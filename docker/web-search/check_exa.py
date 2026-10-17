@@ -172,7 +172,12 @@ def main():
             assert calls == [("yahoo", "same exact query")] and not post.called
             assert data["method"] == "GET" and data["json"] == {}
             engine.STATE.write_text("{}")
-            engine._session = {"Accept": "application/json, text/event-stream"}
+            provider_headers = {
+                "Accept": "application/json, text/event-stream",
+                "MCP-Protocol-Version": "2025-03-26",
+                "Mcp-Session-Id": "offline-session",
+            }
+            engine._session = provider_headers.copy()
             data = params()
             engine.request("same exact query", data)
             assert data["json"]["params"]["arguments"]["query"] == "same exact query"
@@ -181,11 +186,26 @@ def main():
             get.return_value = SimpleNamespace()
             assert engine.response(r) == ["yahoo-result"]
             assert get.call_count == 1 and not post.called
-            assert json.loads(engine.STATE.read_text())["until"] > time.time()
+            until = json.loads(engine.STATE.read_text())["until"]
+            assert until > time.time()
+            assert engine._session == provider_headers, "rate limit discarded initialized session"
             calls.clear()
             for _ in range(3):
                 engine.request("new query", params())
             assert len(calls) == 3 and not post.called, "cooldown contacted Exa"
+            assert engine._session == provider_headers
+            # Only a private, network-disabled test clock advances; real quota state is untouched.
+            with patch.object(engine.time, "time", return_value=until + 1):
+                recovered = params()
+                engine.request("after cooldown", recovered)
+            assert recovered["headers"] == provider_headers and not post.called, (
+                "recovery reinitialized MCP"
+            )
+            assert recovered["json"]["method"] == "tools/call"
+            r = response(status=404)
+            r.search_params = recovered
+            assert engine.response(r) == ["yahoo-result"]
+            assert engine._session is None, "invalid session was reused"
             engine.STATE.write_text("{}")
             engine._session = {"Accept": "application/json"}
             data = params()

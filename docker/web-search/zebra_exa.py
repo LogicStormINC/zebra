@@ -315,7 +315,8 @@ def response(resp):
     try:
         out = _results(resp)
     except (ProviderError, ValueError, TypeError, KeyError) as error:
-        _session = None
+        if not isinstance(error, RateLimit):
+            _session = None  # A rate limit alone does not invalidate this session.
         _finish(
             params["_exa_lease"],
             "rate_limit" if isinstance(error, RateLimit) else "provider_error",

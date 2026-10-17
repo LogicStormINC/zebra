@@ -6893,3 +6893,19 @@ Gate fails: retain fast optional/Yahoo sole default; no speculative performance
 source change, expanded samples, models or pages. Previous limited cohort retained,
 no state reset/identity/egress rotation. Normal service snapshots identical,
 owned candidate removed, one-shot follow-up deleted. Details CLOUD_EXA_OPTIONAL.md.
+
+## 2026-10-17 — Remove redundant MCP initialization after rate limit
+
+CLOUD-EXA-COLD-01 traces historical669.113ms cold controls:205.840ms transport
+ready,258.721ms initialize response,204.552ms initialized notification. True cold
+lifecycle still mandatory. Minimal response guard preserves already initialized
+provider metadata only on RateLimit; lease/cooldown still gates every request,
+non-rate/404 errors invalidate and cold/partial handshake behavior unchanged.
+Native offline regression reproduced old session loss, then passes cooldown
+zero-frame/expiry-no-reinitialize/404/cold2frames and existing controls.37Cloud
+search/DNS/tool checks andRuff/format pass. Optional image built/startup checked
+with networknone; no new Exa/model/page requests or normal service activation.
+Potential recovery saving is two control requests/~463ms from historical timing,
+not a measured real recovery latency win; reconnect/TLS and true process cold
+remain. Actual provider state and normal services unchanged; no Trench/security/
+high/v2/default changes. See CLOUD_EXA_OPTIONAL.md for scope and acceptance limits.

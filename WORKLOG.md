@@ -15685,3 +15685,23 @@ Previous limited cohort preserved. Same normal image/envhash/start/restarts,
 diagnosticcontainer removed, exa-fast-instant one-shot automation deleted.
 Updated docs/task/progress; exact private receipts .artifacts/cloud-exa-pair-02/.
 Local commit/integration only, no push/deploy. No further quota probes scheduled.
+
+## 2026-10-17 — CLOUD-EXA-COLD-01
+
+ClaimedReady task/ownedpaths on codex/cloud-exa-cold-01/base1cd207d8 before code.
+Read current MCP lifecycle/transport/version change docs. Historical669.113ms
+decomposes205.840transport+258.721initialize-response+204.552notification; no
+handshake omission/batch/pipeline/prewarm probe. Root cause: response() cleared
+initialized metadata on every providererror, including rate limits. One conditional
+now retains metadata only for RateLimit; actual cooldown/lease/deadline/Yahoo gate
+unchanged. Regression first reproduced discarded-session assertion, then passes
+sameheaders during cooldown/zeroExaframes, offline simulated expiry with0extra
+controls,404invalidation,truecold2controls and existing cancel/RetryAfter checks.
+Only private network-disabled test clocks/state simulated; realproviderstate hash
+unchanged.37existingCloud search/DNS/tool checks pass;Ruff/format pass. Prepared
+optional image exa-cold-01/updatedlocaloptional tag; exact source/default/cancel
+and native startup checked networknone. No realExa/control/model/page requests,
+no normal activation/Trench/globalproxy/freshauthority changes. Potential~463ms
+recovery saving excludes reconnect/TLS and truecold; no real latency gain claim.
+Normal images/envhash/start/restarts unchanged; owned offline container removed.
+Private evidence .artifacts/cloud-exa-cold-01/; local integration only, no push/deploy.
