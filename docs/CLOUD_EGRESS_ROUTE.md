@@ -181,3 +181,11 @@ proxy-config digest. Website text/model reasoning/secrets are not collected.
 Normal API/Worker images/health/restart counts are verified separately.
 Both owned SSH process groups and the Worker overlay were removed. The original
 global proxy configuration digest is unchanged. No push, deployment or model run.
+
+Local delivery: runner/evidence document integrated into cloud-agent-trench as
+55614acf. Actual primary DoH/native cancellation/public-DNS regressions pass85,
+including preserved local DNS recovery changes. Diagnostic Ruff/selfcheck/trace
+verification pass in the primary environment. All21 existing tracked dirty file
+hashes were intact before appending only this task's governance notes. Original
+API/Worker images remain healthy with zero restarts; both owned tunnel listener
+ports are closed and the global proxy configuration digest is unchanged.
