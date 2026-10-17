@@ -15588,3 +15588,27 @@ Retain raw/normalized results/logs. DDG observed median848.465 vs1123.547ms is
 small fixed-order/provider/cache-confounded, not accepted speedup. No12case
 expansion or pagepair without recall benefit. Owned container removed; normal
 API/Worker/Search image/envhash/start/restarts identical; source configs unchanged.
+
+
+## 2026-10-17 — CLOUD-KEYLESS-PROVIDER-02
+
+Claimed before new-provider probes. Primary sources show Exa hosted MCP keyless
+(REST differs), archived Stract now PR product, Marginalia public development
+key/noncommercial restrictions. Native source screening Seznam/Swiss/Yandex
+avoids challenge solvers and does not rerun old blocked channels. Exa discovery
+works anonymously; select advanced fast5/no-summary/no-expansion/1000text
+rather than default tool's additional objective, same public query bodies.
+Initial4paired ABBA: Exa4/Yahoo3targets. Freeze12questionsx2/reversed pair order,
+all48 retained: Exa3textual rate limits with200/noisError evade diagnostic stop
+check. Do not hide protocol deviation or accept later success. Offline reject
+nonstructured responses; no rerun/identity rotation. Strict target19/24 versus
+16/24; Node official Chinese version fixes2false negatives in separate adjudicated
+copy21/24, not original scores or gate. No accepted page cohort.
+Secondary native four-query screen13calls: Yahoo3/4, Seznamtimeout1stop,
+Swiss1/4, Yandex0/4; one frozen Swiss all-region contrast4calls still1/4, no
+more variants.73total search calls/8MCP setup-discovery frames, no model calls.
+Existing Cloud normalizer reused offline; no new dependency/provider source/
+prompt/Trench/globalproxy/authority changes. Before/after service image/envhash/
+start/restarts identical; owned candidate removed. Preserve all raw/normalized/
+adjudicated evidence, no new SQL/latency acceptance. Native-source read checks
+and service/source equality validate scope.

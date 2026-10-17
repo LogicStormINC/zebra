@@ -6832,3 +6832,18 @@ stopped. Total10native search requests, no models/retries/pages. DDG faster in
 small fixed-order screen but weaker source recall; no stable benefit or SQL
 claim. Yahoo default/normal containers/source unchanged, candidate removed.
 Evidence and qualification boundaries docs/CLOUD_KEYLESS_RECALL.md.
+
+
+## 2026-10-17 — New keyless provider screen: useful Exa recall, rate-limit gate fails
+
+CLOUD-KEYLESS-PROVIDER-02 confirms official hosted Exa MCP anonymous access,
+distinct from keyed REST. Initial4targets4/4 vsYahoo3/4; fixed12x2 expansion
+has3text-only rate limits underHTTP200/noisError. Probe missed stop boundary,
+all48fixed cells retained and entire expanded cohort NOT accepted. Frozen
+exact target19/24 vs16/24; official Node translation adjudication21/24 kept
+separately, not a posthoc pass. Seznam timeout1stop, Swiss zhCN/all1/4 each,
+Yandex0/4.73search calls total, no model/Run/page/new prompts or runtime edits.
+Normal services unchanged and temporary container removed. Only plausible future
+candidate is bounded low-frequency anonymous MCP with correct limit/cooldown/
+Yahoo fallback and existing Cloud authorization/cancellation, not default replacement.
+See docs/CLOUD_KEYLESS_PROVIDER_02.md; no performance/SQL acceptance claim.
