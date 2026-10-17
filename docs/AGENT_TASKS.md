@@ -34186,3 +34186,15 @@ WEB-MODEL-LIMIT-01 audit amendment before edit: add packages/agent-core/src/agen
 - Frozen protocol before calls: cuts19/32/45 ×2repetitions ×Flash(F)/Pro(P)=12single-response completions, alternating pair order; identical native inputs/tool definitions except profile, no tool execution/Runmutation/retries/replacement. Retain all usage/latencies/errors/publicproposals. Qualify only if initial source refinement and single-gap recovery improve without unsupported URL increase, overlapping proposals drop>=25% at>=2checkpoints, and per-decision latency does not erase the observed previous4.3s B1/B2 first-body difference (counterfactual bound, not measured speedup). Otherwise no production profile change/page cohort or claim. Any accepted profile requires separate actual high/v2 page comparison.
 
 - Acceptance: Review/profile hypothesis not promoted.12valid native high/auto responses, per-cut message/tool hashes identical; F11/P9proposals, but initial product detourF0/2/P1/2 and model median1409.6→2806.1ms. Pro improves optional corroboration only; parallel fetch deletion is not a saved model round. GateFAIL, no default profile/router/page/production changes. All36model responses and30native backendqueries from this turn retained across two focused investigations; no replay-framework/test/Trench/globalproxy/auth/high/v2 changes. Normal images/env/status/restarts match before; own tmp removed. docs/CLOUD_B1_DECISION_PROFILE.md.
+
+
+### CLOUD-BRAVE-OPTIONAL-01
+
+- Status: Ready → In Progress 2026-10-17, claimed before implementation.
+- Human owner: Luke Ding; executor: Codex.
+- Branch/worktree: codex/cloud-brave-optional-01; zebra-agent; base fa70133a.
+- Owned paths: docker/web-search/prepare_brave.py(new); docker/web-search/check_brave.py(new); docker/web-search/compose.brave.yml(new); docs/CLOUD_BRAVE_OPTIONAL.md(new); docs/AGENT_TASKS.md; PROGRESS.md; WORKLOG.md.
+- Scope: opt-in native Brave API configuration only, disabled by default even in optional configuration; preserve Yahoo default/explicit fallback, current transport/authority/DNS/SSRF/cancel/high/transient_v2. Private credential preparation without dependencies; no model/prompt/replay/Trench changes, upstream queries, service activation or credential enrollment.
+- Acceptance: offline pinned native SearXNG YAML/engine/secret-file checks and Compose merged configuration validation; no real recall, latency or production acceptance before credentials and separately bounded native search qualification.
+
+- Acceptance: Review/prepared only. Offline pinned image with network=none verifies native config merge/Yahoo-only defaults, request header/query, secret validation/permissions and exclusive writes. Compose base/override differs only in settings mount (missing path cannot auto-create); Ruff/format pass. No real key/config created or service activation/search/model traffic. Original Yahoo default and all Cloud/Trench paths unchanged. Credential-dependent recall, latency and actual !brapi dispatch remain open; docs/CLOUD_BRAVE_OPTIONAL.md.

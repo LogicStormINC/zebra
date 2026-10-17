@@ -6796,3 +6796,15 @@ and30nativequeries total, no executed proposedtools/test-framework expansion.
 First-query event recall and semantic gap selection remain the unresolved target;
 no validated generic small production fix claimed. Normal images/env/auth/DNS/
 SSRF/cancel/high/v2/Trench preserved. docs/CLOUD_B1_DECISION_PROFILE.md.
+
+
+## 2026-10-17 — Optional official Brave Search API prepared
+
+CLOUD-BRAVE-OPTIONAL-01 adds an offline private-settings preparer and explicit
+Compose settings-mount override for the pinned native braveapi engine. Yahoo
+remains the only default, including in the optional configuration; Brave is
+explicit !brapi only. No default startup, image, runtime authority/DNS/SSRF/cancel,
+high/transient_v2, prompts or Trench changes. Network-disabled pinned-image
+checks and Compose configuration comparison pass; no real credential, upstream
+query, model call or running-service replacement. Actual recall/latency/page
+acceptance waits for credentials. See docs/CLOUD_BRAVE_OPTIONAL.md.

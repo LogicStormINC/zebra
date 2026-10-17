@@ -1,0 +1,10 @@
+# Explicit opt-in only. Missing private settings must fail before service replacement.
+services:
+  searxng:
+    volumes:
+      - type: bind
+        source: ./secrets/brave-settings.yml
+        target: /etc/searxng/settings.yml
+        read_only: true
+        bind:
+          create_host_path: false

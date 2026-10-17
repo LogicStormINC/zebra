@@ -15536,3 +15536,23 @@ source/config/Trench/auth/high/v2 edits. Normal serviceidentity/env/restarts
 equal; own tmp exported/removed. No production performanceclaim. Remaining
 bottleneck is event-source recall/semantic gap choice; no verified general code
 shortcut found, so stop these variants instead of expanding speculative scope.
+
+
+## 2026-10-17 — CLOUD-BRAVE-OPTIONAL-01
+
+Claimed Ready task on codex/cloud-brave-optional-01 before implementation. Reuse
+pinned SearXNG native braveapi rather than a new Cloud provider/SDK. Standard
+library preparer inserts an explicit disabled engine into a private settings
+snapshot; JSON escaping, input bounds and exclusive 0600 creation protect key
+handling. Optional Compose override changes only the read-only settings mount,
+missing host files fail at mounting; normal Yahoo configuration unchanged.
+Initial offline checks caught missing PYTHONPATH then incorrect Path.open opener;
+fixed to native import path and builtin open, all final asserts pass.
+Pinned network=none/read-only image verifies merged Yahoo-only defaults, exact
+query/token-header request, invalid inputs/layout drift, permissions/no overwrite
+and symlink refusal. Compose base/override config comparison (captured privately,
+never environment output) confirms only settings mount differs. Ruff/format pass.
+No private Brave settings/credential created, API/Worker/Search not restarted,
+no upstream/model/replay calls. Next: obtain operator-provisioned key, generate
+private config, separately activate explicit engine for bounded native recall
+qualification; never infer performance from offline preparation.
