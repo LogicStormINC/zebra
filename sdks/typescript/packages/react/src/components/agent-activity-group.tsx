@@ -19,6 +19,7 @@ export interface AgentActivityGroupProps {
   activities: readonly AgentActivity[];
   className?: string;
   expanded: boolean;
+  running?: boolean | undefined;
   labels?: Partial<AgentActivityGroupLabels> | undefined;
   onExpandedChange: (expanded: boolean) => void;
   terminalStatus?: AgentRunOutcome | undefined;
@@ -33,12 +34,12 @@ const DEFAULT_LABELS: AgentActivityGroupLabels = {
   partial: "Partially completed",
   ready: "Ready",
   running: "Running",
-  summary: (count) => `Work log · ${count}`,
+  summary: (count) => `Execution process · ${count}`,
 };
 
 export function AgentActivityGroup(props: AgentActivityGroupProps) {
   const labels = { ...DEFAULT_LABELS, ...props.labels };
-  const active = !props.terminalStatus && props.activities.some((item) => item.status === "running");
+  const active = !props.terminalStatus && (props.running ?? props.activities.some((item) => item.status === "running"));
   const failedCount = props.activities.filter((item) => item.status === "failed").length;
   const wasActive = useRef(active);
   useEffect(() => {
@@ -49,7 +50,7 @@ export function AgentActivityGroup(props: AgentActivityGroupProps) {
     wasActive.current = active;
   }, [active, failedCount, props.expanded, props.onExpandedChange, props.terminalStatus]);
   if (!props.activities.length) return null;
-  const open = active || props.expanded;
+  const open = props.expanded;
   const activityKind = props.activities[0]?.kind ?? "tool";
   const terminal = props.terminalStatus !== undefined;
   return (
@@ -57,7 +58,7 @@ export function AgentActivityGroup(props: AgentActivityGroupProps) {
       className={`zebra-agent-activity ${active ? "zebra-agent-activity--active" : ""} ${terminal ? "zebra-agent-activity--terminal" : ""} ${props.className ?? ""}`.trim()}
       data-activity-kind={activityKind}
       onToggle={(event) => {
-        if (!active) props.onExpandedChange(event.currentTarget.open);
+        if (event.currentTarget.open !== props.expanded) props.onExpandedChange(event.currentTarget.open);
       }}
       open={open}
     >

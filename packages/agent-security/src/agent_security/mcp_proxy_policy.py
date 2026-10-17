@@ -25,6 +25,7 @@ class ToolEgressRoute(StrEnum):
     MCP_PROXY = "mcp_proxy"
     WEB_GATEWAY = "web_gateway"
     BLOCKED = "blocked"
+    INVALID_ARGUMENTS = "invalid_arguments"
 
 
 @dataclass(frozen=True)
@@ -149,8 +150,16 @@ def _classify_web_search_egress(
             tool_call.arguments,
             web_pipeline_v2=web_pipeline_v2,
         )
+    except (WebSearchInputError, SearchInputError) as exc:
+        return ToolEgressMetadata(
+            tool_name=tool_call.name,
+            route=ToolEgressRoute.INVALID_ARGUMENTS,
+            network_profile=network_profile.name.value,
+            reason=str(exc),
+        )
+    try:
         target = parse_web_target(endpoint)
-    except (WebSearchInputError, SearchInputError, WebTargetError) as exc:
+    except WebTargetError as exc:
         return ToolEgressMetadata(
             tool_name=tool_call.name,
             route=ToolEgressRoute.BLOCKED,

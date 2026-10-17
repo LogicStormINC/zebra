@@ -137,7 +137,7 @@ class LocalPolicyEngine:
             web_search_endpoint=self.web_search_endpoint,
             web_pipeline_v2=self.web_pipeline_v2,
         )
-        if egress.route is ToolEgressRoute.BLOCKED:
+        if egress.route in (ToolEgressRoute.BLOCKED, ToolEgressRoute.INVALID_ARGUMENTS):
             return PolicyDecision(
                 decision=PolicyDecisionType.DENY,
                 reason=blocked_route_reason(egress),

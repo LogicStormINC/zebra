@@ -41,10 +41,11 @@ def test_private_or_mixed_dns_never_uses_fallback(monkeypatch, ips):
 
 
 @pytest.mark.parametrize("ip", ["127.0.0.1", "169.254.169.254", "198.18.0.5"])
-def test_fallback_answers_must_be_public(monkeypatch, ip):
+@pytest.mark.parametrize("synthetic", ["198.18.0.1", "2001::c760:3f35"])
+def test_fallback_answers_must_be_public(monkeypatch, ip, synthetic):
     from agent_runtime import public_dns
 
-    monkeypatch.setattr(socket, "getaddrinfo", lambda *a, **kw: answers("198.18.0.1"))
+    monkeypatch.setattr(socket, "getaddrinfo", lambda *a, **kw: answers(synthetic))
     monkeypatch.setattr(public_dns, "_doh_addresses", lambda host: (ip,))
     with pytest.raises(OSError):
         public_dns.public_addresses("example.com", 443)
@@ -119,3 +120,26 @@ def test_native_resolver_has_typed_policy_failure_not_child_crash(monkeypatch):
     with pytest.raises(WebGatewayError) as error:
         public_host_ips("example.com")
     assert error.value.reason == "private_network_blocked"
+
+
+def test_synthetic_teredo_answer_replaces_entire_dns_set(monkeypatch):
+    from agent_runtime import public_dns
+
+    monkeypatch.setattr(
+        socket, "getaddrinfo", lambda *a, **kw: answers("108.160.170.26", "2001::c760:3f35")
+    )
+    monkeypatch.setattr(public_dns, "_doh_addresses", lambda host: ("104.20.41.132",))
+    assert public_dns.public_addresses("api.coingecko.com", 443) == answers("104.20.41.132")
+
+
+def test_teredo_mixed_with_private_address_stays_blocked(monkeypatch):
+    from agent_runtime import public_dns
+
+    fallback = Mock()
+    monkeypatch.setattr(
+        socket, "getaddrinfo", lambda *a, **kw: answers("2001::c760:3f35", "10.0.0.1")
+    )
+    monkeypatch.setattr(public_dns, "_doh_addresses", fallback)
+    with pytest.raises(OSError):
+        public_dns.public_addresses("example.com", 443)
+    fallback.assert_not_called()

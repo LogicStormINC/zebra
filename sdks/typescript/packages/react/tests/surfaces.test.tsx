@@ -77,7 +77,8 @@ test("AgentChat renders the finite public surfaces and keeps Host actions contro
   ]);
 
   await render({ ...base, activities: [{ ...base.activities[0]!, status: "running" }] });
-  assert.equal((container.querySelector("details") as HTMLDetailsElement).open, true);
+  // Running indicators must not override the Host's explicit collapsed state.
+  assert.equal((container.querySelector("details") as HTMLDetailsElement).open, false);
 
   await render({
     ...base,

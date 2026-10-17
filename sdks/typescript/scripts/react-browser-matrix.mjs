@@ -65,6 +65,7 @@ async function verifyViteInteractions(browser, tarballs, browserName) {
     const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
     const errors = collectBrowserErrors(page);
     await page.goto(server.url);
+    await verifyProgressiveIdentity(page, browserName);
     await page.setViewportSize({ width: 1280, height: 900 });
     const emptyComposerWidth = await page.locator(".zebra-agent-chat__composer").evaluate((node) => Math.round(node.getBoundingClientRect().width));
     if (emptyComposerWidth !== 672) throw new Error(`${browserName}: centered draft composer expected 672px, received ${emptyComposerWidth}px`);
@@ -136,7 +137,7 @@ async function verifyViteInteractions(browser, tarballs, browserName) {
     await page.locator("textarea").press("Enter");
     if (await page.locator("#submits").textContent() !== "1") throw new Error("Enter did not submit the draft");
     await page.locator("#burst").click();
-    await page.getByText(/Long output 29/).waitFor();
+    await page.locator(".zebra-agent-timeline").getByText(/Long output 29/).waitFor();
     await assertConversationContentContained(page, browserName, "long output conversation");
     const viewport = page.locator(".zebra-agent-chat__viewport");
     await viewport.evaluate((node) => { node.scrollTop = 120; node.dispatchEvent(new Event("scroll")); });
@@ -172,6 +173,40 @@ async function verifyViteInteractions(browser, tarballs, browserName) {
   } finally {
     await server.close();
   }
+}
+
+async function verifyProgressiveIdentity(page, browserName) {
+  await page.evaluate(() => window.progressiveCase.start());
+  await page.getByRole("img", { name: "Progressive image" }).waitFor();
+  await page.locator(".zebra-agent-chart__canvas svg.marks").waitFor();
+  const ordered = await page.evaluate(() => {
+    const image = document.querySelector('img[alt="Progressive image"]');
+    const chart = document.querySelector(".zebra-agent-chart__canvas svg.marks");
+    const video = document.querySelector('[data-testid="progress-video"]');
+    window.progressiveNodes = { image, chart, video };
+    video.currentTime = 7;
+    const text = document.querySelector(".zebra-agent-timeline").textContent;
+    return text.indexOf("Checking two sources") < text.indexOf("Read sources") &&
+      text.indexOf("Read sources") < text.indexOf("Only the first page is covered");
+  });
+  if (!ordered) throw new Error(`${browserName}: progressive items lost execution order`);
+  for (const action of ["revise", "finish", "replay"]) {
+    await page.evaluate((key) => window.progressiveCase[key](), action);
+    await page.getByText("Verified first-page result", { exact: true }).waitFor();
+    const stable = await page.evaluate(() => {
+      const nodes = window.progressiveNodes;
+      return {
+        image: nodes.image === document.querySelector('img[alt="Progressive image"]'),
+        chart: nodes.chart === document.querySelector(".zebra-agent-chart__canvas svg.marks"),
+        video: nodes.video === document.querySelector('[data-testid="progress-video"]'),
+        time: nodes.video.currentTime === 7,
+        unique: document.querySelectorAll('video[data-testid="progress-video"]').length === 1,
+      };
+    });
+    if (!Object.values(stable).every(Boolean)) throw new Error(`${browserName}: ${action} remounted media DOM ${JSON.stringify(stable)}`);
+    await page.getByText("Only the first page is covered", { exact: true }).waitFor();
+  }
+  await page.evaluate(() => window.progressiveCase.reset());
 }
 
 async function readConversationGeometry(page) {
@@ -278,12 +313,17 @@ import { AgentChat, AgentComposer, AgentContentRenderer } from "@zebra-agent/rea
 import { AgentVegaLiteRenderer } from "@zebra-agent/react-charts";
 import "@zebra-agent/react/styles.css";
 
+const resolveArtifact=(artifactId:string)=>({artifactId,mimeType:"image/png",url:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="});
+const browserRenderers={chart:AgentVegaLiteRenderer,video:()=>createElement("video",{controls:true,"data-testid":"progress-video"})};
+
 function App(){
   const [phase,setPhase]=useState("idle"); const [value,setValue]=useState(""); const [files,setFiles]=useState([]); const [submits,setSubmits]=useState(0); const [actions,setActions]=useState([]); const [turns,setTurns]=useState([]); const [scrollKey,setScrollKey]=useState("thread-a");
   const state=phase==="running"?{phase:"running",availableActions:[]}:phase==="completed"?{phase:"terminal",outcome:"completed",availableActions:[]}:phase==="disconnected"?{phase:"disconnected",availableActions:["reconnect"]}:phase==="paused"?{phase:"paused",availableActions:["resume"]}:phase==="failed"?{phase:"terminal",outcome:"failed",availableActions:["retry"]}:{phase:"idle",availableActions:[]};
   const composer=createElement(AgentComposer,{attachments:files,busy:phase==="running",capabilityOptions:[],capabilityValue:"general",canContinue:false,disabled:false,metrics:{cacheHitRate:.984,contextBreakdown:[{id:"messages",label:"Messages",tokens:8200},{id:"system",label:"System prompt",tokens:4100},{id:"tools",label:"Tool definitions",tokens:1800}],contextLimit:100000,contextPercent:.141,contextTokens:14100},modelOptions:[],modelValue:"default",onCapabilityChange:()=>{},onContinue:()=>{},onFilesSelected:(list)=>setFiles([...list].map((file,index)=>({id:String(index),isImage:false,name:file.name}))),onModelChange:()=>{},onPause:()=>{},onReasoningChange:()=>{},onRemoveAttachment:(id)=>setFiles((items)=>items.filter((item)=>item.id!==id)),onSubmit:()=>setSubmits((count)=>count+1),onSuggestionPick:()=>{},onValueChange:setValue,pausing:false,queueCount:0,reasoningOptions:[],reasoningValue:"high",suggestions:[],value});
-  const resolveArtifact=(artifactId:string)=>({artifactId,mimeType:"image/png",url:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="});
-  const renderContent=(message:any)=>createElement(AgentContentRenderer,{message,renderers:{chart:AgentVegaLiteRenderer},resolveArtifact});
+  const renderContent=(message:any)=>createElement(AgentContentRenderer,{message,renderers:browserRenderers,resolveArtifact});
+  const progressive=()=>{setPhase("running");setTurns([{id:"progress",status:"running",workSegments:[],items:[{id:"comment",sequence:1,kind:"message",message:{id:"comment",role:"assistant",content:"Checking two sources",status:"complete"}},{id:"read",sequence:2,kind:"activity",segment:{id:"read",activities:[{activityId:"read",kind:"tool",title:"Read sources",status:"completed"}]}},{id:"selected",sequence:3,kind:"message",message:{id:"selected",role:"assistant",content:"Draft first-page result\\nOnly the first page is covered",status:"streaming",parts:[{id:"intro",type:"text",state:"ready",format:"plain",text:"Draft first-page result"},{id:"image",type:"image",state:"ready",artifactId:"image-1",mimeType:"image/png",alt:"Progressive image"},{id:"video",type:"video",state:"ready",artifactId:"video-1",mimeType:"video/webm"},{id:"chart",type:"chart",state:"ready",specType:"vega-lite",specVersion:"6",spec:{mark:"bar",data:{values:[{label:"A",value:2}]},encoding:{x:{field:"label"},y:{field:"value",type:"quantitative"}}}},{id:"coverage",type:"text",state:"ready",format:"plain",text:"Only the first page is covered"}]}}]}])};
+  const revise=(finish=false)=>{setTurns((items)=>items.map((turn)=>({...turn,status:finish?"completed":"running",assistantMessage:{id:"selected",role:"assistant",content:"Verified first-page result\\nOnly the first page is covered",status:finish?"complete":"streaming"}})));if(finish)setPhase("completed")};
+  window.progressiveCase={start:progressive,revise:()=>revise(),finish:()=>revise(true),replay:()=>setTurns((items)=>JSON.parse(JSON.stringify(items))),reset:()=>{setPhase("idle");setTurns([])}};
   const activate=()=>{setPhase("running");setTurns([{id:"live",status:"running",userMessage:{id:"user",role:"user",content:("这是一条用于验证长输入折叠和渐隐效果的中文请求。 ").repeat(24),status:"complete"},workSegments:[{id:"work",activities:[{activityId:"tool",kind:"tool",status:"running",title:"Inspect"}]}],assistantMessage:{id:"media",role:"assistant",content:"",status:"complete",parts:[{id:"image",type:"image",state:"ready",artifactId:"image-1",mimeType:"image/png",alt:"Generated preview"},{id:"chart",type:"chart",state:"ready",specType:"vega-lite",specVersion:"6",spec:{mark:"bar",data:{values:[{label:"A",value:2},{label:"B",value:5}]},encoding:{x:{field:"label"},y:{field:"value",type:"quantitative"}}},title:"Generated chart",description:"A browser-rendered chart"}]}}])};
   const complete=()=>{setPhase("completed");setTurns((items)=>items.map((turn)=>turn.id==="live"?{...turn,status:"completed",workSegments:[{id:"work",activities:[{activityId:"tool",kind:"tool",status:"completed",title:"Inspect"}]}],assistantMessage:{id:"answer",role:"assistant",content:"Done",status:"complete"}}:turn))};
   return <><nav><button id="activate" onClick={activate}>Activate</button><button id="complete" onClick={complete}>Complete</button><button id="disconnected" onClick={()=>setPhase("disconnected")}>Disconnect</button><button id="paused" onClick={()=>setPhase("paused")}>Pause state</button><button id="failed" onClick={()=>setPhase("failed")}>Fail state</button><button id="burst" onClick={()=>setTurns(Array.from({length:30},(_,index)=>({id:String(index),status:"completed",workSegments:[],assistantMessage:{id:"message-"+index,role:"assistant",content:"Long output "+index+" "+"x".repeat(180),status:"complete"}})))}>Burst</button><button id="append" onClick={()=>setTurns((items)=>[...items,{id:"latest",status:"completed",workSegments:[],assistantMessage:{id:"latest-message",role:"assistant",content:"Newest output",status:"complete"}}])}>Append</button><button id="thread-a" onClick={()=>setScrollKey("thread-a")}>Thread A</button><button id="thread-b" onClick={()=>setScrollKey("thread-b")}>Thread B</button></nav><span id="submits">{submits}</span><span id="actions">{actions.join(",")}</span><span id="scroll-key">{scrollKey}</span><AgentChat composer={composer} renderMessageContent={renderContent} runStatus={{state,onReconnect:()=>setActions((v)=>[...v,"reconnect"]),onResume:()=>setActions((v)=>[...v,"resume"]),onRetry:()=>setActions((v)=>[...v,"retry"])}} scrollKey={scrollKey} themeTokens={{input:"#123456",surface:"#101820"}} turns={turns} /></>;

@@ -22,19 +22,25 @@ def recoverable_egress_denial(
     """Return an observation for blocked read egress, never an authorization."""
     if (
         decision.decision is not PolicyDecisionType.DENY
-        or decision.route != "blocked"
+        or decision.route not in ("blocked", "invalid_arguments")
         or tool_call.name not in read_only_tools
     ):
         return None
+    invalid = decision.route == "invalid_arguments"
     return ToolResult(
         tool_call_id=tool_call.tool_call_id,
         status=ToolCallStatus.FAILED,
         output=(
-            f"Policy blocked {tool_call.name}: {decision.reason}. No request was sent. "
-            "Use already available evidence or an allowed source; do not retry this route."
+            f"{decision.reason}. No request was sent. "
+            + (
+                "Correct the arguments using the tool schema; "
+                "do not repeat identical invalid calls."
+                if invalid
+                else "Use already available evidence or an allowed source; do not retry this route."
+            )
         ),
         metadata={
-            "reason": "policy_blocked_egress",
+            "reason": "invalid_tool_arguments" if invalid else "policy_blocked_egress",
             "executed": False,
             "retryable": False,
             "network_profile": decision.network_profile,

@@ -18,6 +18,7 @@ const packageSpecs = {
     "package/dist/index.d.ts",
     "package/styles.css",
     "package/styles/surfaces.css",
+    "package/styles/usage.css",
   ],
   "react-charts": [
     "package/package.json",

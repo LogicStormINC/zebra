@@ -25,8 +25,12 @@ class PublicAddressBlocked(OSError):
 def public_addresses(hostname: str, port: int) -> Sequence[AddressInfo]:
     answers: Sequence[AddressInfo] = socket.getaddrinfo(hostname, port, type=socket.SOCK_STREAM)
     ips = [ipaddress.ip_address(item[4][0]) for item in answers]
-    if ips and all(ip in _FAKE_IP for ip in ips):
-        # ponytail: only A answers on Fake-IP fallback; native public DNS keeps
+    synthetic_teredo = any(isinstance(ip, ipaddress.IPv6Address) and ip.teredo for ip in ips)
+    recoverable_teredo = synthetic_teredo and all(
+        ip.is_global or (isinstance(ip, ipaddress.IPv6Address) and ip.teredo) for ip in ips
+    )
+    if ips and (all(ip in _FAKE_IP for ip in ips) or recoverable_teredo):
+        # ponytail: only A answers on synthetic DNS fallback; native public DNS keeps
         # its IPv6 sockaddr. An operator egress resolver is the fleet upgrade.
         resolved = _doh_addresses(hostname)
         answers = [(socket.AF_INET, socket.SOCK_STREAM, 6, "", (ip, port)) for ip in resolved]

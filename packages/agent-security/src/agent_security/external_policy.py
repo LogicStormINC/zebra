@@ -70,6 +70,8 @@ def external_approval_decision(
 
 
 def blocked_route_reason(egress: ToolEgressMetadata) -> str:
+    if egress.route is ToolEgressRoute.INVALID_ARGUMENTS:
+        return f"{egress.tool_name}: {egress.reason}"
     target = egress.target or egress.tool_name
     denied_capability = (
         "mcp proxy egress" if egress.tool_name.startswith("mcp.") else "the requested egress"

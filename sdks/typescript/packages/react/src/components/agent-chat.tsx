@@ -93,7 +93,8 @@ export function AgentChat(props: AgentChatProps) {
           <div className="zebra-agent-chat__content">
             {empty && props.emptyState ? (
               <div className="zebra-agent-chat__empty">{props.emptyState}</div>
-            ) : props.turns ? (
+            ) : null}
+            {props.turns ? (
               <AgentConversationTimeline
                 {...(props.activityLabels ? { activityLabels: props.activityLabels } : {})}
                 {...(props.contentRenderer ? { contentRenderer: props.contentRenderer } : {})}
@@ -102,9 +103,10 @@ export function AgentChat(props: AgentChatProps) {
                 {...(props.renderMessageContent ? { renderMessageContent: props.renderMessageContent } : {})}
                 {...(props.renderTurnFooter ? { renderTurnFooter: props.renderTurnFooter } : {})}
                 {...(props.runStatusLabels ?? props.runStatus?.labels ? { runStatusLabels: props.runStatusLabels ?? props.runStatus?.labels } : {})}
+                {...(props.scrollKey !== undefined ? { scrollKey: props.scrollKey } : {})}
                 turns={props.turns}
               />
-            ) : (
+            ) : empty && props.emptyState ? null : (
               <>
                 <AgentMessageList contentRenderer={props.contentRenderer} labels={props.messageLabels} messages={messages} renderContent={props.renderMessageContent} />
                 <AgentActivityGroup

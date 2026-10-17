@@ -218,12 +218,28 @@ export interface AgentAppResource {
   version: "2025-11-21";
 }
 
+/** Public timeline identity is stable across replay, revision and final confirmation. */
+export type AgentConversationItem = {
+  /** Unique within a Turn; never derive from content or completion status. */
+  id: string;
+  /** Ascending order; unsequenced items follow in their supplied order. */
+  sequence?: number;
+} & (
+  /** message.id and parts[].id also remain stable through revisions and final confirmation. */
+  | { kind: "message"; message: AgentMessage }
+  | { kind: "activity"; segment: AgentWorkSegment }
+  | { kind: "status"; state: AgentRunState }
+);
+
 /** One durable user request and the public work/output that belongs to it. */
 export interface AgentConversationTurn {
   id: string;
   status: AgentTurnStatus;
   userMessage?: AgentMessage;
   workSegments: readonly AgentWorkSegment[];
+  /** Public commentary/results, execution work and status; omitted for legacy Turns. */
+  items?: readonly AgentConversationItem[];
+  /** Confirms an item with the same message.id in place; otherwise follows the items. */
   assistantMessage?: AgentMessage;
   artifacts?: readonly AgentArtifact[];
 }

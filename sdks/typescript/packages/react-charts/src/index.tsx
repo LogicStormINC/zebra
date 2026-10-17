@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import type { Result as VegaEmbedResult } from "vega-embed";
 import type { AgentArtifactAccess, AgentChartPart, AgentChartTable, AgentJsonValue } from "@zebra-agent/ui-contracts";
 import type { AgentPartRendererProps } from "@zebra-agent/react";
@@ -21,43 +21,66 @@ export function createAgentVegaLiteRenderer(options: AgentVegaLiteRendererOption
 
 export const AgentVegaLiteRenderer = createAgentVegaLiteRenderer();
 
-function VegaLiteChart({ context, maxInlineDataRows, maxSpecBytes, part }: {
+function VegaLiteChart({ context, maxInlineDataRows, maxSpecBytes, part: incomingPart }: {
   context: AgentPartRendererProps["context"];
   maxInlineDataRows: number;
   maxSpecBytes: number;
   part: AgentChartPart;
 }) {
+  const serialized = useMemo(() => {
+    try { return JSON.stringify(incomingPart); }
+    catch { return undefined; } // Invalid JSON goes through the chart's isolated fallback.
+  }, [incomingPart]);
+  const retained = useRef({ serialized, part: incomingPart });
+  // ponytail: equal JSON snapshots retain the rendered view; real spec changes still revalidate.
+  if (serialized === undefined || retained.current.serialized !== serialized) retained.current = { serialized, part: incomingPart };
+  const part = retained.current.part;
   const container = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string>();
+  const [revision, setRevision] = useState(0);
+  useEffect(() => {
+    if (!error) return;
+    const retry = () => setRevision((value) => value + 1);
+    window.addEventListener("online", retry);
+    return () => window.removeEventListener("online", retry);
+  }, [error]);
   useEffect(() => {
     if (part.state !== "ready" || !container.current) return;
     let active = true;
+    const controller = new AbortController();
     let result: VegaEmbedResult | undefined;
     setError(undefined);
-    void loadSpec(part, context.resolveArtifact, maxSpecBytes).then(async (spec) => {
+    void loadSpec(part, context.resolveArtifact, maxSpecBytes, controller.signal).then(async (spec) => {
       validateVegaLiteSpec(spec, { maxInlineDataRows, maxSpecBytes, specVersion: part.specVersion });
       const { default: embed } = await import("vega-embed");
       if (!active || !container.current) return;
-      result = await embed(container.current, spec as never, {
+      const rendered = await embed(container.current, spec as never, {
         actions: { export: true, source: false, compiled: false, editor: false },
         mode: "vega-lite",
         renderer: "svg",
         tooltip: true,
       });
+      if (active) result = rendered;
+      else rendered.view.finalize();
     }).catch((reason: unknown) => {
       if (active) setError(reason instanceof Error ? reason.message : "chart_render_failed");
     });
     return () => {
       active = false;
+      controller.abort();
       result?.view.finalize();
     };
-  }, [context.resolveArtifact, maxInlineDataRows, maxSpecBytes, part]);
+  }, [context.resolveArtifact, maxInlineDataRows, maxSpecBytes, part, revision]);
   if (part.state === "processing") return <ChartFallback description={part.description} label={context.labels.loading} table={part.table} title={part.title} />;
-  if (part.state === "failed" || error) return <ArtifactChartFallback context={context} maxRows={maxInlineDataRows} maxSpecBytes={maxSpecBytes} part={part} />;
+  if (part.state === "failed") return <ArtifactChartFallback context={context} maxRows={maxInlineDataRows} maxSpecBytes={maxSpecBytes} part={part} />;
   return (
     <figure className="zebra-agent-chart">
       <figcaption><strong>{part.title}</strong><span>{part.description}</span></figcaption>
-      <div aria-label={part.description} className="zebra-agent-chart__canvas" ref={container} role="img" />
+      <div aria-label={part.description} className="zebra-agent-chart__canvas" hidden={Boolean(error)} ref={container} role="img" />
+      {error ? <>
+        <ArtifactChartFallback context={context} maxRows={maxInlineDataRows} maxSpecBytes={maxSpecBytes} part={part} />
+        <button type="button" onClick={() => setRevision((value) => value + 1)}>Retry chart</button>
+      </> : null}
       {part.table ? <details><summary>View chart data</summary><AgentChartDataTable table={part.table} /></details> : null}
     </figure>
   );
@@ -73,18 +96,19 @@ function ArtifactChartFallback({ context, maxRows, maxSpecBytes, part }: {
   const [table, setTable] = useState<AgentChartTable | undefined>(part.table);
   useEffect(() => {
     let active = true;
+    const controller = new AbortController();
     setImage(undefined);
     setTable(part.table);
     if (part.fallbackImageArtifactId && context.resolveArtifact) {
-      void Promise.resolve(context.resolveArtifact(part.fallbackImageArtifactId, "preview"))
+      void Promise.resolve().then(() => context.resolveArtifact!(part.fallbackImageArtifactId!, "preview"))
         .then((access) => { if (active) setImage(access); }, () => undefined);
     }
     if (!part.table && part.fallbackTableArtifactId && context.resolveArtifact) {
-      void Promise.resolve(context.resolveArtifact(part.fallbackTableArtifactId, "data"))
-        .then((access) => fetchJson(access, maxSpecBytes))
+      void Promise.resolve().then(() => context.resolveArtifact!(part.fallbackTableArtifactId!, "data"))
+        .then((access) => fetchJson(access, maxSpecBytes, controller.signal))
         .then((value) => { if (active) setTable(parseTable(value, maxRows)); }, () => undefined);
     }
-    return () => { active = false; };
+    return () => { active = false; controller.abort(); };
   }, [context.resolveArtifact, maxRows, maxSpecBytes, part]);
   return (
     <section className="zebra-agent-chart zebra-agent-chart--fallback" role="status">
@@ -107,20 +131,21 @@ export function AgentChartDataTable({ table }: { table: AgentChartTable }) {
   );
 }
 
-async function loadSpec(part: AgentChartPart, resolver: AgentPartRendererProps["context"]["resolveArtifact"], maxBytes: number): Promise<AgentJsonValue> {
+async function loadSpec(part: AgentChartPart, resolver: AgentPartRendererProps["context"]["resolveArtifact"], maxBytes: number, signal: AbortSignal): Promise<AgentJsonValue> {
   let spec = part.spec;
   if (!spec) {
     if (!part.specArtifactId || !resolver) throw new Error("chart_spec_unavailable");
-    spec = await fetchJson(await resolver(part.specArtifactId, "data"), maxBytes);
+    spec = await fetchJson(await resolver(part.specArtifactId, "data"), maxBytes, signal);
   }
   if (!part.dataArtifactId) return spec;
   if (!resolver || !spec || Array.isArray(spec) || typeof spec !== "object") throw new Error("chart_data_unavailable");
-  const values = await fetchJson(await resolver(part.dataArtifactId, "data"), maxBytes);
+  const values = await fetchJson(await resolver(part.dataArtifactId, "data"), maxBytes, signal);
   return { ...spec, data: { values } };
 }
 
-async function fetchJson(access: AgentArtifactAccess, maxBytes: number): Promise<AgentJsonValue> {
-  const response = await fetch(access.url, { credentials: "same-origin" });
+async function fetchJson(access: AgentArtifactAccess, maxBytes: number, signal: AbortSignal): Promise<AgentJsonValue> {
+  signal.throwIfAborted();
+  const response = await fetch(access.url, { credentials: "same-origin", signal });
   if (!response.ok) throw new Error("chart_artifact_unavailable");
   const declared = Number(response.headers.get("content-length"));
   if (Number.isFinite(declared) && declared > maxBytes) throw new Error("chart_spec_too_large");
