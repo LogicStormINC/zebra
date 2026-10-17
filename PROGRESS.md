@@ -6909,3 +6909,10 @@ Potential recovery saving is two control requests/~463ms from historical timing,
 not a measured real recovery latency win; reconnect/TLS and true process cold
 remain. Actual provider state and normal services unchanged; no Trench/security/
 high/v2/default changes. See CLOUD_EXA_OPTIONAL.md for scope and acceptance limits.
+
+Real-recovery follow-up: original Exa processes were cleaned up and initialized
+metadata was memory-only, so no original session is available for a true natural
+rate-limit recovery pair. Zero new Exa/model requests; no quota fishing, state
+reset or provider/default activation. Real recovery benefit remains unaccepted.
+Future natural business-limit episodes must retain the process until recovery
+observation ends; comparable baseline required before claiming paired gains.

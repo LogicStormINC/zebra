@@ -15705,3 +15705,12 @@ no normal activation/Trench/globalproxy/freshauthority changes. Potential~463ms
 recovery saving excludes reconnect/TLS and truecold; no real latency gain claim.
 Normal images/envhash/start/restarts unchanged; owned offline container removed.
 Private evidence .artifacts/cloud-exa-cold-01/; local integration only, no push/deploy.
+
+CLOUD-EXA-COLD-01 explicitly requested Review follow-up: read-only audit finds
+cooldown elapsed/no lease, no Exa containers and no retained original protocol
+headers. Original process/session cannot be reconstructed from cooldown/logs.
+No real recovery pair executed, no new Exa/model requests or runtime/state change;
+do not pass a new cold process off as same-session recovery. Record readiness
+receipt and retention rule for future natural business-limit episode; no quota
+polling/exhaustion/rotation/reset or page acceptance. Existing~463ms remains an
+estimate. Same task/owned paths/branch reused for this authorized follow-up.
