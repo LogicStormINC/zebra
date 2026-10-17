@@ -108,9 +108,9 @@ cohort or a causal performance claim.
 
 ## Validation and delivery boundary
 
--370tests pass: complete agent-security package, Cloud composition, scoped DoH and
+- 370 tests pass: complete agent-security package, Cloud composition, scoped DoH and
   original native cancellation paths. Separate SSRF/network-profile46tests pass.
-- Mypy1289source files, repository-source Ruff, file-size gate, eval30/30 and
+- Mypy 1289source files, repository-source Ruff, file-size gate, eval30/30 and
   existing progress/risk guards pass. Private captured source snapshots are
   diagnostic artifacts, not new production source lint targets.
 - Named aliases/type-only imports are preserved; only type-only grouping was
@@ -137,3 +137,9 @@ The network runner requires the worker's DNS/CA environment. It deliberately
 instruments only private child processes and must not become a normal Worker
 entrypoint. OS launch/import/DoH/server-header intervals are separately observable;
 further network-routing explanations require new evidence, not another test repair.
+
+Local source integration completed as `b4f3abe9` on `cloud-agent-trench`. All
+previous tracked dirty-file hashes were verified unchanged, including the existing
+policy and Teredo repairs. API/Worker/Search retain their original image IDs,
+entrypoints and running processes (zero restarts); temporary overlay removed.
+The isolated profiler and frozen evidence remain local; no model/page run or push.
