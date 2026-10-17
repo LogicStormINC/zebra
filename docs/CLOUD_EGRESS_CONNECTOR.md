@@ -100,11 +100,74 @@ signed authorization is separately checked by the actual page path.
 
 ## Local deployment and page acceptance
 
-Pending until normal-source image/config checks and fixed4 actual high/Flash/v2
-page ABBA complete. Use one candidate Worker source image for both variants; only
-its endpoint changes. Preserve existing API/pool/startup, schema103 native generic
-plan settings, private search configuration and Trench. No model invocation is
-allowed before the no-model gate above.
+Completed after the no-model gate above. Fixed four new conversations, ordered
+A1/B1/B2/A2; A disables only the explicit endpoint, B enables it. Both use one
+candidate source/observer image and identical API/config, with a fresh Worker per
+case and the operator SSH channel already ready. The agent chooses all tools.
+Prompt: official release dates and two major features each for PostgreSQL18 and
+Redis8, official sources with links, concise answer. All four completed, using
+DeepSeek Flash, thinking enabled/high, transient_v2, zero provider retries and
+zero failed tools. Each committed exactly one answer; no forced tool sequence.
+
+| Case | First visible answer s | Host whole turn s | Model rounds | Tools | Nonempty SQL calls |
+|---|---:|---:|---:|---:|---:|
+| A1 | 21.471 | 24.893 | 4 | 5 | 4015 |
+| B1 | 12.671 | 14.995 | 3 | 4 | 3166 |
+| B2 | 13.961 | 16.343 | 3 | 4 | 3225 |
+| A2 | 12.999 | 16.573 | 3 | 4 | 3207 |
+| A mean | 17.235 | 20.733 | 3.5 | 4.5 | 3611 |
+| B mean | 13.316 | 15.669 | 3 | 4 | 3195.5 |
+
+Observed mean first answer improves22.7%, whole turn24.4%, SQL calls11.5%.
+These are small-cohort observations, not isolated causal estimates. A1 autonomously
+made one extra evidence fetch and model round; all samples are retained. B2 first
+answer is slower than A2. Do not claim universal page gains, fewer required model
+rounds, or a database optimization from this connector. Its code adds no SQL.
+Matched official fetches provide more direct network evidence: PostgreSQL fetches
+A1892.9/1890.9ms vs B1697.7/1549.5ms (mean−14.2%); Redis fetches A819.7/921.0ms
+vs B646.3/727.3ms (mean−21.1%). Search stays on the original internal route.
+Click-to-first-provider mean remains2.776s vs2.757s; this does not fix admission.
+
+First body means the first visible Markdown whose normalized text contains the
+first16characters of the final answer, observed from Send by MutationObserver.
+Progress text is excluded. This includes the explicitly temporary ordinary draft;
+accepted answer can appear later. Whole turn ends at the persisted host completed
+time. SQL counts are Python driver execute calls minus empty statements, covering
+the matching Worker execution plus API request scopes started between Send and
+host completion+1s. They exclude background work/DB-trigger internal statements,
+are not PostgreSQL-wide statement counts, and are not comparable to prior probes
+with different scopes. API counters are source-identical in both arms.
+
+A preceding A0 calibration completed with3model rounds, but the old last-Markdown
+selector followed collapsed progress rather than visible answer. Its full canonical,
+SQL and host completion evidence is retained; first-body time is missing, excluded
+before any B result was observed. Four fresh fixed samples were declared then.
+Thus five real model Runs occurred in total; none was re-executed, no favorable
+replacement after inspecting B results. A2 initially encountered a stale AX input
+index before text submission; fresh state resolved it, producing only one A2 Run.
+
+Normal startup is now enabled locally: native launchd label
+`com.zebra-agent.cloud-egress` supervises a loopback-only prebuilt SSH channel;
+only the new endpoint key was persisted in ignored `docker/trench-acceptance.env`.
+Worker image9953a04d uses the twelve source hashes measured in the page cohort,
+normal entrypoint and original compose files; API imageeb4f695b and Search245b675f
+are unchanged. All three are healthy with zero restarts. All previous environment
+values match their original digests after excluding the new Worker-only key.
+Normal Worker remote-readiness probe succeeds; temporary observers are absent.
+Global proxy configuration digest, schema103 generic-plan function settings,
+private search and Trench source/config are unchanged. No remote publication.
+
+Primary combined regression suite passes163tests (including its existing DNS/Teredo
+checks); this is focused validation, not a full repository test-suite claim. The
+accepted B2 result was checked read-only after restoring normal services.
+
+Operational boundary: this machine's explicit SSH route depends on its existing
+verified SSH identity, network and launchd session. Production operators must supply
+a supervised reachable endpoint of their own. On initial readiness failure Worker
+fails startup; a later outage fails the affected request without direct fallback.
+For local rollback remove/empty only `ZEBRA_WEB_EGRESS_SOCKS_ENDPOINT`, recreate the
+Worker with the original compose files, then stop the owned launchd service if no
+consumer needs it. Do not change the global proxy or weaken DNS/TLS admission.
 
 ## Reproduction and evidence
 
