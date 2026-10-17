@@ -113,8 +113,18 @@ untrusted instruction。它们可以帮助模型恢复任务，但不能覆盖 S
 1. Context snapshot 不包含或派生 credential。
 2. Child binding 的 capability 是父上限、Child Definition 上限和 Zebra
    Child Policy 的交集；Context mode 不参与扩大权限。
-3. Durable research Child 固定为 read-only、research tool profile、network
-   `none`，且深度为 1，不能再次创建 Durable Child。
+3. Durable research Child 保持 read-only、深度为 1，不能再次创建 Durable Child。
+   默认仍为 `research/none`。2026-10-17 CLOUD-RESEARCH-WEB-01 扩展：仅当
+   Worker 恢复的父 Task 工具配置包含 `web.search`，且持久网络配置允许当前
+   HTTPS 搜索端点时，Child 使用 `research_web/domain-allowlist`；allowlist
+   仅含该端点域名，不能扩大父网络权限。`research_web` 只在原 research 工具集
+   上增加 `web.search`，不开放 fetch/crawl/extract、命令、工作区写入或再次委派。
+   搜索 auto_fetch 受现有 domain-allowlist Policy 拒绝。父配置不允许、端点
+   缺失/非法/不匹配时保持 `research/none`，不受 prompt 或 context 中的声明影响。
+   派生结果随现有 Child 准入事件和 Workspace Projection 持久化；旧 Child
+   重放仍返回原权限，不追溯扩权。binding capability 交集与逐调用新鲜授权不变。
+   搜索沿用现有受控出口、DNS/SSRF 校验及取消，不复制凭据，不改引擎默认值。
+   本地同步 researcher 不变；父 Agent 和 Child 自行决定是否使用已获授权工具。
 4. raw tool output 只通过受控 Artifact 引用或安全摘要传递。
 5. hidden reasoning 和 Provider private continuation 不持久化、不继承。
 6. Context 中的文本只能作为数据；任何内嵌指令都不能获得执行 authority。

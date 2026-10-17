@@ -11,7 +11,11 @@ from agent_context import delegated_context_from_materialization
 from agent_core.domain.context_inheritance import ContextInheritanceMode
 from agent_core.domain.context_materialization import ContextMaterialization
 from agent_core.domain.identifiers import TaskId
+from agent_core.domain.networking import NetworkProfileName
+from agent_core.domain.tool_profiles import ToolProfile, tool_names_for_profile
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
+from agent_core.domain.web import WebTargetError, parse_web_target
+from agent_security.network_profile import DEFAULT_NETWORK_PROFILE, NetworkProfile
 from agent_tools.contracts import ToolContract
 from agent_tools.errors import ToolArgumentError
 
@@ -64,6 +68,29 @@ def parse_context_mode(
         ) from exc
 
 
+def research_search_domains(
+    tool_profile: ToolProfile,
+    network_profile: NetworkProfile,
+    endpoint: str | None,
+) -> tuple[str, ...]:
+    """Narrow an existing parent search permission to its configured endpoint."""
+    if "web.search" not in tool_names_for_profile(tool_profile):
+        return ()
+    try:
+        target = parse_web_target(endpoint)
+    except WebTargetError:
+        return ()
+    if network_profile.name in (
+        NetworkProfileName.FULL_GATEWAY,
+        NetworkProfileName.FULL_TRUSTED_LOCAL,
+    ) or (
+        network_profile.name is NetworkProfileName.DOMAIN_ALLOWLIST
+        and target.hostname in network_profile.domain_allowlist
+    ):
+        return (target.hostname,)
+    return ()
+
+
 def delegate_durable_research(
     tool_call: ToolCall,
     *,
@@ -78,6 +105,9 @@ def delegate_durable_research(
     max_model_calls: int,
     max_tool_calls: int,
     parent_attempt_number: int = 1,
+    parent_tool_profile: ToolProfile = ToolProfile.RESEARCH,
+    parent_network_profile: NetworkProfile = DEFAULT_NETWORK_PROFILE,
+    web_search_endpoint: str | None = None,
 ) -> ToolResult:
     from agent_core.application.session_bootstrap import (
         SessionBootstrapCommand,
@@ -93,7 +123,6 @@ def delegate_durable_research(
     )
     from agent_core.domain.subagents import SubagentRole
     from agent_core.domain.task_bindings import TaskBindingSnapshot
-    from agent_core.domain.tool_profiles import ToolProfile
     from agent_core.ports.task_admission_transaction import TaskAdmissionRequest
 
     child_capabilities = frozenset(capability_set(["agent.execute", "evidence.read"]))
@@ -148,6 +177,11 @@ def delegate_durable_research(
             if context_mode is not ContextInheritanceMode.FRESH
             else None
         )
+        search_domains = research_search_domains(
+            parent_tool_profile,
+            parent_network_profile,
+            web_search_endpoint,
+        )
         request = SubagentDelegationRequest(
             parent_task_id=TaskId(parent_uuid),
             parent_attempt_number=parent_attempt_number,
@@ -158,7 +192,9 @@ def delegate_durable_research(
             context_mode=context_mode,
             requested_capabilities=child_capabilities,
             child_definition_snapshot_digest="0" * 64,
-            child_capability_profile_ref="profile/researcher@1",
+            child_capability_profile_ref=(
+                "profile/researcher-web@1" if search_domains else "profile/researcher@1"
+            ),
             expected_parent_binding_digest=parent_binding.binding_digest,
         )
         bootstrap = SessionBootstrapService().build(
@@ -167,8 +203,9 @@ def delegate_durable_research(
                 user_input=objective,
                 workspace_root=Path(str(workspace_root)),
                 policy_profile="read_only",
-                tool_profile=ToolProfile.RESEARCH,
-                network_profile="none",
+                tool_profile=ToolProfile.RESEARCH_WEB if search_domains else ToolProfile.RESEARCH,
+                network_profile="domain-allowlist" if search_domains else "none",
+                network_allowlist=search_domains,
                 max_model_calls=max_model_calls,
                 max_tool_calls=max_tool_calls,
                 host_context=parent_binding.host_capability.host_context,

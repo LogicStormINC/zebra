@@ -64,6 +64,7 @@ from agent_storage.postgres.projection_work_routing_migration import (
     TASK_PROJECTION_WORK_ROUTING_MIGRATION,
 )
 from agent_storage.postgres.provider_continuation_migration import PROVIDER_CONTINUATION_MIGRATION
+from agent_storage.postgres.research_web_profile_migration import RESEARCH_WEB_PROFILE_MIGRATION
 from agent_storage.postgres.session_observation_headers_migration import (
     SESSION_OBSERVATION_HEADERS_MIGRATION,
 )
@@ -161,4 +162,5 @@ LATEST_MIGRATIONS = (
     STREAM_HINT_RELAY_MIGRATION,
     TASK_PROJECTION_WORK_CLASSIFICATION_MIGRATION,
     TASK_PROJECTION_TRIGGER_PLAN_MIGRATION,
+    RESEARCH_WEB_PROFILE_MIGRATION,
 )

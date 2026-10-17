@@ -181,6 +181,7 @@ class LocalToolGateway(ToolGatewayPort):
         parent_binding_digest: str | None = None,
         parent_binding: object | None = None,
         parent_context: ContextMaterialization | None = None,
+        parent_network_profile: NetworkProfile = DEFAULT_NETWORK_PROFILE,
         tool_profile: ToolProfile = ToolProfile.GENERAL,
         web_gateway_transport: WebGatewayTransport | None = None,
         web_search_endpoint: str | None = None,
@@ -338,6 +339,9 @@ class LocalToolGateway(ToolGatewayPort):
                 parent_attempt_number=parent_attempt_number,
                 parent_binding=parent_binding,
                 parent_context=parent_context,
+                parent_tool_profile=tool_profile,
+                parent_network_profile=parent_network_profile,
+                web_search_endpoint=web_search_endpoint,
                 skill_components=self.effective_skill_components,
             )
             registry.register(research.contract, research.handle)

@@ -15740,3 +15740,30 @@ post-cooldown probe with event marker, then delete; no quota probing/retries.
 Current live state authoritative in normalvolume, oldhostcontrol historical only.
 No Trench/globalproxy/freshauthority/high/v2 changes, no push/remote deployment.
 Receipts .artifacts/cloud-exa-live-01/, recovery savings not yet accepted.
+
+
+## 2026-10-17 CLOUD-RESEARCH-WEB-01
+
+User authorized minimal implementation, no-model security validation only. Claimed
+owned paths on codex/cloud-research-web-01 before implementation; no subagents.
+Reuse existing ToolProfile, durable bootstrap, network allowlist and Policy route;
+new research_web profile contains old research plus web.search only. Carry existing
+Worker-recovered parent network through gateway/research tool to delegation. Derive
+only configured endpoint domain when parent's tool and network ceiling permit it;
+otherwise retain old research/none. Persist normal admission; retain capability
+intersection/read_only/depth1 and original child on idempotent replay. No engine
+routing changes or extra production SQL/requests. ADR-025 updated; migration104
+accepts profile without altering old migrations or data.
+
+Validation: final-regression.log202passed incl full fresh isolated PostgreSQL16
+migration/admission/replay and both pipeline registrations. catalog-transport.log
+4passed. Updated only directly related profile/catalog assertions (catalog already
+omitted pre-existing103, now includes104). Ruff/check-diff clean; strict mypy with
+workspace src resolution7files clean (first invocation had import-untyped discovery
+errors; no code suppression). Initial new-test import/required ToolCall fields fixed
+before final verification; no unrelated fixture/test infrastructure work. Evidence
+.artifacts/cloud-research-web-01/. No external search/model/page requests, no running
+service/config/Trench edits, no live migration or claimed latency improvement.
+Cleaned only task-owned disposable PostgreSQL container. Local commit/integration
+to cloud-agent-trench; no push/remote deployment. Next operational step if authorized:
+apply migration104 then deploy matching Worker; existing Child remains immutable.

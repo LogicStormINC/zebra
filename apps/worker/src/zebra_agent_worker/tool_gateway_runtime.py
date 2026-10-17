@@ -145,6 +145,7 @@ def build_worker_tool_gateway(
         parent_binding_digest=parent_binding_digest,
         parent_binding=parent_binding,
         parent_context=parent_context,
+        parent_network_profile=task.network_profile,
         network_cancellation_check=network_cancellation_check,
         reuse_doh_transport=settings.deployment == "cloud",
         egress_endpoint=(settings.web_egress_socks_endpoint

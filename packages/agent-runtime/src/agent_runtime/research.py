@@ -19,6 +19,7 @@ from agent_core.domain.subagents import (
     SubagentStatus,
     research_evidence_gate,
 )
+from agent_core.domain.tool_profiles import ToolProfile
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
 from agent_core.harness import HarnessLoop, HarnessModelStep, HarnessTask, SingleAttemptOrchestrator
 from agent_core.ports.model_gateway import ModelGatewayPort
@@ -26,6 +27,7 @@ from agent_core.ports.runtime import RuntimePort
 from agent_core.ports.subagents import SubagentPort
 from agent_core.ports.tool_gateway import ToolGatewayPort
 from agent_security import LocalPolicyEngine, PolicyProfile
+from agent_security.network_profile import DEFAULT_NETWORK_PROFILE, NetworkProfile
 from agent_tools import (
     FileReadTool,
     GitStatusTool,
@@ -215,6 +217,9 @@ class ResearchSubagentTool:
         parent_attempt_number: int = 1,
         parent_binding: object | None = None,
         parent_context: ContextMaterialization | None = None,
+        parent_tool_profile: ToolProfile = ToolProfile.RESEARCH,
+        parent_network_profile: NetworkProfile = DEFAULT_NETWORK_PROFILE,
+        web_search_endpoint: str | None = None,
         skill_components: tuple[str, ...] = (),
     ) -> None:
         self._coordinator = coordinator
@@ -232,6 +237,9 @@ class ResearchSubagentTool:
         self._parent_attempt_number = parent_attempt_number
         self._parent_binding = parent_binding
         self._parent_context = parent_context
+        self._parent_tool_profile = parent_tool_profile
+        self._parent_network_profile = parent_network_profile
+        self._web_search_endpoint = web_search_endpoint
         self._skill_components = skill_components
 
     @property
@@ -274,6 +282,9 @@ class ResearchSubagentTool:
                     parent_task_id=self._parent_task_id,
                     parent_attempt_number=self._parent_attempt_number,
                     parent_binding=self._parent_binding,
+                    parent_tool_profile=self._parent_tool_profile,
+                    parent_network_profile=self._parent_network_profile,
+                    web_search_endpoint=self._web_search_endpoint,
                     max_model_calls=self._max_model_calls,
                     max_tool_calls=self._max_tool_calls,
                 )

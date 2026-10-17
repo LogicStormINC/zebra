@@ -6933,3 +6933,22 @@ gain or autonomous-model/page claim. Keep normalSearch process. Read-only heartb
 exa watches natural limits; no request until real eligible event, at mostone
 post-cooldown recovery observation/probe then stop; no quota fishing/retry/reset.
 Real paired recovery savings still pending. Details CLOUD_EXA_OPTIONAL.md.
+
+
+## 2026-10-17 — CLOUD-RESEARCH-WEB-01 authorized search delegation
+
+Cloud durable researchers can receive `research_web/domain-allowlist` only when
+the parent durable tool/network profiles already allow the configured HTTPS search
+endpoint. Child policy stays read_only and depth1; only web.search is added, no
+fetch/commands/redelegation, and search auto_fetch remains denied. Missing/denied
+parent permission retains research/none. Existing binding narrowing and fresh
+authority/DNS/SSRF/cancellation remain on the normal path; local synchronous
+researcher and Yahoo-default/Exa-fast/cooldown/fallback are unchanged. ADR-025
+records this explicit extension of the former fixed-none rule.
+
+No-model safety regression202passed including actual isolated PostgreSQL16
+admission/projection/event replay, both Web tool chains, authority, DNS/SSRF and
+cancellation; catalog/transport4passed; Ruff/diffcheck and source-resolved strict
+mypy7files green. v104 is additive; no production migration or Worker update, no
+external search/model/page requests, no new performance claim. This slice is
+locally integrated only; activation must apply v104 before a new Worker image.

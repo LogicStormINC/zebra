@@ -5,6 +5,7 @@ class ToolProfile(StrEnum):
     GENERAL = "general"
     CODING = "coding"
     RESEARCH = "research"
+    RESEARCH_WEB = "research_web"
     RESEARCH_COORDINATOR = "research_coordinator"
 
 
@@ -59,6 +60,8 @@ RESEARCH_COORDINATOR_TOOL_NAMES = RESEARCH_TOOL_NAMES | {
 def tool_names_for_profile(profile: ToolProfile) -> frozenset[str]:
     if profile is ToolProfile.GENERAL:
         return GENERAL_TOOL_NAMES
+    if profile is ToolProfile.RESEARCH_WEB:
+        return RESEARCH_TOOL_NAMES | {"web.search"}
     if profile is ToolProfile.RESEARCH:
         return RESEARCH_TOOL_NAMES
     if profile is ToolProfile.RESEARCH_COORDINATOR:
