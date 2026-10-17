@@ -15430,3 +15430,17 @@ normal9e1a5f95 restored. No favorable extra Runs or SQL claim. New unrelated-to-
 but relevant redundant-generation cause: Chinese right parenthesis swallowed by
 citation regex in two captured original candidates. Pure same-candidate quality
 replay reproduces; no model/private reasoning or historical data changes.
+
+2026-10-17 CLOUD-CITATION-DELIMITER-01: shared bare URL matcher consumed Chinese
+prose in two actual candidates. Native replay red; preliminary right-only Q1
+completed but still revised due left annotation. Blanket exclusion rejected by
+existing explicit-Markdown bad-href test (kept unchanged); diagnostic activation
+after failed pytest rolled back before any model traffic, subsequentcommands
+stop-on-failure. Final prose-only normalization keeps original regex/knownUnicode/
+exact explicit targets; eight formats/eightunknown/fourexplicit/noevidencechecks,
+three actual candidate replays/64regressions/Ruff/mypy/image smoke pass. Fixed
+final2pagesSQLiteQ2/PGRedisQ3 complete/high/v2/zeroProviderretry/toolfailure,
+3models/2and4tools/onecandidate each. Firstbody not stably faster; only validator
+correction proved. Normald246fa25 on9e1a5f95/no rejected checklist; API/Search/env
+preserved. docs/CLOUD_CITATION_DELIMITER.md records all intermediate failures and
+bounds; old B1 source-choice issue still open. No unrelated fixtures/push/deploy.

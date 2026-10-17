@@ -6711,3 +6711,17 @@ classification/egress/connection work preserved. Two original public candidates
 (SQLiteB2/PG-A4) independently reproduce false URL citations caused by Chinese
 right parenthesis; separate minimal delimiter repair warranted. No broad prompt/
 tool control, authority/Trench change, SQL reduction or generalized speedup claim.
+
+## 2026-10-17 - Preserve exact targets while repairing citation prose boundaries
+
+CLOUD-CITATION-DELIMITER-01 corrects false invented-URL rejection on Chinese
+parenthesized prose. Original regex retained; explicit Markdown/angle/quoted
+destinations remain exact, including invalid annotation targets. Three real
+unchanged public candidates pass replay; standalone negatives/64regressions/
+Ruff/mypy/image smoke pass. Preliminary one-sided fix and rejected blanket regex
+excluded; failed-image activation rolled back before model traffic. Final normal
+Workerd246fa25 overlays onlyquality_gates.py on9e1a5f95, original guidance/API/
+Search/env/authority/high/v2 intact. Final2pages3models each,one candidate; SQLite
+body12.262s/whole14.494s,PGRedis12.386/15.725s. No stable body/SQL speedup; old B1
+semantic source detour remains open. Exactly11newRuns across prompt+quality
+experiments,37canonical model responses/38successfultools, no replacement.

@@ -134,7 +134,21 @@ def _unsupported_urls(
     """Reject invented URLs while allowing collected media references."""
 
     supported = set(evidence_refs) | set(media_refs)
-    candidates = {
-        match.group(0).rstrip(_TRAILING_URL_PUNCTUATION) for match in _URL_PATTERN.finditer(answer)
-    }
+    candidates: set[str] = set()
+    for match in _URL_PATTERN.finditer(answer):
+        candidate = match.group(0).rstrip(_TRAILING_URL_PUNCTUATION)
+        index = match.start() - 1
+        while index >= 0 and answer[index].isspace():
+            index -= 1
+        explicit_destination = (
+            answer[index : index + 1] in {"<", '"', "'"}
+            or answer[max(0, index - 1) : index + 1] == "]("
+        )
+        # ponytail: normalize Chinese prose annotations only; explicit link
+        # destinations stay exact. This is a citation heuristic, not a Markdown parser.
+        if candidate not in supported and not explicit_destination:
+            candidate = re.split("[（）]", candidate, maxsplit=1)[0].rstrip(
+                _TRAILING_URL_PUNCTUATION
+            )
+        candidates.add(candidate)
     return tuple(sorted(candidate for candidate in candidates if candidate not in supported))
