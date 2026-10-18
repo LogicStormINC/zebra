@@ -101,18 +101,23 @@ def test_exact_scope_persisted_problem_reaches_initial_head_tail_without_writes(
 
     async def collect() -> list[str]:
         class Request(_FakeRequest):
+            observed_checks = 0
+
             async def is_disconnected(self) -> bool:
-                return bool(prefix and len(seen) >= 3)
+                if prefix:
+                    return len(seen) >= 3
+                self.observed_checks += bool(seen)
+                return self.observed_checks >= 3
 
         # Dense prefix replay and short-authorization expiry are separate contracts.
-        # Stop scheduled/dependency waits after three actual scoped polling reads.
-        async with asyncio.timeout(30 if prefix else 0.4):
+        # Allow the observed problem to reach transport before disconnecting.
+        async with asyncio.timeout(30):
             return [
                 frame
                 async for frame in tail_checkpoint_frames(
                     context,
                     Request(),
-                    monotonic() + (30 if prefix else 0.08),
+                    monotonic() + 30,
                     poll_seconds=0.005,
                     keepalive_seconds=0.005,
                 )

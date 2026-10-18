@@ -16013,3 +16013,15 @@ Claimed before code. Shared supplemental closure rejects newer Turn/command/Atte
 CLOUD-CLOSE-GUARD-03 activation sealed: exact three-file Worker healthy; exact env/mount/security retained, API/Search IDs/start/images/restarts/env/control unchanged. Before/after namespace model/tool counters identical.80focused checks (78+2 isolated native) pass; no production schema/Trench/model/search or repeated-read optimization. Local integration pending commit.
 
 CLOUD-CLOSE-GUARD-03 local delivery complete: cloud-agent-trench fast-forwarded through767d22a0; pre-existing user AGENTS.md bytes preserved. Worker healthy/exact3files; no push/remote deployment.
+
+2026-10-18 TRN-ASSET-RECOVERY-01: restored bounded owned historical asset index,
+read-only scope, internal content alias and legacy ownership fallback. Real page
+14 files / 3 reports; 14 browser download responses 200; native all-file length
+and SHA256 recorded, supported HEAD/Range passed. Explicit six-Task read metadata
+preparation preserves canonical content hashes. Current and legacy API activated
+with exact environment/mount/security preservation and compatible schema image.
+Worker/Search untouched. Final make check passes. Complete run: 9718 passed,
+2923 skipped, one old issuer-scope fixture failed; fixture-only correction verified
+by 16 issuer/thread tests and last-failed 1 passed. Production source unchanged
+since full-run start. User-directed existing-branch commit/push follows.
+Private evidence: .artifacts/trn-asset-recovery-01/; doc: docs/TRN_ASSET_RECOVERY.md.

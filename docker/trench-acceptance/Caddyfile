@@ -16,7 +16,7 @@ https://zebra.localhost:8443 {
 	handle_path /legacy/* {
 		@historical_artifact_read {
 			method GET HEAD
-			path_regexp ^/tasks/[0-9a-f-]+/artifacts/[0-9a-f-]+/(preview|download)$
+			path_regexp ^/tasks/[0-9a-f-]+/artifacts/[0-9a-f-]+(/(preview|download))?$
 		}
 		handle @historical_artifact_read {
 			reverse_proxy zebra-api-legacy:8000

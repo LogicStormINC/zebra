@@ -248,6 +248,23 @@ def require_task_host_context(
     return thread
 
 
+def require_legacy_artifact_host_context(
+    prepared: HostContextEnvelope, current: HostContextEnvelope, *, now: datetime
+) -> None:
+    """Compare historical ownership only; this never creates execution authority."""
+    if now.tzinfo is None or current.expires_at is None or current.expires_at <= now:
+        raise HostGrantExpiredError("Artifact read requires a current Host Grant")
+    prepared.require_scope("artifact.read")
+    current.require_scope("artifact.read")
+    if any(
+        getattr(prepared, key) != getattr(current, key)
+        for key in ("host_app_id", "namespace_id", "workspace_ref", "origin")
+    ) or _host_principal(prepared) != _host_principal(current):
+        raise HostGrantMismatchError("Historical artifact owner conflicts")
+    if require_host_thread(prepared) != require_host_thread(current):
+        raise HostGrantScopeError("Historical artifact thread conflicts")
+
+
 def _host_principal(context: HostContextEnvelope) -> HostResourceRef:
     refs = [ref for ref in context.resource_refs if ref.resource_type == "principal"]
     if len(refs) != 1:

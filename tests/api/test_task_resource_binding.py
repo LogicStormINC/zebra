@@ -31,7 +31,7 @@ def verified(broker, *, thread=THREAD, run="bootstrap:opaque", now=None, resourc
     token = mint_grant(
         settings,
         key,
-        ExchangeRequest("zebra", thread, run, ("agent.run", "event.read")),
+        ExchangeRequest("zebra", thread, run, ("agent.run", "event.read", "artifact.read")),
         TrenchViewer(user_id="user-a", workspace_id="workspace-a", active_source_ids=frozenset()),
         now=now,
     )

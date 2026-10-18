@@ -1,5 +1,61 @@
 # AGENT_TASKS.md
 
+### TRN-ASSET-RECOVERY-01 - Restore bounded historical asset listing and reads
+
+- Status: Done (2026-10-18; user-directed existing-target delivery).
+- Acceptance: local 14 files / 3 reports; all 14 browser/native downloads pass.
+  make check passes; full run 9718 pass / 2923 skip / one old fixture failure,
+  then fixture-only scope fix passes issuer suite 16 and last-failed rerun 1.
+  Production source unchanged since full-run start; no blanket full-green claim.
+- Before-code extension: API host_auth.py and focused scope-selection regression;
+  read-only artifact routes require artifact.read, mutation routes retain agent.run.
+- Before-code legacy read extension: API legacy_artifact_read.py, host target
+  and tenant read hooks (http_host_auth.py, tenant_guard.py), focused regressions.
+  Only exact published-file GET/HEAD with a fresh signed artifact.read grant may
+  use canonical bounded TASK_PREPARED ownership when no binding snapshot exists;
+  match Host, namespace, principal, workspace and original thread. No execution
+  fallback, synthesized binding, migration or business writes.
+- Core ownership amendment before edits: domain/task_bindings.py historical
+  artifact-only Host identity comparison and its focused security regression.
+- Recovery extension before edits: docker/trench-acceptance/Caddyfile exact-file
+  metadata GET/HEAD allowlist and regression. Explicit local maintenance may
+  prepare missing observation/replay projection metadata for the six owned
+  historical Tasks only, using existing bounded helpers; no canonical event,
+  Task identity, binding or business-data rewrite. Coverage checks stay intact.
+- Gate repair extension before edits: tests/api/test_agui_run_binding.py scoped
+  read observation must stop by observed reads, not an 80ms scheduling deadline.
+  Existing dedicated authorization-expiry checks remain unchanged.
+- Scope-fixture amendment before edits: tests/api/test_task_resource_binding.py
+  real Broker fixture includes artifact.read so issuer/thread rejection is tested
+  after the artifact read-scope fence rather than failing earlier for no scope.
+- Human owner: Luke Ding; executor: Codex.
+- Before-code extension: trench_ai_asset_references.py and trench_ai_zebra_assets.py
+  for bounded exact-reference enumeration and asset-only upstream reads.
+
+- User-selected existing branches/checkouts: Zebra cloud-agent-trench; Trench main.
+  Explicit no-new-branch and commit/push authorization override branch defaults.
+- Owned paths: core ports/session_artifact_read.py; storage artifacts.py and
+  postgres/artifact_reads.py; API session_artifact_read_mixin.py,
+  api_artifact_read_mixin.py and task_routes.py; matching artifact API/storage tests.
+  Paired Trench: trench_ai_asset_bindings.py, trench_ai_asset_models.py,
+  routers/trench_ai_assets.py, asset-specific Zebra client reads/grant module
+  and existing client call-site extraction only; scoped binding/grant recovery
+  only for asset reads, never general execution; corresponding API regressions.
+  Asset frontend API/types/board and associated tests if pagination/status requires.
+  Governance: this registry, PROGRESS.md, WORKLOG.md, focused recovery document
+  in each repository and private .artifacts/trn-asset-recovery-01/ evidence.
+- Scope: avoid all-artifact object verification during published-file indexing;
+  bounded enumeration, canonical metadata/policy checks and exact legacy asset
+  ownership from durable server-produced assistant references. Preserve user,
+  workspace, namespace, coverage/publication, payload integrity and byte limits;
+  no fabricated Task mapping or blanket historical execution authority.
+- Validation: red-first targeted regressions, native authenticated historical
+  display/preview/download and cross-owner denial, repository gates before explicit
+  staging/commit/push to the existing targets. Preserve unrelated dirty files.
+  Local API activation only if required to complete the authorized restoration;
+  prepare exact-source overlay and preserve running configuration/rollback image.
+  No production deployment, business-data rewriting or model execution.
+
 ### TRN-SETTINGS-MEDIA-01 - Restore settings grants and published media access
 
 - Status: Review (2026-10-18 full gates passed: 9,633 Zebra tests / 2,921

@@ -184,6 +184,14 @@ class PostgresHostGrantRequestAuthorizer(HostGrantRequestAuthorizer):
 
 
 def _required_scopes_for_request(request: HostGrantHttpRequest) -> tuple[str, ...]:
+    parts = request.path.strip("/").split("/")
+    if (
+        request.method in {"GET", "HEAD"}
+        and len(parts) >= 3
+        and parts[0] in {"tasks", "sessions"}
+        and parts[2] == "artifacts"
+    ):
+        return ("artifact.read",)
     from zebra_agent_api.coverage_report_http import report_task_id
 
     if request.method in {"GET", "HEAD"} and report_task_id(request.path) is not None:

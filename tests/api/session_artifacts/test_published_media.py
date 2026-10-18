@@ -52,3 +52,36 @@ def test_only_successfully_published_media_can_preview_under_workspace_policy(
     store.upsert(published)
     _seed_workspace_policy(database, session.session_id, PolicyProfile.READ_ONLY.value)
     assert client.get(f"{path}/preview").status_code == 409
+
+
+def test_artifact_index_uses_metadata_without_verifying_every_object(tmp_path, monkeypatch):
+    from agent_storage.artifact_payload_reads import LocalArtifactPayloadReader
+    from zebra_agent_api.app import create_app
+
+    database = tmp_path / "index.sqlite"
+    session = _seed_session(database)
+    _seed_payload_backed_tool_artifact(
+        database, session.session_id, mime_type="text/plain", payload=b"published"
+    )
+    store = SQLiteToolRunStore(database)
+    store.upsert(
+        store.list_for_session(session.session_id)[0].model_copy(
+            update={"tool_name": "files.publish"}
+        )
+    )
+    inspected = []
+    original = LocalArtifactPayloadReader.inspect_payload
+
+    def inspect(self, *args):
+        inspected.append(args)
+        return original(self, *args)
+
+    monkeypatch.setattr(LocalArtifactPayloadReader, "inspect_payload", inspect)
+    app = create_app(database)
+    index = app.get_session_artifacts(str(session.session_id))
+    assert index.status_code == 200
+    assert index.body["artifacts"][0]["access"]["allowed"] is True
+    assert inspected == [], "Listing must not verify every payload object"
+    detail = app.get_session_artifact_detail(str(session.session_id), "tool-run:5")
+    assert detail.status_code == 200
+    assert inspected, "An actual file read still verifies the object"

@@ -1,3 +1,15 @@
+## 2026-10-18 - TRN-ASSET-RECOVERY-01 (validated delivery)
+
+Historical assets use bounded owned references, read-only artifact authority and
+canonical legacy ownership checks. Local page: 14 files / 3 reports; all 14
+browser downloads and native payload-length checks pass. Six retained Tasks had
+only missing read metadata prepared; canonical Event content hashes are unchanged.
+Historical API now uses a schema-compatible image; Worker/Search unchanged.
+Trench full gates and Zebra make check pass. Full Zebra run: 9,718 pass / 2,923
+skip / one old issuer fixture failed. Test-only scope fix: issuer suite 16 pass,
+last-failed rerun 1 pass. Production code unchanged since full-run start. Delivery
+to existing cloud-agent-trench (paired Trench main); see docs/TRN_ASSET_RECOVERY.md.
+
 ## 2026-10-18 - Trench settings and media repair (validated Review)
 
 TRN-SETTINGS-MEDIA-01 restores user-management grants without fabricated Task

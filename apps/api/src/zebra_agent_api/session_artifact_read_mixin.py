@@ -64,7 +64,10 @@ class SessionArtifactReadMixin:
             status_code=200,
             body={
                 "session_id": session_id,
-                "artifacts": [self._serialize_artifact(artifact) for artifact in artifacts],
+                "artifacts": [
+                    self._serialize_artifact(artifact, verify_payload=False)
+                    for artifact in artifacts
+                ],
             },
         )
 
@@ -342,13 +345,19 @@ class SessionArtifactReadMixin:
         *,
         access: ArtifactAccessContext | None = None,
         include_delivery_metadata: bool = False,
+        verify_payload: bool = True,
     ) -> dict[str, object]:
         resolved_access = access or classify_session_artifact_access(
             stores=self.stores,
             session_id=str(artifact.session_id),
             artifact=artifact,
         )
-        inspection = inspect_artifact_payload(self.stores, artifact)
+        # An index reports lifecycle metadata; actual reads still verify the object.
+        inspection = (
+            inspect_artifact_payload(self.stores, artifact)
+            if verify_payload
+            else resolved_access.payload
+        )
         lifecycle = serialize_read_lifecycle(inspection)
         projection = serialize_session_artifact_projection(
             artifact,

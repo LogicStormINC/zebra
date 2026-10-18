@@ -159,6 +159,20 @@ def validate_host_target(
     assert control is not None
     binding = control.load_task_binding(task_id)
     if binding is None:
+        from zebra_agent_api.legacy_artifact_read import (
+            artifact_read_target,
+            legacy_artifact_read_allowed,
+        )
+
+        artifact_target = artifact_read_target(method, path)
+        if (
+            artifact_target is not None
+            and artifact_target[1] is not None
+            and legacy_artifact_read_allowed(
+                api, verified.context, str(task_id), artifact_target[1]
+            )
+        ):
+            return
         _reject(ApiResponse(404, {"status": "not_found"}))
     assert binding is not None
     try:

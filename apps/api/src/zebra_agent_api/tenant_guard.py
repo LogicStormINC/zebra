@@ -132,8 +132,12 @@ def tenant_scope_response(
     one session), so all three prefixes guard through the same durable tenant
     namespace bound at TASK_PREPARED projection time.
     """
+    from zebra_agent_api.legacy_artifact_read import artifact_read_target
+
     sessions = app.stores.sessions
     path = request.path
+    artifact_target = artifact_read_target(request.method.upper(), path)
+    required_scope = "artifact.read" if artifact_target is not None else "agent.run"
     host_context = getattr(request, "host_context", None)
     verified = getattr(request, "verified_host_grant", None)
     cloud_host = host_context is not None and bool(
@@ -163,7 +167,9 @@ def tenant_scope_response(
             target = path.removeprefix(prefix).split("/")[0]
             if cloud_host:
                 assert host_context is not None
-                denied = host_list_context_response(host_context, verified)
+                denied = host_list_context_response(
+                    host_context, verified, required_scope=required_scope
+                )
                 if denied is not None:
                     return denied
             if prefix == "/tasks/" and target:
@@ -173,6 +179,8 @@ def tenant_scope_response(
                     host_context,
                     verified_host_grant=verified,
                     proof=proof,
+                    required_scope=required_scope,
+                    legacy_artifact_id=artifact_target[1] if artifact_target is not None else None,
                 )
                 if task_response is not None:
                     return task_response
@@ -198,6 +206,10 @@ def tenant_scope_response(
                         host_context,
                         verified_host_grant=verified,
                         proof=proof,
+                        required_scope=required_scope,
+                        legacy_artifact_id=artifact_target[1]
+                        if artifact_target is not None
+                        else None,
                     )
                 if session_tenant_denied(sessions, target, host_context):
                     return tenant_forbidden_response(target)
@@ -212,12 +224,16 @@ def task_access_response(
     verified_host_grant: VerifiedHostGrant | None = None,
     run_id: str | None = None,
     proof: StreamProofSnapshot | None = None,
+    required_scope: str = "agent.run",
+    legacy_artifact_id: str | None = None,
 ) -> ApiResponse | None:
     """Fence Task transports; envelope-only callers have verified preflight upstream."""
 
     issuer = None
     if host_context is not None and verified_host_grant is not None:
-        denied = host_list_context_response(host_context, verified_host_grant)
+        denied = host_list_context_response(
+            host_context, verified_host_grant, required_scope=required_scope
+        )
         if denied is not None:
             return denied
         issuer = verified_host_grant.authority_issuer
@@ -237,6 +253,8 @@ def task_access_response(
         authority_issuer=issuer,
         run_id=run_id,
         proof=proof,
+        required_scope=required_scope,
+        legacy_artifact_id=legacy_artifact_id,
     )
 
 
@@ -248,6 +266,8 @@ def _task_principal_response(
     authority_issuer: str | None = None,
     run_id: str | None = None,
     proof: StreamProofSnapshot | None = None,
+    required_scope: str = "agent.run",
+    legacy_artifact_id: str | None = None,
 ) -> ApiResponse | None:
     namespace = getattr(app.stores, "deployment_namespace", None)
     if namespace is None:
@@ -275,6 +295,15 @@ def _task_principal_response(
     except Exception:
         return ApiResponse(503, {"status": "principal_binding_unavailable"})
     if binding is None:
+        from zebra_agent_api.legacy_artifact_read import legacy_artifact_read_allowed
+
+        if (
+            required_scope == "artifact.read"
+            and legacy_artifact_id is not None
+            and host_context is not None
+            and legacy_artifact_read_allowed(app, host_context, task_id, legacy_artifact_id)
+        ):
+            return None
         return tenant_forbidden_response(task_id)
     try:
         assert host_context is not None
@@ -294,6 +323,8 @@ def _task_principal_response(
 def host_list_context_response(
     context: HostContextEnvelope,
     verified: VerifiedHostGrant | None,
+    *,
+    required_scope: str = "agent.run",
 ) -> ApiResponse | None:
     """An envelope alone cannot supply the issuer needed by exact list fences."""
     if (
@@ -307,7 +338,7 @@ def host_list_context_response(
         return ApiResponse(403, {"status": "host_grant_rejected"})
     try:
         require_host_thread(context)
-        context.require_scope("agent.run")
+        context.require_scope(required_scope)
     except ValueError:
         return ApiResponse(403, {"status": "host_grant_rejected"})
     return None

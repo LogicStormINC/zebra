@@ -44,7 +44,7 @@ def _context(principal: str) -> HostContextEnvelope:
             HostResourceRef(type="run", id="principal-read-run"),
             HostResourceRef(type="principal", id=principal),
         ),
-        scopes=("agent.run",),
+        scopes=("agent.run", "artifact.read"),
         limits=HostTechnicalLimits(
             max_runtime_seconds=60,
             max_model_tokens=1000,
@@ -63,7 +63,7 @@ def _context_without_principal() -> HostContextEnvelope:
         namespace_id="trench-prod",
         workspace_ref="workspace-1",
         resource_refs=(HostResourceRef(type="thread", id="trench-bootstrap-principal-opaque"),),
-        scopes=("agent.run",),
+        scopes=("agent.run", "artifact.read"),
         limits=HostTechnicalLimits(
             max_runtime_seconds=60,
             max_model_tokens=1000,
