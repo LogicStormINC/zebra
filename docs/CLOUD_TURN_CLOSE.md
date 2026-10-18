@@ -50,7 +50,9 @@ No raw projection edits, new Run/command/harness/model/tool execution.
 Sequence445 now parks the conversation at awaiting_turn. Original answer payload
 SHA256 stayed `8581071b688784c6a29a6cbe1dc0683dab570c6155a7445ed8dcd1f633f76d68`;
 model request/response counts stayed20/20, tool completions stayed62. Repeating
-the recovery check appended nothing. Browser reload shows both turns completed,
+the recovery check appended nothing. A normal asynchronous
+MEMORY_EXTRACTION_COMPLETED event followed at446, with model/tool counts unchanged.
+Browser reload shows both turns completed,
 normal input and disabled Send instead of Pause; no Trench outbox repair needed.
 This repairs completion synchronization, not semantic certification of the
 answer's requested full-news coverage. No performance improvement claim.
