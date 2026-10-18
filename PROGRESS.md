@@ -7264,4 +7264,9 @@ legacy uncertainty suspension and conflict checks prevent receipt replay. Shared
 error classification retains whitelisted state. Native provider timeout/invalid
 response no longer dispatches ordinary fallback; pre-dispatch unsupported-only
 fallback remains.109 focused offline checks/Ruff/14-source Mypy pass; Worker-only
-exact-image activation pending. No model/search/Trench/Desktop changes.
+exact-image activation completed: normalWorker c5792e55 healthy/restarts0, source
+24eebf68 integrated locally. Image/live offline checks and14source hashes pass;
+API/Search/MCP unchanged, protected partial Turns all hashes unchanged, update
+window model/tool counts unchanged. Configuration equal apart from mount array
+ordering (exact old-hash reconstruction proven). Coordinated stageK release first;
+new baseline handed back. No model/search/Trench/Desktop changes or push/deploy.

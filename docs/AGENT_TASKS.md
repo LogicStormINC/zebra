@@ -34642,8 +34642,9 @@ WEB-MODEL-LIMIT-01 audit amendment before edit: add packages/agent-core/src/agen
 
 ### CLOUD-CLIENT-RECOVERY-04 — Client receipt and provider continuation safety
 
-- Status: Review (2026-10-18; 109 offline regressions/Ruff/14-source Mypy pass;
-  Worker-only activation pending; originally Ready claimed before implementation).
+- Status: Done (2026-10-18; 109 offline regressions/Ruff/14-source Mypy pass;
+  source24eebf68 locally integrated, Worker c5792e55 healthy and offline/live checks
+  passed; originally Ready claimed before implementation. No push/remote deploy).
 - Human owner: Luke Ding; executor: Codex.
 - Branch: codex/cloud-client-recovery-04; worktree cloud-client-recovery-04/zebra-agent.
 - Base: cloud-agent-trench 1cd4aef7; local integration and Worker activation authorized.

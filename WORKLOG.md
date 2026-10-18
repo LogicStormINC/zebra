@@ -16193,3 +16193,15 @@ Mypy; Ruff passes. No real provider/search/database writes during regression.
 Worker activation baseline .artifacts/cloud-client-recovery-04/before.json; active
 leases0, both protected Turns partial. Only Worker image replacement authorized;
 API/Search/Trench/control bytes must remain equal. Pending exact-image validation.
+
+CLOUD-CLIENT-RECOVERY-04 closeout: source24eebf68 locally ff-integrated. The initial
+activation preflight refused concurrent stageK image drift; waited for explicit
+restored_and_released handoff, re-baselined current normal image, then performed
+Worker-only replacement. New normal c5792e55 healthy/restarts0; exact14source hashes
+and offline image/live safety checks pass. Config hash mismatch traced to Docker
+mount enumeration order, not runtime changes: permutations reproduce full oldhash.
+acceptance.json proves API/Search identity/start/config unchanged, MCP controlbytes
+unchanged, original protected partial Turns status/content/request/metadata hashes
+unchanged and no model/tool count increase across the update. The performance task
+was notified of c5792e55 so later restoration retains this repair. No model/search
+requests from this task, no Trench/Desktop/API change, no push/remote deployment.

@@ -155,6 +155,22 @@ context window and concurrent tool paths. Ruff and 14-source-file Mypy pass.
 All model gateways in these checks are scripted/stubbed; no provider or search
 requests. This proves safety behavior, not new model latency or search quality.
 
-Local Worker-only activation and protected-Run checks pending. API/Search process,
-MCP session/control state, Yahoo default/fast, high thinking/v2, original partial
-Turns and Trench configuration must remain unchanged. No push/remote deployment.
+Local Worker-only activation completed: zebra-worker:client-recovery-04,
+sha256:c5792e5520b8686b38e31ddde9232a40c38fbdd908a2022b915ab60f900d8769,
+healthy/restarts0. Exact-image and running-image offline checks pass, including
+all14source hashes. Original API/Search containers/start/images/configs and MCP
+control bytes remain unchanged. Both protected partial Turns retain identical
+status/answer/request/metadata hashes; high/v2/dedupe and Trench hashes unchanged.
+Model/tool counters do not change across this update window. Concurrent stage K
+model work before handoff is separate and was not attributed to this task.
+
+Activation initially refused a concurrently replaced diagnostic Worker. The other
+authorized task finished its current Run and explicitly restored/released the
+normal Worker before this update. No live model Run was interrupted. Runtime
+configuration hash differed solely because Docker enumerates mount arrays in
+varying order: permuting those arrays exactly reconstructs the old full hash.
+No other runtime option differs. New normal baseline was handed back to the
+performance task; future restoration must use c5792e55 rather than old3eb51845.
+Source locally integrated24eebf68; no push or remote deployment. Evidence is private
+.artifacts/cloud-client-recovery-04/{acceptance,config-order-analysis}.json in the
+task worktree. No real model/browser acceptance was requested or performed.
