@@ -60,3 +60,62 @@ answer's requested full-news coverage. No performance improvement claim.
 Private evidence: `.artifacts/cloud-turn-close-01/` (regression.log,
 recovery.log, recovery-idempotence.log, before/after.json, page-completed.png).
 Local commit/integration target cloud-agent-trench only; no push/remote deploy.
+
+## CLOUD-CLOSE-RECOVERY-02: recovery before model-input preparation
+
+The Cloud composition now supplies a completion reader through the existing
+Worker recorder factory and canonical replay adapter. Before Worker progress,
+execution inputs, model gateway or runtime setup, the execution entry reads
+only lifecycle events at the claimed revision under the current lease fence.
+It excludes tool and model-response bodies. Existing per-page and cumulative
+1MiB/2048-event replay limits remain, as do execution-input preparation limits.
+Evidence over the bound fails closed; it is never truncated or treated as absence.
+The reader uses the existing replay seek index; no schema change is required.
+
+The last admitted command, current human Turn and latest Harness Attempt delimit
+the recoverable answer. One canonical Harness ANSWER_COMMITTED with complete
+assessment and no unmet requirements permits an idempotent TURN_COMPLETED.
+Conversation mode parks awaiting_turn; one-shot mode then reuses the existing
+Session-terminal reconciliation. A crashed TURN_COMPLETED/TURN_FAILED or SYSTEM
+TURN_CANCELLED missing its Session terminal reuses the same reconciliation;
+original failure/cancellation outcomes are preserved. No new command, answer,
+certificate, model call or tool execution is created.
+
+Partial/blocked delivery, or a complete label with unmet requirements, is never
+upgraded to successful recovery: the existing assessment is retained and the
+Run suspends as committed_delivery_incomplete, with no automatic model rerun.
+Conflicting Attempt/Session identity or ambiguous answers fail closed. No legacy
+Turn identity is guessed. Recorder fresh control state, ownership, lease fence,
+revision CAS and idempotency keys still gate all writes. A newer human message
+or control event winning the read/write race prevents stale completion. The
+shared Session-terminal reconciliation accepts an optional expected revision
+so a race between the two close events cannot terminate a newer revision.
+
+Normal finish also checks the current recorder's canonical committed answer.
+Only proven complete delivery for the same Attempt can normalize a following
+cleanup/derived-state failure to completed; diagnostic metadata remains. Older
+answers cannot override a newer Attempt/question, partial/blocked assessments,
+or authoritative control state. Memory/title side effects and local event-store
+behavior remain on their existing paths; Trench product code is unchanged.
+
+Validation:82 unique focused no-model cases pass across the final80-case gate
+and two added SYSTEM-cancel/failure cases (final recovery file19/19). This
+includes real Recorder/projection recovery and entrypoint ordering, new-message
+CAS and cancellation races, lost lease/foreign identity/Attempt, idempotence,
+partial/blocked/unmet safety, cleanup result preservation, and existing input,
+preflight and progress regressions. Native PostgreSQL tests use only disposable
+schemas in a task-only header_scratch container. They verify a >1MiB aggregate
+of tool bodies still permits exact bounded lifecycle reads, and >1MiB lifecycle
+evidence and stale fencing are refused. Ruff and seven-file mypy pass. Exact
+seven-file Worker derivative also passes network-disabled offline checks.
+
+An older shared scratch server rejected its configured test credential; it was
+left unchanged. Native checks then passed on the task-only isolated PostgreSQL.
+No application data, credentials, limits or test fixtures were repaired.
+
+Local activation: zebra-worker:close-recovery-02 is healthy; exact seven source
+files and preserved configuration verified. API/Search ID/image/start/restarts/env
+and persistent Exa control bytes match before; model/tool counters are unchanged.
+Task-only test PostgreSQL removed. Evidence: private .artifacts/cloud-close-recovery-02/
+(final-regression.log, final-recovery-regression.log, mypy.log, image-check-final.log,
+before/after.json, counts.before/after.json). No migration or Trench change.

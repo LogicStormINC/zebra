@@ -1,5 +1,6 @@
 from collections.abc import Callable
 
+from agent_core.domain.events import SessionEvent
 from agent_core.domain.leases import WorkerLease
 from agent_core.domain.sessions import Session
 from agent_core.domain.workspaces import WorkspaceProjection
@@ -26,6 +27,7 @@ class WorkerProjectionRecorderFactory:
         deployment_namespace: str | None,
         tail_reader: Callable[[WorkerMutationAuthority, int | None], SessionEventPage]
         | None = None,
+        completion_reader: Callable[[WorkerMutationAuthority], list[SessionEvent]] | None = None,
     ) -> None:
         if (transaction is None) != (deployment_namespace is None):
             raise ValueError(
@@ -37,6 +39,7 @@ class WorkerProjectionRecorderFactory:
         self._transaction = transaction
         self._deployment_namespace = deployment_namespace
         self._tail_reader = tail_reader
+        self.completion_reader = completion_reader
 
     def build(
         self,

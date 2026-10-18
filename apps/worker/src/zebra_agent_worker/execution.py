@@ -34,6 +34,7 @@ import zebra_agent_worker.tool_output_artifact_runtime as artifact_runtime
 from zebra_agent_worker.claims import ClaimedSession, SessionClaimService
 from zebra_agent_worker.client_effect_resume import recover_client_effect_wakeup
 from zebra_agent_worker.client_tool_gateway import ClientToolGateway
+from zebra_agent_worker.completion_recovery import recover_committed_completion
 from zebra_agent_worker.context_materialization import prepare_worker_context
 from zebra_agent_worker.control import SessionControlService
 from zebra_agent_worker.coverage_composition import CloudCoverageRuntime
@@ -195,6 +196,8 @@ class SessionExecutionService(SessionExecutionEntrypoints):
         ownership_check: Callable[[], None],
     ) -> ExecutedSession:
         session_id = claimed.lease.session_id
+        if (completed := recover_committed_completion(self, claimed, ownership_check, started_at)):
+            return completed
         worker_progress = finish_preparation(
             lambda: recover_execution_progress(self, claimed, ownership_check), ownership_check
         )

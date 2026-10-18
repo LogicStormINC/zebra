@@ -9,6 +9,7 @@ from agent_core.domain.identifiers import SessionId
 from agent_core.domain.turns import InteractionMode
 from agent_core.harness.models import HarnessAttemptResult, HarnessContext
 
+from zebra_agent_worker.completion_recovery import preserve_committed_result
 from zebra_agent_worker.continuation_dispatch import run_continuation
 from zebra_agent_worker.execution_errors import error_metadata, exception_attempt_result
 from zebra_agent_worker.execution_events import ExecutionInterrupted
@@ -85,6 +86,9 @@ def finish_execution(
     attempt_number: int = 1,
 ) -> ExecutedSession:
     recorder.project_persisted_tail()
+    attempt_result = preserve_committed_result(
+        recorder.events, attempt_result, attempt_number=attempt_number
+    )
     events = finalize_execution(
         recorder=recorder,
         attempt_result=attempt_result,

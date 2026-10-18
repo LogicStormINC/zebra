@@ -277,6 +277,7 @@ def build_worker_loop_service(
         transaction=active_transaction,
         deployment_namespace=active_namespace,
         tail_reader=replay_reader.tail_page if replay_reader else None,
+        completion_reader=replay_reader.completion_events if replay_reader else None,
     )
     from zebra_agent_worker.transient_output_composition import compose_transient_output_factory
 

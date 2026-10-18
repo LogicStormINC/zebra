@@ -98,6 +98,7 @@ def reconcile_pending_turn_close(
     recorder: DurableHarnessEventRecorder,
     events: list[SessionEvent],
     started_at: datetime,
+    expected_revision: int | None = None,
 ) -> ExecutedSession | None:
     """Heal a crashed Turn close; never re-invokes the model."""
 
@@ -129,6 +130,10 @@ def reconcile_pending_turn_close(
             )
         }
     )
+    if expected_revision is not None and terminal.sequence != expected_revision + 1:
+        from zebra_agent_worker.execution_preflight import StaleExecutionSnapshot
+
+        raise StaleExecutionSnapshot("completion recovery lost its canonical revision")
     recorder.append_event(terminal)
     return ExecutedSession(
         session=recorder.session,

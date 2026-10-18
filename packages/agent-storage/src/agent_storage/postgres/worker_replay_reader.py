@@ -59,6 +59,17 @@ MEMORY_TYPES = (
 )
 
 
+COMPLETION_TYPES = (
+    EventType.TASK_PREPARED, EventType.USER_MESSAGE_RECEIVED,
+    EventType.SESSION_COMMAND_ACCEPTED, EventType.HARNESS_ATTEMPT_STARTED,
+    EventType.ANSWER_COMMITTED, EventType.TURN_COMPLETED, EventType.TURN_FAILED,
+    EventType.TURN_CANCELLED, EventType.SESSION_COMPLETED, EventType.SESSION_FAILED,
+    EventType.SESSION_CANCELLED, EventType.SESSION_SUSPENDED,
+    EventType.SESSION_WAITING_FOR_CLIENT_EFFECT,
+    EventType.APPROVAL_REQUESTED, EventType.CLARIFICATION_REQUESTED,
+)
+
+
 class WorkerReplayLimitExceeded(CheckpointNotReady):
     """Exact evidence exceeds admission; never return a silently truncated chain."""
 
@@ -111,6 +122,11 @@ class PostgresWorkerReplayReader:
                 connection, namespace, authority.session_id, authority.lease_fence
             )
             return page
+
+    def completion_events(self, authority: WorkerMutationAuthority) -> list[SessionEvent]:
+        """Exact bounded lifecycle evidence; never prepare or read tool/model bodies."""
+        return self._read(authority.session_id, COMPLETION_TYPES,
+                          through=authority.expected_stream_revision, authority=authority)
 
     def memory_events(
         self, session_id: SessionId, *, authority: WorkerMutationAuthority
