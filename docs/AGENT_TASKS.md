@@ -34486,7 +34486,7 @@ WEB-MODEL-LIMIT-01 audit amendment before edit: add packages/agent-core/src/agen
 
 ### CLOUD-TURN-CLOSE-01
 
-- Status: Ready → In Progress 2026-10-18; claimed before coding.
+- Status: Done 2026-10-18; claimed Ready before coding, validated and locally integrated into cloud-agent-trench.
 - Human owner Luke Ding; executor Codex; branch codex/cloud-turn-close-01; managed worktree cloud-turn-close-01/zebra-agent; target cloud-agent-trench.
 - Owned paths: apps/worker/src/zebra_agent_worker/{execution,execution_preparation,execution_input_preparation,execution_turn_close}.py; tests/worker/test_turn_close_admitted_identity.py; docs/CLOUD_TURN_CLOSE.md; docs/AGENT_TASKS.md; PROGRESS.md; WORKLOG.md; private .artifacts/cloud-turn-close-01/.
 - Scope: bind closing Turn identity from the already-admitted bounded execution snapshot; Cloud close reuses it without re-preparing full execution inputs. Keep 1MiB/2048 exact preparation limits, lease/fence/fresh control/cancel checks and local compatibility. No model/search/Trench product changes. Deterministic no-model checks first; exact Worker derivative only, preserve API/Search/control/env; then fenced, idempotent recovery of existing committed answer for db605223-91df-40f3-8b24-1a7556ceee3f / turn3ed953da-8228-54d2-beba-c78da214deb5, no new Run/model/tool execution or answer rewriting. Recovery must check no newer Turn/active command/lease and original accepted answer identity, append missing completion through normal projection transaction, not raw projection SQL. Local commit/integration only, no push/remote deploy.
