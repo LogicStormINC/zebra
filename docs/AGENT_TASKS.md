@@ -34570,7 +34570,8 @@ WEB-MODEL-LIMIT-01 audit amendment before edit: add packages/agent-core/src/agen
 
 ## CLOUD-EXPLAIN-CONTRACT-01
 
-- Status: Ready -> In Progress 2026-10-18; claimed before coding.
+- Status: Done 2026-10-18; claimed before coding.
 - Human owner Luke Ding; executor Codex; branch codex/cloud-explain-contract-01; isolated worktree cloud-explain-contract-01/zebra-agent; target existing cloud-agent-trench locally.
 - Owned paths: packages/agent-core/src/agent_core/harness/task_contracts.py information-request marker only; tests/agent_core/test_explanatory_contract.py; own appended task record; PROGRESS.md/WORKLOG.md own scoped entries; docs/CLOUD_EXPLANATORY_CONTRACT_REPAIR.md; private .artifacts/cloud-explain-contract-01/.
 - Scope: explanation of deletion is not mutation authority; explicit and compound mutation/operation requests and typed Host overrides retain verification. No provider/prompt/Trench changes. Offline regressions first, then update local Worker only preserving Search process/session and env; one authorized new high/v2 Turn and one suggestion request, reload restoration, no retries/interception, original two partial Runs read-only. No push or production deployment.
+- Acceptance: 59 offline tests and existing intent/date checks pass; one-marker repair locally integrated as 19517d08. Healthy Worker-only image activation, exact original-question new high/v2 completed answer; one DeepSeek suggestion request auto-saved, exact real snapshot/reload restoration, zero repeat POSTs/interception/retries. Both original partial Runs and prior failed sample fingerprints unchanged; API/Search processes and effective environment preserved.

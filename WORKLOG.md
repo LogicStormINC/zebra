@@ -16034,3 +16034,13 @@ explanations red-first, added one information marker, preserved explicit action
 and Host verification boundaries. 59 focused tests plus standalone checks and
 Ruff pass. Local Worker-only activation/page acceptance next; no provider calls
 in offline validation. Preserve dirty AGENTS.md and Search/API processes.
+
+
+CLOUD-EXPLAIN-CONTRACT-01 closeout: source 19517d08 and one-module derived
+Worker image activated locally without effective configuration drift or
+API/Search restart. First compose activation never reached container mutation
+due host Docker TLS context; corrected host CLI environment, then healthy.
+Exact previous failing question now completes as answer, high/v2. One actual
+DeepSeek Flash suggestions POST ready in 3.247 s auto-saved; page reload exact
+snapshot restore and all six suggestions visible with zero repeated POSTs.
+No retries/interception or prior Run mutation. Evidence under task artifacts.
