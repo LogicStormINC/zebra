@@ -1,3 +1,14 @@
+## 2026-10-18 - CLOUD-PAUSED-VERIFIER-01
+
+Authoritative partial/blocked delivery now stops waiting-input execution badges;
+the two retained real Run pages show 部分完成, not 执行中. Noop verifier results
+are false/skipped and ignored as retry success/failure; real configured checks
+retain their result. Core1712pass/1skip plus5focused checks,frontend45pass and
+actual-Worker offline checks pass. Normal Worker d814124b healthy, no new
+model/search/tool/Run; protected original partial hashes/high/v2/dedupe preserved.
+Paired Trench local integration80f3896; no historical Event rewrite or push.
+See docs/CLOUD_PAUSED_VERIFIER_REPAIR.md.
+
 ## 2026-10-18 - Real mutation safety acceptance completed
 
 Fresh user-authorized change/operate page pair now reaches successful isolated

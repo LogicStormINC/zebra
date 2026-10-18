@@ -87,8 +87,9 @@ class NoopVerifier:
     ) -> VerifierResult:
         return VerifierResult(
             summary="verifier hook skipped",
-            passed=tool_status == "executed",
+            passed=False,
             metadata={
+                "skipped": True,
                 "attempt_number": context.attempt.number,
                 "tool_output": tool_output,
             },

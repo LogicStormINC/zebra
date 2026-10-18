@@ -36,6 +36,11 @@ def build_retry_plan_hint(
             focus.append(evidence.summary)
             continue
         if evidence.kind == "verifier_summary":
+            if (
+                evidence.summary == "verifier hook skipped"
+                or (evidence.metadata or {}).get("skipped") is True
+            ):
+                continue
             if bool((evidence.metadata or {}).get("passed")):
                 accepted_constraints.append(evidence.summary)
             else:
