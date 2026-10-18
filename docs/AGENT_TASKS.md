@@ -34482,3 +34482,13 @@ WEB-MODEL-LIMIT-01 audit amendment before edit: add packages/agent-core/src/agen
 - Acceptance:92focused checks/Ruff/strict5file mypy pass. Saved rank7 value gate passes; unique H71.561s/73.611s/10models20tools, inline5/retained7 each search,0agent reads of search Artifacts, no8.8 in current extra candidates; partial remains. No realized recall/performance benefit or SQL reduction claim; no limit/retry/error or rerun. Search/API process/control preserved, local Worker image prepared/active; docs/CLOUD_SEARCH_CANDIDATES.md records boundaries.
 
 - Local integration closeout: cloud-agent-trench fast-forwarded through f450665c; previous CLOUD-VERSION-STATE-01 source/docs also included after unrelated merge finished. Original staged/unstaged patch verified byte-identical. Final services healthy, exact5file Worker source/image/env matches; API/Search IDs/start/images/restarts/env and provider control unchanged. No push/remote deployment.
+
+
+### CLOUD-TURN-CLOSE-01
+
+- Status: Ready → In Progress 2026-10-18; claimed before coding.
+- Human owner Luke Ding; executor Codex; branch codex/cloud-turn-close-01; managed worktree cloud-turn-close-01/zebra-agent; target cloud-agent-trench.
+- Owned paths: apps/worker/src/zebra_agent_worker/{execution,execution_preparation,execution_input_preparation,execution_turn_close}.py; tests/worker/test_turn_close_admitted_identity.py; docs/CLOUD_TURN_CLOSE.md; docs/AGENT_TASKS.md; PROGRESS.md; WORKLOG.md; private .artifacts/cloud-turn-close-01/.
+- Scope: bind closing Turn identity from the already-admitted bounded execution snapshot; Cloud close reuses it without re-preparing full execution inputs. Keep 1MiB/2048 exact preparation limits, lease/fence/fresh control/cancel checks and local compatibility. No model/search/Trench product changes. Deterministic no-model checks first; exact Worker derivative only, preserve API/Search/control/env; then fenced, idempotent recovery of existing committed answer for db605223-91df-40f3-8b24-1a7556ceee3f / turn3ed953da-8228-54d2-beba-c78da214deb5, no new Run/model/tool execution or answer rewriting. Recovery must check no newer Turn/active command/lease and original accepted answer identity, append missing completion through normal projection transaction, not raw projection SQL. Local commit/integration only, no push/remote deploy.
+
+- Acceptance:33focused no-model regressions/Ruff/four-file mypy/offline exact-image checks pass. Worker healthy/updated; API/Search/MCP/control preserved. Original second Turn recovered fenced444->445, awaiting_turn; same answer hash/models20/tools62. Browser both completed/no Pause. Idempotent repeat adds nothing. Local integration target cloud-agent-trench; no push/remote deploy. See docs/CLOUD_TURN_CLOSE.md.

@@ -4,6 +4,8 @@ from collections.abc import Callable
 from time import monotonic
 from typing import Any
 
+from agent_core.application import current_turn
+from agent_core.application.turn_projection import TurnRecord
 from agent_core.domain.events import SessionEvent
 from agent_core.domain.leases import WorkerLease
 from agent_core.ports.agent_tasks import AgentTaskPort
@@ -145,9 +147,23 @@ class ExecutionInputEventView:
         reader: Callable[[WorkerLease], list[SessionEvent]],
         lease: WorkerLease,
         ownership_check: Callable[[], None] | None = None,
+        *,
+        admitted_events: list[SessionEvent] | None = None,
     ) -> None:
+        if admitted_events is not None and any(
+            event.session_id != lease.session_id for event in admitted_events
+        ):
+            raise ValueError("admitted Turn cannot cross Session boundaries")
+        self._turn_admitted = admitted_events is not None
+        self._admitted_turn = current_turn(admitted_events) if admitted_events is not None else None
         self._event_store, self._reader, self._lease = event_store, reader, lease
         self._ownership_check = ownership_check
+
+    @property
+    def admitted_turn(self) -> TurnRecord | None:
+        if not self._turn_admitted:
+            raise ValueError("closing Turn identity was not admitted")
+        return self._admitted_turn
 
     def list_for_session(self, session_id: object) -> list[SessionEvent]:
         if session_id != self._lease.session_id:

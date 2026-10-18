@@ -77,6 +77,8 @@ def execution_event_view(
     reader: Callable[[WorkerLease], list[SessionEvent]] | None,
     lease: WorkerLease,
     ownership_check: Callable[[], None],
+    *,
+    admitted_events: list[SessionEvent],
 ) -> EventStorePort:
     if reader is None:
         return events
@@ -86,4 +88,5 @@ def execution_event_view(
         events,
         lambda current: finish_preparation(lambda: reader(current), ownership_check),
         lease,
+        admitted_events=admitted_events,
     )

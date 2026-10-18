@@ -9,6 +9,7 @@ from agent_core.harness.models import HarnessAttemptOutcome, HarnessAttemptResul
 from agent_core.ports import EventStorePort
 
 from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
+from zebra_agent_worker.execution_input_preparation import ExecutionInputEventView
 
 
 def append_turn_close(
@@ -22,15 +23,19 @@ def append_turn_close(
     """Conversation completion parks a Turn; failures close its Segment."""
     if type(attempt_number) is not int or attempt_number < 1:
         raise ValueError("invalid executing Attempt number")
-    events = (
-        event_store.list_for_session(recorder.session.session_id) if event_store is not None else []
-    )
-    open_turn = current_turn(events) if events else None
-    fallback: UUID = (
-        events[0].session_id
-        if events
-        else getattr(recorder.session, "session_id", None) or UUID(int=0)
-    )
+    if isinstance(event_store, ExecutionInputEventView):
+        # ponytail: closure needs the admitted identity, not a new model-input replay.
+        # Recorder writes still enforce fresh control state, sequence and lease fencing.
+        open_turn = event_store.admitted_turn
+        fallback: UUID = recorder.session.session_id
+    else:
+        events = (
+            event_store.list_for_session(recorder.session.session_id)
+            if event_store is not None else []
+        )
+        open_turn = current_turn(events) if events else None
+        fallback = (events[0].session_id if events else
+                    getattr(recorder.session, "session_id", None) or UUID(int=0))
     turn_id = open_turn.turn_id if open_turn else str(derive_turn_id(fallback, 0))
     turn_index = open_turn.turn_index if open_turn else 0
     completed = attempt_result.outcome is HarnessAttemptOutcome.COMPLETED

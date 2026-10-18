@@ -221,6 +221,7 @@ class SessionExecutionService(SessionExecutionEntrypoints):
             inputs.execution_input_reader,
             claimed.lease,
             ownership_check,
+            admitted_events=session_events,
         )
         trusted_local = zebra_agent_config.trusted_local_mode_enabled(self._settings)
         policy_trusted = zebra_agent_config.unrestricted_policy_mode_enabled(self._settings)
