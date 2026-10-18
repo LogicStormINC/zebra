@@ -37,6 +37,10 @@ class RetryableWorkerSetupError(WorkerExecutionError):
     """Transient setup failure leaves the Session resumable."""
 
 
+class CompletionRecoveryPending(RetryableWorkerSetupError):
+    """Close recovery must defer; never retry model execution or write setup failure."""
+
+
 def log_worker_failure(kind: str, stage: str, session_id: object, exc: BaseException) -> None:
     logger.exception(
         "%s stage=%s session=%s error_type=%s",
@@ -176,11 +180,11 @@ def is_sequence_race(exc: BaseException) -> bool:
 
 
 @contextmanager
-def sequence_race_guard(context: str) -> Iterator[None]:
+def sequence_race_guard(context: str, *, recovery: bool = False) -> Iterator[None]:
     """A lost durable sequence race means the snapshot is stale.
 
     The caller re-recovers once instead of raising past the Worker
-    boundary (ADR-026 §5).
+    boundary (ADR-026 §5). Recovery-only writes defer instead of re-entering execution.
     """
     from zebra_agent_worker.execution_preflight import (  # noqa: PLC0415
         StaleExecutionSnapshot,
@@ -190,5 +194,7 @@ def sequence_race_guard(context: str) -> Iterator[None]:
         yield
     except ValueError as exc:
         if is_sequence_race(exc):
+            if recovery:
+                raise CompletionRecoveryPending(context) from exc
             raise StaleExecutionSnapshot(context) from exc
         raise

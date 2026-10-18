@@ -12,6 +12,7 @@ from agent_core.domain.sessions import SessionStatus
 from agent_core.domain.turns import InteractionMode
 from agent_core.harness.models import HarnessAttemptOutcome, HarnessAttemptResult
 
+from zebra_agent_worker.execution_errors import CompletionRecoveryPending, sequence_race_guard
 from zebra_agent_worker.execution_finalization import (
     ExecutedSession,
     pending_turn_close,
@@ -102,7 +103,8 @@ def recover_committed_completion(
         ownership_check=ownership_check,
     )
     events = reader(recorder.worker_mutation_authority)
-    result = reconcile_completion(recorder, events, started_at)
+    with sequence_race_guard("completion recovery lost its canonical sequence", recovery=True):
+        result = reconcile_completion(recorder, events, started_at)
     if result is not None:
         rebuild_task_index(service._task_index_store, claimed.lease.session_id)
     return result
@@ -114,8 +116,6 @@ def reconcile_completion(
     started_at: datetime,
 ) -> ExecutedSession | None:
     """Use only the last admitted command/Turn/Attempt, never an earlier answer."""
-    from zebra_agent_worker.execution_preflight import StaleExecutionSnapshot
-
     revision = recorder.session.current_sequence
     if any(e.session_id != recorder.session.session_id or e.sequence > revision for e in events):
         raise ValueError("completion evidence crosses Session/revision")
@@ -124,22 +124,10 @@ def reconcile_completion(
         default=-1,
     )
     tail = [e for e in events if e.sequence >= anchor]
-    pending = pending_turn_close(tail)
+    pending = pending_turn_close(events)
     if pending is not None:
-        allowed = (
-            {EventActor.HARNESS, EventActor.SYSTEM}
-            if pending.event_type is EventType.TURN_CANCELLED
-            else {EventActor.HARNESS}
-        )
-        if pending.actor not in allowed:
-            raise ValueError("completion boundary has an invalid actor")
-        if any(
-            e.event_type is EventType.USER_MESSAGE_RECEIVED and e.sequence > pending.sequence
-            for e in tail
-        ):
-            return None
         return reconcile_pending_turn_close(
-            recorder=recorder, events=tail, started_at=started_at, expected_revision=revision
+            recorder=recorder, events=events, started_at=started_at, expected_revision=revision
         )
     turn = current_turn(events)
     if turn is None or turn.legacy:
@@ -215,7 +203,7 @@ def reconcile_completion(
         created_at=started_at,
     )
     if event.sequence != revision + 1:
-        raise StaleExecutionSnapshot("completion recovery lost its canonical revision")
+        raise CompletionRecoveryPending("completion recovery lost its canonical revision")
     event = event.model_copy(update={"idempotency_key": f"answer-close:{answer.event_id}"})
     recorder.append_event(event)
     if complete and closes_segment:

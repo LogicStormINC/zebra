@@ -119,3 +119,50 @@ and persistent Exa control bytes match before; model/tool counters are unchanged
 Task-only test PostgreSQL removed. Evidence: private .artifacts/cloud-close-recovery-02/
 (final-regression.log, final-recovery-regression.log, mypy.log, image-check-final.log,
 before/after.json, counts.before/after.json). No migration or Trench change.
+
+## CLOUD-CLOSE-GUARD-03: one shared guard and non-destructive race classification
+
+Shared `reconcile_pending_turn_close` now refuses any newer user message,
+accepted command or Harness Attempt after the pending Turn close. This applies
+to the old preflight and early lifecycle recovery alike. The early caller checks
+the whole bounded lifecycle evidence before filtering the current command, so
+an old pending close cannot disappear behind a newer command anchor. Original
+Harness completion/failure and Harness/SYSTEM cancellation actor rules now live
+in this shared function rather than only in the early caller.
+
+Every shared supplement captures the current recorder revision even when the
+caller omits expected_revision. Fresh prepare still checks ownership/control
+and projects the external tail; a changed revision prevents append. A lost
+sequence CAS during prepare/append also defers. Neither guessed latest Turn nor
+an unguarded legacy preflight can close a newer interaction.
+
+`CompletionRecoveryPending` reuses the existing retryable Worker setup boundary:
+the lease heartbeat releases ownership and propagates the defer signal BEFORE
+the generic WorkerExecutionError/setup-failure handler. It is deliberately not
+a StaleExecutionSnapshot, so no whole-execution retry, fresh model-input
+preparation or model call happens in the same attempt after a close-recovery
+race. Both answer->Turn and Turn->Session writes use this classification.
+This changes only recovery-specific races: unrelated stale setup behavior
+retains its existing bounded retry. Integrity/idempotency conflicts are not
+relabelled as transient. Persistent conflicting lifecycle evidence stays pending
+for canonical resolution; this change never force-closes or starts a new Run.
+
+Validation:80 focused no-model cases passed (78 normal checks plus the two
+PostgreSQL cases initially skipped without a scratch DSN, then passed on a
+task-only isolated PostgreSQL with TCP readiness checked). Covers shared/old
+preflight/early entry against newer Turn/Run/Attempt, prepare-refresh and append
+CAS races, real heartbeat lease release/no setup-failure handler, no whole-run
+retry, fresh cancellation/lost lease, integrity conflicts, existing partial and
+cleanup behavior and 1MiB native read/input refusal. No production test fixtures
+were changed. Ruff and three-source mypy pass. Exact current Worker base plus
+only three application files passed network-disabled offline checks. No repeated
+input-read optimization, migration, dependency, Trench, model or search change.
+
+Private evidence: .artifacts/cloud-close-guard-03/ (regression.log,
+native-cap-final.log, mypy.log, image-check.log, before/after.json and counters).
+
+Local activation sealed: zebra-worker:close-guard-03 healthy, three exact source
+files and unchanged configuration verified. API/Search process identity/start/
+image/restarts/env and Exa control bytes preserved; namespace-wide model/tool
+counters unchanged across the update. Task-only native PostgreSQL removed.
+Only local commit/integration; no push or remote deployment.

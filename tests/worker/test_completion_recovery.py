@@ -18,9 +18,9 @@ from zebra_agent_worker.completion_recovery import (
     reconcile_completion,
 )
 from zebra_agent_worker.execution_completion import finish_execution
+from zebra_agent_worker.execution_errors import CompletionRecoveryPending
 from zebra_agent_worker.execution_events import ExecutionInterrupted
 from zebra_agent_worker.execution_input_preparation import ExecutionInputEventView
-from zebra_agent_worker.execution_preflight import StaleExecutionSnapshot
 
 # Reuse the existing disposable-schema native fixture; never touch application data.
 from tests.worker.test_bounded_session_recovery import NS, seed
@@ -136,7 +136,7 @@ def test_new_message_race_does_not_close_wrong_turn(tmp_path):
             },
         )
     )
-    with pytest.raises(StaleExecutionSnapshot):
+    with pytest.raises(CompletionRecoveryPending):
         reconcile_completion(recorder, events, NOW)
     assert (
         reconcile_completion(refresh(stores, sid), stores.events.list_for_session(sid), NOW) is None

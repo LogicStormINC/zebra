@@ -24,10 +24,14 @@ from agent_core.ports import (
 
 from zebra_agent_worker.cloud_memory_finalization import finalize_cloud_memory
 from zebra_agent_worker.execution_errors import (
+    CompletionRecoveryPending,
+    is_sequence_race,
+    sequence_race_guard,
+)
+from zebra_agent_worker.execution_errors import (
     RetryableWorkerSetupError as RetryableWorkerSetupError,
 )
 from zebra_agent_worker.execution_errors import WorkerExecutionError as WorkerExecutionError
-from zebra_agent_worker.execution_errors import is_sequence_race
 from zebra_agent_worker.execution_events import (
     DurableHarnessEventRecorder,
     ExecutionInterrupted,
@@ -105,6 +109,27 @@ def reconcile_pending_turn_close(
     turn_event = pending_turn_close(events)
     if turn_event is None:
         return None
+    revision = recorder.session.current_sequence if expected_revision is None else expected_revision
+    if any(e.session_id != recorder.session.session_id or e.sequence > revision for e in events):
+        raise ValueError("Turn close evidence crosses Session/revision")
+    allowed = (
+        {EventActor.HARNESS, EventActor.SYSTEM}
+        if turn_event.event_type is EventType.TURN_CANCELLED
+        else {EventActor.HARNESS}
+    )
+    if turn_event.actor not in allowed:
+        raise ValueError("completion boundary has an invalid actor")
+    if any(
+        e.sequence > turn_event.sequence
+        and e.event_type
+        in {
+            EventType.USER_MESSAGE_RECEIVED,
+            EventType.SESSION_COMMAND_ACCEPTED,
+            EventType.HARNESS_ATTEMPT_STARTED,
+        }
+        for e in events
+    ):
+        raise CompletionRecoveryPending("pending Turn close crosses a newer Turn/Run/Attempt")
     turn_id = turn_event.payload.get("turn_id")
     summary = turn_event.payload.get("summary") or turn_event.payload.get("reason")
     metadata = turn_event.payload.get("metadata")
@@ -114,27 +139,26 @@ def reconcile_pending_turn_close(
         if terminal_type is EventType.SESSION_COMPLETED
         else HarnessAttemptOutcome.FAILED
     )
-    terminal = recorder.prepare(
-        terminal_type,
-        EventActor.HARNESS,
-        {
-            "attempt_number": turn_event.payload.get("attempt_number", 1),
-            "summary": summary if isinstance(summary, str) else "",
-            "metadata": metadata if isinstance(metadata, dict) else {},
-        },
-        created_at=started_at,
-    ).model_copy(
-        update={
-            "idempotency_key": (
-                f"turn-close:{turn_id}" if isinstance(turn_id, str) and turn_id else None
-            )
-        }
-    )
-    if expected_revision is not None and terminal.sequence != expected_revision + 1:
-        from zebra_agent_worker.execution_preflight import StaleExecutionSnapshot
-
-        raise StaleExecutionSnapshot("completion recovery lost its canonical revision")
-    recorder.append_event(terminal)
+    with sequence_race_guard("Turn close lost its canonical sequence", recovery=True):
+        terminal = recorder.prepare(
+            terminal_type,
+            EventActor.HARNESS,
+            {
+                "attempt_number": turn_event.payload.get("attempt_number", 1),
+                "summary": summary if isinstance(summary, str) else "",
+                "metadata": metadata if isinstance(metadata, dict) else {},
+            },
+            created_at=started_at,
+        ).model_copy(
+            update={
+                "idempotency_key": (
+                    f"turn-close:{turn_id}" if isinstance(turn_id, str) and turn_id else None
+                )
+            }
+        )
+        if terminal.sequence != revision + 1:
+            raise CompletionRecoveryPending("completion recovery lost its canonical revision")
+        recorder.append_event(terminal)
     return ExecutedSession(
         session=recorder.session,
         events=recorder.events,
