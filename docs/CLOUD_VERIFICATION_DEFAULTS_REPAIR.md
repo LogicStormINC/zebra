@@ -116,3 +116,55 @@ after-refresh.png under the task artifact directory. The initial observation
 spanned a buffer eviction on the first refresh; a second refresh used fresh
 cursors and complete buffers for the zero-POST assertion. No extra model call
 was used to replace a sample. No automatic retry, code/config change or restart.
+
+## Real mutation-page attempt: stopped, not accepted
+
+User authorized real change/operate page scenarios with isolated state and no
+automatic retry. Two unique markers were registered before activation. A
+temporary derived Worker image scoped fixture tools/contracts/budgets to only
+those markers; normal policy, fencing, Effect dispatch, provider/high/v2 and
+finalization remained in place. API/Search/Trench product logic was untouched.
+The write tool can only exclusively create its fixed temporary state file;
+strict enum arguments reject out-of-scope data. No postcondition evidence is
+fabricated. Offline checks exercised real isolated file I/O.
+
+The first change sample is retained as a failure, not replaced:
+conversation conv_1792322144198_f4e84b, Turn
+8dc3f2b1-afb5-4430-9154-78e50d2c5a07, Run
+2460072e-415c-4e48-91ef-e0246d0e48ef, canonical Session
+9befd112-8439-4fd4-a16c-1120c7a9114b. Page status failed, high/transient_v2,
+17.400s Turn interval. Three model rounds, each retry_count0; one tool attempt,
+zero successful tools, no suggestion generation. The third model round was
+a quality revision after missing evidence, not a post-success verification
+round. Required verification was true, but this run did not reach its intended
+successful-write/missing-proof checkpoint.
+
+Durable Effect evidence is failed_no_effect/payload_not_admitted, no result and
+no retained claim epoch. The failure occurred about2.03s after scheduling; the
+fixture state file was absent. This proves failure before business dispatch,
+not a verified mutation or the target no-extra-round guarantee. The operate
+sample was never started under the stop-on-error protocol. No model retry,
+replacement sample or success claim followed.
+
+Read-only diagnosis found acceptance setup defects: an unconditional .pth import
+loaded the whole Worker in Artifact reader Python children, and a proxy around
+FencedEffectToolGateway changed isinstance checks used for terminal observers.
+A prepared, inactive test-image revision restricts startup injection to the
+Worker CLI and retains the original fenced-gateway object/type. Offline cold
+child comparison (three samples each): failed fixture1.785/1.915/1.891s with
+fixture loaded; corrected fixture0.102/0.100/0.066s with fixture absent; normal
+image0.096/0.091/0.070s. This overhead can consume the observed2s admission
+window; no production-root-cause or live repaired-Effect claim is made without
+a successful targeted observation. Corrected isolated-I/O boundary checks pass.
+
+Normal Worker87505c5e was restored healthy/restart0; fixture absent, actual Worker
+33offline checks pass. API/Search runtime, Exa control, Trench configuration and
+dedupe hashes, and both original partial Turn full hashes remain unchanged.
+Both activation preflights compared environment/command/entrypoint/mount/network/
+security/resource settings explicitly; the broad HostConfig diagnostic hash
+differs, so whole-hash identity is not claimed.
+
+Private live-mutations/ receipts include frozen protocols/hooks, cold-child
+comparison, acceptance-blocked.json, canonical public events and change-page.png.
+A fresh bounded pair requires additional user authorization after this stop;
+the failed Run stays retained and is never replayed.

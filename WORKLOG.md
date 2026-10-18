@@ -16090,3 +16090,23 @@ Private page seal initially counted zero due unnamespaced conversation filter;
 fixed private evidence query to use canonical Turn conversation_key (no DB
 mutation), then one Turn/Run and full seal pass. No production code/config or
 service changes; local docs integration only, no push/remote deployment.
+
+
+CLOUD-VERIFICATION-DEFAULTS-01 real change/operate page attempt: two marker
+protocol registered and test-only image scoped to new tasks; exact normal
+config/no-active-lease preflight, actual model/high/v2/auto, no response mocking.
+First change CV-976b82d465f0-change failed before fixture execute: canonical
+Effect failed_no_effect/payload_not_admitted;17.4s/3models(each retry0)/1failed
+tool/0successful tools. Third call is quality revision, not target verification
+path. Stop-on-error honored: operate not run, no retry or replacement. Captured
+scope file by read-only exec; subsequent docker cp found it absent, so do not
+claim state-directory export. Normal Worker87505c5e restored healthy/restart0,
+fixture absent;33offlinechecks pass, protected partial hashes/API/Search/Exa/
+Trenchdedupe retained. Broad HostConfig hash differs; explicit activation config
+preflight fields matched. Offline investigation: unconditional pth loads Worker
+in Artifact reader child (~1.8–1.9s), consuming2s admission budget; proxy also
+breaks fenced isinstance observer attachment. Prepared inactive fix CLI-gates
+pth/preserves actual fenced object. Three cold-child checks0.066–0.102s vs
+normal0.070–0.096s; isolated real file boundary checks pass. No live repaired
+payload claim. Asked user before any fresh pair due no-auto-retry constraint.
+Receipts in private live-mutations/, no source/config/product changes, no push.

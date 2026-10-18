@@ -1,3 +1,12 @@
+## 2026-10-18 - Mutation page acceptance remains open
+
+Real change sample failed before business dispatch at Effect payload admission;
+no false completed status, but target successful-write/missing-proof checkpoint
+was not reached. Operate not run; no retries/replacement. Normal Worker restored,
+original partial Runs unchanged. Test-only initialization/type issues corrected
+and checked offline; new pair awaits authorization. No production source fix or
+new acceptance success claimed. See docs/CLOUD_VERIFICATION_DEFAULTS_REPAIR.md.
+
 ## 2026-10-18 - Verification defaults page acceptance
 
 One real explanatory high/v2 Turn completed as answer, one main model round,
