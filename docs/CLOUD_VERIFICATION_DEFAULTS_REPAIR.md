@@ -80,3 +80,39 @@ Private receipts and runnable activation/offline/seal scripts are under
 .artifacts/cloud-verification-defaults-01/ in the task worktree. No external
 model/search request, original-Run mutation, Trench source change, push or remote
 deployment was performed. Local Worker activation only; no page/model E2E.
+
+## Real explanatory page Turn acceptance
+
+One user-authorized new Turn, 2026-10-18, on the normal updated Worker:
+conversation `conv_1792321396376_d5a89a`, Turn
+`50e4165d-1762-4a88-a1cd-f728143ca0e0`, Run
+`6bbb20ca-2f66-4127-abea-aba7cee90aed`. Question: 简要解释数据库中主键与外键的区别，并说明删除用户时需要注意哪些关联数据问题。
+
+- Actual page submitted once; scoped database shows one Turn and one Run.
+- Completed with task_type=answer, required_outcomes=[answer_present], no unmet
+  acceptance requirements. No change/operate outcome or mutation evidence was
+  required for this explanatory question. Answer 3,484 UTF-8 bytes.
+- High reasoning, thinking enabled, transient_v2. Main Run has one model request
+  and response, zero tools and retry_count=0; model latency 5,959 ms.
+- Turn creation-to-completion 9,781 ms; started-to-completion 8,061 ms. These are
+  backend Turn intervals, not browser first-text timing.
+- Exactly one real DeepSeek Flash suggestion POST succeeded and was stored.
+  A complete non-truncated refresh observation contained zero POSTs; actual
+  snapshot returned identical persisted suggestions and full answer. All six
+  suggestion labels are visible after refresh. No response interception.
+- Actual Worker scripted safety regression rerun: 33 cases pass, including
+  explicit change and operate, stale/missing proof and missing read capability.
+  Both mutating-contract cases suspend rather than falsely complete or request
+  another unsupported verification round. This is deterministic Worker-process
+  evidence; no real mutation, missing-tool fault injection or separate live
+  change/operate page Run was executed.
+- Exact protected original partial Turn hashes, runtime receipts, Exa control
+  and Trench configuration/dedupe source hashes unchanged. Global durable
+  model-request/response counters increased by exactly one for this main Run;
+  tool counters unchanged. Suggestions are independently observed over HTTP.
+
+Receipts: private page/acceptance.json, snapshot.json, network.safe.json and
+after-refresh.png under the task artifact directory. The initial observation
+spanned a buffer eviction on the first refresh; a second refresh used fresh
+cursors and complete buffers for the zero-POST assertion. No extra model call
+was used to replace a sample. No automatic retry, code/config change or restart.

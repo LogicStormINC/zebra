@@ -16074,3 +16074,19 @@ request, new Run, Trench source edit, push or remote deploy. Existing high/v2
 settings and de-duplication preserved. Private before/after/acceptance receipts
 and runnable scripts in task artifacts; independent diagnostic activity before
 handoff is excluded from this task's no-request accounting.
+
+
+CLOUD-VERIFICATION-DEFAULTS-01 real-page acceptance: one new conversation
+conv_1792321396376_d5a89a / Turn50e4165d / Run6bbb20ca completed answer/high/v2,
+main model1/tool0/retry0; creation-to-completion9.781s (not first-text timing).
+Exactly one real DeepSeek suggestions POST saved; actual snapshot equals DB
+answer/suggestions, six labels visible after refresh. First reload event window
+was truncated, so repeated only reload with fresh cursors; complete windows
+confirm zero POSTs, no model replay/retry/interception. Actual Worker33 scripted
+safety cases pass for missing-evidence change/operate/no-read capability; no
+real mutation page Run or fault injection claimed. Protected partial full
+hashes, Worker/API/Search receipts, Exa control and Trench dedupe/config exact.
+Private page seal initially counted zero due unnamespaced conversation filter;
+fixed private evidence query to use canonical Turn conversation_key (no DB
+mutation), then one Turn/Run and full seal pass. No production code/config or
+service changes; local docs integration only, no push/remote deployment.
