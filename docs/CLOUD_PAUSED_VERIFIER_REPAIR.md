@@ -109,3 +109,31 @@ byte checks and stage-H restored_and_released handoff. Network-disabled image
 passes33 prior verification-default/freshness cases plus shared skip/retry/event,
 context and independent-proof cases. Configuration/no-lease preflight passes;
 Worker-only activation and original two Run page verification follow below.
+
+
+Local follow-up acceptance completed: Worker skipped-waiting-02 image
+b8175274ec4ab898f4139e79d4981e6a2d5acdc4cee0b72961b7116e0769666f,
+container693bf9c3, healthy/restart0. Actual Worker repeats the offline safety
+checks successfully. API/Search process identities and Exa control are exact;
+no search or model requests, original canonical Events or Run state writes.
+
+Paired Trench70ce702 installed with frozen/offline lock and no lifecycle scripts.
+The running Next dev process initially retained the old SDK in its module cache;
+only that frontend process was restarted with the same command/path/port. Actual
+browser chunks now contain the waiting branch and localized label. Normal
+installed-SDK frontend47 checks pass. No configuration/dependency version change.
+
+Both existing authenticated change/operate pages were reloaded without response
+interception, regeneration, suggestions or Turn submission. They still show
+部分完成 and the paused/unverified text; no execution summary says 执行中.
+High/Flash remain selected. Ordinary waiting is separately covered by no-model
+SDK and installed Trench tests because these historical pages authoritatively
+remain partial; their outcomes were not changed to manufacture waiting samples.
+
+Global durable model/tool counts match the pre-update baseline exactly; both
+new Run Session event-count maps match the saved original two-model/one-write
+samples. Two older protected partial Turns have exact answer/request/metadata
+hashes. Config/suggestion-dedupe hashes are unchanged; no model replay or search.
+No claim of complete browser POST-window recording is made. Receipt and screenshots
+are in task worktree .artifacts/cloud-skipped-waiting-02/acceptance.json and
+{change,operate}-page.png. Desktop remains excluded, no push/remote deployment.
