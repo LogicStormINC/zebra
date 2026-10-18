@@ -5,7 +5,6 @@ from collections.abc import Callable, Sequence
 from pathlib import Path
 
 from agent_context import LocalContextCompiler
-from agent_core.contracts.public_output import project_tool_result_evidence
 from agent_core.domain.attachments import AttachmentContextInput
 from agent_core.domain.context_materialization import ContextMaterialization
 from agent_core.domain.image_attachments import ImageAttachmentContextInput
@@ -65,7 +64,7 @@ from agent_runtime.mcp_routing import build_mcp_transport
 from agent_runtime.research import LocalResearchSubagentRunner, ResearchSubagentTool
 from agent_runtime.skill_requirements import build_skill_read_requirements
 from agent_runtime.subagents import LocalResearchSubagentCoordinator
-from agent_runtime.tool_output_projection import build_output_projector
+from agent_runtime.tool_output_projection import build_output_projector, project_tool_output
 from agent_runtime.web_gateway import LocalWebGatewayTransport, sticky_network_cancellation_check
 from agent_runtime.web_search import LocalWebSearchTransport
 from agent_runtime.web_tools import register_web_tools
@@ -428,36 +427,7 @@ class LocalToolGateway(ToolGatewayPort):
             return self._project_tool_output(tool_call, failed)
 
     def _project_tool_output(self, tool_call: ToolCall, result: ToolResult) -> ToolResult:
-        if self._output_projector is None:
-            return result
-        existing_uri = result.metadata.get("artifact_uri")
-        if isinstance(existing_uri, str) and existing_uri.strip():
-            return result
-        stderr = result.metadata.get("stderr")
-        if tool_call.name in {"command.run", "tests.run"} and isinstance(stderr, str):
-            projected = self._output_projector.project(
-                stdout=result.output,
-                stderr=stderr,
-                artifact_name=f"{tool_call.name.replace('.', '-')}.txt",
-                provenance={
-                    "tool_name": tool_call.name,
-                    "tool_call_id": str(tool_call.tool_call_id),
-                },
-            )
-            metadata = {**result.metadata, "stderr": "", **projected.metadata}
-        else:
-            projected = self._output_projector.project_text(
-                result.output,
-                artifact_name=f"{tool_call.name.replace('.', '-')}.txt",
-                provenance={
-                    "tool_name": tool_call.name,
-                    "tool_call_id": str(tool_call.tool_call_id),
-                },
-            )
-            metadata = {**result.metadata, **projected.metadata}
-        return project_tool_result_evidence(
-            result, output=projected.model_output, metadata=metadata
-        )
+        return project_tool_output(self._output_projector, tool_call, result)
 
     def resolve_model_tool_calls(
         self,

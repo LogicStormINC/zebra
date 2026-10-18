@@ -73,21 +73,28 @@ class ToolOutputProjector:
         complete = content or "[no output]"
         uri = self._persist(complete, artifact_name)
         encoded = complete.encode("utf-8")
-        truncated = len(complete) > self._max_model_characters
-        head, tail = _preview_parts(complete, self._max_model_characters)
+        prefix_preview = (
+            small_output is not None and complete.startswith(small_output)
+            and small_output != complete
+        )
+        truncated = prefix_preview or len(complete) > self._max_model_characters
+        preview = small_output if prefix_preview and small_output is not None else complete
+        head, tail = _preview_parts(preview, self._max_model_characters)
         model_output = (
-            _head_tail(complete, self._max_model_characters)
-            if truncated
+            _head_tail(preview, self._max_model_characters)
+            if len(preview) > self._max_model_characters
             else (complete if small_output is None else small_output)
         )
         if truncated:
             model_output += f"\n\n[Complete output: {uri}]"
         # ponytail: ranges describe displayed snapshot characters, never semantic completeness.
-        if truncated:
+        if prefix_preview and len(preview) <= self._max_model_characters:
+            ranges = [[0, len(preview)]]
+        elif len(preview) > self._max_model_characters:
             marker_size = len("\n\n[... middle omitted from model context ...]\n\n")
             available = self._max_model_characters - marker_size
             head_end = available // 2
-            ranges = [[0, head_end], [len(complete) - (available - head_end), len(complete)]]
+            ranges = [[0, head_end], [len(preview) - (available - head_end), len(preview)]]
         else:
             start = complete.find(model_output)
             ranges = [[start, start + len(model_output)]] if start >= 0 else []

@@ -22,6 +22,8 @@ MAX_WEB_SEARCH_TITLE_CHARS = 200
 MAX_WEB_SEARCH_URL_CHARS = 2_048
 MAX_WEB_SEARCH_SNIPPET_CHARS = 1_000
 MAX_WEB_SEARCH_PROVIDER_CHARS = 50
+MAX_SEARCH_CANDIDATES = 20
+MAX_SEARCH_CANDIDATE_CHARS = 20_000
 
 web_search_contract = ToolContract(
     name="web.search",
@@ -103,8 +105,18 @@ class WebSearchResponse:
     byte_count: int
     truncated: bool = False
     metadata: dict[str, JsonValue] = field(default_factory=dict)
+    candidates: tuple[WebSearchResult, ...] = ()
+    candidates_truncated: bool = False
 
     def __post_init__(self) -> None:
+        if self.candidates and (
+            len(self.candidates) > MAX_SEARCH_CANDIDATES
+            or self.candidates[:len(self.results)] != self.results
+            or len({x.url for x in self.candidates}) != len(self.candidates)
+            or sum(len(x.title) + len(x.url) + len(x.snippet) for x in self.candidates)
+            > MAX_SEARCH_CANDIDATE_CHARS
+        ):
+            raise ValueError("search candidate snapshot is outside the bounded contract")
         if len(self.results) > MAX_WEB_SEARCH_RESULTS:
             raise ValueError("search response exceeds the result limit")
         if not self.provider.strip() or len(self.provider) > MAX_WEB_SEARCH_PROVIDER_CHARS:
@@ -144,15 +156,24 @@ class WebSearchTool:
             return search_failure(
                 tool_call, reason=exc.reason, detail=str(exc), metadata=exc.metadata
             )
-        lines = ["[UNTRUSTED EXTERNAL SEARCH RESULTS]"]
-        for index, result in enumerate(response.results, start=1):
-            lines.extend((f"{index}. {result.title}", result.url, result.snippet))
+        output = _candidate_text(response.results)
+        candidates = response.candidates or response.results
+        extra: dict[str, JsonValue] = {}
+        if len(candidates) > len(response.results):
+            extra = {
+                "_search_candidate_output": _candidate_text(candidates),
+                "total_count": len(candidates),
+                "has_more": True,
+                "candidate_set_truncated": response.candidates_truncated,
+            }
         return ToolResult(
             tool_call_id=tool_call.tool_call_id,
             status=ToolCallStatus.EXECUTED,
-            output="\n".join(lines),
+            output=output,
             metadata={
-                **response.metadata,
+                **{k: v for k, v in response.metadata.items()
+                   if k != "_search_candidate_output"},
+                **extra,
                 "route": "web_gateway",
                 "target": self.endpoint.hostname,
                 "provider": response.provider,
@@ -163,6 +184,13 @@ class WebSearchTool:
                 "evidence_refs": [item.url for item in response.results],
             },
         )
+
+
+def _candidate_text(results: tuple[WebSearchResult, ...]) -> str:
+    lines = ["[UNTRUSTED EXTERNAL SEARCH RESULTS]"]
+    for index, result in enumerate(results, start=1):
+        lines.extend((f"{index}. {result.title}", result.url, result.snippet))
+    return "\n".join(lines)
 
 
 def search_failure(

@@ -11,6 +11,8 @@ from http.client import HTTPException
 from agent_core.domain.web import WebTargetError, parse_web_target
 from agent_tools.web_gateway import WebGatewayError
 from agent_tools.web_search import (
+    MAX_SEARCH_CANDIDATE_CHARS,
+    MAX_SEARCH_CANDIDATES,
     MAX_WEB_SEARCH_SNIPPET_CHARS,
     MAX_WEB_SEARCH_TITLE_CHARS,
     MAX_WEB_SEARCH_URL_CHARS,
@@ -30,7 +32,7 @@ from agent_runtime.web_gateway import (
 )
 
 JSON_CONTENT_TYPE = "application/json"
-MAX_OUTPUT_CHARS = 20_000
+MAX_OUTPUT_CHARS = MAX_SEARCH_CANDIDATE_CHARS
 
 
 class LocalWebSearchTransport:
@@ -133,8 +135,10 @@ def _normalize_response(
     output_chars = 0
     raw_results = payload["results"]
     truncated = len(raw_results) > request.limit
+    candidates_truncated = False
     for item in raw_results:
-        if len(normalized) >= request.limit:
+        if len(normalized) >= MAX_SEARCH_CANDIDATES:
+            candidates_truncated = True
             break
         result = _normalize_result(item)
         if result is None or result.url in seen_urls:
@@ -143,12 +147,15 @@ def _normalize_response(
         result_chars = len(result.title) + len(result.url) + len(result.snippet)
         if output_chars + result_chars > MAX_OUTPUT_CHARS:
             truncated = True
+            candidates_truncated = True
             break
         normalized.append(result)
         seen_urls.add(result.url)
         output_chars += result_chars
     return WebSearchResponse(
-        results=tuple(normalized),
+        results=tuple(normalized[:request.limit]),
+        candidates=tuple(normalized),
+        candidates_truncated=candidates_truncated,
         provider="searxng",
         byte_count=byte_count,
         truncated=truncated,
