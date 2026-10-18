@@ -552,7 +552,7 @@ def test_required_delivery_outcome_blocks_false_completion() -> None:
     assert "The setting is changed" not in answer.payload["assistant_message"]
 
 
-def test_mutation_only_satisfies_the_matching_task_type_outcome() -> None:
+def test_verified_mutation_satisfies_only_the_matching_task_type_outcome() -> None:
     mutation = _tool_call("tests.run", {"preset": "mutate"}, "call_mutate")
     operate = TaskAcceptanceContract(
         task_type=AgentTaskType.OPERATE,
@@ -564,12 +564,16 @@ def test_mutation_only_satisfies_the_matching_task_type_outcome() -> None:
             title="Operate",
             user_input="Deploy it.",
             acceptance_contract=operate,
-            max_model_calls=2,
+            max_model_calls=3,
         ),
         SingleAttemptOrchestrator(
-            _gateway(_completion("Deploy it.", mutation), _completion("Deployed.")),
+            _gateway(
+                _completion("Deploy it.", mutation),
+                _completion("Verify it.", _tool_call("files.read", {}, "verify-deploy")),
+                _completion("Deployed."),
+            ),
             AllowAllPolicy(),
-            MutationOnlyToolGateway(),
+            EvidenceToolGateway(),
             model_step=HarnessModelStep(available_tools=TOOLS),
             synthesize_tool_results=True,
         ).run,
@@ -594,12 +598,16 @@ def test_unrelated_mutation_cannot_satisfy_a_change_outcome() -> None:
             title="Unrelated mutation",
             user_input="Explain it.",
             acceptance_contract=contract,
-            max_model_calls=2,
+            max_model_calls=3,
         ),
         SingleAttemptOrchestrator(
-            _gateway(_completion("Check it.", mutation), _completion("Explained.")),
+            _gateway(
+                _completion("Check it.", mutation),
+                _completion("Verify it.", _tool_call("files.read", {}, "verify-unrelated")),
+                _completion("Explained."),
+            ),
             AllowAllPolicy(),
-            MutationOnlyToolGateway(),
+            EvidenceToolGateway(),
             model_step=HarnessModelStep(available_tools=TOOLS),
             synthesize_tool_results=True,
         ).run,

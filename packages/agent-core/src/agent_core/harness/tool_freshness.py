@@ -181,8 +181,6 @@ def needs_post_mutation_verification(
     *,
     read_only_tools: frozenset[str],
 ) -> bool:
-    if not read_only_tools:
-        return False
     mutation_epochs = _resource_epochs(metadata, "mutation_resource_epochs")
     verified_epochs = _resource_epochs(metadata, "verified_resource_epochs")
     if mutation_epochs and metadata.get("mutation_requires_global") is not True:

@@ -39,7 +39,7 @@ def finalize_without_tools(
     tool_limit: int | None,
     request_next: Callable[..., HarnessAttemptResult],
 ) -> HarnessAttemptResult:
-    can_verify = tool_limit is None or tool_calls_executed < tool_limit
+    can_verify = bool(read_only_tools) and (tool_limit is None or tool_calls_executed < tool_limit)
     skill_tools_available = {"skills.list", "skills.read"}.issubset(tool_names)
     if context.task.skill_components and not skill_tools_available:
         return build_attempt_result(

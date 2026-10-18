@@ -16044,3 +16044,17 @@ Exact previous failing question now completes as answer, high/v2. One actual
 DeepSeek Flash suggestions POST ready in 3.247 s auto-saved; page reload exact
 snapshot restore and all six suggestions visible with zero repeated POSTs.
 No retries/interception or prior Run mutation. Evidence under task artifacts.
+
+
+## 2026-10-18 CLOUD-VERIFICATION-DEFAULTS-01
+
+Claimed isolated owned paths before coding. Fixed final explicit mutation-type
+defaults and removed missing-read-capability evidence bypass. Extended ownership
+before adding the shared can_verify capability guard. Two directly affected
+outcome tests now supply fresh verification. Red-first 13 failures reproduced;
+final complete agent-core 1710 passed/1 skipped, standalone intent/date checks,
+Ruff and diff checks passed. No external provider/search requests or service
+mutation; existing protected partial Turn answer/request/metadata hashes match.
+Worker has changed independently since earlier task record; no runtime
+acceptance claimed. Preserve dirty primary AGENTS.md; local commit/integration
+into cloud-agent-trench only, no push/deploy or semantic classification expansion.

@@ -142,8 +142,21 @@ def parse_task_contract(
         task_type = AgentTaskType(str(raw_type))
     except ValueError as exc:
         raise ValueError("task acceptance task_type is invalid") from exc
+    mutation_type = task_type in {AgentTaskType.CHANGE, AgentTaskType.OPERATE}
+    require_verification = _flag(
+        value, "requireVerification", mutation_type or inferred.require_verification
+    )
     raw_outcomes = value.get("requiredOutcomes", value.get("required_outcomes"))
     outcomes = inferred.required_outcomes
+    if raw_outcomes is None and mutation_type:
+        outcomes = tuple(item for item in outcomes if item not in {
+            "change_applied", "operation_completed", "result_verified",
+        })
+        outcomes += (
+            "change_applied" if task_type is AgentTaskType.CHANGE else "operation_completed",
+        )
+        if require_verification:
+            outcomes += ("result_verified",)
     if raw_outcomes is not None:
         if not isinstance(raw_outcomes, list) or len(raw_outcomes) > 12:
             raise ValueError("task acceptance required_outcomes is invalid")
@@ -181,7 +194,7 @@ def parse_task_contract(
         require_matching_citation=_flag(
             value, "requireCitations", inferred.require_matching_citation
         ),
-        require_verification=_flag(value, "requireVerification", inferred.require_verification),
+        require_verification=require_verification,
         require_artifact=_flag(value, "requireArtifact", inferred.require_artifact),
         version_scopes=scopes,
     )
