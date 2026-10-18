@@ -16110,3 +16110,9 @@ pth/preserves actual fenced object. Three cold-child checks0.066–0.102s vs
 normal0.070–0.096s; isolated real file boundary checks pass. No live repaired
 payload claim. Asked user before any fresh pair due no-auto-retry constraint.
 Receipts in private live-mutations/, no source/config/product changes, no push.
+
+Post-seal concurrency: final primary integration check found independent task
+had switched shared Worker to native-scope-01 again. Do not overwrite; our
+fixture absent verified. Authorized coordination message sent to performance
+thread to preserve/restore87505c5e baseline; no current-normal-image claim after
+that independent switch. Fresh model-pair question remains pending.

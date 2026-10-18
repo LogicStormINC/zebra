@@ -168,3 +168,10 @@ Private live-mutations/ receipts include frozen protocols/hooks, cold-child
 comparison, acceptance-blocked.json, canonical public events and change-page.png.
 A fresh bounded pair requires additional user authorization after this stop;
 the failed Run stays retained and is never replayed.
+
+After this task's restoration seal, the independent performance thread switched
+the shared Worker to its own native-scope diagnostic image again. This task did
+not overwrite it; our _verification_fixture hook remains absent. Coordinating
+message sent under the existing user authorization. The healthy normal-image
+restoration claim refers to the recorded release checkpoint, not the later
+shared runtime. Future activation must re-check ownership and container ID.
