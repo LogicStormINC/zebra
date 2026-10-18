@@ -3,8 +3,10 @@
 Explicit change/operate defaults now require verification and matching outcomes;
 missing read capability cannot count as proof or trigger an impossible extra
 verification round. Complete agent-core: 1,710 passed / 1 skipped; existing intent
-and date checks plus Ruff pass. Source-only local integration; no service update
-or external model/search requests. Protected partial Turns unchanged. See
+and date checks plus Ruff pass. Local Worker-only activation now accepted: 47 fresh source checks and 33 offline
+cases in both disconnected image and actual Worker pass. Healthy/restart0/exact
+configuration; API/Search and two protected partial Turns unchanged. No external
+model/search requests; high/v2/dedupe retained. See
 docs/CLOUD_VERIFICATION_DEFAULTS_REPAIR.md.
 
 ## 2026-10-18 - CLOUD-EXPLAIN-CONTRACT-01

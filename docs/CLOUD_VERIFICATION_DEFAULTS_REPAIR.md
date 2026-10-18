@@ -37,11 +37,46 @@ prompts, provider, schema, Trench logic or suggestion de-duplication.
   continue testing outcome matching rather than relying on the removed bypass.
 
 No external model or search request was made. Harness completions are scripted.
-No service was rebuilt or restarted in this task. Source acceptance is separate
-from live Worker activation. The current Worker differs from the earlier task's
-record; no unchanged-Worker or live-E2E claim is made. API/Search process IDs and
-start times still match that record.
+Initial source-only acceptance did not rebuild or restart services. The separately
+authorized local activation is recorded below; no model/page E2E is claimed.
 
 The two protected original Turns remain partial, high/transient_v2 with their
 original feedback. Answer/request/metadata hashes match the prior saved snapshot.
 Local delivery targets cloud-agent-trench only; no push or deployment.
+
+## Authorized local Worker activation
+
+User authorized Worker-only update after source integration. Derived image
+`zebra-worker:verification-defaults-01` replaces exactly task_contracts.py,
+tool_freshness.py and final_completion.py on the then-normal c0f0380c base.
+All three base modules matched the repair parent commit before replacement.
+No dependency installation or base-image pull was performed.
+
+The first activation was correctly stopped by the container-ID guard because
+the independent performance task had switched the shared Worker to a diagnostic
+image. With explicit user authorization, coordination waited for that task to
+finish its batch, restore the original normal image and release the Worker via
+its stage-e/worker-handoff.safe.json. No diagnostic process was overwritten.
+A fresh activation baseline was taken after handoff, excluding the other task's
+model/tool activity from this acceptance window.
+
+- Fresh targeted source regression: 47 passed.
+- Derived image, network disabled: 33 standalone cases passed.
+- Actual updated normal Worker subprocess: the same 33 cases passed using
+  scripted completions and fake tools only. Explicit change/operate defaults,
+  stale/missing/global/resource evidence, valid receipts and truthful suspension
+  are covered. Missing read capability consumes exactly two scripted completions
+  and one fake mutation; no invalid extra verification round.
+- Exact three-module source hashes; healthy Worker, restart count zero and no
+  startup errors or diagnostic probe. Image SHA256:
+  87505c5e0eda972d028ae25be3eb79025c74f1a348bcdd89130f047e6df74e8b.
+- Full effective configuration hash unchanged, preserving runtime model settings
+  and v2. API/Search IDs, image/start/restart/config receipts unchanged.
+- Model/tool event counters unchanged across this activation and offline check;
+  Exa control hash and Trench configuration/suggestion-dedupe source hashes equal.
+- Both original partial Turns retain exact answer/request/metadata hashes.
+
+Private receipts and runnable activation/offline/seal scripts are under
+.artifacts/cloud-verification-defaults-01/ in the task worktree. No external
+model/search request, original-Run mutation, Trench source change, push or remote
+deployment was performed. Local Worker activation only; no page/model E2E.

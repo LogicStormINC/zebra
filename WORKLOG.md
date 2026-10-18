@@ -16058,3 +16058,19 @@ mutation; existing protected partial Turn answer/request/metadata hashes match.
 Worker has changed independently since earlier task record; no runtime
 acceptance claimed. Preserve dirty primary AGENTS.md; local commit/integration
 into cloud-agent-trench only, no push/deploy or semantic classification expansion.
+
+
+CLOUD-VERIFICATION-DEFAULTS-01 authorized local activation follow-up:
+fresh source regression47pass; derived network-none image33checks pass. Initial
+activation blocked on concurrent Worker ID drift, without mutation. User
+authorized coordination with performance task; waited for stage-e restored and
+released receipt, then renewed baseline. Exact c0f0380c base plus3module overlay
+activated as zebra-worker:verification-defaults-01 (87505c5e), actual Worker33
+scripted cases pass; healthy/restart0/clean startup/probe absent. Effective config
+exact; API/Search runtime receipts, Exa control, model/tool event counts and
+Trench config/dedupe hashes unchanged in activation window. Both original
+partial Turn status/answer/request/metadata hashes exact. No model/search/page
+request, new Run, Trench source edit, push or remote deploy. Existing high/v2
+settings and de-duplication preserved. Private before/after/acceptance receipts
+and runnable scripts in task artifacts; independent diagnostic activity before
+handoff is excluded from this task's no-request accounting.
