@@ -13,6 +13,7 @@ from agent_core.domain.context_inheritance import (
     DelegatedContextSnapshot,
 )
 from agent_core.domain.context_materialization import ContextMaterialization
+from agent_core.harness.retry_plan import is_skipped_verification
 from agent_core.ports.context_compiler import ConfirmedMemoryInput, RuntimeEvidenceInput
 
 MAX_INHERITED_HISTORY = 12
@@ -194,7 +195,7 @@ def _capsule_content(capsule: ContextCapsule) -> tuple[str, bool]:
         ("Pending actions", capsule.pending_actions),
         ("Rejected approaches", capsule.rejected_approaches),
         ("Touched files", capsule.touched_files),
-        ("Validation", capsule.tests),
+        ("Validation", tuple(item for item in capsule.tests if not is_skipped_verification(item))),
         ("Known failures", capsule.errors),
         (
             "Pending tools",

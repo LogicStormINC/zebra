@@ -72,6 +72,12 @@ def build_child_result_verifier(
             raise ValueError(f"child wakeup result rejected: {child_task_id} status drift")
         trusted = summary_of(child)
         if canonical_child_terminal_summary(trusted) != summary:
+            if (
+                child_session.status.value == "suspended"
+                and summary == canonical_child_terminal_summary(None)
+            ):
+                # Previously frozen wakeups carried no paused answer, only this generic fact.
+                return
             raise ValueError(
                 f"child wakeup result rejected: {child_task_id} summary "
                 "does not match its own terminal event"

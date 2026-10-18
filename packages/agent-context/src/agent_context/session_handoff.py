@@ -9,6 +9,7 @@ from agent_core.domain.session_handoff import (
     SessionHandoffEnvelope,
     WorkspaceBindingRevision,
 )
+from agent_core.harness.retry_plan import is_skipped_verification
 from agent_core.ports.context_compiler import RuntimeEvidenceInput
 
 
@@ -65,7 +66,9 @@ def build_handoff_envelope(request: HandoffEnvelopeBuildInput) -> SessionHandoff
         permission_boundaries=(() if capsule is None else capsule.permission_boundaries),
         immediate_next=request.immediate_next,
         touched_files=() if capsule is None else capsule.touched_files,
-        validation_results=() if capsule is None else capsule.tests,
+        validation_results=() if capsule is None else tuple(
+            item for item in capsule.tests if not is_skipped_verification(item)
+        ),
         known_failures=() if capsule is None else capsule.errors,
         open_questions=() if capsule is None else capsule.open_questions,
         artifact_refs=() if capsule is None else capsule.artifact_refs,
@@ -96,7 +99,8 @@ def handoff_runtime_evidence(envelope: SessionHandoffEnvelope) -> RuntimeEvidenc
         *(f"Rejected approach: {item}" for item in envelope.rejected_approaches),
         *(f"Permission boundary: {item}" for item in envelope.permission_boundaries),
         *(f"Touched file: {item}" for item in envelope.touched_files),
-        *(f"Validation: {item}" for item in envelope.validation_results),
+        *(f"Validation: {item}" for item in envelope.validation_results
+          if not is_skipped_verification(item)),
         *(f"Known failure: {item}" for item in envelope.known_failures),
         *(f"Open question: {item}" for item in envelope.open_questions),
         *(f"Artifact: {item}" for item in envelope.artifact_refs),

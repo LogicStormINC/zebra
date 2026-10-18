@@ -15,10 +15,15 @@ _CONTINUATION_METADATA_KEYS = frozenset(
         "loop_guard_counts",
         "invalid_tool_requests",
         "mutation_epoch",
+        "mutation_resource_epochs",
+        "mutation_resource_evidence",
+        "mutation_requires_global",
         "mutation_resources",
+        "read_fingerprint_epochs",
         "plan_metadata",
         "plan_summary",
         "post_mutation_verification_prompted",
+        "contract_verification_prompted",
         "quality_reason",
         "quality_revision_count",
         "quality_revision_prompted",
@@ -37,6 +42,20 @@ def continuation_metadata(metadata: dict[str, object]) -> dict[str, object]:
     """Persist only bounded orchestration state required for an exact resume."""
 
     return {key: metadata[key] for key in _CONTINUATION_METADATA_KEYS if key in metadata}
+
+
+def continuation_verification_scope_missing(metadata: dict[str, object]) -> bool:
+    epoch = metadata.get("mutation_epoch", 0)
+    if type(epoch) is not int or epoch < 0:
+        return True
+    if epoch == 0:
+        return False
+    scopes = metadata.get("mutation_resource_epochs")
+    return not isinstance(scopes, dict) or not scopes or any(
+        not isinstance(key, str) or not key.strip()
+        or type(value) is not int or not 0 < value <= epoch
+        for key, value in scopes.items()
+    )
 
 
 def model_response_event(

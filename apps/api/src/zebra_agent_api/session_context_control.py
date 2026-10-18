@@ -19,6 +19,7 @@ from agent_core.domain.context_capsule import (
 )
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.sessions import Session, SessionStatus
+from agent_core.harness.retry_plan import is_skipped_verification
 from agent_storage import (
     ControlPlaneStores,
     PostgresContextLifecycleStore,
@@ -378,6 +379,7 @@ def _capsule_from_events(
         str(event.payload.get("summary", ""))[:1_000]
         for event in events
         if event.event_type is EventType.TESTS_COMPLETED
+        and not is_skipped_verification(event.payload.get("summary"), event.payload.get("metadata"))
     )[-5:]
     errors = tuple(
         str(event.payload.get("output", event.payload.get("summary", "")))[:1_000]

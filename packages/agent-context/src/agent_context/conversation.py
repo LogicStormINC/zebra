@@ -4,6 +4,7 @@ from datetime import datetime
 from agent_core.domain.context_capsule import ContextCapsule
 from agent_core.domain.identifiers import new_message_id
 from agent_core.domain.messages import MessageRole, SessionMessage
+from agent_core.harness.retry_plan import is_skipped_verification
 from agent_core.ports.conversation_compactor import ConversationCompactionResult
 
 from agent_context.capsule import build_context_capsule
@@ -189,7 +190,9 @@ def _summary_message(
             rejected_approaches=capsule.rejected_approaches,
             modified_files=capsule.touched_files,
             failed_attempts=capsule.errors,
-            unresolved_tests=capsule.tests,
+            unresolved_tests=tuple(
+                item for item in capsule.tests if not is_skipped_verification(item)
+            ),
             approvals=capsule.approvals_and_policy_state,
             permission_boundaries=capsule.permission_boundaries,
             artifact_refs=capsule.artifact_refs,

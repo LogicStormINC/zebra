@@ -233,9 +233,11 @@ def child_terminal_summary_in_transaction(
 
     row = connection.execute(
         """
-        SELECT payload FROM session_events
+        SELECT event_type, payload FROM session_events
         WHERE deployment_namespace = %s AND session_id = %s
-            AND event_type IN ('session_completed', 'session_failed', 'session_cancelled')
+            AND event_type IN (
+                'session_completed', 'session_failed', 'session_cancelled', 'session_suspended'
+            )
         ORDER BY sequence DESC
         LIMIT 1
         """,
@@ -245,6 +247,18 @@ def child_terminal_summary_in_transaction(
         return None
     payload = row["payload"]
     metadata = payload.get("metadata") if isinstance(payload, dict) else None
+    if row["event_type"] == "session_suspended" and isinstance(payload, dict):
+        detail = {"status": "suspended", "reason": payload.get("reason")}
+        if isinstance(metadata, dict):
+            assessment = metadata.get("delivery_assessment")
+            if isinstance(assessment, dict):
+                detail["delivery_status"] = assessment.get("status")
+                detail["unmet"] = assessment.get("unmet")
+        answer = metadata.get("assistant_message", "") if isinstance(metadata, dict) else ""
+        return _canonical_summary(
+            json.dumps(detail, sort_keys=True, ensure_ascii=False)
+            + "\n" + (answer if isinstance(answer, str) else "")
+        )
     if isinstance(metadata, dict):
         assistant = metadata.get("assistant_message")
         if isinstance(assistant, str) and assistant.strip():
