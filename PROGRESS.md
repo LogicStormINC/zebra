@@ -1,3 +1,14 @@
+## 2026-10-18 - Real mutation safety acceptance completed
+
+Fresh user-authorized change/operate page pair now reaches successful isolated
+writes without verification. Both correctly pause as awaiting_input with partial
+delivery;2real model rounds/1write/0retries each. No-read operate stops despite
+remaining3tool+1model budget. High/v2/de-duplication and protected original Runs
+preserved; prior failed sample not replayed. Normal Worker87505c5e restored.
+Remaining trace-badge and skipped-hook metadata inconsistencies are recorded,
+not repaired in this acceptance-only slice. See
+docs/CLOUD_VERIFICATION_DEFAULTS_REPAIR.md.
+
 ## 2026-10-18 - Mutation page acceptance remains open
 
 Real change sample failed before business dispatch at Effect payload admission;

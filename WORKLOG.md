@@ -16116,3 +16116,25 @@ had switched shared Worker to native-scope-01 again. Do not overwrite; our
 fixture absent verified. Authorized coordination message sent to performance
 thread to preserve/restore87505c5e baseline; no current-normal-image claim after
 that independent switch. Fresh model-pair question remains pending.
+
+
+CLOUD-VERIFICATION-DEFAULTS-01 explicit fresh-pair authorization: frozen
+live-mutations-02 protocol and2new markers, original failure retained. Read
+stage-f restored/released receipt; normal87505c5e/no leases/config preflight.
+Corrected CLI-only pth, original FencedEffect instance/type retained, offline
+strict isolatedI/O/policy/capability/type checks pass. Exactly2page submissions:
+change5c9afa1f/705c8db1=15.281s and operate52ce78cc/ae797764=9.278s; each2real
+mainmodel+1successful isolatedwrite+retry0/high/enabled/v2. Actualfiles updated
+and active; acceptance read only after suspension. Both explicit contracts
+defaultrequireverificationtrue, canonical partial/awaiting_input/unmet fresh
+proof, epoch1/notverified, no verification/quality extra prompt. Operate no-read
+with3tool+1model budget unused. No search/suggestions. Initial browser records
+complete1Turn/case; reloadtail buffers evicted so do not assert full-window
+zeroPOST. Durable model/Run/write counts unchanged after reload, original failed
+sample eventcounts exact, two original partial hashes exact. Normal87505c5e
+restored healthy/restart0/hookabsent/noactiveleases, coordinator notified. API/
+Search/Exa/Trenchdedupe preserved; diagnostic HostConfig whole hash not claimed.
+Observed residual executing trace badge and verification_passed=true/skipped
+legacyhook; authoritative finaldelivery partial. No source/Trenchlogic fixes or
+provider replay. Private sealedacceptance and screenshots retained; local docs
+integration only, no push/remote deployment.

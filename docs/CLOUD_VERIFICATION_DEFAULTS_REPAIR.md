@@ -175,3 +175,71 @@ not overwrite it; our _verification_fixture hook remains absent. Coordinating
 message sent under the existing user authorization. The healthy normal-image
 restoration claim refers to the recorded release checkpoint, not the later
 shared runtime. Future activation must re-check ownership and container ID.
+
+## Fresh real mutation pair: target behavior passed
+
+User explicitly authorized one fresh pair after the stopped sample; old Run
+2460072e was not replayed (canonical event counts match the retained failure).
+Exactly two new marker-scoped page submissions used the corrected test image,
+original fenced-gateway type/observer and Worker-CLI-only loader. Raw provider
+responses, finalizer, verification evidence, policy/authority/leases, durable
+Effect and v2 publication were not replaced or intercepted. Real tools wrote
+only their own fixed temporary state files; state reads for acceptance occurred
+after each Run was already suspended and were never fed into model history.
+
+| Case | Real page | Run | Main model rounds | Writes | Turn interval | Result |
+| --- | --- | --- | --- | --- | --- | --- |
+| change | conv_1792323938793_608b93 | 5c9afa1f-f8bc-45a5-b203-6ea1f7faeb1f | 2 | 1 successful | 15.281s | awaiting_input / delivery.partial |
+| operate | conv_1792324017506_44ddf3 | 52ce78cc-8599-458a-aca8-3c74b6c4ffc2 | 2 | 1 successful | 9.278s | awaiting_input / delivery.partial |
+
+Turn IDs: change705c8db1-8a23-42a2-8834-92a1a173c543 and
+operateae797764-2c6f-46ad-866c-374c89bdf8e2. Both high/enabled/transient_v2,
+provider retry_count0, one scoped Turn per conversation, one write per Run,
+zero failed tools, zero search or suggestion-generation requests. Tool choice
+was automatic. Initial browser POST observations were complete/non-truncated
+and show exactly one Turn submission per case, with no suggestions POST.
+
+Both recovered explicit typed contracts omitted requireVerification and
+defaulted it to true, with result_verified and the matching change_applied or
+operation_completed outcome. Questions omitted unrelated source-evidence
+requests so the test specifically reached the verification/freshness gate.
+
+Change had an actual read tool but total tool budget1. Actual isolated file
+value=updated; no read remained after the single write. Operate had an empty
+read-tool set and tool budget4: actual file value=active, three tool calls and
+one model call still available at suspension. Both stopped immediately after
+the second model completion, not at the3model safety ceiling. Canonical
+mutation_epoch1, no verified mutation epoch, unverified_mutation=true,
+stop_reason=verification_required, unmet fresh_post_mutation_verification,
+post_mutation_verification_prompted=false, no contract-verification or quality
+revision prompt. Neither Run completed or tried an unavailable read tool.
+
+Real reloads preserve the paused/unverified answer. Reload tail CDP buffers
+were evicted, so full-window zero-POST is not asserted; durable counts and
+one-Turn cardinality prove no new model/Run/write after refresh. The two-case
+activation window has exactly4main model requests/responses and2write events,
+no active leases at release. No retry, replacement or original-Run replay.
+
+Normal Worker87505c5e restored healthy/restart0, fixture absent, shared-resource
+handoff sent. Explicit activation preflights preserve effective environment,
+mounts, command, security and resource settings; no broad diagnostic HostConfig
+hash identity claim. API/Search image/ID/start/restart/health, Exa control and
+Trench configuration/suggestion-dedupe hashes unchanged. Two original partial
+Turns retain exact answer/request/metadata hashes. No production source edits.
+
+### Residual limitations observed, not repaired here
+
+The page trace badge still says 执行中 after the authoritative Turn becomes
+awaiting_input and the Session is suspended with no active lease. The answer
+correctly states it is paused/unverified and does not claim completion. This is
+a remaining presentation-state issue, not ongoing background execution.
+
+Legacy metadata verification_passed=true accompanies verification_summary=
+verifier hook skipped. It is distinct from final fresh verification: canonical
+delivery remains partial with fresh_post_mutation_verification unmet. These
+legacy fields were not normalized in this acceptance-only task; consumers
+should not interpret a skipped hook as verified business completion.
+
+Private evidence: live-mutations-02/acceptance.json, canonical public-event
+receipts, state-after-both.json, network.safe.json, change-page.png and
+operate-page.png. Both old failures and all frozen protocols remain retained.
