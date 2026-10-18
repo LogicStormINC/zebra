@@ -1,3 +1,11 @@
+## 2026-10-18 - CLOUD-EXPLAIN-CONTRACT-01
+
+Shared task-contract inference now recognizes 说明 as an information request,
+without removing explicit mutation/operation or post-mutation verification.
+59 focused offline tests and existing standalone intent/date checks pass.
+One local Worker activation and new high/v2 suggestion persistence acceptance
+are pending; see docs/CLOUD_EXPLANATORY_CONTRACT_REPAIR.md.
+
 ## 2026-10-18 - TRN-ASSET-RECOVERY-01 (validated delivery)
 
 Historical assets use bounded owned references, read-only artifact authority and

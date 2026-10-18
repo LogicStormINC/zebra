@@ -34566,3 +34566,11 @@ WEB-MODEL-LIMIT-01 audit amendment before edit: add packages/agent-core/src/agen
 - Scope: shared closure guard for newer human/command/Attempt boundaries and fresh revision; completion-only sequence races defer without whole-execution retry/setup-failure closure/model fallback. Keep leases/cancel,1MiB/2048 bounds, prior partial safety and outcomes. No repeated-input-read optimization, schema/dependency/Trench/global proxy/search changes. No-model focused regression then exact local Worker-only update; preserve API/Search/MCP/control/env; local commit/integration only, no push/remote deploy.
 
 - Acceptance:80focused no-model checks (78+2 isolated PostgreSQL), Ruff/three-source mypy/exact-image offline pass. Shared/old/early guards reject newer Turn/Run/Attempt; recovery CAS exits without execution retry or setup-failure writes, real heartbeat releases lease, cancel/lost lease/integrity checks retained. Worker healthy/exact three files/config; API/Search/MCP control and model/tool counters unchanged. Local integration cloud-agent-trench through767d22a0 verified, no push/remote deploy.
+
+
+## CLOUD-EXPLAIN-CONTRACT-01
+
+- Status: Ready -> In Progress 2026-10-18; claimed before coding.
+- Human owner Luke Ding; executor Codex; branch codex/cloud-explain-contract-01; isolated worktree cloud-explain-contract-01/zebra-agent; target existing cloud-agent-trench locally.
+- Owned paths: packages/agent-core/src/agent_core/harness/task_contracts.py information-request marker only; tests/agent_core/test_explanatory_contract.py; own appended task record; PROGRESS.md/WORKLOG.md own scoped entries; docs/CLOUD_EXPLANATORY_CONTRACT_REPAIR.md; private .artifacts/cloud-explain-contract-01/.
+- Scope: explanation of deletion is not mutation authority; explicit and compound mutation/operation requests and typed Host overrides retain verification. No provider/prompt/Trench changes. Offline regressions first, then update local Worker only preserving Search process/session and env; one authorized new high/v2 Turn and one suggestion request, reload restoration, no retries/interception, original two partial Runs read-only. No push or production deployment.

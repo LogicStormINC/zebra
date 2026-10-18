@@ -16025,3 +16025,12 @@ Worker/Search untouched. Final make check passes. Complete run: 9718 passed,
 by 16 issuer/thread tests and last-failed 1 passed. Production source unchanged
 since full-run start. User-directed existing-branch commit/push follows.
 Private evidence: .artifacts/trn-asset-recovery-01/; doc: docs/TRN_ASSET_RECOVERY.md.
+
+
+## 2026-10-18 CLOUD-EXPLAIN-CONTRACT-01
+
+Claimed before coding on isolated branch; reproduced four false-positive
+explanations red-first, added one information marker, preserved explicit action
+and Host verification boundaries. 59 focused tests plus standalone checks and
+Ruff pass. Local Worker-only activation/page acceptance next; no provider calls
+in offline validation. Preserve dirty AGENTS.md and Search/API processes.

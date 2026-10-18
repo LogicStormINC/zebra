@@ -221,6 +221,7 @@ def _task_type(text: str) -> AgentTaskType:
             "是什么",
             "介绍",
             "解释",
+            "说明",
             "评估",
             "look up",
             "find out",
