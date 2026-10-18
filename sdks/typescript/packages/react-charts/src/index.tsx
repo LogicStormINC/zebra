@@ -51,10 +51,10 @@ function VegaLiteChart({ context, maxInlineDataRows, maxSpecBytes, part: incomin
     let result: VegaEmbedResult | undefined;
     setError(undefined);
     void loadSpec(part, context.resolveArtifact, maxSpecBytes, controller.signal).then(async (spec) => {
-      validateVegaLiteSpec(spec, { maxInlineDataRows, maxSpecBytes, specVersion: part.specVersion });
+      const safeSpec = validateVegaLiteSpec(spec, { maxInlineDataRows, maxSpecBytes, specVersion: part.specVersion });
       const { default: embed } = await import("vega-embed");
       if (!active || !container.current) return;
-      const rendered = await embed(container.current, spec as never, {
+      const rendered = await embed(container.current, safeSpec as never, {
         actions: { export: true, source: false, compiled: false, editor: false },
         mode: "vega-lite",
         renderer: "svg",
@@ -169,25 +169,34 @@ export function validateVegaLiteSpec(spec: AgentJsonValue, options: { maxInlineD
   if (!options.specVersion.startsWith("6")) throw new Error("chart_spec_version_unsupported");
   const encoded = JSON.stringify(spec);
   if (new TextEncoder().encode(encoded).byteLength > options.maxSpecBytes) throw new Error("chart_spec_too_large");
-  inspectNode(spec, options.maxInlineDataRows);
+  return inspectNode(spec, options.maxInlineDataRows);
 }
 
-function inspectNode(value: AgentJsonValue, maxRows: number, key = "") {
+function inspectNode(value: AgentJsonValue, maxRows: number, key = ""): AgentJsonValue {
   if (Array.isArray(value)) {
     if (key === "values" && value.length > maxRows) throw new Error("chart_inline_data_too_large");
-    value.forEach((item) => inspectNode(item, maxRows));
-    return;
+    return value.map((item) => inspectNode(item, maxRows, key));
   }
-  if (!value || typeof value !== "object") return;
-  for (const [childKey, child] of Object.entries(value)) {
+  if (!value || typeof value !== "object") return value;
+  return Object.fromEntries(Object.entries(value).map(([childKey, incoming]) => {
+    const child = key === "condition" && childKey === "test" && typeof incoming === "string"
+      ? numericPredicate(incoming) : incoming;
     if (
       ["__proto__", "calculate", "constructor", "expr", "href", "labelExpr", "prototype", "url"].includes(childKey)
       || (["filter", "signal", "test"].includes(childKey) && typeof child === "string")
     ) {
       throw new Error("chart_external_or_executable_content_forbidden");
     }
-    inspectNode(child, maxRows, childKey);
-  }
+    return [childKey, inspectNode(child, maxRows, childKey)];
+  }));
+}
+
+function numericPredicate(expression: string): AgentJsonValue {
+  // ponytail: only one numeric comparison; richer expressions must use declarative predicates.
+  const match = /^datum(?:\.([A-Za-z_$][\w$]*)|\[(['"])([^'"\\.\[\]]+)\2\])\s*(===|>=|<=|>|<)\s*(-?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)$/.exec(expression.trim());
+  const operators: Record<string, string> = { "===": "equal", ">=": "gte", "<=": "lte", ">": "gt", "<": "lt" };
+  if (!match || !Number.isFinite(Number(match[5]))) throw new Error("chart_external_or_executable_content_forbidden");
+  return { field: match[1] ?? match[3]!, [operators[match[4]!]!]: Number(match[5]) };
 }
 
 function displayJson(value: AgentJsonValue | undefined) {

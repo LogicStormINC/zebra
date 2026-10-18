@@ -449,7 +449,7 @@ def test_local_tool_gateway_exposes_only_parallel_safe_builtins(tmp_path) -> Non
     gateway = LocalToolGateway(tmp_path.resolve())
 
     assert gateway.parallel_safe_tools == frozenset(
-        {"files.list", "files.read", "files.search"}
+        {"files.list", "files.read", "files.search", "web.fetch"}
     )
 
 
@@ -607,7 +607,7 @@ def test_local_tool_gateway_exposes_coding_profile_tools(tmp_path) -> None:
         "web.fetch",
     )
     assert gateway.parallel_safe_tools == frozenset(
-        {"files.list", "files.read", "files.search", "git.status"}
+        {"files.list", "files.read", "files.search", "git.status", "web.fetch"}
     )
 
 

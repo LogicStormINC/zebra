@@ -381,20 +381,28 @@ def test_cloud_read_rejects_a_late_wall_clock_result(tmp_path, grant, monkeypatc
     assert response.json()["reason"] == "host_grant_rejected"
 
 
-def test_early_extension_read_inherits_remaining_io_budget(tmp_path, grant, monkeypatch):
+@pytest.mark.parametrize("parent_seconds", [1.0, 5.0])
+def test_early_extension_read_inherits_remaining_io_budget(
+    tmp_path, grant, monkeypatch, parent_seconds
+):
     authorizer = Authorizer(grant)
     observed = []
 
     async def read(request, **kwargs):
-        observed.append(current_task_io_deadline())
+        observed.append((current_task_io_deadline(), monotonic()))
         return JSONResponse({"items": []})
 
+    monkeypatch.setattr(http_host_auth, "HOST_CATALOG_READ_SECONDS", parent_seconds)
     monkeypatch.setattr(http, "extension_read_response", read)
     response = TestClient(app(tmp_path, authorizer)).get(
         "/v1/extensions/skill-installations", headers={"Authorization": "Bearer verified"}
     )
     assert response.status_code == 200
-    assert observed == [authorizer.calls[0].deadline]
+    (deadline, at_read), = observed
+    assert at_read < deadline <= at_read + 2.0
+    parent = authorizer.calls[0].deadline
+    assert deadline <= parent
+    assert (deadline == parent) is (parent_seconds < 2.0)
 
 
 def test_early_extension_timeout_cancels_the_async_read(tmp_path, grant, monkeypatch):
@@ -406,7 +414,7 @@ def test_early_extension_timeout_cancels_the_async_read(tmp_path, grant, monkeyp
         finally:
             cancelled.append(True)
 
-    monkeypatch.setattr(http_host_auth, "HOST_PREFLIGHT_SECONDS", 0.05)
+    monkeypatch.setattr(http_host_auth, "HOST_CATALOG_READ_SECONDS", 0.05)
     monkeypatch.setattr(http, "extension_read_response", read)
     response = TestClient(app(tmp_path, Authorizer(grant))).get(
         "/v1/extensions/skill-installations", headers={"Authorization": "Bearer verified"}

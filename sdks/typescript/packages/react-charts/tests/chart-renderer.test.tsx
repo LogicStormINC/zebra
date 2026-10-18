@@ -88,7 +88,25 @@ test("Vega-Lite guard rejects remote and executable content", () => {
   assert.throws(() => validateVegaLiteSpec({ transform: [{ calculate: "datum.secret", as: "x" }], mark: "bar" }, options), /forbidden/);
   assert.throws(() => validateVegaLiteSpec({ transform: [{ filter: "datum.x > 2" }], mark: "bar" }, options), /forbidden/);
   assert.throws(() => validateVegaLiteSpec({ axis: { labelExpr: "datum.label" }, mark: "bar" }, options), /forbidden/);
-  assert.throws(() => validateVegaLiteSpec({ condition: { test: "datum.x > 1" }, mark: "bar" }, options), /forbidden/);
+  assert.throws(() => validateVegaLiteSpec({ condition: { test: "datum.x > 1 && alert(1)" }, mark: "bar" }, options), /forbidden/);
+});
+
+test("numeric chart conditions become declarative predicates without executing expressions", () => {
+  for (const [source, expected] of [
+    ["datum.pct >= 0", { field: "pct", gte: 0 }],
+    ["datum['同比'] < -2.5", { field: "同比", lt: -2.5 }],
+    ['datum["贡献"] <= 1.2e2', { field: "贡献", lte: 120 }],
+    ["datum.pct > 0", { field: "pct", gt: 0 }],
+    ["datum.pct === 0", { field: "pct", equal: 0 }],
+  ] as const) {
+    const spec = { mark: "bar", encoding: { color: { condition: { test: source, value: "red" }, value: "blue" } } };
+    const normalized = validateVegaLiteSpec(spec, options);
+    assert.deepEqual(normalized, { ...spec, encoding: { color: { ...spec.encoding.color, condition: { test: expected, value: "red" } } } });
+    assert.equal(spec.encoding.color.condition.test, source);
+  }
+  for (const source of ["datum.x >= 0 || alert(1)", "DATUM.x > 0", "datum.x == 0", "datum.x > 1e999", "datum.x.y > 0", "datum['x.y'] > 0", "datum.x > other", "window.location = 'https://evil.example'", "datum.x > 0; fetch('/private')"]) {
+    assert.throws(() => validateVegaLiteSpec({ condition: { test: source } }, options), /forbidden/);
+  }
 });
 
 test("Vega-Lite guard rejects unsupported versions and excessive inline rows", () => {

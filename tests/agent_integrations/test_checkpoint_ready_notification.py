@@ -29,7 +29,8 @@ def test_checkpoint_ready_notification_runs_after_durable_commit_before_ack(
         # A separate store connection must see the committed frontier already.
         assert _restore(tasks).read_checkpoint_head(head.scope) == head
         notified.append(head)
-        raise ConnectionError("lost Redis hint")
+        if len(notified) == 1:
+            raise ConnectionError("lost Redis hint")
 
     def complete(*args, **kwargs):
         assert notified, "ACK happened before readiness notification"
@@ -37,9 +38,11 @@ def test_checkpoint_ready_notification_runs_after_durable_commit_before_ack(
 
     consumer.checkpoint_committed = ready
     monkeypatch.setattr(queue, "complete_projection_work", complete)
-    assert consumer.materialize_once(work)
+    assert not consumer.materialize_once(work)
     assert notified[0].through_sequence == work.requested_through
+    assert queue.read_pending_projection_work()
+    assert consumer.materialize_once(work)
     assert not queue.read_pending_projection_work()
     # An already committed work item can republish its readiness safely.
     assert not consumer.materialize_once(work)
-    assert len(notified) == 2
+    assert len(notified) == 3

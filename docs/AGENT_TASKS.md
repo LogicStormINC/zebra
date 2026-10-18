@@ -1,5 +1,55 @@
 # AGENT_TASKS.md
 
+### TRN-SETTINGS-MEDIA-01 - Restore settings grants and published media access
+
+- Status: Review (2026-10-18 full gates passed: 9,633 Zebra tests / 2,921
+  environment skips; complete Trench checks and SDK verify passed; user-authorized
+  commit/push delivery, with prior local browser acceptance retained).
+- Human owner: Luke Ding; executor: Codex.
+- Implementation: codex/trench-settings-media-01; primary paired checkouts.
+  User-requested integration (2026-10-18): Zebra cloud-agent-trench, Trench main;
+  no new branches. Existing target snapshot/version-scope work is preserved.
+  Integration validation and governance paths claimed before edits.
+  Combined target validation: 9,646 passed / 2,921 environment skips,
+  zero failures; make check passes (3,153 files / 1,294 typed sources).
+- Owned paths: core/domain/artifact_access.py; security/artifact_access.py;
+  API/artifact_access.py; CLI/artifact_read.py; focused artifact policy/read regressions; this registry,
+  PROGRESS.md and WORKLOG.md. Paired Trench owns user-scoped grant callers
+  (memory/personalization, usage, extensions, schedules), grant helper and tests,
+  settings/media frontend only if reproduced faults require it, and governance.
+  Scope extended before edits: sdks/typescript/packages/react-charts/src/index.tsx
+  and tests/chart-renderer.test.tsx; paired Trench vendored react-charts tarball
+  and pnpm-lock.yaml. Convert simple numeric conditions into declarative
+  predicates; retain executable/external-content rejection.
+  Validation follow-up ownership claimed before edits: .gitignore for local
+  generated operator evidence; paired Trench coverage replay URL assertions.
+  Full-suite regression ownership extended before edits:
+  tests/agent_integrations/test_checkpoint_ready_notification.py,
+  test_stream_frontier_notifications.py, test_deepseek_provider_smoke.py;
+  tests/agent_runtime/test_harness_runner.py; tests/api/test_http_host_preflight.py
+  for the stricter child-read deadline versus the parent catalog budget.
+  Additional full-suite fixtures claimed before edits:
+  tests/config/test_search_engine_defaults.py;
+  tests/integration/test_compacted_approval_continuation.py;
+  tests/test_cloud_api_worker_profile_composition.py (canonical config path,
+  protected-context budget, mandatory cloud Redis composition);
+  tests/worker/test_command_recovery.py and test_cloud_context_materialization.py
+  for the same cloud composition contract and current scoped recovery guidance.
+  Final full-suite regressions claimed before edits:
+  tests/worker/test_execution_input_frontier.py (explicit local recorder authority);
+  tests/worker/test_public_output_deadline.py (typed progress timeout provenance);
+  tests/worker/test_transient_output_composition.py (publisher cleanup only).
+  Align with current notification
+  ACK, native-fixture, provider and parallel-tool contracts after root-cause audit.
+  Documentation: docs/TRN_SETTINGS_MEDIA_REPAIR.md for the confirmed causes,
+  trust boundaries, exact local activation and validation limitations.
+- Scope: preserve task-binding validation; user settings use a user bootstrap
+  grant. Allow explicitly published local files through workspace policy while
+  retaining redacted/internal/external restrictions and all Host/Artifact checks.
+- Validation: failing regressions first, focused backend/frontend gates and
+  original authenticated browser reads. Commit/push authorized after full gates;
+  target-branch merge now explicitly authorized; no production deployment.
+
 ### CLOUD-STREAM-SPEC-01 - Adopt stream storage roadmap and SQL estimate
 
 - Status: Review (user requested plan adoption 2026-10-12; documentation only).

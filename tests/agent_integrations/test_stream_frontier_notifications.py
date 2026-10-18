@@ -197,7 +197,9 @@ def test_native_unix_socket_via_owned_redis_bridge_and_timeout(tmp_path):
 
     from tests.agent_runtime.test_stream_hint_relay import _ReplyProxy
 
-    configured = os.environ["ZEBRA_STREAM_TEST_REDIS_URL"]
+    configured = os.environ.get("ZEBRA_STREAM_TEST_REDIS_URL")
+    if not configured:
+        pytest.skip("owned Redis fixture not configured")
     proxy = _ReplyProxy(configured)
     proxy.listener.close()
     with TemporaryDirectory(prefix="relay-unix-", dir="/tmp") as directory:

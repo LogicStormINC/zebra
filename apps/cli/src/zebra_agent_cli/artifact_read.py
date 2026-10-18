@@ -279,6 +279,11 @@ def _artifact_access_context(
             uri=artifact.uri,
             preview_redacted=artifact.preview_state["redacted"],
             preview_truncated=artifact.preview_state["truncated"],
+            published=(
+                artifact.source == "tool_run"
+                and artifact.metadata.get("tool_name") == "files.publish"
+                and artifact.metadata.get("status") == "executed"
+            ),
         ),
         session_policy_profile=_session_policy_profile(database_path, session_id),
     )

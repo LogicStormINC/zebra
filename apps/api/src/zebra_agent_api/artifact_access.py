@@ -58,6 +58,11 @@ def classify_session_artifact_access(
             uri=artifact.uri,
             preview_redacted=artifact.preview_state["redacted"],
             preview_truncated=artifact.preview_state["truncated"],
+            published=(
+                artifact.source == "tool_run"
+                and artifact.metadata.get("tool_name") == "files.publish"
+                and artifact.metadata.get("status") == "executed"
+            ),
         ),
         session_policy_profile=session_policy_profile(stores, session_id),
     )

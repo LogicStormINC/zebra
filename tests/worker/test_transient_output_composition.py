@@ -102,6 +102,7 @@ def test_real_cloud_loop_wires_mode_factory_and_binding_without_memory(tmp_path,
     service = build_worker_loop_service(
         database_path=tmp_path / "unused", settings=_settings(), cloud_worker_composition=bundle
     )
+    service.drain()
     assert callable(captured["transient_output_factory"])
     assert callable(captured["task_binding_loader"])
     assert service._command_consumer is not None

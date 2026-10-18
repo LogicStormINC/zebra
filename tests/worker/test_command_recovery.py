@@ -21,6 +21,7 @@ from tests.worker.test_command_consumer import _command_event, _ExecutionSpy, _s
 def _settings():
     return load_settings(env={
         "ZEBRA_PROFILE": "cloud",
+        "ZEBRA_LIVE_REDIS_URL": "redis://fixture.invalid:6379/0",
         "ZEBRA_DATABASE_URL": "postgresql://unused:unused@localhost/unused",
         "ZEBRA_RUNTIME_CLASS": "gvisor",
         "ZEBRA_RUNTIME_IMAGE": "zebra/runtime@sha256:" + "a" * 64,
@@ -195,6 +196,8 @@ def test_cloud_loop_composes_control_without_changing_cutover(tmp_path, monkeypa
     service = build_worker_loop_service(
         database_path=tmp_path / "unused", settings=_settings(), cloud_worker_composition=bundle,
     )
+    assert service._stream_hint_relay is not None
+    service.drain()
     assert (service.migrated_run is not None) == migrated
     consumer = service._command_consumer
     if migrated:
