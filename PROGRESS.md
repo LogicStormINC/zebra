@@ -1,3 +1,16 @@
+## 2026-10-18 - CLOUD-RECOVERY-VERIFICATION-03
+
+Recovery retains per-resource verification scope/evidence and prompt dedupe;
+legacy mutations missing scope pause before model/tool dispatch. Capsule/handoff
+views exclude skipped without historical rewrites. Researcher paused summaries
+retain their reason, unmet items and bounded existing result, with exact guarded
+legacy-wakeup compatibility.1846 no-model checks pass/3environment skips,
+Mypy8files/Ruff/image/runtime checks pass. Local Worker3eb51845/APIacf4978d are
+healthy; both retained Run pages remain partial/no executing/high. Protected
+original partial hashes, high/v2/dedupe, Search/Exa and event counts preserved;
+no model/search, Trench/Desktop change, push or remote deploy. See
+docs/CLOUD_RECOVERY_VERIFICATION_REPAIR.md.
+
 ## 2026-10-18 - CLOUD-SKIPPED-WAITING-02
 
 Shared skipped classification now covers retry, context compaction and final

@@ -34628,7 +34628,7 @@ WEB-MODEL-LIMIT-01 audit amendment before edit: add packages/agent-core/src/agen
 
 ## CLOUD-RECOVERY-VERIFICATION-03
 
-- Status: Review (Ready claimed before implementation); human owner Luke Ding; executor Codex.
+- Status: Done (Ready claimed before implementation; local source/runtime/page acceptance complete); human owner Luke Ding; executor Codex.
 - Branch/worktree: codex/cloud-recovery-verification-03, cloud-recovery-verification-03/zebra-agent; local integration target cloud-agent-trench.
 - Owned source paths: packages/agent-core/src/agent_core/harness/orchestration_events.py; apps/worker/src/zebra_agent_worker/{continuation_dispatch,execution_continuations}.py; apps/api/src/zebra_agent_api/session_context_control.py; packages/agent-context/src/agent_context/{materialization,conversation,session_handoff}.py; packages/agent-storage/src/agent_storage/postgres/subagent_delegation.py.
 - Owned checks/docs: tests/worker/test_recovery_verification_state.py; docs/CLOUD_RECOVERY_VERIFICATION_REPAIR.md; own registry/PROGRESS/WORKLOG entries; private task artifacts.
@@ -34636,3 +34636,5 @@ WEB-MODEL-LIMIT-01 audit amendment before edit: add packages/agent-core/src/agen
 - Offline regressions before local Worker/API-only overlays and existing two change/operate page reloads. No Desktop/Trench source/schema/dependency/provider/prompt/model/search/new Run/retry/push/remote deployment. Preserve high/v2/dedupe, both protected partial hashes, Search/Yahoo/fast/Exa process/cooldown; coordinate shared services before activation.
 
 - Before-code compatibility ownership extension: execution_continuations.py retains validation of already-frozen generic child summaries only when the same durable linked child is actually suspended and maps to failed. No arbitrary summary/status acceptance, new summaries stay exact, no command/history rewrite or retry.
+
+- CLOUD-RECOVERY-VERIFICATION-03 acceptance: source23c95263 locally integrated;1846pass/3environment skips, focused29pass, scoped Mypy8files/Ruff/diff and image/runtime offline checks pass. Worker3eb51845/APIacf4978d healthy/restart0, configuration preserved after explicit released handoff. Existing two new Run pages partial/no executing/high, same original Session/model/tool counts; protected older partial full hashes and high/v2/dedupe exact, Search/Exa unchanged. No model/search/retry/new Run/response interception/Trench/Desktop/push/remote deployment. See CLOUD_RECOVERY_VERIFICATION_REPAIR.md and private acceptance.json.

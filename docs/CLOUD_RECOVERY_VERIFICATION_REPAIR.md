@@ -72,3 +72,45 @@ process/MCP session, Yahoo default, fast, cooldown/fallback remain untouched.
 The two existing change/operate Run pages will be reloaded only; both original
 protected partial Turn hashes and high/v2/dedupe are checked before/after.
 Private receipts live under the task worktree .artifacts/cloud-recovery-verification-03/.
+
+
+## Completed local acceptance
+
+Final combined no-model regression:1846 passed/3 environment skips; focused
+contracts29 passed. Ruff, Mypy8 source files, diff and exact-image offline checks
+pass. Actual normal Worker/API repeat the same pure assertion checks successfully.
+No new fixtures/framework/dependencies or unrelated test repairs were introduced.
+
+Stage-I owner restored/released b8175274 with no more updates before activation.
+Same-container/no-active-lease and environment/mount/command/security/resource
+preflight gates passed. The API preflight initially rejected YAML !override null
+being interpreted as a literal command argument; no API update happened then.
+An explicit empty argv now preserves the original no-extra-argument command;
+entrypoint/logging wrapper compares exactly before/after. Dynamic HostConfig
+aggregate hashes are not an equality claim. No startup/logging configuration
+or unrelated API modules were changed.
+
+Normal Worker image recovery-verification-03 is
+3eb51845262f792eb0d174c650488b83f3effc2e1f3c6964aaa19a8d4a7e91ef;
+normal API image recovery-verification-03 is
+acf4978d16def5fd22a4e85ebbe4eb41fa29bb1f1377ba43125e5b462c65fc47.
+Both healthy/restart0. Search ID/image/start/restarts and Exa control are exact;
+Yahoo/fast/cooldown/fallback, high/v2 and suggestion-dedupe sources are unchanged.
+
+Authenticated existing change Run5c9afa1f and operate Run52ce78cc were reloaded
+without response interception, Turn submission, regeneration, model/search or
+history rewrite. Both still show 部分完成 and their unverified/paused notices;
+no execution summary shows 执行中, DeepSeek Flash/high remain selected. Their
+Session event-count maps match the original saved two-model/one-write samples.
+The new recovery/capsule contracts are proven by offline checks; these retained
+partial Runs are not mutated into artificial crash/recovery samples.
+
+Global durable model/tool counters are identical across the post-handoff update
+and page checks. Both protected older partial Turns have exact answer/request/
+metadata hashes throughout this task, including while the unrelated diagnostic
+batch ran. API/Worker source bytes match their recorded overlay paths. Receipt
+acceptance.json and change/operate screenshots are under the task artifact root.
+No claim of complete browser POST-window recording is made. Source23c95263
+locally integrated to cloud-agent-trench; no push/remote deployment or Desktop/
+Trench product/source changes. New Worker baseline was handed to the diagnostic
+owner to prevent later rollback to b8175274.
