@@ -34638,3 +34638,33 @@ WEB-MODEL-LIMIT-01 audit amendment before edit: add packages/agent-core/src/agen
 - Before-code compatibility ownership extension: execution_continuations.py retains validation of already-frozen generic child summaries only when the same durable linked child is actually suspended and maps to failed. No arbitrary summary/status acceptance, new summaries stay exact, no command/history rewrite or retry.
 
 - CLOUD-RECOVERY-VERIFICATION-03 acceptance: source23c95263 locally integrated;1846pass/3environment skips, focused29pass, scoped Mypy8files/Ruff/diff and image/runtime offline checks pass. Worker3eb51845/APIacf4978d healthy/restart0, configuration preserved after explicit released handoff. Existing two new Run pages partial/no executing/high, same original Session/model/tool counts; protected older partial full hashes and high/v2/dedupe exact, Search/Exa unchanged. No model/search/retry/new Run/response interception/Trench/Desktop/push/remote deployment. See CLOUD_RECOVERY_VERIFICATION_REPAIR.md and private acceptance.json.
+
+
+### CLOUD-CLIENT-RECOVERY-04 — Client receipt and provider continuation safety
+
+- Status: Review (2026-10-18; 109 offline regressions/Ruff/14-source Mypy pass;
+  Worker-only activation pending; originally Ready claimed before implementation).
+- Human owner: Luke Ding; executor: Codex.
+- Branch: codex/cloud-client-recovery-04; worktree cloud-client-recovery-04/zebra-agent.
+- Base: cloud-agent-trench 1cd4aef7; local integration and Worker activation authorized.
+- Owned paths: core harness/client_effect_suspension.py, provider_continuation.py,
+  model_step.py; Worker client_effect_resume.py, continuation_dispatch.py,
+  continuation_lifecycle.py, execution_continuations.py, execution.py,
+  execution_completion.py, execution_errors.py; focused client/provider regression
+  tests; this registry, PROGRESS.md, WORKLOG.md, docs/CLOUD_RECOVERY_VERIFICATION_REPAIR.md;
+  private .artifacts/cloud-client-recovery-04/ evidence.
+- Scope: preserve verification/dedupe metadata in both Client Effect freeze paths;
+  fenced receipt consumption and fail-closed uncertain recovery; native provider
+  failures may not trigger an uncertain second model request. Reuse existing helpers.
+- Validation: offline safety regressions and exact Worker image checks, preserve
+  original partial Runs/high/v2 and Yahoo/fast/Search process; zero model/search calls.
+- No Trench/Desktop, API/config changes, push or remote deployment.
+
+CLOUD-CLIENT-RECOVERY-04 before-code scope amendment: core harness/tool_batch.py
+and tool_execution.py must freeze the same whitelisted continuation state before
+the scheduled event reaches the eager sink (fast receipt/crash window), not mutate
+an already persisted draft. ports/provider_continuation.py documents the sole
+pre-dispatch NotImplementedError fallback contract. No new provider capability.
+CLOUD-CLIENT-RECOVERY-04 before-code contract amendment: core/contracts/client_events.py
+adds optional continuation_metadata to the existing strict scheduled-event schema;
+old payloads remain byte-compatible by excluding None. No database migration.

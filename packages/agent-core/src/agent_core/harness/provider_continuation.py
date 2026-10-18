@@ -16,6 +16,10 @@ from agent_core.ports.provider_continuation import (
 )
 
 
+class ProviderContinuationUncertainError(RuntimeError):
+    """A dispatched continuation has no safe outcome; never issue a fallback request."""
+
+
 @dataclass(frozen=True)
 class PreparedProviderContinuation:
     mode: str

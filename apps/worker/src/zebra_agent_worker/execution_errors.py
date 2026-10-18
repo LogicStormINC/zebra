@@ -14,6 +14,8 @@ from agent_core.domain.context_capsule import ContextCapsuleValidationError
 from agent_core.domain.coverage_contracts import CoverageRefusalReason
 from agent_core.harness.context_window import ContextWindowExceededError
 from agent_core.harness.models import HarnessAttemptOutcome, HarnessAttemptResult
+from agent_core.harness.orchestration_events import continuation_metadata
+from agent_core.harness.provider_continuation import ProviderContinuationUncertainError
 from agent_core.ports.model_gateway import ModelResponseRejectedError
 from agent_core.ports.worker_progress import WorkerProgressTimeout
 from agent_integrations.model_errors import ModelProviderError
@@ -58,6 +60,14 @@ def exception_attempt_result(exc: Exception, metadata: dict[str, object]) -> Har
     fallback is a recovery signal, not a model execution failure. It must
     suspend (recoverable) rather than fail (terminal).
     """
+    if isinstance(exc, ProviderContinuationUncertainError):
+        return HarnessAttemptResult(
+            outcome=HarnessAttemptOutcome.SUSPENDED,
+            summary="provider continuation outcome is uncertain; automatic fallback refused",
+            metadata={
+                **metadata, "stop_reason": "provider_continuation_uncertain", "retryable": False,
+            },
+        )
     if isinstance(exc, WorkerProgressTimeout):
         return HarnessAttemptResult(
             outcome=HarnessAttemptOutcome.FAILED,
@@ -125,7 +135,9 @@ def error_metadata(
         | ModelResponseRejectedError
         | ModelProviderError,
     )
+    resumed_metadata = getattr(clarification or continuation, "metadata", None)
     metadata: dict[str, object] = {
+        **(continuation_metadata(resumed_metadata) if isinstance(resumed_metadata, dict) else {}),
         "stop_reason": "model_execution_failed",
         "error_type": error_type,
         "model_calls_used": (model_calls or 0) + 1 + response_repair_count,

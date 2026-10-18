@@ -7255,3 +7255,13 @@ Cloud lifecycle-only recovery now precedes execution inputs/progress/model/runti
 
 ### CLOUD-CLOSE-GUARD-03 — 2026-10-18
 Unified old preflight/early recovery Turn/Run/Attempt/revision guards; recovery CAS defers through retryable lease-release path without whole-execution retry or setup-failure outcome.1MiB/2048caps, fresh lease/control/cancel and partial assessment preserved.80focused no-model checks, Ruff/three-source mypy/exact-image offline pass; local Worker-only activation healthy/exact source/config, API/Search/MCP preserved and model/tool counters unchanged. No duplicate-read optimization or Trench/model/search change. See docs/CLOUD_TURN_CLOSE.md.
+
+
+### CLOUD-CLIENT-RECOVERY-04 — 2026-10-18
+Client Effect freezes/restores shared verification and dedupe state before eager
+scheduled persistence and normal waiting; fenced effect-identity consumption,
+legacy uncertainty suspension and conflict checks prevent receipt replay. Shared
+error classification retains whitelisted state. Native provider timeout/invalid
+response no longer dispatches ordinary fallback; pre-dispatch unsupported-only
+fallback remains.109 focused offline checks/Ruff/14-source Mypy pass; Worker-only
+exact-image activation pending. No model/search/Trench/Desktop changes.

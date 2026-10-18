@@ -12,6 +12,9 @@ from agent_core.domain.identifiers import new_message_id, new_tool_call_id
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import ModelCompletion
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
+from agent_core.harness.orchestration_events import continuation_metadata
+
+from zebra_agent_worker.continuation_boundaries import has_later_attempt_result_boundary
 
 
 class ClientEffectWakeupError(ValueError):
@@ -30,6 +33,7 @@ class ClientEffectWakeup:
     conversation: tuple[SessionMessage, ...]
     model_calls_used: int
     tool_calls_executed: int
+    metadata: dict[str, object] | None = None
 
 
 def recover_client_effect_wakeup(
@@ -40,7 +44,8 @@ def recover_client_effect_wakeup(
     scheduled: dict[str, dict[str, object]] = {}
     continuations: dict[str, dict[str, object]] = {}
     resume_payload: dict[str, object] | None = None
-    for event in events:
+    resume_indexes: dict[str, int] = {}
+    for index, event in enumerate(events):
         if event.event_type is EventType.CLIENT_EFFECT_SCHEDULED:
             effect_id = str(event.payload.get("client_effect_id", ""))
             if effect_id:
@@ -62,6 +67,9 @@ def recover_client_effect_wakeup(
             and "client_effect_result" in event.payload["payload"]
         ):
             resume_payload = dict(event.payload["payload"])
+            result = resume_payload.get("client_effect_result")
+            if isinstance(result, dict):
+                resume_indexes.setdefault(str(result.get("client_effect_id", "")), index)
     if resume_payload is None:
         return None
     raw_result_value = resume_payload.get("client_effect_result")
@@ -72,7 +80,23 @@ def recover_client_effect_wakeup(
         raise ClientEffectWakeupError(
             "resume references a client effect never scheduled on this stream"
         )
+    resume_index = resume_indexes.get(effect_id, len(events))
+    # Include legacy unmarked starts: uncertainty must not replay a provider call.
+    starts = [
+        index for index, event in enumerate(events)
+        if index > resume_index and event.event_type is EventType.HARNESS_ATTEMPT_STARTED
+    ]
+    later = events[resume_index + 1:]
+    if not starts:
+        # A fast receipt can precede its own waiting marker, not a consumption.
+        later = [event for event in later if not (
+            event.event_type is EventType.SESSION_WAITING_FOR_CLIENT_EFFECT
+            and effect_id in event.payload.get("client_effect_ids", [])
+        )]
+    if has_later_attempt_result_boundary(later, after_index=-1):
+        return None
     continuation = continuations.get(effect_id, scheduled_payload)
+    frozen_metadata = continuation.get("continuation_metadata")
     fallback_call = ToolCall(
         tool_call_id=new_tool_call_id(),
         name=str(raw_result.get("action_name") or scheduled_payload.get("tool_name")),
@@ -93,6 +117,11 @@ def recover_client_effect_wakeup(
         conversation=conversation,
         model_calls_used=_as_int(continuation.get("model_calls_used")),
         tool_calls_executed=_as_int(continuation.get("tool_calls_executed")),
+        metadata=(
+            {**continuation_metadata(frozen_metadata),
+             **({"client_effect_recovery_uncertain": True} if starts else {})}
+            if isinstance(frozen_metadata, dict) else None
+        ),
     )
 
 

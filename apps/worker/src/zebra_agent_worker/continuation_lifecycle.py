@@ -13,6 +13,7 @@ from zebra_agent_worker.client_effect_continuation import (
     is_waiting_client_effect_suspension,
     pending_client_effect_ids,
 )
+from zebra_agent_worker.client_effect_resume import ClientEffectWakeup
 from zebra_agent_worker.control import SessionControlError, SessionControlService
 from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
 from zebra_agent_worker.execution_finalization import WorkerExecutionError
@@ -69,6 +70,7 @@ def mark_completed_continuation_started(
     started_at: datetime,
     recorder: DurableHarnessEventRecorder | None = None,
     attempt_number: int = 1,
+    client_effect_id: str | None = None,
 ) -> ClaimedSession:
     event = SessionEvent.create(
         session_id=claimed.recovery.session.session_id,
@@ -78,6 +80,7 @@ def mark_completed_continuation_started(
         payload={
             "attempt_number": attempt_number,
             "completed_continuation": True,
+            **({"client_effect_id": client_effect_id} if client_effect_id else {}),
             "tool_name": tool_name,
             "tool_call_id": tool_call_id,
         },
@@ -260,9 +263,22 @@ def start_recovered_continuation(
     started_at: datetime,
     recorder: DurableHarnessEventRecorder | None = None,
     child_wakeup: ChildWakeupContinuation | None = None,
+    client_effect: ClientEffectWakeup | None = None,
     attempt_number: int = 1,
 ) -> ClaimedSession:
     """Emit the continuation start Events for the recovered active continuation."""
+    if client_effect is not None:
+        if client_effect.metadata is None or client_effect.metadata.get(
+            "client_effect_recovery_uncertain"
+        ) is True:
+            return claimed
+        return mark_completed_continuation_started(
+            claimed, event_store=event_store, recovery_service=recovery_service,
+            tool_name=client_effect.tool_call.name,
+            tool_call_id=str(client_effect.tool_call.tool_call_id),
+            client_effect_id=client_effect.effect_id,
+            started_at=started_at, recorder=recorder, attempt_number=attempt_number,
+        )
     if continuation is not None and continuation.completed_output is not None:
         return mark_completed_continuation_started(
             claimed,

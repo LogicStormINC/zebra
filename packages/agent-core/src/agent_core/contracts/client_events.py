@@ -25,6 +25,9 @@ class ClientEffectScheduledPayload(BaseModel):
     conversation: list[dict[str, object]] | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
+    continuation_metadata: dict[str, object] | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
     model_calls_used: int = Field(default=0, ge=0)
     tool_calls_executed: int = Field(default=0, ge=0)
 

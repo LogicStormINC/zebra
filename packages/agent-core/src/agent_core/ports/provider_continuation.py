@@ -30,4 +30,9 @@ class ProviderContinuationCompletionPort(Protocol):
         messages: list[SessionMessage],
         *,
         tools: tuple[ModelToolDefinition, ...] = (),
-    ) -> ModelCompletion: ...
+    ) -> ModelCompletion:
+        """Continue once. NotImplementedError guarantees no request was dispatched.
+
+        All other failures have an uncertain outcome and must not trigger fallback.
+        """
+        ...

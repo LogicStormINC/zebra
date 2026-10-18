@@ -39,6 +39,7 @@ from agent_core.harness.models import HarnessEventDraft, HarnessTask
 from agent_core.harness.protocol_invariants import validate_tool_call_pairing
 from agent_core.harness.provider_continuation import (
     PreparedProviderContinuation,
+    ProviderContinuationUncertainError,
     continuation_event,
     prepare_provider_continuation,
 )
@@ -165,12 +166,11 @@ class HarnessModelStep:
                     completion = model_gateway.complete_from_reference(
                         self._provider_continuation, messages, tools=tools
                     )
-                except (
-                    NotImplementedError,
-                    TimeoutError,
-                    ValueError,
-                    ModelResponseRejectedError,
-                ):
+                except (TimeoutError, ValueError, ModelResponseRejectedError) as exc:
+                    raise ProviderContinuationUncertainError(
+                        "provider continuation outcome is uncertain; automatic fallback refused"
+                    ) from exc
+                except NotImplementedError:
                     completion = complete_model(
                         model_gateway,
                         messages,
@@ -231,12 +231,11 @@ class HarnessModelStep:
                     messages,
                     tools=tools,
                 )
-            except (
-                NotImplementedError,
-                TimeoutError,
-                ValueError,
-                ModelResponseRejectedError,
-            ):
+            except (TimeoutError, ValueError, ModelResponseRejectedError) as exc:
+                raise ProviderContinuationUncertainError(
+                    "provider continuation outcome is uncertain; automatic fallback refused"
+                ) from exc
+            except NotImplementedError:
                 self._emit_continuation_selection(
                     PreparedProviderContinuation(
                         mode="capsule_fallback",

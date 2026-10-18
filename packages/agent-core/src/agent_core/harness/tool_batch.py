@@ -1,4 +1,5 @@
 from collections.abc import Mapping
+from functools import partial
 
 from agent_core.domain.events import EventActor, EventType
 from agent_core.domain.messages import SessionMessage
@@ -7,6 +8,7 @@ from agent_core.domain.policies import PolicyDecisionType
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
 from agent_core.harness.attempt_result import action_fingerprint, build_attempt_result
 from agent_core.harness.clarification_step import clarification_stop_result
+from agent_core.harness.client_effect_suspension import freeze_client_effect_state
 from agent_core.harness.concurrent_batch import (
     DEFAULT_REPEAT_HARD_STOP_THRESHOLD,
     ConcurrentToolBatchExecutor,
@@ -335,12 +337,11 @@ class ToolBatchExecutor:
                 )
                 if tool_call.name == "agent.plan"
                 else execute_tool_call(
-                    context,
-                    tool_call,
-                    tool_gateway=self._tool_gateway,
-                    verifier=self._verifier,
-                    emitted_events=emitted_events,
+                    context, tool_call, tool_gateway=self._tool_gateway,
+                    verifier=self._verifier, emitted_events=emitted_events,
                     emit_execution_started=not (index == 0 and first_execution_started),
+                    continuation_state=partial(freeze_client_effect_state, completion, messages,
+                                               model_calls_used, tool_calls_executed + 1, metadata),
                 )
             )
             tool_calls_executed += 1

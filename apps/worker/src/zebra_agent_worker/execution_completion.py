@@ -48,7 +48,7 @@ def run_worker_continuation(
         except Exception as error:
             result = exception_attempt_result(
                 error,
-                error_metadata(error, clarification, child_wakeup or continuation),
+                error_metadata(error, clarification, child_wakeup or continuation or client_effect),
             )
     finally:
         active_error = sys.exception()

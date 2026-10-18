@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from dataclasses import dataclass
 
 from agent_core.domain.events import EventActor, EventType
@@ -22,6 +23,7 @@ def execute_tool_call(
     verifier: VerifierHook,
     emitted_events: list[HarnessEventDraft],
     emit_execution_started: bool = True,
+    continuation_state: Callable[[], dict[str, object]] | None = None,
 ) -> ToolExecutionStep:
     manages_effect = _manages_durable_effect(tool_gateway, tool_call)
     if emit_execution_started and not manages_effect:
@@ -44,6 +46,7 @@ def execute_tool_call(
                 event_type=EventType.CLIENT_EFFECT_SCHEDULED,
                 actor=EventActor.TOOL,
                 payload={
+                    **(continuation_state() if continuation_state is not None else {}),
                     "attempt_number": context.attempt.number,
                     "tool_name": tool_call.name,
                     "tool_call_id": str(tool_call.tool_call_id),

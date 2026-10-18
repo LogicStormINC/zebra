@@ -114,3 +114,47 @@ No claim of complete browser POST-window recording is made. Source23c95263
 locally integrated to cloud-agent-trench; no push/remote deployment or Desktop/
 Trench product/source changes. New Worker baseline was handed to the diagnostic
 owner to prevent later rollback to b8175274.
+
+
+## CLOUD-CLIENT-RECOVERY-04 — Client Effect and provider continuation
+
+Client Effect previously omitted the whitelisted verification scopes and dedupe
+state at freeze/recovery, and scanned accepted receipts without a consumed-attempt
+boundary. Native provider continuation also treated an uncertain timeout or invalid
+response as permission to send a second ordinary model request.
+
+Changes are limited to the common runtime; Trench and Desktop are unchanged:
+
+- Freeze the existing continuation metadata before the scheduled event reaches
+  its eager durable sink, and in the normal waiting snapshot. The strict event
+  schema adds an optional field excluded when absent; no migration or legacy
+  payload rewrite. Lazy snapshot serialization runs only for deferred effects.
+- Restore metadata in both provider-safe and rebased receipt branches. Merge
+  the current action fingerprint with historical fingerprints; do not replace
+  verification scope, read epochs or one-time verification prompt markers.
+- Recover Client Effect through the existing active-continuation conflict gate.
+  Persist its effect identity on the existing fenced completed-continuation
+  start before entering the orchestrator. No duplicate generic start is emitted.
+- Result boundaries consume prior receipts, including duplicate accepted commands.
+  A fast receipt before its own waiting marker is still resumable. An old or new
+  start without a durable result boundary suspends without invoking a model again.
+  Missing legacy verification state also remains unverified, preserving counters
+  and existing results; no inferred scope or automatic replay.
+- Shared exception classification retains only whitelisted continuation state,
+  including Client Effect, and withholds unrelated private metadata.
+- Native continuation timeout, ValueError and rejected response suspend with
+  retryable=false; cancellation and other errors propagate without fallback.
+  Only NotImplementedError, now explicitly documented as pre-dispatch unsupported
+  capability, permits ordinary fallback. Both tracked and untracked paths clear
+  the in-memory reference after the attempt. Explicit invocation policy remains
+  unchanged and continues to bypass this optional native path.
+
+Validation: 109 offline focused tests pass across Client Effect, approval,
+clarification, child wakeup, recovery verification, provider storage/reference,
+context window and concurrent tool paths. Ruff and 14-source-file Mypy pass.
+All model gateways in these checks are scripted/stubbed; no provider or search
+requests. This proves safety behavior, not new model latency or search quality.
+
+Local Worker-only activation and protected-Run checks pending. API/Search process,
+MCP session/control state, Yahoo default/fast, high thinking/v2, original partial
+Turns and Trench configuration must remain unchanged. No push/remote deployment.

@@ -32,7 +32,6 @@ import zebra_agent_worker.runtime_setup as runtime_setup
 import zebra_agent_worker.session_handoff as handoff
 import zebra_agent_worker.tool_output_artifact_runtime as artifact_runtime
 from zebra_agent_worker.claims import ClaimedSession, SessionClaimService
-from zebra_agent_worker.client_effect_resume import recover_client_effect_wakeup
 from zebra_agent_worker.client_tool_gateway import ClientToolGateway
 from zebra_agent_worker.completion_recovery import recover_committed_completion
 from zebra_agent_worker.context_materialization import prepare_worker_context
@@ -402,6 +401,7 @@ class SessionExecutionService(SessionExecutionEntrypoints):
             continuation = continuations.approved
             clarification = continuations.clarification
             child_wakeup = continuations.child_wakeup
+            client_wakeup = continuations.client_effect
             setup_stage = "continuation_recorder"
             recorder = self._projection_recorder_factory.build(
                 session=claimed.recovery.session,
@@ -411,7 +411,7 @@ class SessionExecutionService(SessionExecutionEntrypoints):
             )
             release_gateway.recorder = recorder
             effect_recorder.append(recorder)
-            if all(item is None for item in (continuation, clarification, child_wakeup)) and (
+            if not any((continuation, clarification, child_wakeup, client_wakeup)) and (
                 worker_progress is None
                 or not worker_progress.head.state.attempt_started
                 or recorder.session.status is SessionStatus.READY
@@ -454,7 +454,6 @@ class SessionExecutionService(SessionExecutionEntrypoints):
                 user_input=task.user_input,
                 attempt_number=attempt_number,
             )
-            client_wakeup = recover_client_effect_wakeup(session_events)
             setup_stage = "continuation_run"
             attempt_result = run_worker_continuation(
                 orchestrator,

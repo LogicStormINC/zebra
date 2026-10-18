@@ -13,6 +13,7 @@ from agent_core.harness.attempt_result import action_fingerprint
 from agent_core.harness.evidence_ledger import record_tool_evidence
 from agent_core.harness.models import HarnessAttemptOutcome, HarnessAttemptResult, HarnessContext
 from agent_core.harness.orchestration_events import continuation_verification_scope_missing
+from agent_core.harness.sequential_support import durable_action_fingerprints
 
 from zebra_agent_worker.approved_continuation import ApprovedContinuation
 from zebra_agent_worker.child_wakeup_continuation import ChildWakeupContinuation
@@ -36,8 +37,12 @@ def run_continuation(
     child_wakeup: ChildWakeupContinuation | None = None,
     client_effect: ClientEffectWakeup | None = None,
 ) -> HarnessAttemptResult:
-    resumed = child_wakeup or continuation or clarification
-    if resumed is not None and continuation_verification_scope_missing(resumed.metadata or {}):
+    resumed = child_wakeup or continuation or clarification or client_effect
+    if resumed is not None and (
+        (client_effect is not None and client_effect.metadata is None)
+        or (resumed.metadata or {}).get("client_effect_recovery_uncertain") is True
+        or continuation_verification_scope_missing(resumed.metadata or {})
+    ):
         return HarnessAttemptResult(
             outcome=HarnessAttemptOutcome.SUSPENDED,
             summary="Saved mutation scope is unavailable; recovery remains unverified.",
@@ -49,7 +54,11 @@ def run_continuation(
                 ),
                 "model_calls_used": resumed.model_calls_used,
                 "tool_calls_executed": resumed.tool_calls_executed,
-                "stop_reason": "verification_required",
+                "stop_reason": (
+                    "client_effect_recovery_uncertain"
+                    if (resumed.metadata or {}).get("client_effect_recovery_uncertain") is True
+                    else "verification_required"
+                ),
                 "retryable": False,
                 "unverified_mutation": True,
                 "delivery_assessment": {
@@ -59,14 +68,16 @@ def run_continuation(
         )
     if client_effect is not None:
         tool_result = client_effect_wakeup_tool_result(client_effect)
+        metadata = {
+            **(client_effect.metadata or {}),
+            "durable_action_fingerprints": sorted(
+                durable_action_fingerprints(client_effect.metadata or {})
+                | {action_fingerprint(client_effect.tool_call)}
+            ),
+        }
         if not _has_provider_safe_client_call(client_effect):
             metadata = record_tool_evidence(
-                {
-                    "client_effect_rebased": True,
-                    "durable_action_fingerprints": [
-                        action_fingerprint(client_effect.tool_call)
-                    ],
-                },
+                {**metadata, "client_effect_rebased": True},
                 tool_result,
             )
             return orchestrator.continue_completed_tools(
@@ -89,6 +100,7 @@ def run_continuation(
             model_calls_used=client_effect.model_calls_used,
             tool_calls_executed=client_effect.tool_calls_executed,
             assistant_message=client_effect.assistant_message,
+            metadata=metadata,
         )
     if child_wakeup is not None:
         tool_results = child_wakeup_tool_results(child_wakeup)

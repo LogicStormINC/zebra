@@ -19,9 +19,26 @@ from agent_core.harness.models import (
     HarnessContext,
     HarnessEventDraft,
 )
+from agent_core.harness.orchestration_events import continuation_metadata
 
 CLIENT_EFFECT_DEFERRED = "client_effect_deferred"
 CLIENT_EFFECT_ID = "client_effect_id"
+
+
+def freeze_client_effect_state(
+    completion: ModelCompletion,
+    messages: list[SessionMessage] | tuple[SessionMessage, ...],
+    model_calls_used: int,
+    tool_calls_executed: int,
+    metadata: dict[str, object],
+) -> dict[str, object]:
+    return {
+        "assistant_message": completion.assistant_message.content,
+        "conversation": [message.model_dump(mode="json") for message in messages],
+        "model_calls_used": model_calls_used,
+        "tool_calls_executed": tool_calls_executed,
+        "continuation_metadata": continuation_metadata(metadata),
+    }
 
 
 def client_effect_suspension_result(
@@ -42,14 +59,9 @@ def client_effect_suspension_result(
     effect_ids = [effect_id for _, effect_id in deferred]
     frozen_conversation = _conversation_before_deferred_results(messages, deferred)
     continuations = {
-        effect_id: {
-            "assistant_message": completion.assistant_message.content,
-            "conversation": [
-                message.model_dump(mode="json") for message in frozen_conversation
-            ],
-            "model_calls_used": model_calls_used,
-            "tool_calls_executed": tool_calls_executed,
-        }
+        effect_id: freeze_client_effect_state(
+            completion, frozen_conversation, model_calls_used, tool_calls_executed, metadata
+        )
         for _, effect_id in deferred
     }
     for draft in emitted_events:
@@ -64,6 +76,7 @@ def client_effect_suspension_result(
             "conversation",
             [message.model_dump(mode="json") for message in messages],
         )
+        draft.payload.setdefault("continuation_metadata", continuation_metadata(metadata))
         draft.payload.setdefault("model_calls_used", model_calls_used)
         draft.payload.setdefault("tool_calls_executed", tool_calls_executed)
     return build_attempt_result(

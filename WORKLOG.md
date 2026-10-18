@@ -16181,3 +16181,15 @@ Implementation and gates: shared freeze preserves resource scope/evidence/read/p
 Final combined source regression1846passed/3skipped, including all core/context and targeted recovery/child/approval/clarification/completion checks. Mypy8files, Ruff and diff checks pass. The three skips are optional/environment-gated checks, not verification success receipts. Exact-image Worker/API offline assertions pass. No more broad testing planned without new failure/change; runtime/page gates pending shared Worker release.
 
 Closeout: stage-I explicitly restored/released b817 and no more updates, then source23c95263 FF-integrated cloud-agent-trench. Worker3eb51845/f8be5cde and APIacf4978d/f567d626 healthy/restart0; exact-image and actual normal-container offline checks pass. API-only preflight safely stopped on !override null literal-command parsing; explicit empty argv preserves original no-argument execution and logging entrypoint exact, no secrets/output changes. Search/Exa process/state and config/dedupe sources exact. Existing authenticated change/operate pages reload partial/no执行中 with original unverified pause text/high/Flash, no response interception/Turn/regeneration/model/search. Global post-handoff model/tool counts unchanged; both Session counts match original saved samples; both protected older partial answer/request/metadata hashes exact vs initial and before. acceptance.json passes, screenshots retained. No production crash injection or original partial status rewrite; offline checks prove new recovery guards. New normal Worker baseline communicated, no push/remote deploy/Trench/Desktop.
+
+
+### 2026-10-18 — CLOUD-CLIENT-RECOVERY-04
+Claimed Ready task in codex/cloud-client-recovery-04 before implementation, based
+on cloud-agent-trench1cd4aef7. Preserved primary AGENTS.md dirty work. Audited eager
+scheduled-event sink and strict schema before placing freeze state; initial
+primary-venv baseline was not counted as changed-source proof. Explicit PYTHONPATH
+and MYPYPATH select the task worktree for109 offline regression checks and14-file
+Mypy; Ruff passes. No real provider/search/database writes during regression.
+Worker activation baseline .artifacts/cloud-client-recovery-04/before.json; active
+leases0, both protected Turns partial. Only Worker image replacement authorized;
+API/Search/Trench/control bytes must remain equal. Pending exact-image validation.

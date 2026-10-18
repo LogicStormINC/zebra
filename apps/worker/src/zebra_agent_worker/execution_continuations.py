@@ -26,6 +26,7 @@ __all__ = [
 from zebra_agent_worker.child_wakeup import child_terminal_status
 from zebra_agent_worker.claims import ClaimedSession
 from zebra_agent_worker.clarification_continuation import ClarificationContinuation
+from zebra_agent_worker.client_effect_resume import ClientEffectWakeup, recover_client_effect_wakeup
 from zebra_agent_worker.continuation_lifecycle import start_recovered_continuation
 from zebra_agent_worker.continuation_recovery import (
     recover_approved_continuation,
@@ -95,6 +96,7 @@ class ActiveContinuations:
     approved: ApprovedContinuation | None
     clarification: ClarificationContinuation | None
     child_wakeup: ChildWakeupContinuation | None
+    client_effect: ClientEffectWakeup | None = None
 
 
 def recover_active_continuations(
@@ -105,9 +107,10 @@ def recover_active_continuations(
     approved = recover_approved_continuation(session_events)
     clarification = recover_clarification_continuation(session_events)
     child_wakeup = recover_child_wakeup_continuation(session_events, verifier=child_result_verifier)
+    client_effect = recover_client_effect_wakeup(session_events)
     active = [
         continuation
-        for continuation in (approved, clarification, child_wakeup)
+        for continuation in (approved, clarification, child_wakeup, client_effect)
         if continuation is not None
     ]
     if len(active) > 1:
@@ -116,6 +119,7 @@ def recover_active_continuations(
         approved=approved,
         clarification=clarification,
         child_wakeup=child_wakeup,
+        client_effect=client_effect,
     )
 
 
@@ -157,6 +161,7 @@ def recover_and_start_continuations(
         started_at=started_at,
         recorder=recorder,  # type: ignore[arg-type]
         child_wakeup=continuations.child_wakeup,
+        client_effect=continuations.client_effect,
         attempt_number=attempt_number,
     )
     return started, continuations
