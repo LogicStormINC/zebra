@@ -230,3 +230,26 @@ def test_attachment_truncation_and_omission_are_explicit(tmp_path: Path) -> None
     assert "TAIL_RESTRICTION" not in prompt
     assert "Attachments omitted from inline context: third.txt" in prompt
     assert "before claiming complete coverage" in prompt
+
+
+def test_skipped_verification_is_neither_accepted_nor_unresolved_context():
+    from agent_context.adapter import _compact_runtime_evidence
+
+    for summary in ("verifier hook skipped", "optional check unavailable"):
+        for passed in (False, True):
+            for marker in ({"skipped": True}, {}):
+                if summary != "verifier hook skipped" and not marker:
+                    continue
+                evidence = (
+                    RuntimeEvidenceInput(kind="conversation_summary", summary="Continue task."),
+                    RuntimeEvidenceInput(kind="verifier_summary", summary=summary,
+                                         metadata={"passed": passed, **marker}),
+                    RuntimeEvidenceInput(kind="verifier_summary", summary="real check passed",
+                                         metadata={"passed": True}),
+                    RuntimeEvidenceInput(kind="verifier_summary", summary="real check failed",
+                                         metadata={"passed": False}),
+                )
+                content = "\n".join(item.content for item in _compact_runtime_evidence(evidence))
+                assert summary not in content
+                assert "Acceptance:\n- real check passed" in content
+                assert "Unresolved Tests:\n- real check failed" in content

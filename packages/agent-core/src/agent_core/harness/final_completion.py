@@ -17,6 +17,7 @@ from agent_core.harness.models import (
 )
 from agent_core.harness.orchestration_events import answer_committed_event
 from agent_core.harness.quality_gates import evaluate_answer, missing_selected_skills
+from agent_core.harness.retry_plan import is_skipped_verification
 from agent_core.harness.tool_freshness import (
     needs_post_mutation_verification,
     post_mutation_verification_instruction,
@@ -446,9 +447,13 @@ def _contract_verification_satisfied(
     tool_metadata = metadata.get("tool_metadata")
     if isinstance(tool_metadata, dict) and tool_metadata.get("postcondition_met") is True:
         return True
-    return metadata.get("verification_passed") is True and metadata.get(
-        "verification_summary"
-    ) not in {None, "verifier hook skipped"}
+    return (
+        metadata.get("verification_passed") is True
+        and metadata.get("verification_summary") is not None
+        and not is_skipped_verification(
+            metadata.get("verification_summary"), metadata.get("verification_metadata")
+        )
+    )
 
 def _satisfied_outcomes(
     context: HarnessContext,

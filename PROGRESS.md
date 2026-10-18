@@ -1,3 +1,13 @@
+## 2026-10-18 - CLOUD-SKIPPED-WAITING-02
+
+Shared skipped classification now covers retry, context compaction and final
+verifier fallback without suppressing independent evidence. SDK ordinary waiting
+has explicit waiting presentation and retains real activity outcomes. No Desktop
+or historical Event changes. Offline core/context1782pass/1skip,SDK24pass,
+installed Trench47pass,build/types/lint and network-disabled Worker checks pass.
+Local Worker/SDK activation and two retained Run reload acceptance in progress;
+no model/search/new Run. See docs/CLOUD_PAUSED_VERIFIER_REPAIR.md.
+
 ## 2026-10-18 - CLOUD-PAUSED-VERIFIER-01
 
 Authoritative partial/blocked delivery now stops waiting-input execution badges;

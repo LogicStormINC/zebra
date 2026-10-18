@@ -4,6 +4,7 @@ from pathlib import Path
 from agent_core.domain.attachments import AttachmentContextInput
 from agent_core.domain.memories import MemoryType
 from agent_core.domain.messages import SessionMessage
+from agent_core.harness.retry_plan import is_skipped_verification
 from agent_core.ports.context_compiler import ConfirmedMemoryInput, RuntimeEvidenceInput
 from agent_core.ports.conversation_compactor import ConversationCompactionResult
 
@@ -173,15 +174,21 @@ def _compact_runtime_evidence(
     planner_summaries = tuple(
         evidence.summary for evidence in runtime_evidence if evidence.kind == "planner_summary"
     )
+    verifier_results = tuple(
+        evidence
+        for evidence in runtime_evidence
+        if evidence.kind == "verifier_summary"
+        and not is_skipped_verification(evidence.summary, evidence.metadata)
+    )
     verifier_failures = tuple(
         evidence.summary
-        for evidence in runtime_evidence
-        if evidence.kind == "verifier_summary" and not bool((evidence.metadata or {}).get("passed"))
+        for evidence in verifier_results
+        if not bool((evidence.metadata or {}).get("passed"))
     )
     verifier_acceptance = tuple(
         evidence.summary
-        for evidence in runtime_evidence
-        if evidence.kind == "verifier_summary" and bool((evidence.metadata or {}).get("passed"))
+        for evidence in verifier_results
+        if bool((evidence.metadata or {}).get("passed"))
     )
     for evidence in runtime_evidence:
         if evidence.kind in {

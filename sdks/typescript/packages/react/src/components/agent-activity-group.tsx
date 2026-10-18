@@ -12,6 +12,7 @@ export interface AgentActivityGroupLabels {
   partial: string;
   ready: string;
   running: string;
+  waiting?: string;
   summary: (count: number) => string;
 }
 
@@ -20,12 +21,13 @@ export interface AgentActivityGroupProps {
   className?: string;
   expanded: boolean;
   running?: boolean | undefined;
+  waiting?: boolean | undefined;
   labels?: Partial<AgentActivityGroupLabels> | undefined;
   onExpandedChange: (expanded: boolean) => void;
   terminalStatus?: AgentRunOutcome | undefined;
 }
 
-const DEFAULT_LABELS: AgentActivityGroupLabels = {
+const DEFAULT_LABELS: Required<AgentActivityGroupLabels> = {
   blocked: "Blocked",
   cancelled: "Cancelled",
   completed: "Completed",
@@ -34,12 +36,14 @@ const DEFAULT_LABELS: AgentActivityGroupLabels = {
   partial: "Partially completed",
   ready: "Ready",
   running: "Running",
+  waiting: "Waiting for input",
   summary: (count) => `Execution process · ${count}`,
 };
 
 export function AgentActivityGroup(props: AgentActivityGroupProps) {
   const labels = { ...DEFAULT_LABELS, ...props.labels };
-  const active = !props.terminalStatus && (props.running ?? props.activities.some((item) => item.status === "running"));
+  const waiting = !props.terminalStatus && props.waiting === true;
+  const active = !waiting && !props.terminalStatus && (props.running ?? props.activities.some((item) => item.status === "running"));
   const failedCount = props.activities.filter((item) => item.status === "failed").length;
   const wasActive = useRef(active);
   useEffect(() => {
@@ -67,7 +71,7 @@ export function AgentActivityGroup(props: AgentActivityGroupProps) {
         <strong className="zebra-agent-activity__summary-label">{labels.summary(props.activities.length)}</strong>
         <span aria-hidden="true" className="zebra-agent-activity__summary-separator">·</span>
         <span aria-live="polite" aria-atomic="true" role="status" className="zebra-agent-activity__summary-status">
-          {active ? labels.running : props.terminalStatus ? labels[props.terminalStatus] : latestStatus(props.activities, labels)}
+          {active ? labels.running : props.terminalStatus ? labels[props.terminalStatus] : waiting ? labels.waiting : latestStatus(props.activities, labels)}
           {failedCount ? ` · ${labels.failedActivities(failedCount)}` : null}
         </span>
         <span aria-hidden="true" className="zebra-agent-activity__summary-chevron">›</span>
@@ -75,7 +79,7 @@ export function AgentActivityGroup(props: AgentActivityGroupProps) {
       <ol>
         {props.activities.map((item) => (
           <li
-            className={`zebra-agent-activity__item zebra-agent-activity__item--${item.status}`}
+            className={`zebra-agent-activity__item zebra-agent-activity__item--${waiting && item.status === "running" ? "waiting" : item.status}`}
             data-activity-kind={item.kind}
             key={item.activityId}
           >
@@ -85,7 +89,7 @@ export function AgentActivityGroup(props: AgentActivityGroupProps) {
               {item.description ? <span>{item.description}</span> : null}
             </span>
             <span className="zebra-agent-activity__status">
-              {durationLabel(item.durationMs)}{item.durationMs ? " · " : ""}{labels[item.status]}
+              {durationLabel(item.durationMs)}{item.durationMs ? " · " : ""}{labels[waiting && item.status === "running" ? "waiting" : item.status]}
             </span>
           </li>
         ))}

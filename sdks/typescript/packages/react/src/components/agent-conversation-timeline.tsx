@@ -129,7 +129,7 @@ function AgentTurnProgress({ children, collapseWork, turnStatus, activityLabels,
     <summary>
       <span aria-hidden="true" className="zebra-agent-activity__summary-icon" />
       <strong className="zebra-agent-activity__summary-label">{activityLabels?.summary?.(count) ?? `Execution process · ${count}`}</strong>
-      <span className="zebra-agent-activity__summary-status">{live ? activityLabels?.running ?? "Running" :
+      <span className="zebra-agent-activity__summary-status">{turnStatus === "waiting" ? activityLabels?.waiting ?? "Waiting for input" : live ? activityLabels?.running ?? "Running" :
         activityLabels?.[toActivityTerminalStatus(turnStatus) ?? "completed"] ?? turnStatus}</span>
       <span aria-hidden="true" className="zebra-agent-activity__summary-chevron">›</span>
     </summary>
@@ -178,6 +178,7 @@ function AgentTurnWork({
       onExpandedChange={setExpanded}
       terminalStatus={terminalStatus}
       running={turnStatus === "running"}
+      waiting={turnStatus === "waiting"}
     />
   );
 }

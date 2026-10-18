@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { act, createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import type { AgentConversationTurn } from "@zebra-agent/ui-contracts";
 import { JSDOM } from "jsdom";
 
-import { AgentChat, AgentUsageAnalytics, type AgentChatProps, type AgentUsageSnapshot } from "../src/index.ts";
+import { AgentChat, AgentConversationTimeline, AgentUsageAnalytics, type AgentChatProps, type AgentUsageSnapshot } from "../src/index.ts";
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
@@ -121,4 +123,35 @@ test("AgentUsageAnalytics renders provider usage without inventing billing limit
   assert.doesNotMatch(container.textContent ?? "", /积分已用|额度已用/);
   await act(async () => root.unmount());
   dom.window.close();
+});
+
+
+test("waiting Turns show waiting without rewriting activity outcomes, then resume", () => {
+  for (const indexed of [false, true]) {
+    const activities = [
+      { activityId: "open", kind: "tool" as const, title: "Awaiting result", status: "running" as const },
+      { activityId: "done", kind: "tool" as const, title: "Write applied", status: "completed" as const },
+      { activityId: "failed", kind: "tool" as const, title: "Failed check", status: "failed" as const },
+    ];
+    const segment = { id: "work", activities };
+    const turn: AgentConversationTurn = {
+      id: "waiting", status: "waiting", workSegments: indexed ? [] : [segment],
+      ...(indexed ? { items: [{ id: "work", kind: "activity", segment }] } : {}),
+    };
+    const render = () => renderToStaticMarkup(createElement(AgentConversationTimeline, {
+      turns: [turn], workMessageIds: [], activityLabels: { waiting: "Waiting for input" },
+    }));
+    const waiting = render();
+    assert.match(waiting, /Waiting for input/);
+    assert.doesNotMatch(waiting, /item--running|activity--active|>Running</);
+    assert.match(waiting, /item--completed/);
+    assert.match(waiting, /item--failed/);
+    assert.equal(activities[0]!.status, "running");
+    turn.status = "running";
+    assert.match(render(), /item--running/);
+    assert.match(render(), />Running</);
+    turn.status = "partial";
+    assert.match(render(), /Partially completed/);
+    assert.doesNotMatch(render(), /Waiting for input/);
+  }
 });

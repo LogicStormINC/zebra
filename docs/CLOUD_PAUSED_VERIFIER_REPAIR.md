@@ -77,3 +77,35 @@ Private receipts under .artifacts/cloud-paused-verifier-01/ in the task worktree
 before/after, acceptance.json, frozen offline check scripts and change/operate
 page screenshots. Trench source commit80f3896. Shared-resource handoff includes
 the new normal image so later diagnostics do not roll this fix back.
+
+
+## CLOUD-SKIPPED-WAITING-02 follow-up, 2026-10-18
+
+Three audited siblings only. A shared is_skipped_verification predicate in the
+existing retry-plan module recognizes metadata.skipped=true and the historical
+hook summary. Retry hints, context compaction and final verifier fallback use
+it. Skipped records become neither accepted nor unresolved tests, even with
+historical passed=true. Independent postcondition receipts and fresh reads
+still prove their own facts; skipped never blocks those independent paths.
+Original Events remain unchanged. Desktop is explicitly excluded.
+
+SDK Turn waiting remains resumable but no longer means executing. Both grouped
+progress and activity summaries show waiting, and open running activity rows
+use waiting presentation without rewriting their input status. Actual completed
+and failed activity outcomes remain intact. On resume, running returns; partial
+and blocked retain existing authoritative presentation. Optional waiting props
+and label preserve existing consumers. Trench only supplies the localized label
+and rebuilt React tarball/integrity; no product control logic changes.
+
+Red-first regressions reproduced context/final-gate/waiting gaps. Core/context
+1782 passed,1 skipped; SDK timeline/surfaces24 passed; installed-SDK Trench47
+passed. SDK build/types, Ruff/ESLint/diff checks pass. Initial SDK test used an
+unsupported old Node and hit existing MockTimers API incompatibility; supported
+bundled Node24 passes without test-fixture repairs. Lock changes are restricted
+to the local React tarball integrity; no dependency versions changed.
+
+Three-module Worker overlay is derived from normal d814124b after exact source
+byte checks and stage-H restored_and_released handoff. Network-disabled image
+passes33 prior verification-default/freshness cases plus shared skip/retry/event,
+context and independent-proof cases. Configuration/no-lease preflight passes;
+Worker-only activation and original two Run page verification follow below.

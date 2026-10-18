@@ -1,6 +1,13 @@
+from collections.abc import Mapping
 from dataclasses import dataclass
 
 from agent_core.ports.context_compiler import RuntimeEvidenceInput
+
+
+def is_skipped_verification(summary: object, metadata: object = None) -> bool:
+    return summary == "verifier hook skipped" or (
+        isinstance(metadata, Mapping) and metadata.get("skipped") is True
+    )
 
 
 @dataclass(frozen=True)
@@ -36,10 +43,7 @@ def build_retry_plan_hint(
             focus.append(evidence.summary)
             continue
         if evidence.kind == "verifier_summary":
-            if (
-                evidence.summary == "verifier hook skipped"
-                or (evidence.metadata or {}).get("skipped") is True
-            ):
+            if is_skipped_verification(evidence.summary, evidence.metadata):
                 continue
             if bool((evidence.metadata or {}).get("passed")):
                 accepted_constraints.append(evidence.summary)
