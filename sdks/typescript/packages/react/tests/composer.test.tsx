@@ -76,6 +76,10 @@ test("AgentComposer keeps host actions controlled and switches run actions safel
   assert.equal(composer.style.getPropertyValue("--zebra-agent-accent"), "#f4b942");
   assert.equal(composer.style.getPropertyValue("--zebra-agent-composer-radius"), "22px");
   assert.equal(composer.style.getPropertyValue("--zebra-agent-input"), "#111827");
+  const suggestions = container.querySelector('[aria-label="Suggestions"]');
+  const input = container.querySelector("textarea");
+  assert.ok(suggestions && input);
+  assert.ok(suggestions.compareDocumentPosition(input) & dom.window.Node.DOCUMENT_POSITION_FOLLOWING);
   assert.match(container.textContent ?? "", /2 queued/);
   assert.match(container.textContent ?? "", /brief\.md/);
   assert.equal(container.querySelector('[aria-label="Context capacity 42%"]') !== null, true);
@@ -128,6 +132,7 @@ test("AgentComposer keeps host actions controlled and switches run actions safel
   assert.equal(calls.length, submittedCalls);
 
   await render({ ...props, busy: true });
+  assert.equal(container.querySelector('[aria-label="Suggestions"]'), null);
   await act(async () => {
     (container.querySelector('[aria-label="Pause"]') as HTMLButtonElement).click();
   });

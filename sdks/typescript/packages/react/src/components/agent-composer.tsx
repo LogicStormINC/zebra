@@ -124,6 +124,22 @@ export function AgentComposer(props: AgentComposerProps) {
 
   return (
     <section className={`zebra-agent-composer ${props.className ?? ""}`.trim()} data-theme={props.theme} style={createAgentThemeStyle(props.themeTokens)}>
+      {!props.busy && props.suggestions.length > 0 ? (
+        <div aria-label="Suggestions" className="zebra-agent-composer__suggestions">
+          {props.suggestions.map((item) => (
+            <button
+              className="zebra-agent-composer__suggestion"
+              disabled={props.disabled}
+              key={item.value}
+              onClick={() => props.onSuggestionPick(item.value)}
+              type="button"
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+      ) : null}
+
       <textarea
         aria-label={props.placeholder || labels.send}
         className="zebra-agent-composer__input"
@@ -157,21 +173,6 @@ export function AgentComposer(props: AgentComposerProps) {
         </div>
       ) : null}
 
-      {!props.busy && props.suggestions.length > 0 ? (
-        <div aria-label="Suggestions" className="zebra-agent-composer__suggestions">
-          {props.suggestions.map((item) => (
-            <button
-              className="zebra-agent-composer__suggestion"
-              disabled={props.disabled}
-              key={item.value}
-              onClick={() => props.onSuggestionPick(item.value)}
-              type="button"
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
-      ) : null}
 
       <footer className="zebra-agent-composer__footer">
         <div className="zebra-agent-composer__leading">

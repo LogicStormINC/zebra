@@ -16205,3 +16205,16 @@ unchanged, original protected partial Turns status/content/request/metadata hash
 unchanged and no model/tool count increase across the update. The performance task
 was notified of c5792e55 so later restoration retains this repair. No model/search
 requests from this task, no Trench/Desktop/API change, no push/remote deployment.
+
+
+## 2026-10-19 TRN-COMPOSER-SUGGESTIONS-01
+
+Shared React AgentComposer now renders recommendation buttons before textarea;
+no new API/style/dependency or callback change. Existing SDK test covers DOM order
+and busy hiding; red against prior source,5focused checks/build/typecheck pass.
+Trench consumes rebuilt matching React tarball, with only local integrity changed;
+14focused/complete makecheck (243API/80cleaning/515frontend) pass. Original browser
+conversation confirms recommendations above text input with matching accessible
+order. Desktop screenshot in Trench .artifacts/trn-composer-suggestions-01/.
+No actual model submission/service restart/push/remote deployment. Task Review,
+focused local delivery; unrelated primary AGENTS.md/Trench dirty work preserved.

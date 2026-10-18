@@ -7270,3 +7270,16 @@ API/Search/MCP unchanged, protected partial Turns all hashes unchanged, update
 window model/tool counts unchanged. Configuration equal apart from mount array
 ordering (exact old-hash reconstruction proven). Coordinated stageK release first;
 new baseline handed back. No model/search/Trench/Desktop changes or push/deploy.
+
+
+## 2026-10-19 TRN-COMPOSER-SUGGESTIONS-01
+
+Shared React AgentComposer now renders recommendation buttons before textarea;
+no new API/style/dependency or callback change. Existing SDK test covers DOM order
+and busy hiding; red against prior source,5focused checks/build/typecheck pass.
+Trench consumes rebuilt matching React tarball, with only local integrity changed;
+14focused/complete makecheck (243API/80cleaning/515frontend) pass. Original browser
+conversation confirms recommendations above text input with matching accessible
+order. Desktop screenshot in Trench .artifacts/trn-composer-suggestions-01/.
+No actual model submission/service restart/push/remote deployment. Task Review,
+focused local delivery; unrelated primary AGENTS.md/Trench dirty work preserved.

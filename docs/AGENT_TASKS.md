@@ -34669,3 +34669,13 @@ pre-dispatch NotImplementedError fallback contract. No new provider capability.
 CLOUD-CLIENT-RECOVERY-04 before-code contract amendment: core/contracts/client_events.py
 adds optional continuation_metadata to the existing strict scheduled-event schema;
 old payloads remain byte-compatible by excluding None. No database migration.
+
+
+### TRN-COMPOSER-SUGGESTIONS-01
+
+- Status: Review 2026-10-19; Ready → In Progress claimed before implementation.
+- Human owner: Luke Ding; executor: Codex; branch codex/trn-composer-suggestions-01; managed worktree composer-suggestions/zebra-agent.
+- Owned paths: sdks/typescript/packages/react/src/components/agent-composer.tsx; sdks/typescript/packages/react/tests/composer.test.tsx; docs/AGENT_TASKS.md; PROGRESS.md; WORKLOG.md; private .artifacts/trn-composer-suggestions-01/.
+- Scope: move existing suggestion DOM before textarea, preserve callbacks/busy/disabled/attachments/model controls. No new API/CSS/dependency/runtime changes. Rebuild current React package and deliver exact tarball to existing Trench local frontend; focused SDK and Host checks plus browser desktop DOM/geometry proof without model submission. Preserve all unrelated dirty work; local changes only, no push/remote deployment.
+
+- Acceptance: existing source block moved before textarea without new props/CSS/dependencies. Regression fails prior order;5focused SDK checks and SDK build/typecheck pass. Trench14focused/full makecheck (243API/80cleaning/515frontend) and exact vendor/lock/install/build byte validation pass; original signed-in browser shows both visual and accessibility order, screenshot retained in Trench. No model request/service restart/push/remote deploy.
