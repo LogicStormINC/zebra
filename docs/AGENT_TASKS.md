@@ -34495,9 +34495,9 @@ WEB-MODEL-LIMIT-01 audit amendment before edit: add packages/agent-core/src/agen
 
 ### CLOUD-CLOSE-RECOVERY-02
 
-- Status: Review 2026-10-18; claimed Ready before implementation; validation/local activation passed.
+- Status: Done 2026-10-18; claimed Ready before implementation; validated, locally activated and integrated into cloud-agent-trench.
 - Human owner Luke Ding; executor Codex; branch codex/cloud-close-recovery-02; worktree cloud-close-recovery-02/zebra-agent; target cloud-agent-trench.
 - Owned paths: apps/worker/src/zebra_agent_worker/{execution,execution_completion,execution_finalization,completion_recovery,worker_projection,loop}.py; packages/agent-storage/src/agent_storage/postgres/worker_replay_reader.py; tests/worker/test_completion_recovery.py; tests/worker/test_worker_cleanup.py (only related assertions if needed); docs/CLOUD_TURN_CLOSE.md; docs/AGENT_TASKS.md; PROGRESS.md; WORKLOG.md; private .artifacts/cloud-close-recovery-02/.
 - Scope: bounded canonical lifecycle recovery before execution inputs/model/runtime; heal committed-complete answer without Turn close and matching Turn close without Session terminal. Preserve incomplete delivery, Run/Attempt/Turn identity, 1MiB/2048 bounds, fresh lease/control/cancel/CAS. Cleanup/derived failure cannot invert proven complete answer. No model/search requests, Trench/global proxy or search process changes. Targeted no-model checks and exact local Worker update only; local integration, no push/remote deploy.
 
-- Acceptance:82unique focused no-model cases/Ruff/seven-source mypy/offline exact-image pass. Worker healthy/exact source/config; API/Search/MCP/control preserved and model/tool counters unchanged. Both crash windows/partial safety/newer Turn race/lost lease/SYSTEM cancellation/cleanup truth covered. Local integration cloud-agent-trench pending commit; no push/remote deploy.
+- Acceptance:82unique focused no-model cases/Ruff/seven-source mypy/offline exact-image pass. Worker healthy/exact source/config; API/Search/MCP/control preserved and model/tool counters unchanged. Both crash windows/partial safety/newer Turn race/lost lease/SYSTEM cancellation/cleanup truth covered. Local integration cloud-agent-trench through9c94f19b verified; no push/remote deploy.
