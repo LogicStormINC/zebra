@@ -16218,3 +16218,8 @@ conversation confirms recommendations above text input with matching accessible
 order. Desktop screenshot in Trench .artifacts/trn-composer-suggestions-01/.
 No actual model submission/service restart/push/remote deployment. Task Review,
 focused local delivery; unrelated primary AGENTS.md/Trench dirty work preserved.
+
+Delivery boundary: the optional all-package SDK-source comparison found an existing
+ui-contracts declaration mismatch. That unchanged package was not repacked. All
+five vendor/lock/install comparisons pass; all7changed React payload files match
+the fresh SDK build. This unrelated source/package reconciliation is not claimed.
