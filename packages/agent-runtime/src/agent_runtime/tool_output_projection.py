@@ -89,4 +89,3 @@ def project_tool_output(
     return project_tool_result_evidence(
         result, output=projected.model_output, metadata=metadata
     )
-
