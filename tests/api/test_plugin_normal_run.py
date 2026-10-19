@@ -122,3 +122,45 @@ def test_direct_mcp_selectability_reuses_fresh_cached_catalog_without_discovery(
         assert off["selectable"] is False
         assert not {"catalog_digest", "credential_ref", "tools", "session_id"} & ready.keys()
     asyncio.run(check())
+
+
+@pytest.mark.parametrize("legacy", [False, True])
+def test_skill_inventory_marks_rebound_legacy_and_orphan_package_origins_once_per_page(legacy):
+    import json
+
+    from agent_core.ports.extensions import SkillInstallationPage
+    from agent_security.extension_authority import extension_scope_from_grant
+    from fastapi import Request
+    from zebra_agent_api.extension_reads import extension_read_response
+
+    from tests.agent_security.test_extension_authority import _verified
+    from tests.agent_storage.test_postgres_plugin_installations import _record
+
+    async def check():
+        verified = _verified(scopes=["extensions.read"])
+        scope = extension_scope_from_grant(verified, permission="extensions.read")
+        backend, original = skill_plugin(legacy=legacy, enabled=False)
+        skill = backend.installation.model_copy(update={"scope": scope})
+        original = original.model_copy(update={"scope": scope, "bindings": (
+            original.bindings[0].model_copy(update={"installation": skill}),)})
+        # Current bindings no longer include the old Skill; only immutable r1 does.
+        values = _record().model_dump()
+        values["scope"] = scope
+        values["revision"] = 3
+        values["bindings"][0]["connection"]["scope"] = scope
+        rebound = type(original).model_validate(values)
+        store, plugins = AsyncMock(), AsyncMock()
+        store.list_skills.return_value = SkillInstallationPage(items=(skill,))
+        plugins.list.return_value = PluginInstallationPage(items=(rebound,) if legacy else ())
+        plugins.get_creation.return_value = original
+        request = Request({"type": "http", "method": "GET",
+                           "path": "/v1/extensions/skill-installations",
+                           "headers": [], "query_string": b""})
+        request.state.verified_host_grant = verified
+        response = await extension_read_response(request, store=store, deployment="cloud",
+                                                  plugin_installations=plugins)
+        assert response.status_code == 200
+        assert json.loads(response.body)["items"][0]["managed"] is True
+        assert plugins.list.await_count == int(legacy)
+        assert plugins.get_creation.await_count == int(legacy)
+    asyncio.run(check())

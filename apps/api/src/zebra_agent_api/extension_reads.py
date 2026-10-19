@@ -3,6 +3,7 @@
 import asyncio
 import logging
 
+from agent_core.application.plugin_component_ownership import managed_skill_ids
 from agent_core.domain.extensions import McpConnection, OpaqueExtensionId, SkillInstallation
 from agent_core.ports.extensions import (
     ExtensionNotFoundError,
@@ -10,6 +11,7 @@ from agent_core.ports.extensions import (
     ExtensionStore,
 )
 from agent_core.ports.mcp_catalog import McpCatalogStore
+from agent_core.ports.plugin_installations import PluginInstallationStore
 from agent_core.ports.skill_publications import SkillPublicationNotFoundError
 from agent_security.extension_authority import extension_scope_from_grant
 from agent_security.host_grant import HostGrantSecurityError, VerifiedHostGrant
@@ -60,6 +62,7 @@ def _public_record(record: SkillInstallation | McpConnection) -> dict[str, objec
             "installation_id": record.installation_id,
             "revision": record.revision,
             "enabled": record.enabled,
+            "managed": record.plugin_origin is not None,
             "version": {
                 "skill_id": record.version.skill_id,
                 "version_id": record.version.version_id,
@@ -85,6 +88,7 @@ async def extension_read_response(
     manage_enabled: bool = False,
     publications: SkillPublicationService | None = None,
     mcp_catalogs: McpCatalogStore | None = None,
+    plugin_installations: PluginInstallationStore | None = None,
 ) -> JSONResponse | None:
     if not is_extension_path(request.url.path):
         return None
@@ -152,7 +156,14 @@ async def extension_read_response(
             )
             if record.scope != scope:
                 return extension_error(404)
-            content = await _described_record(record, publications, mcp_catalogs)
+            managed = (
+                await managed_skill_ids(plugin_installations, scope, (record,))
+                if isinstance(record, SkillInstallation) else frozenset()
+            )
+            content = await _described_record(
+                record, publications, mcp_catalogs,
+                managed=isinstance(record, SkillInstallation) and record.installation_id in managed,
+            )
         else:
             records = (
                 await store.list_skills(scope=scope, page=page)
@@ -161,11 +172,19 @@ async def extension_read_response(
             )
             if any(record.scope != scope for record in records.items):
                 return extension_error(404)
+            managed = await managed_skill_ids(
+                plugin_installations, scope,
+                tuple(item for item in records.items if isinstance(item, SkillInstallation)),
+            )
             semaphore = asyncio.Semaphore(8)
 
             async def describe(record: SkillInstallation | McpConnection) -> dict[str, object]:
                 async with semaphore:
-                    return await _described_record(record, publications, mcp_catalogs)
+                    return await _described_record(
+                        record, publications, mcp_catalogs,
+                        managed=isinstance(record, SkillInstallation)
+                        and record.installation_id in managed,
+                    )
 
             content = {
                 "items": await asyncio.gather(*(describe(record) for record in records.items)),
@@ -187,6 +206,7 @@ async def _described_record(
     record: SkillInstallation | McpConnection,
     publications: SkillPublicationService | None,
     mcp_catalogs: McpCatalogStore | None = None,
+    *, managed: bool | None = None,
 ) -> dict[str, object]:
     content = _public_record(record)
     if isinstance(record, McpConnection):
@@ -197,6 +217,8 @@ async def _described_record(
         count = len(entry.permissions.tools) if entry is not None else 0
         content.update(selectable=0 < count <= 32, tool_count=count)
         return content
+    if managed is not None:
+        content["managed"] = managed
     if publications is None:
         return content
     try:
