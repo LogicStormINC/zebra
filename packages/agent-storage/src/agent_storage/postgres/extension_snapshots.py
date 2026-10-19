@@ -241,7 +241,7 @@ def resolve_extension_task_ceiling_in_transaction(
     row = connection.execute(
         """
         SELECT segment.task_id, binding.binding_digest, binding.snapshot_json,
-               workspace.skill_components
+               workspace.skill_components, workspace.tool_profile, workspace.network_profile
         FROM execution_segments AS segment
         JOIN task_binding_snapshots AS binding
           ON binding.deployment_namespace = segment.deployment_namespace
@@ -270,4 +270,6 @@ def resolve_extension_task_ceiling_in_transaction(
         task_id=str(row["task_id"]),
         binding=binding,
         skill_components=tuple(row["skill_components"] or ()),
+        tool_profile=row["tool_profile"],
+        network_profile=row["network_profile"],
     )

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from agent_core.application.plugin_resolution import PluginResolver
 from agent_core.ports.extensions import ExtensionStore
 from agent_runtime.mcp_catalog_refresh import McpCatalogRefresh
 from agent_security.mcp_credential_management import McpCredentialManagement
@@ -38,8 +39,17 @@ def resolve_publication_cloud(
     service: SkillPublicationService | None,
     credentials: McpCredentialManagement | None = None,
     refresh: McpCatalogRefresh | None = None,
+    plugin_service: object | None = None,
 ) -> CloudCompositionSettings | None:
     """Resolve once before control-plane creation; explicit services remain caller-owned."""
+    if settings.plugins.enabled and settings.deployment != "local" and plugin_service is None:
+        if (
+            settings.deployment != "cloud"
+            or settings.storage_authority != "postgresql"
+            or not settings.cloud_extensions_read_enabled
+        ):
+            raise ValueError("cloud plugins require PostgreSQL extension composition")
+        cloud = cloud if cloud is not None else cloud_composition_from_environment()
     if settings.mcp_credentials.refresh_enabled and refresh is None:
         if not settings.mcp_credentials.enabled or credentials is not None:
             raise ValueError("automatic MCP refresh requires automatically composed credentials")
@@ -176,6 +186,7 @@ def compose_extension_turn_admission(
     extension_store: ExtensionStore | None,
     *,
     cloud_composition: CloudCompositionSettings | None = None,
+    plugins: PluginResolver | None = None,
 ) -> CloudExtensionTurnAdmission | None:
     """Keep per-Turn binding independently opt-in and PostgreSQL-only."""
     if not settings.cloud_extension_turn_admission_enabled:
@@ -199,6 +210,7 @@ def compose_extension_turn_admission(
         extension_store,
         snapshots,
         snapshots,
+        plugins=plugins,
         mcp_catalogs=(
             PostgresMcpCatalogStore(dsn, deployment_namespace=stores.deployment_namespace)
             if settings.mcp_credentials.worker_enabled
@@ -213,6 +225,7 @@ def compose_http_turn_admission(
     extension_store: ExtensionStore | None,
     *,
     cloud_composition: CloudCompositionSettings | None = None,
+    plugins: PluginResolver | None = None,
 ) -> CloudExtensionTurnAdmission | None:
     """Preserve lazy local/API construction while the feature stays disabled."""
     if (
@@ -231,4 +244,5 @@ def compose_http_turn_admission(
         api.stores,
         extension_store,
         cloud_composition=cloud_composition,
+        plugins=plugins,
     )

@@ -28,6 +28,8 @@ from agent_storage.postgres.extensions import (
     ExtensionSnapshotAdmissionConflictError,
     validate_skill_snapshot_in_transaction,
 )
+from agent_storage.postgres.plugin_admission import validate_plugin_snapshot_in_transaction
+from agent_storage.postgres.plugin_installations import PostgresPluginInstallationStore
 
 
 class PostgresEventStore(EventStorePort):
@@ -109,6 +111,26 @@ class PostgresEventStore(EventStorePort):
                     expected_digest=snapshot.digest,
                 )
                 if existing_snapshot is None:
+                    prior = connection.execute(
+                        "SELECT 1 FROM session_events "
+                        "WHERE deployment_namespace=%s AND session_id=%s "
+                        "AND event_type='session_command_accepted' "
+                        "AND payload->>'extension_turn_id'=%s LIMIT 1",
+                        (self._database.deployment_namespace, event.session_id, snapshot.turn_id),
+                    ).fetchone()
+                    if prior is not None:
+                        raise ExtensionSnapshotAdmissionConflictError(
+                            "accepted Turn snapshot is missing"
+                        )
+                    validate_plugin_snapshot_in_transaction(
+                        connection,
+                        PostgresPluginInstallationStore(
+                            self._database._dsn,
+                            deployment_namespace=self._database.deployment_namespace,
+                            task_io_connections=self._database._task_io,
+                        ),
+                        snapshot,
+                    )
                     validate_skill_snapshot_in_transaction(
                         connection,
                         self._database.deployment_namespace,

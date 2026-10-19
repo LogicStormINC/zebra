@@ -2,9 +2,17 @@
 
 from __future__ import annotations
 
-from typing import Self
+from typing import Any, Self, cast
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    SerializerFunctionWrapHandler,
+    field_validator,
+    model_serializer,
+    model_validator,
+)
 
 from agent_core.domain.execution_authority_support import digest
 from agent_core.domain.extensions import (
@@ -15,7 +23,14 @@ from agent_core.domain.extensions import (
     OpaqueExtensionId,
     SkillInstallation,
 )
+from agent_core.domain.networking import NetworkProfileName
+from agent_core.domain.plugin_snapshots import (
+    ExtensionSelection,
+    PluginRevisionSelection,
+    PluginSnapshot,
+)
 from agent_core.domain.task_bindings import TaskBindingSnapshot
+from agent_core.domain.tool_profiles import ToolProfile
 
 
 class ExtensionPermissions(BaseModel):
@@ -78,6 +93,29 @@ class ExtensionSnapshot(BaseModel):
     skills: tuple[SkillInstallation, ...] = Field(default=(), max_length=32)
     mcp: tuple[McpSnapshotEntry, ...] = Field(default=(), max_length=32)
 
+    plugins: tuple[PluginSnapshot, ...] = Field(default=(), max_length=32)
+    direct_skills: tuple[OpaqueExtensionId, ...] = Field(default=(), max_length=32)
+    direct_mcp: tuple[OpaqueExtensionId, ...] = Field(default=(), max_length=32)
+
+    @model_serializer(mode="wrap")
+    def omit_empty_provenance(self, handler: SerializerFunctionWrapHandler) -> dict[str, Any]:
+        value = cast(dict[str, Any], handler(self))
+        for key in ("plugins", "direct_skills", "direct_mcp"):
+            if not value.get(key):
+                value.pop(key, None)
+        return value
+
+    @property
+    def selection(self) -> ExtensionSelection:
+        return ExtensionSelection(
+            plugins=tuple(
+                PluginRevisionSelection(installation_id=p.installation_id, revision=p.revision)
+                for p in self.plugins
+            ),
+            skills=self.direct_skills,
+            mcp=self.direct_mcp,
+        )
+
     @field_validator("skills")
     @classmethod
     def canonical_skills(
@@ -106,6 +144,22 @@ class ExtensionSnapshot(BaseModel):
         scopes = [item.scope for item in self.skills] + [item.connection.scope for item in self.mcp]
         if any(scope != self.scope for scope in scopes):
             raise ValueError("all snapshot entries must match the exact extension scope")
+        if self.plugins or self.direct_skills or self.direct_mcp:
+            if len({p.installation_id for p in self.plugins}) != len(self.plugins):
+                raise ValueError("duplicate plugin source")
+            actual = {("skill-bundle", s.installation_id) for s in self.skills} | {
+                ("mcp-http", m.connection.connection_id) for m in self.mcp
+            }
+            direct = [("skill-bundle", s) for s in self.direct_skills] + [
+                ("mcp-http", m) for m in self.direct_mcp
+            ]
+            if len(direct) != len(set(direct)) or not set(direct) <= actual:
+                raise ValueError("invalid direct component source")
+            covered = set(direct) | {
+                (c.kind, c.target_id) for p in self.plugins for c in p.components
+            }
+            if covered != actual:
+                raise ValueError("component sources must exactly cover flattened components")
         return self
 
     @property
@@ -119,6 +173,12 @@ class ExtensionSnapshot(BaseModel):
             ceiling.session_id,
             ceiling.turn_id,
         ):
+            return False
+        if any(plugin not in ceiling.plugins for plugin in self.plugins):
+            return False
+        if not set(self.direct_skills) <= set(ceiling.direct_skills) or not set(
+            self.direct_mcp
+        ) <= set(ceiling.direct_mcp):
             return False
         if any(skill not in ceiling.skills for skill in self.skills):
             return False
@@ -140,6 +200,8 @@ class ExtensionTaskCeiling(BaseModel):
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
+    tool_profile: ToolProfile | None = None
+    network_profile: NetworkProfileName | None = None
     task_id: OpaqueExtensionId
     binding: TaskBindingSnapshot
     skill_components: tuple[OpaqueExtensionId, ...] = Field(default=(), max_length=32)

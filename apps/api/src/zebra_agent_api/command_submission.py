@@ -85,6 +85,12 @@ def submit_session_command(
         SessionCommandKind.RUN,
         SessionCommandKind.RESUME,
     }
+    if (
+        needs_extensions
+        and extension_admission is None
+        and "extension_selection" in command.payload
+    ):
+        return bad_request("explicit extension selection requires enabled Turn admission")
     if needs_extensions and extension_admission is not None:
         if not isinstance(verified_host_grant, VerifiedHostGrant):
             return ApiResponse(
@@ -324,7 +330,9 @@ def _expected_revision(value: object) -> int:
 
 
 def _stream_admission(
-    stores: ControlPlaneStores, command: SessionCommand, enabled: bool,
+    stores: ControlPlaneStores,
+    command: SessionCommand,
+    enabled: bool,
     capacity_policy: TransientCapacityPolicy | None = None,
 ) -> RunStreamAdmission | None:
     raw = command.payload.get("stream_capabilities")
@@ -347,7 +355,10 @@ def _stream_admission(
     if mode is StreamMode.LEGACY:
         return None  # Accepted absence pins legacy and keeps old Workers byte-compatible.
     return RunStreamAdmission(
-        task_id=task_id, run_id=run_id, mode=mode, capabilities=caps,
+        task_id=task_id,
+        run_id=run_id,
+        mode=mode,
+        capabilities=caps,
         capacity_policy=capacity_policy,
         capacity_digest=capacity_policy.digest if capacity_policy is not None else None,
     )

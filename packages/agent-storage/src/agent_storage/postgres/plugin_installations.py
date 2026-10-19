@@ -49,6 +49,43 @@ class PostgresPluginInstallationStore(PostgresDatabase):
         row = await asyncio.to_thread(self._extensions()._get, scope, "plugin", installation_id)
         return _decode_record(PluginInstallation, row, scope)
 
+    async def get_current_batch(
+        self,
+        *,
+        scope: ExtensionScope,
+        installation_ids: tuple[str, ...],
+    ) -> tuple[PluginInstallation, ...]:
+        if not installation_ids:
+            return ()
+        if len(installation_ids) > 32 or len(set(installation_ids)) != len(installation_ids):
+            raise ValueError("plugin lookup exceeds bounded unique identities")
+
+        def load() -> tuple[PluginInstallation, ...]:
+            from agent_storage.postgres.extensions import _SCOPE
+
+            with self.connect() as connection:
+                rows = connection.execute(
+                    _CURRENT + _SCOPE + " AND object_id = ANY(%s) ORDER BY object_id "
+                    "FOR SHARE OF extension_configurations",
+                    (
+                        *_scope_key(self.deployment_namespace, scope, "plugin"),
+                        list(installation_ids),
+                    ),
+                ).fetchall()
+                ready: list[PluginInstallation] = []
+                for row in rows:
+                    record = _decode_record(PluginInstallation, row, scope)
+                    if not record.enabled:
+                        continue
+                    try:
+                        self._validate_enabled(connection, scope, record, record.revision)
+                    except ExtensionRevisionConflictError:
+                        continue
+                    ready.append(record)
+            return tuple(ready)
+
+        return await asyncio.to_thread(load)
+
     async def get_creation(
         self,
         *,

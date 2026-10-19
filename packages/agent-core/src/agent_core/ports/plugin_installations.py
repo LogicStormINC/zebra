@@ -19,6 +19,15 @@ class PluginInstallationPage(BaseModel):
 class PluginInstallationStore(Protocol):
     async def get(self, *, scope: ExtensionScope, installation_id: str) -> PluginInstallation: ...
 
+    async def get_current_batch(
+        self,
+        *,
+        scope: ExtensionScope,
+        installation_ids: tuple[str, ...],
+    ) -> tuple[PluginInstallation, ...]:
+        """One bounded fresh lookup; absent, disabled or unready bindings are omitted."""
+        ...
+
     async def get_creation(
         self,
         *,

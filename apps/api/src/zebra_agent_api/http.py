@@ -103,6 +103,7 @@ def create_http_app(
         skill_publication_service,
         mcp_credential_management,
         mcp_catalog_refresh,
+        plugin_installation_service,
     )
     api = create_app(
         active_database_path,
@@ -157,8 +158,21 @@ def create_http_app(
             cloud_composition=cloud_composition,
             task_io_connections=task_io_connections,
         )
+    from zebra_agent_api.plugin_composition import compose_plugins
+
+    plugin_installation_service, plugin_resolver = compose_plugins(
+        active_settings,
+        cloud_composition,
+        active_extension_store,
+        plugin_installation_service,
+        task_io_connections=task_io_connections,
+    )
     turn_admission = compose_http_turn_admission(
-        active_settings, api, active_extension_store, cloud_composition=cloud_composition
+        active_settings,
+        api,
+        active_extension_store,
+        cloud_composition=cloud_composition,
+        plugins=plugin_resolver,
     )
     adapter = RouteAdapter(api, turn_admission)
     exact_host_origins = _resolve_host_origins(
