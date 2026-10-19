@@ -1,21 +1,25 @@
 """Optional native configuration tools; no synthetic grants or mutable tool selection."""
 
+from agent_core.domain.extensions import ExtensionScope
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.leases import LeaseFence
 from agent_runtime.github_skill_import import GitHubSkillImportError, import_github_skill
 from agent_runtime.mcp_catalog_refresh import McpCatalogRefresh
 from agent_security.extension_worker_authority import ExtensionWorkerAuthority
-from agent_tools.extension_management import ExtensionManagementTools
+from agent_tools.extension_management import ExtensionManagementTools, Permission
+from agent_tools.skills_catalog import SkillCatalog
 
 from zebra_agent_worker.extension_recovery import RecoveredTurnExtension
 from zebra_agent_worker.worker_mcp_catalog import WorkerMcpSource
+from zebra_agent_worker.worker_plugins import WorkerPluginGuard
 from zebra_agent_worker.worker_skill_catalog import WorkerSkillCatalogSource
 
 
 def prepare_extension_management(
     extension: RecoveredTurnExtension | None, *, mcp: WorkerMcpSource | None,
     skills: WorkerSkillCatalogSource | None, session_id: SessionId, fence: LeaseFence,
-    allow_network: bool = False,
+    allow_network: bool = False, skill_catalog: SkillCatalog | None = None,
+    plugin_guard: WorkerPluginGuard | None = None,
 ) -> ExtensionManagementTools | None:
     if extension is None or mcp is None or skills is None:
         return None
@@ -27,6 +31,12 @@ def prepare_extension_management(
         tasks=mcp.release.tasks, leases=mcp.leases,
         fresh_authority=lambda: mcp.execution_authority(session_id, extension.snapshot.turn_id),
     )
+
+    def authorize(permission: Permission) -> ExtensionScope:
+        scope = authority(permission)
+        if plugin_guard is not None:
+            plugin_guard.validate()
+        return scope
 
     async def refresh(connection_id: str, revision: int) -> int:
         if mcp.refresh is None:
@@ -63,6 +73,7 @@ def prepare_extension_management(
                 "commit_sha": imported.commit_sha, "path": imported.skill_path}
 
     return ExtensionManagementTools(
-        skills.store, authority, refresh if mcp.refresh and allow_network else None,
+        skills.store, authorize, refresh if mcp.refresh and allow_network else None,
         import_skill if skills.publications and allow_network else None,
+        mcp_catalogs=mcp.catalogs, snapshot=extension.snapshot, skill_catalog=skill_catalog,
     )

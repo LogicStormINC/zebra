@@ -16564,3 +16564,34 @@ all other containers IDs/started/restarts unchanged and healthy. Original15heads
 2partialTurn hashes exact, SearchPID/cooldownexact,2testheads/1snapshotdelta,0leases/pending.
 Ran capture before/after/final, native savedcatalog, analyze.py and cold-refresh event
 identity assertions; no production source changes or remote push/deployment.
+
+
+## 2026-10-20 - CLOUD-EXTENSION-INVENTORY-01
+
+Claimed Ready->InProgress before implementation in codex/cloud-extension-inventory-01,
+reused clean plugin worktree atba877a6e. Traced all ExtensionManagementTools callers:
+only native Worker composition plus deterministic tests. Root causes: hardcoded
+MCPfalse/refresh advice, no frozen/live catalog context for installed Skill rows.
+Moved existing MCP selector into core application, API keeps compatible re-export;
+added optional pinned-digest read and integrity comparison. Management reads use
+that checker and one shared actual Skill catalog outside the async management
+loop, exact installation/revision/version matching, no readname for unmounted/
+disabled/changed/unreadable Skills. Added existing Plugin guard to management's
+fresh authority; no new permissions or network. Writes gain no post-save catalog
+queries and unknown state is not false verification.
+TDD reproduced missing composition and wrong digest acceptance;16new inventory
+cases plus3Worker wiring/revocation regressions. Concentrated158pass/1existingskip,
+Ruff clean, fullMypy1318 and filegate3218/0. No unrelated test fixes or dependencies.
+Built5source-file offline layer from exact running Worker; verified hashes. Idle
+pre-update0leases/pending; Worker-only compose, image677d5f610a1b,healthy9e809d7c44b6.
+Post-check encountered optional missing DockerInit on Search; fixed readonly check
+and reverified without rerunning activation. All originalenv/commands/security/
+resources/network/mounts/logging exact, other4container IDs/starts/restarts exact.
+UpdatedWorker operator-only metadata inspection: existingMCPverifiedtrue/tool1/
+noadvice, oldSkillnotselected/testSkilldisabled, bothreadnameNone. No liveRun/lease
+created; not claimed as full executedRun authority proof. Exact before/after
+capture17heads/126snapshots/model-toolcounters/2partialhashes/SearchPID/cooldown,
+0leases/pending; startupERROR0, unrelateddirtyhashes exact. No model/search/MCPwire,
+API/Search/TLS restart, Trench logic, remote push/deployment. Evidence primary
+.artifacts/cloud-extension-inventory-01/. Activation helper consumed; readonly
+verify_services.py/capture.py retained. Locally integrated source/docs only.

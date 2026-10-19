@@ -11,8 +11,10 @@ from agent_core.application.extension_configuration import (
     update_mcp_configuration,
     update_skill_version,
 )
+from agent_core.application.mcp_catalog_selection import mcp_selection_entry
 from agent_core.application.mcp_connections import create_mcp_connection
 from agent_core.application.skill_installations import create_skill_installation
+from agent_core.domain.extension_snapshots import ExtensionSnapshot
 from agent_core.domain.extensions import ExtensionScope, McpConnection, SkillInstallation
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolIdempotency, ToolResult, ToolRisk
 from agent_core.ports.extensions import (
@@ -21,9 +23,11 @@ from agent_core.ports.extensions import (
     ExtensionRevisionConflictError,
     ExtensionStore,
 )
+from agent_core.ports.mcp_catalog import McpCatalogStore
 from pydantic import ValidationError
 
 from agent_tools.contracts import ToolContract
+from agent_tools.skills_catalog import MAX_SKILLS, SkillCatalog
 
 Permission = Literal["extensions.read", "extensions.manage"]
 Refresh = Callable[[str, int], Awaitable[int]]
@@ -103,6 +107,9 @@ class ExtensionManagementTools:
     authorize: Callable[[Permission], ExtensionScope]
     refresh: Refresh | None = None
     import_skill: ImportSkill | None = None
+    mcp_catalogs: McpCatalogStore | None = None
+    snapshot: ExtensionSnapshot | None = None
+    skill_catalog: SkillCatalog | None = None
 
     def execute(self, call: ToolCall) -> ToolResult:
         contracts = {contract.name: contract for contract in management_contracts()}
@@ -115,7 +122,15 @@ class ExtensionManagementTools:
             scope = self.authorize(
                 "extensions.read" if call.name in READ_NAMES else "extensions.manage"
             )
-            output = asyncio.run(self._execute(call, scope))
+            if self.snapshot is not None and self.snapshot.scope != scope:
+                raise ExtensionNotFoundError()
+            # Reuse the real synchronous catalog outside the management event loop.
+            skill_names = (
+                {item.skill_id: item.name for item in self.skill_catalog.list(limit=MAX_SKILLS)[0]}
+                if call.name == "extensions.list" and args.get("kind") == "skill"
+                and self.skill_catalog is not None else {}
+            )
+            output = asyncio.run(self._execute(call, scope, skill_names))
             return ToolResult(
                 tool_call_id=call.tool_call_id, status=ToolCallStatus.EXECUTED,
                 output=json.dumps(output, ensure_ascii=False),
@@ -131,7 +146,9 @@ class ExtensionManagementTools:
             # Never send backend exception strings (DSNs/headers/secret inputs) to the model.
             return self._failure(call, "management_unavailable_or_not_authorized")
 
-    async def _execute(self, call: ToolCall, scope: ExtensionScope) -> dict[str, object]:
+    async def _execute(
+        self, call: ToolCall, scope: ExtensionScope, skill_names: dict[str | None, str],
+    ) -> dict[str, object]:
         args = call.arguments
 
         def before_save() -> None:
@@ -147,7 +164,7 @@ class ExtensionManagementTools:
                       else await self.store.list_mcp(scope=scope, page=page))
             if any(item.scope != scope for item in result.items):
                 raise ExtensionNotFoundError()
-            return {"items": [_record(item) for item in result.items],
+            return {"items": [await self._record(item, skill_names) for item in result.items],
                     "next_cursor": result.next_cursor}
         key = "agent:" + str(call.tool_call_id)
         record: SkillInstallation | McpConnection
@@ -208,6 +225,47 @@ class ExtensionManagementTools:
         return {"configuration": _record(record), "status": "saved",
                 "effective": "future_eligible_turn", "current_turn_changed": False}
 
+    async def _record(
+        self, value: SkillInstallation | McpConnection, skill_names: dict[str | None, str],
+    ) -> dict[str, object]:
+        content = _record(value)
+        if isinstance(value, SkillInstallation):
+            pinned = next((s for s in self.snapshot.skills
+                           if s.installation_id == value.installation_id), None
+                          ) if self.snapshot else None
+            name = (skill_names.get(value.version.skill_id)
+                    if pinned == value and value.enabled else None)
+            reason = ("disabled" if not value.enabled else "not_selected_for_turn" if pinned is None
+                      else "installation_changed" if pinned != value
+                      else "turn_catalog_unavailable")
+            return content | {"installed": True, "available_this_turn": name is not None,
+                              "read_name": name, "unavailable_reason": None if name else reason}
+        pinned_mcp = next((m for m in self.snapshot.mcp
+                           if m.connection.connection_id == value.connection_id), None
+                          ) if self.snapshot else None
+        entry = await mcp_selection_entry(
+            self.mcp_catalogs, value.scope, value,
+            expected_digest=(pinned_mcp.catalog_digest if pinned_mcp
+                             and pinned_mcp.connection == value else None),
+        ) if self.mcp_catalogs is not None else None
+        available = bool(entry and pinned_mcp and entry.connection == pinned_mcp.connection
+                         and entry.catalog_digest == pinned_mcp.catalog_digest
+                         and pinned_mcp.permissions.tools
+                         and set(pinned_mcp.permissions.tools) <= set(entry.permissions.tools))
+        pending = value.auth_state.value not in ("not_required", "ready")
+        return content | {
+            "catalog_verified": entry is not None if self.mcp_catalogs is not None else None,
+            "tool_count": (len(entry.permissions.tools) if entry else
+                           0 if self.mcp_catalogs else None),
+            "available_this_turn": available,
+            "next_step": ("Complete authentication in settings; do not paste secrets into chat."
+                          if pending else "Enable the connection for future eligible Turns."
+                          if not value.enabled else "Catalog status unavailable."
+                          if self.mcp_catalogs is None
+                          else "Refresh the missing catalog for a future Turn."
+                          if entry is None else None),
+        }
+
     @staticmethod
     def _failure(call: ToolCall, reason: str) -> ToolResult:
         return ToolResult(tool_call_id=call.tool_call_id, status=ToolCallStatus.FAILED,
@@ -226,10 +284,7 @@ def _record(value: SkillInstallation | McpConnection) -> dict[str, object]:
         return {"installation_id": value.installation_id, "revision": value.revision,
                 "enabled": value.enabled, "skill_id": value.version.skill_id,
                 "version_id": value.version.version_id}
-    pending = value.auth_state.value not in ("not_required", "ready")
     return {"connection_id": value.connection_id, "revision": value.revision,
             "enabled": value.enabled, "transport": value.transport,
             "auth_mode": value.auth_mode.value, "auth_state": value.auth_state.value,
-            "next_step": ("Complete authentication in extension settings; do not paste secrets "
-                          "into chat." if pending else "Enable then refresh the tool catalog."),
-            "catalog_verified": False}
+            "catalog_verified": None}

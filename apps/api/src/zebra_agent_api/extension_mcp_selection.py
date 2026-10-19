@@ -1,39 +1,10 @@
 """Select current-user enabled catalogs without remote discovery or credentials."""
 
-from agent_core.domain.extension_snapshots import ExtensionPermissions, McpSnapshotEntry
-from agent_core.domain.extensions import ExtensionScope, McpConnection
-from agent_core.ports.extensions import ExtensionNotFoundError, ExtensionPageRequest, ExtensionStore
+from agent_core.application.mcp_catalog_selection import mcp_selection_entry as mcp_selection_entry
+from agent_core.domain.extension_snapshots import McpSnapshotEntry
+from agent_core.domain.extensions import ExtensionScope
+from agent_core.ports.extensions import ExtensionPageRequest, ExtensionStore
 from agent_core.ports.mcp_catalog import McpCatalogIntegrityError, McpCatalogStore
-
-
-async def mcp_selection_entry(
-    catalogs: McpCatalogStore,
-    scope: ExtensionScope,
-    connection: McpConnection,
-) -> McpSnapshotEntry | None:
-    if connection.scope != scope:
-        raise McpCatalogIntegrityError("MCP selection returned invalid connection scope")
-    if (
-        not connection.enabled
-        or connection.auth_mode.value not in ("none", "bearer")
-        or connection.auth_state.value not in ("not_required", "ready")
-    ):
-        return None
-    try:
-        catalog = await catalogs.latest(
-            scope=scope, connection_id=connection.connection_id, config_revision=connection.revision
-        )
-    except ExtensionNotFoundError:
-        return None
-    if catalog.connection != connection:
-        raise McpCatalogIntegrityError("MCP selection catalog configuration mismatch")
-    if not catalog.tools:
-        return None
-    return McpSnapshotEntry(
-        connection=connection,
-        catalog_digest=catalog.digest,
-        permissions=ExtensionPermissions(tools=tuple(tool.name for tool in catalog.tools)),
-    )
 
 
 async def select_enabled_mcp(

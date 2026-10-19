@@ -35135,3 +35135,35 @@ old payloads remain byte-compatible by excluding None. No database migration.
   New test records disabled, API temporary allowlist restored, other runtime unchanged;
   original15heads/2partialhashes/SearchPID/cooldown exact,2heads/1snapshot delta,
   0leases/pending. docs/CLOUD_PLUGINS.md13; primary .artifacts/cloud-plugin-page-01/.
+
+
+### CLOUD-EXTENSION-INVENTORY-01 — Truthful installed and current-Turn inventory
+
+- Status: Done (2026-10-20; no-model safety gates and Worker-only local activation verified).
+- Human owner: Luke Ding; executor Codex; branch codex/cloud-extension-inventory-01
+  in reused cloud-plugin-plan-01/zebra-agent worktree, base ba877a6e.
+- Owned paths: this card, PROGRESS.md, WORKLOG.md, docs/CLOUD_EXTENSION_INVENTORY.md,
+  one link in docs/CLOUD_PLUGINS.md; core application/mcp_catalog_selection.py;
+  API extension_mcp_selection.py (move existing shared selector without behavior
+  change); tools extension_management.py; Worker worker_extension_management.py
+  and execution_tool_gateway.py; focused extension inventory/core selector/API
+  compatibility/Worker wiring tests; .artifacts/cloud-extension-inventory-01/.
+- Scope: reuse exact catalog integrity/eligibility logic for MCP status, installed
+  Skill records explicitly identify current-Turn availability and readable name
+  from frozen snapshot plus actual authorized prepared Skill catalog. Preserve
+  fresh read/manage authority, live revocation/Plugin guard, scope/version/digest,
+  pagination/size bounds, write semantics; no new tool or prompts/keyword routing.
+- Validation: deterministic no-model safe regressions first, saved actual Run
+  snapshot/catalog readonly proof; update only idle local Worker with same-base
+  image and exact preserved configuration after checks. No Run/model/search/MCP
+  wire, discovery or original Search/TLS/MCP restart. Protect original partial
+  Turns and extension heads/snapshots/counters, high/v2. No Trench logic, API
+  restart, unrelated tests, push or remote deployment; locally integrate.
+
+- Delivered: shared stored MCP verification, pinned digest and exact current Skill
+  availability/readname; live Plugin/fresh scope/lease guards retained.158pass/
+  1existingskip,Ruff,Mypy1318,filegate3218/0. Worker-only healthy9e809d7c44b6,
+  image677d5f610a1b; real stored metadata truthful. Before/after protection exact,
+  no Run/model/search/MCPwire; APIs/Search/TLS/MCP sessions unchanged. See
+  docs/CLOUD_EXTENSION_INVENTORY.md and primary task artifacts. Local integration,
+  no push/remote deploy; no production source beyond declared owned paths.

@@ -597,3 +597,4 @@ Host正常自动生成一次追问建议，单独计数，不混入五轮主Run�
 仅新增2测试head/1快照，租约/待执行0。脚本和脱敏证据位于主工作区
 `.artifacts/cloud-plugin-page-01/`，analyze.py可重跑只读核对；prepare/fixture是
 已消费的操作记录，禁止重跑安装或发送。无生产源码变更、推送或远程部署。
+清单修复见 [Cloud extension inventory](CLOUD_EXTENSION_INVENTORY.md)。

@@ -7444,3 +7444,20 @@ Scoped test records disabled and temporary API-only allowlist restored. Worker/S
 TLS/originalMCP untouched; old15heads/2partial hashes/SearchPIDs/cooldown exact,
 only2heads/1snapshot added,0leases/pending. No search/retry/push/remote deployment.
 See docs/CLOUD_PLUGINS.md13 and .artifacts/cloud-plugin-page-01/acceptance.safe.json.
+
+
+## 2026-10-20 - CLOUD-EXTENSION-INVENTORY-01
+
+Fixed management inventory at the shared boundary: MCP reuses existing exact
+stored catalog validation including current-Turn digest; Skill installed state
+is distinct from current-Turn readable names via frozen pins plus the actual
+live prepared catalog. No selector/prompt/permission changes; revocation and
+fresh scope/lease checks retained.158focusedpass/1existingskip,Ruff,Mypy1318,
+filegate3218/0 pass. Offline same-base5file Worker layer only; idle update yielded
+healthy9e809d7c44b6, exact original env/security/resources/mounts/network.
+Real stored MCP shows verified/1tool/no-refresh advice; unselected/disabled Skills
+show unavailable/no readname in operator readonly metadata inspection. No active
+Run/lease fabricated. Protection before/after exactlyequal:17heads/126snapshots,
+model/tool counters/2originalpartialhashes/SearchPID/cooldown,0leases/pending.
+No model/search/MCPwire/API/Search restart/Trench change/push/remote deploy.
+Details docs/CLOUD_EXTENSION_INVENTORY.md; local source integration only.

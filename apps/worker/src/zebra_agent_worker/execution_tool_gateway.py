@@ -111,6 +111,12 @@ def build_execution_tool_gateway(
         skills_available=service._extensions.skills is not None,
         mcp_available=service._extensions.mcp is not None,
     )
+    skill_catalog = worker_skills.prepare_worker_skill_catalog(
+        extension,
+        deployment_namespace=service._deployment_namespace or "",
+        source=service._extensions.skills,
+        plugin_guard=plugin_guard,
+    )
     gateway = build_worker_tool_gateway(
         task,
         settings=service._settings,
@@ -135,12 +141,7 @@ def build_execution_tool_gateway(
         manifest_digest=(task_binding.host_capability.manifest_digest if task_binding else None),
         frozen_manifest_loader=service._frozen_manifest_loader,
         client_gateway=(service._client_runtime(session_id) if service._client_runtime else None),
-        skill_catalog=worker_skills.prepare_worker_skill_catalog(
-            extension,
-            deployment_namespace=service._deployment_namespace or "",
-            source=service._extensions.skills,
-            plugin_guard=plugin_guard,
-        ),
+        skill_catalog=skill_catalog,
         skill_component_names=(
             tuple(item.version.skill_id for item in extension.snapshot.skills)
             if extension is not None
@@ -163,6 +164,8 @@ def build_execution_tool_gateway(
         skills=service._extensions.skills,
         session_id=session_id,
         fence=fence,
+        skill_catalog=skill_catalog,
+        plugin_guard=plugin_guard,
         allow_network=task.network_profile.name.value
         in ("mcp-proxy-only", "full-gateway", "full-trusted-local"),
     )
