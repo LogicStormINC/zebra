@@ -16595,3 +16595,32 @@ capture17heads/126snapshots/model-toolcounters/2partialhashes/SearchPID/cooldown
 API/Search/TLS restart, Trench logic, remote push/deployment. Evidence primary
 .artifacts/cloud-extension-inventory-01/. Activation helper consumed; readonly
 verify_services.py/capture.py retained. Locally integrated source/docs only.
+## 2026-10-20 - CLOUD-EXTENSION-ACCEPT-01
+
+Claimed Ready task on codex/cloud-extension-accept-01 from79dc9e18 before fixture
+work.116focused no-model tests pass; real pilot Skill/Plugin snapshot reads pass.
+One protected MCP management refresh returned404; stopped without retry/remote
+frames. Readonly diagnosis confirmed refreshdisabled independently of execution.
+User then authorized at most one ordinary-page real new Run. Reused only prior
+human-scope UI02Skill/Plugin and originalMCP; temporarily approved existing test
+digest on same normalAPIimage/env. No new connection, credentials or catalog.
+SingleSend created conv1792428159027_cf3074,Run10234587-9ace-4bea-bbaf-9b45af40d8cb.
+High/v2/auto,5model rounds,7successful tools,0modelretry/search. ActualSkillmain
+165bytes/reference19bytes markerCLOUD-PLUGIN-UI-02;MCPsimplifiedfetch thenrawHTML
+bothsuccessful,titleExampleDomain,17.943/4.194s. Secondrepresentation supplies
+missingtitle,notfailedretry. Pluginselectedwithbothbindings;Skilldirectselection
+empty;MCPalsodirectselected so no isolatedPlugin-onlyMCPexecution claim.
+Hostcompleted45.334s aftercreation/46.162s afterSend,providerreportedlatency14.118s.
+One separateHostsuggestionsPOST. Pagecomplete/coldrefreshsameanswer;Run evidence
+exactlyunchanged;no inventedfirstbody/SQL/A-Bclaim. Saved page-completed.png.
+Testcleanupinitially usedsystemPythonwithouthttpx andfailedbeforeHTTP;normalAPI
+restore succeeded, thenrepositoryvenvcleanupdisabledonlytestPlugin6/Skill5.
+OriginalMCPexact,originalAPIenvvalues/image/mounts/security/resources restored,
+healthy69e6333d32a5. Other4serviceIDs/start/restartsunchanged;Worker9e809d7c44b6,
+Search320c9f820419/persistentPIDs/cooldownexact. Correctedreadonly comparator for
+generatedDockerhostname/Composemetadata/env/mountordering and duplicate scope-less
+capturedheadIDs; no additional service mutation resulted. Final17heads/127snapshots,
+onlytest2headrevisions+1snapshot,other15exact,protected2partialhashesexact,
+globaldurablemodel/tooldelta5/7,0leases/pending. Existingunrelateddirtyworkpreserved.
+No production source/Trenchlogic/modelretry/search/Worker-MCP-Searchrestart/push/
+remote deployment. Focuseddoc plus local integration; private artifacts remainlocal.

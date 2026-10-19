@@ -35167,3 +35167,52 @@ old payloads remain byte-compatible by excluding None. No database migration.
   no Run/model/search/MCPwire; APIs/Search/TLS/MCP sessions unchanged. See
   docs/CLOUD_EXTENSION_INVENTORY.md and primary task artifacts. Local integration,
   no push/remote deploy; no production source beyond declared owned paths.
+
+
+### CLOUD-EXTENSION-ACCEPT-01 — Skill/MCP/Plugin functional acceptance
+
+- Status: Done (2026-10-20; one authorized ordinary-page Run and cleanup verified).
+- Human owner: Luke Ding; executor Codex; branch codex/cloud-extension-accept-01,
+  reused clean plugin worktree from79dc9e18.
+- Owned paths: this card, PROGRESS.md, WORKLOG.md, focused extension acceptance
+  doc; .artifacts/cloud-extension-accept-01/; existing scoped test components and
+  at most one isolated acceptance conversation/Task/Run if user clarifies model
+  authorization. No production code, policy or credential changes; only the
+  explicitly authorized temporary normal-API catalog preparation below.
+- Scope: fresh deterministic Skill/MCP/Plugin gates and live inventories; genuine
+  stored Skill/Plugin package reads; distinguish catalog/registration from actual
+  MCP tool execution. Keep prior no-model constraint pending user's clarification,
+  do not treat waiting as permission. No search, no automatic retry or new engine,
+  no original Search/MCP restart or original partial Turn changes. If authorized,
+  one ordinary page Run high/v2, explicit non-sensitive MCPfetch test only; preserve
+  normal Yahoo/fast and all fresh authority/DNS/SSRF/lease checks. Stop on rate limit.
+- Cleanup: restore any test-only enablement exactly in meaning, no credential
+  copy/discovery/new connection; immutable revisions retained, original normal
+  records untouched. No push/remote deployment. Report actual proof boundaries.
+
+- Explicit test preparation: one protected MCP connectivity/catalog refresh may
+  use the ordinary account's existing connection and current revision, no remote
+  tools/call or model; count initialization/discovery separately. Preserve existing
+  connection/credential revision and immutable old catalog/snapshots; stop on error
+  or limit with no retry. No endpoint override, identity swap, service restart or
+  direct DB edit. Genuine remote fetch execution remains a separate proof boundary.
+
+- User clarified: permit at most one real ordinary-page new Run. May temporarily
+  approve the previously accepted UI-02 test digest on normal API only (same image,
+  all other config; restore), re-enable/rebind ONLY the prior human-scope test Skill/
+  Plugin for this acceptance, keep its original real same-scope MCP connection.
+  Cleanup returns both test components disabled; immutable revisions remain as audit.
+  No Worker/Search/TLS/MCP restart, no refresh flag change, no replacement Run or
+  retry. Normal explicit task may ask MCPfetch of public example.com to exercise
+  the requested capability; tool_choice stays auto, no search/engine forcing.
+
+- Delivered:116focused tests pass, actual Skill main/reference reads and real
+  MCPfetch successful in one ordinary Run10234587-9ace-4bea-bbaf-9b45af40d8cb;
+  frozen Plugin Skill/MCP bindings verified.5model rounds/7tools/0retry/search,
+  high/v2/auto,completed46.162s Send-to-Host persistence; cold refresh durable
+  evidence unchanged. Shared MCP was also directly selected, explicitly recorded
+  as a Plugin-only MCP isolation limit. Initial management refresh404 stopped;
+  existing pinned execution succeeds without changing refresh flag. Test2heads
+  disabled,originalMCPexact,APIoriginalenv/image restored,other15heads/2partial
+  hashes/SearchPIDs/cooldownexact,Worker/Search/TLS/MCP preserved,0leases/pending.
+  No source/Trench change or remote push/deploy; see CLOUD_EXTENSION_ACCEPTANCE.md.

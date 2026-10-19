@@ -7461,3 +7461,15 @@ Run/lease fabricated. Protection before/after exactlyequal:17heads/126snapshots,
 model/tool counters/2originalpartialhashes/SearchPID/cooldown,0leases/pending.
 No model/search/MCPwire/API/Search restart/Trench change/push/remote deploy.
 Details docs/CLOUD_EXTENSION_INVENTORY.md; local source integration only.
+## 2026-10-20 - CLOUD-EXTENSION-ACCEPT-01
+
+Skill/MCP/Plugin functional acceptance passed:116 focused no-model tests and one
+authorized ordinary page Run high/v2/auto. Actual Plugin-mounted Skill main/ref
+reads and existing real MCPfetch both execute successfully; truthful current-Turn
+inventory confirmed. Run completed in46.162s Send-to-Host persistence,5model rounds,
+7successful tools,0retries/searches; refresh restores the answer without new Run
+events. MCP's two successful representations took17.943/4.194s; no performance
+improvement claim. Test Skill/Plugin disabled again, originalAPIimage/env restored,
+Worker/Search/TLS/MCP preserved, original2partialTurn hashes exact. No production
+source/Trench change, push or remote deployment. Scope and evidence boundaries:
+docs/CLOUD_EXTENSION_ACCEPTANCE.md.
