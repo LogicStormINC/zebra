@@ -35006,3 +35006,34 @@ old payloads remain byte-compatible by excluding None. No database migration.
   build passes. Finite review findings fixed. API/legacy only updated with preserved
   config; final capture equals initial: zero model/tool increments,12 heads and2
   original partial Turns unchanged, Worker/Search/TLS/PIDs/cooldown unchanged.
+
+### CLOUD-PLUGIN-UI-02 — One-click installation, row lists and real lifecycle acceptance
+
+- Status: Ready → In Progress (2026-10-19; explicit user follow-up).
+- Human owner: Luke Ding; executor Codex; branch codex/cloud-plugin-ui-02 in both
+  repositories; reuse clean sibling cloud-plugin-plan-01 worktrees.
+- Owned paths (Zebra): this card, PROGRESS.md, WORKLOG.md, docs/CLOUD_PLUGINS.md;
+  packages/agent-core/src/agent_core/application/plugin_installations.py;
+  packages/agent-core/src/agent_core/ports/plugin_installations.py;
+  packages/agent-tools/src/agent_tools/plugin_components.py;
+  apps/api/src/zebra_agent_api/plugin_composition.py, plugin_installations.py;
+  tests/agent_core/test_plugin_auto_install.py; tests/agent_tools/test_plugin_components.py;
+  tests/api/test_plugin_installations_http.py, test_plugin_composition.py;
+  task .artifacts/cloud-plugin-ui-02/ and isolated scoped fixture data.
+- Owned paths (Trench): toc-frontend/src/components/product/plugins/;
+  toc-frontend/src/lib/trench-ai-plugins.ts and its test;
+  docs/CLOUD_PLUGIN_UI.md, WORKLOG.md. Preserve dirty primary registry/next-env.
+- Scope: marketplace and installed views use rows, not cards. One-click install
+  submits approved digest only; trusted server prepares pinned Skill components
+  through existing publication/install operations and resolves exact authorized MCP
+  slots, never asks users for component IDs or binding choices. Missing/ambiguous
+  authorized MCP slots fail closed; no invented endpoints, credentials or grants.
+  Existing explicit binding API remains compatible. Preserve CAS and idempotency.
+- Acceptance: isolated actual product test user/workspace, approved package and
+  Skill/MCP fixtures; genuine page install/enable/disable/cold refresh plus persisted
+  exact binding/revision checks, no response interception. No model/search/MCP tool
+  execution, no change to old Runs. Preserve original Worker/Search/TLS/MCP process.
+  Necessary API-only activation may preserve current image/config and add one
+  approved fixture digest; no search/global proxy changes. End with fixture disabled.
+- Focused no-model safety regression then local integration/normal service/page
+  acceptance. No unrelated test repairs, push or remote deployment.

@@ -16474,3 +16474,9 @@ Worker/Search/TLS identities, SearchPIDs/cooldown and all preexisting dirty hash
 unchanged. No models/search/newMCP, push or remote deploy. Current restart helper
 compose_market.py supersedes prior API tags while retaining the dedicated Worker
 mount. Local task integration and docs only; no unrelated test repairs.
+
+CLOUD-PLUGIN-UI-02 claimed Ready→In Progress under Luke Ding. User extended actual
+marketplace lifecycle acceptance to all-row presentation and one-click installation.
+Reuse approved package validation and existing component publication/install; keep
+exact scoped MCP slot resolution and no privilege inference. No user binding form.
+Isolated fixtures only, no model/search/interception or original MCP restart.
