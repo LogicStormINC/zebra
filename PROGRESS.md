@@ -7387,3 +7387,16 @@ acceptance, not speeduppairing orTrenchpage. NativeSkill3calls0provision proof;
 realRunfiles.list legitimatelyprovisionsonce. No extra models onrecovery, nosearch/
 MCP, old12heads/2partialTurnhashes unchanged,0leases/pending. Priorfailedsamples
 retained. No remote push/deploy. Currentrestarthelper andproofs inrunbooksection9.
+
+CLOUD-PLUGIN-UI-01 completed locally: Trench Settings sidebar now has independent
+Plugin immediately below Tools & connections, with real approved marketplace and
+installed management. Browsing reuses hash-validated approved packages through a
+bounded authenticated read catalog; no publication, automatic binding or grants.
+Actual logged-in page displays the approved pilot and exact install prefill/current
+Skill candidates; no live install/toggle or response interception. Zebra19 tests,
+Ruff/Mypy1315, Trench20 proxy tests, focused frontend regressions and build pass.
+Only API/legacy API updated preserving configuration; Worker/Search/TLS/MCP process
+unchanged. Final read-only protection equals baseline: zero model/tool increments,
+12 heads and two original partial Turns unchanged, zero leases/pending. No models,
+searches, push or remote deploy. Runbook section10 records current restart helper
+and proof; this is management UI acceptance, not another real Run acceptance.

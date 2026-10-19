@@ -34964,7 +34964,8 @@ old payloads remain byte-compatible by excluding None. No database migration.
 
 ### CLOUD-PLUGIN-UI-01 — Trench Settings Plugin tab and approved marketplace
 
-- Status: Ready → In Progress (2026-10-19; user confirmed Trench web frontend).
+- Status: Done (2026-10-19; source and real-page acceptance locally integrated;
+  no remote push/deploy).
 - Human owner: Luke Ding; executor Codex; branch codex/cloud-plugin-ui-01 in each
   repository. Reuse cloud-plugin-plan-01/zebra-agent; isolated sibling Trench
   checkout based on its current main c80a2f9. Preserve all primary dirty changes.
@@ -34993,5 +34994,15 @@ old payloads remain byte-compatible by excluding None. No database migration.
 - Validation: focused frontend/backend regression, TypeScript/lint/build as
   appropriate; actual local logged-in page navigation/read with no interception.
   No model/search requests, no Worker/Search/MCP restarts or policy changes.
-- Integrate locally after validation; no push/remote deployment. No marketplace,
-  arbitrary package URL execution, automatic grants or forced Run selection.
+- Local integration only; no push/remote deployment. No arbitrary external registry,
+  package URL execution, automatic grants or forced Run selection.
+- Final acceptance: actual logged-in Settings sidebar has Plugin immediately below
+  Tools & connections. Marketplace reads one approved local pilot package from the
+  normal service; configuration opens with exact digest/components and real current
+  Skill candidates. No intercepted responses or live install/toggle submitted.
+  Installed list is genuinely empty in this user scope; no demo records created.
+- Gates: Zebra19 focused tests/Ruff/Mypy1315; Trench20 proxy tests, frontend22
+  focused tests then16 affected tests including new race regression; production
+  build passes. Finite review findings fixed. API/legacy only updated with preserved
+  config; final capture equals initial: zero model/tool increments,12 heads and2
+  original partial Turns unchanged, Worker/Search/TLS/PIDs/cooldown unchanged.

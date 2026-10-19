@@ -367,7 +367,7 @@ Turn均未变，末次Worker有效租约/待执行命令0。该阶段两个失�
 
 ### 管理页面边界
 
-当前没有Plugin管理页面。后端 `/v1/extensions/plugin-installations` 已提供列表、
+当时没有Plugin管理页面；后续按用户授权新增的页面见第10节。后端 `/v1/extensions/plugin-installations` 已提供列表、
 详情、安装、CAS启停/重绑；首期计划5.1明确先用HTTP/SDK，不先做Trench管理页面。
 只读核对Trench的DashboardExtensionSettings仅接受mcp/skill，Zebra桌面与SDK也没有
 Plugin页面/入口。本次未新增前端或修改Trench产品逻辑。
@@ -431,3 +431,46 @@ snapshot与accepted command身份和digest一致，无direct Skill或MCP选择�
 `update-protection.safe.json`、`acceptance-proof.safe.json` 和
 `real-run/canonical-proof.safe.json`。私有inspect、resolved配置和流日志权限0600。
 本轮源修复和验收记录仅本地提交并集成cloud-agent-trench，没有远程推送或部署。
+
+## 10. Trench 设置插件与批准包市场（CLOUD-PLUGIN-UI-01）
+
+2026-10-19本地完成。最终入口是设置左侧“工具与连接”**下方的独立“插件”标签**，
+其中有“插件市场”和“已安装”。原工具与连接页保持原有行为；临时账户菜单入口、
+独立 `/dashboard/plugins` 路由和工具页内的插件标签已移除。沿用现有主题与登录。
+
+市场通过Trench当前用户代理读取 `/v1/extensions/plugin-packages`。Zebra继续校验
+新鲜 `extensions.read` 授权，每页最多10个已批准指纹对应的完整包，固定摘要游标。
+复用发布器的hash校验，只返回指纹、插件ID、版本、发布者及组件ID/类型；不返回内部
+路径、凭据或绑定，不发布S3对象。错误显示不可用，不以空列表掩盖失败。
+这是当前服务批准包目录，不是任意外部注册表。没有新增迁移。
+
+配置安装预填所选包与组件，仍需显式选择当前作用域已有、启用且匹配的Skill/MCP
+绑定并提交。安装默认停用；启停保留revision CAS，写入保留幂等键，不自动重试。
+候选类型独立加载；账号切换丢弃旧响应；初始列表结算后才显示预填表单，避免旧列表
+覆盖新安装。页面不自动发布组件、创建权限或为Run选择插件。
+
+实际登录页面读到 `cloud-plugin-local-pilot`（Local operator pilot，1.0.0，
+Skill组件local-guide）；“配置安装”中的指纹与组件正确，当前用户已有Skill候选可读。
+本用户已安装列表实际为0，没有为演示创建记录或提交安装/启停。页面未拦截响应；
+实际变更操作的保护由定向回归及此前Plugin原生验收覆盖，不冒称本轮已做真人安装。
+
+Zebra19项定向回归、Ruff、Mypy1315源文件通过；Trench20项代理回归、前端22项集中
+回归及后续16项受影响回归（含新增竞态用例）、生产构建通过。有限审查问题已修复。
+API和legacy API仅覆盖3个已验收源文件，环境、命令、挂载、安全/资源/网络保持一致：
+
+- 正常API镜像 `zebra-api:cloud-plugin-market-01`，ID前缀 `cff0acd9f27d`。
+- legacy镜像 `zebra-api:cloud-plugin-market-legacy-01`，ID前缀 `3399d7ddc46e`。
+- Worker、Search、TLS完整身份/启动时间/重启数/环境不变；Search PID和冷却hash不变。
+
+最终只读capture与任务初始完全相同：schema105、有效租约/待执行命令0，模型/工具
+事件无增量，旧12个扩展head和两个原partial Turn状态及正文/请求/元数据hash不变。
+没有模型、搜索或新增MCP调用，没有重启原搜索进程或改变其会话。
+
+当前本机重启以主工作区 `.artifacts/cloud-plugin-ui-01/compose_market.py` 生成的
+`services-preserve.yml` 为准。此helper复用第9节的Worker挂载并保留本节API镜像；
+第7/9节旧helper不能单独覆盖当前服务。运行helper本身只做预检；
+`update_market_api.py`已执行，仅作记录，不可重跑。真实页面截图为
+`plugin-market-in-settings.png`，结果见 `page-proof.safe.json`、
+`final-protection.safe.json`、`services-final.safe.json`，均位于同一任务artifact。
+旧两版导航截图只作历史记录。私有inspect/resolved配置保持0600。
+源代码和记录仅本地集成；未推送或远程部署。

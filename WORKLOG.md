@@ -16458,3 +16458,19 @@ Prior inside-Tools tab/card will be removed. Extend owned paths before coding fo
 Settings dialog, a bounded authenticated approved-package read catalog, existing
 publisher/Port and focused tests; necessary exact-preserved local API update only.
 Marketplace cannot be fabricated from installed records or hardcoded fake cards.
+
+CLOUD-PLUGIN-UI-01 final acceptance: actual logged-in Trench Settings sidebar shows
+Plugin immediately below Tools & connections, containing marketplace/installed.
+Real market returns approved cloud-plugin-local-pilot1.0.0/local-guide; configure
+opens with exact digest/component and existing better-writing Skill candidate.
+No install/toggle submitted and no intercepted response; real installed scope0.
+Final screenshot plugin-market-in-settings.png and page-proof.safe.json retained
+in primary artifact; superseded navigation proofs explicitly historical.
+Zebra19 focused/Ruff/Mypy1315, Trench20 proxy tests, frontend22 focused then16
+affected incl race test, final Next production build pass. Only API/legacy updated
+to market layers with preserved configuration. Final capture equals baseline:
+0model/tool increments,12 heads/2originalpartial hashes unchanged,0leases/pending;
+Worker/Search/TLS identities, SearchPIDs/cooldown and all preexisting dirty hashes
+unchanged. No models/search/newMCP, push or remote deploy. Current restart helper
+compose_market.py supersedes prior API tags while retaining the dedicated Worker
+mount. Local task integration and docs only; no unrelated test repairs.
