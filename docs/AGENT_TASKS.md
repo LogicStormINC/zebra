@@ -34898,3 +34898,9 @@ old payloads remain byte-compatible by excluding None. No database migration.
   accepted Plugin snapshot, real tools and model event timeline, v2 final result
   and cold readback, no-search and unchanged Search/MCP process evidence.
   Local docs/evidence integration only; no remote push/deploy.
+- First sample: one acceptedv2/high Run failed before model/tool invocation because
+  operator test payload used /workspaces outside the readonly Worker's writable
+  mount. Original failed Run retained, no rerun. Correct actual mounted isolated
+  path now passes native gateway construction with0model/search. Prepared distinct
+  replacement script/keys, awaiting explicit replacement authorization. Real
+  accepted Plugin snapshot passes; model/tool/successful final sync gate incomplete.

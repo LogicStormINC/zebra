@@ -16348,3 +16348,19 @@ start/PIDs/env/cooldownhash unchanged; protectedpartialTurns status/body/request
 metadatahashes unchanged. Sharedcapabilityflags global, scopedinstallationone;
 no MCPworker/refresh/credentialactivation. Evidenceprivate/safe artifacts and
 runbook7updated. No model/search/Trenchlogic/globalproxy/remote operation.
+
+### 2026-10-19 — CLOUD-PLUGIN-E2E-01
+
+Claimed codex/cloud-plugin-e2e-01, reusecleanworktreea5440b13. Fresh idle0leases/
+0pending, existingr4 installationmatches. User authorized one realRun; one-create/
+one-command script usesnormalRS256/API/nativeWorker/v2SSE, no intercept/toolchoice.
+FirstTaske94e48bf-0c64-45ec-bc38-96803450a9e5 acceptedPluginr4/high/transientv2,
+then failedsetup at12:36:25UTC beforemodel/tool. Mytestpayload /workspaces was not
+the actual writablemount; LocalToolGateway mkdir raisedEROFS. Preservedfailure,
+0model/0tools, clientRUN_ERROR2.4576s. No retry/resume/replacement mutation.
+Actualmount /tmp/zebra-trench-live-workspaces, layoutroot; native gateway now
+constructs/closes at ownedisolatedsubdir, no model/search. Preparedreplacement
+under taskartifact/replacement/run_once.py withcorrectpath/distinctkeys; requested
+explicit authorization because initialoneRunalready consumed. Before/afterSearch
+object/PIDs/cooldown, protectedpartialTurns, extensionheads, model/toolcounters
+identical. Do not reruninitialsingle-uselock or silently resetfailedRun.

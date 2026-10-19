@@ -317,3 +317,24 @@ coverage-pro-test、web-search，随后是Plugin overlay和精确preserve overla
 私有inspect、日志与resolved配置权限0600，不提交或发送。需撤回试点时先确认空闲，
 使用同一105兼容镜像关闭新增开关；不要回退schema或启动104旧镜像。
 本轮仅本地集成，无远程推送、远程部署或真实模型/页面验收。
+
+## 8. 单次真实Run验收（CLOUD-PLUGIN-E2E-01，进行中）
+
+用户随后授权一次真实Run，保留high与v2、自主工具选择，不新增搜索或重启服务。
+2026-10-19首个样本 `e94e48bf-0c64-45ec-bc38-96803450a9e5` 已真实准入，
+Run为 `plugin-e2e-c082f003-fbe9-4bd5-9590-2f40a4846e44`。当前状态failed，
+不能算Plugin模型端到端通过：
+
+- 固定Plugin revision4真实snapshot与accepted command的turn/digest一致；
+  仅Plugin来源、无direct Skill或MCP，high和transient_v2实际准入通过。
+- Worker在tool_gateway初始化时遇到只读根目录 `/workspaces`，抛出Errno30。
+  这是验收脚本填写了与正常Worker挂载不符的路径，不是模型或Skill读取失败。
+- 模型0次、工具0次；v2客户端2.4576秒收到RUN_ERROR，原失败Run保留。
+- 已核对实际可写挂载，并在其隔离子目录
+  `/tmp/zebra-trench-live-workspaces/cloud-plugin-e2e-01-isolated` 成功构造/关闭
+  原生LocalToolGateway，未调用模型或搜索，未变更服务配置或源码。
+- 原搜索容器/进程/冷却、旧安装与两个原partial Turn及模型/工具计数均未变。
+
+替代脚本已修正工作区并使用独立幂等键，尚未提交。为遵守一次Run和不自动重跑的
+边界，已询问是否允许新建一个替代样本；确认前不继续模型调用。证据与单次锁位于
+`.artifacts/cloud-plugin-e2e-01/`，不要重新运行已消费的 `run_once.py`。

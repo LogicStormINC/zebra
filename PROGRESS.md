@@ -7354,3 +7354,10 @@ no accepted execution Run; no model/search requests or model/tool event incremen
 Search fullID/start/PIDs/env/cooldown and2protectedpartialTurn hashes preserved.
 MCP Worker remains off. Local activation gate passed; acceptedRun/model/page E2E
 remains separate. No remote push/deploy. Runbook section7; no source/test expansion.
+
+CLOUD-PLUGIN-E2E-01 in progress: one signedv2/high Run accepted with fixedPluginr4;
+test workspace /workspaces was outside actual readonlyWorker writablemount, causing
+gateway setup failure before0model/0tool. Failed sample retained. Correct isolated
+mounted path passes native no-model gateway construction; replacement prepared,
+awaiting explicit permission to exceed the original one-Run sample. No services/
+source/Trench/search changes; Search/MCP process and originalpartialTurns preserved.
