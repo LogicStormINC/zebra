@@ -16267,3 +16267,27 @@ PostgreSQL/MinIO only;
 MinIO versioning enabled for later full acceptance. Normal API/Worker/Search
 identity/image/start/restarts/config hashes match pre-task evidence. No model,
 search, Trench/Desktop, normal migration/service activation, push or deployment.
+
+
+### 2026-10-19 — CLOUD-PLUGIN-RUN-01
+
+Task3 source4b2f6998/97382630 adds explicit selection/provenance, atomic admission,
+automatic default-off composition and live-source Worker suspension. Controller
+fresh check:113 changed-file tests pass with task PG; Ruff and Mypy34sources pass.
+Implementer impacted153pass/route86pass; prior447pass/one route-hook failure was
+fixed with all equivalent hooks in3files (Task2 extraction, not unrelated fixture).
+Independent spec review found four gaps to fix together before integration:
+underlying MCP RuntimeError authority drift, shared direct/plugin native authority
+loss classification, legacy nonempty snapshot incorrectly matching explicit empty
+selection, and unsupported direct MCP auth admission. Same implementer assigned
+one bounded regression/fix pass; no repeated full-suite or unrelated repair.
+Normal services, DB and models/search remain untouched. Native MinIO/cross-process
+acceptance and child plugin-isolation proof remain Task4.
+
+Task3 review follow-up resolved the four gaps in01c2a954 after7expected red
+failures, then fixed the same-class initial MCP catalog missing/backend seam in
+e8e201cc. Control signals still take priority; non-plugin behavior unchanged.
+Controller fresh160focused tests pass using isolated PG; final setup seam4pass.
+Ruff46changedPython/Mypy34sources/diff checks pass. Independent final spec and
+quality review approved e8e201cc with no blocking issues. Local integration only;
+no model/search/normal services/DB/config changes.

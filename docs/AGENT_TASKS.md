@@ -34744,3 +34744,54 @@ old payloads remain byte-compatible by excluding None. No database migration.
 - Validation: focused offline checks + actual disposable PostgreSQL; spec/quality
   review. Isolated task containers permitted, normal service/DB/config untouched.
   No model/search/push/Trench/Desktop or production activation.
+
+
+### CLOUD-PLUGIN-RUN-01 — Turn admission and authorized Worker execution
+
+- Status: Done (2026-10-19; local integration to cloud-agent-trench authorized; STORE integrated51bd8d58 to
+  cloud-agent-trench after independent spec/quality approval; local unlock authorized).
+- Human owner: Luke Ding; executor Codex; branch codex/cloud-plugin-run-01;
+  reused isolated cloud-plugin-plan-01/zebra-agent checkout.
+- Owned paths: core/domain/extension_snapshots.py and new plugin_snapshots.py,
+  plugin_authority.py; core/application/plugin_resolution.py;
+  core/ports/plugin_installations.py; integrations/plugins/publication.py;
+  runtime/mcp_http.py, mcp_http_authorization.py, mcp_sse.py (preserve typed
+  plugin suspension across existing sanitized frame-authority catches);
+  postgres/events.py, extension_snapshots.py (read existing Task profile ceiling),
+  plugin_installations.py and new plugin_admission.py;
+  API/extension_turn_admission.py, extension_mcp_selection.py,
+  extension_composition.py, http.py, command_submission.py (shared fail-closed
+  selection guard when admission is absent) and new plugin_composition.py;
+  Worker/extension_recovery.py, execution_tool_gateway.py, worker_skill_catalog.py,
+  worker_mcp_catalog.py, context_materialization.py, execution.py, loop.py,
+  execution_errors.py, execution_recovery.py, execution_finalization.py, and new
+  plugin_composition.py, worker_plugins.py; core/harness/tool_recovery.py,
+  tool_batch.py, concurrent_batch.py and new tool_batch_stops.py (shared typed
+  plugin suspension, preserving paired terminal results before stopping);
+  config/plugin_settings.py, settings.py, .env.example only required config seams;
+  new tests/agent_core/test_plugin_snapshots.py, test_plugin_resolution.py,
+  test_plugin_suspension.py; tests/agent_runtime/test_mcp_plugin_suspension.py;
+  tests/api/test_plugin_turn_admission.py,
+  test_plugin_composition.py; tests/worker/test_plugin_recovery.py,
+  test_worker_plugin_composition.py; tests/agent_storage/test_plugin_admission.py;
+  tests/api/test_extension_composition.py, test_http_host_preflight.py,
+  test_skill_publication_composition.py (Task2 route-extraction test seams);
+  existing focused extension/worker tests only when genuinely required regression;
+  own registry, PROGRESS.md, WORKLOG.md, adoption plan; private .artifacts/cloud-plugin/.
+- Scope: compact pinned provenance, explicit selection without ceiling widening,
+  same accepted-command transaction, automatic default-off Cloud composition,
+  immutable recovery and live component-source authorization. Legacy digest and
+  direct selection remain compatible; independent admitted origins survive plugin
+  disablement. No valid source means suspension before further model invocation.
+- Boundaries: no child plugin inheritance, new grants, remote discovery, source
+  overrides, per-delta SQL, Trench/Desktop, normal service/DB/config update or
+  models/search/push. Isolated task PostgreSQL/MinIO permitted; full native proof
+  belongs to ACCEPT. Preserve 1MiB/history budgets, leases/cancel, verification
+  scope/deduplication and existing Client Effect/provider continuation contracts.
+- Implementation may use two internal commits (snapshot/admission then Worker),
+  with one combined spec/quality review at completed stage; no per-test review loop.
+
+- Result: source4b2f6998/97382630, review fixes01c2a954/e8e201cc. Independent
+  spec and quality approved; controller160focused pass +4final setup-seam checks,
+  Ruff46Python files/Mypy34source pass. Prior route-hook fixture mismatch fixed
+  as one bounded same-class pass. Native PG/MinIO proof remains ACCEPT.

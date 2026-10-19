@@ -263,13 +263,13 @@ Worker 从可信 accepted command 的 snapshot digest 恢复；包、组件或 s
 - 修改 `apps/config/src/zebra_agent_config/settings.py`、`.env.example` 和既有 API/Worker composition，增加默认关闭的 `ZEBRA_CLOUD_PLUGINS_ENABLED`；
 - 新增 `tests/api/test_plugin_turn_admission.py`、`tests/worker/test_plugin_recovery.py`。
 
-- [ ] 先测试无插件旧 snapshot digest 字节不变、同 Turn 重试不重新解析最新版本、跨 scope 全部拒绝。
-- [ ] 插件解析进入既有 snapshot/accepted-command 原子提交，处理禁用/准入并发。
-- [ ] 根任务按显式选择组合 Skill/MCP；Skill 正文不被全量注入，MCP 不覆盖内置工具。
-- [ ] 验证共享组件的来源去重、插件禁用不影响独立已准入来源、无有效来源时拒绝；旧 Turn 的直接路径不变。
-- [ ] 开关关闭时不接受新插件选择、不增加插件 I/O；已有插件 snapshot 不得丢弃来源后退回普通执行，必须明确暂停。
-- [ ] 执行 `uv run pytest -q tests/api/test_plugin_turn_admission.py tests/worker/test_plugin_recovery.py`。
-- [ ] 完成失败恢复、取消、租约、验证去重回归后提交；仍不自动启用生产 feature。
+- [x] 先测试无插件旧 snapshot digest 字节不变、同 Turn 重试不重新解析最新版本、跨 scope 全部拒绝。
+- [x] 插件解析进入既有 snapshot/accepted-command 原子提交，处理禁用/准入并发。
+- [x] 根任务按显式选择组合 Skill/MCP；Skill 正文不被全量注入，MCP 不覆盖内置工具。
+- [x] 验证共享组件的来源去重、插件禁用不影响独立已准入来源、无有效来源时拒绝；旧 Turn 的直接路径不变。
+- [x] 开关关闭时不接受新插件选择、不增加插件 I/O；已有插件 snapshot 不得丢弃来源后退回普通执行，必须明确暂停。
+- [x] 执行 `uv run pytest -q tests/api/test_plugin_turn_admission.py tests/worker/test_plugin_recovery.py`。
+- [x] 完成失败恢复、取消、租约、验证去重回归后提交；仍不自动启用生产 feature。
 
 #### Task 4 — 原生验收与子任务开放（拟 CLOUD-PLUGIN-ACCEPT-01；依赖 Task 3）
 
@@ -315,4 +315,4 @@ Worker 从可信 accepted command 的 snapshot digest 恢复；包、组件或 s
 保持默认关闭、可信内部包白名单、小范围 namespace 启用。先准入/Worker 配对发布，再开放选择。
 仅回滚管理面开关不能移除已有被引用的包/安装/snapshot；先等待相关 Turn 结束或明确暂停。
 数据库迁移保持加法兼容，旧记录继续可读；保留包对象引用、expectation/receipt，首期不自动回收 Plugin 包。
-实施记录：Task1/Task2已实现并通过独立规格与质量审查；Task2在隔离 PostgreSQL 验证安装/CAS/绑定与迁移105，默认关闭的管理 API 可注入使用。自动 composition、Turn/Worker 和真实对象跨进程验收仍在后续阶段；正常数据库/服务未更新，无模型或搜索请求。
+实施记录：Task1/Task2/Task3已实现并通过独立规格与质量审查；Task2在隔离 PostgreSQL 验证安装/CAS/绑定与迁移105；Task3自动组合默认关闭的管理/准入/Worker，固定精确来源并在失效时暂停。真实对象跨进程与子任务隔离验收为Task4；正常数据库/服务未更新，无模型或搜索请求。

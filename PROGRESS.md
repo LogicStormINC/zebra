@@ -7313,3 +7313,10 @@ checks pass using disposable PostgreSQL; impacted215passed and one transient
 connection-timeout fixture passed targeted rerun. Ruff/Mypy/file bounds pass;
 independent spec then quality reviews approved. Normal service/DB/config remain
 untouched. Automatic composition and Turn/Worker execution are the next stage.
+
+CLOUD-PLUGIN-RUN-01 complete: source4b2f6998/97382630 plus01c2a954/e8e201cc
+connects explicit selection, atomic Turn provenance and Worker live source checks.
+Legacy snapshots/direct paths retained; setup and per-call authority loss suspend
+without another model or Turn closure. Independent spec/quality approved; fresh
+160focused +4setup seam tests, Ruff46files/Mypy34sources pass. Still default-off;
+normal services/DB/config unchanged. Native cross-process acceptance follows.
