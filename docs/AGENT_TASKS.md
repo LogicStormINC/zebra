@@ -34862,3 +34862,7 @@ old payloads remain byte-compatible by excluding None. No database migration.
   scoped no-model management/Worker proof, process/log/request counters and
   protected original partial Turns. Source/offline eval baseline remains recorded;
   no unrelated test repairs. Local integration after operation/evidence closeout.
+
+- Runtime path clarification: durable pilot bundle and exact private Compose
+  overrides live under primary checkout .artifacts/cloud-plugin-live-01/; staging
+  scripts/build/evidence under this task worktree. Both paths owned by this task.

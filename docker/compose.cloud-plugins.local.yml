@@ -1,0 +1,18 @@
+# Optional Skill-only local pilot. Scope/grants and ready components remain required.
+services:
+  zebra-api:
+    environment:
+      ZEBRA_CLOUD_PLUGINS_ENABLED: "true"
+      ZEBRA_CLOUD_PLUGIN_BUNDLE_ROOT: /run/zebra/plugins
+      ZEBRA_CLOUD_PLUGIN_ALLOWED_DIGESTS: ${ZEBRA_CLOUD_PLUGIN_ALLOWED_DIGESTS:?set one approved pilot digest}
+      ZEBRA_CLOUD_EXTENSIONS_READ_ENABLED: "true"
+      ZEBRA_CLOUD_EXTENSIONS_MANAGE_ENABLED: "true"
+      ZEBRA_CLOUD_EXTENSION_TURN_ADMISSION_ENABLED: "true"
+      ZEBRA_CLOUD_SKILLS_PUBLISH_ENABLED: "true"
+    volumes:
+      - ${ZEBRA_PLUGIN_OPERATOR_ROOT:?set trusted pilot bundle directory}:/run/zebra/plugins:ro
+  zebra-worker:
+    environment:
+      ZEBRA_CLOUD_PLUGINS_ENABLED: "true"
+      ZEBRA_CLOUD_EXTENSION_WORKER_ENABLED: "true"
+      ZEBRA_CLOUD_SKILL_WORKER_ENABLED: "true"
