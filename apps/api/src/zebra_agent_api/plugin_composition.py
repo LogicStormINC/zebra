@@ -74,6 +74,7 @@ def compose_plugins(
             packages,
             cloud.deployment_namespace,
             mcp_available=mcp_available,
+            skill_available=settings.cloud_skill_worker_enabled,
             components=ApprovedPluginComponents(
                 packages,
                 SkillPublicationService(
@@ -95,4 +96,5 @@ def compose_plugins(
         catalogs,
         packages,
         allow_mcp=mcp_available,
+        allow_skills=settings.cloud_skill_worker_enabled,
     )

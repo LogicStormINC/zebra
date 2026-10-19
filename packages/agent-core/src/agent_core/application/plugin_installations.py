@@ -106,6 +106,7 @@ class PluginInstallationService:
     deployment_namespace: str
     components: PluginComponentInstaller | None = None
     mcp_available: bool = True
+    skill_available: bool = True
 
     async def _package_and_bindings(
         self,
@@ -205,6 +206,9 @@ class PluginInstallationService:
 
     async def readiness(self, record: PluginInstallation) -> str:
         """Fresh component facts; configured availability is not a Worker heartbeat."""
+        if any(isinstance(item, PluginSkillBinding) for item in record.bindings):
+            if not self.skill_available:
+                return "skill_runtime_unavailable"
         if any(isinstance(item, PluginMcpBinding) for item in record.bindings):
             if not self.mcp_available:
                 return "mcp_runtime_unavailable"

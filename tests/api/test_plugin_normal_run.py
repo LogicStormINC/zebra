@@ -81,6 +81,12 @@ def test_skill_enable_checks_current_publication_revision_and_package_manifest()
         args = dict(scope=record.scope, operated_by="operator", installation_id="plugin-a",
                     expected_revision=1, payload={"enabled": True})
         assert await service.readiness(record) == "ready"
+        off = PluginInstallationService(
+            store, extensions, AsyncMock(), AsyncMock(), "test", skill_available=False,
+        )
+        assert await off.readiness(record) == "skill_runtime_unavailable"
+        with pytest.raises(ExtensionRevisionConflictError, match="skill_runtime"):
+            await off.update(**args)
         for changes in ({"state": "pending"}, {"manifest": ()}):
             extensions.get_skill_publication.return_value = backend.publication.model_copy(
                 update=changes)

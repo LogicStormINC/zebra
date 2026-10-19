@@ -21,6 +21,7 @@ def test_skill_only_composition_reuses_cloud_objects_without_mcp_secrets(tmp_pat
         cloud_extensions_manage_enabled=True,
         cloud_extension_turn_admission_enabled=True,
         cloud_skills_publish_enabled=True,
+        cloud_skill_worker_enabled=True,
         mcp_credentials=SimpleNamespace(worker_enabled=False),
     )
     cloud = SimpleNamespace(
@@ -30,7 +31,11 @@ def test_skill_only_composition_reuses_cloud_objects_without_mcp_secrets(tmp_pat
     service, resolver = compose_plugins(settings, cloud, extensions)
     assert service.extensions is extensions and resolver.extensions is extensions
     assert resolver.packages.objects is cloud.artifact_objects
-    assert not resolver.allow_mcp
+    assert not resolver.allow_mcp and resolver.allow_skills
+    assert service.skill_available
+    settings.cloud_skill_worker_enabled = False
+    unavailable, restricted = compose_plugins(settings, cloud, extensions)
+    assert not unavailable.skill_available and not restricted.allow_skills
     assert not cloud.artifact_objects.mock_calls
 
 
@@ -43,6 +48,7 @@ def test_mcp_configured_capability_requires_secure_existing_key_before_compositi
         deployment="cloud", storage_authority="postgresql",
         cloud_extensions_manage_enabled=True, cloud_extension_turn_admission_enabled=True,
         cloud_skills_publish_enabled=True,
+        cloud_skill_worker_enabled=True,
         mcp_credentials=SimpleNamespace(worker_enabled=True, secret_root=str(tmp_path),
                                         key_handle="missing", key_version="v1"),
     )

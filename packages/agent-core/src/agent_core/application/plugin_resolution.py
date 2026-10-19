@@ -31,6 +31,7 @@ class PluginResolver:
     catalogs: McpCatalogStore | None
     packages: PluginPackageReader | None
     allow_mcp: bool = False
+    allow_skills: bool = True
 
     async def resolve(
         self,
@@ -50,9 +51,10 @@ class PluginResolver:
         plugins: list[PluginSnapshot] = []
 
         async def skill(identifier: str, expected: SkillInstallation | None = None) -> None:
-            if ceiling.tool_profile is None or "skills.read" not in tool_names_for_profile(
+            if (not self.allow_skills or ceiling.tool_profile is None
+                or "skills.read" not in tool_names_for_profile(
                 ceiling.tool_profile
-            ):
+            )):
                 raise PluginSelectionRefused("selected Skill is outside Task tool profile")
             try:
                 current = await self.extensions.get_skill(scope=scope, installation_id=identifier)
