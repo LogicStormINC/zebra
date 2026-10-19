@@ -34878,3 +34878,23 @@ old payloads remain byte-compatible by excluding None. No database migration.
   Model/tool event delta0; search fullID/start/PIDs/env/cooldown hash unchanged;
   two protectedpartialTurns hashes/status unchanged. MCP Worker remains off.
   Evidence and restart/rollback boundaries: docs/CLOUD_PLUGINS.md section7.
+
+### CLOUD-PLUGIN-E2E-01 — One real authorized Plugin Run
+
+- Status: Ready → In Progress (2026-10-19; user authorized one real Run with
+  genuine model calls, autonomous Skill/tool choice, high reasoning and v2).
+- Human owner: Luke Ding; executor Codex; branch codex/cloud-plugin-e2e-01;
+  worktree cloud-plugin-plan-01/zebra-agent reused clean at a5440b13.
+- Owned paths: this task card, docs/CLOUD_PLUGINS.md, PROGRESS.md, WORKLOG.md;
+  private .artifacts/cloud-plugin-e2e-01/ in task and primary checkouts.
+- Scope: reuse the existing approved isolated Skill-only installation; submit
+  exactly one new real Run via normal signed API, observe native Worker and v2
+  synchronization, record real tools/model rounds/timing and final saved result.
+- Boundaries: no search requests, service restarts/config/source changes, MCP
+  initialization/session replacement, Trench product changes or oldRun mutations.
+  No forced tool, synthetic completion, response interception or automatic rerun.
+  Preserve high/v2/Yahoo/fast, scope/Task ceilings, lease/cancel/history limits.
+- Validation: fresh protection baseline and live installation revision; exact
+  accepted Plugin snapshot, real tools and model event timeline, v2 final result
+  and cold readback, no-search and unchanged Search/MCP process evidence.
+  Local docs/evidence integration only; no remote push/deploy.
