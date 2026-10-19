@@ -7320,3 +7320,8 @@ Legacy snapshots/direct paths retained; setup and per-call authority loss suspen
 without another model or Turn closure. Independent spec/quality approved; fresh
 160focused +4setup seam tests, Ruff46files/Mypy34sources pass. Still default-off;
 normal services/DB/config unchanged. Native cross-process acceptance follows.
+
+
+CLOUD-PLUGIN-ACCEPT-01 claimed after RUN local integration. Final source stage
+proves real isolated PG/versioned-object recovery and bounded native overhead;
+child Plugin inheritance remains closed. Normal activation/model gates separate.

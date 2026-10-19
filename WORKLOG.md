@@ -16291,3 +16291,11 @@ Controller fresh160focused tests pass using isolated PG; final setup seam4pass.
 Ruff46changedPython/Mypy34sources/diff checks pass. Independent final spec and
 quality review approved e8e201cc with no blocking issues. Local integration only;
 no model/search/normal services/DB/config changes.
+
+
+### 2026-10-19 — CLOUD-PLUGIN-ACCEPT-01 (in progress)
+
+Claimed after RUN ed450dab local integration. Only task PG/MinIO and controlled
+MCP protocol stub may run; no models/search/upstream/normal service changes.
+Actual immutable nonempty Skill bytes, cross-process native recovery, child
+isolation and identical-workload overhead are final offline proof boundaries.

@@ -34795,3 +34795,35 @@ old payloads remain byte-compatible by excluding None. No database migration.
   spec and quality approved; controller160focused pass +4final setup-seam checks,
   Ruff46Python files/Mypy34source pass. Prior route-hook fixture mismatch fixed
   as one bounded same-class pass. Native PG/MinIO proof remains ACCEPT.
+
+
+### CLOUD-PLUGIN-ACCEPT-01 — Native offline acceptance and child isolation
+
+- Status: Ready → In Progress (2026-10-19; RUN integrated ed450dab to
+  cloud-agent-trench after independent spec/quality approval; local unlock authorized).
+- Human owner: Luke Ding; executor Codex; branch codex/cloud-plugin-accept-01;
+  reused isolated cloud-plugin-plan-01/zebra-agent checkout.
+- Owned paths: packages/agent-runtime/src/agent_runtime/research_context.py
+  (truthful existing delegation capability description only);
+  tests/worker/test_plugin_child_authority.py; tests/cloud_plugins/ (focused native
+  acceptance fixture/protocol stub/process checks, not a general test framework);
+  scripts/check_cloud_plugins.py (runnable offline acceptance entry);
+  docs/CLOUD_PLUGINS.md, this adoption plan/task card, PROGRESS.md, WORKLOG.md;
+  README.md only a focused runbook link if needed; private .artifacts/cloud-plugin/.
+- Scope: actual isolated PostgreSQL + versioned MinIO, nonempty Skill bytes and
+  immutable package roundtrip across independent processes; management/atomic
+  admission/native Worker Skill/MCP execution and recovery through existing
+  authority/approval boundaries. Local MCP protocol stub allowed and labeled;
+  do not bypass policy via trusted-local. Compare identical direct/plugin tool
+  workloads with bounded SQL/connect/latency measurements, no P95/model claims.
+- Child Plugin inheritance stays CLOSED: prove own identity, no parent extension
+  selection, read-only/depth and authorized web.search ceiling unchanged. State
+  that limitation truthfully in existing agent.research definition.
+- Boundaries: no model/search/upstream calls, new grants, normal migration/service
+  update, Trench/Desktop/global proxy or production activation. Preserve normal
+  API/Worker/Search process/config and MCP session. Actual task PG/MinIO only.
+- Validation: focused native/safety regression; final affected checks and full
+  make check/make test once with no dependency sync; classify pre-existing failures
+  without unrelated repair. Independent spec then combined quality/final review.
+  Local integration only, no push/deploy. Remove only task-owned containers after
+  saving safe evidence; real model/page and normal activation remain separate gates.
