@@ -128,9 +128,12 @@ def _validate_entry_paths(bundle_root: Path, manifest: PluginManifest) -> None:
     if entry.kind.value == "skill-bundle" and entry.skill_root is not None:
         skill_root = (bundle_root / entry.skill_root).resolve()
         bundle_resolved = bundle_root.resolve()
-        if not str(skill_root).startswith(str(bundle_resolved)):
+        skill_file = (skill_root / "SKILL.md").resolve()
+        if not skill_root.is_relative_to(bundle_resolved) or not skill_file.is_relative_to(
+            bundle_resolved
+        ):
             raise PluginRegistryError("skill_root escapes the plugin bundle")
-        if not (skill_root / "SKILL.md").is_file():
+        if not skill_file.is_file():
             raise PluginRegistryError(
                 "skill-bundle entry does not contain SKILL.md at skill_root"
             )

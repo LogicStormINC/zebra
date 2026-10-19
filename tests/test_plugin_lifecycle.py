@@ -137,3 +137,37 @@ def test_load_manifest_validates_bundle_layout(tmp_path: Path) -> None:
     missing.mkdir()
     with pytest.raises(PluginRegistryError):
         load_manifest(missing)
+
+
+@pytest.mark.parametrize("symlink", [False, True])
+def test_load_manifest_rejects_prefix_sibling_escape(tmp_path: Path, symlink: bool) -> None:
+    import json
+
+    bundle = tmp_path / "bundle"
+    bundle.mkdir()
+    sibling = tmp_path / "bundle-outside"
+    sibling.mkdir()
+    (sibling / "SKILL.md").write_text("# outside\n")
+    skill_root = "../bundle-outside"
+    if symlink:
+        (bundle / "linked").symlink_to(sibling, target_is_directory=True)
+        skill_root = "linked"
+    (bundle / "plugin.json").write_text(
+        json.dumps(_manifest(entry={"kind": "skill-bundle", "skill_root": skill_root}))
+    )
+    with pytest.raises(PluginRegistryError, match="escapes"):
+        load_manifest(bundle)
+
+
+def test_load_manifest_rejects_skill_file_symlink_escape(tmp_path: Path) -> None:
+    import json
+
+    bundle = tmp_path / "bundle"
+    skill = bundle / "skills" / "code"
+    skill.mkdir(parents=True)
+    outside = tmp_path / "outside.md"
+    outside.write_text("# outside\n")
+    (skill / "SKILL.md").symlink_to(outside)
+    (bundle / "plugin.json").write_text(json.dumps(_manifest()))
+    with pytest.raises(PluginRegistryError, match="escapes"):
+        load_manifest(bundle)
