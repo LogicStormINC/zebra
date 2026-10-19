@@ -31,6 +31,7 @@ from agent_core.ports.plugin_installations import (
     PluginInstallationStore,
     PluginPackagePublisher,
 )
+from agent_core.ports.skill_publications import SkillPublicationNotFoundError
 
 
 class PluginSkillSelection(BaseModel):
@@ -104,6 +105,7 @@ class PluginInstallationService:
     publisher: PluginPackagePublisher
     deployment_namespace: str
     components: PluginComponentInstaller | None = None
+    mcp_available: bool = True
 
     async def _package_and_bindings(
         self,
@@ -201,6 +203,53 @@ class PluginInstallationService:
                 )
         return package, tuple(bindings)
 
+    async def readiness(self, record: PluginInstallation) -> str:
+        """Fresh component facts; configured availability is not a Worker heartbeat."""
+        if any(isinstance(item, PluginMcpBinding) for item in record.bindings):
+            if not self.mcp_available:
+                return "mcp_runtime_unavailable"
+        mcp_tools = 0
+        for binding in record.bindings:
+            try:
+                if isinstance(binding, PluginSkillBinding):
+                    current = await self.extensions.get_skill(
+                        scope=record.scope, installation_id=binding.installation.installation_id
+                    )
+                    publication = await self.extensions.get_skill_publication(
+                        scope=record.scope, skill_id=current.version.skill_id,
+                        version_id=current.version.version_id,
+                    )
+                    if (
+                        current != binding.installation or not current.enabled
+                        or publication.scope != record.scope
+                        or publication.version != current.version
+                        or publication.state != "ready"
+                        or publication.manifest != record.package.skill_files(binding.component_id)
+                        or publication.expectation.deployment_namespace != self.deployment_namespace
+                    ):
+                        return "component_unavailable"
+                else:
+                    current_mcp = await self.extensions.get_mcp(
+                        scope=record.scope, connection_id=binding.connection.connection_id
+                    )
+                    catalog = await self.catalogs.latest(
+                        scope=record.scope, connection_id=current_mcp.connection_id,
+                        config_revision=current_mcp.revision,
+                    )
+                    mcp_tools += len(catalog.tools)
+                    if (
+                        mcp_tools > 32
+                        or current_mcp != binding.connection or not current_mcp.enabled
+                        or current_mcp.auth_mode.value not in {"none", "bearer"}
+                        or current_mcp.auth_state.value not in {"not_required", "ready"}
+                        or catalog.connection != current_mcp
+                        or catalog.digest != binding.catalog_digest or not catalog.tools
+                    ):
+                        return "component_unavailable"
+            except (ExtensionNotFoundError, SkillPublicationNotFoundError):
+                return "component_unavailable"
+        return "ready"
+
     async def install(
         self,
         *,
@@ -279,6 +328,10 @@ class PluginInstallationService:
         )
         if current.revision != expected_revision:
             raise ExtensionRevisionConflictError("plugin revision conflict")
+        if request.enabled is True:
+            reason = await self.readiness(current)
+            if reason != "ready":
+                raise ExtensionRevisionConflictError(reason)
         if request.enabled is not None and request.enabled == current.enabled:
             return current
         package, bindings = current.package, current.bindings

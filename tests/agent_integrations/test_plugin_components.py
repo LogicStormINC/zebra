@@ -111,11 +111,26 @@ def test_components_are_pinned_repeatable_and_never_reenable_explicit_revocation
         skill = next(item for item in first if item.kind == "skill-bundle")
         mcp = next(item for item in first if item.kind == "mcp-http")
         assert skill.installation.enabled and skill.installation.revision == 2
+        assert skill.installation.plugin_origin.package_digest == digest
+        assert skill.installation.plugin_origin.component_id == "guide"
         assert publications.current.manifest == pin.skill_files("guide")
         assert mcp.connection == connection and mcp.catalog_digest == catalog.digest
         puts = objects.puts
         assert await installer.prepare(scope=SCOPE, package=pin) == first
         assert len(current) == 1 and objects.puts == puts
+        # An independently installed matching publication stays a shared origin.
+        managed = dict(current)
+        shared = skill.installation.model_copy(update={
+            "installation_id": "standalone-guide", "plugin_origin": None,
+        })
+        current.clear()
+        current[shared.installation_id] = shared
+        saves = extensions.save_skill.await_count
+        reused = await installer.prepare(scope=SCOPE, package=pin)
+        assert next(item for item in reused if item.kind == "skill-bundle").installation == shared
+        assert extensions.save_skill.await_count == saves
+        current.clear()
+        current.update(managed)
         current[skill.installation.installation_id] = skill.installation.model_copy(
             update={"revision": 3, "enabled": False},
         )

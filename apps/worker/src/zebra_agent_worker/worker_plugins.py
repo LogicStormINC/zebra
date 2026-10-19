@@ -4,6 +4,7 @@ import asyncio
 from concurrent.futures import CancelledError
 from dataclasses import dataclass
 
+from agent_core.application.plugin_component_ownership import managed_skill_ids
 from agent_core.application.plugin_resolution import PluginPackageReader
 from agent_core.domain.leases import LeaseLostError
 from agent_core.domain.plugin_authority import PluginAuthorityUnavailable
@@ -96,7 +97,23 @@ def prepare_worker_plugins(
     skills_available: bool,
     mcp_available: bool,
 ) -> WorkerPluginGuard | None:
-    if extension is None or not extension.snapshot.plugins:
+    if extension is None:
+        return None
+    snapshot = extension.snapshot
+    direct = tuple(
+        skill for skill in snapshot.skills
+        if not snapshot.plugins or skill.installation_id in snapshot.direct_skills
+    )
+    try:
+        if asyncio.run(managed_skill_ids(
+            source.installations if source is not None else None, extension.scope, direct
+        )):
+            raise PluginAuthorityUnavailable("package-managed Skill has no accepted Plugin origin")
+    except (CancelledError, LeaseLostError, ExecutionInterrupted):
+        raise
+    except Exception as exc:
+        raise PluginAuthorityUnavailable("accepted Skill origin is unavailable") from exc
+    if not snapshot.plugins:
         return None
     if (
         source is None

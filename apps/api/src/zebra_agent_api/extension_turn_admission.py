@@ -6,6 +6,7 @@ import asyncio
 from collections import defaultdict
 
 from agent_core.application import current_turn, project_turns
+from agent_core.application.plugin_component_ownership import managed_skill_ids
 from agent_core.application.plugin_resolution import PluginResolver
 from agent_core.application.turn_projection import TurnRecord
 from agent_core.contracts import (
@@ -81,7 +82,7 @@ class CloudExtensionTurnAdmission:
     ) -> None:
         """Freeze only the caller's currently enabled, published Skill IDs."""
         scope = extension_runtime_scope_from_grant(verified)
-        selected = tuple(self._enabled_skills(scope, components))
+        selected = tuple(self._enabled_skills(scope, components, allow_managed=True))
         if {item.version.skill_id for item in selected} != set(components):
             raise ValueError("requested Skills are not enabled in this scope")
         asyncio.run(self._store.authorize_frozen_skills(scope=scope, installations=selected))
@@ -190,14 +191,19 @@ class CloudExtensionTurnAdmission:
         return scope, snapshot, ceiling
 
     def _enabled_skills(
-        self, scope: ExtensionScope, skill_components: tuple[str, ...]
+        self, scope: ExtensionScope, skill_components: tuple[str, ...], *,
+        allow_managed: bool = False,
     ) -> list[SkillInstallation]:
         if not skill_components:
             return []
-        return asyncio.run(self._list_enabled_skills(scope, frozenset(skill_components)))
+        return asyncio.run(
+            self._list_enabled_skills(
+                scope, frozenset(skill_components), allow_managed=allow_managed
+            )
+        )
 
     async def _list_enabled_skills(
-        self, scope: ExtensionScope, allowed: frozenset[str]
+        self, scope: ExtensionScope, allowed: frozenset[str], *, allow_managed: bool = False
     ) -> list[SkillInstallation]:
         selected: list[SkillInstallation] = []
         cursor: str | None = None
@@ -230,6 +236,12 @@ class CloudExtensionTurnAdmission:
             if page.next_cursor == cursor:
                 raise ValueError("extension pagination did not advance")
             cursor = page.next_cursor
+        if not allow_managed:
+            managed = await managed_skill_ids(
+                self._plugins.installations if self._plugins is not None else None,
+                scope, tuple(selected),
+            )
+            selected = [item for item in selected if item.installation_id not in managed]
         return selected
 
     @staticmethod

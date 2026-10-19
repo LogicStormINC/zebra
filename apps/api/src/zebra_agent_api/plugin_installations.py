@@ -3,6 +3,7 @@
 import asyncio
 import re
 
+from agent_core.application.plugin_component_ownership import managed_plugin_skill
 from agent_core.application.plugin_installations import (
     PluginInstallationCreate,
     PluginInstallationPatch,
@@ -28,11 +29,15 @@ _PREFIX = "/v1/extensions/plugin-installations"
 _CATALOG = "/v1/extensions/plugin-packages"
 
 
-def _public(record: PluginInstallation) -> dict[str, object]:
+def _public(record: PluginInstallation, readiness: str = "ready") -> dict[str, object]:
     return {
         "installation_id": record.installation_id,
         "revision": record.revision,
         "enabled": record.enabled,
+        "readiness": {
+            "ready": record.enabled and readiness == "ready",
+            "reason": readiness if readiness != "ready" or record.enabled else "disabled",
+        },
         "plugin_id": record.package.manifest.id,
         "version": record.package.manifest.version,
         "publisher": record.package.manifest.publisher,
@@ -47,12 +52,16 @@ def _public(record: PluginInstallation) -> dict[str, object]:
                     {
                         "installation_id": binding.installation.installation_id,
                         "revision": binding.installation.revision,
+                        "skill_id": binding.installation.version.skill_id,
+                        "version_id": binding.installation.version.version_id,
+                        "managed": managed_plugin_skill(record, binding),
                     }
                     if isinstance(binding, PluginSkillBinding)
                     else {
                         "connection_id": binding.connection.connection_id,
                         "revision": binding.connection.revision,
                         "catalog_digest": binding.catalog_digest,
+                        "managed": False,
                     }
                 ),
             }
@@ -176,7 +185,9 @@ async def plugin_installation_response(
                 return extension_error(404)
             return JSONResponse(
                 content={
-                    "items": [_public(record) for record in records.items],
+                    "items": [
+                        _public(record, await service.readiness(record)) for record in records.items
+                    ],
                     "next_cursor": records.next_cursor,
                 },
                 headers={"Cache-Control": "no-store"},
@@ -185,6 +196,7 @@ async def plugin_installation_response(
             record = await service.store.get(scope=scope, installation_id=identifier)
         if record.scope != scope:
             return extension_error(404)
+        readiness = await service.readiness(record)
     except ExtensionNotFoundError:
         return extension_error(404)
     except ExtensionRevisionConflictError:
@@ -197,5 +209,6 @@ async def plugin_installation_response(
     if request.method == "POST":
         headers["Location"] = f"{_PREFIX}/{record.installation_id}"
     return JSONResponse(
-        content=_public(record), status_code=201 if created else 200, headers=headers
+        content=_public(record, readiness),
+        status_code=201 if created else 200, headers=headers
     )

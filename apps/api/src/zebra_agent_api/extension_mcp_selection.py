@@ -6,7 +6,7 @@ from agent_core.ports.extensions import ExtensionNotFoundError, ExtensionPageReq
 from agent_core.ports.mcp_catalog import McpCatalogIntegrityError, McpCatalogStore
 
 
-async def _entry(
+async def mcp_selection_entry(
     catalogs: McpCatalogStore,
     scope: ExtensionScope,
     connection: McpConnection,
@@ -50,7 +50,7 @@ async def select_enabled_mcp(
             connection = await store.get_mcp(scope=scope, connection_id=identifier)
             if connection.connection_id != identifier:
                 raise McpCatalogIntegrityError("MCP selection returned invalid connection identity")
-            entry = await _entry(catalogs, scope, connection)
+            entry = await mcp_selection_entry(catalogs, scope, connection)
             if entry is None:
                 raise ValueError("selected MCP connections are not ready")
             selected.append(entry)
@@ -68,7 +68,7 @@ async def select_enabled_mcp(
                         "MCP selection returned duplicate connection identity"
                     )
                 seen_ids.add(connection.connection_id)
-                entry = await _entry(catalogs, scope, connection)
+                entry = await mcp_selection_entry(catalogs, scope, connection)
                 if entry is not None:
                     selected.append(entry)
             if page.next_cursor is None:

@@ -7,6 +7,7 @@ from agent_core.application.plugin_resolution import PluginResolver
 from agent_core.ports.extensions import ExtensionStore
 from agent_integrations.plugins.installation import ApprovedPluginComponents
 from agent_integrations.plugins.publication import PluginPackagePublicationService
+from agent_security.mcp_credential_protection import mounted_mcp_protector
 from agent_storage import CloudCompositionSettings
 from agent_storage.postgres.mcp_catalog import PostgresMcpCatalogStore
 from agent_storage.postgres.plugin_installations import PostgresPluginInstallationStore
@@ -44,6 +45,12 @@ def compose_plugins(
         or not config.allowed_digests
     ):
         raise ValueError("cloud plugin API requires a trusted bundle root and digest allowlist")
+    mcp_available = settings.mcp_credentials.worker_enabled
+    if mcp_available:
+        config_mcp = settings.mcp_credentials
+        mounted_mcp_protector(
+            config_mcp.secret_root, config_mcp.key_handle, config_mcp.key_version
+        )
     catalogs = PostgresMcpCatalogStore(
         cloud.dsn,
         deployment_namespace=cloud.deployment_namespace,
@@ -66,6 +73,7 @@ def compose_plugins(
             catalogs,
             packages,
             cloud.deployment_namespace,
+            mcp_available=mcp_available,
             components=ApprovedPluginComponents(
                 packages,
                 SkillPublicationService(
@@ -86,5 +94,5 @@ def compose_plugins(
         extensions,
         catalogs,
         packages,
-        allow_mcp=settings.mcp_credentials.worker_enabled,
+        allow_mcp=mcp_available,
     )

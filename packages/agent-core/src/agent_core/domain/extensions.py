@@ -51,6 +51,15 @@ class SkillVersion(BaseModel):
     content_digest: ExtensionDigest
 
 
+class PluginSkillOrigin(BaseModel):
+    """Server-created package component; never an independent Skill grant."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    package_digest: str = Field(strict=True, pattern=r"^sha256:[0-9a-f]{64}$")
+    component_id: OpaqueExtensionId
+
+
 class SkillInstallation(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -59,6 +68,9 @@ class SkillInstallation(BaseModel):
     revision: ExtensionRevision
     version: SkillVersion
     enabled: bool = Field(default=True, strict=True)
+    plugin_origin: PluginSkillOrigin | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
 
 
 class McpAuthState(StrEnum):

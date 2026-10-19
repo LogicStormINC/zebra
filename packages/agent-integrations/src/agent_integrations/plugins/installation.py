@@ -3,12 +3,12 @@
 import io
 import zipfile
 from dataclasses import dataclass
-from hashlib import sha256
 
 from agent_core.application.extension_configuration import set_extension_enabled
 from agent_core.application.mcp_connections import mcp_connection_identifier
+from agent_core.application.plugin_component_ownership import plugin_skill_key
 from agent_core.application.skill_installations import create_skill_installation
-from agent_core.domain.extensions import ExtensionScope, SkillInstallation
+from agent_core.domain.extensions import ExtensionScope, PluginSkillOrigin, SkillInstallation
 from agent_core.domain.plugin_installations import (
     PluginBinding,
     PluginMcpBinding,
@@ -110,12 +110,7 @@ class ApprovedPluginComponents:
                         info = zipfile.ZipInfo(file.path.removeprefix(component.skill_root + "/"))
                         info.compress_type = zipfile.ZIP_DEFLATED
                         archive.writestr(info, file.content)
-            key = (
-                "plugin-skill-"
-                + sha256(
-                    (package.package_digest + ":" + component.id).encode(),
-                ).hexdigest()
-            )
+            key = plugin_skill_key(package.package_digest, component.id)
             assert self.publications is not None
             publication = await self.publications.publish(
                 archive=output.getvalue(),
@@ -134,6 +129,9 @@ class ApprovedPluginComponents:
                     store=self.extensions,
                     scope=scope,
                     idempotency_key=key,
+                    plugin_origin=PluginSkillOrigin(
+                        package_digest=package.package_digest, component_id=component.id,
+                    ),
                     payload={
                         "skill_id": publication.version.skill_id,
                         "version_id": publication.version.version_id,

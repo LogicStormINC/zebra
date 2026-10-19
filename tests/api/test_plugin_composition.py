@@ -32,3 +32,22 @@ def test_skill_only_composition_reuses_cloud_objects_without_mcp_secrets(tmp_pat
     assert resolver.packages.objects is cloud.artifact_objects
     assert not resolver.allow_mcp
     assert not cloud.artifact_objects.mock_calls
+
+
+def test_mcp_configured_capability_requires_secure_existing_key_before_composition(tmp_path):
+    import pytest
+
+    settings = SimpleNamespace(
+        plugins=SimpleNamespace(enabled=True, bundle_root=str(tmp_path),
+                                allowed_digests=("sha256:" + "a" * 64,)),
+        deployment="cloud", storage_authority="postgresql",
+        cloud_extensions_manage_enabled=True, cloud_extension_turn_admission_enabled=True,
+        cloud_skills_publish_enabled=True,
+        mcp_credentials=SimpleNamespace(worker_enabled=True, secret_root=str(tmp_path),
+                                        key_handle="missing", key_version="v1"),
+    )
+    cloud = SimpleNamespace(dsn="postgresql://unused", deployment_namespace="plugins",
+                            artifact_objects=Mock())
+    with pytest.raises(ValueError, match="master key"):
+        compose_plugins(settings, cloud, AsyncMock())
+    assert not cloud.artifact_objects.mock_calls

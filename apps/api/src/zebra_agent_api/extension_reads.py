@@ -9,6 +9,7 @@ from agent_core.ports.extensions import (
     ExtensionPageRequest,
     ExtensionStore,
 )
+from agent_core.ports.mcp_catalog import McpCatalogStore
 from agent_core.ports.skill_publications import SkillPublicationNotFoundError
 from agent_security.extension_authority import extension_scope_from_grant
 from agent_security.host_grant import HostGrantSecurityError, VerifiedHostGrant
@@ -16,6 +17,8 @@ from agent_tools.skill_publications import SkillPublicationService
 from fastapi import Request
 from fastapi.responses import JSONResponse
 from pydantic import TypeAdapter, ValidationError
+
+from zebra_agent_api.extension_mcp_selection import mcp_selection_entry
 
 _PREFIX = "/v1/extensions"
 _ID = TypeAdapter(OpaqueExtensionId)
@@ -81,6 +84,7 @@ async def extension_read_response(
     deployment: str,
     manage_enabled: bool = False,
     publications: SkillPublicationService | None = None,
+    mcp_catalogs: McpCatalogStore | None = None,
 ) -> JSONResponse | None:
     if not is_extension_path(request.url.path):
         return None
@@ -148,7 +152,7 @@ async def extension_read_response(
             )
             if record.scope != scope:
                 return extension_error(404)
-            content = await _described_record(record, publications)
+            content = await _described_record(record, publications, mcp_catalogs)
         else:
             records = (
                 await store.list_skills(scope=scope, page=page)
@@ -161,7 +165,7 @@ async def extension_read_response(
 
             async def describe(record: SkillInstallation | McpConnection) -> dict[str, object]:
                 async with semaphore:
-                    return await _described_record(record, publications)
+                    return await _described_record(record, publications, mcp_catalogs)
 
             content = {
                 "items": await asyncio.gather(*(describe(record) for record in records.items)),
@@ -182,9 +186,18 @@ async def extension_read_response(
 async def _described_record(
     record: SkillInstallation | McpConnection,
     publications: SkillPublicationService | None,
+    mcp_catalogs: McpCatalogStore | None = None,
 ) -> dict[str, object]:
     content = _public_record(record)
-    if not isinstance(record, SkillInstallation) or publications is None:
+    if isinstance(record, McpConnection):
+        entry = (
+            await mcp_selection_entry(mcp_catalogs, record.scope, record)
+            if mcp_catalogs is not None else None
+        )
+        count = len(entry.permissions.tools) if entry is not None else 0
+        content.update(selectable=0 < count <= 32, tool_count=count)
+        return content
+    if publications is None:
         return content
     try:
         publication = await publications.get(

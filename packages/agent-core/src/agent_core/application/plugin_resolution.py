@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 from typing import Protocol
 
+from agent_core.application.plugin_component_ownership import managed_skill_ids
 from agent_core.domain.extension_snapshots import (
     ExtensionPermissions,
     ExtensionSnapshot,
@@ -67,6 +68,10 @@ class PluginResolver:
                 raise PluginSelectionRefused(
                     "selected Skill is unavailable or exceeds Task ceiling"
                 )
+            if expected is None and await managed_skill_ids(
+                self.installations, scope, (current,)
+            ):
+                raise PluginSelectionRefused("package-managed Skill requires its Plugin origin")
             try:
                 publication = await self.extensions.get_skill_publication(
                     scope=scope,

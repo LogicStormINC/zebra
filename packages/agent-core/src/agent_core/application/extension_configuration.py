@@ -134,7 +134,7 @@ async def update_skill_version(
     # a future publication revoke lifecycle needs an atomic eligibility check.
     installation = SkillInstallation(
         scope=scope, installation_id=object_id, revision=current.revision + 1,
-        enabled=current.enabled, version=publication.version,
+        enabled=current.enabled, version=publication.version, plugin_origin=current.plugin_origin,
     )
     if before_save is not None:
         before_save()

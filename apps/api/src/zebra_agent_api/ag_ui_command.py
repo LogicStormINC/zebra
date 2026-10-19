@@ -8,6 +8,7 @@ from uuid import UUID
 from ag_ui.core import RunAgentInput
 from agent_core.contracts import SessionCommandKind
 from agent_core.domain.identifiers import ClientSessionId, TaskId
+from agent_core.domain.plugin_snapshots import ExtensionSelection
 from agent_core.domain.stream_admission import StreamCapabilities
 from agent_security.host_grant import VerifiedHostGrant
 from agent_storage import ControlPlaneStores
@@ -65,6 +66,12 @@ class AgUiCommandEnvelope(BaseModel):
         default=None,
         validation_alias="streamCapabilities",
         serialization_alias="streamCapabilities",
+    )
+
+    extension_selection: ExtensionSelection | None = Field(
+        default=None,
+        validation_alias="extensionSelection",
+        serialization_alias="extensionSelection",
     )
 
     @field_validator("thread_id", "run_id")
@@ -177,6 +184,10 @@ def _command_payload(envelope: AgUiCommandEnvelope) -> dict[str, object]:
         "thread_id": envelope.thread_id,
         "run_id": envelope.run_id,
     }
+    if envelope.extension_selection is not None:
+        if envelope.action == "stop":
+            raise ValueError("stop command must not select extensions")
+        payload["extension_selection"] = envelope.extension_selection.model_dump(mode="json")
     if envelope.stream_capabilities is not None:
         if envelope.action == "stop":
             raise ValueError("stop command must not renegotiate streaming")

@@ -63,4 +63,5 @@ async def extension_management_response(
         deployment=deployment,
         manage_enabled=manage_enabled,
         publications=publications,
+        mcp_catalogs=plugins.catalogs if plugins is not None and plugins.mcp_available else None,
     )
