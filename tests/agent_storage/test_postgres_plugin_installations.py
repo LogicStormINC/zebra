@@ -13,7 +13,7 @@ from uuid import uuid4
 import pytest
 from agent_core.domain.artifact_objects import ArtifactObjectExpectation, ArtifactObjectReceipt
 from agent_core.domain.identifiers import ArtifactId
-from agent_core.domain.mcp_catalog import McpToolCatalog
+from agent_core.domain.mcp_catalog import McpCatalogTool, McpToolCatalog
 from agent_core.domain.plugin_packages import PluginPackageManifest
 from agent_core.ports.extensions import (
     ExtensionNotFoundError,
@@ -24,6 +24,14 @@ from agent_core.ports.extensions import (
 from tests.agent_storage.test_postgres_extensions import SCOPE, dsn, postgres_dsn
 
 __all__ = ["dsn", "postgres_dsn"]
+
+
+def _catalog(connection: Any) -> McpToolCatalog:
+    return McpToolCatalog(
+        connection=connection,
+        protocol_version="2025-03-26",
+        tools=(McpCatalogTool(name="test", input_schema_json='{"type":"object"}'),),
+    )
 
 
 def _record(**updates: Any) -> Any:
@@ -175,7 +183,7 @@ def test_enable_ready_mcp_then_disable_after_connection_changes(dsn: str) -> Non
     async def check() -> None:
         original = _record()
         binding = original.bindings[0]
-        catalog = McpToolCatalog(connection=binding.connection, protocol_version="2025-03-26")
+        catalog = _catalog(binding.connection)
         original = type(original).model_validate(
             {
                 **original.model_dump(),
@@ -230,7 +238,7 @@ def test_enable_holds_component_lock_until_plugin_commit(dsn: str) -> None:
         catalogs = PostgresMcpCatalogStore(dsn, deployment_namespace="cloud-a")
         original = _record()
         binding = original.bindings[0]
-        catalog = McpToolCatalog(connection=binding.connection, protocol_version="2025-03-26")
+        catalog = _catalog(binding.connection)
         original = type(original).model_validate(
             {
                 **original.model_dump(),
@@ -265,6 +273,137 @@ def test_enable_holds_component_lock_until_plugin_commit(dsn: str) -> None:
             release.set()
             await asyncio.gather(enabling, changing)
         assert (await store.get(scope=SCOPE, installation_id="plugin-a")).enabled
+
+    asyncio.run(check())
+
+
+def test_empty_mcp_catalog_cannot_enable_plugin(dsn: str) -> None:
+    from agent_storage.postgres.extensions import PostgresExtensionStore
+    from agent_storage.postgres.mcp_catalog import PostgresMcpCatalogStore
+    from agent_storage.postgres.plugin_installations import PostgresPluginInstallationStore
+
+    async def check() -> None:
+        store = PostgresPluginInstallationStore(dsn, deployment_namespace="cloud-a")
+        extensions = PostgresExtensionStore(dsn, deployment_namespace="cloud-a")
+        catalogs = PostgresMcpCatalogStore(dsn, deployment_namespace="cloud-a")
+        original = _record()
+        binding = original.bindings[0]
+        catalog = McpToolCatalog(connection=binding.connection, protocol_version="2025-03-26")
+        original = type(original).model_validate(
+            {
+                **original.model_dump(),
+                "bindings": [{**binding.model_dump(), "catalog_digest": catalog.digest}],
+            }
+        )
+        await extensions.save_mcp(
+            scope=SCOPE, connection=binding.connection, expected_revision=None
+        )
+        await catalogs.publish(scope=SCOPE, catalog=catalog)
+        await store.save(scope=SCOPE, installation=original, expected_revision=None)
+        with pytest.raises(ExtensionRevisionConflictError):
+            await store.save(
+                scope=SCOPE,
+                installation=original.model_copy(update={"revision": 2, "enabled": True}),
+                expected_revision=1,
+            )
+
+    asyncio.run(check())
+
+
+def test_real_store_service_rebind_disables_and_replay_keeps_creation_intent(dsn: str) -> None:
+    from unittest.mock import AsyncMock
+
+    from agent_core.application.plugin_installations import PluginInstallationService
+    from agent_storage.postgres.extensions import PostgresExtensionStore
+    from agent_storage.postgres.mcp_catalog import PostgresMcpCatalogStore
+    from agent_storage.postgres.plugin_installations import PostgresPluginInstallationStore
+
+    async def check() -> None:
+        store = PostgresPluginInstallationStore(dsn, deployment_namespace="cloud-a")
+        extensions = PostgresExtensionStore(dsn, deployment_namespace="cloud-a")
+        catalogs = PostgresMcpCatalogStore(dsn, deployment_namespace="cloud-a")
+        original = _record()
+        connection = original.bindings[0].connection
+        await extensions.save_mcp(scope=SCOPE, connection=connection, expected_revision=None)
+        await catalogs.publish(scope=SCOPE, catalog=_catalog(connection))
+        publisher = AsyncMock()
+        publisher.publish.return_value = original.package
+        service = PluginInstallationService(
+            store=store,
+            extensions=extensions,
+            catalogs=catalogs,
+            publisher=publisher,
+            deployment_namespace="cloud-a",
+        )
+        payload = {
+            "package_digest": original.package.package_digest,
+            "bindings": [
+                {
+                    "kind": "mcp-http",
+                    "component_id": "test-mcp",
+                    "connection_id": connection.connection_id,
+                }
+            ],
+        }
+        created, fresh = await service.install(
+            scope=SCOPE, operated_by="operator", idempotency_key="one", payload=payload
+        )
+        assert fresh and not created.enabled
+        enabled = await service.update(
+            scope=SCOPE,
+            operated_by="operator",
+            installation_id=created.installation_id,
+            expected_revision=1,
+            payload={"enabled": True},
+        )
+        assert enabled.enabled
+        changed = connection.model_copy(
+            update={"revision": 2, "endpoint": "https://mcp.example/changed"}
+        )
+        await extensions.save_mcp(scope=SCOPE, connection=changed, expected_revision=1)
+        await catalogs.publish(scope=SCOPE, catalog=_catalog(changed))
+        rebound = await service.update(
+            scope=SCOPE,
+            operated_by="operator",
+            installation_id=created.installation_id,
+            expected_revision=2,
+            payload=payload,
+        )
+        assert not rebound.enabled and rebound.revision == 3
+        assert rebound.bindings[0].connection == changed
+        assert rebound.creation_request_digest == created.creation_request_digest
+        assert (
+            await store.get_revision(
+                scope=SCOPE, installation_id=created.installation_id, revision=1
+            )
+            == created
+        )
+        replayed, fresh = await service.install(
+            scope=SCOPE, operated_by="operator", idempotency_key="one", payload=payload
+        )
+        assert replayed == rebound and not fresh
+        with pytest.raises(ExtensionRevisionConflictError):
+            await service.install(
+                scope=SCOPE,
+                operated_by="operator",
+                idempotency_key="one",
+                payload={
+                    **payload,
+                    "bindings": [{**payload["bindings"][0], "connection_id": "different"}],
+                },
+            )
+        with pytest.raises(ValueError):
+            await store.save(
+                scope=SCOPE,
+                installation=rebound.model_copy(
+                    update={
+                        "revision": 4,
+                        "creation_request_digest": "0" * 64,
+                    }
+                ),
+                expected_revision=3,
+            )
+        assert await store.get(scope=SCOPE, installation_id=created.installation_id) == rebound
 
     asyncio.run(check())
 

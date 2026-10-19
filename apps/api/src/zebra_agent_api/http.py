@@ -4,6 +4,7 @@ import asyncio
 from collections.abc import AsyncIterator, Mapping
 from pathlib import Path
 
+from agent_core.application.plugin_installations import PluginInstallationService
 from agent_core.ports.event_store import BoundedSessionEventReadPort
 from agent_core.ports.extensions import ExtensionStore
 from agent_integrations import GitHubPullRequestTransport
@@ -35,7 +36,6 @@ from zebra_agent_api.extension_composition import (
 from zebra_agent_api.extension_management_routes import extension_management_response
 from zebra_agent_api.extension_reads import (
     extension_error,
-    extension_read_response,
     is_extension_path,
 )
 from zebra_agent_api.http_host_auth import (
@@ -60,7 +60,6 @@ from zebra_agent_api.responses import ApiResponse
 from zebra_agent_api.routes import RouteAdapter, RouteRequest
 from zebra_agent_api.session_identity_read import _parse_session_id
 from zebra_agent_api.session_streaming import tail_session_events, tail_task_events
-from zebra_agent_api.skill_publications import skill_publication_response
 from zebra_agent_api.task_api import parse_task_id
 from zebra_agent_api.tenant_guard import tenant_scope_response
 
@@ -92,6 +91,7 @@ def create_http_app(
     skill_publication_service: SkillPublicationService | None = None,
     mcp_credential_management: McpCredentialManagement | None = None,
     mcp_catalog_refresh: McpCatalogRefresh | None = None,
+    plugin_installation_service: PluginInstallationService | None = None,
 ) -> FastAPI:
     active_settings = settings or load_settings()
     active_database_path = Path(database_path or active_settings.database_url)
@@ -192,30 +192,17 @@ def create_http_app(
     )
 
     async def optional_extensions(request: Request) -> Response | None:
-        credential_response = await extension_management_response(
+        return await extension_management_response(
             request,
             service=mcp_credential_management,
             refresh=mcp_catalog_refresh,
             deployment=active_settings.deployment,
             manage_enabled=active_settings.cloud_extensions_manage_enabled,
-        )
-        if credential_response is not None:
-            return credential_response
-        publication_response = await skill_publication_response(
-            request,
-            service=skill_publication_service,
-            deployment=active_settings.deployment,
             read_enabled=active_settings.cloud_extensions_read_enabled,
-            manage_enabled=active_settings.cloud_extensions_manage_enabled,
-        )
-        if publication_response is not None:
-            return publication_response
-        return await extension_read_response(
-            request,
-            store=active_extension_store,
-            deployment=active_settings.deployment,
-            manage_enabled=active_settings.cloud_extensions_manage_enabled,
+            extension_store=active_extension_store,
             publications=skill_publication_service,
+            plugins=plugin_installation_service,
+            plugins_enabled=active_settings.plugins.enabled,
         )
 
     async def handle(request: Request, full_path: str = "") -> Response:

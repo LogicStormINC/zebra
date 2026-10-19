@@ -12,6 +12,7 @@ from zebra_agent_config.coverage_settings import CoverageWorkSettings, load_cove
 from zebra_agent_config.egress_settings import load_egress_endpoint
 from zebra_agent_config.mcp_credentials import McpCredentialSettings, load_mcp_credentials
 from zebra_agent_config.memory_settings import MemoryGatewaySettings, load_memory_gateway_settings
+from zebra_agent_config.plugin_settings import PluginSettings, load_plugins
 from zebra_agent_config.public_output_settings import PublicOutputPolicy, load_public_output_policy
 from zebra_agent_config.runtime_settings import RuntimeSettings as RuntimeSettings
 from zebra_agent_config.setup_settings import SetupSettings, load_setup_settings
@@ -100,6 +101,7 @@ class ZebraAgentSettings:
     cloud_extensions_read_enabled: bool = False
     cloud_extensions_manage_enabled: bool = False
     mcp_credentials: McpCredentialSettings = field(default_factory=McpCredentialSettings)
+    plugins: PluginSettings = field(default_factory=PluginSettings)
     cloud_extension_turn_admission_enabled: bool = False
     cloud_extension_worker_enabled: bool = False
     cloud_skill_worker_enabled: bool = False
@@ -243,6 +245,7 @@ def load_settings(
             values, "ZEBRA_CLOUD_EXTENSIONS_MANAGE_ENABLED", default=False
         ),
         mcp_credentials=load_mcp_credentials(values),
+        plugins=load_plugins(values),
         cloud_extension_turn_admission_enabled=_read_bool(
             values, "ZEBRA_CLOUD_EXTENSION_TURN_ADMISSION_ENABLED", default=False
         ),

@@ -5,7 +5,7 @@ from typing import Protocol
 from pydantic import BaseModel, ConfigDict, Field
 
 from agent_core.domain.extensions import ExtensionScope, OpaqueExtensionId
-from agent_core.domain.plugin_installations import PluginInstallation
+from agent_core.domain.plugin_installations import PluginInstallation, PluginPackagePin
 from agent_core.ports.extensions import ExtensionPageRequest
 
 
@@ -55,4 +55,10 @@ class PluginInstallationStore(Protocol):
         Package/binding changes must remain disabled. Missing scope/revision uses
         ExtensionNotFoundError; stale revisions/bindings use ExtensionRevisionConflictError.
         """
+        ...
+
+
+class PluginPackagePublisher(Protocol):
+    async def publish(self, *, package_digest: str) -> PluginPackagePin:
+        """Resolve an approved digest to trusted, immutable package facts only."""
         ...

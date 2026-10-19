@@ -65,7 +65,38 @@ def _unique_object(pairs: list[tuple[str, object]]) -> dict[str, object]:
 def load_plugin_package(bundle_root: Path) -> ValidatedPluginPackage:
     """Validate actual files, preserve legacy manifest hash, hash all content."""
     try:
-        files = _snapshot_files(bundle_root)
+        return validate_plugin_package_files(_snapshot_files(bundle_root))
+    except PluginPackageError:
+        raise
+    except (OSError, ValueError, RuntimeError, RecursionError):
+        raise PluginPackageError("invalid_package") from None
+
+
+def validate_plugin_package_files(files: tuple[PluginPackageFile, ...]) -> ValidatedPluginPackage:
+    """Revalidate fixed object bytes through the same package integrity rules."""
+    try:
+        if len(files) > MAX_ENTRIES or sum(file.size for file in files) > MAX_EXPANDED_BYTES:
+            raise PluginPackageError("package_too_large")
+        paths = tuple(file.path for file in files)
+        if paths != tuple(sorted(set(paths))):
+            raise PluginPackageError("path_conflict")
+        prefixes: dict[str, str] = {}
+        for file in files:
+            if (
+                normalize_plugin_path(file.path) != file.path
+                or len(file.path.split("/")) > MAX_PATH_DEPTH
+                or file.size != len(file.content)
+                or file.sha256 != sha256(file.content).hexdigest()
+            ):
+                raise PluginPackageError("invalid_package")
+            parts = file.path.split("/")
+            for index in range(1, len(parts) + 1):
+                prefix = "/".join(parts[:index])
+                previous = prefixes.setdefault(prefix.casefold(), prefix)
+                if previous != prefix or (index < len(parts) and prefix in paths):
+                    raise PluginPackageError("path_conflict")
+            if parts[-1] in {"plugin.json", "SKILL.md"} and file.size > MAX_SKILL_FILE_BYTES:
+                raise PluginPackageError("metadata_too_large")
         manifest_file = next((file for file in files if file.path == "plugin.json"), None)
         if manifest_file is None:
             raise PluginPackageError("missing_manifest")
@@ -90,7 +121,8 @@ def load_plugin_package(bundle_root: Path) -> ValidatedPluginPackage:
         canonical,
         "sha256:" + sha256(canonical.encode()).hexdigest(),
         plugin_package_digest(
-            canonical, ((file.path, file.size, file.sha256) for file in contents),
+            canonical,
+            ((file.path, file.size, file.sha256) for file in contents),
         ),
         contents,
     )

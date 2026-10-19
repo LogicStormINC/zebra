@@ -17,7 +17,6 @@ from agent_core.domain.plugin_installations import (
     PluginMcpBinding,
     PluginSkillBinding,
 )
-from agent_core.domain.plugin_packages import PluginSkillComponent
 from agent_core.domain.skill_publications import SkillPublication
 from agent_core.ports.extensions import (
     ExtensionNotFoundError,
@@ -215,21 +214,11 @@ class PostgresPluginInstallationStore(PostgresDatabase):
         if row is None:
             raise ExtensionRevisionConflictError("plugin Skill publication unavailable")
         publication = SkillPublication.model_validate(row["payload"])
-        component = next(
-            item for item in record.package.manifest.components if item.id == binding.component_id
-        )
-        assert isinstance(component, PluginSkillComponent)
-        root = component.skill_root + "/"
-        files = tuple(
-            file.model_copy(update={"path": file.path.removeprefix(root)})
-            for file in record.package.files
-            if file.path.startswith(root)
-        )
         if (
             publication.scope != scope
             or publication.version != version
             or publication.state != "ready"
-            or publication.manifest != files
+            or publication.manifest != record.package.skill_files(binding.component_id)
             or publication.expectation.deployment_namespace != self.deployment_namespace
         ):
             raise ExtensionRevisionConflictError("plugin Skill publication disagrees with package")
@@ -241,7 +230,10 @@ class PostgresPluginInstallationStore(PostgresDatabase):
         binding: PluginMcpBinding,
     ) -> None:
         expected = binding.connection
-        if expected.auth_state.value not in {"not_required", "ready"}:
+        if expected.auth_state.value not in {
+            "not_required",
+            "ready",
+        } or expected.auth_mode.value not in {"none", "bearer"}:
             raise ExtensionRevisionConflictError("plugin MCP authentication unavailable")
         row = transaction.execute(
             "SELECT payload FROM mcp_catalog_versions WHERE "
@@ -257,5 +249,9 @@ class PostgresPluginInstallationStore(PostgresDatabase):
         if row is None:
             raise ExtensionRevisionConflictError("plugin MCP catalog unavailable")
         catalog = McpToolCatalog.model_validate(row["payload"])
-        if catalog.connection != expected or catalog.digest != binding.catalog_digest:
+        if (
+            catalog.connection != expected
+            or catalog.digest != binding.catalog_digest
+            or not catalog.tools
+        ):
             raise ExtensionRevisionConflictError("plugin MCP catalog disagrees with binding")

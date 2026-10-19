@@ -21,6 +21,7 @@ from agent_core.domain.extensions import (
 from agent_core.domain.plugin_packages import (
     PluginComponentId,
     PluginPackageManifest,
+    PluginSkillComponent,
     normalize_plugin_manifest,
     normalize_plugin_path,
     plugin_package_digest,
@@ -64,6 +65,17 @@ class PluginPackagePin(BaseModel):
         if sum(file.size for file in self.files) > 50 * 1024 * 1024:
             raise ValueError("package index exceeds expanded package limit")
         return self
+
+    def skill_files(self, component_id: str) -> tuple[SkillPublicationFile, ...]:
+        component = next(item for item in self.manifest.components if item.id == component_id)
+        if not isinstance(component, PluginSkillComponent):
+            raise ValueError("component is not a Skill bundle")
+        root = component.skill_root + "/"
+        return tuple(
+            file.model_copy(update={"path": file.path.removeprefix(root)})
+            for file in self.files
+            if file.path.startswith(root)
+        )
 
 
 class PluginSkillBinding(BaseModel):
