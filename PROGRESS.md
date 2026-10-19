@@ -7283,3 +7283,14 @@ conversation confirms recommendations above text input with matching accessible
 order. Desktop screenshot in Trench .artifacts/trn-composer-suggestions-01/.
 No actual model submission/service restart/push/remote deployment. Task Review,
 focused local delivery; unrelated primary AGENTS.md/Trench dirty work preserved.
+
+### 2026-10-19 CLOUD-PLUGIN-PLAN-01 — proposal only
+
+Current-source Cloud Plugin adoption plan saved to
+docs/superpowers/plans/2026-10-19-cloud-plugin-adoption.md. Four proposed slices:
+package integrity, scoped durable installation, existing Turn/Worker integration,
+then native acceptance and separately gated researcher inheritance. Reuses current
+Skill/MCP authority and snapshots; no implicit grants or component enablement.
+Default off; immutable object receipts retained without automatic Plugin GC.
+316-line source-pointer/scope checks and independent review/recheck passed.
+No runtime code, migration, service activation, model/search or Trench change.

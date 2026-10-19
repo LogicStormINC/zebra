@@ -16223,3 +16223,16 @@ Delivery boundary: the optional all-package SDK-source comparison found an exist
 ui-contracts declaration mismatch. That unchanged package was not repacked. All
 five vendor/lock/install comparisons pass; all7changed React payload files match
 the fresh SDK build. This unrelated source/package reconciliation is not claimed.
+
+### 2026-10-19 — CLOUD-PLUGIN-PLAN-01
+
+Claimed a plan-only task in codex/cloud-plugin-plan-01 from cloud-agent-trench
+2a6966be before drafting. Audited plugin v0.1, scoped extensions, publication
+objects, admission, snapshot transaction and Worker recovery/authorization.
+316-line proposal defines four implementation slices without starting them.
+Independent review found existing session payload GC does not protect extension
+objects; corrected first release to retain Plugin objects/receipts without auto-GC.
+Clarified shared-component provenance/disable semantics and default-off wiring;
+reviewer recheck approved. Source pointers/scope/diff checks pass; no runtime
+tests, database migration, service changes or model/search requests. Preserve
+primary AGENTS.md and unrelated runtime-platform spec; local documentation only.

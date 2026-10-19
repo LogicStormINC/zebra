@@ -34679,3 +34679,22 @@ old payloads remain byte-compatible by excluding None. No database migration.
 - Scope: move existing suggestion DOM before textarea, preserve callbacks/busy/disabled/attachments/model controls. No new API/CSS/dependency/runtime changes. Rebuild current React package and deliver exact tarball to existing Trench local frontend; focused SDK and Host checks plus browser desktop DOM/geometry proof without model submission. Preserve all unrelated dirty work; local changes only, no push/remote deployment.
 
 - Acceptance: existing source block moved before textarea without new props/CSS/dependencies. Regression fails prior order;5focused SDK checks and SDK build/typecheck pass. Trench14focused/full makecheck (243API/80cleaning/515frontend) and all vendor/lock/install bytes and changed React fresh-build bytes pass; original signed-in browser shows both visual and accessibility order, screenshot retained in Trench. No model request/service restart/push/remote deploy.
+
+
+### CLOUD-PLUGIN-PLAN-01 — Cloud Plugin adoption plan
+
+- Status: Done (plan-only, 2026-10-19; Ready → In Progress claimed before drafting;
+  current-source consistency checks and independent review/recheck passed).
+- Human owner: Luke Ding; executor: Codex.
+- Branch: codex/cloud-plugin-plan-01; worktree cloud-plugin-plan-01/zebra-agent.
+- Base: cloud-agent-trench2a6966be.
+- Owned paths: docs/superpowers/plans/2026-10-19-cloud-plugin-adoption.md;
+  own registry record; PROGRESS.md and WORKLOG.md plan-only status.
+- Scope: current-source audit and implementable minimal Cloud Plugin proposal,
+  reusing existing Skill/MCP/snapshot/authorization/credential/egress flows.
+- No runtime implementation, migrations, activation, model/search or Trench/Desktop changes.
+- Validation: source-pointer/contract consistency and one independent plan review.
+- Implementation tasks remain proposed until the user authorizes execution.
+- Delivery: 316-line plan; reuses existing governed Skill/MCP components, exact
+  Turn snapshots and fresh authorization. No implicit component enablement, no
+  automatic Plugin object GC, default-off rollout; no runtime capability claim.
