@@ -34938,3 +34938,11 @@ old payloads remain byte-compatible by excluding None. No database migration.
 - Hard boundaries: no search/Exa requests or retries, no quota/auth weakening,
   no Trench/Desktop changes, no oldRun mutations/automatic rerun, no remote push
   or deployment. Local integration only. Existing failed samples remain unchanged.
+- Pre-model gates passed: meaningful regression reproduced old eager preparation;
+  78focused tests, Ruff, Mypy1315sources and file sizes pass. Read-only code/ops
+  review found no Critical/Important. New image only copiesharness.py. One-shot
+  nativeWorker PG/S3/Plugin3Skilltoolcalls/0provisions, badpathdenied; files.list
+  provisions1realgVisor, bidirectionalmarker proves sharedpath. Dedicatedchild
+  mount10527662080<=10737418240, quotaenabled. Shared parent capacity upper bound,
+  not per-child reservedquota. No model/search/MCP; no-RunprobeTaskcancelled.
+  NormalWorker update and one genuineRun remain before completion.

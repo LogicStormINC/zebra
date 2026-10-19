@@ -7366,3 +7366,11 @@ also unnecessarily triggerDeferredRuntime in currentgateway. No finalanswer/E2E
 pass; no thirdRun/resume, security weakening or source/service/config changes.
 Search/MCP process/cooldown and originalpartialTurns/oldheads preserved. Nextgate
 requires nativeSkillruntime audit plus compliant isolation before another sample.
+
+CLOUD-SKILL-RUNTIME-01 authorized/implemented: exactnativeSkillread/list share
+existingArtifactruntime-free dispatch, existingcatalog/Plugin/cancel boundaries
+intact; filesystem tools still provision.78focused/Ruff/Mypy1315/files pass,
+read-only code/ops review noCritical/Important. True one-shotWorkerPG/S3 tools
+andgVisor bidirectionalmarker prove nestedchildmount/10527662080Bcap within10GiB,
+no quota weakening or exclusivecapacityclaim.0model/search/MCP; no-RunTaskclosed.
+NormalWorker update and new once-onlyhigh/v2 Run are next; priorfailuresretained.

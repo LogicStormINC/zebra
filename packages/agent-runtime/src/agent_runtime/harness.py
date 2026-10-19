@@ -391,11 +391,11 @@ class LocalToolGateway(ToolGatewayPort):
     def execute(self, tool_call: ToolCall) -> ToolResult:
         if self._network_check is not None:
             self._network_check()
-        # ponytail: session-scoped Artifact reads use the control plane, not the sandbox.
+        # ponytail: Skill/Artifact reads use bounded stores, not an OCI workspace.
         # Only audited native Web handlers otherwise skip provisioning.
         if (isinstance(self._runtime, DeferredRuntime)
                 and tool_call.name not in self._runtime_free_web_tools
-                and tool_call.name != "artifacts.read"):
+                and tool_call.name not in {"artifacts.read", "skills.list", "skills.read"}):
             self._runtime.ensure_ready()
         try:
             result = self._executor.execute(tool_call)

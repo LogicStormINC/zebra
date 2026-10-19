@@ -16379,3 +16379,26 @@ thirdRun; fullE2Estillfails. Searchcompleteobject/PIDs/cooldown, protectedpartia
 Turns andextensionheads unchanged; leases/pending0. UseralsoaskedaboutPluginpage:
 TrenchDashboardExtensionSettings kindmcp|skill only, no UI/Desktop/SDK Pluginentry;
 backendlist/read/install/CASenable/rebind API exists. Readonlyanswer, noTrenchchange.
+
+### 2026-10-19 — CLOUD-SKILL-RUNTIME-01 (pre-model gates)
+
+User explicitly authorized minimalSkillruntimefix+compliantisolation, thenoneRun.
+Claimedfreshbranch1caece1b from46c9fc15 incleanexistingworktree. AuditedallSkill/
+gatewaycallers: nativecataloghandlersonly, fixedPG/S3/Plugin guards andstickycancel
+preserved. Two-linereplacement adds exactskills.list/read toexistingArtifactskip;
+workspace/unknown calls stillensure_ready. Newsmallregression reproducesoldquota
+failure, thenpasses; aftercorrectingtestparameter/setup, all78focused tests pass.
+Ruff andMypy1315sources pass (standaloneonefile invocation resolvedinstalleddeps
+withouttyping; repository-wide canonicalinvocation passes). Filegatepasses.
+Original Worker config saved0600, Search/API IDs/starts/env captured. Createdonly
+taskchild underexisting10GiBvolume, chmod onlynewnonsensitivetestdir. Builtonefile
+Workerlayerb72e1210...; no deps. Composeextra7thmerge broke empty!override arrays;
+reuseexactfinalpreserve overlay instead, onlyWorkerimage+childmount changed.
+One-shot normal-config Worker: freshsignedno-RunTask+realPG/S3 snapshot/catalog,
+actualnativeSkill tools3calls/0provision/badpathdenied. files.list triggers1real
+gVisor; quota childmountself10527662080<=10737418240; enginefreshidentity/mTLS and
+Worker→sandbox marker read/sandbox→Worker marker write pass in9.3426s. ProbeTask
+directlycancelled, ownedOCIhandlecleaned. ThisstandaloneOCIprobe is notcanonical
+Run/lease/v2 acceptance. Independentreviewsource/ops noCritical/Important. Next:
+freshidle andonlynormalWorker image/mount update, compareactualconfig andSearch/
+APIprocesses, thennewexactlyoncehigh/v2 Run. No model/search/MCP requests sofar.
