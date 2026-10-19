@@ -7294,3 +7294,13 @@ Skill/MCP authority and snapshots; no implicit grants or component enablement.
 Default off; immutable object receipts retained without automatic Plugin GC.
 316-line source-pointer/scope checks and independent review/recheck passed.
 No runtime code, migration, service activation, model/search or Trench change.
+
+CLOUD-PLUGIN-CON-01 implementation authorized and claimed 2026-10-19 on isolated
+codex/cloud-plugin-con-01. Legacy Plugin baseline7passed using explicit task
+source paths and existing interpreter. New-worktree make sync hit external PyPI
+build-dependency timeout; dependency/lock files unchanged. No service activation.
+
+CLOUD-PLUGIN-CON-01 complete: source8912c63b adds bounded v0.2/legacy normalization,
+immutable byte snapshots and actual package hashes; fixes legacy path escapes.
+45focused offline tests (0skips), Ruff/four-source Mypy pass; independent spec
+then quality review approved. No installed plugin/runtime capability yet.

@@ -34698,3 +34698,22 @@ old payloads remain byte-compatible by excluding None. No database migration.
 - Delivery: 316-line plan; reuses existing governed Skill/MCP components, exact
   Turn snapshots and fresh authorization. No implicit component enablement, no
   automatic Plugin object GC, default-off rollout; no runtime capability claim.
+
+
+### CLOUD-PLUGIN-CON-01 — Plugin package contracts and integrity
+
+- Status: Done (2026-10-19;45offline checks/Ruff/touched-source Mypy pass;
+  independent spec and quality reviews approved; source8912c63b local integration).
+- Human owner: Luke Ding; executor: Codex; branch codex/cloud-plugin-con-01.
+- Worktree: /Users/lukeding/.codex/worktrees/cloud-plugin-plan-01/zebra-agent (reused clean planning checkout).
+- Base: cloud-agent-trench1d160735; user authorized sequential local integration.
+- Owned paths: core/domain/plugins.py and new plugin_packages.py;
+  integrations/plugins/__init__.py and new package_integrity.py;
+  tests/test_plugin_lifecycle.py and tests/test_plugin_package_integrity.py;
+  own registry entry, PROGRESS.md, WORKLOG.md and adoption plan checkboxes.
+- Scope: bounded v0.2 multi-component packages, v0.1 normalization, actual file
+  integrity, strict JSON/path validation. No installation code or runtime enablement.
+- Validation: focused offline regressions, lint/types, independent spec then quality
+  review. No model/search/database writes/service changes/Trench/Desktop/push.
+- Next STORE/RUN/ACCEPT cards stay Locked until dependency local integration,
+  following prior explicit user authorization to integrate cloud-agent-trench.

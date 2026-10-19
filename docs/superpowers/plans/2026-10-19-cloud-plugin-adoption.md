@@ -1,6 +1,6 @@
 # Cloud Agent Plugin 接入实施方案
 
-> **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan. Steps use checkbox (`- [ ]`) syntax for tracking. 本文当前仅交付方案；运行时实施须另获用户授权，不因本文件自动开始。
+> **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan. Steps use checkbox (`- [ ]`) syntax for tracking. 用户已于2026-10-19授权实施；服务激活与真实模型验收仍为独立门槛。
 
 **Goal:** 将可信 Plugin 包解析为 Cloud Agent 已有的 Skill/MCP 组件，完成安装、启停、Turn 固定、授权执行和安全恢复。
 
@@ -8,7 +8,7 @@
 
 **Tech Stack:** Python 3.12、现有 Pydantic、PostgreSQL storage adapters、Artifact/Skill Publication/MCP HTTP transport；不增加依赖。
 
-**状态:** Proposed，2026-10-19；源码基线 cloud-agent-trench `2a6966be`。本文描述目标与验收条件，不声明功能已上线。
+**状态:** Implementing，2026-10-19；方案源码基线 cloud-agent-trench `2a6966be`，实施基线 `1d160735`。本文描述目标与验收条件，不声明功能已上线。
 
 ---
 
@@ -110,6 +110,8 @@ JSON 重复键、重复规范化路径、绝对路径、`..`、软链接逃逸�
 文件/字节/解压预算沿用既有 Publication/Artifact 上限；仅有受限目录包即可起步，不先实现任意归档格式。
 
 首期信任来自管理员允许的来源和明确包摘要，不来自任意 manifest 内的 publisher 字符串。
+Cloud API 从运维挂载的只读包目录与摘要允许列表解析安装请求；客户端只提交摘要和作用域内绑定，不提交服务器路径或可信包元数据。
+Worker 仅依赖已固定的对象版本，不需要该目录挂载。包目录/允许列表由后续默认关闭的 composition 设置提供。
 已有 signature 字段不等于已经完成签名验证；外部签名信任链/撤销体系留在后续供应链任务。
 安装器不执行包内任何脚本。
 
@@ -228,10 +230,10 @@ Worker 从可信 accepted command 的 snapshot digest 恢复；包、组件或 s
 - 新建 `packages/agent-integrations/src/agent_integrations/plugins/package_integrity.py`；
 - 回归 `tests/test_plugin_lifecycle.py`，新增 `tests/test_plugin_package_integrity.py`。
 
-- [ ] 先加入能击穿现状的检查：篡改 Skill 字节改变 package_digest；前缀相邻路径、软链接逃逸被拒绝。
-- [ ] 运行 `uv run pytest -q tests/test_plugin_lifecycle.py tests/test_plugin_package_integrity.py`，确认新增场景在现状失败。
-- [ ] 实现最小 v0.2 多组件读取与 v0.1 单组件规范化；不执行包代码。
-- [ ] 同命令转绿，旧 Manifest/canonical digest 回归不变，提交本阶段。
+- [x] 先加入能击穿现状的检查：篡改 Skill 字节改变 package_digest；前缀相邻路径、软链接逃逸被拒绝。
+- [x] 运行 `uv run pytest -q tests/test_plugin_lifecycle.py tests/test_plugin_package_integrity.py`，确认新增场景在现状失败。
+- [x] 实现最小 v0.2 多组件读取与 v0.1 单组件规范化；不执行包代码。
+- [x] 同命令转绿，旧 Manifest/canonical digest 回归不变，提交本阶段。
 
 #### Task 2 — 持久安装与管理（拟 CLOUD-PLUGIN-STORE-01；依赖 Task 1）
 
@@ -313,4 +315,4 @@ Worker 从可信 accepted command 的 snapshot digest 恢复；包、组件或 s
 保持默认关闭、可信内部包白名单、小范围 namespace 启用。先准入/Worker 配对发布，再开放选择。
 仅回滚管理面开关不能移除已有被引用的包/安装/snapshot；先等待相关 Turn 结束或明确暂停。
 数据库迁移保持加法兼容，旧记录继续可读；保留包对象引用、expectation/receipt，首期不自动回收 Plugin 包。
-当前只完成文档与源代码审查，没有创建安装记录、迁移数据库、发模型/搜索请求或更新服务。
+实施记录：Task1契约与完整性已完成并独立审查；后续安装/执行尚未接线，没有创建安装记录、迁移正常数据库、发模型/搜索请求或更新服务。

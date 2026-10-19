@@ -16236,3 +16236,15 @@ Clarified shared-component provenance/disable semantics and default-off wiring;
 reviewer recheck approved. Source pointers/scope/diff checks pass; no runtime
 tests, database migration, service changes or model/search requests. Preserve
 primary AGENTS.md and unrelated runtime-platform spec; local documentation only.
+
+### 2026-10-19 — CLOUD-PLUGIN-CON-01
+
+User approved implementation of the four-stage plan. Reused clean isolated plan
+checkout on task branch, preserving primary AGENTS.md/untracked design. App attach
+reported existing checkout unmanaged; no existing worktree was removed or reset.
+make sync failed PyPI hatchling timeout; existing interpreter plus explicit task
+PYTHONPATH proved baseline7pass/current45pass. Prefix sibling and symlink regressions
+failed before fix; final offline45/Ruff/four-file Mypy/diff checks passed. Source
+8912c63b committed only five owned paths. Independent spec and quality approved;
+minor descriptor-only case alias fails closed at real loader and was not expanded.
+No upstream/model/search/DB writes/service changes. Local integration only.
