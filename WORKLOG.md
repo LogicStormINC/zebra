@@ -16328,3 +16328,23 @@ User authorized normal local activation. Read104 schema,0effective leases;3runni
 projections last changed August and preserved. Verify runnable queue before pause.
 Reuse existing image/compose preservation pattern; legacy API also needs105-aware
 code. Skill-only pilot avoids new MCP initialization, credentials or search calls.
+
+2026-10-19 20:24 CST closeout: reviewed preservation config and no-model operator
+probe; fixed planned shm omission, canonical profile and directTaskcancel before
+operation. Preserved local dirty AGENTS SHA256fc7ffe1e... and untrackedruntime spec.
+Images copy1315verified Python sources over original role dependency layers;
+initialBuildKit digestFROM resolution fixed with verified local basetags, no deps.
+Idle0leases/0pending before and after ingress pause; stopped only3roles, migrated
+only105 with full historicalchecksum verification, restarted same3with no-deps.
+API/Workerhealthy, legacy internalhealthok. Actual env/security/ports/network/
+resources/mounts compare passes (Cmdnull/[] normalized, shm8409579520 preserved).
+Real fresh RS256 operator-test scope publishes216byteSkill+reference, installs/
+enablesonePlugin;401/403/404 negatives pass. Native Worker currentcomposition
+reads real PG/S3 and fixedsnapshot, checks freshTaskceiling, emptyselection and
+disabledsource denial; explicitreenable/newrevision reads again. No acceptedRun;
+testTask667e2f08-9a19-4cce-9be0-bd51851d269c directly cancelled. Existing10extension
+heads unchanged,2newpilotheads only. Model/tool eventdelta0, originalSearchID/
+start/PIDs/env/cooldownhash unchanged; protectedpartialTurns status/body/request/
+metadatahashes unchanged. Sharedcapabilityflags global, scopedinstallationone;
+no MCPworker/refresh/credentialactivation. Evidenceprivate/safe artifacts and
+runbook7updated. No model/search/Trenchlogic/globalproxy/remote operation.

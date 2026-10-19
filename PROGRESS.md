@@ -7343,3 +7343,14 @@ docs/CLOUD_PLUGINS.md. Separate activation/model gates remain unexecuted.
 CLOUD-PLUGIN-LIVE-01 authorized: local normal-service v105 activation with a single
 Skill-only digest/scoped pilot; no real models/search. Preflight104/no effective
 leases; old ready/running projections are not to be repaired as part of rollout.
+
+CLOUD-PLUGIN-LIVE-01 complete: v105 exact checksums/current schema; same-source
+API/legacyAPI/Worker updated with preserved settings/resources, including shm.
+API/Worker healthy; legacy internalhealth ok. One approved Skill-only digest and
+isolated scoped installation; shared service flags global, existing heads unchanged.
+Real signed HTTP CRUD/isolation plus native Worker PG/S3 fixed snapshot/Skill reads,
+empty selection/disable denial/newrevision pass. Bootstrap-only testTask cancelled,
+no accepted execution Run; no model/search requests or model/tool event increments.
+Search fullID/start/PIDs/env/cooldown and2protectedpartialTurn hashes preserved.
+MCP Worker remains off. Local activation gate passed; acceptedRun/model/page E2E
+remains separate. No remote push/deploy. Runbook section7; no source/test expansion.

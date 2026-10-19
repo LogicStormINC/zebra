@@ -1,8 +1,8 @@
 # Cloud Plugin 使用与运维
 
-2026-10-19。首期交付可信内部包的 Skill/MCP 组合；默认关闭。
+2026-10-19。首期交付可信内部包的 Skill/MCP 组合；源码默认关闭。
 源码、隔离原生验收、正常服务激活、真实模型验收是四个独立状态。
-本文不表示当前 API/Worker 已启用 Plugin。
+本地正常服务已完成 Skill-only 隔离试点激活，见第7节；未做真实模型验收。
 
 ## 1. 能力边界
 
@@ -245,7 +245,8 @@ export PYTHONPATH="$PWD:$(printf '%s:' "$PWD"/packages/*/src "$PWD"/apps/*/src)"
 驱动 SQL 次数不冒充服务端触发器内部语句；短样本不冒充 P95。
 相同工具脚本的耗时不代表真实高思考模型的首正文时间或质量提升。
 
-正常服务当前未迁移、未重启、未启用 Plugin。真实模型/页面验收须另获授权，
+以上源码交付阶段未迁移、重启或启用正常服务；第7节记录随后获授权的本地激活。
+真实模型/页面验收须另获授权，
 且应由模型自主选工具；不得为验收强制委派、选择 Exa 或制造限流。
 首期包对象不接入普通 Session payload GC，自动回收另立任务。
 
@@ -253,3 +254,66 @@ export PYTHONPATH="$PWD:$(printf '%s:' "$PWD"/packages/*/src "$PWD"/apps/*/src)"
 仅本任务两个隔离容器及其匿名卷已清理；正常API/Worker/Search的进程与环境哈希保持。
 安全汇总归档于 `.artifacts/cloud-plugin/`，不含凭据；运行用的私有 `infra.json`
 不纳入交付归档。
+
+## 7. 本地正常服务试点（CLOUD-PLUGIN-LIVE-01）
+
+2026-10-19 20:20 CST 已按用户授权应用 v105，并更新正常 API、legacy API、Worker。
+操作前与关闭入口后均确认有效租约0、Worker所在 `zebra` namespace待执行命令0。
+3个历史 `running` 投影最后变化在8月，无有效租约；未修改这些旧记录。
+Cloud Worker仍不扫描ready投影，未改变namespace或唤醒其他部署的历史命令。
+
+| 服务 | 当前镜像 | 验收 |
+|---|---|---|
+| API | `zebra-api:cloud-plugin-live-01` | healthy、真实授权管理接口通过 |
+| legacy API | `zebra-api:cloud-plugin-legacy-live-01` | running、内部health通过 |
+| Worker | `zebra-worker:cloud-plugin-live-01` | healthy、原生组件验收通过 |
+
+三镜像均核对1315个Python源码文件与已验收的 `b1d082b3` 相同；复用原镜像依赖，
+未安装新依赖。v105迁移校验全部历史checksum且仅增加plugin类型约束，迁移后精确
+schema检查通过。原模型配置、v2、授权、资源、安全选项、网络、端口与挂载均实测
+对比；仅允许的Plugin/Skill开关、三镜像和API一个只读可信包挂载发生变化。
+共享内存显式保留8409579520字节；legacy空命令的null/空数组按等价形式比较。
+
+试点包 `cloud-plugin-local-pilot@1.0.0` 仅有只读Skill，摘要为
+`sha256:da4f262772d038851935a7304339ee9c9e2bca11cf228e7f1770fa26cce1f5fa`。
+仅这个摘要获准发布；隔离principal `cloud-plugin-local-pilot-20261019` 与workspace
+`workspace-cloud-plugin-local-pilot-20261019` 内有1个启用Plugin、1个启用Skill。
+未向正常业务身份安装、默认选择或授予Plugin。共享服务开关全局启用，不是按身份的
+feature gate；未来已授权Skill恢复仍受原Task ceiling、scope和固定快照约束。
+启用前已有9个Skill/1个MCP配置、119个扩展快照，全部旧配置head/revision/hash保留。
+Cloud MCP Worker、凭据自动管理与refresh继续关闭，不初始化任何新MCP连接。
+
+真实无拦截验收：
+
+- 正常API经现有broker密钥在原容器内签发新鲜RS256测试Grant；每请求使用新jti。
+  测试身份和权限由操作者显式指定，未模拟Trench用户登录或修改其业务权限。
+- Skill发布、安装、启用，Plugin安装、启用、GET均成功；跨principal/workspace返回
+  404、缺权限403、无Grant401。旧组件未被重绑或启停。
+- 只bootstrap一个 `executed:false` Task，不提交Run/message/resume/coverage命令。
+  在正常Worker容器内使用生产composition与PG/S3，校验新鲜Task授权、显式selection、
+  snapshot固定读写、Skill列表、216字节正文及非空引用标记；空选择不获得组件。
+- 禁用Plugin后原固定snapshot恢复被拒绝；显式启用新revision后以新合成snapshot
+  再次验证读取。末尾走现有Task直接取消，试点Task现为cancelled。
+- 无model、tool执行事件增量；试点自身没有accepted执行命令。合成snapshot用于
+  原生组件证明，不冒称accepted Turn、队列消费、页面或模型端到端验收。
+- 原搜索容器 `320c9f820419` 的完整ID、StartedAt、进程PID、镜像、环境及冷却文件
+  hash一致；未重启Search/TLS，未调用搜索、Exa或模型。Yahoo默认、fast及MCP内存
+  会话所属原进程保留；本次不声称完成自然限流恢复验收。
+- 两个原partial Turn的status、answer/request/metadata hash一致；末次有效租约及
+  Worker待执行命令均为0。未改变原Run或Trench产品代码。
+
+可选启动overlay为 `docker/compose.cloud-plugins.local.yml`，基础Compose仍默认关闭。
+本机可信包、`pilot.env`、精确运行配置和证据位于主工作区
+`.artifacts/cloud-plugin-live-01/`；勿删除该目录或替换readonly可信包。
+`services-preserve.yml` 仅保留环境占位符，`configure.py`从0600的本机快照在内存中
+填入实际值，并逐项检查原配置。基础四层为application、local-gvisor、
+coverage-pro-test、web-search，随后是Plugin overlay和精确preserve overlay。
+运行 `python .artifacts/cloud-plugin-live-01/configure.py` 只预检，不更新服务。
+后续更新须再次核对空闲并复用该组合；不要单独用基础Compose覆盖现有配置。
+一次性 `rollout.py` 和 `operator_probe.py` 保留取证，不应为验收再次运行。
+
+安全报告为 `live-proof.safe.json`、`protection-proof.safe.json`、
+`migration-live.safe.json`、`runtime-after.safe.json`、`pilot-events.safe.json`。
+私有inspect、日志与resolved配置权限0600，不提交或发送。需撤回试点时先确认空闲，
+使用同一105兼容镜像关闭新增开关；不要回退schema或启动104旧镜像。
+本轮仅本地集成，无远程推送、远程部署或真实模型/页面验收。

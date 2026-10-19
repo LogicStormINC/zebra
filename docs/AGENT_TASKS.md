@@ -34841,8 +34841,8 @@ old payloads remain byte-compatible by excluding None. No database migration.
 
 ### CLOUD-PLUGIN-LIVE-01 — Local normal-service pilot activation
 
-- Status: Ready → In Progress (2026-10-19; user explicitly authorized v105,
-  related normal-service update and narrowly scoped offline activation).
+- Status: Done (2026-10-19; normal local v105/three-role activation and scoped
+  no-model proof passed; local integration only, no remote push/deploy).
 - Human owner: Luke Ding; executor Codex; branch codex/cloud-plugin-live-01;
   worktree cloud-plugin-plan-01/zebra-agent reused clean at b1d082b3.
 - Owned paths: docs/CLOUD_PLUGINS.md, this task card, PROGRESS.md, WORKLOG.md;
@@ -34866,3 +34866,15 @@ old payloads remain byte-compatible by excluding None. No database migration.
 - Runtime path clarification: durable pilot bundle and exact private Compose
   overrides live under primary checkout .artifacts/cloud-plugin-live-01/; staging
   scripts/build/evidence under this task worktree. Both paths owned by this task.
+- Result: before/after ingress0effective leases and0pending in Worker namespace;
+  v105 checksums/current schema pass; API/Worker healthy, legacy internalhealth ok.
+  Exact original settings/resources including shm preserved except approved flags,
+  images andAPIreadonlybundle. One Skill-only digest/isolated scoped installation;
+  service flags global, not a per-principal feature gate. Existing heads untouched.
+  Real signed HTTP publishing/install/CAS/read and401/403/404 isolation pass.
+  Native normalWorkerPG/S3 Skill216bytes + reference read, snapshot/empty selection,
+  disabled-source denial and newrevision proof pass. Synthetic snapshots are NOT
+  accepted Turns. Bootstrap-only Task cancelled; no execution Run accepted.
+  Model/tool event delta0; search fullID/start/PIDs/env/cooldown hash unchanged;
+  two protectedpartialTurns hashes/status unchanged. MCP Worker remains off.
+  Evidence and restart/rollback boundaries: docs/CLOUD_PLUGINS.md section7.
