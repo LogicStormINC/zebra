@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import asyncio
 import json
+from collections.abc import Callable
 from hashlib import sha256
 from typing import Any, Literal
 
 from agent_core.domain.extensions import ExtensionScope, McpConnection, SkillInstallation
+from agent_core.domain.plugin_installations import PluginInstallation
 from agent_core.domain.skill_publications import SkillPublication
 from agent_core.ports.extensions import (
     AuthorizedSkill,
@@ -69,14 +71,14 @@ def _skill_lock_key(
     return sha256(json.dumps((scope_digest, skill_id), ensure_ascii=True).encode()).hexdigest()
 
 
-def _decode_record[T: (SkillInstallation, McpConnection)](
+def _decode_record[T: (SkillInstallation, McpConnection, PluginInstallation)](
     model: type[T],
     row: dict[str, Any],
     scope: ExtensionScope,
 ) -> T:
     record = model.model_validate(row["payload"])
     identifier = (
-        record.installation_id if isinstance(record, SkillInstallation) else record.connection_id
+        record.connection_id if isinstance(record, McpConnection) else record.installation_id
     )
     if (
         record.scope != scope
@@ -269,7 +271,7 @@ class PostgresExtensionStore(PostgresDatabase):
         return _scope_key(self.deployment_namespace, scope, kind)
 
     @staticmethod
-    def _decode[T: (SkillInstallation, McpConnection)](
+    def _decode[T: (SkillInstallation, McpConnection, PluginInstallation)](
         model: type[T],
         row: dict[str, Any],
         scope: ExtensionScope,
@@ -301,9 +303,10 @@ class PostgresExtensionStore(PostgresDatabase):
     def _save(
         self,
         scope: ExtensionScope,
-        kind: Literal["skill", "mcp"],
-        record: SkillInstallation | McpConnection,
+        kind: Literal["skill", "mcp", "plugin"],
+        record: SkillInstallation | McpConnection | PluginInstallation,
         expected_revision: int | None,
+        validate_in_transaction: Callable[[Any], None] | None = None,
     ) -> None:
         if record.scope != scope:
             raise ValueError("extension scope disagrees with supplied scope")
@@ -314,9 +317,7 @@ class PostgresExtensionStore(PostgresDatabase):
         if record.revision != (1 if expected_revision is None else expected_revision + 1):
             raise ValueError("extension revision must follow expected revision")
         identifier = (
-            record.installation_id
-            if isinstance(record, SkillInstallation)
-            else record.connection_id
+            record.connection_id if isinstance(record, McpConnection) else record.installation_id
         )
         key = (*self._scope(scope, kind), identifier)
         with self.connect() as connection:
@@ -361,6 +362,8 @@ class PostgresExtensionStore(PostgresDatabase):
                     "UPDATE extension_configurations SET revision = %s WHERE " + _KEY,
                     (record.revision, *key),
                 )
+            if validate_in_transaction is not None:
+                validate_in_transaction(connection)
             connection.execute(
                 "INSERT INTO extension_configuration_revisions ("
                 + _COLUMNS

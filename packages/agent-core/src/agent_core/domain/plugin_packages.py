@@ -4,12 +4,23 @@ from __future__ import annotations
 
 import json
 import unicodedata
+from collections.abc import Iterable
+from hashlib import sha256
 from pathlib import PurePosixPath, PureWindowsPath
 from typing import Annotated, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator
 
 from agent_core.domain.plugins import PluginEntryKind, PluginManifest
+
+
+def plugin_package_digest(canonical_manifest: str, files: Iterable[tuple[str, int, str]]) -> str:
+    """Full package identity shared by directory validation and immutable pins."""
+    value = json.dumps(
+        {"manifest": json.loads(canonical_manifest), "files": list(files)},
+        ensure_ascii=False, sort_keys=True, separators=(",", ":"),
+    )
+    return "sha256:" + sha256(value.encode()).hexdigest()
 
 MAX_PLUGIN_COMPONENTS = 32
 PluginComponentId = Annotated[str, StringConstraints(pattern=r"^[a-z][a-z0-9-]{2,63}$")]

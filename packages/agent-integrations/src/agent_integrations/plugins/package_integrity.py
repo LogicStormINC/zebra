@@ -17,6 +17,7 @@ from agent_core.domain.plugin_packages import (
     PluginSkillComponent,
     normalize_plugin_manifest,
     normalize_plugin_path,
+    plugin_package_digest,
 )
 from agent_core.domain.plugins import PluginManifest
 from agent_tools.skill_packages import (
@@ -84,20 +85,13 @@ def load_plugin_package(bundle_root: Path) -> ValidatedPluginPackage:
         raise PluginPackageError(error.reason) from None
     except (OSError, ValueError, RuntimeError, RecursionError):
         raise PluginPackageError("invalid_package") from None
-    digest_input = json.dumps(
-        {
-            "manifest": json.loads(canonical),
-            "files": [(file.path, file.size, file.sha256) for file in contents],
-        },
-        ensure_ascii=False,
-        sort_keys=True,
-        separators=(",", ":"),
-    )
     return ValidatedPluginPackage(
         manifest,
         canonical,
         "sha256:" + sha256(canonical.encode()).hexdigest(),
-        "sha256:" + sha256(digest_input.encode()).hexdigest(),
+        plugin_package_digest(
+            canonical, ((file.path, file.size, file.sha256) for file in contents),
+        ),
         contents,
     )
 
