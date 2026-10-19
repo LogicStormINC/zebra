@@ -34962,23 +34962,34 @@ old payloads remain byte-compatible by excluding None. No database migration.
   CLOUD-PLUGIN-E2E-01; old failed samples are preserved historical evidence.
 
 
-### CLOUD-PLUGIN-UI-01 — Trench Plugin management beside Settings
+### CLOUD-PLUGIN-UI-01 — Trench Settings Plugin tab and approved marketplace
 
 - Status: Ready → In Progress (2026-10-19; user confirmed Trench web frontend).
 - Human owner: Luke Ding; executor Codex; branch codex/cloud-plugin-ui-01 in each
   repository. Reuse cloud-plugin-plan-01/zebra-agent; isolated sibling Trench
   checkout based on its current main c80a2f9. Preserve all primary dirty changes.
 - Owned paths (Zebra): this task card, PROGRESS.md, WORKLOG.md,
-  docs/CLOUD_PLUGINS.md; task .artifacts/cloud-plugin-ui-01/.
+  docs/CLOUD_PLUGINS.md; packages/agent-core/src/agent_core/ports/plugin_installations.py;
+  packages/agent-integrations/src/agent_integrations/plugins/publication.py;
+  apps/api/src/zebra_agent_api/plugin_installations.py;
+  tests/api/test_plugin_catalog_http.py; tests/agent_integrations/test_plugin_publications.py;
+  task .artifacts/cloud-plugin-ui-01/.
 - Owned paths (Trench): toc-frontend/src/components/product/dashboard-account-menu.tsx,
-  dashboard-nav.tsx and dashboard-nav.test.tsx; new components/product/plugins/;
+  dashboard-nav.tsx and dashboard-nav.test.tsx; dashboard-integrations-settings.tsx
+  and its focused test; dashboard-account-dialog.tsx and its test; new components/product/plugins/;
   new app/dashboard/plugins/page.tsx; new lib/trench-ai-plugins.ts and focused
   test; services/api/src/trench_api/routers/trench_ai_extensions.py and existing
   tests/api/test_trench_ai_extensions.py; WORKLOG.md and docs/CLOUD_PLUGIN_UI.md.
-- Scope: Plugins as a peer of Settings in account menu, independent responsive
-  page, real scoped list/detail/install/enable/disable using existing signed
-  extension proxy. Approved package digest and existing component bindings only;
-  preserve CAS, idempotency, same-origin user auth, bounded reads, no secrets.
+- Scope (latest explicit user screenshot correction): separate Plugin tab in
+  Settings sidebar immediately BELOW Tools & connections, not inside that page
+  and not a peer of Settings in account menu. Plugin page has marketplace and
+  installed views. Marketplace reads real operator-approved, hash-validated package
+  metadata, no arbitrary remote registry or fabricated listings. Reuse approved
+  digest installation and existing component bindings, CAS/idempotency/signed auth.
+- Minimal API extension: authenticated read-only approved package catalog with
+  bounded pagination; no S3 publication, execution, credentials or caller bindings
+  during browse. Fresh idle before necessary local API/legacy image updates with
+  exact original settings; Worker/Search/TLS/MCP processes remain untouched.
 - Validation: focused frontend/backend regression, TypeScript/lint/build as
   appropriate; actual local logged-in page navigation/read with no interception.
   No model/search requests, no Worker/Search/MCP restarts or policy changes.

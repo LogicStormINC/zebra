@@ -5,7 +5,12 @@ from typing import Protocol
 from pydantic import BaseModel, ConfigDict, Field
 
 from agent_core.domain.extensions import ExtensionScope, OpaqueExtensionId
-from agent_core.domain.plugin_installations import PluginInstallation, PluginPackagePin
+from agent_core.domain.plugin_installations import (
+    PluginDigest,
+    PluginInstallation,
+    PluginPackagePin,
+)
+from agent_core.domain.plugin_packages import PluginPackageManifest
 from agent_core.ports.extensions import ExtensionPageRequest
 
 
@@ -67,7 +72,23 @@ class PluginInstallationStore(Protocol):
         ...
 
 
+class PluginPackageCatalogEntry(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+    package_digest: PluginDigest
+    manifest: PluginPackageManifest
+
+
+class PluginPackageCatalogPage(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+    items: tuple[PluginPackageCatalogEntry, ...] = Field(max_length=10)
+    next_cursor: PluginDigest | None = None
+
+
 class PluginPackagePublisher(Protocol):
+    async def list_packages(self, *, page: ExtensionPageRequest) -> PluginPackageCatalogPage:
+        """Read approved descriptors without object writes or user component binding."""
+        ...
+
     async def publish(self, *, package_digest: str) -> PluginPackagePin:
         """Resolve an approved digest to trusted, immutable package facts only."""
         ...

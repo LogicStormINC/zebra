@@ -16443,3 +16443,18 @@ already implements list/detail/install/CAS enablement; Trench proxy allowlist on
 has MCP/Skill. Minimal forwarding addition, no runtime state machine changes.
 Use isolated branch/worktrees; preserve Zebra AGENTS/untracked spec and Trench
 registry/next-env/untracked paths. No models/search or shared Worker changes.
+
+
+CLOUD-PLUGIN-UI-01 navigation clarified by user screenshot: requested Plugins
+inside Settings/Tools & connections, not peer account-menu destination. Extend
+owned paths before edits for dashboard-integrations-settings.tsx and its test.
+Reuse management body in new Plugin tab plus overview card; remove own previously
+added independent menu wiring/route. No domain/authority or service changes.
+
+
+User clarified again before task completion: Plugin is a Settings sidebar tab
+immediately below Tools & connections (sibling), containing a Plugin marketplace.
+Prior inside-Tools tab/card will be removed. Extend owned paths before coding for
+Settings dialog, a bounded authenticated approved-package read catalog, existing
+publisher/Port and focused tests; necessary exact-preserved local API update only.
+Marketplace cannot be fabricated from installed records or hardcoded fake cards.

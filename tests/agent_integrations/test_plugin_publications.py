@@ -84,3 +84,32 @@ def test_unapproved_digest_performs_no_package_or_object_io(tmp_path: Path) -> N
     with pytest.raises(ValueError):
         asyncio.run(service.publish(package_digest="sha256:" + "a" * 64))
     assert objects.puts == 0
+
+
+def test_market_reads_approved_bytes_without_publication_and_pages(tmp_path: Path) -> None:
+    from agent_core.ports.extensions import ExtensionPageRequest
+    from agent_integrations.plugins.publication import PluginPackagePublicationService
+
+    digests = []
+    for index in range(2):
+        root = tmp_path / f"input-{index}"
+        bundle(root)
+        manifest = json.loads((root / "plugin.json").read_text())
+        manifest["version"] = f"1.0.{index}"
+        (root / "plugin.json").write_text(json.dumps(manifest))
+        digest = load_plugin_package(root).package_digest
+        root.rename(tmp_path / digest.removeprefix("sha256:"))
+        digests.append(digest)
+    objects = Objects()
+    service = PluginPackagePublicationService(tmp_path, tuple(digests), objects, "cloud-a")
+    first = asyncio.run(service.list_packages(page=ExtensionPageRequest(limit=1)))
+    second = asyncio.run(
+        service.list_packages(page=ExtensionPageRequest(limit=1, cursor=first.next_cursor))
+    )
+    assert [first.items[0].package_digest, second.items[0].package_digest] == sorted(digests)
+    assert second.next_cursor is None and objects.puts == 0 and objects.values == {}
+    with pytest.raises(ValueError):
+        asyncio.run(service.list_packages(page=ExtensionPageRequest(cursor="not-approved")))
+    (tmp_path / sorted(digests)[0].removeprefix("sha256:") / "plugin.json").write_text("{}")
+    with pytest.raises(RuntimeError, match="catalog unavailable"):
+        asyncio.run(service.list_packages(page=ExtensionPageRequest(limit=1)))

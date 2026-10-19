@@ -18,6 +18,11 @@ from agent_core.domain.identifiers import ArtifactId
 from agent_core.domain.plugin_installations import PluginDigest, PluginPackagePin
 from agent_core.domain.skill_publications import SkillPublicationFile
 from agent_core.ports.artifact_object_store import ArtifactObjectStorePort
+from agent_core.ports.extensions import ExtensionPageRequest
+from agent_core.ports.plugin_installations import (
+    PluginPackageCatalogEntry,
+    PluginPackageCatalogPage,
+)
 from pydantic import TypeAdapter
 
 from agent_integrations.plugins.artifact_codec import decode_plugin_package, encode_plugin_package
@@ -31,8 +36,8 @@ class PluginPackagePublicationService:
     objects: ArtifactObjectStorePort
     deployment_namespace: str
 
-    async def publish(self, *, package_digest: str) -> PluginPackagePin:
-        digest = TypeAdapter(PluginDigest).validate_python(package_digest)
+    async def _approved_package(self, digest: str) -> ValidatedPluginPackage:
+        digest = TypeAdapter(PluginDigest).validate_python(digest)
         if digest not in self.allowed_digests:
             raise ValueError("package digest is not approved")
         package = await asyncio.to_thread(
@@ -41,6 +46,33 @@ class PluginPackagePublicationService:
         )
         if package.package_digest != digest:
             raise ValueError("approved package digest disagrees with actual package")
+        return package
+
+    async def list_packages(self, *, page: ExtensionPageRequest) -> PluginPackageCatalogPage:
+        approved = sorted(set(self.allowed_digests))
+        if page.cursor is not None and page.cursor not in approved:
+            raise ValueError("invalid package cursor")
+        remaining = [digest for digest in approved if page.cursor is None or digest > page.cursor]
+        # ponytail: validate at most ten bounded bundles sequentially per page;
+        # use a verified manifest index if the approved catalog grows large.
+        selected = remaining[: min(page.limit, 10)]
+        items = []
+        for digest in selected:
+            try:
+                package = await self._approved_package(digest)
+            except ValueError:
+                raise RuntimeError("approved package catalog unavailable") from None
+            items.append(
+                PluginPackageCatalogEntry(package_digest=digest, manifest=package.manifest)
+            )
+        return PluginPackageCatalogPage(
+            items=tuple(items),
+            next_cursor=selected[-1] if len(remaining) > len(selected) else None,
+        )
+
+    async def publish(self, *, package_digest: str) -> PluginPackagePin:
+        package = await self._approved_package(package_digest)
+        digest = package.package_digest
         payload = encode_plugin_package(package)
         expectation = ArtifactObjectExpectation(
             deployment_namespace=self.deployment_namespace,

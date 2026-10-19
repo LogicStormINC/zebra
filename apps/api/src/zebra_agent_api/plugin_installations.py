@@ -25,6 +25,7 @@ from zebra_agent_api.extension_reads import extension_error
 from zebra_agent_api.extension_request_body import ExtensionBodyTooLarge, extension_request_body
 
 _PREFIX = "/v1/extensions/plugin-installations"
+_CATALOG = "/v1/extensions/plugin-packages"
 
 
 def _public(record: PluginInstallation) -> dict[str, object]:
@@ -70,14 +71,17 @@ async def plugin_installation_response(
     manage_enabled: bool,
 ) -> JSONResponse | None:
     path = request.url.path
-    if path != _PREFIX and not path.startswith(_PREFIX + "/"):
+    catalog = path == _CATALOG
+    if not catalog and path != _PREFIX and not path.startswith(_PREFIX + "/"):
         return None
     if not enabled or service is None or deployment == "local" or not read_enabled:
         return extension_error(404)
-    collection = path == _PREFIX
+    collection = path == _PREFIX or catalog
     identifier = path.removeprefix(_PREFIX + "/")
     if not collection and ("/" in identifier or not identifier):
         return extension_error(404)
+    if catalog and request.method != "GET":
+        return extension_error(405, allow="GET")
     mutation = request.method in {"POST", "PATCH"}
     if mutation and not manage_enabled:
         return extension_error(404)
@@ -129,6 +133,28 @@ async def plugin_installation_response(
         return extension_error(422)
     try:
         created = False
+        if catalog:
+            async with asyncio.timeout(5):
+                packages = await service.publisher.list_packages(page=page)
+            return JSONResponse(
+                content={
+                    "items": [
+                        {
+                            "package_digest": item.package_digest,
+                            "plugin_id": item.manifest.id,
+                            "version": item.manifest.version,
+                            "publisher": item.manifest.publisher,
+                            "components": [
+                                {"component_id": component.id, "kind": component.kind}
+                                for component in item.manifest.components
+                            ],
+                        }
+                        for item in packages.items
+                    ],
+                    "next_cursor": packages.next_cursor,
+                },
+                headers={"Cache-Control": "no-store"},
+            )
         if request.method == "POST":
             record, created = await service.install(
                 scope=scope,
