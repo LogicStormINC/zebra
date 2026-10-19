@@ -245,12 +245,12 @@ Worker 从可信 accepted command 的 snapshot digest 恢复；包、组件或 s
 - API 在 `apps/api/src/zebra_agent_api/extension_composition.py` 组合，单独薄管理 adapter；
 - 新增 `tests/agent_storage/test_postgres_plugin_installations.py` 及 API 授权回归。
 
-- [ ] 写入 exact-scope、CAS、同键冲突、必要绑定缺失和失败半成品不可启用的回归。
-- [ ] 修改两张 revision 表的 kind 约束，复用现有 transaction/Artifact/Skill Publication；迁移在隔离库测试。
-- [ ] 包对象复用既有 immutable put/receipt，安装器仅绑定现有组件且不改变其启停；首期不调用 payload GC 删除包。
-- [ ] 暴露最小管理操作，凭据仍只经现有 Credential 管理。
-- [ ] 运行 `uv run pytest -q tests/agent_storage/test_postgres_plugin_installations.py` 和对应 API 测试。
-- [ ] 验证两个独立 store/worker 实例读到同一安装事实，重启不丢失；提交。
+- [x] 写入 exact-scope、CAS、同键冲突、必要绑定缺失和失败半成品不可启用的回归。
+- [x] 修改两张 revision 表的 kind 约束，复用现有 transaction/Artifact/Skill Publication；迁移在隔离库测试。
+- [x] 包对象复用既有 immutable put/receipt，安装器仅绑定现有组件且不改变其启停；首期不调用 payload GC 删除包。
+- [x] 暴露最小管理操作，凭据仍只经现有 Credential 管理。
+- [x] 运行 `uv run pytest -q tests/agent_storage/test_postgres_plugin_installations.py` 和对应 API 测试。
+- [x] 验证两个独立 store/worker 实例读到同一安装事实，重启不丢失；提交。
 
 #### Task 3 — Turn 与 Worker 接入（拟 CLOUD-PLUGIN-RUN-01；依赖 Task 2）
 
@@ -315,4 +315,4 @@ Worker 从可信 accepted command 的 snapshot digest 恢复；包、组件或 s
 保持默认关闭、可信内部包白名单、小范围 namespace 启用。先准入/Worker 配对发布，再开放选择。
 仅回滚管理面开关不能移除已有被引用的包/安装/snapshot；先等待相关 Turn 结束或明确暂停。
 数据库迁移保持加法兼容，旧记录继续可读；保留包对象引用、expectation/receipt，首期不自动回收 Plugin 包。
-实施记录：Task1契约与完整性已完成并独立审查；后续安装/执行尚未接线，没有创建安装记录、迁移正常数据库、发模型/搜索请求或更新服务。
+实施记录：Task1/Task2已实现并通过独立规格与质量审查；Task2在隔离 PostgreSQL 验证安装/CAS/绑定与迁移105，默认关闭的管理 API 可注入使用。自动 composition、Turn/Worker 和真实对象跨进程验收仍在后续阶段；正常数据库/服务未更新，无模型或搜索请求。

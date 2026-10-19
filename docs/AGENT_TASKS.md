@@ -34717,3 +34717,30 @@ old payloads remain byte-compatible by excluding None. No database migration.
   review. No model/search/database writes/service changes/Trench/Desktop/push.
 - Next STORE/RUN/ACCEPT cards stay Locked until dependency local integration,
   following prior explicit user authorization to integrate cloud-agent-trench.
+
+
+### CLOUD-PLUGIN-STORE-01 — Scoped durable Plugin installation
+
+- Status: Done (2026-10-19; source3ca58a16/22293850;19focused checks and
+  impacted215passed plus targeted fixture rerun1passed; spec/quality approved;
+  local integration to cloud-agent-trench only).
+- Human owner: Luke Ding; executor Codex; branch codex/cloud-plugin-store-01;
+  reused isolated cloud-plugin-plan-01/zebra-agent checkout.
+- Owned paths: new core/domain, ports and application/plugin_installations.py;
+  core/domain/plugin_packages.py shared package digest seam;
+  integrations/plugins publication/Artifact codec modules and package_integrity.py
+  validation seam; postgres/plugin_installations.py, extensions.py reuse seam,
+  new plugin_installations_migration.py and migration_catalog_tail.py;
+  API/plugin_installations.py, extension_composition.py, extension_management_routes.py,
+  http.py minimal optional composition seams; config/plugin_settings.py, settings.py,
+  .env.example (default-off guard lands now to avoid exposed intermediate API);
+  tests/test_plugin_package_integrity.py, new tests/agent_core/test_plugin_installations.py,
+  tests/agent_integrations/test_plugin_publications.py, tests/agent_storage/test_postgres_plugin_installations.py,
+  tests/api/test_plugin_installations_http.py, tests/agent_storage/test_branch_migration_catalog.py,
+  tests/test_plugin_settings.py; own registry, PROGRESS.md, WORKLOG.md, adoption plan; private .artifacts/cloud-plugin/.
+- Scope: exact scope, immutable object receipt, bindings to existing ready components,
+  disabled creation, idempotency/CAS/read/enable/rebind; both kind constraints migrate.
+  No implicit Skill/MCP enablement, new grants, GC, Turn/Worker execution yet.
+- Validation: focused offline checks + actual disposable PostgreSQL; spec/quality
+  review. Isolated task containers permitted, normal service/DB/config untouched.
+  No model/search/push/Trench/Desktop or production activation.

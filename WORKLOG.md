@@ -16248,3 +16248,22 @@ failed before fix; final offline45/Ruff/four-file Mypy/diff checks passed. Sourc
 8912c63b committed only five owned paths. Independent spec and quality approved;
 minor descriptor-only case alias fails closed at real loader and was not expanded.
 No upstream/model/search/DB writes/service changes. Local integration only.
+
+### 2026-10-19 — CLOUD-PLUGIN-STORE-01
+
+Claimed on codex/cloud-plugin-store-01 after CON local integration. Source
+3ca58a16/22293850 adds scoped revision/CAS/install intent, disabled/rebind behavior,
+approved immutable package publication and default-off management API. Migration105
+changes both extension kind constraints; historical migrations remain unchanged.
+Bound components must already be enabled/ready; installation grants no authority
+and never toggles underlying components. Shared TaskIoConnections are retained.
+19 focused checks passed against task-only PostgreSQL. Impacted suite215passed;
+one existing credential API fixture had a connection timeout during heavy host
+load, then passed on its single targeted rerun. No production fixture repairs.
+Ruff16sources/6tests, Mypy16sources, file limits/diff checks passed. Independent
+spec and quality reviews approved. Nonempty Skill object roundtrip is retained
+as a Task4 native acceptance check, not an added Task2 framework. Task-owned
+PostgreSQL/MinIO only;
+MinIO versioning enabled for later full acceptance. Normal API/Worker/Search
+identity/image/start/restarts/config hashes match pre-task evidence. No model,
+search, Trench/Desktop, normal migration/service activation, push or deployment.

@@ -7304,3 +7304,12 @@ CLOUD-PLUGIN-CON-01 complete: source8912c63b adds bounded v0.2/legacy normalizat
 immutable byte snapshots and actual package hashes; fixes legacy path escapes.
 45focused offline tests (0skips), Ruff/four-source Mypy pass; independent spec
 then quality review approved. No installed plugin/runtime capability yet.
+
+
+CLOUD-PLUGIN-STORE-01 complete: source3ca58a16/22293850 adds additive migration105,
+scoped immutable installation/CAS/idempotency, ready exact component binding,
+approved fixed-object publication and default-off management API.19newfocused
+checks pass using disposable PostgreSQL; impacted215passed and one transient
+connection-timeout fixture passed targeted rerun. Ruff/Mypy/file bounds pass;
+independent spec then quality reviews approved. Normal service/DB/config remain
+untouched. Automatic composition and Turn/Worker execution are the next stage.
