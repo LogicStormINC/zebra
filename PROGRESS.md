@@ -7359,5 +7359,10 @@ CLOUD-PLUGIN-E2E-01 in progress: one signedv2/high Run accepted with fixedPlugin
 test workspace /workspaces was outside actual readonlyWorker writablemount, causing
 gateway setup failure before0model/0tool. Failed sample retained. Correct isolated
 mounted path passes native no-model gateway construction; replacement prepared,
-awaiting explicit permission to exceed the original one-Run sample. No services/
-source/Trench/search changes; Search/MCP process and originalpartialTurns preserved.
+then explicitreplacement authorized. Replacement made1realFlash/high round,
+autonomousskills.list/files.list2started/0completed; v2commentary3.0009s/error4.3769s.
+Dedicatedmount quota rejects isolatedsubdir; base10GiBmount passes. Skill reads
+also unnecessarily triggerDeferredRuntime in currentgateway. No finalanswer/E2E
+pass; no thirdRun/resume, security weakening or source/service/config changes.
+Search/MCP process/cooldown and originalpartialTurns/oldheads preserved. Nextgate
+requires nativeSkillruntime audit plus compliant isolation before another sample.

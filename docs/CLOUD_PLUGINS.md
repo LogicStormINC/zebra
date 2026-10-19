@@ -335,6 +335,39 @@ Run为 `plugin-e2e-c082f003-fbe9-4bd5-9590-2f40a4846e44`。当前状态failed，
   原生LocalToolGateway，未调用模型或搜索，未变更服务配置或源码。
 - 原搜索容器/进程/冷却、旧安装与两个原partial Turn及模型/工具计数均未变。
 
-替代脚本已修正工作区并使用独立幂等键，尚未提交。为遵守一次Run和不自动重跑的
-边界，已询问是否允许新建一个替代样本；确认前不继续模型调用。证据与单次锁位于
-`.artifacts/cloud-plugin-e2e-01/`，不要重新运行已消费的 `run_once.py`。
+用户随后明确允许新建一个替代Run；使用独立幂等键提交样本
+`7eb86092-1110-4019-bff2-46a5b73e4529`，Run为
+`plugin-e2e-5285de5e-c449-423a-bf10-8e70a5352c2e`。此样本也failed，未读到Skill正文：
+
+| 记录 | 实测 |
+|---|---|
+| 模型 | DeepSeek Flash，1轮，high，thinking enabled，tool_choice auto |
+| 模型事件往返 | 1.365307秒；provider latency1258ms，retry/repair均0 |
+| 自主工具 | skills.list、files.list；2次started，0次completed |
+| v2客户端 | 3.0009秒出现临时说明，4.3769秒收到RUN_ERROR |
+| 最终结果 | 无answer_committed，无RUN_FINISHED，无最终答案耗时 |
+
+原生只读quota检查定位为隔离子目录不是独立挂载点。现有10GiB配额保持开启：
+原挂载 `/tmp/zebra-trench-live-workspaces` 的virtiofs容量10527662080字节，检查通过；
+子目录返回 `workspace quota requires the workspace root to be a dedicated mount point`。
+可写目录/网关构造检查不足以证明Cloud工具执行前置准备合规；首轮参数修正的预检
+没有覆盖这一步，不应再用它宣称已准备好第三个模型样本。
+
+源码还确认 `LocalToolGateway.execute` 仅对原生Web和artifacts.read跳过延迟runtime；
+skills.list/read同样先调用ensure_ready，故控制面Skill目录读取也被沙箱quota阻断。
+后续最小方案应区分无需沙箱的原生Skill读取与真实workspace工具：审计两项Skill
+handler不依赖runtime后复用现有跳过机制，保留PG/S3/Plugin新鲜授权；files.list等
+仍须使用合规隔离挂载，不能关闭quota、伪造完成或强制模型只选Skill来规避。
+当前未更改生产源码、配置或挂载；上述方案尚未实施。
+
+搜索工具/上游请求均0；Search完整身份、PID/环境/冷却、旧扩展head及两个原partial
+Turn均未变，末次Worker有效租约/待执行命令0。两个失败Run均保留，没有第三个Run
+或恢复命令。证据与单次锁位于 `.artifacts/cloud-plugin-e2e-01/`；替代样本在
+`replacement/`，两份 `run_once.py` 均已消费，不可重跑。完整端到端门槛仍未通过。
+
+### 管理页面边界
+
+当前没有Plugin管理页面。后端 `/v1/extensions/plugin-installations` 已提供列表、
+详情、安装、CAS启停/重绑；首期计划5.1明确先用HTTP/SDK，不先做Trench管理页面。
+只读核对Trench的DashboardExtensionSettings仅接受mcp/skill，Zebra桌面与SDK也没有
+Plugin页面/入口。本次未新增前端或修改Trench产品逻辑。

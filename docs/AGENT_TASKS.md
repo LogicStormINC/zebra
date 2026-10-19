@@ -34902,5 +34902,14 @@ old payloads remain byte-compatible by excluding None. No database migration.
   operator test payload used /workspaces outside the readonly Worker's writable
   mount. Original failed Run retained, no rerun. Correct actual mounted isolated
   path now passes native gateway construction with0model/search. Prepared distinct
-  replacement script/keys, awaiting explicit replacement authorization. Real
-  accepted Plugin snapshot passes; model/tool/successful final sync gate incomplete.
+  replacement script/keys. Real accepted Plugin snapshot passes; model/tool/
+  successful final sync gate incomplete.
+- Explicit replacement authorization received; secondRun7eb86092... made1genuine
+  Flash/high round withauto choice/retry0, autonomously startedskills.list/files.list,
+  0completed. v2draftcommentary3.0009s/error4.3769s. Isolatedsubdir is notdedicated
+  mount; runtimequotacheck rejects it. Base10GiBmount passes. NativeSkilltools also
+  triggerDeferredRuntime before handlers, an additional integration boundary to
+  fix/audit. FullacceptanceNOTpassed. No thirdRun/resume or source/config changes;
+  keepquota. Search/MCP process/cooldown, originalpartialTurns/oldheads preserved.
+  Need focusednativeSkillruntime audit and compliant isolation before another
+  authorized sample. Separate UI question verified: noPluginpage, backendAPIonly.
