@@ -119,7 +119,9 @@ def prepare_worker_mcp(
 
     try:
         return CloudMcpTransport(snapshot, asyncio.run(load()), authorize=authorize)
-    except (ValueError, OSError):
+    except (PluginAuthorityUnavailable, LeaseLostError, CancelledError, ExecutionInterrupted):
+        raise
+    except Exception:
         if plugin_guard is not None:
             raise PluginAuthorityUnavailable("selected plugin MCP catalog is unavailable") from None
         raise

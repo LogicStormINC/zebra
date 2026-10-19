@@ -251,3 +251,95 @@ def test_shared_skill_native_authority_loss_suspends_serial_without_next_model()
     assert result.attempt_result.outcome is HarnessAttemptOutcome.SUSPENDED
     assert len(model.requests) == 1
     assert not guard.source.installations.mock_calls
+
+
+@pytest.mark.parametrize("missing", [True, False])
+def test_fixed_catalog_load_failure_suspends_only_plugin_bound_setup(
+    tmp_path, protector, missing
+) -> None:
+    from agent_core.ports.extensions import ExtensionNotFoundError
+
+    callback, source, extension = setup(tmp_path, protector)
+    extension = _shared_extension(
+        extension, "mcp-http", extension.snapshot.mcp[0].connection.connection_id
+    )
+    error = (
+        ExtensionNotFoundError("missing fixed catalog")
+        if missing
+        else RuntimeError("backend unavailable")
+    )
+    source.catalogs.get.side_effect = error
+    for guard in (None, _shared_guard(extension)):
+        with pytest.raises(type(error) if guard is None else PluginAuthorityUnavailable):
+            prepare_worker_mcp(
+                extension,
+                source=source,
+                session_id=callback.session_id,
+                fence=callback.fence,
+                plugin_guard=guard,
+            )
+
+
+def test_fixed_catalog_load_preserves_control_signals(tmp_path, protector) -> None:
+    from concurrent.futures import CancelledError
+
+    from agent_core.domain.leases import LeaseLostError
+    from zebra_agent_worker.execution_events import ExecutionInterrupted
+
+    callback, source, extension = setup(tmp_path, protector)
+    guard = _shared_guard(extension)
+    for error in (
+        PluginAuthorityUnavailable("stopped"),
+        LeaseLostError("stale"),
+        CancelledError(),
+        ExecutionInterrupted("cancelled"),
+    ):
+        source.catalogs.get.side_effect = error
+        with pytest.raises(type(error)) as raised:
+            prepare_worker_mcp(
+                extension,
+                source=source,
+                session_id=callback.session_id,
+                fence=callback.fence,
+                plugin_guard=guard,
+            )
+        assert raised.value is error
+
+
+def test_missing_fixed_catalog_suspends_worker_without_closing_turn(
+    tmp_path, protector, monkeypatch
+) -> None:
+    from agent_core.domain.events import EventType
+    from agent_core.domain.sessions import SessionStatus
+    from agent_core.ports.extensions import ExtensionNotFoundError
+
+    from tests.worker.execution.test_claimed_execution import _setup
+    from tests.worker.execution.worker_execution_support import _created_at
+
+    callback, source, extension = setup(tmp_path, protector)
+    extension = _shared_extension(
+        extension, "mcp-http", extension.snapshot.mcp[0].connection.connection_id
+    )
+    source.catalogs.get.side_effect = ExtensionNotFoundError("missing fixed catalog")
+    service, lease, leases = _setup(tmp_path, monkeypatch)
+
+    def build(*args, **kwargs):
+        return prepare_worker_mcp(
+            extension,
+            source=source,
+            session_id=callback.session_id,
+            fence=callback.fence,
+            plugin_guard=_shared_guard(extension),
+        )
+
+    monkeypatch.setattr(
+        "zebra_agent_worker.execution_tool_gateway.build_execution_tool_gateway", build
+    )
+    result = service.execute_claimed_session(lease, executed_at=_created_at())
+    assert result.session.status is SessionStatus.SUSPENDED
+    assert not any(
+        e.event_type
+        in {EventType.MODEL_REQUEST_STARTED, EventType.TURN_FAILED, EventType.SESSION_FAILED}
+        for e in result.events
+    )
+    assert leases.get(lease.session_id) is None
