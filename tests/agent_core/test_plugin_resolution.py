@@ -105,3 +105,43 @@ def test_direct_skill_selection_uses_ready_publication_and_exact_task_ceiling() 
             )
 
     asyncio.run(check())
+
+
+@pytest.mark.parametrize(
+    "mode,state", [("api_key", "ready"), ("bearer", "pending"), ("bearer", "expired")]
+)
+def test_unsupported_or_unusable_mcp_auth_is_refused_before_catalog(mode, state) -> None:
+    from agent_core.domain.extensions import McpAuthMode, McpAuthState
+    from agent_core.domain.plugin_authority import PluginSelectionRefused
+
+    async def check():
+        extensions, catalogs = AsyncMock(), AsyncMock()
+        connection = (
+            _record()
+            .bindings[0]
+            .connection.model_copy(
+                update={
+                    "auth_mode": McpAuthMode(mode),
+                    "auth_state": McpAuthState(state),
+                    "credential_ref": "credential",
+                }
+            )
+        )
+        extensions.get_mcp.return_value = connection
+        catalogs.latest.return_value = _catalog(connection)
+        ceiling = SimpleNamespace(
+            tool_profile="general",
+            network_profile="mcp-proxy-only",
+            binding=SimpleNamespace(effective_capabilities={"agent.execute"}),
+        )
+        with pytest.raises(PluginSelectionRefused):
+            await PluginResolver(None, extensions, catalogs, None, allow_mcp=True).resolve(
+                scope=SCOPE,
+                ceiling=ceiling,
+                selection=ExtensionSelection(mcp=(connection.connection_id,)),
+                session_id="session-a",
+                turn_id="turn-a",
+            )
+        catalogs.latest.assert_not_awaited()
+
+    asyncio.run(check())

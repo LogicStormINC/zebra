@@ -112,6 +112,8 @@ class PluginResolver:
                 current.scope != scope
                 or current.connection_id != identifier
                 or not current.enabled
+                or current.auth_mode.value not in {"none", "bearer"}
+                or current.auth_state.value not in {"not_required", "ready"}
                 or (expected is not None and current != expected)
             ):
                 raise PluginSelectionRefused("selected MCP connection is unavailable")

@@ -107,13 +107,18 @@ class ExtensionSnapshot(BaseModel):
 
     @property
     def selection(self) -> ExtensionSelection:
+        legacy = not (self.plugins or self.direct_skills or self.direct_mcp)
         return ExtensionSelection(
             plugins=tuple(
                 PluginRevisionSelection(installation_id=p.installation_id, revision=p.revision)
                 for p in self.plugins
             ),
-            skills=self.direct_skills,
-            mcp=self.direct_mcp,
+            skills=(
+                tuple(s.installation_id for s in self.skills) if legacy else self.direct_skills
+            ),
+            mcp=(
+                tuple(m.connection.connection_id for m in self.mcp) if legacy else self.direct_mcp
+            ),
         )
 
     @field_validator("skills")
@@ -176,9 +181,9 @@ class ExtensionSnapshot(BaseModel):
             return False
         if any(plugin not in ceiling.plugins for plugin in self.plugins):
             return False
-        if not set(self.direct_skills) <= set(ceiling.direct_skills) or not set(
-            self.direct_mcp
-        ) <= set(ceiling.direct_mcp):
+        if not set(self.selection.skills) <= set(ceiling.selection.skills) or not set(
+            self.selection.mcp
+        ) <= set(ceiling.selection.mcp):
             return False
         if any(skill not in ceiling.skills for skill in self.skills):
             return False

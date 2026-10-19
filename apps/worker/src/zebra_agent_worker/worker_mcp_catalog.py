@@ -3,11 +3,12 @@
 import asyncio
 import json
 from collections.abc import Callable, Mapping
+from concurrent.futures import CancelledError
 from dataclasses import dataclass
 
 from agent_core.domain.extension_snapshots import McpSnapshotEntry
 from agent_core.domain.identifiers import SessionId
-from agent_core.domain.leases import LeaseFence
+from agent_core.domain.leases import LeaseFence, LeaseLostError
 from agent_core.domain.mcp_catalog import McpToolCatalog
 from agent_core.domain.plugin_authority import PluginAuthorityUnavailable
 from agent_core.ports.lease_store import LeaseStorePort
@@ -21,6 +22,7 @@ from agent_security.mcp_credential_release import McpCredentialRelease
 from agent_security.mcp_execution_authority import McpWorkerAuthority
 from agent_tools import McpProxyRequest
 
+from zebra_agent_worker.execution_events import ExecutionInterrupted
 from zebra_agent_worker.extension_recovery import RecoveredTurnExtension
 from zebra_agent_worker.worker_plugins import WorkerPluginGuard
 
@@ -66,6 +68,10 @@ def prepare_worker_mcp(
             )
         )
 
+    plugin_connections = {
+        c.target_id for p in snapshot.plugins for c in p.components if c.kind == "mcp-http"
+    }
+
     def authorize(
         entry: McpSnapshotEntry,
         operation: McpProxyRequest,
@@ -92,15 +98,20 @@ def prepare_worker_mcp(
             ),
             connections=source.connections,
         )
+        resolver._check_frame(endpoint, frame)
         try:
             if entry.connection.auth_mode.value == "none":
                 resolver.authorize_anonymous(endpoint, frame)
                 credential = None
             else:
                 credential = resolver(endpoint, frame)
-        except (ValueError, OSError):
-            if plugin_guard is not None:
-                plugin_guard.validate()
+        except (PluginAuthorityUnavailable, LeaseLostError, CancelledError, ExecutionInterrupted):
+            raise
+        except Exception:
+            if entry.connection.connection_id in plugin_connections:
+                raise PluginAuthorityUnavailable(
+                    "selected plugin MCP authority is unavailable"
+                ) from None
             raise
         if plugin_guard is not None:
             plugin_guard.validate()

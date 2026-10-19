@@ -103,5 +103,5 @@ def _check_plugin_skill_failure(guard: WorkerPluginGuard, error: SkillCatalogErr
         "publication_unavailable",
         "package_integrity",
         "backend_unavailable",
-    } and any(s.installation_id not in snapshot.direct_skills for s in snapshot.skills):
+    } and any(c.kind == "skill-bundle" for p in snapshot.plugins for c in p.components):
         raise PluginAuthorityUnavailable("selected plugin Skill source is unavailable") from None

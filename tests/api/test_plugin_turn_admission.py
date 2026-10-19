@@ -2,6 +2,7 @@
 
 from pathlib import Path
 
+import pytest
 from agent_storage import SQLiteEventStore
 
 from tests.agent_security.test_extension_authority import _verified
@@ -86,8 +87,10 @@ def test_disabled_selection_refuses_before_command_append(tmp_path: Path) -> Non
     assert stores.events.bindings == []
 
 
+@pytest.mark.parametrize("legacy", [False, True])
 def test_same_turn_rejects_changed_explicit_selection_without_resolving_latest(
     tmp_path: Path,
+    legacy: bool,
 ) -> None:
     import pytest
     from agent_core.contracts import SessionCommand, SessionCommandKind
@@ -107,7 +110,7 @@ def test_same_turn_rejects_changed_explicit_selection_without_resolving_latest(
         session_id=str(session_id),
         turn_id=turn_id,
         skills=(store.list_skills.return_value.items[1],),
-        direct_skills=("install-01",),
+        direct_skills=() if legacy else ("install-01",),
     )
     snapshots.values[(scope, str(session_id), turn_id)] = snapshot
     command = SessionCommand(
@@ -137,4 +140,12 @@ def test_same_turn_rejects_changed_explicit_selection_without_resolving_latest(
             client_payload={"extension_selection": {}},
             existing_turn=True,
         )
+    _, restored, _ = admission.prepare(
+        verified=verified,
+        session_id=session_id,
+        events=events,
+        client_payload={},
+        existing_turn=True,
+    )
+    assert restored == snapshot
     store.list_skills.assert_not_called()
