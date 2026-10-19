@@ -574,3 +574,26 @@ API设置Skill/MCP Worker能力及现有凭据管理开关，Worker仅打开现�
 持久保存；不能丢弃后生成替代密钥来读取已有密文。无现存密文时才首次生成。
 `update_services.py`已消费，只作单次操作记录，禁止重跑；旧章节helper会回退镜像
 与能力配置，不能单独覆盖当前版本。仅本地集成，不推送或远程部署。
+
+## 13. 普通页面真实 Run 验收（CLOUD-PLUGIN-PAGE-01，2026-10-20）
+
+仅普通页面发送一次，新会话`conv_1792425312607_dec09a`，Run
+`b6fd3788-9a1f-4ec7-9123-6ba1025b353b`。账号原无插件，临时批准既有UI-02
+测试包，同账号安装Skill并显式绑定其既有真实MCP fetch连接；页面启用后ready。
+普通Host命令`skills=[]`、plugins revision2，经AG-UI和冻结快照固定1Plugin/
+1Skill/1MCP，组件目标一致。实际Provider五轮均high、tool_choice=auto、retry0；
+请求上下文有Skill及MCP工具计量，存储目录可装配fetch哈希别名，无远端帧。
+Skill确实被模型读取；MCP未被调用，不能据此声称远端执行或会话恢复已验收。
+主Run五轮模型、七次工具（skills.list1/read2、extensions.list2、files.list2）；
+六成功、一项旧未挂载Skill的skill_not_found。页面发送至Host完成28.392秒，
+Turn记录创建至完成28.034秒，Provider总等待14.423秒；状态completed，完整正文
+1506字符同步，冷刷新保留。被动SSE正文不可读，不报告精确页面首正文；刷新网络
+缓冲截断，不据此宣称零HTTP请求，刷新前后持久模型/工具/快照计数确实相同。
+Host正常自动生成一次追问建议，单独计数，不混入五轮主Run。搜索和远端MCP调用0。
+发现管理工具_record对MCP硬编码catalog_verified=false/刷新提示，agent因此误称
+目录未经验证；另可列出未选入当前快照的旧Skill。均属清单表达边界，本轮不扩修。
+验收后仅停用新Skill/Plugin并恢复API原白名单/镜像/全部环境。Worker/Search/TLS/
+原MCP均未重启；原15heads、两个原partial Turn全部hash、Search PID/冷却不变，
+仅新增2测试head/1快照，租约/待执行0。脚本和脱敏证据位于主工作区
+`.artifacts/cloud-plugin-page-01/`，analyze.py可重跑只读核对；prepare/fixture是
+已消费的操作记录，禁止重跑安装或发送。无生产源码变更、推送或远程部署。

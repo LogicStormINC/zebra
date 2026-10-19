@@ -16535,3 +16535,32 @@ pending,newRuns/models/search0. Existing Search320c9f820419/TLS untouched.
 Source locally FF-integrated to cloud-agent-trench and paired Trench main, preserving
 all dirty files by hash. Runtime/evidence helpers .artifacts/cloud-plugin-normal-01/;
 update_services.py consumed, compose_runtime.py preflight-only. No remote push/deploy.
+
+
+## 2026-10-20 - CLOUD-PLUGIN-PAGE-01 ordinary page real acceptance
+
+Claimed codex/cloud-plugin-page-01 in reused plugin plan worktree, docs/evidence only.
+Current ordinary account had0Plugins; approved existing UI-02 bundle temporarily on
+normalAPI only, preserving exact image/env/mount/security. Published scoped Skill,
+bound existing real same-scope MCP fetch, enabled through actual UI and checkedready.
+One UI Send only: conv_1792425312607_dec09a, Turn375add9e-6e62-45ad-8b82-216ee07803c8,
+Runb6fd3788-9a1f-4ec7-9123-6ba1025b353b, Task36af82d4-9582-4b28-99a7-9fcd8037dfef.
+No forced tools, selectionskills=[]/Pluginr2+existingMCP; frozen snapshot1/1/1, component
+IDs exact; actual provider MCP/Skill category tokens nonzero, schemahash stable five
+rounds high/auto/retry0. Skills.list1/read2, extensions.list2, files.list2;6success and
+one old unselectedSkill missing. New PluginSkill content was read successfully.
+28.392s send->Hostcomplete,28.034s Turncreate->complete,14.423s providerlatency sum.
+Host auto suggestions1 separate. No web.search/web.fetch/remoteMCP. Actual fetchcatalog
+mapped to hashed alias, archived metadata-only composition sent0frames. Original
+no-model check incorrectly expected readable fetch alias, corrected evidence uses
+stored remote name+hashed alias; no new model/request/retry resulted.
+Real page completed,1506char answer retained on cold refresh, durable event/snapshot/
+protection counters unchanged. Passive SSE body unavailable and refreshCDP truncated;
+no invented exact firstbody/zeroHTTP claim. Saved UI screenshotrun-acceptance.png.
+Management _record hardcodes catalog_verifiedfalse/refresh hint; agent repeatedit;
+list also exposes oldSkill not current frozen selection. Recorded followup, no expansion.
+Disabled newPlugin/Skill, originalMCP record exact, restoredAPI originalenv/image;
+all other containers IDs/started/restarts unchanged and healthy. Original15heads and
+2partialTurn hashes exact, SearchPID/cooldownexact,2testheads/1snapshotdelta,0leases/pending.
+Ran capture before/after/final, native savedcatalog, analyze.py and cold-refresh event
+identity assertions; no production source changes or remote push/deployment.

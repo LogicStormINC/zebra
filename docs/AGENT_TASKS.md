@@ -35100,3 +35100,38 @@ old payloads remain byte-compatible by excluding None. No database migration.
   preserved config except declared runtime flags/readonly key mount; source hashes
   match. No Run/model/search/remoteMCP,15heads/2partial/125snapshots/counters exact,
   Search/TLS identities/PIDs/cooldown unchanged,0leases/pending.
+
+
+### CLOUD-PLUGIN-PAGE-01 — Ordinary page real Run Plugin acceptance
+
+- Status: Done (2026-10-20; one real ordinary page Run verified; local docs integration).
+- Human owner: Luke Ding; executor Codex; branch codex/cloud-plugin-page-01
+  in reused cloud-plugin-plan-01/zebra-agent worktree.
+- Owned paths: this card, PROGRESS.md, WORKLOG.md, docs/CLOUD_PLUGINS.md and
+  new focused acceptance doc if the existing doc exceeds600lines; task artifacts
+  .artifacts/cloud-plugin-page-01/; isolated scoped Plugin fixture enablement and
+  ordinary page-created test conversation/Turn only. Preparation may temporarily
+  include already-approved UI-02 bundle in normal API allowlist (API-only recreate,
+  same image/allotherconfig; restore afterward), install scoped acceptance Skill
+  and Plugin in current ordinary user/workspace binding its EXISTING real MCP
+  connection; no credential copy/discovery/new MCP, disable new test records afterward.
+  Preserve original15heads/2partialRuns; no production source edits.
+- Scope: submit exactly one ordinary UI new Run, real provider permitted, retain
+  high/v2, autonomous tool choice, no intercepted response or direct canonical Run
+  command, no replacement/retry/new search. Record model-visible capabilities,
+  context, actual tools/model rounds, first正文 and completion timing; distinguish
+  catalog/schema presence from actual remote tool execution. Preserve fresh auth.
+- Safety: first verify service identities/readiness/idle and original partial Run
+  hashes. Preserve Search/TLS processes and original MCP session; no service restart
+  or unrelated account/data/config changes. Fixture MCP status must be explicit,
+  never present synthetic catalog as live remote service proof. Any rate limit or
+  Run failure stops model acceptance without retry. Local docs integration only.
+
+- Delivered: one page Send/Run completed high/v2,5model rounds/7tools,28.392s.
+  Actual Plugin snapshot/Skill read/provider Skill+MCP context confirmed; real stored
+  fetch catalog composed, agent did not call MCP.6tools succeeded, one old unselected
+  Skill failed; no retry/search or fabricated remote-execution proof. Refresh preserved
+  complete answer and durable counts. Hardcoded false MCP management status recorded.
+  New test records disabled, API temporary allowlist restored, other runtime unchanged;
+  original15heads/2partialhashes/SearchPID/cooldown exact,2heads/1snapshot delta,
+  0leases/pending. docs/CLOUD_PLUGINS.md13; primary .artifacts/cloud-plugin-page-01/.

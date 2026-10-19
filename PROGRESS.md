@@ -7430,3 +7430,17 @@ or remoteMCP. Local API/legacy/Worker updated; Search/TLS/Exa/MCP process preser
 15heads,2originalpartialTurns,125snapshots and all model/tool counters unchanged;
 0leases/pending. Thin Host protocol adaptation only, no Trench product/UI logic.
 Local source integration only, no push/remote deployment. See docs/CLOUD_PLUGINS.md12.
+
+
+## 2026-10-20 - CLOUD-PLUGIN-PAGE-01
+
+One ordinary page new Run completed at high/v2: actual frozen1Plugin/1Skill/1MCP,
+provider Skill/MCP context and real Skill read confirmed.5model rounds/7tools
+(6success/1old-unselected-Skill failure),28.392s page send to Host completion.
+MCP fetch catalog present but not called; no remote-execution/session-recovery claim.
+Cold refresh retained answer and durable counters. Found hardcoded MCP management
+catalog_verified=false plus inventory/current-selection mismatch; no source fix expanded.
+Scoped test records disabled and temporary API-only allowlist restored. Worker/Search/
+TLS/originalMCP untouched; old15heads/2partial hashes/SearchPIDs/cooldown exact,
+only2heads/1snapshot added,0leases/pending. No search/retry/push/remote deployment.
+See docs/CLOUD_PLUGINS.md13 and .artifacts/cloud-plugin-page-01/acceptance.safe.json.
