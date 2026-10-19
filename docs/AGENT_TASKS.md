@@ -34960,3 +34960,27 @@ old payloads remain byte-compatible by excluding None. No database migration.
   acceptance-proofs persisted in primaryartifact. Runbook section9 documents new
   restarthelper/mount/quota. Completes the remaining Plugin realRun gate from prior
   CLOUD-PLUGIN-E2E-01; old failed samples are preserved historical evidence.
+
+
+### CLOUD-PLUGIN-UI-01 — Trench Plugin management beside Settings
+
+- Status: Ready → In Progress (2026-10-19; user confirmed Trench web frontend).
+- Human owner: Luke Ding; executor Codex; branch codex/cloud-plugin-ui-01 in each
+  repository. Reuse cloud-plugin-plan-01/zebra-agent; isolated sibling Trench
+  checkout based on its current main c80a2f9. Preserve all primary dirty changes.
+- Owned paths (Zebra): this task card, PROGRESS.md, WORKLOG.md,
+  docs/CLOUD_PLUGINS.md; task .artifacts/cloud-plugin-ui-01/.
+- Owned paths (Trench): toc-frontend/src/components/product/dashboard-account-menu.tsx,
+  dashboard-nav.tsx and dashboard-nav.test.tsx; new components/product/plugins/;
+  new app/dashboard/plugins/page.tsx; new lib/trench-ai-plugins.ts and focused
+  test; services/api/src/trench_api/routers/trench_ai_extensions.py and existing
+  tests/api/test_trench_ai_extensions.py; WORKLOG.md and docs/CLOUD_PLUGIN_UI.md.
+- Scope: Plugins as a peer of Settings in account menu, independent responsive
+  page, real scoped list/detail/install/enable/disable using existing signed
+  extension proxy. Approved package digest and existing component bindings only;
+  preserve CAS, idempotency, same-origin user auth, bounded reads, no secrets.
+- Validation: focused frontend/backend regression, TypeScript/lint/build as
+  appropriate; actual local logged-in page navigation/read with no interception.
+  No model/search requests, no Worker/Search/MCP restarts or policy changes.
+- Integrate locally after validation; no push/remote deployment. No marketplace,
+  arbitrary package URL execution, automatic grants or forced Run selection.

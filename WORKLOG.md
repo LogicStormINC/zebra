@@ -16433,3 +16433,13 @@ others0; exactly1snapshot. Search/MCP no calls; original12heads and2partialTurn
 status/answer/request/metadatahashes unchanged,0leases/pending. HistoricalfailedRuns
 retained. Currentcomposehelper andevidencepersistedprimary, previoushelperdoesnot
 includechildmount/newimage. Onlylocal source/evidencedocs integration, no push/deploy.
+
+
+### 2026-10-19 — CLOUD-PLUGIN-UI-01 claimed
+
+User confirmed Trench web, Plugins peer to Settings. Existing account menu hosts
+Settings; use adjacent Plugins item and separate page. Existing scoped Plugin API
+already implements list/detail/install/CAS enablement; Trench proxy allowlist only
+has MCP/Skill. Minimal forwarding addition, no runtime state machine changes.
+Use isolated branch/worktrees; preserve Zebra AGENTS/untracked spec and Trench
+registry/next-env/untracked paths. No models/search or shared Worker changes.
