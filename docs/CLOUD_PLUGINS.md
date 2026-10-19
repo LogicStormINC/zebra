@@ -474,3 +474,52 @@ API和legacy API仅覆盖3个已验收源文件，环境、命令、挂载、安
 `final-protection.safe.json`、`services-final.safe.json`，均位于同一任务artifact。
 旧两版导航截图只作历史记录。私有inspect/resolved配置保持0600。
 源代码和记录仅本地集成；未推送或远程部署。
+
+## 11. 一键安装、逐行列表与真实启停（CLOUD-PLUGIN-UI-02）
+
+2026-10-19按用户后续要求，市场和已安装均改为整行列表，左侧名称/发布者/版本、
+右侧安装或启停，行间分隔。包指纹、安装编号、绑定ID及内部revision不在用户界面
+展示。删除手动指纹和组件绑定表单。指纹仍在协议内部用于不可变校验。
+
+市场安装只提交digest，复用既有POST和当前用户 `extensions.manage`。省略bindings
+时由Cloud组合的组件安装器准备；原显式bindings API保持兼容。核心服务先检查原
+创建记录，成功重放不会重复准备组件、反转启停或扩大请求意图。前端幂等键由所选
+包确定，刷新和未确认响应后保持一致；单次写入有并发保护，不自动重试。
+
+Skill来自已固定包对象的完整原始文件，通过确定性ZIP复用现有发布/安装/CAS启用；
+复用已启用且版本精确匹配的安装，明确停用的既有配置不会被重新启用。自动安装
+继续受Skill发布开关约束。包内MCP只描述逻辑connection_slot，不提供可猜测的默认
+端点：本期槽位复用管理员在**相同作用域**预置连接的创建幂等键，经共享标识函数
+定位并核对现有启用状态、授权就绪、配置revision和非空目录。缺失/撤销时失败关闭，
+在写入Skill前报错，不要求用户手动绑ID、不猜选其他连接、不填凭据或访问远端。
+需要第三方账号的连接仍须按既有授权流程先就绪；本期没有新增OAuth流程或自动授权。
+最终所有组件仍经过原核心绑定校验和存储端原子检查，Plugin安装本身默认停用。
+
+隔离普通产品账号/工作区通过实际登录页面验收，无响应拦截。一次市场点击得到一条
+Plugin r1/disabled；点击启用得到r2/enabled；停用得到r3/disabled。每阶段冷刷新以及
+清理测试市场入口后的刷新均保留相同安装与状态。真实PG核对Skill已发布ready，文件
+清单逐项等于包内组件；MCP绑定精确等于隔离连接r2及其目录摘要，未绑到其他作用域。
+MCP目录是明确标注的合成操作员测试数据，本轮不声称验证远端发现或工具执行。
+隔离账号通过127.0.0.1独立Cookie登录，不退出或修改localhost的人类账号。
+
+22项Python定向回归、Ruff、Mypy1316源文件、文件上限通过；前端14项定向及后续
+9项受影响回归、类型/ESLint、最终生产构建通过。没有扩大无关测试修复。
+API/legacy仅覆盖5个验收源文件，运行中hash逐项一致；Worker/Search/TLS不更新。
+临时增加一个批准测试包供验收，完成后仅正常API恢复原批准目录并重建；legacy不再
+重建，测试包不向正常用户展示。原批准试点包保留，新一键安装实现保留，隔离安装
+最终停用r3，3条隔离配置保留用于追溯。最终环境变量值恢复原值，资源/安全/挂载/
+网络保持，Worker/Search完整身份和Search PID/冷却hash未变。
+
+保护capture证明模型/工具事件和snapshot无增量，原12个head及两个原partial Turn
+的状态和正文/请求/元数据hash不变，仅新增隔离Skill/MCP/Plugin三个head，租约和
+待执行命令0。无模型、搜索、远端MCP请求，也未重启原搜索/MCP进程。
+
+当前重启helper为主工作区 `.artifacts/cloud-plugin-ui-02/compose_oneclick.py`，
+默认保留原批准目录与新镜像 `zebra-api:cloud-plugin-oneclick-02` /
+`zebra-api:cloud-plugin-oneclick-legacy-02`。执行helper只预检；此前章节helper会
+覆盖为旧API镜像，不能单独更新当前服务。更新与清理脚本已消费，只作操作记录。
+同目录 `installed.safe.json`、`enabled.safe.json`、`disabled-refreshed.safe.json`
+核对精确绑定；`protection.safe.json`、`api-final.safe.json`、
+`source-hashes.safe.json`证明保护和部署源；`plugin-market-final.png`是正常账号的
+最终列表，`installed-disabled-final.png`是隔离账号收尾。私有凭据/inspect均0600。
+仅本地提交集成，无推送或远程部署。

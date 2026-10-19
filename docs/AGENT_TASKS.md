@@ -35009,7 +35009,8 @@ old payloads remain byte-compatible by excluding None. No database migration.
 
 ### CLOUD-PLUGIN-UI-02 — One-click installation, row lists and real lifecycle acceptance
 
-- Status: Ready → In Progress (2026-10-19; explicit user follow-up).
+- Status: Done (2026-10-19; source and real-page lifecycle locally integrated;
+  no remote push/deploy).
 - Human owner: Luke Ding; executor Codex; branch codex/cloud-plugin-ui-02 in both
   repositories; reuse clean sibling cloud-plugin-plan-01 worktrees.
 - Owned paths (Zebra): this card, PROGRESS.md, WORKLOG.md, docs/CLOUD_PLUGINS.md;
@@ -35038,3 +35039,17 @@ old payloads remain byte-compatible by excluding None. No database migration.
   approved fixture digest; no search/global proxy changes. End with fixture disabled.
 - Focused no-model safety regression then local integration/normal service/page
   acceptance. No unrelated test repairs, push or remote deployment.
+- Accepted: one actual marketplace click created one disabled Plugin with exact
+  Skill/MCP pins; genuine page enable r2/disable r3, cold refresh after each state
+  and after API catalog cleanup preserved the record/state. Native PG reconciled
+  Skill ready manifest and MCP exact connection revision/catalog digest. MCP test
+  catalog was explicitly synthetic operator data; no remote discovery/tool execution.
+- Both views are full-width rows; fingerprints, installation/binding IDs and
+  internal revision details removed from user presentation. Normal human account
+  unchanged; final UI screenshot shows original catalog with one-click Install.
+- Gates:22focused Python tests/Ruff/Mypy1316 and file limits; frontend focused14,
+  latest affected9/type/lint/final production build pass. Final protection: old12
+  heads and2partial Turns unchanged, only3 new isolated heads,0model/tool increments,
+  snapshots unchanged,0leases/pending; Worker/Search/TLS/PIDs/cooldown unchanged.
+  API/legacy only updated; temporary fixture approval removed and original env
+  restored. Test Plugin remains disabled r3. Current helper compose_oneclick.py.

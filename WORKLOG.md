@@ -16491,3 +16491,22 @@ Mypy1316 and Ruff pass; Trench14focused/type/lint pass. No real page mutation ye
 Prepared ordinary isolated product account and ready synthetic MCP catalog using
 normal proxy/scoped native persistence, no remote discovery/tool calls. Minimal
 API layers prepared, current Worker/Search/TLS unchanged. No models/search.
+
+CLOUD-PLUGIN-UI-02 accepted end to end. Genuine isolated product login on127.0.0.1
+kept human localhost cookie/account untouched. One market click installed r1 disabled;
+page enable r2 and disable r3, cold refresh after each and after API cleanup all kept
+same record/state. Native PG confirms exact ready Skill file manifest and MCP r2 /
+catalog digest. MCP fixture catalog was synthetic operator data, no remote request.
+User clarified no internal identifiers: both views are full-width rows, fingerprints,
+installation/binding IDs and internal revision details removed. Normal account actual
+market now shows the original pilot row and Install button, no card/form/debug IDs.
+Temporary fixture approval removed; isolated record retained disabled r3. Final
+model/tool/snapshot delta0, old12heads/2partial hash equality, only3new owned heads,
+0leases/pending, Worker/Search/TLS and SearchPIDs/cooldown unchanged. Config values
+restored, original dirty hashes intact. API/legacy5files exact hash verified.
+Initial Docker FROM digest syntax was corrected to verified local tags before any
+update; post-update health verifier port corrected8000 without rerunning update.
+NormalAPI later deliberately recreated only to remove temporary fixture approval.
+22Python/Ruff/Mypy1316/files; frontend14 then affected9/type/lint/finalbuild pass.
+No model/search/interception/retry or unrelated fixture work; no push/deploy.
+Current primary helper compose_oneclick.py, proofs/screenshots saved to owned artifact.

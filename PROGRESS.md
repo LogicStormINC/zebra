@@ -7400,3 +7400,16 @@ unchanged. Final read-only protection equals baseline: zero model/tool increment
 12 heads and two original partial Turns unchanged, zero leases/pending. No models,
 searches, push or remote deploy. Runbook section10 records current restart helper
 and proof; this is management UI acceptance, not another real Run acceptance.
+
+CLOUD-PLUGIN-UI-02 complete locally: both Plugin views use full-width row lists;
+fingerprints/internal IDs hidden. Market Install submits digest only; composed
+installer reuses verified package bytes, Skill publication/install and exact scoped
+MCP slots. No user binding form; explicit API compatibility, idempotency/CAS and
+revocation checks retained.22focused Python/Ruff/Mypy1316/file gate, scoped frontend
+regressions/type/lint/final build pass. Real isolated user clicked install once,
+enabled r2, disabled r3; cold refresh after all three and API cleanup kept state.
+Native PG confirmed Skill manifest and MCP connection/catalog pins. Synthetic MCP
+fixture only, no remote MCP execution. Temporary fixture removed from market;
+normal account unmodified. Only API layers changed; final env restored, Worker/
+Search/TLS and MCP process unchanged.0model/search, old12heads/2partial Turns intact,
+only3isolated heads added,0leases/pending. No push/deploy; runbook section11.
