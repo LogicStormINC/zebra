@@ -37,6 +37,7 @@ def durable_research_contract(
             )
             + "Children cannot web.fetch, run shell commands, modify workspace files or "
             "delegate again (depth 1). Parent Artifact URIs are not automatically child-readable. "
+            "Children do not inherit parent Skills, Plugins, or MCP selections. "
             "Cloud children may explicitly choose fresh, capsule, fork_tail, or "
             "resume; every inherited mode is bounded and source-attributed."
         ),
