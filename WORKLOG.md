@@ -16510,3 +16510,28 @@ NormalAPI later deliberately recreated only to remove temporary fixture approval
 22Python/Ruff/Mypy1316/files; frontend14 then affected9/type/lint/finalbuild pass.
 No model/search/interception/retry or unrelated fixture work; no push/deploy.
 Current primary helper compose_oneclick.py, proofs/screenshots saved to owned artifact.
+
+
+## 2026-10-19 — CLOUD-PLUGIN-NORMAL-01
+
+Luke Ding/Codex reused clean Plugin sibling worktrees on codex/cloud-plugin-normal-01.
+Implemented smallest coherent normalRun/AG-UI/managed-origin/runtime-readiness slice
+with explicit owned paths. Source commits80d0bd51/ea590620/42b31e4f/367df88a;
+paired Trench fa98e14/eeb8e1f. Finite spec and quality reviews closed old-source
+bypass, duplicate shared-MCP counting and per-GET single-use Grant reuse.
+Final gates239Zebra pass/Mypy1317 and Trench106pass/13existingPG-skips/Ruff/compile;
+no unrelated test repair. Root prepared disconnected same-base layers and a secure
+readonly master-key volume only after confirming no existing encrypted credentials.
+Updated idle API42f5b9f793c4,legacy e6e1765a2714,Worker909761e60366 with preserved
+security/resources/network/log rotation/ports and original mounts, only declared
+Skill/MCP flags and readonly key volume added. Healthy/restart0/source hashes exact.
+Actual fresh signed GETs and normal Host selection prove Plugin capability without
+keywords and disabled managed filtering; actual API pure AG-UI maps exact selection
+without command submission. Native Worker reads original fixed Skill marker, old
+snapshot digest unchanged, guard-only feature-off boundaries and saved synthetic
+MCP tool schema pass with0remote frames. before/after capture exactly equal:15heads,
+2protectedpartialTurns,125snapshots,allmodel/toolcounters/SearchPID/cooldown.0leases/
+pending,newRuns/models/search0. Existing Search320c9f820419/TLS untouched.
+Source locally FF-integrated to cloud-agent-trench and paired Trench main, preserving
+all dirty files by hash. Runtime/evidence helpers .artifacts/cloud-plugin-normal-01/;
+update_services.py consumed, compose_runtime.py preflight-only. No remote push/deploy.

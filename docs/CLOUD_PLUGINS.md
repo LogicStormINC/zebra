@@ -2,7 +2,7 @@
 
 2026-10-19。首期交付可信内部包的 Skill/MCP 组合；源码默认关闭。
 源码、隔离原生验收、正常服务激活、真实模型验收是四个独立状态。
-本地正常服务已完成 Skill-only 隔离试点激活，见第7节；未做真实模型验收。
+本地试点、真实模型与管理页面验收分别见第7至11节；普通 Run 接线见第12节。
 
 ## 1. 能力边界
 
@@ -10,10 +10,11 @@ Plugin 复用已有 Skill Publication、McpConnection、ExtensionSnapshot 和工
 它记录包内容与组件来源，不产生新的执行权限。安装、启用、Task 授权、单次审批分别判断。
 
 - 支持 Skill-only、HTTP MCP-only、Skill+MCP；一个包最多32个组件。
-- 仅绑定当前 scope 中已经 ready 且显式启用的组件，不代为启停底层组件。
+- Skill可从批准包一键发布安装；MCP只绑定当前scope已有、就绪且显式启用的连接。
+  Plugin启停不扩大权限，也不反转独立共享组件的启停。
 - MCP 首期只接受已就绪的 none/bearer 连接与固定非空 catalog。
 - 不执行包内代码；不支持安装脚本、任意 stdio/hook、依赖安装或自动更新。
-- 不开放 Marketplace、任意远程包 URL、publisher 自声明信任或外部签名信任链。
+- 市场只列服务已批准包，不开放任意远程注册表、包URL或publisher自声明信任。
 - researcher 暂不继承父任务的 Plugin/Skill/MCP。其现有只读、深度1与按父授权
   缩小的 web.search 不变；描述性上下文不是子任务的执行授权。
 - 不改变模型档位、思考设置、v2、Yahoo 默认、Exa fast 或搜索回退。
@@ -523,3 +524,53 @@ API/legacy仅覆盖5个验收源文件，运行中hash逐项一致；Worker/Sear
 `source-hashes.safe.json`证明保护和部署源；`plugin-market-final.png`是正常账号的
 最终列表，`installed-disabled-final.png`是隔离账号收尾。私有凭据/inspect均0600。
 仅本地提交集成，无推送或远程部署。
+
+
+## 12. 普通 Run 插件接线与受保护运行时（CLOUD-PLUGIN-NORMAL-01）
+
+普通 Host 在新 Turn 建任务前读取当前作用域的真实扩展目录。已启用且就绪的插件
+作为可用能力提供给模型，插件 Skill 名称合入原有冻结 Task 上限；不依赖问题关键词。
+独立 Skill 保留既有选择行为。外层 AG-UI `extensionSelection` 传递插件精确安装版本、
+独立 Skill 安装ID与可用独立 MCP；API映射到核心 `extension_selection`，不塞入
+官方 RunAgentInput。目录、分页、组件和工具总量均有界，失败不伪装为空目录。
+每个目录GET（含分页）独立取得一次性Host Grant，复用HTTP连接而不复用已消费授权。
+
+Plugin GET补齐Skill名称、版本、managed及ready/reason；Skill GET以同一归属校验
+标记managed；MCP GET仅依据已缓存、校验过的目录返回selectable/tool_count，
+不发现远端工具。Plugin目录404才兼容旧服务；其他错误失败关闭。显式空选择仍为
+空，已接受的回执与恢复Turn继续使用原快照，不采纳后来目录或新增权限。
+
+自动创建Skill记录不可清除的包来源；复用已有独立Skill仍为共享来源。旧一键安装
+通过精确确定性创建ID和不可变r1记录识别，重绑后仍保留约束。新字段为空时不参与
+序列化，旧快照摘要不变。归属在版本更新、重放、准入与Worker中保持；停用插件的
+托管Skill不能绕入独立选择。关闭插件执行时仍保留只读归属检查，但不能恢复插件
+执行。未知旧来源失败关闭；独立共享来源保留。不改旧Event、快照、原Run状态。
+
+Skill/MCP就绪分别核对配置的Worker能力与当前组件版本、发布或固定目录。启用前
+再次检查；不可用不宣称ready，不退化为半个插件。MCP总工具数按唯一连接计数，
+与运行时相同。运行时继续执行每次新鲜授权、租约、取消、DNS/SSRF与凭据释放检查。
+API配置表达部署意图，不冒充Worker心跳；本机激活另用实际Worker接线取证。
+
+源码：Zebra367df88a；Trench eeb8e1f。239项Zebra定向回归、完整Mypy1317文件、
+Ruff通过；Trench相邻回归106通过/13项既有PG环境用例跳过。保存的真实high/v2
+快照摘要一致；不得将离线测试或目录加载当成新Run、模型决策或远端MCP执行验收。
+
+本地激活与只读原生验收已通过。API42f5b9f793c4、legacy e6e1765a2714、
+Worker909761e60366运行正常、重启数0；逐项核对运行中源文件hash与验收镜像一致。
+实际认证HTTP读取证明普通Host在无关键词问题上仍选择就绪插件，停用托管Skill
+被排除；真实API纯序列化保留选择，未提交命令。实际Worker解析旧快照摘要一致、
+读取原Skill标记，并从保存的操作员MCP目录装配1个工具定义；未发远端帧。
+关闭执行的只读guard仍阻断旧托管来源/插件恢复，保留独立Skill。操作证据位于主工作区
+`.artifacts/cloud-plugin-normal-01/`。只允许更新API/legacy API/Worker，原Search、
+TLS、Exa进程与MCP会话保持。初始与最终capture完全一致：15个扩展head、
+两个原partial Turn状态/正文/请求/元数据hash、模型/工具计数、125个snapshot、
+Search PID/冷却hash均未变，有效租约/待执行命令0。未新增Run、模型、搜索或
+远端MCP请求；MCP目录装配不冒充真实远端业务执行验收。
+
+当前准备的重启helper为该目录`compose_runtime.py`，执行只做配置预检。显式保留
+原完整环境、命令、资源、安全、网络、日志轮转与挂载，增加只读MCP密钥卷；
+API设置Skill/MCP Worker能力及现有凭据管理开关，Worker仅打开现有MCP能力，
+保留refresh关闭。主密钥不进入仓库、环境值或日志，卷`zebra-mcp-plugin-normal-01`
+持久保存；不能丢弃后生成替代密钥来读取已有密文。无现存密文时才首次生成。
+`update_services.py`已消费，只作单次操作记录，禁止重跑；旧章节helper会回退镜像
+与能力配置，不能单独覆盖当前版本。仅本地集成，不推送或远程部署。

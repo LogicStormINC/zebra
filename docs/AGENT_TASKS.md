@@ -35053,3 +35053,50 @@ old payloads remain byte-compatible by excluding None. No database migration.
   snapshots unchanged,0leases/pending; Worker/Search/TLS/PIDs/cooldown unchanged.
   API/legacy only updated; temporary fixture approval removed and original env
   restored. Test Plugin remains disabled r3. Current helper compose_oneclick.py.
+
+
+### CLOUD-PLUGIN-NORMAL-01 — Ordinary Run Plugin selection and runtime readiness
+
+- Status: Done (2026-10-19; source and no-model runtime acceptance locally
+  integrated; no remote push/deploy).
+- Human owner: Luke Ding; executor Codex; branch codex/cloud-plugin-normal-01
+  in clean reused cloud-plugin-plan-01 Zebra and Trench sibling worktrees.
+- Owned paths (Zebra): this card, PROGRESS.md, WORKLOG.md, docs/CLOUD_PLUGINS.md;
+  core domain/plugin_installations.py, plugin_snapshots.py, extensions.py; core
+  application/plugin_installations.py, plugin_resolution.py, skill_installations.py
+  and focused plugin ownership/availability module, extension_configuration.py;
+  core ports/plugin_installations.py;
+  integrations/plugins/installation.py; API ag_ui_command.py, extension admission,
+  reads/composition, extension_management_routes.py, extension_mcp_selection.py,
+  plugin composition/installations and capability/readiness modules;
+  Worker MCP/Plugin composition and guards; focused tests for these paths; generic
+  SDK AG-UI contract/tests if required; docker/compose.application.yml only required
+  runtime environment/mount wiring; task .artifacts/cloud-plugin-normal-01/.
+- Owned paths (Trench): services/api/src/trench_api/trench_ai_zebra_skills.py,
+  trench_ai_zebra_client.py, trench_ai_zebra_contract.py,
+  trench_ai_strategy_runtime_types.py and focused new extension
+  selection module; routers/trench_ai_schedules.py and its focused test only
+  for shared per-request authorization wiring; their focused tests; docs/CLOUD_PLUGIN_UI.md, WORKLOG.md.
+- Scope: ordinary Run receives enabled authorized Plugin inventory in frozen
+  Task Skill ceiling and typed AG-UI selection; no prompt/keyword routing. Preserve
+  explicit empty selection, exact scope/revision, immutable replay, shared origins,
+  managed component provenance and live disable constraints. Existing secure MCP
+  runtime must be composed and readiness truthful; no invented service credentials.
+- Acceptance: saved snapshot/response no-model safety regression, native gateway
+  catalog assembly without remote tool/MCP calls, then necessary local API/Worker
+  activation after idle/config checks. No model/search/new Run, Search/MCP restart,
+  forced tools/engines, Trench product logic, unrelated tests, push or remote deploy.
+  Preserve fresh authority/high/v2/Yahoo default/fast/cooldown/fallback and original
+  partial Runs; retain unrelated dirty files exactly.
+
+- Delivered: Zebra367df88a, Trench eeb8e1f; independent spec/quality passed after
+  bounded fixes for disabled-source guards, shared MCP counts and single-use Grants.
+  Each inventory GET/page now gets fresh authority, shared schedule auth caller too.
+  No keyword routing changes, forced tools, product/schedule semantics or expanded permissions.
+- Gates:239Zebra tests, fullMypy1317; Trench106pass/13existingPG-skips. Same-base
+  disconnected images, actual signed inventory/Host selection/AG-UI serialization and
+  native Worker originalSkill/pinnedSnapshot/guard-only/savedMCP catalogs pass.
+  New API42f5b9f793c4/legacy e6e1765a2714/Worker909761e60366 healthy with exact
+  preserved config except declared runtime flags/readonly key mount; source hashes
+  match. No Run/model/search/remoteMCP,15heads/2partial/125snapshots/counters exact,
+  Search/TLS identities/PIDs/cooldown unchanged,0leases/pending.

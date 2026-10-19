@@ -7413,3 +7413,20 @@ fixture only, no remote MCP execution. Temporary fixture removed from market;
 normal account unmodified. Only API layers changed; final env restored, Worker/
 Search/TLS and MCP process unchanged.0model/search, old12heads/2partial Turns intact,
 only3isolated heads added,0leases/pending. No push/deploy; runbook section11.
+
+
+## 2026-10-19 - CLOUD-PLUGIN-NORMAL-01
+
+Ordinary Runs now carry enabled scoped Plugin capabilities through the frozen Task
+Skill ceiling and typed outer AG-UI selection; model tool choice remains autonomous.
+Managed origins survive replay/rebind/version updates and cannot bypass disablement;
+readonly ownership checks remain when execution is off. Skill/MCP readiness is
+truthful, counts unique MCP connections, and every inventory GET/page uses a fresh
+single-use Grant. Existing secured MCP runtime is now composed locally.
+239Zebra tests/fullMypy1317 and Trench106pass/13existingPG-skips; finite independent
+spec/quality review passed. Actual signed HTTP/Host selection/API serialization and
+native Worker savedSkill/snapshot/catalog proof passed with zero new Run/model/search
+or remoteMCP. Local API/legacy/Worker updated; Search/TLS/Exa/MCP process preserved.
+15heads,2originalpartialTurns,125snapshots and all model/tool counters unchanged;
+0leases/pending. Thin Host protocol adaptation only, no Trench product/UI logic.
+Local source integration only, no push/remote deployment. See docs/CLOUD_PLUGINS.md12.
