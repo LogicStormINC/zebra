@@ -34916,8 +34916,8 @@ old payloads remain byte-compatible by excluding None. No database migration.
 
 ### CLOUD-SKILL-RUNTIME-01 — Native Skill reads without sandbox preparation
 
-- Status: Ready → In Progress (2026-10-19; user authorized minimal fix, compliant
-  isolated hard-quota workspace, no-model regression then one genuine Run).
+- Status: Done (2026-10-19; source and evidence locally integrated into
+  cloud-agent-trench under explicit authorization; no remote push/deploy).
 - Human owner: Luke Ding; executor Codex; branch codex/cloud-skill-runtime-01;
   worktree cloud-plugin-plan-01/zebra-agent reused clean at46c9fc15.
 - Owned paths: packages/agent-runtime/src/agent_runtime/harness.py;
@@ -34945,4 +34945,18 @@ old payloads remain byte-compatible by excluding None. No database migration.
   provisions1realgVisor, bidirectionalmarker proves sharedpath. Dedicatedchild
   mount10527662080<=10737418240, quotaenabled. Shared parent capacity upper bound,
   not per-child reservedquota. No model/search/MCP; no-RunprobeTaskcancelled.
-  NormalWorker update and one genuineRun remain before completion.
+  NormalWorker updated healthy (b72e1210 image, a43ec29 container), exactenvvalues/
+  security/resources retained, only owned nestedbind added; API/Search identities
+  and SearchPIDs/cooldown unchanged. No-model counters/state equality proved.
+- Real acceptance: one new Task eb4e2171-e798-46f8-80e0-e9d86aab8a5e /
+  Run plugin-e2e-c5713c15-7af8-44a1-a68f-7c54c8d397d8 completed. Normal signedAPI,
+  canonicalWorker/PG/S3/Skill, high/thinking/v2/autotools.4modelrounds/4executedtools
+  (skills.list, files.list, two skills.read), real marker and reference path read.
+  3.158s temporarycommentary,13.5771s finaldraft,17.3511s terminal; coldv2 sameanswer,
+  no extra models.1legalruntimeprovision for autonomousfiles.list; not zero-sandbox
+  wholeRun or a speedup pairing. Priorfailures unchanged, no retries/resumes.
+- Protection: model/tool globaldeltas exactly own4/4, no search/MCPrequests, old12
+  heads and2partialTurnhashes unchanged,0leases/pending. Nativeproof and canonical
+  acceptance-proofs persisted in primaryartifact. Runbook section9 documents new
+  restarthelper/mount/quota. Completes the remaining Plugin realRun gate from prior
+  CLOUD-PLUGIN-E2E-01; old failed samples are preserved historical evidence.

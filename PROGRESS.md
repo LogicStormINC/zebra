@@ -7374,3 +7374,16 @@ read-only code/ops review noCritical/Important. True one-shotWorkerPG/S3 tools
 andgVisor bidirectionalmarker prove nestedchildmount/10527662080Bcap within10GiB,
 no quota weakening or exclusivecapacityclaim.0model/search/MCP; no-RunTaskclosed.
 NormalWorker update and new once-onlyhigh/v2 Run are next; priorfailuresretained.
+
+
+CLOUD-SKILL-RUNTIME-01 completed locally: onlynormalWorker updated to b72e1210
+with dedicated ownedchildbind, quotaenabled/10527662080<=10737418240. Exactenvvalues,
+security/resources preserved; API/Search fullidentity/start/PIDs/cooldown unchanged.
+OnecanonicalnormalRun eb4e2171-e798-46f8-80e0-e9d86aab8a5e succeeds: Flashhigh/v2/
+autotools,4modelrounds,4successful Skill/workspacetools, actualSKILL.md andmarker
+reference read; answercommitted/turncompleted/sessioncompleted, coldreplayidentical.
+Temporarycommentary3.158s, finaldraft13.5771s, terminal17.3511s; thisisfunctional
+acceptance, not speeduppairing orTrenchpage. NativeSkill3calls0provision proof;
+realRunfiles.list legitimatelyprovisionsonce. No extra models onrecovery, nosearch/
+MCP, old12heads/2partialTurnhashes unchanged,0leases/pending. Priorfailedsamples
+retained. No remote push/deploy. Currentrestarthelper andproofs inrunbooksection9.

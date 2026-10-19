@@ -16402,3 +16402,34 @@ directlycancelled, ownedOCIhandlecleaned. ThisstandaloneOCIprobe is notcanonical
 Run/lease/v2 acceptance. Independentreviewsource/ops noCritical/Important. Next:
 freshidle andonlynormalWorker image/mount update, compareactualconfig andSearch/
 APIprocesses, thennewexactlyoncehigh/v2 Run. No model/search/MCP requests sofar.
+
+
+### 2026-10-19 — CLOUD-SKILL-RUNTIME-01 (local activation and one real Run)
+
+Source4fc4dc9c locallyfastforwarded beforeupdate. Copiedoperationalhelpers/evidence
+andprivate0600 baseline intoprimarytaskartifact. Removedonlyownedprobe markerfiles.
+Freshidle0leases/0pending. FirstComposeupdate command omittedthein-memory env used
+by preflight; interpolation rejected beforeanyservicechange. Correctedscriptcall.
+OnlyWorker thenrecreated. Postcheck initiallycompared Env arrayordering; values/
+sortedhash actuallyidentical, so corrected verifier tokey/valueequality without
+recreatingWorkeragain. Actualimageb72e1210/container a43ec29a64b9 healthy; sourcehash
+e38100d5 matches. Env/security/resources/command/networks/oldmounts preserved, only
+ownedchildbind added. Actualquota mountself/cap verified. Allotheroriginalservices
+IDs/start/restarts/env unchanged. Exactpre/postread-onlycapture identical including
+model/toolcounters, oldheads/partialTurns andSearchPIDs/cooldown. No migrationneeded.
+
+Newunique single-use script submittedonecanonicalRun; no retries/interception or
+toolchoiceoverride. Task eb4e2171-e798-46f8-80e0-e9d86aab8a5e, Runplugin-e2e-c5713c15-
+7af8-44a1-a68f-7c54c8d397d8.4DeepSeekFlash modelresponses, allhigh/thinkingenabled/
+auto,0providerretry/repair. Autonomousskills.list+files.list thenSKILL.md then
+references/marker.txt,4executedtools. Actualmarker returned.1runtime_provisioned
+forworkspacecall; nativeSkillcomponentproof stays0provision. answercommitted,
+turncompleted,sessioncompleted andlive/coldRUN_FINISHEDsuccess. ColdindependentHTTP
+freshGrant finalanswer identical; no new models. Temporarycommentary3.158s,
+finalanswerdraft13.5771s,Runterminal17.3511s/bootstrapterminal18.3922s. Not a page
+or performancepairing; donot call commentaryfinalbody or claimzero-sandboxwholeRun.
+Canonical/source counts match globaldelta4modelstart/response and4toolstart/complete,
+others0; exactly1snapshot. Search/MCP no calls; original12heads and2partialTurn
+status/answer/request/metadatahashes unchanged,0leases/pending. HistoricalfailedRuns
+retained. Currentcomposehelper andevidencepersistedprimary, previoushelperdoesnot
+includechildmount/newimage. Onlylocal source/evidencedocs integration, no push/deploy.

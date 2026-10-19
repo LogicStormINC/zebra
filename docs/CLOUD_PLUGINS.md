@@ -318,7 +318,7 @@ coverage-pro-test、web-search，随后是Plugin overlay和精确preserve overla
 使用同一105兼容镜像关闭新增开关；不要回退schema或启动104旧镜像。
 本轮仅本地集成，无远程推送、远程部署或真实模型/页面验收。
 
-## 8. 单次真实Run验收（CLOUD-PLUGIN-E2E-01，进行中）
+## 8. 历史失败样本（CLOUD-PLUGIN-E2E-01，原样保留）
 
 用户随后授权一次真实Run，保留high与v2、自主工具选择，不新增搜索或重启服务。
 2026-10-19首个样本 `e94e48bf-0c64-45ec-bc38-96803450a9e5` 已真实准入，
@@ -358,12 +358,12 @@ skills.list/read同样先调用ensure_ready，故控制面Skill目录读取也�
 后续最小方案应区分无需沙箱的原生Skill读取与真实workspace工具：审计两项Skill
 handler不依赖runtime后复用现有跳过机制，保留PG/S3/Plugin新鲜授权；files.list等
 仍须使用合规隔离挂载，不能关闭quota、伪造完成或强制模型只选Skill来规避。
-当前未更改生产源码、配置或挂载；上述方案尚未实施。
+该失败阶段未更改生产源码、配置或挂载；后续实施和成功验收见第9节。
 
 搜索工具/上游请求均0；Search完整身份、PID/环境/冷却、旧扩展head及两个原partial
-Turn均未变，末次Worker有效租约/待执行命令0。两个失败Run均保留，没有第三个Run
+Turn均未变，末次Worker有效租约/待执行命令0。该阶段两个失败Run均保留，没有第三个Run
 或恢复命令。证据与单次锁位于 `.artifacts/cloud-plugin-e2e-01/`；替代样本在
-`replacement/`，两份 `run_once.py` 均已消费，不可重跑。完整端到端门槛仍未通过。
+`replacement/`，两份 `run_once.py` 均已消费，不可重跑。该阶段完整端到端门槛未通过，后续成功样本见第9节。
 
 ### 管理页面边界
 
@@ -371,3 +371,63 @@ Turn均未变，末次Worker有效租约/待执行命令0。两个失败Run均�
 详情、安装、CAS启停/重绑；首期计划5.1明确先用HTTP/SDK，不先做Trench管理页面。
 只读核对Trench的DashboardExtensionSettings仅接受mcp/skill，Zebra桌面与SDK也没有
 Plugin页面/入口。本次未新增前端或修改Trench产品逻辑。
+
+## 9. Skill 延迟沙箱与合规工作区（CLOUD-SKILL-RUNTIME-01，已验收）
+
+2026-10-19按用户授权修复并接入本地正常Worker。`LocalToolGateway.execute`
+复用现有Artifact跳过机制，仅增加精确的 `skills.list`、`skills.read`，不提前准备
+OCI沙箱；这两项原生handler只依赖有界catalog。原PG/S3固定版本、Plugin授权、路径
+校验和调用前后取消边界保留。`files.list`等工作区工具仍正常准备沙箱及检查配额。
+新回归曾在旧代码上复现提前准备失败；78项定向测试、Ruff、Mypy1315个源文件和
+文件大小检查通过。没有扩大到旧fixture或基线eval修复。
+
+隔离目录 `/tmp/zebra-trench-live-workspaces/cloud-skill-runtime-01` 是原有受限
+文件系统上的任务子目录，作为同路径嵌套bind挂入Worker，使其自身成为独立挂载点。
+原生检查容量10527662080字节，低于10240MiB上限10737418240字节；
+`require_workspace_quota=true`保持开启。容量上限由父文件系统共享，不是给子目录
+独占预留10GiB。无模型阶段用真实PG/S3 Plugin和原生工具完成3次Skill调用、0次
+沙箱准备，非法路径被拒绝；`files.list`准备1次真实gVisor，Worker和沙箱双向
+文件标记检查通过。该组件检查不冒称canonical Run或页面验收。
+
+在有效租约和待执行命令均为0后，仅更新正常Worker：
+
+- 镜像 `zebra-worker:cloud-skill-runtime-01`，ID `sha256:b72e1210d7384952ff4e3a5dc74d00be4382db52e33f8535189ffdfe158e7a91`，仅覆盖已审核的harness文件。
+- Worker完整ID `a43ec29a64b97970cb95b1f1574b5e08c911ad656bcd34ef8e5efd83b568932d`，healthy；环境变量值、命令、安全限制、资源、网络与原挂载逐项一致，仅增加上述子目录挂载。
+- API、legacy API和Search的完整ID、启动时间、重启计数、环境一致；Search PID和冷却文件hash一致，原MCP会话所属进程保留。未重启Search/TLS。
+
+一次真实Run使用正常签名HTTP准入、真实Worker/模型/Skill及v2 SSE，未拦截响应。
+Task `eb4e2171-e798-46f8-80e0-e9d86aab8a5e`，Run
+`plugin-e2e-c5713c15-7af8-44a1-a68f-7c54c8d397d8`。固定Plugin revision4的
+snapshot与accepted command身份和digest一致，无direct Skill或MCP选择。
+
+| 验收项 | 实测 |
+|---|---|
+| Run与结果 | 仅1个accepted Run；answer committed、Turn与Session completed、RUN_FINISHED success |
+| 模型 | DeepSeek Flash，4轮，均high、thinking enabled、tool_choice auto；retry/repair均0 |
+| 自主工具 | skills.list、files.list、skills.read正文、skills.read引用，共4次，均executed |
+| 标记 | 实际读得 `CLOUD-PLUGIN-LOCAL-PILOT-V1`，引用路径 `references/marker.txt` |
+| 临时说明首字 | 提交Run起3.1580秒；这是过程说明，不是最终答案正文 |
+| 最终答案草稿首字 | 13.5771秒；实时v2临时草稿，尚未经最终提交 |
+| 整轮至终态 | 17.3511秒；含bootstrap至终态18.3922秒 |
+| 冷恢复 | 新鲜Grant、独立HTTP连接读取同Run，最终答案逐字一致，RUN_FINISHED success |
+
+本轮模型自主选择了工作区枚举，因此canonical事件中有1次合法runtime_provisioned；
+不能据此声称整轮无需沙箱，也不能把首批并发工具的3.2秒事件区间当成Skill独占耗时。
+两次Skill正文读取的事件区间分别约318ms和301ms。成功样本与旧失败样本不能组成
+性能提速对照。本轮证明功能修复、权限/配额保持和完整收尾，不声称已有配对降幅。
+
+更新前后无模型事件增量；真实阶段总增量恰为4个模型请求/响应和4个工具start/complete，
+与本Run事件逐项匹配，冷恢复没有再调用模型。搜索请求0，无新增MCP调用；旧12个
+扩展head/revision/hash、两个原partial Turn的状态与正文/请求/元数据hash不变，
+末次租约/待执行命令0。两个历史失败Run原样保留，没有retry/resume或状态修补。
+未改Trench/Desktop产品逻辑。本次是真实Cloud Run验收，不是Trench页面验收。
+
+本机后续重启/更新以主工作区 `.artifacts/cloud-skill-runtime-01/compose_local.py`
+生成的最终 `services-preserve.yml` 为准，保留原完整配置及新增挂载；原第7节的
+旧helper生成的是旧Worker配置，不能单独覆盖当前服务。运行
+`python .artifacts/cloud-skill-runtime-01/compose_local.py` 只做预检。
+`update_worker.py`已执行，仅作记录；`real-run/run_once.py`已消费单次锁，禁止重跑。
+安全证据为 `native-proof.safe.json`、`worker-update.safe.json`、
+`update-protection.safe.json`、`acceptance-proof.safe.json` 和
+`real-run/canonical-proof.safe.json`。私有inspect、resolved配置和流日志权限0600。
+本轮源修复和验收记录仅本地提交并集成cloud-agent-trench，没有远程推送或部署。
