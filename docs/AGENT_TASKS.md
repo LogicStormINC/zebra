@@ -35015,9 +35015,10 @@ old payloads remain byte-compatible by excluding None. No database migration.
 - Owned paths (Zebra): this card, PROGRESS.md, WORKLOG.md, docs/CLOUD_PLUGINS.md;
   packages/agent-core/src/agent_core/application/plugin_installations.py;
   packages/agent-core/src/agent_core/ports/plugin_installations.py;
-  packages/agent-tools/src/agent_tools/plugin_components.py;
+  packages/agent-core/src/agent_core/application/mcp_connections.py;
+  packages/agent-integrations/src/agent_integrations/plugins/installation.py;
   apps/api/src/zebra_agent_api/plugin_composition.py, plugin_installations.py;
-  tests/agent_core/test_plugin_auto_install.py; tests/agent_tools/test_plugin_components.py;
+  tests/agent_core/test_plugin_auto_install.py; tests/agent_integrations/test_plugin_components.py;
   tests/api/test_plugin_installations_http.py, test_plugin_composition.py;
   task .artifacts/cloud-plugin-ui-02/ and isolated scoped fixture data.
 - Owned paths (Trench): toc-frontend/src/components/product/plugins/;

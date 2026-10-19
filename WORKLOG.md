@@ -16480,3 +16480,14 @@ marketplace lifecycle acceptance to all-row presentation and one-click installat
 Reuse approved package validation and existing component publication/install; keep
 exact scoped MCP slot resolution and no privilege inference. No user binding form.
 Isolated fixtures only, no model/search/interception or original MCP restart.
+
+CLOUD-PLUGIN-UI-02 source ready: digest-only install calls optional composed
+component installer after creation replay check. Reuses validated immutable package
+bytes, deterministic Skill ZIP/publication/install and scoped MCP creation-key slot
+identity; original final binding checks/CAS remain authoritative. Existing explicit
+API stays compatible. Both UI views now rows; manual binding form/card removed,
+market click posts digest only with stable scope-isolated key.22focused tests,
+Mypy1316 and Ruff pass; Trench14focused/type/lint pass. No real page mutation yet.
+Prepared ordinary isolated product account and ready synthetic MCP catalog using
+normal proxy/scoped native persistence, no remote discovery/tool calls. Minimal
+API layers prepared, current Worker/Search/TLS unchanged. No models/search.

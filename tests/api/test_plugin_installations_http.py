@@ -123,3 +123,19 @@ def test_plugin_permission_failure_precedes_service_io(tmp_path: Path) -> None:
     assert client.get(PREFIX, headers=AUTH).status_code == 403
     assert client.post(PREFIX, headers=AUTH, json={}).status_code == 403
     assert not service.mock_calls
+
+
+def test_digest_only_install_keeps_fresh_authority_and_rejects_empty_bindings(
+    tmp_path: Path,
+) -> None:
+    client, service = _client(tmp_path)
+    payload = {"package_digest": service.store.get.return_value.package.package_digest}
+    response = client.post(PREFIX, headers=AUTH | {"Idempotency-Key": "automatic"}, json=payload)
+    assert response.status_code == 201
+    assert service.install.call_args.kwargs["payload"] == {**payload, "bindings": None}
+    assert (
+        client.post(
+            PREFIX, headers=AUTH | {"Idempotency-Key": "empty"}, json={**payload, "bindings": []}
+        ).status_code
+        == 422
+    )

@@ -26,7 +26,11 @@ from agent_core.ports.extensions import (
     ExtensionStore,
 )
 from agent_core.ports.mcp_catalog import McpCatalogStore
-from agent_core.ports.plugin_installations import PluginInstallationStore, PluginPackagePublisher
+from agent_core.ports.plugin_installations import (
+    PluginComponentInstaller,
+    PluginInstallationStore,
+    PluginPackagePublisher,
+)
 
 
 class PluginSkillSelection(BaseModel):
@@ -49,11 +53,13 @@ PluginSelection = Annotated[PluginSkillSelection | PluginMcpSelection, Field(dis
 class PluginInstallationCreate(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
     package_digest: PluginDigest
-    bindings: tuple[PluginSelection, ...] = Field(min_length=1, max_length=32)
+    bindings: tuple[PluginSelection, ...] | None = Field(default=None, min_length=1, max_length=32)
 
     @model_validator(mode="after")
     def unique_bindings(self) -> Self:
-        if len({item.component_id for item in self.bindings}) != len(self.bindings):
+        if self.bindings is not None and len({item.component_id for item in self.bindings}) != len(
+            self.bindings
+        ):
             raise ValueError("duplicate plugin component binding")
         return self
 
@@ -97,6 +103,7 @@ class PluginInstallationService:
     catalogs: McpCatalogStore
     publisher: PluginPackagePublisher
     deployment_namespace: str
+    components: PluginComponentInstaller | None = None
 
     async def _package_and_bindings(
         self,
@@ -110,6 +117,28 @@ class PluginInstallationService:
             or package.expectation.deployment_namespace != self.deployment_namespace
         ):
             raise ValueError("published package disagrees with requested digest/deployment")
+        if request.bindings is None:
+            if self.components is None:
+                raise ValueError("automatic component installation is unavailable")
+            prepared = await self.components.prepare(scope=scope, package=package)
+            request = PluginInstallationCreate.model_validate(
+                {
+                    "package_digest": request.package_digest,
+                    "bindings": [
+                        {
+                            "component_id": item.component_id,
+                            "kind": item.kind,
+                            **(
+                                {"installation_id": item.installation.installation_id}
+                                if isinstance(item, PluginSkillBinding)
+                                else {"connection_id": item.connection.connection_id}
+                            ),
+                        }
+                        for item in prepared
+                    ],
+                }
+            )
+        assert request.bindings is not None
         components = {component.id: component for component in package.manifest.components}
         if {item.component_id: item.kind for item in request.bindings} != {
             component.id: component.kind for component in components.values()
@@ -188,7 +217,8 @@ class PluginInstallationService:
         ).hexdigest()
         identifier = "plugin_" + key_digest
         intent = request.model_dump(mode="json")
-        intent["bindings"] = sorted(intent["bindings"], key=lambda item: item["component_id"])
+        if intent["bindings"] is not None:
+            intent["bindings"] = sorted(intent["bindings"], key=lambda item: item["component_id"])
         request_digest = sha256(
             json.dumps(intent, sort_keys=True, separators=(",", ":")).encode()
         ).hexdigest()

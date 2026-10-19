@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from agent_core.domain.extensions import ExtensionScope, OpaqueExtensionId
 from agent_core.domain.plugin_installations import (
+    PluginBinding,
     PluginDigest,
     PluginInstallation,
     PluginPackagePin,
@@ -91,4 +92,15 @@ class PluginPackagePublisher(Protocol):
 
     async def publish(self, *, package_digest: str) -> PluginPackagePin:
         """Resolve an approved digest to trusted, immutable package facts only."""
+        ...
+
+
+class PluginComponentInstaller(Protocol):
+    async def prepare(
+        self,
+        *,
+        scope: ExtensionScope,
+        package: PluginPackagePin,
+    ) -> tuple[PluginBinding, ...]:
+        """Prepare exact approved components in this scope; never execute or grant tools."""
         ...

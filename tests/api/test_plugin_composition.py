@@ -20,6 +20,7 @@ def test_skill_only_composition_reuses_cloud_objects_without_mcp_secrets(tmp_pat
         storage_authority="postgresql",
         cloud_extensions_manage_enabled=True,
         cloud_extension_turn_admission_enabled=True,
+        cloud_skills_publish_enabled=True,
         mcp_credentials=SimpleNamespace(worker_enabled=False),
     )
     cloud = SimpleNamespace(

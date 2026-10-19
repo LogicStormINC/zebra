@@ -22,6 +22,11 @@ from agent_core.ports.extensions import (
 _KEY: TypeAdapter[str] = TypeAdapter(ExtensionIdempotencyKey)
 
 
+def mcp_connection_identifier(idempotency_key: str) -> str:
+    key = _KEY.validate_python(idempotency_key)
+    return "mcp_" + sha256(b"zebra:mcp-connection:create:v1\0" + key.encode("ascii")).hexdigest()
+
+
 class McpConnectionCreate(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -46,9 +51,7 @@ async def create_mcp_connection(
     request = McpConnectionCreate.model_validate(payload)
     scope = ExtensionScope.model_validate(scope.model_dump())
     connection = McpConnection(
-        scope=scope, connection_id="mcp_" + sha256(
-            b"zebra:mcp-connection:create:v1\0" + key.encode("ascii")
-        ).hexdigest(), revision=1, enabled=False,
+        scope=scope, connection_id=mcp_connection_identifier(key), revision=1, enabled=False,
         endpoint=request.endpoint, transport=request.transport, auth_mode=request.auth_mode,
         auth_state=(McpAuthState.NOT_REQUIRED if request.auth_mode == McpAuthMode.NONE
                     else McpAuthState.PENDING),

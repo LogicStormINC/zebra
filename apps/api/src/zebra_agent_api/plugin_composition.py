@@ -5,11 +5,14 @@ from pathlib import Path
 from agent_core.application.plugin_installations import PluginInstallationService
 from agent_core.application.plugin_resolution import PluginResolver
 from agent_core.ports.extensions import ExtensionStore
+from agent_integrations.plugins.installation import ApprovedPluginComponents
 from agent_integrations.plugins.publication import PluginPackagePublicationService
 from agent_storage import CloudCompositionSettings
 from agent_storage.postgres.mcp_catalog import PostgresMcpCatalogStore
 from agent_storage.postgres.plugin_installations import PostgresPluginInstallationStore
+from agent_storage.postgres.skill_publications import PostgresSkillPublicationStore
 from agent_storage.postgres.task_io import TaskIoConnections
+from agent_tools.skill_publications import SkillPublicationService
 from zebra_agent_config import ZebraAgentSettings
 
 
@@ -63,6 +66,20 @@ def compose_plugins(
             catalogs,
             packages,
             cloud.deployment_namespace,
+            components=ApprovedPluginComponents(
+                packages,
+                SkillPublicationService(
+                    PostgresSkillPublicationStore(
+                        cloud.dsn, deployment_namespace=cloud.deployment_namespace
+                    ),
+                    cloud.artifact_objects,
+                    cloud.deployment_namespace,
+                )
+                if settings.cloud_skills_publish_enabled
+                else None,
+                extensions,
+                catalogs,
+            ),
         )
     return service, PluginResolver(
         service.store,
