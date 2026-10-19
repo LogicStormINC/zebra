@@ -34913,3 +34913,28 @@ old payloads remain byte-compatible by excluding None. No database migration.
   keepquota. Search/MCP process/cooldown, originalpartialTurns/oldheads preserved.
   Need focusednativeSkillruntime audit and compliant isolation before another
   authorized sample. Separate UI question verified: noPluginpage, backendAPIonly.
+
+### CLOUD-SKILL-RUNTIME-01 — Native Skill reads without sandbox preparation
+
+- Status: Ready → In Progress (2026-10-19; user authorized minimal fix, compliant
+  isolated hard-quota workspace, no-model regression then one genuine Run).
+- Human owner: Luke Ding; executor Codex; branch codex/cloud-skill-runtime-01;
+  worktree cloud-plugin-plan-01/zebra-agent reused clean at46c9fc15.
+- Owned paths: packages/agent-runtime/src/agent_runtime/harness.py;
+  tests/agent_runtime/test_skill_deferred_runtime.py; docs/CLOUD_PLUGINS.md,
+  this card, PROGRESS.md, WORKLOG.md; task .artifacts/cloud-skill-runtime-01/ in
+  task/primary checkouts and a task-owned child below existing quota workspace.
+- Scope: audit native skills.list/read and reuse existing runtime-free dispatch;
+  preserve per-call catalog/Plugin authorization, cancellation and real filesystem
+  tool provisioning. Bind only the isolated child as a dedicated Worker mount on
+  the existing capped filesystem, preserving quota and source/remote path identity.
+  Fresh idle check, update only necessary Worker image/mount; preserve other
+  runtime config, original API/Search/TLS processes and MCP session.
+- Validation: one focused regression for Skills/reference/invalid access/cancel,
+  workspace tools still provision; real native PG/S3 Plugin recovery and Skill
+  tool handlers; actual quota inspection and gVisor shared-file proof before any
+  real model. Then one signed high/v2 Run, autonomous tools, canonical final result
+  and cold v2 replay, source timeline/tools/model counts/timing and protection.
+- Hard boundaries: no search/Exa requests or retries, no quota/auth weakening,
+  no Trench/Desktop changes, no oldRun mutations/automatic rerun, no remote push
+  or deployment. Local integration only. Existing failed samples remain unchanged.
