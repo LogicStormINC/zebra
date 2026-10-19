@@ -114,13 +114,19 @@ def test_managed_skill_requires_enabled_plugin_and_shared_skill_remains_independ
         snapshot = await resolver.resolve(**arguments, selection=chosen)
         assert snapshot.plugins and snapshot.skills == (backend.installation,)
         assert not snapshot.direct_skills
+        guard_only = PluginResolver(installations, extensions, None, None)
+        with pytest.raises(PluginSelectionRefused):
+            await guard_only.resolve(**arguments, selection=ExtensionSelection(
+                skills=(backend.installation.installation_id,)))
+        with pytest.raises(PluginSelectionRefused, match="disabled"):
+            await guard_only.resolve(**arguments, selection=chosen)
         installations.get.return_value = record.model_copy(update={"enabled": False})
         with pytest.raises(PluginSelectionRefused, match="revision"):
             await resolver.resolve(**arguments, selection=chosen)
         shared_backend, shared = skill_plugin(managed=False, enabled=False)
         installations.list.return_value = PluginInstallationPage(items=(shared,))
         extensions.get_skill.return_value = shared_backend.installation
-        result = await resolver.resolve(**arguments, selection=ExtensionSelection(
+        result = await guard_only.resolve(**arguments, selection=ExtensionSelection(
             skills=(shared_backend.installation.installation_id,)))
         assert not result.plugins and result.direct_skills == ("sample",)
     asyncio.run(check())
@@ -199,4 +205,71 @@ def test_skill_version_update_retains_durable_managed_origin():
             payload={"skill_id": version.skill_id, "version_id": "next"})
         assert changed.plugin_origin == backend.installation.plugin_origin
         assert changed.version == version and changed.revision == 2
+    asyncio.run(check())
+
+
+def test_readiness_counts_unique_mcp_catalog_union_instead_of_component_aliases():
+    from agent_core.domain.mcp_catalog import McpCatalogTool, McpToolCatalog
+
+    async def check():
+        original = _record()
+        connection = original.bindings[0].connection
+        other = connection.model_copy(update={"connection_id": "other"})
+        catalogs_by_id = {
+            item.connection_id: McpToolCatalog(
+                connection=item,
+                protocol_version="2025-03-26",
+                tools=tuple(
+                    McpCatalogTool(name=f"tool_{index}", input_schema_json='{"type":"object"}')
+                    for index in range(17)
+                ),
+            )
+            for item in (connection, other)
+        }
+        store, extensions, catalogs, publisher = (AsyncMock() for _ in range(4))
+        extensions.get_mcp.side_effect = lambda **kwargs: (
+            connection if kwargs["connection_id"] == connection.connection_id else other
+        )
+        catalogs.latest.side_effect = lambda **kwargs: catalogs_by_id[kwargs["connection_id"]]
+        service = PluginInstallationService(store, extensions, catalogs, publisher, "cloud-a")
+        for shared in (True, False):
+            bindings = tuple(
+                original.bindings[0].model_copy(
+                    update={
+                        "component_id": identifier,
+                        "connection": item,
+                        "catalog_digest": catalogs_by_id[item.connection_id].digest,
+                    }
+                )
+                for identifier, item in (
+                    ("first", connection),
+                    ("second", connection if shared else other),
+                )
+            )
+            manifest = original.package.manifest.model_copy(
+                update={
+                    "components": tuple(
+                        original.package.manifest.components[0].model_copy(
+                            update={"id": binding.component_id}
+                        )
+                        for binding in bindings
+                    )
+                }
+            )
+            canonical = manifest.canonical_json()
+            package = original.package.model_copy(
+                update={
+                    "manifest": manifest,
+                    "canonical_manifest": canonical,
+                    "manifest_digest": "sha256:" + sha256(canonical.encode()).hexdigest(),
+                    "package_digest": plugin_package_digest(canonical, ()),
+                }
+            )
+            record = PluginInstallation.model_validate(
+                original.model_dump() | {"package": package, "bindings": bindings}
+            )
+            assert await service.readiness(record) == (
+                "ready" if shared else "component_unavailable"
+            )
+
     asyncio.run(check())

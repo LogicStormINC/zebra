@@ -54,3 +54,62 @@ def test_shared_legacy_origin_survives_disabled_plugin_and_managed_origin_requir
     with pytest.raises(PluginAuthorityUnavailable):
         guard.validate()
     packages.read.assert_awaited_once_with(record.package)
+
+
+def test_feature_off_ownership_reader_denies_managed_and_preserves_standalone():
+    from zebra_agent_worker.plugin_composition import compose_worker_plugins
+
+    settings = SimpleNamespace(
+        plugins=SimpleNamespace(enabled=False),
+        deployment="cloud",
+        storage_authority="postgresql",
+        cloud_extension_worker_enabled=True,
+    )
+    cloud = SimpleNamespace(
+        dsn="postgresql://unused",
+        deployment_namespace="scope",
+        extension_snapshots=object(),
+        skill_objects=None,
+        stores=SimpleNamespace(task_io_connections=None),
+    )
+    composed = compose_worker_plugins(settings, cloud)
+    assert composed is not None and composed.packages is None
+    for managed in (False, True):
+        backend, record = skill_plugin(legacy=True, managed=managed, enabled=False)
+        snapshots = ExtensionSnapshot(
+            scope=record.scope, session_id="session", turn_id="turn", skills=(backend.installation,)
+        )
+        extension = RecoveredTurnExtension(record.scope, snapshots, SimpleNamespace())
+        store = AsyncMock()
+        store.list.return_value = PluginInstallationPage(items=(record,))
+        guarded = WorkerPluginSource(store, None)
+        if managed:
+            with pytest.raises(PluginAuthorityUnavailable):
+                prepare_worker_plugins(
+                    extension, source=guarded, skills_available=True, mcp_available=False
+                )
+        else:
+            assert (
+                prepare_worker_plugins(
+                    extension, source=guarded, skills_available=True, mcp_available=False
+                )
+                is None
+            )
+        with pytest.raises(PluginAuthorityUnavailable, match="ownership reader"):
+            prepare_worker_plugins(
+                extension, source=None, skills_available=True, mcp_available=False
+            )
+        selected = snapshots.model_copy(
+            update={"plugins": (PluginSnapshot.from_installation(record),)}
+        )
+        with pytest.raises(PluginAuthorityUnavailable):
+            prepare_worker_plugins(
+                RecoveredTurnExtension(record.scope, selected, SimpleNamespace()),
+                source=guarded,
+                skills_available=True,
+                mcp_available=False,
+            )
+    assert (
+        prepare_worker_plugins(None, source=None, skills_available=False, mcp_available=False)
+        is None
+    )

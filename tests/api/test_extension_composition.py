@@ -249,6 +249,8 @@ def test_turn_admission_composes_exact_namespace_snapshot_authority(
     assert result._snapshots is snapshots
     assert result._task_authority is snapshots
     assert (result._mcp_catalogs is not None) is mcp_enabled
+    assert result._plugins is not None and result._plugins.packages is None
+    assert result._plugins.installations.deployment_namespace == cloud.deployment_namespace
 
 
 def test_http_factory_passes_composed_store(
@@ -271,6 +273,8 @@ def test_http_factory_passes_composed_store(
         "deployment": "cloud",
         "manage_enabled": False,
         "publications": None,
+        "mcp_catalogs": None,
+        "plugin_installations": None,
     }
 
 

@@ -141,7 +141,9 @@ class CloudExtensionTurnAdmission:
             )
         except ValidationError:
             raise ClientExtensionBindingError("invalid explicit extension selection") from None
-        if selection is not None and selection.plugins and self._plugins is None:
+        if selection is not None and selection.plugins and (
+            self._plugins is None or self._plugins.packages is None
+        ):
             raise PluginSelectionRefused()
         prior = self._prior_binding(events, turn_id)
         if prior is not None:
@@ -155,7 +157,7 @@ class CloudExtensionTurnAdmission:
             )
             if selection is not None and selection != snapshot.selection:
                 raise ClientExtensionBindingError("explicit selection conflicts with accepted Turn")
-            if snapshot.plugins and self._plugins is None:
+            if snapshot.plugins and (self._plugins is None or self._plugins.packages is None):
                 raise PluginSelectionRefused()
         elif selection is not None:
             resolver = self._plugins or PluginResolver(

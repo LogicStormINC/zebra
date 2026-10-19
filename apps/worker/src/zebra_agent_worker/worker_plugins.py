@@ -19,7 +19,7 @@ from zebra_agent_worker.extension_recovery import RecoveredTurnExtension
 @dataclass(frozen=True)
 class WorkerPluginSource:
     installations: PluginInstallationStore
-    packages: PluginPackageReader
+    packages: PluginPackageReader | None
 
 
 @dataclass(frozen=True)
@@ -104,6 +104,8 @@ def prepare_worker_plugins(
         skill for skill in snapshot.skills
         if not snapshot.plugins or skill.installation_id in snapshot.direct_skills
     )
+    if direct and source is None:
+        raise PluginAuthorityUnavailable("accepted Skill ownership reader is unavailable")
     try:
         if asyncio.run(managed_skill_ids(
             source.installations if source is not None else None, extension.scope, direct
@@ -117,12 +119,14 @@ def prepare_worker_plugins(
         return None
     if (
         source is None
+        or source.packages is None
         or (extension.snapshot.skills and not skills_available)
         or (extension.snapshot.mcp and not mcp_available)
     ):
         raise PluginAuthorityUnavailable("selected plugin component Worker source is unavailable")
 
     async def recover() -> WorkerPluginGuard:
+        assert source.packages is not None
         initial = WorkerPluginGuard(source, extension, ())
         current = {record.installation_id: record for record in await initial.current()}
         verified: list[PluginInstallation] = []

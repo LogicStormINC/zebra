@@ -19,6 +19,7 @@ from agent_storage.postgres.extensions import PostgresExtensionStore
 from agent_storage.postgres.mcp_catalog import PostgresMcpCatalogStore
 from agent_storage.postgres.mcp_credentials import PostgresMcpCredentialStore
 from agent_storage.postgres.migration_runner import require_current_schema
+from agent_storage.postgres.plugin_installations import PostgresPluginInstallationStore
 from agent_storage.postgres.skill_publications import PostgresSkillPublicationStore
 from agent_storage.postgres.task_io import TaskIoConnections
 from agent_tools.skill_publications import SkillPublicationService
@@ -206,16 +207,34 @@ def compose_extension_turn_admission(
     snapshots = PostgresExtensionSnapshotStore(
         dsn, deployment_namespace=stores.deployment_namespace
     )
+    catalogs = (
+        PostgresMcpCatalogStore(dsn, deployment_namespace=stores.deployment_namespace)
+        if settings.mcp_credentials.worker_enabled else None
+    )
+    connections = stores.task_io_connections
+    if connections is not None:
+        try:
+            connections.require_compatible(dsn)
+        except ValueError:
+            # An explicit Cloud DSN override cannot borrow another store's transport.
+            connections = None
+    # Disabling package execution must not turn old package-created Skills into
+    # independent origins. This reader shares the existing configuration tables.
+    ownership = plugins or PluginResolver(
+        PostgresPluginInstallationStore(
+            dsn, deployment_namespace=stores.deployment_namespace,
+            task_io_connections=connections,
+        ),
+        extension_store, catalogs, None,
+        allow_mcp=catalogs is not None,
+        allow_skills=settings.cloud_skill_worker_enabled,
+    )
     return CloudExtensionTurnAdmission(
         extension_store,
         snapshots,
         snapshots,
-        plugins=plugins,
-        mcp_catalogs=(
-            PostgresMcpCatalogStore(dsn, deployment_namespace=stores.deployment_namespace)
-            if settings.mcp_credentials.worker_enabled
-            else None
-        ),
+        plugins=ownership,
+        mcp_catalogs=catalogs,
     )
 
 

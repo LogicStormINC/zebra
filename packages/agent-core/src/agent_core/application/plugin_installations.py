@@ -213,6 +213,7 @@ class PluginInstallationService:
             if not self.mcp_available:
                 return "mcp_runtime_unavailable"
         mcp_tools = 0
+        seen_connections: set[str] = set()
         for binding in record.bindings:
             try:
                 if isinstance(binding, PluginSkillBinding):
@@ -240,7 +241,9 @@ class PluginInstallationService:
                         scope=record.scope, connection_id=current_mcp.connection_id,
                         config_revision=current_mcp.revision,
                     )
-                    mcp_tools += len(catalog.tools)
+                    if current_mcp.connection_id not in seen_connections:
+                        mcp_tools += len(catalog.tools)
+                        seen_connections.add(current_mcp.connection_id)
                     if (
                         mcp_tools > 32
                         or current_mcp != binding.connection or not current_mcp.enabled

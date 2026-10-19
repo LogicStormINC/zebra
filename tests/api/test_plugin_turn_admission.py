@@ -149,3 +149,65 @@ def test_same_turn_rejects_changed_explicit_selection_without_resolving_latest(
     )
     assert restored == snapshot
     store.list_skills.assert_not_called()
+
+
+def test_accepted_plugin_turn_cannot_resume_through_guard_only_resolver(tmp_path):
+    from agent_core.application.plugin_resolution import PluginResolver
+    from agent_core.contracts import SessionCommand, SessionCommandKind
+    from agent_core.domain.events import EventActor, EventType, SessionEvent
+    from agent_core.domain.extension_snapshots import ExtensionSnapshot, McpSnapshotEntry
+    from agent_core.domain.plugin_authority import PluginSelectionRefused
+    from agent_core.domain.plugin_snapshots import PluginSnapshot
+    from agent_security.extension_authority import extension_runtime_scope_from_grant
+
+    from tests.agent_storage.test_postgres_plugin_installations import _record
+
+    database, session_id, _ = _seed_ready_session(tmp_path)
+    admission, store, snapshots = _admission()
+    verified = _verified(scopes=["agent.run"])
+    scope = extension_runtime_scope_from_grant(verified)
+    history = SQLiteEventStore(database).list_for_session(session_id)
+    values = _record().model_dump()
+    values["scope"] = scope
+    values["bindings"][0]["connection"]["scope"] = scope
+    record = type(_record()).model_validate(values)
+    binding = record.bindings[0]
+    snapshot = ExtensionSnapshot(
+        scope=scope,
+        session_id=str(session_id),
+        turn_id=history[1].payload["turn_id"],
+        plugins=(PluginSnapshot.from_installation(record),),
+        mcp=(
+            McpSnapshotEntry(connection=binding.connection, catalog_digest=binding.catalog_digest),
+        ),
+    )
+    snapshots.values[(scope, str(session_id), snapshot.turn_id)] = snapshot
+    command = SessionCommand(
+        session_id=session_id,
+        kind=SessionCommandKind.RUN,
+        expected_revision=history[-1].sequence,
+        idempotency_key="prior",
+        payload={},
+    )
+    history.append(
+        SessionEvent.create(
+            session_id=session_id,
+            sequence=history[-1].sequence + 1,
+            event_type=EventType.SESSION_COMMAND_ACCEPTED,
+            actor=EventActor.USER,
+            payload=command.event_payload(
+                extension_snapshot_digest=snapshot.digest, extension_turn_id=snapshot.turn_id
+            ),
+            idempotency_key=command.idempotency_key,
+        )
+    )
+    admission._plugins = PluginResolver(None, store, None, None)
+    with pytest.raises(PluginSelectionRefused):
+        admission.prepare(
+            verified=verified,
+            session_id=session_id,
+            events=history,
+            client_payload={},
+            existing_turn=True,
+        )
+    store.list_skills.assert_not_called()

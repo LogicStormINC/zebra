@@ -13,7 +13,11 @@ from zebra_agent_worker.worker_plugins import WorkerPluginSource
 def compose_worker_plugins(
     settings: ZebraAgentSettings, cloud: CloudWorkerComposition | None
 ) -> WorkerPluginSource | None:
-    if not settings.plugins.enabled:
+    if not settings.plugins.enabled and (
+        cloud is None or settings.deployment != "cloud"
+        or settings.storage_authority != "postgresql"
+        or not settings.cloud_extension_worker_enabled
+    ):
         return None
     if (
         settings.deployment != "cloud"
@@ -22,16 +26,20 @@ def compose_worker_plugins(
         or cloud is None
         or not cloud.dsn
         or cloud.extension_snapshots is None
-        or cloud.skill_objects is None
+        or (settings.plugins.enabled and cloud.skill_objects is None)
     ):
         raise ValueError("cloud plugins require composed PostgreSQL extension recovery and objects")
+    packages = None
+    if settings.plugins.enabled:
+        assert cloud.skill_objects is not None
+        packages = PluginPackagePublicationService(
+            Path(), (), cloud.skill_objects, cloud.deployment_namespace
+        )
     return WorkerPluginSource(
         PostgresPluginInstallationStore(
             cloud.dsn,
             deployment_namespace=cloud.deployment_namespace,
             task_io_connections=cloud.stores.task_io_connections,
         ),
-        PluginPackagePublicationService(
-            Path(), (), cloud.skill_objects, cloud.deployment_namespace
-        ),
+        packages,
     )
