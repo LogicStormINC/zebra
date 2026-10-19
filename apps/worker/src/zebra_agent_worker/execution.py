@@ -12,6 +12,7 @@ from agent_context import LocalContextCompiler
 from agent_core.application import SessionTitleService
 from agent_core.domain.events import EventActor, EventType
 from agent_core.domain.identifiers import SessionId
+from agent_core.domain.plugin_authority import PluginAuthorityUnavailable
 from agent_core.domain.sessions import SessionStatus
 from agent_core.ports import EffectDispatchPort, WorkerProjectionTransactionPort
 from agent_core.ports.host_connector_registry import HostConnectorRegistryPort
@@ -23,6 +24,7 @@ from agent_storage import ControlPlaneStores, PostgresControlPlaneStores
 import zebra_agent_worker.authority_types as authority_types
 import zebra_agent_worker.execution_context as execution_context
 import zebra_agent_worker.execution_continuations as execution_continuations
+import zebra_agent_worker.execution_errors as errors
 import zebra_agent_worker.execution_preflight as execution_preflight
 import zebra_agent_worker.execution_runtime as execution_runtime
 import zebra_agent_worker.execution_tool_gateway as execution_gateway
@@ -95,6 +97,7 @@ class SessionExecutionService(SessionExecutionEntrypoints):
         extension_snapshot_store: WorkerExtensionStore | None = None,
         extension_skills: execution_gateway.WorkerSkillSource | None = None,
         extension_mcp: execution_gateway.WorkerMcpSource | None = None,
+        extension_plugins: execution_gateway.WorkerPluginSource | None = None,
         recorder_factory: WorkerProjectionRecorderFactory | None = None,
         coverage_runtime: CloudCoverageRuntime | None = None,
         transient_output_factory: TransientOutputFactory | None = None,
@@ -182,7 +185,7 @@ class SessionExecutionService(SessionExecutionEntrypoints):
         self._egress_registry, self._delegation_store = egress_registry, delegation_store
         self._frozen_manifest_loader = frozen_manifest_loader
         self._extensions = execution_gateway.extensions(
-            extension_snapshot_store, extension_skills, extension_mcp
+            extension_snapshot_store, extension_skills, extension_mcp, extension_plugins
         )
         self._coverage_runtime = coverage_runtime
         self._transient_output_factory = transient_output_factory
@@ -267,6 +270,7 @@ class SessionExecutionService(SessionExecutionEntrypoints):
                 as_of=started_at,
                 extension_store=self._extensions.snapshot_store,
                 allow_mcp=self._extensions.mcp is not None,
+                allow_plugins=self._settings.plugins.enabled and bool(self._extensions.plugins),
                 attempt_number=attempt_number,
                 execution_input_reader=inputs.execution_input_reader,
                 ownership_check=ownership_check,
@@ -277,6 +281,8 @@ class SessionExecutionService(SessionExecutionEntrypoints):
             materialized_context = prepared_context.materialization
         except ExecutionInterrupted:
             return execution_preflight._superseded_by_control_event(authority_recorder)
+        except PluginAuthorityUnavailable as exc:
+            raise errors.WorkerPluginSetupUnavailable("plugin authority is unavailable") from exc
         except (RuntimeError, ValueError) as exc:
             log_worker_failure("worker_setup_failed", "context_prepare", session_id, exc)
             raise WorkerExecutionError(str(exc)) from exc

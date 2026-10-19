@@ -19,6 +19,7 @@ from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.extension_snapshots import ExtensionSnapshot, ExtensionTaskCeiling
 from agent_core.domain.extensions import ExtensionScope
 from agent_core.domain.identifiers import SessionId
+from agent_core.domain.plugin_authority import PluginAuthorityUnavailable
 from agent_core.domain.task_bindings import TaskBindingSnapshot
 from agent_core.ports.extension_snapshots import (
     ExtensionSnapshotIntegrityError,
@@ -47,13 +48,16 @@ def recover_turn_extension(
     session_id: SessionId,
     task_binding: TaskBindingSnapshot | None,
     allow_mcp: bool = False,
+    allow_plugins: bool = False,
 ) -> RecoveredTurnExtension | None:
     """Load only the snapshot named by the accepted command for the active Turn."""
 
-    if store is None:
-        return None
     active = current_turn(events)
     binding = _materialized_binding(events, session_id=session_id)
+    if store is None:
+        if binding is not None:
+            raise PluginAuthorityUnavailable("accepted extension snapshot recovery is unavailable")
+        return None
     if binding is None:
         if active is None or active.legacy:
             return None
@@ -69,6 +73,14 @@ def recover_turn_extension(
         if exists:
             raise ValueError("active Turn snapshot is missing its accepted command binding")
         return None
+    plugin_bound = allow_plugins or any(
+        event.event_type is EventType.SESSION_COMMAND_ACCEPTED
+        and event.payload.get("extension_turn_id") == binding.extension_turn_id
+        and isinstance(event.payload.get("payload"), dict)
+        and isinstance(event.payload["payload"].get("extension_selection"), dict)
+        and bool(event.payload["payload"]["extension_selection"].get("plugins"))
+        for event in events
+    )
     assert binding.extension_turn_id is not None
     assert binding.extension_snapshot_digest is not None
     ceiling, scope = _validated_authority(store, session_id, task_binding)
@@ -82,6 +94,8 @@ def recover_turn_extension(
             )
         )
     except (ExtensionSnapshotIntegrityError, ExtensionSnapshotNotFoundError) as exc:
+        if plugin_bound:
+            raise PluginAuthorityUnavailable("accepted plugin snapshot is unavailable") from None
         raise ValueError("bound extension snapshot is unavailable or invalid") from exc
     except RuntimeError as exc:
         if "asyncio.run() cannot be called" not in str(exc):
@@ -94,7 +108,11 @@ def recover_turn_extension(
         or snapshot.digest != binding.extension_snapshot_digest
     ):
         raise ValueError("extension snapshot disagrees with its trusted Turn binding")
+    if snapshot.plugins and not allow_plugins:
+        raise PluginAuthorityUnavailable("accepted plugin Turn is disabled")
     if snapshot.mcp and not allow_mcp:
+        if snapshot.plugins:
+            raise PluginAuthorityUnavailable("selected plugin MCP Worker source is unavailable")
         raise ValueError("MCP snapshots are not authorized for this Worker slice")
     if any(skill.version.skill_id not in ceiling.skill_components for skill in snapshot.skills):
         raise ValueError("extension snapshot exceeds the frozen Task Skill ceiling")

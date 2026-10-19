@@ -18,6 +18,7 @@ from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.extension_snapshots import ExtensionSnapshot, ExtensionTaskCeiling
 from agent_core.domain.extensions import ExtensionScope, SkillInstallation
 from agent_core.domain.identifiers import SessionId
+from agent_core.domain.plugin_authority import PluginSelectionRefused
 from agent_core.domain.plugin_snapshots import ExtensionSelection
 from agent_core.domain.turns import TurnStatus, derive_turn_id
 from agent_core.ports.extension_snapshots import ExtensionSnapshotStore, ExtensionTaskAuthorityStore
@@ -32,6 +33,7 @@ from agent_security.extension_authority import (
     extension_runtime_scope_from_task_grant,
 )
 from agent_security.host_grant import VerifiedHostGrant
+from pydantic import ValidationError
 
 from zebra_agent_api.extension_mcp_selection import select_enabled_mcp
 
@@ -130,13 +132,16 @@ class CloudExtensionTurnAdmission:
             if open_turn is not None
             else str(derive_turn_id(session_id, len(project_turns(events))))
         )
-        selection = (
-            ExtensionSelection.model_validate(client_payload["extension_selection"])
-            if "extension_selection" in client_payload
-            else None
-        )
+        try:
+            selection = (
+                ExtensionSelection.model_validate(client_payload["extension_selection"])
+                if "extension_selection" in client_payload
+                else None
+            )
+        except ValidationError:
+            raise ClientExtensionBindingError("invalid explicit extension selection") from None
         if selection is not None and selection.plugins and self._plugins is None:
-            raise ValueError("plugin Turn selection is disabled")
+            raise PluginSelectionRefused()
         prior = self._prior_binding(events, turn_id)
         if prior is not None:
             snapshot = asyncio.run(
@@ -150,45 +155,24 @@ class CloudExtensionTurnAdmission:
             if selection is not None and selection != snapshot.selection:
                 raise ClientExtensionBindingError("explicit selection conflicts with accepted Turn")
             if snapshot.plugins and self._plugins is None:
-                raise ValueError("accepted plugin Turn is disabled")
+                raise PluginSelectionRefused()
         elif selection is not None:
-            if self._plugins is not None:
-                snapshot = asyncio.run(
-                    self._plugins.resolve(
-                        scope=scope,
-                        ceiling=ceiling,
-                        selection=selection,
-                        session_id=str(session_id),
-                        turn_id=turn_id,
-                    )
-                )
-            else:
-                skills = tuple(
-                    item
-                    for item in self._enabled_skills(scope, ceiling.skill_components)
-                    if item.installation_id in selection.skills
-                )
-                if {s.installation_id for s in skills} != set(selection.skills):
-                    raise ValueError("selected Skills are not enabled in Task ceiling")
-                if selection.mcp and self._mcp_catalogs is None:
-                    raise ValueError("selected MCP execution is disabled")
-                snapshot = ExtensionSnapshot(
+            resolver = self._plugins or PluginResolver(
+                None,
+                self._store,
+                self._mcp_catalogs,
+                None,
+                allow_mcp=self._mcp_catalogs is not None,
+            )
+            snapshot = asyncio.run(
+                resolver.resolve(
                     scope=scope,
+                    ceiling=ceiling,
+                    selection=selection,
                     session_id=str(session_id),
                     turn_id=turn_id,
-                    skills=skills,
-                    direct_skills=tuple(sorted(selection.skills)),
-                    direct_mcp=tuple(sorted(selection.mcp)),
-                    mcp=(
-                        asyncio.run(
-                            select_enabled_mcp(
-                                self._store, self._mcp_catalogs, scope, selection.mcp
-                            )
-                        )
-                        if self._mcp_catalogs is not None
-                        else ()
-                    ),
                 )
+            )
         else:
             snapshot = ExtensionSnapshot(
                 scope=scope,

@@ -44,3 +44,9 @@ def test_provenance_requires_exact_component_coverage_and_changes_digest() -> No
         ExtensionSelection.model_validate(
             {"plugins": [{"installation_id": "plugin-a", "revision": 1}], "scope": SCOPE}
         )
+
+
+def test_serializer_allows_partial_dump_without_provenance_keys() -> None:
+    snapshot = ExtensionSnapshot(scope=SCOPE, session_id="session-a", turn_id="turn-a")
+    assert snapshot.model_dump(include={"session_id"}) == {"session_id": "session-a"}
+    assert "plugins" not in snapshot.model_dump(exclude={"plugins"})

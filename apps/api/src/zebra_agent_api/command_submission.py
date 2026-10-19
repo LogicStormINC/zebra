@@ -11,6 +11,7 @@ from agent_core.contracts import (
 )
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId, TaskId
+from agent_core.domain.plugin_authority import PluginSelectionRefused
 from agent_core.domain.stream_admission import (
     RunStreamAdmission,
     StreamCapabilities,
@@ -137,6 +138,12 @@ def submit_session_command(
             return ApiResponse(
                 status_code=403,
                 body={"session_id": session_id, "status": "extension_authority_rejected"},
+            )
+        except PluginSelectionRefused:
+            return conflict(
+                session_id=session_id,
+                status="extension_selection_refused",
+                reason="selected extensions are unavailable or outside the Task capability ceiling",
             )
         except ClientExtensionBindingError as exc:
             return bad_request(str(exc))

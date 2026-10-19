@@ -13,6 +13,7 @@ from agent_core.domain.coverage_contracts import CoverageRefusalReason, Coverage
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.leases import WorkerLease
+from agent_core.domain.plugin_authority import PluginAuthorityUnavailable
 from agent_core.domain.sessions import SessionStatus
 from agent_core.ports.runtime import RuntimeCapabilityError
 from agent_core.ports.task_projection_checkpoints import CheckpointNotReady
@@ -23,7 +24,7 @@ import zebra_agent_worker.provider_continuation_execution as provider_runtime
 import zebra_agent_worker.runtime_setup as runtime_setup
 from zebra_agent_worker.claims import ClaimedSession
 from zebra_agent_worker.continuation_lifecycle import restore_suspended_session_claim
-from zebra_agent_worker.execution_errors import log_worker_failure
+from zebra_agent_worker.execution_errors import WorkerPluginSetupUnavailable, log_worker_failure
 from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
 from zebra_agent_worker.execution_finalization import (
     ExecutedSession,
@@ -109,7 +110,8 @@ def execute_claimed_with_stale_retry(
         effective = _claimed if recovery is None else replace(_claimed, recovery=recovery)
         with (
             postgres_connection_scope(task_io=True)
-            if getattr(service, "_execution_namespace", None) is not None else nullcontext()
+            if getattr(service, "_execution_namespace", None) is not None
+            else nullcontext()
         ):
             result: ExecutedSession = service._execute_claimed_session_once(
                 effective, started_at=started_at, ownership_check=ownership_check
@@ -420,7 +422,8 @@ def raise_runtime_setup_failure(
     created_at: datetime,
     attempt_number: int,
 ) -> Never:
-    log_worker_failure("worker_setup_failed", stage, recorder.session.session_id, error)
+    if not isinstance(error, PluginAuthorityUnavailable):
+        log_worker_failure("worker_setup_failed", stage, recorder.session.session_id, error)
     cleanup_error = destroy_runtime_with_evidence(
         runtime,
         handle,
@@ -428,6 +431,8 @@ def raise_runtime_setup_failure(
         created_at=created_at,
         attempt_number=attempt_number,
     )
+    if isinstance(error, PluginAuthorityUnavailable):
+        raise WorkerPluginSetupUnavailable("accepted plugin authority is unavailable") from None
     if cleanup_error is not None:
         raise WorkerExecutionError(f"{error}; runtime cleanup failed: {cleanup_error}") from error
     if isinstance(error, RuntimeCapabilityError):

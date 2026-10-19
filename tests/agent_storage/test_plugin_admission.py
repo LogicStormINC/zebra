@@ -69,3 +69,11 @@ def test_atomic_admission_rechecks_disable_and_never_accepts_changed_edges(dsn: 
     )
     with store.connect() as connection, pytest.raises(ExtensionSnapshotAdmissionConflictError):
         validate_plugin_snapshot_in_transaction(connection, store, snapshot)
+
+    with store.connect() as connection, pytest.raises(ExtensionSnapshotAdmissionConflictError):
+        validate_plugin_snapshot_in_transaction(connection, store, snapshot, strict=False)
+    direct = ExtensionSnapshot.model_validate(
+        {**snapshot.model_dump(), "direct_mcp": (entry.connection.connection_id,)}
+    )
+    # The same accepted direct source needs no plugin lookup at all after disable.
+    validate_plugin_snapshot_in_transaction(object(), store, direct, strict=False)

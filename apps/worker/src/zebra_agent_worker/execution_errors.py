@@ -12,6 +12,7 @@ from contextlib import contextmanager
 
 from agent_core.domain.context_capsule import ContextCapsuleValidationError
 from agent_core.domain.coverage_contracts import CoverageRefusalReason
+from agent_core.domain.plugin_authority import PLUGIN_UNAVAILABLE, PluginAuthorityUnavailable
 from agent_core.harness.context_window import ContextWindowExceededError
 from agent_core.harness.models import HarnessAttemptOutcome, HarnessAttemptResult
 from agent_core.harness.orchestration_events import continuation_metadata
@@ -33,6 +34,10 @@ class WorkerExecutionError(ValueError):
             raise TypeError("coverage refusal requires a typed reason")
         self.coverage_refusal_reason = coverage_refusal_reason
         super().__init__(*args)
+
+
+class WorkerPluginSetupUnavailable(WorkerExecutionError):
+    """Frozen plugin setup failed; suspend without closing or automatic retry."""
 
 
 class RetryableWorkerSetupError(WorkerExecutionError):
@@ -60,12 +65,20 @@ def exception_attempt_result(exc: Exception, metadata: dict[str, object]) -> Har
     fallback is a recovery signal, not a model execution failure. It must
     suspend (recoverable) rather than fail (terminal).
     """
+    if isinstance(exc, PluginAuthorityUnavailable):
+        return HarnessAttemptResult(
+            outcome=HarnessAttemptOutcome.SUSPENDED,
+            summary="Accepted plugin authority is unavailable; execution suspended.",
+            metadata={**metadata, "stop_reason": PLUGIN_UNAVAILABLE, "retryable": False},
+        )
     if isinstance(exc, ProviderContinuationUncertainError):
         return HarnessAttemptResult(
             outcome=HarnessAttemptOutcome.SUSPENDED,
             summary="provider continuation outcome is uncertain; automatic fallback refused",
             metadata={
-                **metadata, "stop_reason": "provider_continuation_uncertain", "retryable": False,
+                **metadata,
+                "stop_reason": "provider_continuation_uncertain",
+                "retryable": False,
             },
         )
     if isinstance(exc, WorkerProgressTimeout):

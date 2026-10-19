@@ -4,6 +4,7 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 
 from agent_core.domain.mcp_credentials import MAX_TOKEN_BYTES
+from agent_core.domain.plugin_authority import PluginAuthorityUnavailable
 from agent_security.secret_store import SecretMaterial
 
 from agent_runtime.mcp_protocol import McpProtocolError
@@ -34,6 +35,8 @@ def resolve_bearer_header(
         ):
             raise ValueError("invalid credential token")
         return f"Bearer {token}"
+    except PluginAuthorityUnavailable:
+        raise
     except Exception:
         # Authorization failures may include secret backend diagnostics; never forward them.
         raise McpProtocolError("MCP request authorization failed") from None

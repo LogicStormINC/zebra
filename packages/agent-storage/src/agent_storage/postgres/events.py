@@ -122,21 +122,22 @@ class PostgresEventStore(EventStorePort):
                         raise ExtensionSnapshotAdmissionConflictError(
                             "accepted Turn snapshot is missing"
                         )
-                    validate_plugin_snapshot_in_transaction(
-                        connection,
-                        PostgresPluginInstallationStore(
-                            self._database._dsn,
-                            deployment_namespace=self._database.deployment_namespace,
-                            task_io_connections=self._database._task_io,
-                        ),
-                        snapshot,
-                    )
                     validate_skill_snapshot_in_transaction(
                         connection,
                         self._database.deployment_namespace,
                         scope,
                         snapshot.skills,
                     )
+                validate_plugin_snapshot_in_transaction(
+                    connection,
+                    PostgresPluginInstallationStore(
+                        self._database._dsn,
+                        deployment_namespace=self._database.deployment_namespace,
+                        task_io_connections=self._database._task_io,
+                    ),
+                    snapshot,
+                    strict=existing_snapshot is None,
+                )
                 canonical = append_event_in_transaction(
                     connection, self._database.deployment_namespace, event
                 )

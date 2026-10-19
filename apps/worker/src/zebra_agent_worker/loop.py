@@ -41,6 +41,7 @@ from zebra_agent_worker.live_event_runtime import (
 )
 from zebra_agent_worker.mcp_composition import compose_worker_mcp
 from zebra_agent_worker.model_call_index import ModelCallIndexer
+from zebra_agent_worker.plugin_composition import compose_worker_plugins
 from zebra_agent_worker.provider_configuration import model_provider_settings
 from zebra_agent_worker.provider_continuation_commit import (
     CloudProviderContinuationCoordinator,
@@ -262,7 +263,8 @@ def build_worker_loop_service(
     )
     replay_reader = (
         PostgresWorkerReplayReader(
-            cloud_bundle.dsn, deployment_namespace=active_namespace,
+            cloud_bundle.dsn,
+            deployment_namespace=active_namespace,
             task_io_connections=cloud_bundle.stores.task_io_connections,
         )
         if settings.storage_authority == "postgresql"
@@ -319,6 +321,9 @@ def build_worker_loop_service(
         extension_snapshot_store=active_extension_store,
         extension_skills=active_extension_skills,
         extension_mcp=active_extension_mcp,
+        extension_plugins=compose_worker_plugins(
+            settings, cloud_bundle if settings.storage_authority == "postgresql" else None
+        ),
         recorder_factory=recorder_factory,
         cloud_artifact_factory=active_artifact_factory,
         cloud_provider_continuation_factory=active_provider_factory,

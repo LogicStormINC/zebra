@@ -9,7 +9,7 @@ from agent_core.domain.cloud_scope import OpaqueAuthorityScope
 from agent_core.ports.extensions import ExtensionStore
 from agent_storage import CloudCompositionSettings, postgres_control_plane_stores
 from agent_storage.postgres.migration_types import PostgresMigrationError
-from zebra_agent_api import extension_composition, http
+from zebra_agent_api import extension_composition, extension_management_routes, http
 from zebra_agent_config import load_settings
 
 from tests.api.test_extension_reads import AUTH, PREFIX, Authorizer, _client
@@ -259,7 +259,7 @@ def test_http_factory_passes_composed_store(
     compose = Mock(return_value=composed)
     read = AsyncMock(return_value=http.JSONResponse({"composed": True}))
     monkeypatch.setattr(extension_composition, "compose_extension_store", compose)
-    monkeypatch.setattr(http, "extension_read_response", read)
+    monkeypatch.setattr(extension_management_routes, "extension_read_response", read)
     client = _client(tmp_path, None)
     response = client.get(f"{PREFIX}/skill-installations", headers=AUTH)
     assert response.json() == {"composed": True}

@@ -66,3 +66,42 @@ def test_empty_selection_does_no_io_and_exact_revision_requires_fixed_package() 
             )
 
     asyncio.run(check())
+
+
+def test_direct_skill_selection_uses_ready_publication_and_exact_task_ceiling() -> None:
+    from agent_core.domain.plugin_authority import PluginSelectionRefused
+    from agent_core.domain.tool_profiles import ToolProfile
+
+    from tests.agent_tools.test_cloud_skills import Backend
+
+    async def check():
+        backend, extensions = Backend(), AsyncMock()
+        extensions.get_skill.return_value = backend.installation
+        extensions.get_skill_publication.return_value = backend.publication
+        ceiling = SimpleNamespace(
+            skill_components=(backend.installation.version.skill_id,),
+            tool_profile=ToolProfile.GENERAL,
+            binding=SimpleNamespace(effective_capabilities={"agent.execute"}),
+        )
+        resolver = PluginResolver(None, extensions, None, None)
+        selection = ExtensionSelection(skills=(backend.installation.installation_id,))
+        result = await resolver.resolve(
+            scope=backend.installation.scope,
+            ceiling=ceiling,
+            selection=selection,
+            session_id="session-a",
+            turn_id="turn-a",
+        )
+        assert result.direct_skills == (backend.installation.installation_id,)
+        assert not result.plugins and result.skills == (backend.installation,)
+        ceiling.skill_components = ()
+        with pytest.raises(PluginSelectionRefused):
+            await resolver.resolve(
+                scope=backend.installation.scope,
+                ceiling=ceiling,
+                selection=selection,
+                session_id="session-a",
+                turn_id="turn-a",
+            )
+
+    asyncio.run(check())

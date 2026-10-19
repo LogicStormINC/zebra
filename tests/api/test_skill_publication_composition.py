@@ -10,7 +10,7 @@ from agent_storage.postgres.migration_types import PostgresMigrationError
 from agent_storage.postgres.task_io import TaskIoConnections
 from agent_tools.skill_publications import SkillPublicationService
 from fastapi.testclient import TestClient
-from zebra_agent_api import extension_composition, factory, http
+from zebra_agent_api import extension_composition, extension_management_routes, factory, http
 from zebra_agent_config import ZebraAgentSettings, load_settings
 
 from tests.agent_security.test_extension_authority import _verified
@@ -51,7 +51,7 @@ def test_http_startup_reuses_resolved_bundle(cloud_startup: tuple[Mock, Mock],
     publication = AsyncMock(return_value=http.JSONResponse({"ok": True}))
     monkeypatch.setattr(factory, "compose_control_plane_stores", compose)
     monkeypatch.setattr(extension_composition, "PostgresExtensionStore", extension)
-    monkeypatch.setattr(http, "skill_publication_response", publication)
+    monkeypatch.setattr(extension_management_routes, "skill_publication_response", publication)
     app = http.create_http_app(
         settings=replace(_cloud_settings(DSN), cloud_extensions_read_enabled=True,
                          cloud_skills_publish_enabled=True),

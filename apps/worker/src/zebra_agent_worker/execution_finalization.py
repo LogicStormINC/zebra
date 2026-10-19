@@ -12,6 +12,7 @@ from agent_core.application import (
 )
 from agent_core.application.execution_authority_replay import current_turn_authority_start
 from agent_core.domain.events import EventActor, EventType, SessionEvent
+from agent_core.domain.plugin_authority import PLUGIN_UNAVAILABLE
 from agent_core.domain.sessions import Session, SessionStatus
 from agent_core.domain.turns import InteractionMode
 from agent_core.harness.models import HarnessAttemptOutcome, HarnessAttemptResult
@@ -25,6 +26,7 @@ from agent_core.ports import (
 from zebra_agent_worker.cloud_memory_finalization import finalize_cloud_memory
 from zebra_agent_worker.execution_errors import (
     CompletionRecoveryPending,
+    WorkerPluginSetupUnavailable,
     is_sequence_race,
     sequence_race_guard,
 )
@@ -284,11 +286,14 @@ def _finalize_execution(
         ):
             # Unit-budget attempts are distinct from this recorder's durable Harness start.
             events = recorder.events
-            durable_attempt = next((
-                event.payload.get("attempt_number")
-                for event in reversed(events[current_turn_authority_start(events):])
-                if event.event_type is EventType.HARNESS_ATTEMPT_STARTED
-            ), None)
+            durable_attempt = next(
+                (
+                    event.payload.get("attempt_number")
+                    for event in reversed(events[current_turn_authority_start(events) :])
+                    if event.event_type is EventType.HARNESS_ATTEMPT_STARTED
+                ),
+                None,
+            )
             if type(durable_attempt) is not int or durable_attempt < 1:
                 raise ValueError("certified coverage completion requires a durable Attempt")
             attempt_number = durable_attempt
@@ -380,16 +385,20 @@ def finalize_worker_setup_failure(
 ) -> ExecutedSession:
     """Durably close a deterministic setup failure before model execution."""
 
+    plugin_stop = isinstance(error, WorkerPluginSetupUnavailable)
     result = HarnessAttemptResult(
-        outcome=HarnessAttemptOutcome.FAILED,
+        outcome=HarnessAttemptOutcome.SUSPENDED if plugin_stop else HarnessAttemptOutcome.FAILED,
         summary=(
             "沙箱执行环境不可用，任务尚未开始。请检查沙箱运行时配置后重试。"
-            if isinstance(error, RuntimeStartupError) else "Worker execution could not start."
+            if isinstance(error, RuntimeStartupError)
+            else "Worker execution could not start."
         ),
         metadata={
-            "stop_reason": "worker_setup_failed",
+            "stop_reason": PLUGIN_UNAVAILABLE if plugin_stop else "worker_setup_failed",
+            **({"retryable": False} if plugin_stop else {}),
             "error_type": type(error).__name__,
-            "error_code": "runtime_unavailable" if isinstance(error, RuntimeStartupError)
+            "error_code": "runtime_unavailable"
+            if isinstance(error, RuntimeStartupError)
             else "worker_setup_failed",
             **(
                 {"coverage_refusal_reason": error.coverage_refusal_reason.value}
@@ -404,6 +413,13 @@ def finalize_worker_setup_failure(
             EventActor.HARNESS,
             {"attempt_number": attempt_number},
         )
+    if plugin_stop:
+        recorder.append(
+            EventType.SESSION_SUSPENDED,
+            EventActor.HARNESS,
+            {"reason": PLUGIN_UNAVAILABLE, "metadata": result.metadata},
+        )
+        return ExecutedSession(recorder.session, recorder.events, result)
     append_turn_close(
         recorder=recorder,
         attempt_result=result,

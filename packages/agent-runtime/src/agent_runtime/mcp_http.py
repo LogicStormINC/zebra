@@ -11,6 +11,7 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 
 from agent_core.domain.mcp import normalize_mcp_allowlist
+from agent_core.domain.plugin_authority import PluginAuthorityUnavailable
 from agent_tools import McpProxyRequest, McpProxyResponse
 from agent_tools.web_gateway import WebGatewayError
 
@@ -152,6 +153,8 @@ class McpHttpSession:
         if self.frame_authorizer is not None:
             try:
                 self.frame_authorizer(endpoint, payload)
+            except PluginAuthorityUnavailable:
+                raise
             except Exception:
                 raise McpProtocolError("MCP request authorization failed") from None
         if self.credential_resolver is not None and self.server.bearer_token_env is not None:

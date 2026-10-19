@@ -131,6 +131,7 @@ def prepare_worker_context(
     as_of: datetime,
     extension_store: WorkerExtensionStore | None = None,
     allow_mcp: bool = False,
+    allow_plugins: bool = False,
     attempt_number: int = 1,
     execution_input_reader: Callable[[WorkerLease], list[SessionEvent]] | None = None,
     ownership_check: Callable[[], None] | None = None,
@@ -151,6 +152,7 @@ def prepare_worker_context(
         session_id=session_id,
         task_binding=binding,
         allow_mcp=allow_mcp,
+        allow_plugins=allow_plugins,
     )
     claimed, events = AttemptAuthorityEvidence(
         *authority,

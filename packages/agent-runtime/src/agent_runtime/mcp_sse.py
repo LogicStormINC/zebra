@@ -12,6 +12,7 @@ from dataclasses import dataclass, field
 from typing import BinaryIO, cast
 
 from agent_core.domain.extensions import McpConnection
+from agent_core.domain.plugin_authority import PluginAuthorityUnavailable
 
 from agent_runtime.mcp_http import McpHttpSession, _NoRedirectHandler
 from agent_runtime.mcp_http_authorization import resolve_bearer_header
@@ -58,8 +59,12 @@ class McpSseSession(McpHttpSession):
                 self.frame_authorizer(endpoint, payload)
             if self.credential_resolver is not None:
                 headers["Authorization"] = resolve_bearer_header(
-                    self.credential_resolver, endpoint, payload,
+                    self.credential_resolver,
+                    endpoint,
+                    payload,
                 )
+        except PluginAuthorityUnavailable:
+            raise
         except Exception:
             raise McpProtocolError("MCP SSE request authorization failed") from None
         return headers
@@ -70,12 +75,16 @@ class McpSseSession(McpHttpSession):
             raise McpProtocolError("MCP SSE request exceeds frame limit")
         deadline = time.monotonic() + self.timeout_seconds
         opener = urllib.request.build_opener(
-            urllib.request.ProxyHandler({}), PublicMcpHttpsHandler(), _NoRedirectHandler(),
+            urllib.request.ProxyHandler({}),
+            PublicMcpHttpsHandler(),
+            _NoRedirectHandler(),
         )
         try:
             if self._stream is None:
                 request = urllib.request.Request(
-                    self.server.url, headers=self._headers(payload), method="GET",
+                    self.server.url,
+                    headers=self._headers(payload),
+                    method="GET",
                 )
                 response = opener.open(request, timeout=self.timeout_seconds)
                 self._stream = cast(BinaryIO, response)
@@ -86,7 +95,10 @@ class McpSseSession(McpHttpSession):
             # The derived target is same-origin HTTPS only; the socket handler
             # revalidates and pins public DNS for GET and every POST separately.
             request = urllib.request.Request(
-                self._message_endpoint, data=frame, headers=self._headers(payload), method="POST",
+                self._message_endpoint,
+                data=frame,
+                headers=self._headers(payload),
+                method="POST",
             )
             with opener.open(request, timeout=self.timeout_seconds):
                 pass

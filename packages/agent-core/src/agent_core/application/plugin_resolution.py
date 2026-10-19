@@ -10,10 +10,11 @@ from agent_core.domain.extension_snapshots import (
     McpSnapshotEntry,
 )
 from agent_core.domain.extensions import ExtensionScope, McpConnection, SkillInstallation
+from agent_core.domain.plugin_authority import PluginSelectionRefused
 from agent_core.domain.plugin_installations import PluginPackagePin, PluginSkillBinding
 from agent_core.domain.plugin_snapshots import ExtensionSelection, PluginSnapshot
 from agent_core.domain.tool_profiles import tool_names_for_profile
-from agent_core.ports.extensions import ExtensionStore
+from agent_core.ports.extensions import ExtensionNotFoundError, ExtensionStore
 from agent_core.ports.mcp_catalog import McpCatalogStore
 from agent_core.ports.plugin_installations import PluginInstallationStore
 
@@ -24,10 +25,10 @@ class PluginPackageReader(Protocol):
 
 @dataclass(frozen=True)
 class PluginResolver:
-    installations: PluginInstallationStore
+    installations: PluginInstallationStore | None
     extensions: ExtensionStore
-    catalogs: McpCatalogStore
-    packages: PluginPackageReader
+    catalogs: McpCatalogStore | None
+    packages: PluginPackageReader | None
     allow_mcp: bool = False
 
     async def resolve(
@@ -39,6 +40,10 @@ class PluginResolver:
         session_id: str,
         turn_id: str,
     ) -> ExtensionSnapshot:
+        if (
+            selection.plugins or selection.skills or selection.mcp
+        ) and "agent.execute" not in ceiling.binding.effective_capabilities:
+            raise PluginSelectionRefused("Task execution capability is unavailable")
         skills: dict[str, SkillInstallation] = {}
         mcp: dict[str, McpSnapshotEntry] = {}
         plugins: list[PluginSnapshot] = []
@@ -47,8 +52,11 @@ class PluginResolver:
             if ceiling.tool_profile is None or "skills.read" not in tool_names_for_profile(
                 ceiling.tool_profile
             ):
-                raise ValueError("selected Skill is outside Task tool profile")
-            current = await self.extensions.get_skill(scope=scope, installation_id=identifier)
+                raise PluginSelectionRefused("selected Skill is outside Task tool profile")
+            try:
+                current = await self.extensions.get_skill(scope=scope, installation_id=identifier)
+            except ExtensionNotFoundError:
+                raise PluginSelectionRefused() from None
             if (
                 current.scope != scope
                 or current.installation_id != identifier
@@ -56,23 +64,28 @@ class PluginResolver:
                 or current.version.skill_id not in ceiling.skill_components
                 or (expected is not None and current != expected)
             ):
-                raise ValueError("selected Skill is unavailable or exceeds Task ceiling")
-            publication = await self.extensions.get_skill_publication(
-                scope=scope,
-                skill_id=current.version.skill_id,
-                version_id=current.version.version_id,
-            )
+                raise PluginSelectionRefused(
+                    "selected Skill is unavailable or exceeds Task ceiling"
+                )
+            try:
+                publication = await self.extensions.get_skill_publication(
+                    scope=scope,
+                    skill_id=current.version.skill_id,
+                    version_id=current.version.version_id,
+                )
+            except ExtensionNotFoundError:
+                raise PluginSelectionRefused() from None
             if (
                 publication.scope != scope
                 or publication.version != current.version
                 or publication.state != "ready"
             ):
-                raise ValueError("selected Skill publication is unavailable")
+                raise PluginSelectionRefused("selected Skill publication is unavailable")
             if any(
                 s.version.skill_id == current.version.skill_id and s != current
                 for s in skills.values()
             ):
-                raise ValueError("conflicting selected Skill content")
+                raise PluginSelectionRefused("conflicting selected Skill content")
             skills[identifier] = current
 
         async def connection(
@@ -80,30 +93,40 @@ class PluginResolver:
             expected: McpConnection | None = None,
             expected_digest: str | None = None,
         ) -> None:
-            if not self.allow_mcp or "agent.execute" not in ceiling.binding.effective_capabilities:
-                raise ValueError("selected MCP is outside configured Task capabilities")
+            if (
+                not self.allow_mcp
+                or self.catalogs is None
+                or "agent.execute" not in ceiling.binding.effective_capabilities
+            ):
+                raise PluginSelectionRefused("selected MCP is outside configured Task capabilities")
             if ceiling.tool_profile is None or ceiling.network_profile not in {
                 "mcp-proxy-only",
                 "full-gateway",
             }:
-                raise ValueError("selected MCP is outside Task network profile")
-            current = await self.extensions.get_mcp(scope=scope, connection_id=identifier)
+                raise PluginSelectionRefused("selected MCP is outside Task network profile")
+            try:
+                current = await self.extensions.get_mcp(scope=scope, connection_id=identifier)
+            except ExtensionNotFoundError:
+                raise PluginSelectionRefused() from None
             if (
                 current.scope != scope
                 or current.connection_id != identifier
                 or not current.enabled
                 or (expected is not None and current != expected)
             ):
-                raise ValueError("selected MCP connection is unavailable")
-            catalog = await self.catalogs.latest(
-                scope=scope, connection_id=identifier, config_revision=current.revision
-            )
+                raise PluginSelectionRefused("selected MCP connection is unavailable")
+            try:
+                catalog = await self.catalogs.latest(
+                    scope=scope, connection_id=identifier, config_revision=current.revision
+                )
+            except ExtensionNotFoundError:
+                raise PluginSelectionRefused() from None
             if (
                 catalog.connection != current
                 or not catalog.tools
                 or (expected_digest and catalog.digest != expected_digest)
             ):
-                raise ValueError("selected MCP catalog is unavailable")
+                raise PluginSelectionRefused("selected MCP catalog is unavailable")
             mcp[identifier] = McpSnapshotEntry(
                 connection=current,
                 catalog_digest=catalog.digest,
@@ -115,16 +138,21 @@ class PluginResolver:
         for identifier in selection.mcp:
             await connection(identifier)
         for selected in selection.plugins:
-            current = await self.installations.get(
-                scope=scope, installation_id=selected.installation_id
-            )
+            if self.installations is None or self.packages is None:
+                raise PluginSelectionRefused("plugin selection is disabled")
+            try:
+                current = await self.installations.get(
+                    scope=scope, installation_id=selected.installation_id
+                )
+            except ExtensionNotFoundError:
+                raise PluginSelectionRefused() from None
             if (
                 current.scope != scope
                 or current.installation_id != selected.installation_id
                 or current.revision != selected.revision
                 or not current.enabled
             ):
-                raise ValueError("selected plugin revision is unavailable")
+                raise PluginSelectionRefused("selected plugin revision is unavailable")
             await self.packages.read(current.package)
             for binding in current.bindings:
                 if isinstance(binding, PluginSkillBinding):
@@ -135,14 +163,16 @@ class PluginResolver:
                         version_id=binding.installation.version.version_id,
                     )
                     if publication.manifest != current.package.skill_files(binding.component_id):
-                        raise ValueError("plugin Skill publication disagrees with package")
+                        raise PluginSelectionRefused(
+                            "plugin Skill publication disagrees with package"
+                        )
                 else:
                     await connection(
                         binding.connection.connection_id, binding.connection, binding.catalog_digest
                     )
             plugins.append(PluginSnapshot.from_installation(current))
         if sum(len(item.permissions.tools) for item in mcp.values()) > 32:
-            raise ValueError("selected MCP tools exceed execution catalog limit")
+            raise PluginSelectionRefused("selected MCP tools exceed execution catalog limit")
         return ExtensionSnapshot(
             scope=scope,
             session_id=session_id,

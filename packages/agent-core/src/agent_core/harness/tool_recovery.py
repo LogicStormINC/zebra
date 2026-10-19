@@ -5,6 +5,7 @@ from datetime import datetime
 
 from agent_core.domain.events import EventActor, EventType
 from agent_core.domain.messages import SessionMessage
+from agent_core.domain.plugin_authority import PluginAuthorityUnavailable, plugin_unavailable_result
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
 from agent_core.harness.attempt_result import action_fingerprint
 from agent_core.harness.model_step_support import tool_result_message
@@ -16,6 +17,8 @@ def execute_observed(tool_gateway: ToolGatewayPort, tool_call: ToolCall) -> Tool
     # Catch external/input failures, not cancellation or runtime invariants.
     try:
         result = tool_gateway.execute(tool_call)
+    except PluginAuthorityUnavailable:
+        result = plugin_unavailable_result(tool_call)
     except (ValueError, OSError) as exc:
         transient = isinstance(exc, TimeoutError | ConnectionError)
         missing = isinstance(exc, FileNotFoundError)
@@ -68,6 +71,8 @@ def normalize_failure(result: ToolResult, *, read_only: bool) -> ToolResult:
         "available engine, or report/defer the missing evidence. "
         "Do not bypass provider restrictions."
         if read_only and metadata.get("category") == "upstream_search"
+        else "Plugin authority unavailable; repair authority before explicit resume. Do not retry."
+        if metadata.get("category") == "plugin_authority"
         else "Correct the arguments using the tool schema, choose an allowed alternative, "
         "or report the missing outcome. Do not repeat identical failed calls or bypass policy."
     )

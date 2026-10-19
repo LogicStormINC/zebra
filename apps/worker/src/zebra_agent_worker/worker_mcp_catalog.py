@@ -9,6 +9,7 @@ from agent_core.domain.extension_snapshots import McpSnapshotEntry
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.leases import LeaseFence
 from agent_core.domain.mcp_catalog import McpToolCatalog
+from agent_core.domain.plugin_authority import PluginAuthorityUnavailable
 from agent_core.ports.lease_store import LeaseStorePort
 from agent_core.ports.mcp_catalog import McpCatalogStore
 from agent_core.ports.mcp_credentials import McpCredentialManagementStore
@@ -21,6 +22,7 @@ from agent_security.mcp_execution_authority import McpWorkerAuthority
 from agent_tools import McpProxyRequest
 
 from zebra_agent_worker.extension_recovery import RecoveredTurnExtension
+from zebra_agent_worker.worker_plugins import WorkerPluginGuard
 
 
 @dataclass(frozen=True)
@@ -39,6 +41,7 @@ def prepare_worker_mcp(
     source: WorkerMcpSource | None,
     session_id: SessionId,
     fence: LeaseFence,
+    plugin_guard: WorkerPluginGuard | None = None,
 ) -> CloudMcpTransport | None:
     if extension is None or not extension.snapshot.mcp:
         return None
@@ -89,9 +92,23 @@ def prepare_worker_mcp(
             ),
             connections=source.connections,
         )
-        if entry.connection.auth_mode.value == "none":
-            resolver.authorize_anonymous(endpoint, frame)
-            return None
-        return resolver(endpoint, frame)
+        try:
+            if entry.connection.auth_mode.value == "none":
+                resolver.authorize_anonymous(endpoint, frame)
+                credential = None
+            else:
+                credential = resolver(endpoint, frame)
+        except (ValueError, OSError):
+            if plugin_guard is not None:
+                plugin_guard.validate()
+            raise
+        if plugin_guard is not None:
+            plugin_guard.validate()
+        return credential
 
-    return CloudMcpTransport(snapshot, asyncio.run(load()), authorize=authorize)
+    try:
+        return CloudMcpTransport(snapshot, asyncio.run(load()), authorize=authorize)
+    except (ValueError, OSError):
+        if plugin_guard is not None:
+            raise PluginAuthorityUnavailable("selected plugin MCP catalog is unavailable") from None
+        raise

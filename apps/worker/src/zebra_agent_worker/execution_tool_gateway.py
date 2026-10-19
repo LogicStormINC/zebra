@@ -31,6 +31,8 @@ from zebra_agent_worker.tool_output_artifacts import CloudToolOutputArtifactCoor
 from zebra_agent_worker.worker_extension_management import prepare_extension_management
 from zebra_agent_worker.worker_mcp_catalog import WorkerMcpSource as WorkerMcpSource
 from zebra_agent_worker.worker_mcp_catalog import prepare_worker_mcp
+from zebra_agent_worker.worker_plugins import WorkerPluginSource as WorkerPluginSource
+from zebra_agent_worker.worker_plugins import prepare_worker_plugins
 
 WorkerExtensionSnapshotStore = WorkerExtensionStore
 WorkerSkillSource = worker_skills.WorkerSkillCatalogSource
@@ -68,17 +70,21 @@ class ExtensionRuntime:
     snapshot_store: WorkerExtensionStore | None
     skills: worker_skills.WorkerSkillCatalogSource | None
     mcp: WorkerMcpSource | None = None
+    plugins: WorkerPluginSource | None = None
 
 
 def extensions(
     extension_store: WorkerExtensionStore | None,
     skill_source: worker_skills.WorkerSkillCatalogSource | None,
     mcp_source: WorkerMcpSource | None = None,
+    plugin_source: WorkerPluginSource | None = None,
 ) -> ExtensionRuntime:
     store, source = worker_skills.require_recovery(extension_store, skill_source)
     if mcp_source is not None and store is None:
         raise ValueError("MCP Worker requires extension snapshot recovery")
-    return ExtensionRuntime(store, source, mcp_source)
+    if plugin_source is not None and store is None:
+        raise ValueError("plugin Worker requires extension snapshot recovery")
+    return ExtensionRuntime(store, source, mcp_source, plugin_source)
 
 
 def build_execution_tool_gateway(
@@ -99,6 +105,12 @@ def build_execution_tool_gateway(
     network_cancellation_check: Callable[[], None] | None = None,
 ) -> WorkerToolGateway:
     """Compose one execution gateway from already trusted Worker state."""
+    plugin_guard = prepare_worker_plugins(
+        extension,
+        source=service._extensions.plugins,
+        skills_available=service._extensions.skills is not None,
+        mcp_available=service._extensions.mcp is not None,
+    )
     gateway = build_worker_tool_gateway(
         task,
         settings=service._settings,
@@ -127,6 +139,7 @@ def build_execution_tool_gateway(
             extension,
             deployment_namespace=service._deployment_namespace or "",
             source=service._extensions.skills,
+            plugin_guard=plugin_guard,
         ),
         skill_component_names=(
             tuple(item.version.skill_id for item in extension.snapshot.skills)
@@ -138,6 +151,7 @@ def build_execution_tool_gateway(
             source=service._extensions.mcp,
             session_id=session_id,
             fence=fence,
+            plugin_guard=plugin_guard,
         ),
         resource_authority_issuer=(
             task_binding.host_capability.authority_issuer if task_binding is not None else None

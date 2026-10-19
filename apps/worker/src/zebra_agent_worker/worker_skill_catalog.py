@@ -3,13 +3,20 @@
 import asyncio
 from dataclasses import dataclass
 
+from agent_core.domain.plugin_authority import PluginAuthorityUnavailable
 from agent_core.ports import ArtifactObjectStorePort
 from agent_core.ports.extensions import ExtensionStore
-from agent_tools.cloud_skills import prepare_cloud_skill_catalog
+from agent_tools.cloud_skills import CloudSkillCatalog, prepare_cloud_skill_catalog
 from agent_tools.skill_publications import SkillPublicationService
-from agent_tools.skills_catalog import SkillCatalog
+from agent_tools.skills_catalog import (
+    SkillCatalog,
+    SkillCatalogError,
+    SkillMetadata,
+    SkillReadResult,
+)
 
 from zebra_agent_worker.extension_recovery import RecoveredTurnExtension
+from zebra_agent_worker.worker_plugins import WorkerPluginGuard
 
 
 @dataclass(frozen=True, slots=True)
@@ -33,12 +40,13 @@ def prepare_worker_skill_catalog(
     *,
     deployment_namespace: str,
     source: WorkerSkillCatalogSource | None,
+    plugin_guard: WorkerPluginGuard | None = None,
 ) -> SkillCatalog | None:
     """Expose only an already trusted Turn snapshot; disabled paths do no I/O."""
     if source is None or extension is None:
         return None
     snapshot = extension.snapshot
-    return asyncio.run(
+    catalog = asyncio.run(
         prepare_cloud_skill_catalog(
             snapshot=snapshot,
             scope=extension.scope,
@@ -49,3 +57,51 @@ def prepare_worker_skill_catalog(
             objects=source.objects,
         )
     )
+
+    if plugin_guard is None:
+        return catalog
+    return _PluginSkillCatalog(
+        catalog.snapshot,
+        catalog.scope,
+        catalog.deployment_namespace,
+        catalog.store,
+        catalog.objects,
+        plugin_guard,
+    )
+
+
+@dataclass(frozen=True)
+class _PluginSkillCatalog(CloudSkillCatalog):
+    guard: WorkerPluginGuard
+
+    def list(self, *, limit: int = 100) -> tuple[tuple[SkillMetadata, ...], int, bool]:
+        self.guard.validate()
+        try:
+            result = super().list(limit=limit)
+        except SkillCatalogError as exc:
+            _check_plugin_skill_failure(self.guard, exc)
+            raise
+        self.guard.validate()
+        return result
+
+    def read(self, name: str, *, file_path: str = "SKILL.md") -> SkillReadResult:
+        self.guard.validate()
+        try:
+            result = super().read(name, file_path=file_path)
+        except SkillCatalogError as exc:
+            _check_plugin_skill_failure(self.guard, exc)
+            raise
+        self.guard.validate()
+        return result
+
+
+def _check_plugin_skill_failure(guard: WorkerPluginGuard, error: SkillCatalogError) -> None:
+    guard.validate()
+    snapshot = guard.extension.snapshot
+    if error.reason in {
+        "installation_unavailable",
+        "publication_unavailable",
+        "package_integrity",
+        "backend_unavailable",
+    } and any(s.installation_id not in snapshot.direct_skills for s in snapshot.skills):
+        raise PluginAuthorityUnavailable("selected plugin Skill source is unavailable") from None

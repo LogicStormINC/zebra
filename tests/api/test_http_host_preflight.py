@@ -17,7 +17,12 @@ from agent_storage.postgres.task_io import current_task_io_deadline
 from fastapi.responses import JSONResponse
 from fastapi.testclient import TestClient
 from starlette.requests import Request
-from zebra_agent_api import ag_ui_task_view, create_http_app, http, http_host_auth
+from zebra_agent_api import (
+    ag_ui_task_view,
+    create_http_app,
+    extension_management_routes,
+    http_host_auth,
+)
 from zebra_agent_api.http import HostGrantHttpRequest
 from zebra_agent_api.http_host_auth import authorize_request
 from zebra_agent_api.responses import ApiResponse
@@ -393,7 +398,7 @@ def test_early_extension_read_inherits_remaining_io_budget(
         return JSONResponse({"items": []})
 
     monkeypatch.setattr(http_host_auth, "HOST_CATALOG_READ_SECONDS", parent_seconds)
-    monkeypatch.setattr(http, "extension_read_response", read)
+    monkeypatch.setattr(extension_management_routes, "extension_read_response", read)
     response = TestClient(app(tmp_path, authorizer)).get(
         "/v1/extensions/skill-installations", headers={"Authorization": "Bearer verified"}
     )
@@ -415,7 +420,7 @@ def test_early_extension_timeout_cancels_the_async_read(tmp_path, grant, monkeyp
             cancelled.append(True)
 
     monkeypatch.setattr(http_host_auth, "HOST_CATALOG_READ_SECONDS", 0.05)
-    monkeypatch.setattr(http, "extension_read_response", read)
+    monkeypatch.setattr(extension_management_routes, "extension_read_response", read)
     response = TestClient(app(tmp_path, Authorizer(grant))).get(
         "/v1/extensions/skill-installations", headers={"Authorization": "Bearer verified"}
     )

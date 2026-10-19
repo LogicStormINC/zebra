@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from agent_core.domain.events import EventActor, EventType
 from agent_core.domain.messages import SessionMessage
 from agent_core.domain.modeling import ModelCompletion
+from agent_core.domain.plugin_authority import PLUGIN_UNAVAILABLE
 from agent_core.domain.policies import PolicyDecisionType
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
 from agent_core.harness.attempt_result import action_fingerprint, build_attempt_result
@@ -23,6 +24,7 @@ from agent_core.harness.orchestration_events import policy_decision_payload
 from agent_core.harness.policy_step import policy_stop_result, recoverable_egress_denial
 from agent_core.harness.selection import ToolCallSelection
 from agent_core.harness.subagent_metadata import aggregate_subagent_metadata
+from agent_core.harness.tool_batch_stops import plugin_stop
 from agent_core.harness.tool_execution import record_tool_result
 from agent_core.harness.tool_freshness import (
     can_refresh_repeated_read,
@@ -150,16 +152,13 @@ class ConcurrentToolBatchExecutor:
                 )
             )
             fingerprint = action_fingerprint(tool_call)
-            if (
-                fingerprint in seen
-                or (
-                    fingerprint in fingerprints
-                    and not can_retry_read(tool_call, metadata)
-                    and not can_refresh_repeated_read(
-                        tool_call,
-                        metadata=metadata,
-                        read_only_tools=self._read_only_tools,
-                    )
+            if fingerprint in seen or (
+                fingerprint in fingerprints
+                and not can_retry_read(tool_call, metadata)
+                and not can_refresh_repeated_read(
+                    tool_call,
+                    metadata=metadata,
+                    read_only_tools=self._read_only_tools,
                 )
             ):
                 loop_guard_counts[fingerprint] = loop_guard_counts.get(fingerprint, 0) + 1
@@ -265,6 +264,17 @@ class ConcurrentToolBatchExecutor:
             batch_metadata = aggregate_subagent_metadata(
                 batch_metadata,
                 tool_result,
+            )
+        if any(result.metadata.get("reason") == PLUGIN_UNAVAILABLE for result in results):
+            return plugin_stop(
+                context=context,
+                remaining=(),
+                messages=messages,
+                completion=completion,
+                emitted_events=emitted_events,
+                model_calls_used=model_calls_used,
+                tool_calls_executed=tool_calls_executed,
+                metadata=batch_metadata,
             )
         if failed_names:
             prior_failures = batch_metadata.get("recoverable_tool_failure_count", 0)

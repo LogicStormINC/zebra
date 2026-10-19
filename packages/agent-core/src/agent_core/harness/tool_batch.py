@@ -4,9 +4,10 @@ from functools import partial
 from agent_core.domain.events import EventActor, EventType
 from agent_core.domain.messages import SessionMessage
 from agent_core.domain.modeling import ModelCompletion
+from agent_core.domain.plugin_authority import PLUGIN_UNAVAILABLE
 from agent_core.domain.policies import PolicyDecisionType
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
-from agent_core.harness.attempt_result import action_fingerprint, build_attempt_result
+from agent_core.harness.attempt_result import action_fingerprint
 from agent_core.harness.clarification_step import clarification_stop_result
 from agent_core.harness.client_effect_suspension import freeze_client_effect_state
 from agent_core.harness.concurrent_batch import (
@@ -25,6 +26,7 @@ from agent_core.harness.orchestration_events import policy_decision_payload
 from agent_core.harness.plan_step import execute_plan_call
 from agent_core.harness.policy_step import policy_stop_result, recoverable_egress_denial
 from agent_core.harness.selection import ToolCallSelection
+from agent_core.harness.tool_batch_stops import plugin_stop, terminal_batch_result
 from agent_core.harness.tool_execution import execute_tool_call, record_tool_result
 from agent_core.harness.tool_freshness import (
     can_refresh_repeated_read,
@@ -337,11 +339,20 @@ class ToolBatchExecutor:
                 )
                 if tool_call.name == "agent.plan"
                 else execute_tool_call(
-                    context, tool_call, tool_gateway=self._tool_gateway,
-                    verifier=self._verifier, emitted_events=emitted_events,
+                    context,
+                    tool_call,
+                    tool_gateway=self._tool_gateway,
+                    verifier=self._verifier,
+                    emitted_events=emitted_events,
                     emit_execution_started=not (index == 0 and first_execution_started),
-                    continuation_state=partial(freeze_client_effect_state, completion, messages,
-                                               model_calls_used, tool_calls_executed + 1, metadata),
+                    continuation_state=partial(
+                        freeze_client_effect_state,
+                        completion,
+                        messages,
+                        model_calls_used,
+                        tool_calls_executed + 1,
+                        metadata,
+                    ),
                 )
             )
             tool_calls_executed += 1
@@ -363,6 +374,17 @@ class ToolBatchExecutor:
                 tool_result=execution.result,
                 created_at=context.attempt.started_at,
             )
+            if execution.result.metadata.get("reason") == PLUGIN_UNAVAILABLE:
+                return plugin_stop(
+                    context=context,
+                    remaining=tool_calls[index + 1 :],
+                    messages=messages,
+                    completion=completion,
+                    emitted_events=emitted_events,
+                    model_calls_used=model_calls_used,
+                    tool_calls_executed=tool_calls_executed,
+                    metadata=metadata,
+                )
             if execution.result.status is not ToolCallStatus.EXECUTED:
                 metadata = _accumulate_failure(metadata, tool_call.name)
                 continue
@@ -450,30 +472,7 @@ class ToolBatchExecutor:
             {**recovered_metadata, "repeated_read_recovery_count": 1},
         )
 
-    @staticmethod
-    def _terminal(
-        *,
-        outcome: HarnessAttemptOutcome,
-        summary: str,
-        completion: ModelCompletion,
-        emitted_events: list[HarnessEventDraft],
-        model_calls_used: int,
-        tool_calls_executed: int,
-        metadata: dict[str, object],
-    ) -> ToolBatchResult:
-        return ToolBatchResult(
-            build_attempt_result(
-                outcome=outcome,
-                summary=summary,
-                assistant_message=completion.assistant_message.content,
-                model_calls_used=model_calls_used,
-                tool_calls_executed=tool_calls_executed,
-                emitted_events=emitted_events,
-                metadata=metadata,
-            ),
-            tool_calls_executed,
-            metadata,
-        )
+    _terminal = staticmethod(terminal_batch_result)
 
 
 def _can_recover_repeated_reads(
