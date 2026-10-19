@@ -16320,3 +16320,11 @@ normal process/image/start/restarts/envhashes unchanged. Preserve primary user
 AGENTS hash and untracked runtime design. Final docs record configuration mapping,
 migration105 and old-image rollback constraint. Local integration only; default
 off, no normalDB migration/service/model/search/Trench/Desktop/push/deploy.
+
+
+### 2026-10-19 — CLOUD-PLUGIN-LIVE-01 (in progress)
+
+User authorized normal local activation. Read104 schema,0effective leases;3running
+projections last changed August and preserved. Verify runnable queue before pause.
+Reuse existing image/compose preservation pattern; legacy API also needs105-aware
+code. Skill-only pilot avoids new MCP initialization, credentials or search calls.

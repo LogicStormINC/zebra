@@ -7338,3 +7338,8 @@ images/start/restarts/envhashes match. Only task PG/MinIO containers/anonymous
 volumes cleaned. Source locally integrated, default off; no normal migration,
 service activation, real model/search/page calls or push/deploy. Runbook:
 docs/CLOUD_PLUGINS.md. Separate activation/model gates remain unexecuted.
+
+
+CLOUD-PLUGIN-LIVE-01 authorized: local normal-service v105 activation with a single
+Skill-only digest/scoped pilot; no real models/search. Preflight104/no effective
+leases; old ready/running projections are not to be repaired as part of rollout.

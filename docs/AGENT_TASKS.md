@@ -34837,3 +34837,28 @@ old payloads remain byte-compatible by excluding None. No database migration.
   hashes unchanged, no model/search/push/deploy. Only two owned test containers
   and anonymous volumes removed after evidence. Native/source delivery done;
   normal activation, JWT/MCP HTTPS and real-model/page acceptance remain separate.
+
+
+### CLOUD-PLUGIN-LIVE-01 — Local normal-service pilot activation
+
+- Status: Ready → In Progress (2026-10-19; user explicitly authorized v105,
+  related normal-service update and narrowly scoped offline activation).
+- Human owner: Luke Ding; executor Codex; branch codex/cloud-plugin-live-01;
+  worktree cloud-plugin-plan-01/zebra-agent reused clean at b1d082b3.
+- Owned paths: docs/CLOUD_PLUGINS.md, this task card, PROGRESS.md, WORKLOG.md;
+  focused optional docker/compose.cloud-plugins.local.yml and
+  scripts/check_cloud_plugin_live.py only if needed for reproducible composition
+  or no-model check; private .artifacts/cloud-plugin-live-01/.
+- Scope: freshly verify effective Worker leases and runnable queue before change;
+  prepare same-source v105 API/legacyAPI/Worker images preserving original settings,
+  apply additive105, activate one trusted Skill-only digest and isolated scope.
+  No auto component grant or normal-business installation. Real normal-service
+  authenticated management, immutable-object and native Worker no-model proof.
+- Hard boundaries: preserve search container/PID/MCP state; no search/provider/model
+  requests, global proxy/Trench product changes or old Run mutations. Preserve v2,
+  thinking, lease/cancel/DNS/SSRF and 1MiB/history limits. No destructive migration
+  rollback or legacy-image restart after105. No remote push/deploy.
+- Validation: image source/settings and preflight, real database migration/checksums,
+  scoped no-model management/Worker proof, process/log/request counters and
+  protected original partial Turns. Source/offline eval baseline remains recorded;
+  no unrelated test repairs. Local integration after operation/evidence closeout.
