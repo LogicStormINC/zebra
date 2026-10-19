@@ -16299,3 +16299,24 @@ Claimed after RUN ed450dab local integration. Only task PG/MinIO and controlled
 MCP protocol stub may run; no models/search/upstream/normal service changes.
 Actual immutable nonempty Skill bytes, cross-process native recovery, child
 isolation and identical-workload overhead are final offline proof boundaries.
+
+
+Task4 source9b6eca55 and safe native-evidence.json complete: nonempty2file mixed
+package, real versioned S3/PG, deleted local input, independent process and actual
+Worker gateway/HITL. Counter selfcheck2SQL/2opens;4tool AB/BA: admission20/29SQL,
+recovery10/17, tools+durableevidence99/153 (direct/Plugin). Small cold/warm samples
+are not P95/TTFT or a speedup claim. Per-schema namespace avoids destructive-test
+object collisions; no prior state reset. Stubbed JWT-verification input and MCP
+HTTPS/DNS seam explicitly labeled. Real PG child replay retains independent
+identity, no extension inheritance, readonly/depth/search ceilings.
+Focused78pass/2optionalPGskip; scopedRuff/types pass. Independent spec then combined
+quality/final review approved with no issues. Finalmakecheck/test each once with
+live opt-ins unset: globalfiles/Ruff/Mypy1315sources pass; eval24/30 fails and full
+suite9885pass/2951skip/1sameevalfailure in18m04s. Archived pre-Plugin1d160735 source
+freshly reproduced exact30case terminal/replay metrics (only randomsessionIDs
+excluded). Both remaining progress scripts pass. No unrelated fixture repair.
+Only two labeled task containers and their anonymous volumes removed after proof;
+normal process/image/start/restarts/envhashes unchanged. Preserve primary user
+AGENTS hash and untracked runtime design. Final docs record configuration mapping,
+migration105 and old-image rollback constraint. Local integration only; default
+off, no normalDB migration/service/model/search/Trench/Desktop/push/deploy.

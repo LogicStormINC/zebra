@@ -34799,7 +34799,7 @@ old payloads remain byte-compatible by excluding None. No database migration.
 
 ### CLOUD-PLUGIN-ACCEPT-01 — Native offline acceptance and child isolation
 
-- Status: Ready → In Progress (2026-10-19; RUN integrated ed450dab to
+- Status: Done (2026-10-19; RUN integrated ed450dab to
   cloud-agent-trench after independent spec/quality approval; local unlock authorized).
 - Human owner: Luke Ding; executor Codex; branch codex/cloud-plugin-accept-01;
   reused isolated cloud-plugin-plan-01/zebra-agent checkout.
@@ -34827,3 +34827,13 @@ old payloads remain byte-compatible by excluding None. No database migration.
   without unrelated repair. Independent spec then combined quality/final review.
   Local integration only, no push/deploy. Remove only task-owned containers after
   saving safe evidence; real model/page and normal activation remain separate gates.
+
+- Result: source9b6eca55; actual isolated PG/versioned MinIO, removed-directory
+  cross-process native recovery, four identical4tool AB/BA workloads, durable
+  exact approval and closed child inheritance passed.78focused/2optional skips;
+  fulltest9885pass/2951skip/1existingevalfailure; fullstatic/1315source types pass.
+  Fresh1d160735 baseline matches all30eval terminal/metrics; no unrelated repair.
+  Independent spec and combined quality/final review approved. Normal process/env
+  hashes unchanged, no model/search/push/deploy. Only two owned test containers
+  and anonymous volumes removed after evidence. Native/source delivery done;
+  normal activation, JWT/MCP HTTPS and real-model/page acceptance remain separate.

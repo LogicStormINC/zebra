@@ -7325,3 +7325,16 @@ normal services/DB/config unchanged. Native cross-process acceptance follows.
 CLOUD-PLUGIN-ACCEPT-01 claimed after RUN local integration. Final source stage
 proves real isolated PG/versioned-object recovery and bounded native overhead;
 child Plugin inheritance remains closed. Normal activation/model gates separate.
+
+
+CLOUD-PLUGIN-ACCEPT-01 complete: source9b6eca55 proves real isolated PG/versioned
+MinIO, nonempty Skill content, fixed-object recovery in independent process after
+bundle deletion, native Worker tools/durable approval and closed child isolation.
+78focusedpass/2optionalskip; whole test9885pass/2951skip/1knownbaselineevalfailure.
+Globalfiles/Ruff/Mypy1315source and progress checks pass. Eval30 terminal/metrics
+match pre-Plugin1d160735 exactly (24/30); release gate remains nongreen, no unrelated
+fixture repair. Independent spec/quality approved. NormalAPI/Worker/Search ids,
+images/start/restarts/envhashes match. Only task PG/MinIO containers/anonymous
+volumes cleaned. Source locally integrated, default off; no normal migration,
+service activation, real model/search/page calls or push/deploy. Runbook:
+docs/CLOUD_PLUGINS.md. Separate activation/model gates remain unexecuted.

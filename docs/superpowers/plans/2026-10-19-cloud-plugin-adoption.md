@@ -8,7 +8,7 @@
 
 **Tech Stack:** Python 3.12、现有 Pydantic、PostgreSQL storage adapters、Artifact/Skill Publication/MCP HTTP transport；不增加依赖。
 
-**状态:** Implementing，2026-10-19；方案源码基线 cloud-agent-trench `2a6966be`，实施基线 `1d160735`。本文描述目标与验收条件，不声明功能已上线。
+**状态:** 首期源码与离线原生验收完成，2026-10-19；正常激活/真实模型门槛未执行。方案源码基线 cloud-agent-trench `2a6966be`，实施基线 `1d160735`。本文描述目标与验收条件，不声明功能已上线。
 
 ---
 
@@ -271,7 +271,7 @@ Worker 从可信 accepted command 的 snapshot digest 恢复；包、组件或 s
 - [x] 执行 `uv run pytest -q tests/api/test_plugin_turn_admission.py tests/worker/test_plugin_recovery.py`。
 - [x] 完成失败恢复、取消、租约、验证去重回归后提交；仍不自动启用生产 feature。
 
-#### Task 4 — 原生验收与子任务开放（拟 CLOUD-PLUGIN-ACCEPT-01；依赖 Task 3）
+#### Task 4 — 原生验收与子任务权限门禁（CLOUD-PLUGIN-ACCEPT-01；依赖 Task 3）
 
 **Files:**
 - 委派接缝在独立 Owned paths 卡中按实际代码认领，避免扩大 Task 3；
@@ -279,12 +279,12 @@ Worker 从可信 accepted command 的 snapshot digest 恢复；包、组件或 s
 - 新增 `tests/worker/test_plugin_child_authority.py`、一份原生 Cloud 验收脚本；
 - 更新本方案验收记录及运行手册。
 
-- [ ] 先用固定包和本地受控 MCP stub 做无模型跨进程完整链路，使用真实隔离 PostgreSQL/Artifact。
-- [ ] 若开放 researcher，先验证独立 child snapshot、父子组件交集、只读/深度和撤销；未通过则继续关闭。
-- [ ] 核对当前运行实例实际装配所需 Cloud Skill/MCP 开关及凭据挂载；源码存在不等于当前服务已启用。
-- [ ] 获得独立真实模型授权后，才做一次真实根任务验收；模型自主选择工具，记录实际调用与首正文/整轮/SQL。
-- [ ] 按现有本地运维流程另行更新服务；先确认共享 Worker 没有活动 Run，再保留 Search/MCP 原进程和配置。
-- [ ] 最终执行受影响检查及 `make check` / `make test`，记录已有失败而不扩展修复；本地集成范围遵守当前用户授权。
+- [x] 固定混合包、本地受控 MCP stub、真实隔离 PostgreSQL/版本化 MinIO；删除本地包后跨进程恢复及原生工具/持久审批通过。
+- [x] researcher Plugin 继承继续关闭；真实PG子任务独立身份、重放、无扩展继承、只读/深度及搜索授权上限已验收。开放另行立项。
+- [x] 核对正常API/Worker的扩展开关均未配置；默认关闭，原进程和环境哈希保持。部署手册列出显式映射和密钥挂载前提。
+- [ ] 独立模型门槛：获得另行授权后才做真实根任务验收；模型自主选择工具，记录实际调用与首正文/整轮/SQL。
+- [ ] 独立激活门槛：按现有本地运维流程另行更新服务；先确认共享 Worker 没有活动 Run，再保留 Search/MCP 原进程和配置。
+- [x] 专项78通过/2可选跳过；完整make check/test各一次，静态门禁通过、9885测试通过/2951跳过/1已有eval失败。前后30例eval逐例相同，未扩展修复；独立规格/质量审查通过，本地集成。
 
 四项任务按顺序完成；依赖解锁遵守仓库规则及当前明确授权的集成目标。
 公共 Marketplace、DSH 式任意运行时插件和第三方签名分发不是这些任务的隐藏后续。
@@ -315,4 +315,7 @@ Worker 从可信 accepted command 的 snapshot digest 恢复；包、组件或 s
 保持默认关闭、可信内部包白名单、小范围 namespace 启用。先准入/Worker 配对发布，再开放选择。
 仅回滚管理面开关不能移除已有被引用的包/安装/snapshot；先等待相关 Turn 结束或明确暂停。
 数据库迁移保持加法兼容，旧记录继续可读；保留包对象引用、expectation/receipt，首期不自动回收 Plugin 包。
-实施记录：Task1/Task2/Task3已实现并通过独立规格与质量审查；Task2在隔离 PostgreSQL 验证安装/CAS/绑定与迁移105；Task3自动组合默认关闭的管理/准入/Worker，固定精确来源并在失效时暂停。真实对象跨进程与子任务隔离验收为Task4；正常数据库/服务未更新，无模型或搜索请求。
+实施记录：Tasks1–4源码与离线验收完成；安装管理、精确来源准入、Worker授权/暂停、
+真实隔离PG/版本化MinIO跨进程恢复和子任务隔离均有证据。正常服务保持关闭，未更新正常库/服务，
+无真实模型或搜索请求。原生授权边界、耗时/SQL和全库基线失败见[CLOUD_PLUGINS.md](../../CLOUD_PLUGINS.md)。
+独立模型/激活门槛仍保持未执行，不把离线脚本当成页面或生产验收。
