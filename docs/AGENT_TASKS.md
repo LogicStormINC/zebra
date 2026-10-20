@@ -35251,3 +35251,32 @@ old payloads remain byte-compatible by excluding None. No database migration.
   services/SearchPIDs/cooldown/17heads/127snapshots/model-tool counters/acceptedRun/
   protected2partial hashes exact. No new Run/model/search/remoteMCP or Trench change.
   See docs/CLOUD_MCP_PREPARE_TIMING.md; no real-page speedup claim; local integration.
+
+
+### CLOUD-TRENCH-ARCHIVE-20261020 — Freeze Trench baseline and synchronize GitHub
+
+- Status: Review (2026-10-20; Ready claimed In Progress before edits; archive
+  prepared, local/remote delivery checks remain in progress).
+- Human owner: Luke Ding; executor: Codex.
+- Branch: codex/cloud-trench-archive-20261020; reuse the clean
+  cloud-plugin-plan-01/zebra-agent worktree from06578c09.
+- Owned paths: this card; PROGRESS.md; WORKLOG.md;
+  docs/CLOUD_TRENCH_ARCHIVE_2026-10-20.md; private task artifacts under
+  .artifacts/cloud-trench-archive-20261020/ in the primary checkout.
+- Scope: record the accepted source/runtime and paired Trench baseline, add
+  immutable annotated archive tags, fast-forward cloud-agent from the complete
+  integrated baseline, synchronize the approved branches/tags to GitHub, and
+  delete only ancestor topic refs with no dirty occupied worktree. Preserve all
+  unique/uncommitted work and all worktree directories. Keep main unchanged.
+- Branch/worktree operations: detach only clean already-integrated topic
+  worktrees at the SAME commit before deleting redundant refs; no reset/clean,
+  directory removal, speculative cherry-pick or forced push. Remove the existing
+  remote settings/media topic only after both corresponding integration branches
+  and archive tags are remotely verified.
+- Paired scope: push already-committed Trench main and its matching archive tag;
+  preserve its dirty/untracked files and Gitee remote. No Trench source edits.
+- Validation: fresh remote ancestry, archived ref reachability, docs-only tree
+  diff, explicit staging, remote/local SHA equality and annotated tag peeling;
+  verify preexisting dirty hashes and service IDs/start/restarts remain unchanged.
+  No model/search/MCP requests, migrations, restarts, deployment or new runtime
+  capability/performance claims. Do not archive the GitHub repositories.

@@ -16658,3 +16658,18 @@ schema/model-tool counts/17heads/127snapshots/protected2partialhashes/acceptedRu
 ERROR/CRITICAL/Traceback0. No new Run/model/search/remote MCP,APIs/Search/TLS/MCP
 restart,Trenchlogic,prompt/model-round/reuse change,push or remote deployment.
 Recorded focused doc and local integration. No measured page-speedup claim.
+
+
+## 2026-10-20 - CLOUD-TRENCH-ARCHIVE-20261020 preparation
+
+User approved archive, branch handling and GitHub sync. Fresh origin fetch: Zebra
+Trench baseline +55, old cloud-agent ancestor -276; paired Trench main +22, no
+divergence. Inventoried73local refs/41worktrees:59ancestor topics,11unique refs.
+45ancestor topics eligible for removal (35unoccupied/10clean occupied);14dirty
+occupied ancestor refs and all11unique refs retained. Detached dirty worktrees
+stay intact. Saved private service/dirty-file hashes; GitHub ref push does not
+automatically deploy. Claimed focused branch in clean reused checkout before
+archival docs. A documentation-generation script failed with NameError before
+writing; corrected import and regenerated. No application/configuration/service
+operations or model/search/MCP calls. GitHub sync and final ref cleanup follow
+local archive checks.
