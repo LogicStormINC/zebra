@@ -15,6 +15,8 @@
   events unchanged. No global proxy/configuration/migration changes.
 - One NBOPC tool request failed at Yahoo5s; no repeat. Native tool registration
   is restored, but real retrieval acceptance remains open. See focused doc.
+- Source b019a100 integrated locally into cloud-agent; paired Trench8feacbf into
+  main. Protected dirty/untracked files and archivea4d0e90f preserved; no push.
 
 ## 2026-10-18 - TRN-SETTINGS-MEDIA-01
 

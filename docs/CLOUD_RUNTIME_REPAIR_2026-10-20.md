@@ -32,7 +32,7 @@ cooldown and fallback configuration remain byte-identical.
 - Cancellation and search-diagnostic regression: another 68 passed. These use
   scratch peers; no public search/model requests were added.
 - Trench protocol regression: 30 passed, including real clarification retention.
-- File-size gate: 3,223 tracked files / zero violations. Ruff clean; mypy clean
+- Final file-size gate: 3,227 tracked files / zero violations. Ruff clean; mypy clean
   across 1,319 source files. Both progress-safety checks pass.
 - Full `make check` is not green: deterministic eval is 24/30 (0.80). The
   unmodified 948b8a43 baseline reproduces the same result. All 30 replay metrics
@@ -123,3 +123,8 @@ Private evidence: `.artifacts/cloud-runtime-repair-20261020/`; do not commit raw
 event/credential-bearing snapshots. Safe receipts include saved-replay,
 paired-projection, image-smoke, source-manifest, eval-baseline, preservation and
 nbopc JSON. The frozen Trench archive tag/branch remain unchanged.
+
+Source delivery: Zebra b019a100 locally fast-forwarded into cloud-agent;
+Trench8feacbf locally fast-forwarded into main. Existing dirty registry content,
+next-env and unrelated protected files are retained. No new GitHub push was
+made. The frozen archive still resolves to a4d0e90f.
