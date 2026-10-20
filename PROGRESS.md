@@ -1,3 +1,17 @@
+## 2026-10-20 - CLOUD-YAHOO-EGRESS-20261020
+
+Yahoo retrieval is restored through the existing per-engine proxy seam, without
+product source/dependency changes. Root cause: global DIRECT route accepted
+CONNECT but failed target TCP after abnormal DNS answers; no Yahoo HTTP exchange.
+A dedicated non-root, loopback Yahoo-only outlet reuses the tested existing node,
+static binary and installed image. Exactly one user-authorized Search recreation;
+image/settings/cache/Exa cooldown retained. One NBOPC native tool acceptance:
+3261.81ms,5results,official rank2. Four existing offline native checks pass.
+No models/new Runs/original replay/global proxy or Trench logic changes;
+other service identities, original event hashes/high/stream-v2 retained.
+This closes retrieval recovery, not a statistical/page/model performance claim.
+See docs/CLOUD_YAHOO_EGRESS_2026-10-20.md for active override and rollback boundary.
+
 ## 2026-10-20 - CLOUD-RUNTIME-REPAIR-20261020
 
 Five minimal runtime/protocol fixes are deployed to production192.168.110.30:

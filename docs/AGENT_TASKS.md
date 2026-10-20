@@ -35295,6 +35295,60 @@ old payloads remain byte-compatible by excluding None. No database migration.
   remain active. No models/search/MCP, migration/restart/deployment or source edits.
 
 
+### CLOUD-YAHOO-EGRESS-20261020 — diagnose proxy/TLS/upstream timeout
+
+- Status: Done (2026-10-20; focused configuration repair deployed and accepted;
+  integrated locally into cloud-agent, no GitHub push).
+- Human owner: Luke Ding; executor: Codex.
+- Branch: codex/cloud-yahoo-egress-20261020; reused clean cloud-plugin-plan-01
+  worktree from ed871829; local target cloud-agent, archive refs unchanged.
+- Initial owned paths: this card, PROGRESS.md, WORKLOG.md,
+  docs/CLOUD_YAHOO_EGRESS_2026-10-20.md and private evidence/scripts under
+  .artifacts/cloud-yahoo-egress-20261020/. Amend exact production/test paths
+  after tracing the demonstrated cause, before implementation.
+- Scope: distinguish proxy CONNECT, target TLS and upstream response timing;
+  use existing drivers/configuration first. Read-only proxy/controller/log
+  inspection and bounded non-search handshake diagnostics, then one NBOPC query.
+  No model/Run replay, global proxy changes, Search/MCP restart or session reset,
+  forced engine, Exa quota probe, timeout inflation or unrelated fixture changes.
+  Preserve Yahoo default/fast/cooldown/fallback, high/v2, fresh authority,
+  lease/cancel and DNS/SSRF. Stop on actual rate limit; no automatic failed
+  acceptance repeat. Record the limits if live repair requires a forbidden
+  process/configuration change; do not hot-patch a running interpreter.
+- Root-cause ownership amendment before preparation: private production release
+  /home/ubuntu/releases/20261020-yahoo-egress/ only for an isolated loopback proxy
+  profile/process using the existing binary and currently selected configured
+  node, a one-variable pending Search compose override and rollback receipt.
+  No global proxy mutation, node rotation or new proxy credentials. Existing
+  scripts/check_yahoo_egress_config.py and failure/deadline checks are reused.
+  Native Search does not expose runtime network reconfiguration; prepare and
+  verify the new route before requesting any exception to the no-restart rule.
+- User exception (2026-10-20): explicitly permits one Search service recreation,
+  accepting in-process MCP reinitialization. No Exa call/reset is authorized.
+  Activate only after a verified dedicated-route gate, preserve cache/cooldown,
+  and make exactly one NBOPC normal-tool acceptance; stop on error/rate limit.
+- Outlet preparation amendment: the server-selected node has stale July health
+  and failed TLS. Reuse only the exact existing Mac route member observed for
+  search.yahoo.com, with certificate verification, in the private production
+  release. Read its existing local profile in memory and transfer that one node
+  via SSH stdin to the same operator server; no credential stdout/repository,
+  subscription refresh, node rotation, global proxy edits or Mac dependency.
+- Persistence amendment before activation: own only the new isolated
+  zebra-yahoo-egress Compose project/container and its private release config,
+  state directory and rollback receipt. Reuse the existing static Mihomo binary
+  read-only and installed Search image; loopback listener, Yahoo-only rules,
+  non-root/cap-drop/read-only container, restart-unless-stopped. No user/global
+  proxy service alteration; no new dependency or product source modification.
+
+- Result: global DIRECT/target dial failure located before Yahoo TLS/HTTP.
+  Existing proxy seam plus isolated persistent Yahoo-only outlet, no product
+  source/dependency change. Native HEAD HTTP200386.19ms; four offline checks pass.
+  Exactly one permitted Search recreation and one NBOPC query:3261.81ms,
+  5results/official rank2. No model/Run replay/Exa probe/global proxy mutation.
+  Original Session/source/runtime and all non-Search service identities retained;
+  Search settings/cache/cooldown retained. Proof and active release override:
+  docs/CLOUD_YAHOO_EGRESS_2026-10-20.md. No page/statistical performance claim.
+
 ### CLOUD-RUNTIME-REPAIR-20261020 — Search, clarification and truthful delivery
 
 - Status: Ready (2026-10-20; user authorized the five minimal fixes, no-model

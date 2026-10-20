@@ -1,5 +1,29 @@
 # Progress Log
 
+## 2026-10-20 - CLOUD-YAHOO-EGRESS-20261020
+
+- Claimed Ready -> In Progress before implementation on the focused branch;
+  human Luke Ding. Reused existing native proxy setting; no product source edits.
+- Correlated native failure, verified TLS phases and proxy dial logs: CONNECT
+  accepted in2.525ms but target dial failed, TLS EOF at5004.138ms; no Yahoo HTTP.
+- Server-selected route failed and July health was stale; retained that sample.
+  Reused only the actually observed existing local Yahoo route, not node rotation.
+  Transferred one profile privately; no credentials in Git/stdout/command args.
+- Dedicated persistent loopback Yahoo-only outlet passes native HTTP200 HEAD,
+  TLS205.775ms/full386.19ms. No global proxy edits or laptop runtime dependency.
+- User explicitly allowed one Search recreation/MCP reinitialization. Activated
+  one env-only override after zero leases/pending; same image/cache/settings.
+- One normal Worker NBOPC tool call: executed3261.81ms,5results,official rank2,
+ 73policy/cancel checks; no models/new Runs/replay/Exa calls or automatic repeat.
+- Four existing offline native checks pass. Preservation comparison normalizes
+  mount-list ordering; only Search identity changed. Other roles/source/runtime,
+  original Session event/model hashes, Exa control/global proxy hashes retained.
+- Full/page/model performance gates not rerun or claimed. Failed baseline is
+  retained; no statistical speedup claim. See focused doc for active overlay,
+  operational external dependency and explicitly authorized rollback boundary.
+- Committed on the focused branch and fast-forwarded locally into cloud-agent;
+  frozen archive refs and unrelated dirty/untracked files retained. No push.
+
 ## 2026-10-20 - CLOUD-RUNTIME-REPAIR-20261020
 
 - Claimed before code on codex/cloud-runtime-repair-20261020, human Luke Ding.
