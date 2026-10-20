@@ -1,5 +1,29 @@
 # Progress Log
 
+## 2026-10-20 - CLOUD-VERSION-SYNC-20261020
+
+- User authorized latest-version check/deployment. Claimed focused task/branch
+  before packaging; source baseline6bca5053/Trench8feacbf, no feature code edits.
+- Compared complete live source: API66/Worker64/Broker74 differences; TrenchAPI7,
+  each backendWorker8 and frontend10. Image names alone had hidden old base code.
+- Verified Python locks; built exact committed overlays offline. Preserved five
+  pre-existing HTTP checksum compatibility files/dependencies with separate hashes.
+- Focused tests111Zebra/68TrenchAPI/91frontend pass,1skip. Corrected invocation
+  environment/stdin only, not product/tests. Complete new-image source checks pass.
+- Idle guard caught normal business and made no changes until it naturally ended.
+  Existing migrations verified by version/name/checksum, not migration-row count.
+- Prepared v105-compatible rollback images, applied only v105 with bounded locks,
+  then updated API/Worker/Broker and all Trench application roles. No rollback used.
+- Live source hashes all match explicit deployment manifest; login and actual
+  new Plugin dashboard assets served200. Readiness200 remains configuration-only
+  for Zebra, not authenticated Run E2E. Six ARQ heartbeats present.
+- Search/Exa/Yahoo/TLS/data identities and four original event/model hashes,
+  high/v2/authority/config preserved; production Plugins still default-off.
+- RSS upstream DNS/HTTP/timeout errors recorded separately; no unrelated repair
+  or claim that every ingestion source is healthy. No new model/search/Run probe.
+- Temporary migration env file removed. Private release/evidence and v105 rollback
+  retained. Focused docs committed/integrated locally; no GitHub push/archive move.
+
 ## 2026-10-20 - CLOUD-YAHOO-EGRESS-20261020
 
 - Claimed Ready -> In Progress before implementation on the focused branch;

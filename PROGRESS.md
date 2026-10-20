@@ -1,3 +1,18 @@
+## 2026-10-20 - CLOUD-VERSION-SYNC-20261020
+
+Production was missing committed Plugin/runtime/frontend updates despite the
+latest incident overlays. All application roles now align with Zebra6bca5053 /
+Trench8feacbf, with existing HTTP checksum compatibility separately retained.
+Full live fingerprints:1322Zebra files per role,537Trench files per role,222front
+files; zero differences from the explicit deployment manifest. Schema104->105,
+image-only cutover after live business drained; v105-compatible rollback prepared.
+270targeted checks pass/1skip; login/assets/readiness200 and six ARQ heartbeats.
+No model/search/Run acceptance; Plugin production switch remains false. Search,
+Exa/Yahoo/MCP, global proxy, protected original events/high/v2/data retained.
+RSS upstream ingestion errors remain an explicit operational observation, so this
+is version/deployment acceptance, not a full-business-health claim. See
+docs/CLOUD_VERSION_SYNC_2026-10-20.md for source provenance and rollback.
+
 ## 2026-10-20 - CLOUD-YAHOO-EGRESS-20261020
 
 Yahoo retrieval is restored through the existing per-engine proxy seam, without

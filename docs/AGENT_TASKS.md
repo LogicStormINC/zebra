@@ -35295,6 +35295,52 @@ old payloads remain byte-compatible by excluding None. No database migration.
   remain active. No models/search/MCP, migration/restart/deployment or source edits.
 
 
+### CLOUD-VERSION-SYNC-20261020 — complete committed production source alignment
+
+- Status: Done (2026-10-20; production source/schema alignment and scoped
+  validation completed; integrated locally into cloud-agent, no push).
+- Human owner: Luke Ding; executor: Codex. Branch:
+  codex/cloud-version-sync-20261020; reused clean cloud-plugin-plan-01 worktree
+  from 6bca5053. Local integration target cloud-agent; archive refs unchanged.
+- Owned paths: this card, PROGRESS.md, WORKLOG.md,
+  docs/CLOUD_VERSION_SYNC_2026-10-20.md, private packaging/evidence under
+  .artifacts/cloud-version-sync-20261020/ and production
+  /home/ubuntu/releases/20261020-version-sync/. Build only committed Zebra
+  cloud-agent and Trench main source. No feature/product source changes.
+- Scope: fingerprint full runtime source/dependencies against running images;
+  reuse installed immutable runtime/dependencies and replace source only when
+  lockfiles match, build frontend from committed source, apply required existing
+  migration up to v105 after idle preflight, update only outdated application
+  roles through image-only overrides. Preserve credentials, volumes, original
+  events/partial Runs, high/v2, authority and proxy boundaries.
+- No model/search/new Run requests, global proxy changes, Search/Exa/TLS restart
+  or MCP reset, new feature activation/credentials/dependencies, unrelated dirty
+  work integration, force push or archive-ref movement. No runtime packaging
+  source edits; inspect first and amend exact ownership if needed.
+- Packaging amendment: frontend currently contains an existing HTTP checksum
+  compatibility layer absent from Git. Preserve exactly its browser-sha256.ts,
+  strategy-coverage-report.ts, strategy-ordered-items.ts and package/lock bytes
+  from pinned image sha256:62974fa6, with separate provenance hashes. Do not
+  overwrite this accepted behavior or call the layer committed source. No new
+  compatibility logic/dependency installation; retain existing node_modules.
+  All other runtime source is checked against the committed manifests.
+- Schema safety amendment: v105 expands two existing kind constraints only.
+  Prepare rollback images from each current Zebra role with only the committed
+  v105 migration/catalog files copied in, so rollback remains v105-compatible;
+  never delete migration receipts or start an unadapted v104 image afterward.
+  All files/images stay in the owned private release, no source-tree changes.
+- Validate native offline/image composition, schema readiness, complete installed
+  source hashes, real health and frontend delivery; separately state no browser
+  model E2E. Record previous images/configuration for rollback. Do not equate
+  image tags or source directory Git HEAD with running source.
+
+- Result: all11 application roles updated; complete live source hashes match
+  explicit committed+retained-HTTP-compat manifest. Schema105;270targeted tests
+  pass/1skip, native/image checks and actual login/assets/readiness200 accepted.
+  Search/Exa/MCP/global proxy/original events/high/v2/data retained, Plugin flag
+  remains false. RSS upstream failures explicitly remain outside this deployment
+  scope. No model/search/Run acceptance or GitHub push. See focused deployment doc.
+
 ### CLOUD-YAHOO-EGRESS-20261020 — diagnose proxy/TLS/upstream timeout
 
 - Status: Done (2026-10-20; focused configuration repair deployed and accepted;
