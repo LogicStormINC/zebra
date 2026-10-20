@@ -7473,3 +7473,18 @@ improvement claim. Test Skill/Plugin disabled again, originalAPIimage/env restor
 Worker/Search/TLS/MCP preserved, original2partialTurn hashes exact. No production
 source/Trench change, push or remote deployment. Scope and evidence boundaries:
 docs/CLOUD_EXTENSION_ACCEPTANCE.md.
+
+## 2026-10-20 - CLOUD-MCP-PREPARE-TIMING-01
+
+Selected Cloud MCP tools now skip unrelated deferred sandbox preparation by exact
+composed name; workspace/non-Cloud/unknown routes retain original preparation.
+Per-call numeric metadata separates live authorization,DNS/SSRF,connect/TLS,SSE,
+initialize/notify/call and result waiting; redacted failure timing logs preserve
+original exceptions.414focused checks pass/1environment skip,Ruff/fullMypy1319,
+filegate3220/0. Offline same-filesystem image flattening resolves127layer ceiling;
+Worker-only12694c55ae77 is healthy with original config. Actual-image/Worker offline
+smoke confirms0Cloudprepare/1workspaceprepare/8fresh guards/8captured HTTP frames.
+APIs/Search/TLS/MCP sessions and original partialRuns preserved;17heads/127snapshots/
+model-tool counts unchanged,0leases/pending. No model/search/remoteMCP/newRun,
+Trench/prompt/rounds/reuse change,push or remote deploy. Real-page speedup remains
+unmeasured. See docs/CLOUD_MCP_PREPARE_TIMING.md.

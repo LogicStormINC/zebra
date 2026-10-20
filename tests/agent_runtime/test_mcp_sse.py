@@ -88,7 +88,9 @@ def test_discovery_then_cloud_call_uses_sse_and_live_guards(network):
     )
     response = transport.execute(request(transport))
     assert "Example Domain" in response.output
-    assert response.metadata == {"transport": "sse", "mcp_is_error": False}
+    assert response.metadata["transport"] == "sse"
+    assert response.metadata["mcp_is_error"] is False
+    assert response.metadata["mcp_timings_ms"]["total"] >= 0
     assert checked[-4:] == ["initialize", "initialize", "notifications/initialized", "tools/call"]
     assert all(stream.closed for stream in streams)
 

@@ -35216,3 +35216,38 @@ old payloads remain byte-compatible by excluding None. No database migration.
   disabled,originalMCPexact,APIoriginalenv/image restored,other15heads/2partial
   hashes/SearchPIDs/cooldownexact,Worker/Search/TLS/MCP preserved,0leases/pending.
   No source/Trench change or remote push/deploy; see CLOUD_EXTENSION_ACCEPTANCE.md.
+
+### CLOUD-MCP-PREPARE-TIMING-01 — Remote Cloud MCP preparation and timings
+
+- Status: Done (2026-10-20; no-model gates and Worker-only local activation verified).
+- Human owner: Luke Ding; executor Codex; branch codex/cloud-mcp-prepare-timing-01,
+  reused clean cloud-plugin-plan-01/zebra-agent worktree, base7c8f769d.
+- Owned paths: this card, PROGRESS.md, WORKLOG.md, docs/CLOUD_MCP_PREPARE_TIMING.md;
+  packages/agent-runtime/src/agent_runtime/{harness.py,cloud_mcp_transport.py,
+  mcp_http.py,mcp_sse.py,mcp_http_egress.py,mcp_timing.py}; focused no-model runtime
+  tests test_cloud_mcp_preparation.py,test_mcp_timing.py,test_mcp_sse.py and
+  test_mcp_http_egress.py; .artifacts/cloud-mcp-prepare-timing-01/.
+- Scope: exact selected Cloud transport aliases skip unrelated DeferredRuntime
+  preparation; local stdio/workspace/unknown tools keep existing preparation.
+  Bounded numeric phase timings for authorization, DNS/SSRF, connect/TLS, SSE
+  opening/endpoint, initialize/notify/tools call/post/result wait; preserve exception
+  propagation and redact failure timing logs. Existing output metadata/event path,
+  no new SQL/telemetry service or dependency. No raw URL/session/credential/body logs.
+- Validation: reproduce before fixing; focused offline safety/compatibility checks,
+  fresh authorization/lease/revocation/cancel/SSRF bounds retained; no real model,
+  search or remote MCP request. After passing, verify idle leases/pending/active
+  work then update only local Worker with same-base image and identical config.
+  Preserve APIs/Search/TLS/MCP processes/session, high/v2, original2partialTurns
+  and existing extension/snapshot/event state. No Trench code or product logic,
+  no session/connection reuse, model-round/prompt optimization, push or remote deploy.
+
+- Delivered: exact selected Cloud aliases skip unrelated sandbox, numeric
+  per-call phases survive normal result projection; failure logs redact all input.
+  414pass/1environment skip,Ruff/fullMypy1319,filegate3220/0. Same-filesystem offline
+  image flattening resolves127layer ceiling;6source hashes/config verified. Worker
+  12694c55ae77/e179099d4ac8 healthy; isolated-network and actual-Worker offline smoke
+  confirms0Cloudprepare/1workspaceprepare/8fresh guards/8captured HTTP frames,
+  no reuse.0leases/pending,original3August stale projections untouched. Other4
+  services/SearchPIDs/cooldown/17heads/127snapshots/model-tool counters/acceptedRun/
+  protected2partial hashes exact. No new Run/model/search/remoteMCP or Trench change.
+  See docs/CLOUD_MCP_PREPARE_TIMING.md; no real-page speedup claim; local integration.

@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import logging
 from collections.abc import Callable, Mapping
 
 from agent_core.domain.extension_snapshots import ExtensionSnapshot, McpSnapshotEntry
@@ -21,6 +22,7 @@ from agent_runtime.mcp_stdio import (
     _normalize_tool_result,
     _validate_tool_arguments,
 )
+from agent_runtime.mcp_timing import mcp_phase
 
 type FrameAuthority = Callable[
     [McpSnapshotEntry, McpProxyRequest, str, Mapping[str, object]],
@@ -128,19 +130,30 @@ class CloudMcpTransport:
 
         authenticated = entry.connection.auth_mode.value == "bearer"
         session_type = McpSseSession if entry.connection.transport == "sse" else McpHttpSession
-        with session_type(
-            _DiscoveryServer(entry.connection.endpoint),
-            MCP_CALL_TIMEOUT_SECONDS,
-            credential_resolver=bearer if authenticated else None,
-            frame_authorizer=None if authenticated else anonymous,
-        ) as session:
-            if session.protocol_version != protocol:
-                raise McpProtocolError("MCP protocol changed; refresh its catalog")
-            result = session.request("tools/call", json.loads(params_json))
+        timings: dict[str, float] = {}
+        try:
+            with mcp_phase(timings, "total"), session_type(
+                _DiscoveryServer(entry.connection.endpoint),
+                MCP_CALL_TIMEOUT_SECONDS,
+                credential_resolver=bearer if authenticated else None,
+                frame_authorizer=None if authenticated else anonymous,
+                timings_ms=timings,
+            ) as session:
+                if session.protocol_version != protocol:
+                    raise McpProtocolError("MCP protocol changed; refresh its catalog")
+                with mcp_phase(timings, "tools_call"):
+                    result = session.request("tools/call", json.loads(params_json))
+        except BaseException:
+            # Only internal phase names and elapsed numbers; never log exception/body/endpoint.
+            logging.getLogger(__name__).warning(
+                "cloud_mcp_timing status=failed phases_ms=%s", json.dumps(timings)
+            )
+            raise
         return McpProxyResponse(
             output=_normalize_tool_result(remote, result, max_output_bytes=self._max_output_bytes),
             metadata={
                 "transport": "sse" if entry.connection.transport == "sse" else "http",
                 "mcp_is_error": result.get("isError") is True,
+                "mcp_timings_ms": {key: value for key, value in timings.items()},
             },
         )

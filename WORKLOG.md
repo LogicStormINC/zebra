@@ -16624,3 +16624,37 @@ onlytest2headrevisions+1snapshot,other15exact,protected2partialhashesexact,
 globaldurablemodel/tooldelta5/7,0leases/pending. Existingunrelateddirtyworkpreserved.
 No production source/Trenchlogic/modelretry/search/Worker-MCP-Searchrestart/push/
 remote deployment. Focuseddoc plus local integration; private artifacts remainlocal.
+
+## 2026-10-20 - CLOUD-MCP-PREPARE-TIMING-01
+
+Claimed Ready task before code on codex/cloud-mcp-prepare-timing-01 from7c8f769d,
+reusing clean plugin worktree. Read architecture/phase/RACI/task rules and traced
+all LocalToolGateway/CloudMcpTransport/session/HTTPS-handler callers. Initial new
+checks reproduced6fail/3pass: Cloud path unnecessarily prepared runtime, timings
+absent. Exact selected Cloud aliases now join audited runtime-free routes; no
+prefix exemption or stdio/workspace bypass. Runtimeprepare time and call-owned
+numeric MCP spans use perf_counter with finally accounting. Preserve every frame's
+authority/lease/revocation, DNS/SSRF pinning,TLS,timeout,bounds,cancel and exceptions.
+Success uses original result metadata; session/authority failures emit phase-only
+warning with no exception text/endpoint/session/header/body. No dependency or SQL.
+One new test used nonexistent workspace.read; corrected to actual files.read.
+Final414pass/1environment skip;Ruff,fullMypy1319,filegate3220/0. Partial-file Mypy
+had unrelated import-untyped limitations; complete workspace check is clean.
+Same-base6file image layer hit old127layer depth limit; consolidating COPY still
+created non-runnable128layer image. Built offline from same immutable filesystem
+via scratch copy, preserving imageConfig and6source hashes; final3layers,e179099d.
+No download, global daemon change, pruning or running-service filesystem capture.
+Isolated --network none smoke passed0models/searches/remote frames/Cloudprepare,
+1requiredworkspaceprepare,8capturedSSEHTTP/8fresh guards for2calls,streamsclosed,
+no session reuse. Reused already-rendered normal Compose JSON into own private
+artifact, literal-dollar escaping and exact config/mount/security/resource preflight.
+Before replace effectiveleases0/pending0;3running projections fromAug29/30 had
+released expired leases/no commands. These historical rows and10cleanup obligations
+were inspected, not repaired/resumed. Single Worker-only activation healthy
+12694c55ae77; sourceimports/hash and sameoffline smoke verified inside liveWorker.
+Other4container IDs/start/restarts/config,SearchpersistentPIDs/cooldownexact;
+schema/model-tool counts/17heads/127snapshots/protected2partialhashes/acceptedRun
+67events+snapshot exact; unrelated dirty files exact,0leases/pending. Startup
+ERROR/CRITICAL/Traceback0. No new Run/model/search/remote MCP,APIs/Search/TLS/MCP
+restart,Trenchlogic,prompt/model-round/reuse change,push or remote deployment.
+Recorded focused doc and local integration. No measured page-speedup claim.

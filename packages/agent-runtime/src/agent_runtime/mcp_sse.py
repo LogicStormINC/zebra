@@ -19,6 +19,7 @@ from agent_runtime.mcp_http_authorization import resolve_bearer_header
 from agent_runtime.mcp_http_egress import PublicMcpHttpsHandler
 from agent_runtime.mcp_http_response import read_response
 from agent_runtime.mcp_protocol import MAX_MCP_FRAME_BYTES, McpProtocolError
+from agent_runtime.mcp_timing import mcp_phase
 
 
 @dataclass
@@ -55,14 +56,15 @@ class McpSseSession(McpHttpSession):
             raise McpProtocolError("cloud SSE cannot use environment credentials")
         headers = {"Accept": "text/event-stream", "Content-Type": "application/json"}
         try:
-            if self.frame_authorizer is not None:
-                self.frame_authorizer(endpoint, payload)
-            if self.credential_resolver is not None:
-                headers["Authorization"] = resolve_bearer_header(
-                    self.credential_resolver,
-                    endpoint,
-                    payload,
-                )
+            with mcp_phase(self.timings_ms, "authorization"):
+                if self.frame_authorizer is not None:
+                    self.frame_authorizer(endpoint, payload)
+                if self.credential_resolver is not None:
+                    headers["Authorization"] = resolve_bearer_header(
+                        self.credential_resolver,
+                        endpoint,
+                        payload,
+                    )
         except PluginAuthorityUnavailable:
             raise
         except Exception:
@@ -76,7 +78,7 @@ class McpSseSession(McpHttpSession):
         deadline = time.monotonic() + self.timeout_seconds
         opener = urllib.request.build_opener(
             urllib.request.ProxyHandler({}),
-            PublicMcpHttpsHandler(),
+            PublicMcpHttpsHandler(timings_ms=self.timings_ms),
             _NoRedirectHandler(),
         )
         try:
@@ -86,11 +88,13 @@ class McpSseSession(McpHttpSession):
                     headers=self._headers(payload),
                     method="GET",
                 )
-                response = opener.open(request, timeout=self.timeout_seconds)
+                with mcp_phase(self.timings_ms, "sse_open"):
+                    response = opener.open(request, timeout=self.timeout_seconds)
                 self._stream = cast(BinaryIO, response)
                 if response.headers.get_content_type() != "text/event-stream":
                     raise McpProtocolError("MCP SSE endpoint did not return an event stream")
-                self._message_endpoint = _read_endpoint(self._stream, self.server.url, deadline)
+                with mcp_phase(self.timings_ms, "sse_endpoint_wait"):
+                    self._message_endpoint = _read_endpoint(self._stream, self.server.url, deadline)
             assert self._message_endpoint is not None
             # The derived target is same-origin HTTPS only; the socket handler
             # revalidates and pins public DNS for GET and every POST separately.
@@ -100,11 +104,16 @@ class McpSseSession(McpHttpSession):
                 headers=self._headers(payload),
                 method="POST",
             )
-            with opener.open(request, timeout=self.timeout_seconds):
-                pass
+            with mcp_phase(self.timings_ms, "http_post"):
+                with opener.open(request, timeout=self.timeout_seconds):
+                    pass
             if "id" not in payload:
                 return "application/json", ""
-            message = read_response(self._stream, "text/event-stream", payload["id"], deadline)
+            wait_phase = {"initialize": "initialize_result_wait",
+                          "tools/call": "tools_call_result_wait"}.get(
+                              str(payload.get("method")), "other_result_wait")
+            with mcp_phase(self.timings_ms, wait_phase):
+                message = read_response(self._stream, "text/event-stream", payload["id"], deadline)
             return "application/json", json.dumps(message)
         except urllib.error.HTTPError as exc:
             exc.close()

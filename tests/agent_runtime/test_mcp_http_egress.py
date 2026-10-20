@@ -103,6 +103,35 @@ def test_handler_routes_through_pinned_connection(monkeypatch):
     do_open.assert_called_once_with(PublicMcpHttpsConnection, request)
 
 
+@pytest.mark.parametrize("blocked_second", [False, True])
+def test_timed_handler_retains_per_connection_dns_pinning(monkeypatch, blocked_second):
+    timings = {}
+    resolver = Mock(side_effect=[answers("93.184.216.34"),
+                                answers("127.0.0.1" if blocked_second else "93.184.216.34")])
+    monkeypatch.setattr(socket, "getaddrinfo", resolver)
+    factory = Mock(return_value=Mock())
+    monkeypatch.setattr(socket, "socket", factory)
+    handler = PublicMcpHttpsHandler(timings_ms=timings)
+
+    def do_open(connection_type, req):
+        connection = connection_type("example.test", timeout=2, context=Mock())
+        connection.connect()
+        connection.close()
+
+    monkeypatch.setattr(handler, "do_open", do_open)
+    req = urllib.request.Request("https://example.test/private-endpoint")
+    handler.https_open(req)
+    if blocked_second:
+        with pytest.raises(OSError, match="blocked"):
+            handler.https_open(req)
+    else:
+        handler.https_open(req)
+    assert resolver.call_count == 2
+    assert factory.call_count == (1 if blocked_second else 2)
+    assert set(timings) == {"dns_ssrf", "connect", "tls"}
+    assert all(type(value) is float and value >= 0 for value in timings.values())
+
+
 def test_session_disables_ambient_proxy_and_installs_pinned_handler(monkeypatch):
     from agent_runtime.mcp_http import McpHttpSession
     from agent_runtime.mcp_protocol import McpProtocolError

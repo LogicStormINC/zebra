@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from collections.abc import Callable, Sequence
 from pathlib import Path
+from time import perf_counter
 
 from agent_context import LocalContextCompiler
 from agent_core.domain.attachments import AttachmentContextInput
@@ -308,6 +309,9 @@ class LocalToolGateway(ToolGatewayPort):
             max_output_bytes=None if output_projector is not None else 32_768,
             cloud=cloud_mcp_transport,
         )
+        self._runtime_free_mcp_tools = frozenset(
+            tool.name for tool in cloud_mcp_transport.model_tools
+        ) if cloud_mcp_transport is not None else frozenset()
         self._mcp_catalog = AuthorizedMcpToolCatalog(
             mcp_transport.model_tools if mcp_transport is not None else ()
         )
@@ -392,13 +396,21 @@ class LocalToolGateway(ToolGatewayPort):
         if self._network_check is not None:
             self._network_check()
         # ponytail: Skill/Artifact reads use bounded stores, not an OCI workspace.
-        # Only audited native Web handlers otherwise skip provisioning.
+        # Selected Cloud MCP uses Worker HTTPS, never the local sandbox/stdio path.
+        prepare_ms = 0.0
         if (isinstance(self._runtime, DeferredRuntime)
                 and tool_call.name not in self._runtime_free_web_tools
+                and tool_call.name not in self._runtime_free_mcp_tools
                 and tool_call.name not in {"artifacts.read", "skills.list", "skills.read"}):
+            started = perf_counter()
             self._runtime.ensure_ready()
+            prepare_ms = (perf_counter() - started) * 1000
         try:
             result = self._executor.execute(tool_call)
+            if isinstance(self._runtime, DeferredRuntime):
+                result = result.model_copy(update={
+                    "metadata": {**result.metadata, "runtime_prepare_ms": prepare_ms},
+                })
             if self._network_check is not None:
                 self._network_check()
             result = self._project_tool_output(tool_call, result)

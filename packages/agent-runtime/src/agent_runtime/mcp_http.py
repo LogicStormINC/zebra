@@ -40,6 +40,7 @@ from agent_runtime.mcp_stdio import (
     _parse_tool,
     _validate_tool_arguments,
 )
+from agent_runtime.mcp_timing import mcp_phase
 from agent_runtime.web_gateway import reject_non_public_resolution
 
 
@@ -59,6 +60,7 @@ class McpHttpSession:
     frame_authorizer: Callable[[str, Mapping[str, object]], None] | None = field(
         default=None, repr=False
     )
+    timings_ms: dict[str, float] | None = field(default=None, repr=False, kw_only=True)
     _request_id: int = field(default=0, init=False)
     _capabilities: dict[str, object] = field(default_factory=dict, init=False)
     _protocol_version: str | None = field(default=None, init=False)
@@ -68,14 +70,15 @@ class McpHttpSession:
     def __enter__(self) -> McpHttpSession:
         if self.timeout_seconds <= 0:
             raise ValueError("MCP timeout must be positive")
-        result = self.request(
-            "initialize",
-            {
-                "protocolVersion": self.requested_protocol_version,
-                "capabilities": {},
-                "clientInfo": {"name": "zebra-agent", "version": "0.1.0"},
-            },
-        )
+        with mcp_phase(self.timings_ms, "initialize"):
+            result = self.request(
+                "initialize",
+                {
+                    "protocolVersion": self.requested_protocol_version,
+                    "capabilities": {},
+                    "clientInfo": {"name": "zebra-agent", "version": "0.1.0"},
+                },
+            )
         server_version = result.get("protocolVersion")
         if (
             not isinstance(server_version, str)
@@ -90,7 +93,8 @@ class McpHttpSession:
             raise McpProtocolError(f"MCP server {self.server.name} has invalid capabilities")
         self._capabilities = dict(capabilities)
         self._has_server_instructions = result.get("instructions") is not None
-        self.notify("notifications/initialized")
+        with mcp_phase(self.timings_ms, "initialized_notify"):
+            self.notify("notifications/initialized")
         return self
 
     def __exit__(self, *_: object) -> None:
@@ -152,7 +156,8 @@ class McpHttpSession:
         endpoint = self.server.url
         if self.frame_authorizer is not None:
             try:
-                self.frame_authorizer(endpoint, payload)
+                with mcp_phase(self.timings_ms, "authorization"):
+                    self.frame_authorizer(endpoint, payload)
             except PluginAuthorityUnavailable:
                 raise
             except Exception:
@@ -167,7 +172,8 @@ class McpHttpSession:
             raise McpProtocolError(f"MCP server {self.server.name} has an invalid url")
         port = parsed.port or 443
         try:
-            reject_non_public_resolution(hostname, port=port)
+            with mcp_phase(self.timings_ms, "dns_ssrf"):
+                reject_non_public_resolution(hostname, port=port)
         except WebGatewayError as exc:
             raise McpProtocolError(
                 f"MCP server {self.server.name} url resolves to a blocked address"
@@ -190,12 +196,14 @@ class McpHttpSession:
         if len(frame) > MAX_MCP_FRAME_BYTES:
             raise McpProtocolError(f"MCP request to {self.server.name} exceeds the frame limit")
         opener = urllib.request.build_opener(
-            urllib.request.ProxyHandler({}), PublicMcpHttpsHandler(), _NoRedirectHandler()
+            urllib.request.ProxyHandler({}),
+            PublicMcpHttpsHandler(timings_ms=self.timings_ms), _NoRedirectHandler()
         )
         if self.credential_resolver is not None:
-            headers["Authorization"] = resolve_bearer_header(
-                self.credential_resolver, endpoint, json.loads(frame)
-            )
+            with mcp_phase(self.timings_ms, "authorization"):
+                headers["Authorization"] = resolve_bearer_header(
+                    self.credential_resolver, endpoint, json.loads(frame)
+                )
         request = urllib.request.Request(
             endpoint,
             data=frame,
@@ -204,7 +212,9 @@ class McpHttpSession:
         )
         deadline = time.monotonic() + self.timeout_seconds
         try:
-            with opener.open(request, timeout=self.timeout_seconds) as response:
+            with mcp_phase(self.timings_ms, "http_post"):
+                response = opener.open(request, timeout=self.timeout_seconds)
+            with response:
                 session_id = response.headers.get("MCP-Session-Id")
                 if session_id is not None:
                     if (
@@ -221,7 +231,11 @@ class McpHttpSession:
                     return "application/json", ""
                 content_type = response.headers.get("Content-Type") or ""
                 content_type = content_type.partition(";")[0].strip().lower()
-                message = read_response(response, content_type, payload["id"], deadline)
+                wait_phase = {"initialize": "initialize_result_wait",
+                              "tools/call": "tools_call_result_wait"}.get(
+                                  str(payload.get("method")), "other_result_wait")
+                with mcp_phase(self.timings_ms, wait_phase):
+                    message = read_response(response, content_type, payload["id"], deadline)
         except urllib.error.HTTPError as exc:
             if 300 <= exc.code < 400:
                 raise McpProtocolError(
