@@ -1,0 +1,280 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "cloud-agent scoped Runtime management",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/management/v1/target": {
+      "get": {
+        "operationId": "describeRuntimeTarget",
+        "summary": "Read a scoped deployment descriptor; not readiness or execution authority",
+        "security": [
+          {
+            "RuntimeManagementBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Runtime-Deployment",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "X-Runtime-Audience",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "X-Runtime-Product",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "X-Runtime-Environment",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "X-Runtime-Trust-Revision",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Scoped descriptor; no storage/worker readiness probe",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TargetDescriptor"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "400 strict management failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "401 strict management failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "403 strict management failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "405 strict management failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "429 strict management failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "503 strict management failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "RuntimeManagementBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Dedicated rtmg_ credential; target.describe only; exact expected identity/scope headers mandatory"
+      }
+    },
+    "schemas": {
+      "TargetDescriptor": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "contractVersion",
+          "deploymentId",
+          "deploymentNamespace",
+          "audience",
+          "productId",
+          "environment",
+          "observedAt",
+          "engine",
+          "apiPackageVersion",
+          "trustRevision",
+          "codeMigrationVersion",
+          "checks",
+          "capabilities"
+        ],
+        "properties": {
+          "contractVersion": {
+            "const": "runtime-management/1"
+          },
+          "deploymentId": {
+            "type": "string"
+          },
+          "deploymentNamespace": {
+            "type": "string"
+          },
+          "audience": {
+            "type": "string"
+          },
+          "productId": {
+            "type": "string"
+          },
+          "environment": {
+            "type": "string"
+          },
+          "observedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "engine": {
+            "const": "cloud-agent"
+          },
+          "apiPackageVersion": {
+            "type": "string"
+          },
+          "trustRevision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "codeMigrationVersion": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "checks": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "database",
+              "worker"
+            ],
+            "properties": {
+              "database": {
+                "const": "not_checked"
+              },
+              "worker": {
+                "const": "not_checked"
+              }
+            }
+          },
+          "capabilities": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "bundleManagement",
+              "nativeScriptAbi"
+            ],
+            "properties": {
+              "bundleManagement": {
+                "const": "unsupported"
+              },
+              "nativeScriptAbi": {
+                "const": "unsupported"
+              }
+            }
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "code"
+            ],
+            "properties": {
+              "code": {
+                "enum": [
+                  "INVALID_ARGUMENT",
+                  "UNAUTHENTICATED",
+                  "SCOPE_MISMATCH",
+                  "METHOD_NOT_ALLOWED",
+                  "RATE_LIMITED",
+                  "MANAGEMENT_UNAVAILABLE"
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

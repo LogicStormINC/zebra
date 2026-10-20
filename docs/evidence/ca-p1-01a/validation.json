@@ -1,0 +1,58 @@
+{
+  "task": "CA-P1-01A",
+  "status": "PASS",
+  "branch": "codex/ca-p1-01a-target-management",
+  "base_commit": "703c3c03965d3f03e9622e8a74c07918c3067e57",
+  "recorded_at": "2026-10-20T17:06:28.790809+00:00",
+  "gates": [
+    {
+      "command": "make test",
+      "exit_code": 0,
+      "passed": 10366,
+      "skipped": 3007,
+      "seconds": 1109.16
+    },
+    {
+      "command": "make check",
+      "exit_code": 0,
+      "mypy_source_files": 1329,
+      "eval_cases": 30,
+      "eval_pass_rate": 1.0
+    },
+    {
+      "command": "uv run pytest -q tests/api/test_runtime_management.py tests/api/test_extension_composition.py tests/api/test_skill_publication_composition.py",
+      "exit_code": 0,
+      "passed": 70,
+      "seconds": 6.82
+    }
+  ],
+  "initial_full_gate": {
+    "failed": 6,
+    "passed": 10359,
+    "skipped": 3007,
+    "cause": "Optional management composition eagerly resolved stores while disabled",
+    "fix": "Guard namespace resolution by configured management path; default lazy local/cloud composition preserved"
+  },
+  "independent_review": "Read-only security/quality review found no remaining important Runtime findings after recheck",
+  "paired_acceptance": {
+    "passed": 8,
+    "boundary": "Native create_http_app with isolated local SQLite; trusted TLS; two real Go processes; fresh disposable platform PostgreSQL",
+    "consumer_repository": "LogicStormINC/overdoze",
+    "consumer_evidence": "docs/evidence/p1-d/runtime-process-acceptance.json"
+  },
+  "source_sha256": {
+    "apps/api/src/zebra_agent_api/http.py": "5ade0193e6003490bc56ae0d9eeb474818ea70f6c358800211852039654a694c",
+    "apps/api/src/zebra_agent_api/runtime_management.py": "71fb01d29f57d98d3cbbbf5f68d0721f7a16f039b99aaafafbf31ad4176738bb",
+    "apps/config/src/zebra_agent_config/settings.py": "7a779badaba7a5e311771f435506b15f614f7c5861e04e1b54208840f2406466",
+    "tests/api/test_runtime_management.py": "cbe91a462c61924982e03239701175c01bf17c9a941e1161d063606d9dc0a42f",
+    "docs/contracts/runtime-management-v1.openapi.json": "8cb8b6d56700a906fc119106b6329df615c9feecc0a395c37681f006318906c3"
+  },
+  "not_claimed": [
+    "Skipped integration tests are not accepted as passed",
+    "production cloud dependencies or Worker readiness",
+    "capacity SLO or storage HA/failover",
+    "Host/connector management writes",
+    "main/cloud-agent integration or production deployment/migration"
+  ],
+  "preserved": "Original dirty checkout, existing data/services, execution authority, history and Coverage formats untouched"
+}

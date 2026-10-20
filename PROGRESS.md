@@ -1,3 +1,24 @@
+# 2026-10-21 — CA-P1-01A read-only scoped management
+
+Implemented native runtime-management/1 GET /management/v1/target with separate opaque
+credential digest, exact deployment/namespace/audience/product/environment/action and
+expiry binding. Private bounded configuration is reread for rotation/revocation; malformed
+configuration fails closed, timed-out reads retain their capacity slot until finished.
+The native contract and scope/compatibility rules are in docs/RUNTIME_MANAGEMENT.md.
+
+No Host/connector writes, migrations, execution/Coverage changes or readiness claims.
+Code migration number remains explicitly distinct from actual database/Worker readiness.
+Unconfigured management preserves existing local and injected-cloud lazy startup; initial
+full suite exposed six eager-store regressions, fixed at the optional composition seam,
+with70new/existing composition checks passing. Final make test passed10366/3007skipped
+and make check passed (Ruff/mypy1329/eval30/30 and repository gates).
+Independent review found no additional Runtime blocker. Real paired Go/Python/TLS/temporary
+platform-PG acceptance passed separately; native storage there is local SQLite, not a cloud
+readiness or production HA proof. Final gate/source evidence is docs/evidence/ca-p1-01a/.
+Original checkout's unrelated dirty work/data/services remain untouched in their checkout.
+Feature source delivery is independent from main/cloud-agent integration or production.
+Earlier sections are historical snapshots.
+
 # 2026-10-20 — Four-batch decoupling audit locally verified
 
 CLOUD-DECOUPLE-AUDIT-01 on cloud-agent, Luke Ding owner/Codex executor. Preserved

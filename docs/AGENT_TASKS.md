@@ -1,3 +1,14 @@
+# CA-P1-01A — Scoped read-only Runtime target management
+
+- Status: Review — final make test10366passed/3007skipped exit0; make check exit0; focused70pass and independent review clear. Created Ready and Luke Ding/Codex claimed before code on2026-10-21; user authorized paired Runtime/Overdoze continuation.
+- Human owner: Luke Ding; executor Codex; branch codex/ca-p1-01a-target-management from cloud-agent703c3c03.
+- Worktree: /Users/lukeding/.codex/worktrees/ca-p1-01a-target-management/zebra-agent.
+- Owned paths: apps/api/src/zebra_agent_api/runtime_management.py; apps/api/src/zebra_agent_api/http.py (route composition only); apps/config/src/zebra_agent_config/settings.py (optional mounted configuration path only); tests/api/test_runtime_management.py; docs/contracts/runtime-management-v1.openapi.json; docs/RUNTIME_MANAGEMENT.md; docs/evidence/ca-p1-01a/; docs/AGENT_TASKS.md; PROGRESS.md; WORKLOG.md; README.md (contract entry only).
+- Scope: native v1 GET target description, dedicated opaque credential digest with deployment/audience/product/environment/action/expiry binding and per-request private-file revalidation. No Host/connector writes, database migration, deployment or business/Agent identity changes.
+- Trust: explicit stable deployment/namespace and revision; credentials never treated as operator/HostGrant. Missing/invalid configuration fails closed; no readiness claim for code migration number, database or Worker.
+- Validation: bounded strict file/request parsing, credential/scope/expiry/rotation/revocation negatives, actual FastAPI route, multi-instance shared config; focused tests and make test/check; retain local/cloud/dependency/history/coverage baseline.
+- Protected: original dirty checkout, all execution authority/history/Coverage, existing services/data and unrelated source. Formal native contract belongs here; Overdoze pins source commit/digest after tested publication.
+
 # AGENT_TASKS.md
 
 ### CLOUD-EVAL-BASELINE-01 - Restore deterministic baseline verification trace

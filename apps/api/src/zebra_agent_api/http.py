@@ -58,6 +58,7 @@ from zebra_agent_api.http_stream_routing import (
 from zebra_agent_api.request_cursor import after_sequence
 from zebra_agent_api.responses import ApiResponse
 from zebra_agent_api.routes import RouteAdapter, RouteRequest
+from zebra_agent_api.runtime_management import register_runtime_management
 from zebra_agent_api.session_identity_read import _parse_session_id
 from zebra_agent_api.session_streaming import tail_session_events, tail_task_events
 from zebra_agent_api.task_api import parse_task_id
@@ -448,6 +449,8 @@ def create_http_app(
         _ = task_id, artifact_id
         return await handle(request)
 
+    namespace = _deployment_namespace(api) if active_settings.runtime_management_config else None
+    register_runtime_management(app, active_settings, namespace)
     app.add_api_route("/", handle, methods=HTTP_METHODS, response_model=None)
     app.add_api_route(
         "/tasks/{task_id}/artifacts/{artifact_id}/preview",

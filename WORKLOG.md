@@ -1,3 +1,15 @@
+# 2026-10-21 CA-P1-01A
+
+User authorized the Runtime prerequisite alongside Overdoze P1-D. Work occurs on an isolated
+managed worktree based on cloud-agent703c3c03, preserving original dirty AGENTS/docs/data.
+Native scoped read-only management and contract/tests implemented; no Host writes or schema.
+Found/fixed six default lazy-storage composition regressions during the initial full test. Final
+make test exit0:10366passed/3007skipped; make check exit0 (mypy1329/eval30/30).
+Focused management + existing composition70pass; independent review has no Runtime
+blocker. Go/Python process/TLS/PG acceptance is separate local evidence, not production.
+Next: scoped native commit/push, pin its source contract in Overdoze evidence,
+then publish the independently validated Go task. No deployment/migration/main merge.
+
 # 2026-10-20 — Four-batch decoupling audit locally verified
 
 CLOUD-DECOUPLE-AUDIT-01 on cloud-agent, Luke Ding owner/Codex executor. Preserved

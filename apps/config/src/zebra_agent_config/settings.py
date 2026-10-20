@@ -107,6 +107,7 @@ class ZebraAgentSettings:
     cloud_skill_worker_enabled: bool = False
     cloud_skills_publish_enabled: bool = False
     platform_operator_token: str | None = None
+    runtime_management_config: str | None = None
     skill_roots: tuple[str, ...] = ()
     skill_roots_system: tuple[str, ...] = ()
     skill_roots_admin: tuple[str, ...] = ()
@@ -264,6 +265,7 @@ def load_settings(
             values, "ZEBRA_CLOUD_SKILLS_PUBLISH_ENABLED", default=False
         ),
         platform_operator_token=_read_optional(values, "ZEBRA_PLATFORM_OPERATOR_TOKEN"),
+        runtime_management_config=_read_optional(values, "ZEBRA_RUNTIME_MANAGEMENT_CONFIG"),
         skill_roots=_read_paths(values, "ZEBRA_SKILL_ROOTS"),
         skill_roots_system=_read_paths(values, "ZEBRA_SKILL_ROOTS_SYSTEM"),
         skill_roots_admin=_read_paths(values, "ZEBRA_SKILL_ROOTS_ADMIN"),
