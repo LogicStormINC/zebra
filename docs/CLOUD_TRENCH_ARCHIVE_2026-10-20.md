@@ -187,3 +187,30 @@ Next implementation starts from inherited cloud-agent through a separately
 claimed task. Trench compatibility remains a regression target. Management must
 use public contracts and cannot create a second execution-fact authority or sit
 on the model/tool synchronous execution path.
+
+
+## Verified delivery receipt
+
+- Frozen Zebra archive commit/tag/branch: `a4d0e90f`; unchanged accepted runtime
+  source: `06578c09`. Paired Trench tag/main: `f25ea8b`. Both GitHub tag objects
+  and peeled commit targets matched local refs after atomic synchronization.
+- cloud-agent inherits the whole archive and an additional documentation-only
+  delivery receipt; cloud-agent-trench and its tag remain at the frozen commit.
+  Zebra main remains `749cfa256af64dd97592d833482ce96261a2c48d`.
+- Removed all45eligible historical Zebra refs above;9clean occupied worktrees
+  detached at the same SHA (the MCP worktree was already reused for archival).
+  Removed both redundant remote settings/media refs and the corresponding local
+  Trench topic. The archive task ref is disposable after its receipt is pushed.
+- Retained all11unique topic refs and14dirty occupied ancestor refs above, all41
+  original worktree directories,20dirty tracked-diff hashes and4explicitly
+  protected files. The paired Trench dirty diff/status is identical. No reset,
+  clean, forced push, directory deletion or speculative integration occurred.
+- All5normal service IDs/images/StartedAt/restart counts are unchanged. No model,
+  search, remote MCP, schema, service restart or deployment operation occurred.
+- Fresh checks: file-size gate3223files/0violations, explicit docs-only staging,
+  source-tree identity, ancestry, remote refs/annotated tags and local/service
+  preservation. Earlier tests are linked historical evidence; no new full-runtime
+  or performance certification is claimed. Private machine receipts remain local.
+
+Future development uses cloud-agent and a separately scoped task branch. The
+frozen compatibility branch/tag is retained for reference and rollback planning.

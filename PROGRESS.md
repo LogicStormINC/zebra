@@ -1,12 +1,16 @@
-## 2026-10-20 - Trench baseline archival and generic Cloud handoff
+## 2026-10-20 - Trench baseline archived; generic Cloud branch inherited
 
-User authorized freezing cloud-agent-trench and synchronizing GitHub. Accepted
-06578c09 source and paired Trench f25ea8b define the compatibility baseline.
-cloud-agent inherits the complete history; Zebra main stays unchanged. This is
-an archive/docs/ref task, not generic Runtime/backend implementation or production
-readiness certification. Unique/dirty historical work and existing services,
-Search/MCP sessions and original Runs remain intact. See
-docs/CLOUD_TRENCH_ARCHIVE_2026-10-20.md for identities, gates and branch policy.
+Frozen compatibility tag cloud-agent-trench-archive-2026-10-20 is verified on
+both GitHub repositories: Zebra a4d0e90f (accepted source06578c09), paired Trench
+f25ea8b. cloud-agent inherits the entire baseline and this docs-only receipt;
+Zebra main remains unchanged.45historical Zebra topic refs removed,9clean
+worktrees detached at identical SHAs;11unique/14dirty occupied refs and all41
+worktree directories preserved. Both redundant remote settings/media refs removed.
+20dirty tracked diffs/4protected files and5normal service identities unchanged.
+No source/configuration/migration/restart/deployment, model/search or MCP calls.
+Runtime readiness remains bounded by existing evidence; the next generic Cloud/
+management task must be separately claimed. See
+docs/CLOUD_TRENCH_ARCHIVE_2026-10-20.md for frozen identities and remaining gates.
 
 ## 2026-10-18 - CLOUD-RECOVERY-VERIFICATION-03
 

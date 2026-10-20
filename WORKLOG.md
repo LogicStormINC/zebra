@@ -16673,3 +16673,21 @@ archival docs. A documentation-generation script failed with NameError before
 writing; corrected import and regenerated. No application/configuration/service
 operations or model/search/MCP calls. GitHub sync and final ref cleanup follow
 local archive checks.
+
+
+## 2026-10-20 - CLOUD-TRENCH-ARCHIVE-20261020 delivery
+
+Archive docs-only commit a4d0e90f inherits06578c09; primary cloud-agent-trench
+fast-forwarded, old cloud-agent fast-forwarded without force, primary switched to
+cloud-agent with unrelated changes intact. Annotated matching tags in Zebra and
+Trench; atomic pushes synchronized both Zebra branches and paired Trench main
+f25ea8b. Fresh ls-remote equality checks include tag objects and peeled commits.
+Only after verification: removed45ancestor Zebra topic refs, detached9clean
+worktrees at sameSHA, removed both remote settings/media refs and local Trench
+settings/media ref. Kept11unique/14dirty ancestor refs; all41directories,20dirty
+tracked hashes,4protected files and paired dirty status exact. Normal5service
+ID/image/start/restarts exact; no source/Run/config/schema/service operations.
+Filegate3223/0 and docs-only/source/ancestry/preservation checks pass. This final
+receipt goes only to cloud-agent; frozen branch/tag staya4d0e90f. Archive task
+branch detaches at final receipt and is deleted after its GitHub push verifies.
+No new runtime tests/model/search/MCP, remote deployment or full-readiness claim.

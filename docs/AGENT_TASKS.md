@@ -35255,8 +35255,8 @@ old payloads remain byte-compatible by excluding None. No database migration.
 
 ### CLOUD-TRENCH-ARCHIVE-20261020 — Freeze Trench baseline and synchronize GitHub
 
-- Status: Review (2026-10-20; Ready claimed In Progress before edits; archive
-  prepared, local/remote delivery checks remain in progress).
+- Status: Done (2026-10-20; paired annotated tags and GitHub integration refs
+  verified; redundant historical refs removed; preservation checks passed).
 - Human owner: Luke Ding; executor: Codex.
 - Branch: codex/cloud-trench-archive-20261020; reuse the clean
   cloud-plugin-plan-01/zebra-agent worktree from06578c09.
@@ -35280,3 +35280,16 @@ old payloads remain byte-compatible by excluding None. No database migration.
   verify preexisting dirty hashes and service IDs/start/restarts remain unchanged.
   No model/search/MCP requests, migrations, restarts, deployment or new runtime
   capability/performance claims. Do not archive the GitHub repositories.
+
+- Delivered: Zebra archive tag/branch a4d0e90f (accepted code06578c09), paired
+  Trench tag/main f25ea8b. GitHub exact refs/tag objects/peeled commits verified
+  after atomic pushes; Zebra main unchanged. cloud-agent inherits all276prior
+  integration commits plus archive documentation, with a docs-only final receipt.
+  45historical Zebra topics removed,9clean worktrees detached at identical SHAs;
+  both remote settings/media topics and its local Trench ref removed only after
+  integration verification.11unique and14dirty occupied ancestor refs retained;
+  all41worktree directories and20dirty tracked diffs/4protected files preserved.
+  Normal5service IDs/images/start/restarts exact. File-size3223/0, docs-only source
+  comparison and fresh ref/preservation checks pass; no full runtime rerun claimed.
+  Archive task ref is removed after receipt integration/push; GitHub repositories
+  remain active. No models/search/MCP, migration/restart/deployment or source edits.
