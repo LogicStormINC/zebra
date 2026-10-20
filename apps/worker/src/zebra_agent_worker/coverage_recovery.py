@@ -16,6 +16,7 @@ from agent_core.domain.coverage_contracts import (
 )
 from agent_core.domain.coverage_validation import expected_units
 from agent_core.domain.events import EventType, SessionEvent
+from agent_core.domain.host_authority import HostResourceRef
 from agent_core.domain.leases import LeaseFence
 from agent_core.domain.task_bindings import TaskBindingSnapshot
 from agent_integrations.coverage_model_derivation import derive_semantic_observation
@@ -134,8 +135,8 @@ def verify_cloud_coverage_recovery(
     ):
         raise ValueError("strict command proof lost its admitted frozen authority")
     expires_at = host.expires_at
-    history_ref = binding.snapshot.source_resource_ref
-    if expires_at is None or history_ref is None:
+    resource_id = binding.snapshot.source_resource_ref
+    if expires_at is None or resource_id is None:
         raise ValueError("strict command proof requires retained source authority")
     events = tuple(SessionEvent.model_validate(r) for r in rows)
     issued = tuple(e for e in events if e.event_type is EventType.COVERAGE_REPORT_CERTIFIED)
@@ -228,11 +229,10 @@ def verify_cloud_coverage_recovery(
         )
         gateway.transport = HttpHostToolTransport(client=client)
         source = HostCoverageSnapshotSource(
-            session_id=session_id,
-            authority=host,
-            history_ref=history_ref,
-            manifest=manifest,
-            invoke=gateway.invoke,
+            session_id=session_id, authority=host, contract=binding.contract,
+            source_ref=HostResourceRef(
+                type=binding.contract.source_definition.resource_type, id=resource_id),
+            manifest=manifest, invoke=gateway.invoke,
         )
 
         def external() -> None:

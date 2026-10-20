@@ -6,7 +6,7 @@ import hashlib
 import json
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Literal, Protocol
 
 from agent_core.domain.host_authority import HostContextEnvelope, HostResourceRef
 from agent_core.domain.host_capability_manifests import ResourceBindingRule
@@ -70,6 +70,7 @@ class HostToolManifest:
     digest: str
     tool_resource_bindings: tuple[tuple[str, tuple[ResourceBindingRule, ...]], ...] = ()
     resource_bindings_declared: bool = False
+    binding_policy: Literal["declared"] | None = None
 
     def resource_bindings_for(self, name: str) -> tuple[ResourceBindingRule, ...]:
         """Declared (or legacy-inferred) binding rules for one tool name."""
@@ -99,7 +100,15 @@ class HostToolManifest:
         object.__setattr__(self, "workload_identity", identity)
 
     @classmethod
-    def from_payload(cls, payload: Mapping[str, object]) -> HostToolManifest:
+    def from_payload(
+        cls, payload: Mapping[str, object], *, binding_policy: str | None = None
+    ) -> HostToolManifest:
+        marker = payload.get("bindingPolicy")
+        if "bindingPolicy" in payload and marker != "declared":
+            raise HostToolGatewayError("unknown manifest binding policy")
+        if binding_policy not in (None, "declared", "legacy"):
+            raise HostToolGatewayError("unknown trusted manifest binding policy")
+        declared = binding_policy == "declared" or marker == "declared"
         try:
             identity = _required_text(
                 payload.get("workloadIdentity", payload.get("workload_identity")),
@@ -114,14 +123,12 @@ class HostToolManifest:
             raise HostToolGatewayError("manifest contains too many tools")
         tools = tuple(_tool_contract(item) for item in raw_tools)
         parsed_bindings = tuple(
-            (tool.name, _tool_bindings(item))
+            (tool.name, _tool_bindings(item, strict=declared))
             for item, tool in zip(raw_tools, tools, strict=True)
         )
-        declared_bindings = tuple(
-            (name, rules) for name, rules in parsed_bindings if rules
-        )
-        if declared_bindings:
-            tool_resource_bindings = declared_bindings
+        declared_bindings = tuple((name, rules) for name, rules in parsed_bindings if rules)
+        if declared or declared_bindings:
+            tool_resource_bindings = parsed_bindings if declared else declared_bindings
         else:
             tool_resource_bindings = infer_legacy_resource_bindings(
                 tuple(tool.name for tool in tools)
@@ -132,10 +139,13 @@ class HostToolManifest:
                 _tool_payload(
                     tool,
                     dict(declared_bindings).get(tool.name, ()),
+                    include_empty_bindings=declared,
                 )
                 for tool in tools
             ],
         }
+        if declared:
+            canonical["bindingPolicy"] = "declared"
         encoded = json.dumps(canonical, sort_keys=True, separators=(",", ":")).encode()
         if len(encoded) > MAX_MANIFEST_BYTES:
             raise HostToolGatewayError("manifest exceeds its size bound")
@@ -148,7 +158,8 @@ class HostToolManifest:
             tools=tools,
             digest=digest,
             tool_resource_bindings=tool_resource_bindings,
-            resource_bindings_declared=bool(declared_bindings),
+            resource_bindings_declared=declared or bool(declared_bindings),
+            binding_policy="declared" if declared else None,
         )
 
     def get(self, name: str) -> ToolContract | None:
@@ -165,11 +176,14 @@ class HostToolManifest:
                     dict(self.tool_resource_bindings).get(tool.name, ())
                     if self.resource_bindings_declared
                     else (),
+                    include_empty_bindings=self.binding_policy == "declared",
                 )
                 for tool in self.tools
             ],
             "manifestDigest": self.digest,
         }
+        if self.binding_policy is not None:
+            payload["bindingPolicy"] = self.binding_policy
         return payload
 
 
@@ -232,13 +246,15 @@ class HostToolInvocation:
             )
 
 
-def _tool_bindings(raw: object) -> tuple[ResourceBindingRule, ...]:
+def _tool_bindings(raw: object, *, strict: bool = False) -> tuple[ResourceBindingRule, ...]:
     """Parse optional per-tool ``resourceBindings`` wire entries."""
 
     if not isinstance(raw, Mapping):
         return ()
     value = raw.get("resourceBindings", raw.get("resource_bindings"))
     if value is None:
+        if strict:
+            raise HostToolGatewayError("each tool must declare resourceBindings")
         return ()
     if isinstance(value, str | bytes) or not isinstance(value, Sequence):
         raise HostToolGatewayError("resource bindings must be an array")
@@ -248,17 +264,25 @@ def _tool_bindings(raw: object) -> tuple[ResourceBindingRule, ...]:
     for entry in value:
         if not isinstance(entry, Mapping):
             raise HostToolGatewayError("resource binding entry must be an object")
+        if strict and not isinstance(entry.get("required", True), bool):
+            raise HostToolGatewayError("resource binding required must be a boolean")
         try:
             rules.append(
-                ResourceBindingRule(
-                    argument_pointer=str(
-                        entry.get("argumentPointer", entry.get("argument_pointer", ""))
-                    ),
-                    resource_type=str(
-                        entry.get("resourceType", entry.get("resource_type", ""))
-                    ),
-                    required=bool(entry.get("required", True)),
-                    match_mode="exact",
+                ResourceBindingRule.model_validate(
+                    dict(
+                        argument_pointer=str(
+                            entry.get("argumentPointer", entry.get("argument_pointer", ""))
+                        ),
+                        resource_type=str(
+                            entry.get("resourceType", entry.get("resource_type", ""))
+                        ),
+                        required=bool(entry.get("required", True)),
+                        match_mode=(
+                            entry.get("matchMode", entry.get("match_mode", "exact"))
+                            if strict
+                            else "exact"
+                        ),
+                    )
                 )
             )
         except ValueError as exc:
@@ -326,6 +350,8 @@ def _tool_contract(raw: object) -> ToolContract:
 def _tool_payload(
     tool: ToolContract,
     resource_bindings: tuple[ResourceBindingRule, ...] = (),
+    *,
+    include_empty_bindings: bool = False,
 ) -> dict[str, object]:
     payload = {
         "name": tool.name,
@@ -342,7 +368,7 @@ def _tool_payload(
         "idempotency": tool.idempotency.value,
         "receiptSchemaVersion": tool.receipt_schema_version,
     }
-    if resource_bindings:
+    if resource_bindings or include_empty_bindings:
         payload["resourceBindings"] = [
             {
                 "argumentPointer": rule.argument_pointer,

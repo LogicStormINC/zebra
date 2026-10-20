@@ -195,7 +195,8 @@ def _required_scopes_for_request(request: HostGrantHttpRequest) -> tuple[str, ..
     from zebra_agent_api.coverage_report_http import report_task_id
 
     if request.method in {"GET", "HEAD"} and report_task_id(request.path) is not None:
-        return ("history.read", "artifact.read")
+        # Source-specific read scope is enforced against the frozen Coverage contract.
+        return ("artifact.read",)
     if request.path == "/usage":
         return ("event.read",)
     if request.path == "/schedules" or request.path.startswith("/schedules/"):

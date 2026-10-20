@@ -15,7 +15,7 @@ MODULE = "agent_integrations.rabbitmq"
 RAW = json.dumps(
     {
         "message_id": "01234567-89ab-4cde-8123-0123456789ab",
-        "message_type": "trench.ai.turn.ready",
+        "message_type": "zebra.session.command.ready",
         "schema_version": 1,
         "deployment_namespace": "dev",
         "scope": {"kind": "principal", "tenant_id": "t", "workspace_id": "w"},
@@ -27,7 +27,9 @@ RAW = json.dumps(
         "causation_id": None,
         "occurred_at": "2026-09-04T10:00:00Z",
         "traceparent": None,
-        "payload_ref": {"kind": "trench_turn", "id": "turn"},
+        "payload_ref": {"kind": "zebra_command", "id": "turn"},
+        "accepted_event_id": "01234567-89ab-4cde-8123-0123456789ab",
+        "accepted_sequence": 1,
     }
 ).encode()
 
@@ -357,3 +359,34 @@ def test_start_cleanup_and_safe_errors(monkeypatch):
         connection.close.assert_awaited_once()
 
     asyncio.run(run())
+
+
+def test_product_envelopes_require_explicit_parser(monkeypatch):
+    from agent_integrations.trench_compat.broker_envelope import parse_broker_envelope
+
+    product = json.loads(RAW)
+    product.update(
+        message_type="trench.ai.turn.ready", payload_ref={"kind": "trench_turn", "id": "turn"}
+    )
+    del product["accepted_event_id"], product["accepted_sequence"]
+    raw = json.dumps(product).encode()
+    m, transport, _, _, exchange, _, _ = client(monkeypatch)
+
+    async def check():
+        with pytest.raises(m.RabbitMQError, match="invalid broker envelope"):
+            await transport.publish(
+                raw, exchange="trench.command.x", routing_key="ai.turn.ready.v1"
+            )
+        exchange.publish.assert_not_awaited()
+        with pytest.raises(m.RabbitMQError):
+            m.Delivery(incoming(raw), timeout=1).parse()
+        compat = m.RabbitMQTransport("amqp://localhost", envelope_parser=parse_broker_envelope)
+        await compat.start()
+        await compat.publish(raw, exchange="trench.command.x", routing_key="ai.turn.ready.v1")
+        assert exchange.publish.await_args.args[0].body == raw
+        delivery = m.Delivery(incoming(raw), timeout=1, envelope_parser=parse_broker_envelope)
+        assert delivery.parse().message_id == product["message_id"]
+        assert not delivery._message.ack.called
+        await compat.close()
+
+    asyncio.run(check())

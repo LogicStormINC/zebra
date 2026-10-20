@@ -1,3 +1,185 @@
+# 2026-10-20 — Four-batch decoupling audit locally verified
+
+CLOUD-DECOUPLE-AUDIT-01 on cloud-agent, Luke Ding owner/Codex executor. Preserved
+previous145dirtyfiles and32container identities. Two readonly audits found7classes
+of actionable gaps: filtered/stale conformance PASS and auxiliary evidence collision;
+neutral/non-overwriting key bootstrap; missing Runtime gates in joint candidate;
+configured connector paths and report sibling; shared-digest revision freeze and
+cross-generation writer divergence. Fixed with existing helpers/stdlib and no new
+dependencies. Profile routing shared across API admission/Worker/report; historical
+nullable profiles retain previous URLs. Explicit profiles use frozen static paths.
+
+v107 adds Host-scoped revision freezes without rewriting old table/JSON/digests.
+Both updated write APIs share transaction locks and reject conflicting/ambiguous
+writes. Apply v107 BEFORE new API/Worker startup, coordinate consumers before new
+admission; old binaries cannot read new-only freezes. No existing DB was migrated.
+
+Final make test exit0:10376passed/2987skipped in1162.17s. Make check exit0 including
+boundary/Ruff/mypy1328/eval30/30. Final contract161pass/0skip even with old filter env;
+real scratch PostgreSQL conformance87pass/0skip, mixed-writer13pass, report routes8pass.
+Spec/security GO, quality APPROVE; shared path focused38pass and independent45/59pass.
+Earlier partial full runs, old test assertion failure and duplicate kwargs failure
+retained; only final completed gates count as full acceptance. No proof weakening.
+
+Current API/worker-engine/migrate images match frozen production/config source;
+isolated cloud/gVisor no-fallback boot/preflight/401 and API restart retained object/
+Host registry pass. No business Task or actual model used. Original32containers,
+user files and129finalsource hashes unchanged; own scratch cleaned. Defaults no
+longer require Trench services; explicit legacy/history/mock examples remain.
+Product/Broker/browser/model/remoteCI acceptance and production retirement not claimed.
+Formal docs/checklist/README updated, local Review; no commit/push/deploy/live changes.
+Evidence: .artifacts/cloud-decouple-audit/validation-summary.json. Historical logs follow.
+
+# 2026-10-20 — CLOUD-DECOUPLE-04 locally verified
+
+Branch cloud-agent, user-directed existing checkout, Luke Ding owner/Codex executor.
+Core/default transport now own Runtime command hints only. Trench Turn/source
+wire and joint/source/shadow topology are explicit integration compatibility;
+old schema/examples bytes unchanged,94 mocked topology/ACL requests identical
+HEAD. Default provisioner uses only Runtime credentials, no deletion/rotation.
+Historical contracts/Task/Event/Coverage proof/Effect identities remain unchanged.
+
+Offline retirement checks bind namespace/compatibility/time/digest/task set and
+require drain or immutable Runtime pin and rollback; output states materials
+consistency only, never live authorization or authenticated inventory provenance.
+Historical decoder retained; no production retirement. New default ownership gate
+and product conformance Make/CI distinguish contract vs scratch-storage evidence,
+refuse skipped/empty runs, and retain manual Trench joint acceptance separately.
+
+Final make test exit0:10342passed/2974skipped in1139.10s; make check exit0,
+including boundary/mypy1326/eval30/30. Contract conformance145pass/0skip; actual
+scratch PostgreSQL87pass/0skip. Spec GO/quality APPROVE; quality focused161pass.
+Current-source API/worker-engine/migrate built; isolated cloud/gVisor no-fallback
+boot/preflight,401 and restart retained object/Host registry pass. No business
+Task or model calls; Host/S3/model fixtures in storage conformance. Actual Broker,
+production data source/model/browser/remote CI and live retirement not accepted.
+
+Original32container IDs, user files and123source/config/test hashes unchanged;
+own scratch removed. No migration/DB rewrite/existing service restart, commit,
+push or deployment. Formal plan/docs/README/registry updated, status Review.
+Evidence: .artifacts/cloud-decouple-04/validation-summary.json; formal design:
+docs/CLOUD_AGENT_DECOUPLING_BATCH4.md. Earlier records follow.
+
+# 2026-10-20 — CLOUD-DECOUPLE-03 Coverage locally verified
+
+Branch cloud-agent; Luke Ding owner/Codex executor, existing checkout as requested.
+Versioned v2 frozen dataset revision/source permissions/opaque selector, fixed
+coverage-source/2 dataset.snapshot ABI, Worker/Effect/bootstrap/recovery/storage
+and API report wiring. v1 JSON/digest/Manifest/create CallID remain literal-golden
+compatible; no historical data rewrite or new migration. Proof membership/parts/
+bytes/result sets, budgets, expiry/revocation, fencing, unknown-write recovery,
+certified publication and every-output fail-closed guards retained. Report GET/HEAD
+checks exact current owner before source metadata and frozen read permissions after;
+actual before_consume verified without agent.run or source write permissions.
+
+Final make test exit0:10222passed/2974skipped in1118.77s; make check exit0,
+mypy1324/eval30/30. First complete run had2 stale deadline-test patch points;
+updated tests retain shared outer/preflight/read deadline, no-read/no-delivery
+exhaustion and CPU-overrun checks, independently approved, full gates rerun.
+Real scratch PostgreSQL proof/Effect/recovery217pass, report/preconsume51pass,
+no skips; Core/source1320pass. Host/S3/model are fixtures, not production source
+or actual-model E2E. Default suite skips remain explicitly unverified there.
+Independent design/spec/quality approved. Evidence: .artifacts/cloud-decouple-03/.
+
+Original32container IDs/user files and98source/test/config hashes unchanged
+through final gates; own scratch cleaned. Existing services/DB/data untouched.
+Docs: CLOUD_AGENT_DECOUPLING_BATCH3.md and formal plan/registry updated.
+Local Review, uncommitted/unpushed/undeployed. Batch04 remains separate; full
+Trench compatibility retirement and real-product acceptance are not claimed.
+Historical records follow.
+
+# 2026-10-20 — CLOUD-DECOUPLE-02 local implementation verified
+
+Branch cloud-agent, existing checkout; Luke Ding owner/Codex executor. Eval
+repair and both full gates completed BEFORE batch02 runtime edits. Final full
+make test10162passed/2934skipped exit0 (1127.97s); make check exit0 including
+mypy1323/eval30/30. First batch02 full run had only a stale migration catalog
+expectation (106 omitted); minimal expectation fix independently reviewed,
+then BOTH commands rerun to completion. Failed and passing logs preserved.
+
+Implemented generic HTTPS current-authority adapter with opaque principal,
+explicit Trench legacy mode, signed opaque-resource schedule renewal and
+strict firing/identity narrowing; declared resource bindings and frozen marker,
+nullable immutable profile policy and additive v106 persistence. Old profile
+JSON/digests and historical manifest golden remain unchanged. New generic
+CLI/compatibility settings documented. No token-pair issuer or Go backend.
+
+Evidence: .artifacts/cloud-decouple-02/validation-summary.json. Focused realPG
+88pass/2S3skip plus client-effect recovery12pass; authority/renewal/frontend94pass;
+compatibility50pass. Independent spec GO/quality APPROVE. Five images rebuilt;
+corrected worker-engine independent boot, gVisor preflight,401 and API restart
+retention pass. Initial wrong worker target failure retained; no gate weakening.
+Final59 source/test/config hashes match freeze; original32container IDs and user
+files unchanged; own scratch removed. v106 applied ONLY on scratch databases.
+
+Design/task checklist: docs/CLOUD_AGENT_DECOUPLING_BATCH2.md, AGENT_TASKS.md.
+Local status Review: no commit/push/deploy or existing DB migration. Production
+business/browser E2E remains unverified; simulated Host/browser and real storage/
+process startup evidence are distinct. Coverage and messages remain batches03/04.
+Historical records follow.
+
+# 2026-10-20 — Batch02 full gate follow-up
+
+First full batch02 suite:10160pass/2934skip/1fail; tests/agent_storage/
+test_branch_migration_catalog.py still expected max105. Claimed path before
+minimal test update to107-exclusive and exact new migration name; keeps every
+old version/order/name uniqueness check. No production source change. Both
+full commands rerun; previous failure log preserved.
+
+# 2026-10-20 — Eval baseline restored; batch02 unlocked
+
+CLOUD-EVAL-BASELINE-01 corrects replay mutation/read ordering without changing
+production policy or thresholds. Independent review approved;62focused checks
+and eval30/30 pass. Full make check exit0; full make test exit0 with
+10075passed/2931skipped (1144.74s). Evidence: .artifacts/cloud-decouple-02/.
+CLOUD-DECOUPLE-02 claimed only after both results; design and exact paths in
+AGENT_TASKS and CLOUD_AGENT_DECOUPLING_BATCH2.md. Same cloud-agent checkout,
+no data rewrite, running-service restart, commit or push. Historical records follow.
+
+## 2026-10-20 CLOUD-EVAL-BASELINE-01 / batch02 precondition
+
+User requests repair eval baseline first, make test/check both PASS, then batch02
+on cloud-agent preserving capability/data. Claimed eval script + focused tests.
+Six deterministic mutating scenarios marked every eval.observe as mutation and
+never observed after the final mutation. Correct fixture now uses eval.mutate
+followed by read-only eval.observe over an actual per-replay revision. Harness,
+policy, dataset and score thresholds unchanged. Mutation-only/stale/failed read
+remain verification_required;62focused tests pass; eval1.00/30; read-only review
+approved. Pre-batch make check exit0; full make test currently running.
+Batch02 audit/design only until both gates finish. No live operations/commits.
+Evidence: .artifacts/cloud-decouple-02/pre-batch-make-{test,check}.log.
+
+## 2026-10-20 CLOUD-DECOUPLE-01
+
+User authorized formal design/checklist then first batch on existing cloud-agent;
+registered Ready/claimed before edits. Preserved unrelated AGENTS.md/.DS_Store
+and untracked Jorice docs. No production data/services changed.
+
+Implemented neutral Compose/env/gVisor activation, explicit Trench compatibility,
+standalone candidate/rehearsal v2, strict v1 product evidence, SDK text cleanup.
+Plan review added Scheduler/TLS/legacy compatibility checks. Spec review found
+joint release could consume disabled product evidence; fixed. Quality review
+found v2 could assert enabled product capability; fixed with red-first regressions.
+
+Native evidence: .artifacts/cloud-decouple-01/{build-*.log,boot-result.json,
+boot.log,preservation.json,images.json}. Reproducible check:
+`python3 tests/compose/application/run-independent-smoke.py --engine-url <mTLS-engine>
+--engine-cert-dir <engine-client-certs> --info-proxy <optional-proxy>
+--evidence-dir <private-evidence-dir>` (omit info-proxy flag if unnecessary).
+Uses random temporary resource names, no existing volumes or business service.
+API/Worker+migration pass; gVisor ready/no fallback; anonymous401; API restart
+retains test object and Host registry.32 preexisting running container IDs retained.
+
+Final focused independence suite105passes; SDK pnpm check pass. Independent
+candidate/rehearsal make targets pass with
+explicitly synthetic fixtures under contract-fixtures; missing-evidence release
+manifest FAIL. No registry publication or claim of production release acceptance.
+make check eval0.80 failure also occurs using pristine HEAD archived source,
+separate from this deployment/release diff; no unrelated Harness/eval repair.
+Final focused105pass; full-suite snapshot10067pass/2931skip/1baseline eval
+failure (1181.70s); final105 cover last v2 guard added after suite start. Exact
+limitations recorded in plan. Local delivery is Review, not production release.
+
 # Progress Log
 
 ## 2026-10-20 - CLOUD-VERSION-SYNC-20261020

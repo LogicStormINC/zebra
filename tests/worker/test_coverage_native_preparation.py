@@ -28,7 +28,10 @@ from tests.worker.test_coverage_dispatch import native_handoff, native_worker
 
 
 @pytest.mark.parametrize("native_worker", ["first_create"], indirect=True)
-@pytest.mark.parametrize("model_cloud", [{"validation_mode": "final_certification"}], indirect=True)
+@pytest.mark.parametrize("model_cloud", [
+    {"validation_mode": "final_certification"},
+    {"validation_mode": "final_certification", "v2": True},
+], indirect=True)
 def test_native_pure_blocks_and_changed_delegate_fallback(native_worker, monkeypatch):
     import zebra_agent_worker.coverage_dispatch as dispatch
 
@@ -119,7 +122,10 @@ def test_native_pure_blocks_and_changed_delegate_fallback(native_worker, monkeyp
 
 
 @pytest.mark.parametrize("native_worker", ["first_create"], indirect=True)
-@pytest.mark.parametrize("model_cloud", [{"validation_mode": "final_certification"}], indirect=True)
+@pytest.mark.parametrize("model_cloud", [
+    {"validation_mode": "final_certification"},
+    {"validation_mode": "final_certification", "v2": True},
+], indirect=True)
 def test_model_response_revocation_stops_before_checkpoint_publication(native_worker, monkeypatch):
     env = native_worker
     handle = httpx.MockTransport.handle_request
@@ -167,7 +173,10 @@ def test_model_response_revocation_stops_before_checkpoint_publication(native_wo
 
 
 @pytest.mark.parametrize("native_worker", ["first_create"], indirect=True)
-@pytest.mark.parametrize("model_cloud", [{"validation_mode": "final_certification"}], indirect=True)
+@pytest.mark.parametrize("model_cloud", [
+    {"validation_mode": "final_certification"},
+    {"validation_mode": "final_certification", "v2": True},
+], indirect=True)
 def test_native_final_proof_owns_fresh_bytes_and_clears_on_failure(native_worker, monkeypatch):
     import zebra_agent_worker.coverage_dispatch as dispatch
 

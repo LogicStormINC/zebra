@@ -6,6 +6,7 @@ import argparse
 import os
 import re
 import secrets
+import sys
 import tempfile
 from pathlib import Path
 from typing import Any
@@ -13,7 +14,7 @@ from urllib.parse import quote
 
 import httpx
 
-ROUTES = {"trench": "ai.turn.ready", "zebra": "session.command.ready"}
+ROUTES = {"zebra": "session.command.ready"}
 BASE_PASSWORD_KEYS = ("RABBITMQ_ADMIN_PASSWORD",) + tuple(
     f"{system.upper()}_RABBIT_{role.upper()}_PASSWORD"
     for system in ROUTES
@@ -23,19 +24,13 @@ SHADOW_PASSWORD_KEYS = tuple(
     f"{system.upper()}_RABBIT_SHADOW_CONSUMER_PASSWORD" for system in ROUTES
 )
 PASSWORD_KEYS = BASE_PASSWORD_KEYS + SHADOW_PASSWORD_KEYS
-SOURCE_BASE_PASSWORD_KEYS = (
-    "TRENCH_SOURCE_RABBIT_RELAY_PASSWORD",
-    "TRENCH_SOURCE_RABBIT_CONSUMER_PASSWORD",
-)
-SOURCE_SHADOW_PASSWORD_KEYS = ("TRENCH_SOURCE_RABBIT_SHADOW_CONSUMER_PASSWORD",)
-SOURCE_PASSWORD_KEYS = SOURCE_BASE_PASSWORD_KEYS + SOURCE_SHADOW_PASSWORD_KEYS
 
 
-def prepare(path: Path, *, source_delivery: bool = False) -> None:
+def prepare(path: Path) -> None:
     """Create exclusively so repeated setup cannot rotate credentials accidentally."""
     descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
     with os.fdopen(descriptor, "w") as output:
-        for key in PASSWORD_KEYS + (SOURCE_PASSWORD_KEYS if source_delivery else ()):
+        for key in PASSWORD_KEYS:
             output.write(f"{key}={secrets.token_urlsafe(32)}\n")
         output.write("RABBITMQ_AMQP_PORT=25672\nRABBITMQ_MANAGEMENT_PORT=25673\n")
         output.write("RABBITMQ_METRICS_PORT=25692\n")
@@ -54,19 +49,6 @@ def read_settings(path: Path) -> dict[str, str]:
     for key in SHADOW_PASSWORD_KEYS if all(shadow_present) else ():
         if not re.fullmatch(r"[A-Za-z0-9_-]{32,128}", settings[key]):
             raise ValueError("missing or invalid RabbitMQ development credential")
-    source_base_present = tuple(bool(settings.get(key)) for key in SOURCE_BASE_PASSWORD_KEYS)
-    if any(source_base_present) and not all(source_base_present):
-        raise ValueError("source delivery credentials must be configured as a set")
-    source_shadow_present = bool(settings.get(SOURCE_SHADOW_PASSWORD_KEYS[0]))
-    if source_shadow_present and not all(source_base_present):
-        raise ValueError("source shadow credential requires source delivery credentials")
-    for key in SOURCE_BASE_PASSWORD_KEYS if all(source_base_present) else ():
-        if not re.fullmatch(r"[A-Za-z0-9_-]{32,128}", settings[key]):
-            raise ValueError("missing or invalid RabbitMQ development credential")
-    if source_shadow_present and not re.fullmatch(
-        r"[A-Za-z0-9_-]{32,128}", settings[SOURCE_SHADOW_PASSWORD_KEYS[0]]
-    ):
-        raise ValueError("missing or invalid RabbitMQ development credential")
     for key in ("RABBITMQ_AMQP_PORT", "RABBITMQ_MANAGEMENT_PORT", "RABBITMQ_METRICS_PORT"):
         if not settings.get(key, "").isdigit() or not 1024 <= int(settings[key]) <= 65535:
             raise ValueError("invalid explicit local port")
@@ -94,30 +76,20 @@ def _append_credentials(path: Path, keys: tuple[str, ...]) -> None:
         raise
 
 
-def prepare_source(path: Path) -> None:
-    """Atomically add source credentials without rotating existing settings."""
-    settings = read_settings(path)
-    if any(key in settings for key in SOURCE_PASSWORD_KEYS):
-        raise ValueError("source delivery credentials already exist")
-    _append_credentials(path, SOURCE_PASSWORD_KEYS)
-
-
 def prepare_shadow(path: Path) -> None:
-    """Atomically upgrade a legacy settings file with independent shadow identities."""
+    """Add independent Runtime shadow identity without rotating credentials."""
     settings = read_settings(path)
     if any(key in settings for key in SHADOW_PASSWORD_KEYS):
         raise ValueError("shadow consumer credentials already exist")
-    keys = SHADOW_PASSWORD_KEYS
-    if all(settings.get(key) for key in SOURCE_BASE_PASSWORD_KEYS):
-        if any(key in settings for key in SOURCE_SHADOW_PASSWORD_KEYS):
-            raise ValueError("source shadow consumer credential already exists")
-        keys += SOURCE_SHADOW_PASSWORD_KEYS
-    _append_credentials(path, keys)
+    _append_credentials(path, SHADOW_PASSWORD_KEYS)
 
 
 def topology(system: str) -> dict[str, Any]:
     """No user payloads or secrets in static topology. Provisioner alone reads DLQs."""
-    route = ROUTES[system]
+    return _topology(system, ROUTES[system])
+
+
+def _topology(system: str, route: str) -> dict[str, Any]:
     queue = f"{system}.{route}.q"
     return {
         "vhost": f"/{system}",
@@ -135,26 +107,13 @@ def topology(system: str) -> dict[str, Any]:
     }
 
 
-def source_topology() -> dict[str, str]:
-    return {
-        "vhost": "/trench",
-        "exchange": "trench.command.x",
-        "shadow_exchange": "trench.command.shadow.x",
-        "dlx": "trench.command.dlx",
-        "queue": "trench.source.fetch.ready.q",
-        "dlq": "trench.source.fetch.ready.dlq",
-        "routing_key": "source.fetch.ready.v1",
-        "shadow_queue": "trench.source.fetch.ready.shadow.q",
-        "shadow_routing_key": "source.fetch.ready.shadow.v1",
-        "diagnostic_exchange": "trench.command.diagnostic.x",
-        "diagnostic_routing_key": "delivery.rejected.v1",
-    }
+def provision(settings: dict[str, str]) -> None:
+    """Provision Runtime resources only, even with a historical joint settings file."""
+    _provision_systems(settings, ROUTES)
 
 
-def provision(settings: dict[str, str], *, source_delivery: bool = False) -> None:
-    # ponytail: local-only bootstrap. Production provisioning belongs to TLS/IaC tooling.
-    if source_delivery and not all(settings.get(key) for key in SOURCE_BASE_PASSWORD_KEYS):
-        raise ValueError("source delivery credentials are not configured")
+def _provision_systems(settings: dict[str, str], routes: dict[str, str]) -> None:
+    # ponytail: loopback bootstrap only; production provisioning belongs to TLS/IaC tooling.
     base = f"http://127.0.0.1:{settings['RABBITMQ_MANAGEMENT_PORT']}/api/"
     with httpx.Client(
         base_url=base,
@@ -168,8 +127,8 @@ def provision(settings: dict[str, str], *, source_delivery: bool = False) -> Non
             if response.status_code not in (201, 204):
                 raise RuntimeError(f"RabbitMQ provisioning rejected (HTTP {response.status_code})")
 
-        for system in ROUTES:
-            spec = topology(system)
+        for system, route in routes.items():
+            spec = _topology(system, route)
             vhost = quote(spec["vhost"], safe="")
             put(f"vhosts/{vhost}", {"default_queue_type": "quorum"})
             put(f"vhost-limits/{vhost}/max-connections", {"value": 32})
@@ -336,131 +295,39 @@ def provision(settings: dict[str, str], *, source_delivery: bool = False) -> Non
                     )
                 for limit, value in (("max-connections", 8), ("max-channels", 16)):
                     put(f"user-limits/{user}/{limit}", {"value": value})
-        if source_delivery:
-            spec = source_topology()
-            vhost = quote(spec["vhost"], safe="")
-            for name in (spec["queue"], spec["shadow_queue"], spec["dlq"]):
-                put(
-                    f"queues/{vhost}/{name}",
-                    {"durable": True, "arguments": {"x-queue-type": "quorum"}},
-                )
-            for exchange, queue, key in (
-                (spec["exchange"], spec["queue"], spec["routing_key"]),
-                (
-                    spec["shadow_exchange"],
-                    spec["shadow_queue"],
-                    spec["shadow_routing_key"],
-                ),
-                (spec["dlx"], spec["dlq"], spec["dlq"]),
-            ):
-                response = client.post(
-                    f"bindings/{vhost}/e/{exchange}/q/{queue}", json={"routing_key": key}
-                )
-                if response.status_code != 201:
-                    raise RuntimeError("RabbitMQ binding creation rejected")
-            for name, queue, definition in (
-                (
-                    "source-bounded-shadow",
-                    spec["shadow_queue"],
-                    {
-                        "overflow": "reject-publish",
-                        "max-length-bytes": 1_048_576,
-                        "message-ttl": 86_400_000,
-                    },
-                ),
-                (
-                    "source-ready-reliability",
-                    spec["queue"],
-                    {
-                        "dead-letter-exchange": spec["dlx"],
-                        "dead-letter-routing-key": spec["dlq"],
-                        "dead-letter-strategy": "at-least-once",
-                        "overflow": "reject-publish",
-                        "delivery-limit": 5,
-                        "max-length-bytes": 4_194_304,
-                    },
-                ),
-                (
-                    "source-restricted-quarantine",
-                    spec["dlq"],
-                    {
-                        "overflow": "reject-publish",
-                        "max-length-bytes": 1_048_576,
-                        "message-ttl": 86_400_000,
-                    },
-                ),
-            ):
-                put(
-                    f"policies/{vhost}/{name}",
-                    {
-                        "pattern": f"^{re.escape(queue)}$",
-                        "apply-to": "quorum_queues",
-                        "priority": 10,
-                        "definition": definition,
-                    },
-                )
-            roles = ["relay", "consumer"]
-            if settings.get(SOURCE_SHADOW_PASSWORD_KEYS[0]):
-                roles.append("shadow_consumer")
-            for role in roles:
-                user = f"trench-source-{role.replace('_', '-')}"
-                put(
-                    f"users/{user}",
-                    {
-                        "password": settings[f"TRENCH_SOURCE_RABBIT_{role.upper()}_PASSWORD"],
-                        "tags": [],
-                    },
-                )
-                put(
-                    f"permissions/{vhost}/{user}",
-                    {
-                        "configure": "^$",
-                        "write": (
-                            f"^({re.escape(spec['exchange'])}|"
-                            f"{re.escape(spec['shadow_exchange'])}|"
-                            f"{re.escape(spec['diagnostic_exchange'])})$"
-                            if role == "relay"
-                            else "^$"
-                        ),
-                        "read": (
-                            f"^{re.escape(spec['queue'])}$"
-                            if role == "consumer"
-                            else f"^{re.escape(spec['shadow_queue'])}$"
-                            if role == "shadow_consumer"
-                            else "^$"
-                        ),
-                    },
-                )
-                if role == "relay":
-                    for exchange, route in (
-                        (spec["exchange"], spec["routing_key"]),
-                        (spec["shadow_exchange"], spec["shadow_routing_key"]),
-                        (spec["diagnostic_exchange"], spec["diagnostic_routing_key"]),
-                    ):
-                        put(
-                            f"topic-permissions/{vhost}/{user}",
-                            {"exchange": exchange, "write": f"^{re.escape(route)}$", "read": "^$"},
-                        )
-                for limit, value in (("max-connections", 8), ("max-channels", 16)):
-                    put(f"user-limits/{user}/{limit}", {"value": value})
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("action", choices=("prepare", "prepare-source", "prepare-shadow", "apply"))
     parser.add_argument("--env-file", type=Path, required=True)
+    parser.add_argument("--trench-compat", action="store_true")
     parser.add_argument("--source-delivery", action="store_true")
     args = parser.parse_args()
     try:
-        if args.action == "prepare":
-            prepare(args.env_file, source_delivery=args.source_delivery)
-        elif args.action == "prepare-source":
-            prepare_source(args.env_file)
+        if args.trench_compat:
+            if not __package__:
+                sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+            from scripts import provision_rabbitmq_trench as compat
+
+            if args.action == "prepare":
+                compat.prepare(args.env_file, source_delivery=args.source_delivery)
+            elif args.action == "prepare-source":
+                compat.prepare_source(args.env_file)
+            elif args.action == "prepare-shadow":
+                compat.prepare_shadow(args.env_file)
+            else:
+                compat.provision(
+                    compat.read_settings(args.env_file), source_delivery=args.source_delivery
+                )
+        elif args.source_delivery or args.action == "prepare-source":
+            raise ValueError("source delivery requires --trench-compat")
+        elif args.action == "prepare":
+            prepare(args.env_file)
         elif args.action == "prepare-shadow":
             prepare_shadow(args.env_file)
         else:
-            settings = read_settings(args.env_file)
-            provision(settings, source_delivery=args.source_delivery)
+            provision(read_settings(args.env_file))
     except (OSError, ValueError, RuntimeError, httpx.HTTPError):
         raise SystemExit(
             "RabbitMQ setup failed; check private settings and local broker health"

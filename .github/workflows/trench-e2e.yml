@@ -1,4 +1,5 @@
-name: Zebra Trench Cross-Repository E2E
+# Product-owned acceptance bridge; manual only, not a default Runtime prerequisite.
+name: Product integration - Trench joint acceptance
 
 on:
   workflow_dispatch:

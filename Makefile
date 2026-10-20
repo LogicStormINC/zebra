@@ -4,7 +4,7 @@ PYTHON := uv run
 	test-cloud-contracts test-cloud-composition test-cloud-integration \
 	test-cloud-faults test-trench-e2e test-gvisor-runtime \
 	test-redis-agent-memory release-evidence validate-rollout-candidate \
-	validate-rollout-rehearsal
+	validate-rollout-rehearsal test-runtime-independence
 
 EVIDENCE_ROOT ?= .artifacts/cloud-evidence
 CAPABILITIES ?= configs/cloud_release_capabilities.example.json
@@ -16,6 +16,7 @@ sync:
 	uv sync --all-packages --group dev
 
 check:
+	uv run python scripts/check_runtime_product_boundary.py
 	uv run python scripts/check_file_sizes.py
 	uv run ruff check .
 	uv run mypy packages apps
@@ -127,3 +128,17 @@ ui-tauri-build:
 
 ui-tauri-check:
 	cd UI/desktop && CI=true pnpm install --ignore-scripts && pnpm tauri:check
+
+# Independent composition/release contracts; real isolated boot is a separate check.
+test-runtime-independence:
+	uv run pytest -q tests/test_runtime_independence.py tests/compose/application \
+		tests/test_validate_rollout_candidate.py tests/test_validate_rollout_rehearsal.py
+
+
+.PHONY: test-product-conformance test-product-conformance-postgres
+
+test-product-conformance:
+	uv run python tests/conformance/product_v1/run.py --evidence-dir "$(EVIDENCE_ROOT)/product-contracts"
+
+test-product-conformance-postgres:
+	uv run python tests/conformance/product_v1/run.py --postgres --evidence-dir "$(EVIDENCE_ROOT)/product-postgres"

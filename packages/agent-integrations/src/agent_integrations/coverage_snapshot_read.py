@@ -34,7 +34,16 @@ def read_part(
     # ponytail: legacy non-strict snapshots have no local provenance field.
     # Strict MODEL Task admission independently requires an exact non-null ref.
     if (
-        snapshot.source_resource_ref not in (None, adapter.host.resource.resource_id)
+        snapshot.source_resource_ref
+        not in (
+            None,
+            adapter.host.resource.resource_id,
+        )
+        or (
+            adapter.host.contract is not None
+            and adapter.host.contract.schema_version == 2
+            and snapshot.source_resource_ref is None
+        )
         or current.model_dump(exclude={"source_resource_ref"})
         != snapshot.model_dump(exclude={"source_resource_ref"})
     ):

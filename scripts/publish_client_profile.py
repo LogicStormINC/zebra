@@ -142,10 +142,10 @@ def _arguments() -> argparse.Namespace:
     parser.add_argument(
         "--profile",
         type=Path,
-        default=Path(__file__).resolve().parents[1] / "tests/fixtures/trench_frontend_profile.json",
+        required=True,
     )
-    parser.add_argument("--host-app-id", default="trench")
-    parser.add_argument("--namespace-id", default="trench")
+    parser.add_argument("--host-app-id")
+    parser.add_argument("--namespace-id")
     parser.add_argument("--expected-binding-revision", type=int)
     parser.add_argument("--check-only", action="store_true")
     parser.add_argument(
@@ -153,7 +153,10 @@ def _arguments() -> argparse.Namespace:
         action="store_true",
         help="Read-only deployment gate: require matching active profile and binding",
     )
-    return parser.parse_args()
+    args = parser.parse_args()
+    if not args.check_only and (not args.host_app_id or not args.namespace_id):
+        parser.error("publishing requires explicit --host-app-id and --namespace-id")
+    return args
 
 
 if __name__ == "__main__":

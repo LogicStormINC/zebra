@@ -187,12 +187,21 @@ def model_cloud(dsn, request):  # noqa: F811
     now = datetime.now(UTC)
     runtime = getattr(request, "param", 600)
     validation_mode = "eager"
+    v2 = False
     if isinstance(runtime, dict):
-        validation_mode = runtime["validation_mode"]
+        v2 = runtime.get("v2", False)
+        validation_mode = runtime.get("validation_mode", "eager")
         runtime = runtime.get("runtime", 600)
+    from tests.agent_integrations.test_coverage_snapshot_v2 import (
+        V2_AUTHORITY,
+        V2_CONTRACT,
+        V2_SOURCE,
+    )
     definition = semantic_check(REVIEWER_PROFILE)
-    contract = CONTRACT.model_copy(update={"checks": (definition.contract_check,)})
-    host = AUTHORITY.model_copy(
+    contract = (V2_CONTRACT if v2 else CONTRACT).model_copy(
+        update={"checks": (definition.contract_check,)},
+    )
+    host = (V2_AUTHORITY if v2 else AUTHORITY).model_copy(
         update={
             "expires_at": now + timedelta(hours=1),
             "limits": AUTHORITY.limits.model_copy(
@@ -205,7 +214,7 @@ def model_cloud(dsn, request):  # noqa: F811
     )
     admission = CoverageTaskAdmission(
         contract=contract,
-        history_ref="history",
+        **({"source_ref": V2_SOURCE} if v2 else {"history_ref": "history"}),
         model_profile=REVIEWER_PROFILE,
         validation_mode=validation_mode,
         execution_budget=CoverageExecutionBudget(max_attempts=100, max_input_bytes=1000),
@@ -225,12 +234,17 @@ def model_cloud(dsn, request):  # noqa: F811
     )
     session = bootstrap.session.session_id
     text = 'source🙂 停产。\n"quoted"'
-    source, wire, _ = setup_source(
-        (text.encode(),),
-        session_id=session,
-        authority=host,
-        now=lambda: datetime.now(UTC),
-    )
+    if v2:
+        from tests.worker.test_coverage_v2_fixtures import setup_neutral_source
+
+        source, wire = setup_neutral_source(
+            (text.encode(),), session_id=session, authority=host, contract=contract,
+            now=lambda: datetime.now(UTC),
+        )
+    else:
+        source, wire, _ = setup_source(
+            (text.encode(),), session_id=session, authority=host, now=lambda: datetime.now(UTC),
+        )
 
     def mutate(name, value):
         if name in {"create", "get"}:
@@ -249,6 +263,9 @@ def model_cloud(dsn, request):  # noqa: F811
     ).model_dump()
     data["host_capability"].update(
         host_context=host,
+        host_app_id=host.host_app_id,
+        authority_issuer=host.origin,
+        connector_id=host.host_app_id,
         grant_digest=host_context_digest(host),
         grant_expires_at=host.expires_at,
         manifest_digest=source.host.manifest.digest,

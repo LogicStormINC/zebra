@@ -365,6 +365,7 @@ def test_shared_secret_header_is_bounded_and_expired_context_fails_closed() -> N
 def _tool_payload() -> dict[str, object]:
     return {
         "name": "event.get",
+        "resourceBindings": [],
         "description": "Read one Event.",
         "requiredArguments": ["event_id"],
         "argumentProperties": {"event_id": {"type": "string"}},

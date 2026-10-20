@@ -9,7 +9,6 @@ from starlette.requests import Request
 from zebra_agent_api.coverage_report_http import coverage_report_response, report_task_id
 from zebra_agent_api.host_auth import _required_scopes_for_request
 from zebra_agent_api.http import HTTP_METHODS, HostGrantHttpRequest
-from zebra_agent_api.responses import ApiResponse
 
 from tests.api.test_coverage_http_admission import grant
 
@@ -39,9 +38,6 @@ def compose(monkeypatch, result=None, error=None):
         return result
 
     monkeypatch.setattr("zebra_agent_api.coverage_report_read.read_coverage_report", read)
-    monkeypatch.setattr(
-        "zebra_agent_api.coverage_report_http.tenant_scope_response", lambda *_: None
-    )
     return SimpleNamespace(app=object()), calls
 
 
@@ -87,16 +83,14 @@ def test_refused_reads_are_private_and_never_return_bytes(monkeypatch, error, st
     assert response.headers["cache-control"] == "private, no-store"
 
 
-def test_signed_grant_and_tenant_checks_precede_report_io(monkeypatch):
+def test_signed_grant_and_reader_owner_denial_prevent_report_bytes(monkeypatch):
     adapter, calls = compose(monkeypatch)
     response = asyncio.run(coverage_report_response(request(verified=False), adapter))
     assert response.status_code == 403 and not calls
-    monkeypatch.setattr(
-        "zebra_agent_api.coverage_report_http.tenant_scope_response",
-        lambda *_: ApiResponse(404, {"status": "not_found"}),
-    )
+    adapter, calls = compose(monkeypatch, error=PermissionError("wrong owner"))
     response = asyncio.run(coverage_report_response(request(), adapter))
-    assert response.status_code == 404 and not calls
+    assert response.status_code == 403 and len(calls) == 1
+    assert BODY not in response.body
 
 
 def test_exact_route_and_read_only_grant_scopes():
@@ -104,7 +98,7 @@ def test_exact_route_and_read_only_grant_scopes():
     for method in ("GET", "HEAD"):
         assert _required_scopes_for_request(
             HostGrantHttpRequest(method, PATH, None, "Bearer token")
-        ) == ("history.read", "artifact.read")
+        ) == ("artifact.read",)
     assert report_task_id(PATH) == TASK
     for path in (PATH + "/extra", PATH.replace(TASK, "invalid"), "/sessions/" + TASK):
         assert report_task_id(path) is None

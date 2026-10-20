@@ -8,6 +8,7 @@ import json
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from typing import Literal
 from urllib.parse import urlsplit
 
 import httpx
@@ -20,6 +21,9 @@ from agent_core.domain.task_schedule_authority import (
 from agent_core.domain.task_schedules import TaskScheduleFiring
 from agent_security import HostGrantVerificationConfig, HostGrantVerifier, PyJwtHostGrantDecoder
 
+from agent_integrations.schedule_grant_exchange_legacy import legacy_principal, legacy_resources
+
+_RESERVED_REFS = frozenset({"thread", "run", "principal"})
 _NON_RUNTIME_SCOPES = frozenset({"schedule.read", "schedule.manage", "extensions.manage"})
 
 
@@ -30,8 +34,11 @@ class ScheduleGrantExchangeSettings:
     workload_shared_secret: str = field(repr=False)
     verification: HostGrantVerificationConfig
     timeout_seconds: float = 5.0
+    protocol: Literal["generic", "legacy"] = "generic"
 
     def __post_init__(self) -> None:
+        if self.protocol not in {"generic", "legacy"}:
+            raise ValueError("schedule exchange protocol must be generic or legacy")
         parsed = urlsplit(self.exchange_url)
         if parsed.scheme != "https" or not parsed.netloc or parsed.username or parsed.password:
             raise ValueError("schedule grant exchange_url must be HTTPS without credentials")
@@ -98,6 +105,8 @@ class HttpScheduleAuthorityRevalidator:
                 expected_host_app_id=binding.owner.host_app_id,
                 required_scopes=self._runtime_scopes(binding),
             )
+            if verified.subject_ref != binding.owner.principal_id:
+                raise ScheduleAuthorityRejected("principal_drifted")
             narrowed = self._narrow(binding, firing, verified.context)
         except ScheduleAuthorityRejected:
             raise
@@ -118,24 +127,22 @@ class HttpScheduleAuthorityRevalidator:
         resources = [
             {"type": ref.resource_type, "id": ref.resource_id}
             for ref in original.resource_refs
-            if ref.resource_type.startswith("trench.")
+            if ref.resource_type not in _RESERVED_REFS
         ]
+        principal: dict[str, object] = {
+            "userId": binding.owner.principal_id,
+            "workspaceId": binding.owner.workspace_id,
+        }
+        if self.settings.protocol == "legacy":
+            resources = legacy_resources(original)
+            principal.update(legacy_principal(original))
         return {
             "audience": self.settings.verification.audience,
             "threadId": str(firing.schedule_id),
             "runId": str(firing.fire_id),
             "scopes": list(self._runtime_scopes(binding)),
             "resourceRefs": resources,
-            "principal": {
-                "userId": binding.owner.principal_id,
-                "workspaceId": binding.owner.workspace_id,
-                "activeSourceIds": [
-                    ref.resource_id
-                    for ref in original.resource_refs
-                    if ref.resource_type == "trench.source"
-                ],
-                "agentScopes": list(original.scopes),
-            },
+            "principal": principal,
         }
 
     def _narrow(
@@ -153,19 +160,27 @@ class HttpScheduleAuthorityRevalidator:
             or fresh.policy_version != original.policy_version
         ):
             raise ScheduleAuthorityRejected("host_identity_drifted")
-        principals = tuple(
-            ref.resource_id for ref in fresh.resource_refs if ref.resource_type == "principal"
-        )
-        if principals != (binding.owner.principal_id,):
-            raise ScheduleAuthorityRejected("principal_drifted")
-        required = {
-            (ref.resource_type, ref.resource_id)
-            for ref in original.resource_refs
-            if ref.resource_type.startswith("trench.")
+        expected_bindings = {
+            "principal": binding.owner.principal_id,
+            "thread": str(firing.schedule_id),
+            "run": str(firing.fire_id),
         }
-        actual = {(ref.resource_type, ref.resource_id) for ref in fresh.resource_refs}
+        for resource_type, expected_id in expected_bindings.items():
+            actual_ids = tuple(
+                ref.resource_id for ref in fresh.resource_refs
+                if ref.resource_type == resource_type
+            )
+            if actual_ids != (expected_id,):
+                raise ScheduleAuthorityRejected(f"{resource_type}_drifted")
+        required = {
+            ref.key for ref in original.resource_refs
+            if ref.resource_type not in _RESERVED_REFS
+        }
+        actual = {ref.key for ref in fresh.resource_refs}
         if not required <= actual:
             raise ScheduleAuthorityRejected("resource_authority_drifted")
+        if not set(self._runtime_scopes(binding)) <= set(fresh.scopes):
+            raise ScheduleAuthorityRejected("scope_authority_drifted")
         limits = HostTechnicalLimits(
             max_runtime_seconds=min(
                 fresh.limits.max_runtime_seconds, original.limits.max_runtime_seconds
@@ -182,8 +197,7 @@ class HttpScheduleAuthorityRevalidator:
                 "resource_refs": tuple(
                     ref
                     for ref in fresh.resource_refs
-                    if ref.resource_type in {"thread", "run", "principal"}
-                    or ref.resource_type.startswith("trench.")
+                    if ref.resource_type in _RESERVED_REFS or ref.key in required
                 ),
             }
         )

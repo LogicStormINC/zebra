@@ -117,8 +117,13 @@ class ZebraAgentSettings:
     host_tool_endpoint: str | None = None
     host_tool_workload_identity: str | None = None
     host_tool_shared_secret: str | None = None
+    host_manifest_binding_policy: str = "declared"
     development_unrestricted: bool = False
     web_egress_socks_endpoint: tuple[str, int] | None = None
+
+    def __post_init__(self) -> None:
+        if self.host_manifest_binding_policy not in {"declared", "legacy"}:
+            raise ValueError("host_manifest_binding_policy must be declared or legacy")
 
     @property
     def deployment(self) -> str:
@@ -273,6 +278,9 @@ def load_settings(
         host_tool_endpoint=_read_optional(values, "ZEBRA_HOST_TOOL_ENDPOINT"),
         host_tool_workload_identity=_read_optional(values, "ZEBRA_HOST_TOOL_WORKLOAD_IDENTITY"),
         host_tool_shared_secret=_read_optional(values, "ZEBRA_HOST_TOOL_SHARED_SECRET"),
+        host_manifest_binding_policy=_read(
+            values, "ZEBRA_HOST_MANIFEST_BINDING_POLICY", default="declared"
+        ),
         development_unrestricted=development_unrestricted,
     )
 

@@ -206,7 +206,123 @@ class TestCredentialAndGateway:
                 token="tok",
                 audience=rotated.base_uri,
                 scopes=(),
-                expires_at_epoch=2 ** 31,
+                expires_at_epoch=2**31,
             ),
         )
         assert gateway.endpoint == "https://rotated.example.com"
+
+
+@pytest.mark.parametrize("policy", [None, "legacy", "declared"])
+def test_manifest_policy_comes_only_from_trusted_profile(policy: str | None) -> None:
+    profile = _profile().model_copy(update={"manifest_binding_policy": policy})
+    credentials = FakeCredentialResolver()
+    resolver = HostEgressResolver(FakeRegistry(_binding(), profile), credentials)
+    pinned = resolver.resolve(_context())
+    assert pinned is not None
+    gateway = build_pinned_host_gateway(
+        pinned, _context(), resolver.issue_credential(pinned, _context())
+    )
+    assert gateway.manifest_binding_policy == (policy or "legacy")
+
+
+def test_declared_gateway_rejects_legacy_freeze_and_recovers_strict_empty() -> None:
+    from agent_integrations.host_tools import HostToolManifest
+    from zebra_agent_worker.host_gateway_resolution import frozen_or_discovered_manifest
+
+    profile = _profile().model_copy(update={"manifest_binding_policy": "declared"})
+    credentials = FakeCredentialResolver()
+    resolver = HostEgressResolver(FakeRegistry(_binding(), profile), credentials)
+    pinned = resolver.resolve(_context())
+    assert pinned is not None
+    gateway = build_pinned_host_gateway(
+        pinned, _context(), resolver.issue_credential(pinned, _context())
+    )
+    raw = {
+        "workloadIdentity": "workload/zebra-worker",
+        "tools": [
+            {
+                "name": "events.get_event",
+                "scopes": ["record.read"],
+                "resourceBindings": [],
+            }
+        ],
+    }
+    historical = HostToolManifest.from_payload(raw)
+    with pytest.raises(ValueError, match="binding policy mismatch"):
+        frozen_or_discovered_manifest(
+            gateway,
+            _context(),
+            historical.digest,
+            lambda _: historical.to_payload(),
+        )
+    declared = HostToolManifest.from_payload(raw, binding_policy="declared")
+    restored = frozen_or_discovered_manifest(
+        gateway,
+        _context(),
+        declared.digest,
+        lambda _: declared.to_payload(),
+    )
+    assert restored == declared and restored.resource_bindings_for("events.get_event") == ()
+    assert gateway.manifest is restored
+    with pytest.raises(ValueError, match="digest drifted"):
+        frozen_or_discovered_manifest(
+            gateway, _context(), "a" * 64, lambda _: declared.to_payload()
+        )
+
+
+def test_environment_manifest_policy_defaults_declared_and_validates(tmp_path, monkeypatch) -> None:
+    from zebra_agent_config import load_settings
+
+    monkeypatch.chdir(tmp_path)
+    defaults = tmp_path / "defaults.env"
+    defaults.write_text("")
+    assert load_settings({}, defaults_path=defaults).host_manifest_binding_policy == "declared"
+    assert (
+        load_settings(
+            {"ZEBRA_HOST_MANIFEST_BINDING_POLICY": "legacy"},
+            defaults_path=defaults,
+        ).host_manifest_binding_policy
+        == "legacy"
+    )
+    with pytest.raises(ValueError, match="must be declared or legacy"):
+        load_settings({"ZEBRA_HOST_MANIFEST_BINDING_POLICY": "auto"}, defaults_path=defaults)
+
+
+@pytest.mark.parametrize("policy", [None, "legacy", "declared"])
+def test_pinned_gateway_uses_versioned_profile_paths(policy) -> None:
+    from agent_core.domain.identifiers import new_tool_call_id
+    from agent_core.domain.tools import ToolCall, ToolCallStatus
+    from agent_integrations.host_tools import HostToolTransportResponse
+
+    from tests.agent_integrations.test_host_tools import _FakeTransport
+
+    profile = _profile().model_copy(update={
+        "manifest_path": "/capabilities", "invoke_path_template": "/execute",
+        "manifest_binding_policy": policy,
+    })
+    resolver = HostEgressResolver(FakeRegistry(_binding(), profile), FakeCredentialResolver())
+    pinned = resolver.resolve(_context())
+    assert pinned is not None
+    gateway = build_pinned_host_gateway(
+        pinned, _context(), resolver.issue_credential(pinned, _context()),
+    )
+    gateway.transport = transport = _FakeTransport([
+        HostToolTransportResponse(200, {
+            "workloadIdentity": profile.workload_identity_ref,
+            "tools": [{"name": "record.read", "scopes": ["scope:a"], "resourceBindings": []}],
+        }),
+        HostToolTransportResponse(200, {"output": "ok"}),
+    ])
+    manifest = gateway.discover(_context())
+    result = gateway.invoke(
+        ToolCall(tool_call_id=new_tool_call_id(), name="record.read", arguments={},
+                 created_at=datetime.now(UTC)),
+        _context(), manifest=manifest,
+    )
+    assert result.status is ToolCallStatus.EXECUTED
+    expected = (
+        ["https://pinned.example.com/manifest", "https://pinned.example.com/tools/record.read/invoke"]
+        if policy is None else
+        ["https://pinned.example.com/capabilities", "https://pinned.example.com/execute"]
+    )
+    assert [call[1] for call in transport.calls] == expected

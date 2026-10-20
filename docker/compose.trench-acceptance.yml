@@ -23,6 +23,7 @@ services:
       <<: *acceptance-build
       target: broker
     environment:
+      ZEBRA_GRANT_BROKER_AUTHORITY_MODE: trench_legacy
       ZEBRA_GRANT_BROKER_ISSUER: https://broker.zebra.local:8443
       ZEBRA_GRANT_BROKER_ORIGIN: ${TRENCH_ACCEPTANCE_BFF_ORIGIN:?set TRENCH_ACCEPTANCE_BFF_ORIGIN}
       ZEBRA_GRANT_BROKER_HOST_APP_ID: ${TRENCH_ACCEPTANCE_HOST_APP_ID:-trench}

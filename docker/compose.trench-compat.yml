@@ -1,0 +1,49 @@
+# Explicit historical Trench deployment. Apply AFTER local-gvisor (if used)
+# so its volume replacement retains private Host/Broker TLS trust.
+services:
+  zebra-api:
+    environment:
+      ZEBRA_HOST_MANIFEST_BINDING_POLICY: legacy
+    volumes:
+      - ./trench-acceptance/secrets/ca.crt:/etc/ssl/certs/${ZEBRA_LOCAL_CA_HASH:-zebra-local-unused}.0:ro
+      - ${ZEBRA_ACCEPTANCE_CA_BUNDLE_FILE:-./trench-acceptance/secrets/ca-bundle.crt}:/etc/ssl/certs/zebra-acceptance-ca-bundle.crt:ro
+    depends_on:
+      zebra-api-legacy:
+        condition: service_started
+
+  zebra-worker:
+    environment:
+      ZEBRA_HOST_MANIFEST_BINDING_POLICY: legacy
+    volumes:
+      - ./trench-acceptance/secrets/ca.crt:/etc/ssl/certs/${ZEBRA_LOCAL_CA_HASH:-zebra-local-unused}.0:ro
+      - ${ZEBRA_ACCEPTANCE_CA_BUNDLE_FILE:-./trench-acceptance/secrets/ca-bundle.crt}:/etc/ssl/certs/zebra-acceptance-ca-bundle.crt:ro
+
+  zebra-scheduler:
+    profiles: !reset []
+    environment:
+      ZEBRA_SCHEDULER_GRANT_EXCHANGE_PROTOCOL: legacy
+      ZEBRA_SCHEDULER_ID: ${ZEBRA_SCHEDULER_ID:-trench-scheduler}
+      ZEBRA_SCHEDULER_WORKLOAD_IDENTITY: ${ZEBRA_SCHEDULER_WORKLOAD_IDENTITY:-trench-scheduler}
+      SSL_CERT_FILE: /etc/ssl/certs/${ZEBRA_LOCAL_CA_HASH:-zebra-local-unused}.0
+    volumes:
+      - ./trench-acceptance/secrets/ca.crt:/etc/ssl/certs/${ZEBRA_LOCAL_CA_HASH:-zebra-local-unused}.0:ro
+
+  zebra-api-legacy:
+    extends:
+      file: compose.application.yml
+      service: zebra-migrate
+    build: !reset null
+    image: zebra-application-zebra-api
+    environment:
+      ZEBRA_DEPLOYMENT_NAMESPACE: trench-prod
+      ZEBRA_CLIENT_INTEGRATION_ENABLED: "false"
+    restart: unless-stopped
+    init: true
+    read_only: true
+    volumes:
+      - ./trench-acceptance/secrets/ca.crt:/etc/ssl/certs/${ZEBRA_LOCAL_CA_HASH:-zebra-local-unused}.0:ro
+      - ${ZEBRA_ACCEPTANCE_CA_BUNDLE_FILE:-./trench-acceptance/secrets/ca-bundle.crt}:/etc/ssl/certs/zebra-acceptance-ca-bundle.crt:ro
+    tmpfs: [/tmp]
+    depends_on:
+      zebra-migrate:
+        condition: service_completed_successfully

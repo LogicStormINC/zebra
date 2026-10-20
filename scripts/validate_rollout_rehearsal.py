@@ -66,14 +66,21 @@ def validate_rehearsal(
     attestation: dict[str, Any],
     rehearsal: dict[str, Any],
 ) -> dict[str, Any]:
-    if attestation.get("schema_version") != "zebra.cloud-rollout-attestation.v1":
+    version = candidate.get("schema_version", "zebra.cloud-rollout-candidate.v1")
+    if version not in {"zebra.cloud-rollout-candidate.v1", "zebra.cloud-rollout-candidate.v2"}:
+        raise ValueError("unsupported rollout candidate schema")
+    suffix = version.rsplit(".", 1)[-1]
+    scenarios = dict(SCENARIOS)
+    if suffix == "v2":
+        scenarios["host-browser-client-action"] = scenarios.pop("trench-browser-client-action")
+    if attestation.get("schema_version") != f"zebra.cloud-rollout-attestation.{suffix}":
         raise ValueError("unsupported rollout attestation schema")
     if attestation.get("status") != "PASS":
         raise ValueError("rollout attestation must have PASS status")
     candidate_digest = _canonical_digest(candidate)
     if attestation.get("candidate_sha256") != candidate_digest:
         raise ValueError("attestation does not bind this candidate")
-    if rehearsal.get("schema_version") != "zebra.cloud-rollout-rehearsal.v1":
+    if rehearsal.get("schema_version") != f"zebra.cloud-rollout-rehearsal.{suffix}":
         raise ValueError("unsupported rollout rehearsal schema")
     if rehearsal.get("candidate_sha256") != candidate_digest:
         raise ValueError("rehearsal does not bind this candidate")
@@ -110,15 +117,15 @@ def validate_rehearsal(
         if item["id"] in by_id:
             raise ValueError(f"duplicate scenario evidence: {item['id']}")
         by_id[item["id"]] = item
-    if set(by_id) != set(SCENARIOS):
+    if set(by_id) != set(scenarios):
         raise ValueError(
-            f"scenario set mismatch missing={sorted(set(SCENARIOS) - set(by_id))} "
-            f"unknown={sorted(set(by_id) - set(SCENARIOS))}"
+            f"scenario set mismatch missing={sorted(set(scenarios) - set(by_id))} "
+            f"unknown={sorted(set(by_id) - set(scenarios))}"
         )
     capabilities = candidate.get("capabilities")
     if not isinstance(capabilities, dict):
         raise ValueError("candidate capabilities are missing")
-    for scenario_id, capability in SCENARIOS.items():
+    for scenario_id, capability in scenarios.items():
         item = by_id[scenario_id]
         expected = (
             "NOT_ENABLED"
@@ -131,7 +138,7 @@ def validate_rehearsal(
             _require_evidence_ref(item, f"scenario {scenario_id}")
 
     return {
-        "schema_version": "zebra.cloud-rollout-rehearsal-verdict.v1",
+        "schema_version": f"zebra.cloud-rollout-rehearsal-verdict.{suffix}",
         "candidate_id": candidate.get("candidate_id"),
         "candidate_sha256": candidate_digest,
         "environment": environment,

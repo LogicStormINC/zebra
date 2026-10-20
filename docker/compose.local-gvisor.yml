@@ -8,9 +8,7 @@ services:
       DOCKER_CERT_PATH: /run/zebra-engine-tls
       ZEBRA_OCI_INFO_CONNECT_PROXY: ${ZEBRA_LOCAL_GVISOR_INFO_CONNECT_PROXY:-}
     volumes: !override
-      - ./trench-acceptance/secrets/ca.crt:/etc/ssl/certs/${ZEBRA_LOCAL_CA_HASH:-zebra-local-unused}.0:ro
-      - ${ZEBRA_ACCEPTANCE_CA_BUNDLE_FILE:-./trench-acceptance/secrets/ca-bundle.crt}:/etc/ssl/certs/zebra-acceptance-ca-bundle.crt:ro
       - ${ZEBRA_WORKSPACE_VOLUME_ROOT:?keep the verified shared workspace}:${ZEBRA_WORKSPACE_VOLUME_ROOT}
-      - ./trench-acceptance/secrets/local-gvisor/client:/run/zebra-engine-tls:ro
+      - ${ZEBRA_LOCAL_GVISOR_CLIENT_CERT_DIR:?set the verified engine client certificate directory}:/run/zebra-engine-tls:ro
     group_add:
       - ${ZEBRA_LOCAL_GVISOR_CERT_GID:?set the client certificate group}

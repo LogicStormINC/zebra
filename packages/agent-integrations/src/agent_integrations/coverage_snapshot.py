@@ -20,7 +20,7 @@ from agent_core.domain.coverage_snapshot import (
     CoverageRecord,
     CoverageSnapshot,
 )
-from agent_core.domain.host_authority import HostContextEnvelope
+from agent_core.domain.host_authority import HostContextEnvelope, HostResourceRef
 from agent_core.domain.identifiers import ArtifactId, SessionId
 from agent_core.ports.artifact_payload_store import ArtifactPayloadStorePort
 from agent_core.ports.coverage import CoverageSnapshotPort
@@ -43,7 +43,9 @@ class HostCoverageSnapshotAdapter(CoverageSnapshotPort):
         *,
         session_id: SessionId,
         authority: HostContextEnvelope,
-        history_ref: str,
+        history_ref: str | None = None,
+        source_ref: HostResourceRef | None = None,
+        contract: CoverageContract | None = None,
         manifest: HostToolManifest | None,
         invoke: HostCoverageInvoke | None,
         artifacts: ArtifactPayloadStorePort,
@@ -60,6 +62,8 @@ class HostCoverageSnapshotAdapter(CoverageSnapshotPort):
             session_id=session_id,
             authority=authority,
             history_ref=history_ref,
+            source_ref=source_ref,
+            contract=contract,
             manifest=manifest,
             invoke=invoke,
             admitted_effect_invoke=admitted_effect_invoke,

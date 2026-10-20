@@ -34,6 +34,7 @@ x-cloud: &cloud
   ZEBRA_MODEL_BASE_URL: https://api.deepseek.com
   ZEBRA_MODEL_NAME: deepseek-flash
   DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:?required}
+  ZEBRA_HOST_MANIFEST_BINDING_POLICY: legacy
   ZEBRA_HOST_TOOL_ENDPOINT: https://trench.zebra.local:28443/api/trench-ai/agent
   ZEBRA_HOST_TOOL_WORKLOAD_IDENTITY: rabbitmq-product-e2e-worker
   ZEBRA_HOST_TOOL_SHARED_SECRET: ${E2E_WORKLOAD_SECRET:?required}
@@ -160,6 +161,7 @@ services:
     image: ${E2E_BROKER_IMAGE:?required}
     entrypoint: [python, -m, zebra_host_grant_broker]
     environment:
+      ZEBRA_GRANT_BROKER_AUTHORITY_MODE: trench_legacy
       ZEBRA_GRANT_BROKER_ISSUER: https://broker.zebra.local:28443
       ZEBRA_GRANT_BROKER_ORIGIN: https://127.0.0.1:28443
       ZEBRA_GRANT_BROKER_HOST_APP_ID: trench

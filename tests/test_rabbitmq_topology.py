@@ -4,7 +4,7 @@ from pathlib import Path
 import httpx
 import pytest
 
-from scripts.provision_rabbitmq import (
+from scripts.provision_rabbitmq_trench import (
     BASE_PASSWORD_KEYS,
     PASSWORD_KEYS,
     SHADOW_PASSWORD_KEYS,
@@ -335,3 +335,75 @@ def test_compose_is_opt_in_pinned_and_loopback_only():
     assert "@sha256:" in compose
     assert compose.count('"127.0.0.1:') == 3
     assert "rabbitmq" not in (root / "docker/compose.application.yml").read_text().lower()
+
+
+def test_default_runtime_settings_and_topology_exclude_product(tmp_path, monkeypatch):
+    from scripts import provision_rabbitmq as runtime
+
+    path = tmp_path / ".env"
+    runtime.prepare(path)
+    settings = runtime.read_settings(path)
+    assert not any(key.startswith("TRENCH") for key in settings)
+    with pytest.raises(KeyError):
+        runtime.topology("trench")
+    paths = []
+    real_client = httpx.Client
+    monkeypatch.setattr(
+        httpx,
+        "Client",
+        lambda **kw: real_client(
+            **kw,
+            transport=httpx.MockTransport(
+                lambda request: (paths.append(request.url.path), httpx.Response(201))[1]
+            ),
+        ),
+    )
+    runtime.provision(settings)
+    assert paths and all("trench" not in item for item in paths)
+    # Existing private joint files retain their credentials, but never activate product topology.
+    joint = tmp_path / "joint.env"
+    prepare(joint, source_delivery=True)
+    original = joint.read_bytes()
+    settings = runtime.read_settings(joint)
+    paths.clear()
+    runtime.provision(settings)
+    assert all("trench" not in item for item in paths)
+    assert joint.read_bytes() == original
+
+
+def test_cli_explicit_joint_prepare_and_source_rejection(tmp_path):
+    import subprocess
+    import sys
+
+    script = Path(__file__).resolve().parents[1] / "scripts/provision_rabbitmq.py"
+    default = tmp_path / "runtime.env"
+    result = subprocess.run(
+        [sys.executable, str(script), "prepare", "--env-file", str(default)],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "TRENCH" not in default.read_text()
+    rejected = tmp_path / "rejected.env"
+    result = subprocess.run(
+        [sys.executable, str(script), "prepare", "--env-file", str(rejected), "--source-delivery"],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode != 0 and not rejected.exists()
+    joint = tmp_path / "joint.env"
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(script),
+            "prepare",
+            "--env-file",
+            str(joint),
+            "--trench-compat",
+            "--source-delivery",
+        ],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stderr
+    assert all(key in read_settings(joint) for key in PASSWORD_KEYS + SOURCE_PASSWORD_KEYS)

@@ -82,13 +82,16 @@ def validate_candidate(
     release_manifest_digest: str | None = None,
     source_component_versions: dict[str, str] | None = None,
 ) -> dict[str, Any]:
+    version = candidate.get("schema_version")
+    if version not in {"zebra.cloud-rollout-candidate.v1", "zebra.cloud-rollout-candidate.v2"}:
+        raise ValueError("unsupported rollout candidate schema")
+    joint = version.endswith(".v1")
     _require_keys(
         candidate,
         {
             "schema_version",
             "candidate_id",
             "zebra",
-            "trench",
             "component_packages",
             "database",
             "protocols",
@@ -98,11 +101,10 @@ def validate_candidate(
             "capabilities",
             "rollout",
             "rollback",
-        },
+        }
+        | ({"trench"} if joint else set()),
         "candidate",
     )
-    if candidate["schema_version"] != "zebra.cloud-rollout-candidate.v1":
-        raise ValueError("unsupported rollout candidate schema")
     if (
         not isinstance(candidate["candidate_id"], str)
         or not candidate["candidate_id"].strip()
@@ -113,6 +115,65 @@ def validate_candidate(
         raise ValueError("unsupported release manifest schema")
     if release_manifest.get("status") != "PASS":
         raise ValueError("release manifest must have PASS status")
+    gates = release_manifest.get("gates")
+    if not isinstance(gates, list) or any(not isinstance(gate, dict) for gate in gates):
+        raise ValueError("release manifest gates must be objects")
+    trench_gates = [
+        gate
+        for gate in gates
+        if gate.get("gate") == "trench-e2e" or gate.get("capability") == "trench"
+    ]
+    if joint:
+        if (
+            len(trench_gates) != 1
+            or trench_gates[0].get("gate") != "trench-e2e"
+            or trench_gates[0].get("capability") != "trench"
+            or trench_gates[0].get("status") != "PASS"
+        ):
+            raise ValueError("joint rollout requires a PASS trench-e2e gate for capability trench")
+        _require_real_digest(trench_gates[0].get("evidence_sha256"), "trench-e2e evidence_sha256")
+    elif any(gate.get("status") != "NOT_ENABLED" for gate in trench_gates):
+        raise ValueError("independent rollout requires Trench gates to be NOT_ENABLED")
+    if not joint:
+        capabilities = candidate.get("capabilities")
+        for capability in ("task_execution", "redis_agent_memory"):
+            if (
+                not isinstance(capabilities, dict)
+                or capabilities.get(capability) not in CAPABILITY_STATES
+            ):
+                raise ValueError(f"independent rollout requires explicit {capability} capability")
+        if capabilities.get("trench", "not_enabled") != "not_enabled":
+            raise ValueError("independent rollout Trench capability must be not_enabled")
+    capabilities = candidate.get("capabilities")
+    if not isinstance(capabilities, dict):
+        raise ValueError("candidate capabilities must be an object")
+    rollout_kind = "joint" if joint else "independent"
+    inventory = _read(ROOT / "configs/cloud_release_gates.json")["gates"]
+    for required in inventory:
+        if required["capability"] == "trench":
+            continue
+        gate_id = required["id"]
+        matches = [gate for gate in gates if gate.get("gate") == gate_id]
+        if len(matches) != 1 or matches[0].get("capability") != required["capability"]:
+            raise ValueError(f"{rollout_kind} rollout requires exactly one {gate_id} gate")
+        gate = matches[0]
+        disabled = capabilities.get(required["capability"]) == "not_enabled"
+        expected = (
+            "NOT_ENABLED"
+            if required["capability"] in {"task_execution", "redis_agent_memory"} and disabled
+            else "PASS"
+        )
+        if gate.get("status") != expected:
+            raise ValueError(f"{rollout_kind} rollout gate {gate_id} must report {expected}")
+        if expected == "PASS":
+            if "members" in required:
+                members = gate.get("member_evidence_sha256")
+                if not isinstance(members, dict) or set(members) != set(required["members"]):
+                    raise ValueError(f"{gate_id} must bind every integration member")
+                for member, digest in members.items():
+                    _require_real_digest(digest, f"{gate_id}.{member} evidence digest")
+            else:
+                _require_real_digest(gate.get("evidence_sha256"), f"{gate_id} evidence digest")
     expected_release_digest = candidate["release_manifest_sha256"]
     _require_real_digest(expected_release_digest, "release_manifest_sha256")
     actual_release_digest = release_manifest_digest or _canonical_digest(release_manifest)
@@ -120,30 +181,30 @@ def validate_candidate(
         raise ValueError("release manifest digest mismatch")
 
     zebra = candidate["zebra"]
-    trench = candidate["trench"]
-    if not isinstance(zebra, dict) or not isinstance(trench, dict):
-        raise ValueError("zebra and trench coordinates must be objects")
+    if not isinstance(zebra, dict):
+        raise ValueError("zebra coordinates must be an object")
     _require_keys(zebra, {"commit", "image"}, "zebra")
-    _require_keys(trench, {"commit", "api_image", "frontend_image"}, "trench")
     if COMMIT_RE.fullmatch(str(zebra["commit"])) is None:
         raise ValueError("zebra.commit must be a full lowercase commit SHA")
     if zebra["commit"] == "0" * 40:
         raise ValueError("zebra.commit must not use a placeholder SHA")
     if zebra["commit"] != release_manifest.get("candidate_sha"):
         raise ValueError("zebra.commit does not match release candidate SHA")
-    if COMMIT_RE.fullmatch(str(trench["commit"])) is None:
-        raise ValueError("trench.commit must be a full lowercase commit SHA")
-    if trench["commit"] == "0" * 40:
-        raise ValueError("trench.commit must not use a placeholder SHA")
     _require_image(zebra["image"], "zebra.image")
-    _require_image(trench["api_image"], "trench.api_image")
-    _require_image(trench["frontend_image"], "trench.frontend_image")
+    if joint:
+        trench = candidate["trench"]
+        if not isinstance(trench, dict):
+            raise ValueError("trench coordinates must be an object")
+        _require_keys(trench, {"commit", "api_image", "frontend_image"}, "trench")
+        if COMMIT_RE.fullmatch(str(trench["commit"])) is None:
+            raise ValueError("trench.commit must be a full lowercase commit SHA")
+        if trench["commit"] == "0" * 40:
+            raise ValueError("trench.commit must not use a placeholder SHA")
+        _require_image(trench["api_image"], "trench.api_image")
+        _require_image(trench["frontend_image"], "trench.frontend_image")
 
     component_packages = candidate["component_packages"]
-    if (
-        not isinstance(component_packages, dict)
-        or set(component_packages) != COMPONENT_PACKAGES
-    ):
+    if not isinstance(component_packages, dict) or set(component_packages) != COMPONENT_PACKAGES:
         raise ValueError("component_packages must freeze all public Zebra React SDK packages")
     if any(
         not isinstance(version, str) or VERSION_RE.fullmatch(version) is None
@@ -159,12 +220,14 @@ def validate_candidate(
         raise ValueError("database must be an object")
     _require_keys(
         database,
-        {"zebra_schema", "trench_revision", "backward_compatible"},
+        {"zebra_schema", "backward_compatible"} | ({"trench_revision"} if joint else set()),
         "database",
     )
     if not isinstance(database["zebra_schema"], int) or database["zebra_schema"] < 1:
         raise ValueError("database.zebra_schema must be a positive integer")
-    if not isinstance(database["trench_revision"], str) or not database["trench_revision"]:
+    if joint and (
+        not isinstance(database["trench_revision"], str) or not database["trench_revision"]
+    ):
         raise ValueError("database.trench_revision must be non-empty")
     if database["backward_compatible"] is not True:
         raise ValueError("database migration must preserve rollback compatibility")
@@ -201,13 +264,16 @@ def validate_candidate(
             raise ValueError(f"protocols.{key} must be non-empty")
 
     digests = candidate["config_digests"]
-    if not isinstance(digests, dict) or set(digests) != {"zebra", "trench"}:
-        raise ValueError("config_digests must contain only zebra and trench")
+    digest_keys = {"zebra", "trench"} if joint else {"zebra"}
+    if not isinstance(digests, dict) or set(digests) != digest_keys:
+        raise ValueError(f"config_digests must contain only {sorted(digest_keys)}")
     for key, value in digests.items():
         _require_real_digest(value, f"config_digests.{key}")
     artifact_refs = candidate["test_artifact_refs"]
-    if not isinstance(artifact_refs, list) or not artifact_refs or any(
-        not isinstance(value, str) or not value.strip() for value in artifact_refs
+    if (
+        not isinstance(artifact_refs, list)
+        or not artifact_refs
+        or any(not isinstance(value, str) or not value.strip() for value in artifact_refs)
     ):
         raise ValueError("test_artifact_refs must contain evidence locations")
 
@@ -237,34 +303,37 @@ def validate_candidate(
     rollback = candidate["rollback"]
     if not isinstance(rollback, dict):
         raise ValueError("rollback must be an object")
+    rollback_images = {"zebra_image"} | (
+        {"trench_api_image", "trench_frontend_image"} if joint else set()
+    )
     _require_keys(
         rollback,
         {
-            "zebra_image",
-            "trench_api_image",
-            "trench_frontend_image",
             "disable_capabilities",
             "database_forward_compatible",
-        },
+        }
+        | rollback_images,
         "rollback",
     )
-    for key in ("zebra_image", "trench_api_image", "trench_frontend_image"):
+    for key in rollback_images:
         _require_image(rollback[key], f"rollback.{key}")
     disabled = rollback["disable_capabilities"]
-    if not isinstance(disabled, list) or not disabled or any(
-        not isinstance(value, str) or value not in capabilities for value in disabled
+    if (
+        not isinstance(disabled, list)
+        or not disabled
+        or any(not isinstance(value, str) or value not in capabilities for value in disabled)
     ):
         raise ValueError("rollback.disable_capabilities must name candidate capabilities")
     if rollback["database_forward_compatible"] is not True:
         raise ValueError("rollback must not require a database down migration")
 
     return {
-        "schema_version": "zebra.cloud-rollout-attestation.v1",
+        "schema_version": f"zebra.cloud-rollout-attestation.{'v1' if joint else 'v2'}",
         "candidate_id": candidate["candidate_id"],
         "candidate_sha256": _canonical_digest(candidate),
         "release_manifest_sha256": actual_release_digest,
         "zebra_commit": zebra["commit"],
-        "trench_commit": trench["commit"],
+        **({"trench_commit": trench["commit"]} if joint else {}),
         "component_packages": dict(sorted(component_packages.items())),
         "status": "PASS",
     }

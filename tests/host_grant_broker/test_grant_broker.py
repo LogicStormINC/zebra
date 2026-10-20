@@ -40,6 +40,7 @@ def _settings(key) -> BrokerSettings:
         encryption_algorithm=serialization.NoEncryption(),
     ).decode()
     return BrokerSettings(
+        authority_mode="trench_legacy",
         issuer="https://broker.local",
         audience="zebra",
         host_app_id="trench",

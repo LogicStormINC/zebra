@@ -119,7 +119,7 @@ def _policy_from_origin(
         or task_binding.binding_digest != authority["binding_digest"]
         or task_binding.host_capability.host_context != raw.host_context
         or admission.contract != binding.contract
-        or binding.snapshot.source_resource_ref != admission.history_ref
+        or binding.snapshot.source_resource_ref != admission.source_resource.resource_id
     ):
         raise ValueError("model admission disagrees with run/history/Task binding")
     return CoverageModelPolicy(

@@ -29,7 +29,8 @@ def render(*, overlay=True, keys=True):
     if overlay:
         command += ["-f", str(OVERLAY)]
     return subprocess.run(
-        [*command, "config", "--format", "json"], env=env, capture_output=True,
+        [*command, "--profile", "scheduler", "config", "--format", "json"],
+        env=env, capture_output=True,
         text=True, timeout=20, check=False,
     )
 

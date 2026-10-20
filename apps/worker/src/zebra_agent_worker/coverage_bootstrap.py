@@ -100,7 +100,9 @@ def bootstrap_cloud_coverage(
     if (
         source.session_id != session_id
         or source.host.bound != host_authority
-        or source.host.resource.resource_id != admission.history_ref
+        or source.host.resource != admission.source_resource
+        or (source.host.contract is not None and source.host.contract != admission.contract)
+        or (admission.contract.schema_version == 2 and source.host.contract is None)
     ):
         raise ValueError("coverage source does not bind the admitted Session and Host context")
     pinned_binding: str | None = None

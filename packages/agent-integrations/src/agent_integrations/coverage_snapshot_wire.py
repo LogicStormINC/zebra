@@ -5,6 +5,8 @@ import binascii
 from typing import Literal
 
 from agent_core.domain.coverage_contracts import (
+    CoverageContract,
+    CoverageContractVersion,
     CoverageCount,
     CoverageDigest,
     CoverageModel,
@@ -13,6 +15,7 @@ from agent_core.domain.coverage_contracts import (
     CoverageRefusedError,
     CoverageSchemaVersion,
     CoverageScope,
+    CoverageSelectionScope,
     CoverageTime,
     coverage_digest,
 )
@@ -22,6 +25,7 @@ from agent_core.domain.coverage_snapshot import (
     CoverageRecord,
     CoverageSnapshot,
 )
+from agent_core.domain.host_authority import HostContextEnvelope, HostResourceRef
 from pydantic import Field, ValidationError, field_validator
 
 
@@ -62,6 +66,82 @@ class SnapshotWire(CoverageModel):
         if not isinstance(value, dict) or set(value) != set(CoverageScope.model_fields):
             raise ValueError("scope must contain every v1 field")
         return value
+
+
+class SourceProvenance(CoverageModel):
+    dataset: CoverageName
+    dataset_revision: CoverageName
+    resource_ref: HostResourceRef
+    workspace_ref: CoverageName
+    authority_revision: CoverageDigest
+
+
+class SnapshotWireV2(CoverageModel):
+    schema_version: CoverageContractVersion
+    status: Literal["ready"]
+    snapshot: Descriptor
+    sealed_at: CoverageTime
+    content_capabilities: tuple[Literal["canonical_body"], ...]
+    scope: CoverageSelectionScope
+    provenance: SourceProvenance
+
+    @field_validator("schema_version")
+    @classmethod
+    def require_v2(cls, value: int) -> int:
+        if value != 2:
+            raise ValueError("v2 wire requires schema_version 2")
+        return value
+
+
+def parse_snapshot_wire(
+    value: object, contract: CoverageContract | None = None
+) -> SnapshotWire | SnapshotWireV2:
+    if contract is not None and contract.schema_version == 2:
+        return parse(SnapshotWireV2, value, CoverageRefusalReason.SCOPE_MISMATCH)
+    return parse(SnapshotWire, value, CoverageRefusalReason.SCOPE_MISMATCH)
+
+
+def validate_snapshot_provenance(
+    wire: SnapshotWire | SnapshotWireV2,
+    *,
+    contract: CoverageContract | None,
+    authority: HostContextEnvelope,
+    source_ref: HostResourceRef,
+) -> None:
+    snapshot = wire.snapshot
+    mismatch = (
+        snapshot.namespace != authority.namespace_id
+        or snapshot.host_id != authority.host_app_id
+        or wire.provenance.workspace_ref != authority.workspace_ref
+        or wire.content_capabilities != ("canonical_body",)
+        or wire.scope.digest != snapshot.scope_digest
+        or not snapshot.as_of <= wire.sealed_at < snapshot.expires_at
+    )
+    if isinstance(wire, SnapshotWireV2):
+        mismatch |= (
+            contract is None
+            or contract.schema_version != 2
+            or wire.provenance.resource_ref != source_ref
+            or wire.provenance.authority_revision != snapshot.authority_revision
+            or (
+                contract is not None
+                and (
+                    wire.provenance.dataset != contract.dataset
+                    or wire.provenance.dataset_revision != contract.dataset_revision
+                    or source_ref.resource_type != contract.source_definition.resource_type
+                )
+            )
+        )
+    else:
+        mismatch |= (
+            (contract is not None and contract.schema_version != 1)
+            or wire.provenance.history_ref != source_ref.resource_id
+            or wire.provenance.periods_digest != snapshot.authority_revision
+        )
+    if contract is not None:
+        mismatch |= wire.scope != contract.scope or snapshot.contract_digest != contract.digest
+    if mismatch:
+        raise CoverageRefusedError(CoverageRefusalReason.SCOPE_MISMATCH)
 
 
 class PageWire(CoveragePage):

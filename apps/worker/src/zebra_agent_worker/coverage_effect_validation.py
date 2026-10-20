@@ -5,8 +5,13 @@ from dataclasses import fields
 from datetime import UTC, datetime
 from uuid import NAMESPACE_URL, uuid5
 
+from agent_core.domain.coverage_contracts import (
+    CoverageContract,
+    CoverageRefusedError,
+    coverage_digest,
+)
 from agent_core.domain.coverage_contracts import CoverageRefusalReason as Reason
-from agent_core.domain.coverage_contracts import CoverageRefusedError, coverage_digest
+from agent_core.domain.coverage_legacy_source import LEGACY_COVERAGE_SOURCE
 from agent_core.domain.coverage_task_admission import CoverageTaskAdmission
 from agent_core.domain.host_authority import HostContextEnvelope, HostResourceRef
 from agent_core.domain.host_capability_manifests import ResourceBindingRule
@@ -20,15 +25,20 @@ from agent_core.domain.tools import (
     ToolRisk,
 )
 from agent_core.ports.effect_dispatch import effect_input
-from agent_integrations.coverage_snapshot_invocation import HISTORY_RESOURCE_TYPE, unique_object
+from agent_integrations.coverage_snapshot_invocation import unique_object
 from agent_integrations.coverage_snapshot_source import MAX_RECORDS
-from agent_integrations.coverage_snapshot_wire import SnapshotWire, parse
+from agent_integrations.coverage_snapshot_wire import (
+    parse_snapshot_wire,
+    validate_snapshot_provenance,
+)
 from agent_integrations.host_tools.contracts import HostToolManifest
 
 CREATE = "dataset.snapshot.create"
 
 
-def frozen_manifest(value: HostToolManifest) -> HostToolManifest:
+def frozen_manifest(
+    value: HostToolManifest, contract: CoverageContract | None = None,
+) -> HostToolManifest:
     if type(value) is not HostToolManifest or value.digest == "0" * 64:
         raise ValueError("coverage requires a real Host manifest")
     for entry in value.tools:
@@ -50,6 +60,10 @@ def frozen_manifest(value: HostToolManifest) -> HostToolManifest:
     pinned = HostToolManifest.from_payload(value.to_payload())
     if pinned != value:
         raise ValueError("Host manifest raw shape differs from its frozen contract")
+    source = contract.source_definition if contract is not None else LEGACY_COVERAGE_SOURCE
+    resource_argument = (
+        "source_ref" if contract is not None and contract.schema_version == 2 else "history_ref"
+    )
     tool = pinned.get(CREATE)
     rules = pinned.resource_bindings_for(CREATE)
     if (
@@ -57,11 +71,12 @@ def frozen_manifest(value: HostToolManifest) -> HostToolManifest:
         or tool.risk is not ToolRisk.WRITE
         or tool.execution_location is not ToolExecutionLocation.HOST
         or tool.idempotency is not ToolIdempotency.REQUIRED
-        or "history.snapshot.write" not in tool.scopes
+        or not {source.read_scope, source.create_scope}.issubset(tool.scopes)
         or not pinned.resource_bindings_declared
         or len(rules) != 1
-        or rules[0].argument_pointer != "/history_ref"
-        or rules[0].resource_type != HISTORY_RESOURCE_TYPE
+        or rules[0].argument_pointer != "/" + resource_argument
+        or rules[0].resource_type != source.resource_type
+        or rules[0].match_mode != "exact"
         or not rules[0].required
     ):
         raise ValueError("Host snapshot-create write/resource contract is unsupported")
@@ -70,7 +85,9 @@ def frozen_manifest(value: HostToolManifest) -> HostToolManifest:
 
 def create_arguments(admission: CoverageTaskAdmission) -> dict[str, object]:
     return {
-        "history_ref": admission.history_ref,
+        "source_ref" if admission.contract.schema_version == 2 else "history_ref": (
+            admission.source_resource.resource_id
+        ),
         "scope": admission.contract.scope.model_dump(mode="json"),
         "contract_digest": admission.contract.digest,
         "content_requirements": list(admission.contract.content_requirements),
@@ -124,20 +141,20 @@ def validate_result(
         )
     except (ValueError, TypeError) as exc:
         raise CoverageRefusedError(Reason.UPSTREAM_NOT_READY) from exc
-    wire = parse(SnapshotWire, value, Reason.UPSTREAM_NOT_READY)
+    try:
+        wire = parse_snapshot_wire(value, admission.contract)
+    except CoverageRefusedError as exc:
+        raise CoverageRefusedError(Reason.UPSTREAM_NOT_READY) from exc
+    try:
+        validate_snapshot_provenance(
+            wire, contract=admission.contract, authority=context,
+            source_ref=admission.source_resource,
+        )
+    except CoverageRefusedError as exc:
+        raise CoverageRefusedError(Reason.AUTHORITY_INVALID) from exc
     snapshot = wire.snapshot
     if (
-        snapshot.namespace != context.namespace_id
-        or snapshot.host_id != context.host_app_id
-        or wire.provenance.history_ref != admission.history_ref
-        or wire.provenance.workspace_ref != context.workspace_ref
-        or wire.provenance.periods_digest != snapshot.authority_revision
-        or wire.content_capabilities != ("canonical_body",)
-        or wire.scope != admission.contract.scope
-        or wire.scope.digest != snapshot.scope_digest
-        or snapshot.contract_digest != admission.contract.digest
-        or not snapshot.as_of <= wire.sealed_at < snapshot.expires_at
-        or not snapshot.as_of <= datetime.now(UTC) < snapshot.expires_at
+        not snapshot.as_of <= datetime.now(UTC) < snapshot.expires_at
         or snapshot.record_count > MAX_RECORDS
     ):
         raise CoverageRefusedError(Reason.AUTHORITY_INVALID)

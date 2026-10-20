@@ -48,13 +48,23 @@ from tests.agent_storage.test_postgres_command_wakeup import (  # noqa: F401
 from tests.agent_storage.test_s3_artifact_objects import _FakeS3Client
 
 
-def inputs(*, strict=True):
+def inputs(*, strict=True, v2=False):
     now = datetime.now(UTC)
-    host = AUTHORITY.model_copy(update={"expires_at": now + timedelta(hours=1)})
-    contract = CONTRACT.model_copy(update={"checks": (semantic_check("review").contract_check,)})
+    from tests.agent_integrations.test_coverage_snapshot_v2 import (
+        V2_AUTHORITY,
+        V2_CONTRACT,
+        V2_SOURCE,
+    )
+
+    host = (V2_AUTHORITY if v2 else AUTHORITY).model_copy(
+        update={"expires_at": now + timedelta(hours=1)},
+    )
+    contract = (V2_CONTRACT if v2 else CONTRACT).model_copy(
+        update={"checks": (semantic_check("review").contract_check,)},
+    )
     admission = CoverageTaskAdmission(
         contract=contract,
-        history_ref="history",
+        **({"source_ref": V2_SOURCE} if v2 else {"history_ref": "history"}),
         model_profile="review",
         execution_budget=CoverageExecutionBudget(max_attempts=100, max_input_bytes=1000),
         max_model_calls=100,
@@ -71,9 +81,16 @@ def inputs(*, strict=True):
         )
     )
     session = bootstrap.session.session_id
-    source, wire, _ = setup_source(
-        session_id=session, authority=host, now=lambda: datetime.now(UTC)
-    )
+    if v2:
+        from tests.worker.test_coverage_v2_fixtures import setup_neutral_source
+
+        source, wire = setup_neutral_source(
+            session_id=session, authority=host, contract=contract, now=lambda: datetime.now(UTC),
+        )
+    else:
+        source, wire, _ = setup_source(
+            session_id=session, authority=host, now=lambda: datetime.now(UTC),
+        )
 
     def mutate(name, value):
         if name in {"get", "create"}:
@@ -89,6 +106,9 @@ def inputs(*, strict=True):
     ).model_dump()
     data["host_capability"].update(
         host_context=host,
+        host_app_id=host.host_app_id,
+        authority_issuer=host.origin,
+        connector_id=host.host_app_id,
         grant_digest=host_context_digest(host),
         grant_expires_at=host.expires_at,
         manifest_digest=source.host.manifest.digest,
@@ -287,7 +307,8 @@ def test_source_and_readback_refusal_never_bind(component, monkeypatch, problem)
 
 @pytest.fixture
 def cloud(dsn, request):  # noqa: F811 - schema fixture, never the pre-bound publication fixture
-    env = inputs(strict=getattr(request, "param", True))
+    mode = getattr(request, "param", True)
+    env = inputs(strict=mode is not False, v2=mode == "v2")
     PostgresTaskAdmissionTransaction(dsn, deployment_namespace=NAMESPACE).admit(
         TaskAdmissionRequest(
             events=tuple(env.bootstrap.events),
@@ -392,6 +413,7 @@ def test_real_first_bind_readback_and_fresh_instance_retry(cloud):
 
 
 @pytest.mark.parametrize("stage", ["upload", "receipt", "bind"])
+@pytest.mark.parametrize("cloud", [True, "v2"], indirect=True)
 def test_real_crash_recovery_without_duplicate_events(cloud, monkeypatch, stage):
     env = cloud
     before = counts(env)

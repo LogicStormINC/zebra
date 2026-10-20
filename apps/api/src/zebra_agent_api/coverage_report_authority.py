@@ -5,11 +5,12 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
-from agent_core.domain.host_authority import HostContextEnvelope
+from agent_core.domain.coverage_contracts import CoverageContract
+from agent_core.domain.coverage_legacy_source import LEGACY_COVERAGE_SOURCE
+from agent_core.domain.host_authority import HostContextEnvelope, HostResourceRef
 from agent_core.domain.host_connectors import HostConnectorProfileVersion, HostConnectorStatus
 from agent_core.domain.identifiers import TaskId
 from agent_core.domain.task_bindings import TaskBindingSnapshot
-from agent_integrations.coverage_snapshot_invocation import HISTORY_RESOURCE_TYPE
 from agent_security.host_grant import VerifiedHostGrant
 from agent_storage.postgres.host_auth import PostgresHostAuthorityStore
 from agent_storage.postgres.host_connectors import PostgresHostConnectorRegistry
@@ -25,13 +26,8 @@ def _resource(context: HostContextEnvelope, kind: str) -> str:
     return refs[0]
 
 
-def validate_report_grant(
-    binding: TaskBindingSnapshot,
-    grant: VerifiedHostGrant,
-    *,
-    history_ref: str,
-) -> None:
-    """A fresh read grant replaces neither the Task's owner nor its resource."""
+def validate_report_owner(binding: TaskBindingSnapshot, grant: VerifiedHostGrant) -> None:
+    """Check owner before reading source metadata; old execution expiry is irrelevant."""
     if type(grant) is not VerifiedHostGrant:
         raise PermissionError("verified report authority required")
     fresh = grant.context
@@ -42,7 +38,7 @@ def validate_report_grant(
         or fresh.expires_at is None
         or datetime.now(UTC) >= fresh.expires_at
         or grant.grant_id != fresh.grant_id
-        or not {"history.read", "artifact.read"} <= set(fresh.scopes)
+        or "artifact.read" not in fresh.scopes
         or grant.authority_issuer != host.authority_issuer
         or fresh.host_app_id != host.host_app_id
         or fresh.namespace_id != host.namespace_id
@@ -51,10 +47,35 @@ def validate_report_grant(
         or fresh.origin != bound.origin
         or fresh.workspace_ref != bound.workspace_ref
         or _resource(fresh, "principal") != _resource(bound, "principal")
-        or _resource(fresh, HISTORY_RESOURCE_TYPE) != history_ref
-        or _resource(bound, HISTORY_RESOURCE_TYPE) != history_ref
+        or grant.subject_ref != _resource(fresh, "principal")
     ):
         raise PermissionError("report authority does not match the frozen Task")
+
+
+def validate_report_grant(
+    binding: TaskBindingSnapshot,
+    grant: VerifiedHostGrant,
+    *,
+    history_ref: str | None = None,
+    source_ref: HostResourceRef | None = None,
+    contract: CoverageContract | None = None,
+) -> None:
+    """A fresh read grant replaces neither the Task's owner nor its source."""
+    validate_report_owner(binding, grant)
+    definition = contract.source_definition if contract is not None else LEGACY_COVERAGE_SOURCE
+    if source_ref is None:
+        if history_ref is None or contract is not None and contract.schema_version != 1:
+            raise PermissionError("report requires the frozen source resource")
+        source_ref = HostResourceRef(type=definition.resource_type, id=history_ref)
+    bound = binding.host_capability.host_context
+    assert bound is not None
+    if (
+        source_ref.resource_type != definition.resource_type
+        or definition.read_scope not in grant.context.scopes
+        or _resource(grant.context, definition.resource_type) != source_ref.resource_id
+        or _resource(bound, definition.resource_type) != source_ref.resource_id
+    ):
+        raise PermissionError("report source authority does not match the frozen Task")
 
 
 def current_report_profile(
@@ -63,12 +84,16 @@ def current_report_profile(
     binding: TaskBindingSnapshot,
     grant: VerifiedHostGrant,
     *,
-    history_ref: str,
+    history_ref: str | None = None,
+    source_ref: HostResourceRef | None = None,
+    contract: CoverageContract | None = None,
     dsn: str,
     deployment: str,
 ) -> HostConnectorProfileVersion:
     """No grant consumption, renewal, manifest discovery or registry mutation."""
-    validate_report_grant(binding, grant, history_ref=history_ref)
+    validate_report_grant(
+        binding, grant, history_ref=history_ref, source_ref=source_ref, contract=contract
+    )
     control = api.cloud_control
     if (
         control is None

@@ -114,9 +114,7 @@ def test_exact_raw_key_retry_reuses_operation_and_whitespace_variant_is_distinct
         return ToolResult.model_validate_json(operations[idempotency_key].model_dump_json())
 
     options["admitted_effect_invoke"] = host_idempotency
-    first = type(source)(**options).create(
-        CONTRACT, authority=AUTHORITY, idempotency_key=" key "
-    )
+    first = type(source)(**options).create(CONTRACT, authority=AUTHORITY, idempotency_key=" key ")
     fresh = type(source)(**{**options, "now": lambda: NOW + timedelta(seconds=1)})
     assert fresh.create(CONTRACT, authority=AUTHORITY, idempotency_key=" key ") == first
     assert [key for key, _ in calls] == [" key ", " key "]
@@ -160,12 +158,14 @@ def test_raw_key_canonical_arguments_and_process_time_independence():
     first = host.call("create", args, AUTHORITY, host.budget(AUTHORITY), " key ")["call_id"]
     fresh = invocation(ready, later=1)
     reordered = {"items": ["中文", "two"], "scope": {"a": 1, "b": 2}}
-    assert fresh.call("create", reordered, AUTHORITY, fresh.budget(AUTHORITY), " key ")[
-        "call_id"
-    ] == first
-    assert fresh.call("create", reordered, AUTHORITY, fresh.budget(AUTHORITY), "key")[
-        "call_id"
-    ] != first
+    assert (
+        fresh.call("create", reordered, AUTHORITY, fresh.budget(AUTHORITY), " key ")["call_id"]
+        == first
+    )
+    assert (
+        fresh.call("create", reordered, AUTHORITY, fresh.budget(AUTHORITY), "key")["call_id"]
+        != first
+    )
     script = (
         "import sys; "
         "from agent_core.domain.host_authority import HostContextEnvelope; "
@@ -195,8 +195,12 @@ def test_raw_key_canonical_arguments_and_process_time_independence():
         {"expires_at": NOW + timedelta(hours=2)},
         {"scopes": ["history.read", "history.snapshot.write", "extra"]},
         {"limits": {**AUTHORITY.limits.model_dump(), "max_model_tokens": 101}},
-        {"resource_refs": [*AUTHORITY.model_dump(mode="json")["resource_refs"],
-                           {"type": "other", "id": "extra"}]},
+        {
+            "resource_refs": [
+                *AUTHORITY.model_dump(mode="json")["resource_refs"],
+                {"type": "other", "id": "extra"},
+            ]
+        },
     ],
 )
 def test_full_host_context_changes_identity(update):
@@ -226,9 +230,10 @@ def test_key_manifest_history_and_actual_arguments_do_not_alias():
     assert create_id(authority=changed, history_ref="other") != baseline
     host = invocation(ready)
     for args in ({"scope": "other"}, {"history_ref": "other"}, {"items": [1, 2]}):
-        assert host.call("create", args, AUTHORITY, host.budget(AUTHORITY), "admitted-key")[
-            "call_id"
-        ] != baseline
+        assert (
+            host.call("create", args, AUTHORITY, host.budget(AUTHORITY), "admitted-key")["call_id"]
+            != baseline
+        )
 
 
 @pytest.mark.parametrize("name", ["get", "page", "read"])
@@ -259,3 +264,24 @@ def test_generic_reconciled_receipt_cannot_supply_descriptor(output):
     with pytest.raises(CoverageRefusedError):
         fresh.create(CONTRACT, authority=AUTHORITY, idempotency_key="key")
     assert wire.calls == []
+
+
+def test_v1_typed_source_ref_preserves_legacy_create_identity():
+    from agent_core.domain.host_authority import HostResourceRef
+
+    old = invocation(ready)
+    typed = invocation(ready)
+    from agent_integrations.coverage_snapshot_invocation import CoverageInvocation
+
+    typed = CoverageInvocation(
+        authority=AUTHORITY,
+        source_ref=HostResourceRef(type="trench.history", id="history"),
+        manifest=typed.manifest,
+        invoke=ready,
+        admitted_effect_invoke=ready,
+        now=lambda: NOW,
+    )
+    args = {"scope": "scope"}
+    assert old.call("create", args, AUTHORITY, old.budget(AUTHORITY), "key") == typed.call(
+        "create", args, AUTHORITY, typed.budget(AUTHORITY), "key"
+    )

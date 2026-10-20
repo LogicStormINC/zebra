@@ -13,6 +13,28 @@ composition is the delivery target. Zebra turns Agent requests into durable,
 streamable, stoppable, resumable, and auditable execution while remaining
 independent of the business system that calls it.
 
+Coverage integrations support an explicit version 2 source contract with opaque
+selectors, declared resource permissions and dataset revisions. Legacy version 1
+contracts and historical proof identities remain supported without data rewrites.
+See [Coverage integration and compatibility](docs/CLOUD_AGENT_DECOUPLING_BATCH3.md)
+for the fixed source ABI, authorization rules and validation boundaries.
+
+Runtime broker messages are command wakeup hints only. Product Turn/source
+messages and joint topology use explicit compatibility adapters. Existing v1
+history remains readable; compatibility retirement requires inventory, pinning or
+drain and rollback material, without modifying historical records.
+See [message ownership and product acceptance](docs/CLOUD_AGENT_DECOUPLING_BATCH4.md).
+Run `make test-product-conformance` for fixture-backed protocol checks and
+`make test-product-conformance-postgres` with an isolated test PostgreSQL DSN for
+storage/recovery checks. Both refuse empty or skipped acceptance runs.
+
+The four-batch integration audit and compatibility limits are recorded in
+[the audit report](docs/CLOUD_AGENT_DECOUPLING_AUDIT.md). Updated API/Worker
+binaries require additive migration v107 before startup. Coordinate admission
+and Worker upgrades before admitting tasks with new Host-scoped manifest freezes;
+older Workers cannot read freezes stored only in the new table. Historical
+records and their digest lookup remain available after migration.
+
 ## License
 
 Zebra Agent is released under the GNU General Public License v3.0 or later
@@ -100,6 +122,21 @@ for the application/dependency Compose split. Read
 [docs/AGENT_TASKS.md](./docs/AGENT_TASKS.md) for task ownership and status. The
 adaptive execution boundary is specified in
 [docs/自适应Agent循环与预算治理方案_v1.0.md](./docs/自适应Agent循环与预算治理方案_v1.0.md).
+
+## Independent Runtime deployment
+
+The default application Compose and rollout candidate v2 are product-neutral.
+Build/boot requires Runtime infrastructure (PostgreSQL, Redis, S3 and an isolated
+engine), not a Trench service, business database, cookie or business CA.
+Existing deployments explicitly append `docker/compose.trench-compat.yml` after
+any local-gVisor overlay; this preserves the historical legacy API, Scheduler
+identity and private CA mounts. Do not recreate an old deployment from the base
+file alone. Joint rollout v1 remains supported and requires its product gate.
+
+See [the decoupling design](docs/CLOUD_AGENT_DECOUPLING.md),
+[the implementation checklist](docs/superpowers/plans/2026-10-20-cloud-agent-decoupling.md)
+and [Docker instructions](docker/README.md). First batch only: Broker business
+authorization, schedule renewal and coverage dataset decoupling remain later work.
 
 ## Capability Baseline
 
@@ -728,3 +765,11 @@ Focused references:
 | Who owns and reviews a change? | RACI reference and the current task card |
 
 Repository precedence and working rules are defined in `AGENTS.md`.
+
+
+Cloud decoupling batch02 adds an external current-authority adapter, explicit
+Host resource-binding manifests and opaque-resource schedule renewal. Existing
+Trench integration is retained through explicit compatibility settings; historical
+profiles and frozen manifests keep their original digests. Deployment requires the
+additive v106 nullable policy-column migration. Configuration, developer contracts
+and acceptance boundaries are in [the batch02 design](docs/CLOUD_AGENT_DECOUPLING_BATCH2.md).

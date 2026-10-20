@@ -85,8 +85,8 @@ def effect(cloud):
     env = cloud
     env.transport = SignedHost(env)
     env.gateway = HostToolGateway(
-        "https://trench.example",
-        HostWorkloadIdentity("worker", "ns", "trench"),
+        env.host.origin,
+        HostWorkloadIdentity("worker", env.host.namespace_id, env.host.host_app_id),
         shared_secret="fixture-secret",
         transport=env.transport,
         manifest=env.source.host.manifest,
@@ -133,7 +133,7 @@ def effect(cloud):
 
 def invocation(env, key=" opaque key "):
     args = create_arguments(env.admission)
-    resource = HostResourceRef(type="trench.history", id=env.admission.history_ref)
+    resource = env.admission.source_resource
     call = ToolCall(
         tool_call_id=create_call_id(key, env.host, env.gateway.manifest, args, resource),
         name=CREATE,
@@ -162,6 +162,7 @@ def persisted(env):
         }
 
 
+@pytest.mark.parametrize("cloud", [True, "v2"], indirect=True)
 def test_signed_source_mixed_queue_replacement_replays_original_once(effect):
     env = effect
     sibling = env.dispatch.schedule(
@@ -175,7 +176,8 @@ def test_signed_source_mixed_queue_replacement_replays_original_once(effect):
     source = HostCoverageSnapshotSource(
         session_id=env.session,
         authority=env.host,
-        history_ref=env.admission.history_ref,
+        contract=env.admission.contract,
+        source_ref=env.admission.source_resource,
         manifest=env.gateway.manifest,
         invoke=env.gateway.invoke,
         admitted_effect_invoke=env.callback,
@@ -216,6 +218,7 @@ def test_signed_source_mixed_queue_replacement_replays_original_once(effect):
     "problem",
     ["key", "id", "args", "context", "resource", "manifest", "raw", "policy", "revoked", "stale"],
 )
+@pytest.mark.parametrize("cloud", [True, "v2"], indirect=True)
 def test_wrong_identity_denies_before_schedule_or_transport(effect, problem):
     env = effect
     call, kwargs = invocation(env)
@@ -246,6 +249,7 @@ def test_wrong_identity_denies_before_schedule_or_transport(effect, problem):
     assert not env.transport.creates
 
 
+@pytest.mark.parametrize("cloud", [True, "v2"], indirect=True)
 def test_unknown_never_reissues(effect):
     env = effect
     env.transport.unknown = True
@@ -260,6 +264,7 @@ def test_unknown_never_reissues(effect):
 
 
 @pytest.mark.parametrize("replay", [False, True])
+@pytest.mark.parametrize("cloud", [True, "v2"], indirect=True)
 def test_stop_before_transport_or_replay(effect, replay):
     env = effect
     call, kwargs = invocation(env)
@@ -318,6 +323,7 @@ def test_constructor_rejects_non_cloud_admission():
         "receipt_float",
     ],
 )
+@pytest.mark.parametrize("cloud", [True, "v2"], indirect=True)
 def test_persistent_corruption_denies_replay_without_transport(effect, problem):
     env = effect
     call, kwargs = invocation(env)
@@ -329,6 +335,8 @@ def test_persistent_corruption_denies_replay_without_transport(effect, problem):
             raw["binding_revision"] += 1
             connection.execute("UPDATE task_binding_snapshots SET snapshot_json=%s", (Jsonb(raw),))
         elif problem in {"admission", "host_context"}:
+            # Deliberate corruption in this disposable schema, beyond native immutability.
+            connection.execute("SET LOCAL session_replication_role=replica")
             row = connection.execute(
                 "SELECT payload FROM session_events WHERE event_type=%s",
                 (EventType.TASK_PREPARED.value,),
@@ -367,6 +375,7 @@ def test_persistent_corruption_denies_replay_without_transport(effect, problem):
 
 @pytest.mark.parametrize("replay", [False, True])
 @pytest.mark.parametrize("problem", ["session_namespace", "metadata_deployment"])
+@pytest.mark.parametrize("cloud", [True, "v2"], indirect=True)
 def test_namespace_mismatch_denies_constructor_and_invocation_unchanged(effect, replay, problem):
     env = effect
     call, kwargs = invocation(env)
@@ -406,6 +415,7 @@ def replace_worker(env):
     return CloudCoverageEffectInvoke(**env.callback_kwargs)
 
 
+@pytest.mark.parametrize("cloud", [True, "v2"], indirect=True)
 def test_missing_finalized_original_output_denies_replacement_replay(effect):
     env = effect
     call, kwargs = invocation(env)
@@ -428,6 +438,7 @@ def test_missing_finalized_original_output_denies_replacement_replay(effect):
     assert len(env.transport.creates) == 1
 
 
+@pytest.mark.parametrize("cloud", [True, "v2"], indirect=True)
 def test_modified_inline_descriptor_denies_replacement_replay(effect):
     env = effect
     call, kwargs = invocation(env)

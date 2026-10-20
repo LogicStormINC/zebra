@@ -1,0 +1,61 @@
+name: Product integration conformance
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contracts:
+    name: Product-neutral contract conformance
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          python-version: "3.12"
+          version: "0.11.12"
+      - run: uv sync --frozen --all-packages --group dev
+      - run: make test-product-conformance EVIDENCE_ROOT=product-conformance-evidence
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: product-contract-conformance
+          path: product-conformance-evidence
+          if-no-files-found: error
+  storage:
+    name: Product-neutral storage and recovery conformance
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17.5-alpine3.21
+        env:
+          POSTGRES_USER: zebra
+          POSTGRES_PASSWORD: conformance-only
+          POSTGRES_DB: zebra
+        ports: [5432:5432]
+        options: >-
+          --health-cmd "pg_isready -U zebra -d zebra"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      ZEBRA_TEST_POSTGRES_DSN: postgresql://zebra:conformance-only@127.0.0.1:5432/zebra
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          python-version: "3.12"
+          version: "0.11.12"
+      - run: uv sync --frozen --all-packages --group dev
+      - run: make test-product-conformance-postgres EVIDENCE_ROOT=product-conformance-evidence
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: product-storage-conformance
+          path: product-conformance-evidence
+          if-no-files-found: error

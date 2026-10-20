@@ -10,13 +10,21 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
+from typing import Protocol
 from uuid import uuid4
 
 import jwt
 from cryptography.hazmat.primitives.asymmetric import rsa
 
 from zebra_host_grant_broker.config import BrokerSettings
-from zebra_host_grant_broker.trench_session import TrenchViewer
+
+
+class GrantIdentity(Protocol):
+    @property
+    def user_id(self) -> str: ...
+
+    @property
+    def workspace_id(self) -> str: ...
 
 
 class GrantMintError(ValueError):
@@ -60,53 +68,30 @@ class ExchangeRequest:
         if unknown:
             raise GrantMintError("scope_not_allowed")
 
-    def authorize(self, viewer: TrenchViewer) -> None:
-        if viewer.allowed_scopes is None:
-            # Legacy Hosts retain base capabilities, never implicit extension management.
-            if any(scope.startswith("extensions.") for scope in self.scopes):
-                raise GrantMintError("viewer_scope_not_allowed")
-        elif not set(self.scopes).issubset(viewer.allowed_scopes):
-            raise GrantMintError("viewer_scope_not_allowed")
-        requested_sources = {
-            resource_id
-            for resource_type, resource_id in self.resource_refs
-            if resource_type == "trench.source"
-        }
-        if requested_sources - viewer.active_source_ids:
-            raise GrantMintError("source_not_allowed")
-        requested_history = {
-            resource_id
-            for resource_type, resource_id in self.resource_refs
-            if resource_type == "trench.history"
-        }
-        if requested_history - {viewer.user_id}:
-            raise GrantMintError("history_not_allowed")
-        if self.resource_refs and not requested_sources and not requested_history:
-            raise GrantMintError("source_binding_required")
-        required_scopes = {
-            "trench.event": "event.read",
-            "trench.entity": "entity.read",
-            "trench.topic": "topic.read",
-            "trench.source": "source.read",
-            "trench.history": "history.read",
-        }
-        for resource_type, _resource_id in self.resource_refs:
-            required_scope = required_scopes.get(resource_type)
-            if required_scope is not None and required_scope not in self.scopes:
-                raise GrantMintError("resource_scope_missing")
+    def authorize(self, viewer: object) -> None:
+        """Compatibility API; generic exchange uses current-authority subsets."""
+        from zebra_host_grant_broker.legacy_authority import authorize_legacy
+
+        authorize_legacy(self, viewer)
 
 
 def mint_grant(
     settings: BrokerSettings,
     signing_key: rsa.RSAPrivateKey,
     request: ExchangeRequest,
-    viewer: TrenchViewer,
+    viewer: GrantIdentity,
     *,
     now: datetime | None = None,
     jti: str | None = None,
+    expires_at: datetime | None = None,
 ) -> str:
     issued_at = now or datetime.now(UTC)
     grant_id = jti or str(uuid4())
+    deadline = issued_at + timedelta(seconds=settings.ttl_seconds)
+    if expires_at is not None:
+        if expires_at.tzinfo is None or expires_at <= issued_at:
+            raise GrantMintError("authority_expired")
+        deadline = min(deadline, expires_at)
     claims = {
         "iss": settings.issuer,
         "aud": settings.audience,
@@ -114,7 +99,7 @@ def mint_grant(
         "jti": grant_id,
         "iat": int(issued_at.timestamp()),
         "nbf": int(issued_at.timestamp()),
-        "exp": int((issued_at + timedelta(seconds=settings.ttl_seconds)).timestamp()),
+        "exp": int(deadline.timestamp()),
         "host_app_id": settings.host_app_id,
         "namespace_id": settings.namespace_id,
         "workspace_ref": viewer.workspace_id or settings.workspace_ref,
@@ -140,7 +125,7 @@ def mint_grant(
 
 
 def _text(value: object, name: str) -> str:
-    if not isinstance(value, str):
+    if not isinstance(value, str) or len(value) > 512:
         raise GrantMintError(f"{name}_invalid")
     normalized = value.strip()
     if not normalized or len(normalized) > 512:
@@ -151,21 +136,14 @@ def _text(value: object, name: str) -> str:
 def _resource_refs(value: object) -> tuple[tuple[str, str], ...]:
     if not isinstance(value, list) or len(value) > 128:
         raise GrantMintError("resource_refs_invalid")
-    allowed_types = {
-        "trench.source",
-        "trench.event",
-        "trench.entity",
-        "trench.topic",
-        "trench.history",
-    }
     refs: list[tuple[str, str]] = []
     for item in value:
-        if not isinstance(item, dict):
+        if not isinstance(item, dict) or set(item) != {"type", "id"}:
             raise GrantMintError("resource_refs_invalid")
         resource_type = _text(item.get("type"), "resource_type")
         resource_id = _text(item.get("id"), "resource_id")
         ref = (resource_type, resource_id)
-        if resource_type not in allowed_types or ref in refs:
+        if resource_type in {"thread", "run", "principal"} or ref in refs:
             raise GrantMintError("resource_refs_invalid")
         refs.append(ref)
     return tuple(refs)

@@ -13,8 +13,7 @@ from fastapi import Request
 from fastapi.responses import JSONResponse, Response
 
 from zebra_agent_api.responses import ApiResponse
-from zebra_agent_api.routes import RouteAdapter, RouteRequest
-from zebra_agent_api.tenant_guard import tenant_scope_response
+from zebra_agent_api.routes import RouteAdapter
 
 
 def report_task_id(path: str) -> str | None:
@@ -48,13 +47,8 @@ async def coverage_report_response(request: Request, adapter: RouteAdapter) -> R
     def read() -> tuple[ApiResponse | None, tuple[CoverageCertificate, str, bytes] | None]:
         # One worker/context through owner preflight and proof; no detached timed-out work.
         with postgres_deadline(deadline):
-            denied = tenant_scope_response(
-                adapter.app,
-                RouteRequest(request.method, request.url.path, host_context=grant.context),
-            )
-            remaining_recovery_time(deadline)
-            if denied is not None:
-                return denied, None
+            # Certified reads enforce the frozen Task owner/source inside this reader.
+            # Generic execution tenant guards require agent.run and old execution refs.
             result = read_coverage_report(adapter.app, task_id, grant)
             remaining_recovery_time(deadline)
             return None, result

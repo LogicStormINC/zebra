@@ -1,3 +1,93 @@
+# Current task: CLOUD-DECOUPLE-AUDIT-01
+
+User-directed cloud-agent checkout, owner Luke Ding/executor Codex.
+Preserve prior dirty work, histories/proofs and services. No commit/push/live changes.
+
+- [x] Snapshot workspace/services and claim Ready audit task before implementation.
+- [x] Audit actual contracts/auth/renewal/Coverage/messages/deploy/release paths.
+- [x] Exact paths claimed; keys/conformance/mandatoryjointgates/routes/v107freeze fixes.
+- [x] Spec/security GO, quality APPROVE; mixedwriters and report sibling fixed.
+- [x] Final make test10376pass/2987skip exit0 (1162.17s), make check exit0;129hash/32containers.
+- [x] Formal audit/plan/registry/README/progress/handoff updated; Review, no commit/push/deploy.
+
+Previous history follows.
+
+# Current task: CLOUD-DECOUPLE-04 (2026-10-20)
+
+Owner Luke Ding/executor Codex, user-directed existing cloud-agent checkout.
+No commits/pushes/deployments, broker mutation, DB migration or history rewrite.
+
+- [x] Read design/phase/registry/progress; snapshot existing work and containers.
+- [x] Claim fourth batch after explicit user unlock; freeze owned paths before code.
+- [x] Message ownership and explicit product compatibility; topology defaults.
+- [x] Retirement evidence gate, product conformance and default dependency checks.
+- [x] Independent spec GO then quality APPROVE; binding/import guard fixes verified.
+- [x] Product contracts145pass/0skip; scratchPG87pass/0skip;3images/independent boot pass.
+- [x] Full make test10342pass/2974skip exit0 (1139.10s), make check exit0; preservation.
+- [x] Formal design/implementation checklist/progress and handoff; Review/uncommitted.
+
+Previous task history follows.
+
+# Current task: CLOUD-DECOUPLE-03 (2026-10-20)
+
+Same cloud-agent checkout, owner Luke Ding/executor Codex; preserve all prior dirty work.
+Design: docs/CLOUD_AGENT_DECOUPLING_BATCH3.md. Claim/paths in AGENT_TASKS before code.
+
+- [x] Audit proof/authority/recovery paths and freeze legacy golden/user state.
+- [x] Versioned generic contracts and source ABI, exact old JSON/digest/Effect ID goldens.
+- [x] Worker/API/storage wiring, real before-consume report checks; existing proof gates.
+- [x] Neutral product source/Effect/recovery/report flow in actual scratch PG with mocked Host/S3/model.
+- [x] Independent spec/quality reviews; make check exit0 (mypy1324/eval30).
+- [x] Consolidated real PG proof217pass and report51pass, own scratch removed.
+- [x] Complete make test10222pass/2974skip exit0 (1118.77s); make check exit0.
+  Initial10220pass/2fail/2974skip log retained; stale deadline-test fix reviewed.
+- [x] Formal documentation/registry/progress and final preservation proof; Review/uncommitted.
+
+No commit/push/live migration or existing-service restart. Prior history follows.
+
+# Current task: eval baseline repair, then CLOUD-DECOUPLE-02 (2026-10-20)
+
+User explicitly requires make test and make check exit0 BEFORE batch02 code.
+Existing cloud-agent checkout; preserve batch01/user changes and running data.
+
+- [x] Diagnose stale mutation verification in deterministic eval; claim task.
+- [x] Minimal replay fix with actual state revision and later read-only check.
+- [x] Positive/negative freshness regressions62pass; eval30/30; review approved.
+- [x] Pre-batch make check exit0.
+- [x] Pre-batch make test exit0:10075passed/2931skipped in1144.74s.
+- [x] Claim precise batch02 paths after gates; owner Luke Ding/executor Codex.
+- [x] Implement generic auth/explicit bindings/renewal.
+- [x] Focused security/compatibility and neutral-host integration verification.
+- [x] Final make check exit0; spec/quality reviews approved;5images and isolated boot pass.
+- [x] Final make test10162pass/2934skip exit0 (1127.97s), complete make check exit0.
+- [x] Preserve failed first run, final source snapshot and32container/user-file proof;
+  documentation/registry updated, local Review status, no commit/push/live cutover.
+
+No commit/push, data rewrite, production switch or existing service restart.
+Prior task-plan history follows.
+
+---
+
+# Current task: CLOUD-DECOUPLE-01 (2026-10-20)
+
+User requests formal decoupling spec + implementation list, then first batch on
+cloud-agent preserving existing capabilities/data. Registered and claimed before coding.
+Spec: docs/CLOUD_AGENT_DECOUPLING.md.
+Plan: docs/superpowers/plans/2026-10-20-cloud-agent-decoupling.md.
+
+- [x] Audit source and register owned paths; author formal spec and implementation plan.
+- [x] Independent plan review; added Scheduler/TLS/gVisor compatibility matrix.
+- [x] Product-neutral base deployment + explicit compatibility overlay.
+- [x] Versioned independent release + preserved strict joint v1; neutral SDK copy.
+- [x] Real independent build/boot + deterministic release and fail-closed checks.
+- [x] Spec/quality review and checks; final105pass; full10067pass/2931skip/1
+  pristine-HEAD eval failure; evidence and limits recorded. Local status Review.
+
+No production service/data changes, commits, pushes or registry publication requested.
+Unrelated preexisting dirty files stay intact. Previous task-plan content follows.
+
+---
+
 
 ## 2026-10-13 - Canonical observation failure: bounded graceful-close fix
 

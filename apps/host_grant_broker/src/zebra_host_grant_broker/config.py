@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import os
 from dataclasses import dataclass
 from urllib.parse import urlsplit
@@ -51,39 +52,91 @@ class BrokerSettings:
     workload_shared_secret: str = ""
     workload_clock_skew_seconds: int = 60
 
+    authority_mode: str = "generic"
+    authority_url: str = ""
+    authority_timeout_seconds: float = 5
+
+    def __post_init__(self) -> None:
+        if self.authority_mode not in {"generic", "trench_legacy"}:
+            raise BrokerConfigError("AUTHORITY_MODE must be generic or trench_legacy")
+        if self.authority_mode == "generic":
+            if not math.isfinite(self.authority_timeout_seconds) or not (
+                0 < self.authority_timeout_seconds <= 30
+            ):
+                raise BrokerConfigError("AUTHORITY_TIMEOUT_SECONDS must be in (0, 30]")
+            _https_url(self.authority_url, "AUTHORITY_URL")
+            _text(self.host_app_id, "HOST_APP_ID", 128)
+            _text(self.namespace_id, "NAMESPACE_ID", 512)
+
     @classmethod
     def from_env(cls, env: dict[str, str] | None = None) -> BrokerSettings:
         source = dict(os.environ if env is None else env)
         prefix = "ZEBRA_GRANT_BROKER_"
+        mode = source.get(f"{prefix}AUTHORITY_MODE", "generic")
+        legacy = mode == "trench_legacy"
         issuer = _https_origin(_require(source, f"{prefix}ISSUER"), "ISSUER")
         origin = _https_origin(_require(source, f"{prefix}ORIGIN"), "ORIGIN")
         private_key_pem = _private_key(source, prefix)
         return cls(
+            authority_mode=mode,
+            authority_url=(
+                _https_url(_require(source, f"{prefix}AUTHORITY_URL"), "AUTHORITY_URL")
+                if not legacy
+                else ""
+            ),
+            authority_timeout_seconds=float(
+                _bounded_int(
+                    source.get(f"{prefix}AUTHORITY_TIMEOUT_SECONDS", "5"),
+                    "AUTHORITY_TIMEOUT_SECONDS",
+                    1,
+                    30,
+                )
+            ),
             issuer=issuer,
             audience=_text(source.get(f"{prefix}AUDIENCE", "zebra"), "AUDIENCE", 512),
-            host_app_id=_text(source.get(f"{prefix}HOST_APP_ID", "trench"), "HOST_APP_ID", 128),
-            namespace_id=_text(source.get(f"{prefix}NAMESPACE_ID", "trench"), "NAMESPACE_ID", 512),
+            host_app_id=_text(
+                source.get(f"{prefix}HOST_APP_ID", "trench" if legacy else ""), "HOST_APP_ID", 128
+            ),
+            namespace_id=_text(
+                source.get(f"{prefix}NAMESPACE_ID", "trench" if legacy else ""), "NAMESPACE_ID", 512
+            ),
             workspace_ref=_text(
-                source.get(f"{prefix}WORKSPACE_REF", "trench"), "WORKSPACE_REF", 512
+                source.get(f"{prefix}WORKSPACE_REF", "trench" if legacy else "default"),
+                "WORKSPACE_REF",
+                512,
             ),
             origin=origin,
             policy_version=_text(
-                source.get(f"{prefix}POLICY_VERSION", "trench-read-v1"),
+                source.get(f"{prefix}POLICY_VERSION", "trench-read-v1" if legacy else "host-v1"),
                 "POLICY_VERSION",
                 128,
             ),
-            allowed_scopes=_scopes(source.get(f"{prefix}ALLOWED_SCOPES")),
+            allowed_scopes=_scopes(
+                source.get(f"{prefix}ALLOWED_SCOPES") or (None if legacy else "agent.run")
+            ),
             private_key_pem=private_key_pem,
             key_id=_text(
-                source.get(f"{prefix}KEY_ID", "trench-host-grant-v1"), "KEY_ID", 128
+                source.get(
+                    f"{prefix}KEY_ID", "trench-host-grant-v1" if legacy else "host-grant-v1"
+                ),
+                "KEY_ID",
+                128,
             ),
             ttl_seconds=_bounded_int(
                 source.get(f"{prefix}TTL_SECONDS", "1900"), "TTL_SECONDS", 1, 3600
             ),
-            trench_me_url=_https_url(_require(source, f"{prefix}TRENCH_ME_URL"), "TRENCH_ME_URL"),
-            trench_sources_url=_https_url(
-                _require(source, f"{prefix}TRENCH_SOURCES_URL"),
-                "TRENCH_SOURCES_URL",
+            trench_me_url=(
+                _https_url(_require(source, f"{prefix}TRENCH_ME_URL"), "TRENCH_ME_URL")
+                if legacy
+                else ""
+            ),
+            trench_sources_url=(
+                _https_url(
+                    _require(source, f"{prefix}TRENCH_SOURCES_URL"),
+                    "TRENCH_SOURCES_URL",
+                )
+                if legacy
+                else ""
             ),
             trench_timeout_seconds=float(
                 _bounded_int(

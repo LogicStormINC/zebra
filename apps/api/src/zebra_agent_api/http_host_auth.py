@@ -175,6 +175,16 @@ def validate_host_target(
             return
         _reject(ApiResponse(404, {"status": "not_found"}))
     assert binding is not None
+    from zebra_agent_api.coverage_report_http import report_task_id
+
+    if method in {"GET", "HEAD"} and report_task_id(path) is not None:
+        from zebra_agent_api.coverage_report_authority import validate_report_owner
+
+        try:
+            validate_report_owner(binding, verified)
+        except (PermissionError, ValueError):
+            _reject(ApiResponse(404, {"status": "not_found"}))
+        return
     try:
         require_task_host_context(
             binding,

@@ -26,6 +26,7 @@ from agent_core.ports.host_credential_resolver import (
     HostWorkloadCredentialResolverPort,
 )
 from agent_integrations.host_tools import HostToolGateway, HostWorkloadIdentity
+from agent_integrations.host_tools.endpoints import profile_gateway_options
 
 EGRESS_CREDENTIAL_TTL_SECONDS = 900
 
@@ -123,5 +124,5 @@ def build_pinned_host_gateway(
         connector.endpoint,
         identity,
         shared_secret=credential.token,
-        reconcile_path=connector.profile.reconcile_path_template,
+        **profile_gateway_options(connector.profile),
     )

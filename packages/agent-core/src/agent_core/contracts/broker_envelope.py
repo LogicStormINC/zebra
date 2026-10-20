@@ -91,23 +91,8 @@ class PrincipalScope(FrozenModel):
     workspace_id: OpaqueId
 
 
-class SharedSourceScope(FrozenModel):
-    kind: Literal["shared_source"]
-    service_scope_id: OpaqueId
-
-
-class TurnRef(FrozenModel):
-    kind: Literal["trench_turn"]
-    id: OpaqueId
-
-
 class ZebraCommandRef(FrozenModel):
     kind: Literal["zebra_command"]
-    id: OpaqueId
-
-
-class SourceFetchRef(FrozenModel):
-    kind: Literal["source_fetch_command"]
     id: OpaqueId
 
 
@@ -123,24 +108,12 @@ class EnvelopeFields(FrozenModel):
     causation_id: OpaqueId | None
     occurred_at: Timestamp
     traceparent: Traceparent | None
-    payload_ref: TurnRef | ZebraCommandRef | SourceFetchRef
+    payload_ref: ZebraCommandRef
 
     @model_validator(mode="after")
     def match_operation(self) -> Self:
         if self.payload_ref.id != self.operation_id:
             raise ValueError("payload_ref.id must equal operation_id")
-        return self
-
-
-class TurnEnvelope(EnvelopeFields):
-    message_type: Literal["trench.ai.turn.ready"]
-    scope: PrincipalScope
-    payload_ref: TurnRef
-
-    @model_validator(mode="after")
-    def match_turn(self) -> Self:
-        if self.aggregate_id != self.operation_id:
-            raise ValueError("turn aggregate_id must equal operation_id")
         return self
 
 
@@ -152,16 +125,7 @@ class ZebraCommandEnvelope(EnvelopeFields):
     accepted_sequence: PositiveInt
 
 
-class SourceFetchEnvelope(EnvelopeFields):
-    message_type: Literal["trench.source.fetch.ready"]
-    scope: Annotated[PrincipalScope | SharedSourceScope, Field(discriminator="kind")]
-    payload_ref: SourceFetchRef
-
-
-BrokerEnvelope = Annotated[
-    TurnEnvelope | ZebraCommandEnvelope | SourceFetchEnvelope,
-    Field(discriminator="message_type"),
-]
+BrokerEnvelope = ZebraCommandEnvelope
 _ADAPTER: TypeAdapter[BrokerEnvelope] = TypeAdapter(BrokerEnvelope)
 
 
@@ -194,7 +158,7 @@ def _check_depth(value: Any, depth: int = 0) -> None:
             _check_depth(child, depth + 1)
 
 
-def parse_broker_envelope(raw: bytes) -> BrokerEnvelope:
+def _decode_broker_json(raw: bytes) -> Any:
     """Decode bounded untrusted UTF-8 JSON without resolving referenced objects."""
     if not isinstance(raw, bytes):
         raise TypeError("raw envelope must be bytes")
@@ -207,7 +171,12 @@ def parse_broker_envelope(raw: bytes) -> BrokerEnvelope:
     except (UnicodeError, RecursionError):
         raise ValueError("invalid UTF-8 JSON or excessive nesting") from None
     _check_depth(value)
+    return value
+
+
+def parse_broker_envelope(raw: bytes) -> BrokerEnvelope:
+    """Accept Runtime commands only; product protocols require an explicit adapter."""
     try:
-        return _ADAPTER.validate_python(value)
+        return _ADAPTER.validate_python(_decode_broker_json(raw))
     except ValidationError:
         raise ValueError("invalid broker envelope contract") from None

@@ -295,7 +295,8 @@ def execute_cloud_coverage(
         source = HostCoverageSnapshotSource(
             session_id=lease.session_id,
             authority=host,
-            history_ref=admission.history_ref,
+            contract=admission.contract,
+            source_ref=admission.source_resource,
             manifest=manifest,
             invoke=gateway.invoke,
             admitted_effect_invoke=effect,
@@ -425,7 +426,7 @@ def execute_cloud_coverage(
         policy = store.initialize_model_budget(boot.binding, fence=lease.fence)
         prepared, runner = compose_coverage_checks(
             boot=boot, store=store, lease=lease, policy=policy, proof=proof, settings=settings,
-            host=host, history_ref=admission.history_ref, manifest=manifest,
+            host=host, manifest=manifest,
             invoke=gateway.invoke, effect=effect, check=check,
             invocation_factory=NativeCoverageModelInvocation,
             model_factory=NativeSemanticCoverageModel,

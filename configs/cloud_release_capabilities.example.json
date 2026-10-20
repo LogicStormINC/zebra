@@ -3,7 +3,7 @@
   "capabilities": {
     "core": "enabled",
     "cloud_dependencies": "enabled",
-    "trench": "enabled",
+    "trench": "not_enabled",
     "task_execution": "enabled",
     "redis_agent_memory": "not_enabled"
   }

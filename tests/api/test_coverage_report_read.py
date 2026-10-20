@@ -129,12 +129,12 @@ def test_report_requires_composed_cloud_storage_and_verified_grant():
         read_coverage_report(api, str(uuid4()), None)
 
 
-def profile():
+def profile(host_app_id="trench", base_uri="https://trench.example"):
     return HostConnectorProfileVersion(
-        host_app_id="trench",
-        connector_id="trench",
+        host_app_id=host_app_id,
+        connector_id=host_app_id,
         profile_revision=1,
-        base_uri="https://trench.example",
+        base_uri=base_uri,
         manifest_path="/manifest",
         invoke_path_template="/tools/invoke",
         supported_protocol_versions=("1",),
@@ -207,9 +207,34 @@ def test_current_native_registry_checks_are_read_only_and_fail_closed(monkeypatc
 @pytest.fixture
 def report_worker(monkeypatch, request):
     """Pin the real admission's profile/owner before any original proof exists."""
+    import tests.agent_integrations.test_coverage_snapshot_v2 as neutral
     import tests.worker.coverage_model_cloud_fixtures as fixtures
 
-    pinned = profile()
+    params = getattr(getattr(request.node, "callspec", None), "params", {})
+    mode = params.get("model_cloud", 600)
+    is_v2 = isinstance(mode, dict) and mode.get("v2", False)
+    pinned = profile("archive", "https://archive.example") if is_v2 else profile()
+    if is_v2:
+        pinned = pinned.model_copy(
+            update={
+                "manifest_binding_policy": "declared",
+                "manifest_path": "/capabilities",
+                "invoke_path_template": "/execute",
+            }
+        )
+        monkeypatch.setattr(
+            neutral,
+            "V2_AUTHORITY",
+            neutral.V2_AUTHORITY.model_copy(
+                update={
+                    "resource_refs": (
+                        *neutral.V2_AUTHORITY.resource_refs,
+                        HostResourceRef(type="principal", id="user-a"),
+                    ),
+                    "scopes": (*neutral.V2_AUTHORITY.scopes, "artifact.read"),
+                }
+            ),
+        )
     monkeypatch.setattr(
         fixtures,
         "AUTHORITY",
@@ -247,9 +272,9 @@ def report_worker(monkeypatch, request):
     registry.publish_profile(pinned)
     registry.bind(
         HostConnectorBinding(
-            host_app_id="trench",
+            host_app_id=pinned.host_app_id,
             namespace_id="ns",
-            connector_id="trench",
+            connector_id=pinned.connector_id,
             profile_revision=1,
             binding_revision=1,
         )
@@ -259,16 +284,18 @@ def report_worker(monkeypatch, request):
         env.dsn,
         deployment_namespace=NAMESPACE,
         manifest_digest=manifest.digest,
-        connector_id="trench",
+        connector_id=pinned.connector_id,
         profile_revision=1,
         manifest_payload=manifest.to_payload(),
     )
     return env
 
 
+@pytest.mark.parametrize("model_cloud", [600, {"v2": True}], indirect=True)
 def test_native_reader_returns_only_certified_original_bytes_and_rechecks_host(
     report_worker,
     monkeypatch,
+    model_cloud,  # noqa: F811
 ):
     from agent_core.domain.sessions import SessionStatus
     from agent_storage.postgres.direct_control import PostgresDirectControl
@@ -302,7 +329,13 @@ def test_native_reader_returns_only_certified_original_bytes_and_rechecks_host(
     assert ref == result.attempt_result.metadata["coverage_report_ref"]
     calls = env.native_requests[before:]
     assert 3 <= len(calls) <= 8
-    assert all("dataset.snapshot.get" in str(call.url) for call in calls)
+    if env.host.host_app_id == "archive":
+        import json
+
+        assert all(call.url.path == "/execute" for call in calls)
+        assert all(json.loads(call.content)["toolName"] == "dataset.snapshot.get" for call in calls)
+    else:
+        assert all("dataset.snapshot.get" in str(call.url) for call in calls)
     import zebra_agent_api.http as report_http
     from fastapi.testclient import TestClient
 
@@ -313,6 +346,8 @@ def test_native_reader_returns_only_certified_original_bytes_and_rechecks_host(
 
         def authorize(self, request):
             authentications.append(request.method)
+            assert request.before_consume is not None
+            request.before_consume(grant)
             return grant
 
     monkeypatch.setattr(report_http, "create_app", lambda *args, **kwargs: api)
@@ -356,3 +391,154 @@ def test_native_reader_returns_only_certified_original_bytes_and_rechecks_host(
     env.wire.mutate = lambda name, value: {**value, "status": "revoked"}
     with pytest.raises(ValueError):
         read_coverage_report(api, str(env.session), grant)
+
+
+def neutral_authority():
+    from agent_core.domain.coverage_contracts import CoverageContract
+
+    from tests.agent_core.test_coverage_task_admission import admission
+
+    contract = CoverageContract.model_validate(
+        admission().contract.model_dump(mode="json")
+        | {
+            "schema_version": 2,
+            "dataset": "catalog.documents",
+            "dataset_revision": "2026-10",
+            "source": {
+                "protocol": "coverage-source/2",
+                "resource_type": "catalog.collection",
+                "read_scope": "catalog.read",
+                "create_scope": "catalog.snapshot.write",
+            },
+            "scope": {"selection_ref": "collection-selection", "selection_digest": "a" * 64},
+        }
+    )
+    task, grant = authority()
+    source = HostResourceRef(type="catalog.collection", id="collection-1")
+    host = grant.context.model_copy(
+        update={
+            "host_app_id": "catalog",
+            "scopes": ("catalog.read", "artifact.read"),
+            "resource_refs": (HostResourceRef(type="principal", id="user-a"), source),
+        }
+    )
+    task = task.model_copy(
+        update={
+            "host_capability": task.host_capability.model_copy(
+                update={
+                    "host_app_id": "catalog",
+                    "host_context": host,
+                }
+            )
+        }
+    )
+    grant = replace(grant, context=host)
+    return task, grant, contract, source
+
+
+def test_neutral_report_uses_frozen_source_read_scope_without_write_permission():
+    task, grant, contract, source = neutral_authority()
+    validate_report_grant(task, grant, contract=contract, source_ref=source)
+    assert "history.read" not in grant.context.scopes
+    assert "catalog.snapshot.write" not in grant.context.scopes
+
+
+@pytest.mark.parametrize(
+    "failure",
+    [
+        "source_scope",
+        "artifact_scope",
+        "resource_id",
+        "resource_type",
+        "extra_resource",
+        "principal",
+        "subject",
+        "issuer",
+        "workspace",
+        "namespace",
+        "expiry",
+        "legacy_scope",
+    ],
+)
+def test_neutral_report_never_borrows_other_source_or_legacy_permissions(failure):
+    task, grant, contract, source = neutral_authority()
+    context = grant.context
+    updates = {
+        "source_scope": {"scopes": ("artifact.read",)},
+        "artifact_scope": {"scopes": ("catalog.read",)},
+        "resource_id": {
+            "resource_refs": (
+                HostResourceRef(type="principal", id="user-a"),
+                HostResourceRef(type="catalog.collection", id="other"),
+            )
+        },
+        "resource_type": {
+            "resource_refs": (
+                HostResourceRef(type="principal", id="user-a"),
+                HostResourceRef(type="other.collection", id="collection-1"),
+            )
+        },
+        "extra_resource": {
+            "resource_refs": (
+                *context.resource_refs,
+                HostResourceRef(type="catalog.collection", id="other"),
+            )
+        },
+        "principal": {"resource_refs": (HostResourceRef(type="principal", id="other"), source)},
+        "workspace": {"workspace_ref": "other"},
+        "namespace": {"namespace_id": "other"},
+        "expiry": {"expires_at": datetime(2000, 1, 1, tzinfo=UTC)},
+        "legacy_scope": {"scopes": ("history.read", "artifact.read")},
+    }
+    if failure == "subject":
+        grant = replace(grant, subject_ref="other")
+    elif failure == "issuer":
+        grant = replace(grant, authority_issuer="https://other.example")
+    else:
+        grant = replace(grant, context=context.model_copy(update=updates[failure]))
+    with pytest.raises(PermissionError):
+        validate_report_grant(task, grant, contract=contract, source_ref=source)
+
+
+def test_report_rejects_cross_owner_before_reading_source_metadata(monkeypatch):
+    from zebra_agent_api import coverage_report_read as reads
+
+    task, grant, _, _ = neutral_authority()
+    called = []
+    monkeypatch.setattr(reads, "_composition", lambda _: ("unused", "deployment", None))
+    monkeypatch.setattr(reads, "_run", lambda *_: called.append("source lookup"))
+    control = SimpleNamespace(
+        deployment_namespace="deployment",
+        _database=SimpleNamespace(_dsn="unused"),
+        load_task_binding=lambda _: task,
+    )
+    with pytest.raises(PermissionError):
+        reads._read_coverage_report(
+            SimpleNamespace(cloud_control=control),
+            task.task_id,
+            replace(grant, subject_ref="other"),
+            float("inf"),
+        )
+    assert called == []
+
+
+def test_real_preconsume_callback_accepts_only_exact_report_owner():
+    from zebra_agent_api.http_host_auth import _TargetRejected, validate_host_target
+
+    task, grant, _, _ = neutral_authority()
+    control = SimpleNamespace(deployment_namespace="deployment", load_task_binding=lambda _: task)
+    api = SimpleNamespace(
+        stores=SimpleNamespace(deployment_namespace="deployment"),
+        cloud_control=control,
+    )
+    path = f"/tasks/{task.task_id}/coverage/report"
+    # No agent.run/thread/run claims are needed for certified read-only downloads.
+    for method in ("GET", "HEAD"):
+        validate_host_target(api, path, method, None, grant)
+        with pytest.raises(_TargetRejected) as denied:
+            validate_host_target(api, path, method, None, replace(grant, subject_ref="other"))
+        assert denied.value.response.status_code == 404
+    # The exception must never apply to a mutation or another Task route.
+    for method, route in (("POST", path), ("GET", path + "/extra")):
+        with pytest.raises(_TargetRejected):
+            validate_host_target(api, route, method, None, grant)

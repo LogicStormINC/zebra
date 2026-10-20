@@ -238,6 +238,7 @@ def build_worker_tool_gateway(
         settings.host_tool_endpoint,
         identity,
         shared_secret=settings.host_tool_shared_secret,
+        manifest_binding_policy=settings.host_manifest_binding_policy,
     )
     try:
         manifest = host.discover(task.host_context)

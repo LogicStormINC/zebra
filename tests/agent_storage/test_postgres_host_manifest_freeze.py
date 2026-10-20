@@ -24,7 +24,8 @@ from agent_core.domain.host_connectors import (
     HostConnectorBinding,
     HostConnectorProfileVersion,
 )
-from agent_integrations.host_tools.contracts import HostToolManifest
+from agent_integrations.host_tools import HostToolGateway
+from agent_integrations.host_tools.contracts import HostToolManifest, HostWorkloadIdentity
 from agent_storage.postgres.host_connectors import PostgresHostConnectorRegistry
 from agent_storage.postgres.host_manifest_freeze import (
     load_frozen_manifest_by_digest,
@@ -43,9 +44,7 @@ def _host_context(namespace: str) -> HostContextEnvelope:
         host_app_id=HOST_APP_ID,
         namespace_id=namespace,
         workspace_ref="workspace://freeze",
-        resource_refs=(
-            HostResourceRef(resource_type="namespace", resource_id=namespace),
-        ),
+        resource_refs=(HostResourceRef(resource_type="namespace", resource_id=namespace),),
         scopes=("trench:echo",),
         limits=HostTechnicalLimits(
             max_runtime_seconds=3600,
@@ -56,6 +55,7 @@ def _host_context(namespace: str) -> HostContextEnvelope:
         policy_version="1",
     )
 
+
 HOST_APP_ID = "host-freeze"
 
 
@@ -65,9 +65,7 @@ def _manifest_payload() -> dict[str, object]:
             "name": "host.echo",
             "description": "Echo a bounded payload back from the Host.",
             "requiredArguments": ["message"],
-            "argumentProperties": {
-                "message": {"type": "string", "description": "message text"}
-            },
+            "argumentProperties": {"message": {"type": "string", "description": "message text"}},
             "parallelSafe": True,
             "capabilityVersion": "1",
             "executionLocation": "host",
@@ -85,12 +83,8 @@ def _manifest_payload() -> dict[str, object]:
     return manifest.to_payload()
 
 
-def _register_connector(
-    postgres_dsn: str, namespace: str, *, base_uri: str
-) -> None:
-    registry = PostgresHostConnectorRegistry(
-        postgres_dsn, deployment_namespace=namespace
-    )
+def _register_connector(postgres_dsn: str, namespace: str, *, base_uri: str) -> None:
+    registry = PostgresHostConnectorRegistry(postgres_dsn, deployment_namespace=namespace)
     registry.publish_profile(
         HostConnectorProfileVersion(
             host_app_id=HOST_APP_ID,
@@ -115,9 +109,7 @@ def _register_connector(
     )
 
 
-def _freeze(
-    postgres_dsn: str, namespace: str, payload: dict[str, object]
-) -> str:
+def _freeze(postgres_dsn: str, namespace: str, payload: dict[str, object]) -> str:
     digest = str(payload["manifestDigest"])
     store_frozen_manifest(
         postgres_dsn,
@@ -144,9 +136,7 @@ def _app(postgres_dsn: str, namespace: str, cloud: CloudCompositionSettings, tmp
     )
 
 
-def _cloud(
-    cloud_composition: CloudCompositionSettings, namespace: str
-) -> CloudCompositionSettings:
+def _cloud(cloud_composition: CloudCompositionSettings, namespace: str) -> CloudCompositionSettings:
     return CloudCompositionSettings(
         dsn=cloud_composition.dsn,
         deployment_namespace=namespace,
@@ -198,9 +188,12 @@ def test_admission_freezes_manifest_digest_into_binding(
     )
     assert binding is not None
     assert binding.host_capability.manifest_digest == digest
-    assert load_frozen_manifest_by_digest(
-        postgres_dsn, deployment_namespace=namespace, manifest_digest=digest
-    ) == payload
+    assert (
+        load_frozen_manifest_by_digest(
+            postgres_dsn, deployment_namespace=namespace, manifest_digest=digest
+        )
+        == payload
+    )
 
 
 def test_pinned_but_unfreezable_admission_fails_closed(
@@ -252,9 +245,7 @@ def test_worker_consumes_frozen_manifest_without_live_discovery(
         HostEgressResolver,
     )
 
-    registry = PostgresHostConnectorRegistry(
-        postgres_dsn, deployment_namespace=namespace
-    )
+    registry = PostgresHostConnectorRegistry(postgres_dsn, deployment_namespace=namespace)
     resolver = HostEgressResolver(registry, None)  # type: ignore[arg-type]
     host_context = _host_context(namespace)
     pinned = resolver.resolve(host_context)
@@ -267,12 +258,18 @@ def test_worker_consumes_frozen_manifest_without_live_discovery(
 
     HostToolGateway.discover = _no_live_discovery  # type: ignore[method-assign]
     try:
-        from zebra_agent_worker.tool_gateway_runtime import (
-            _frozen_or_discovered_manifest,
+        from zebra_agent_worker.host_gateway_resolution import (
+            frozen_or_discovered_manifest,
         )
 
-        manifest = _frozen_or_discovered_manifest(
-            pinned, host_context, digest,
+        manifest = frozen_or_discovered_manifest(
+            HostToolGateway(
+                pinned.endpoint,
+                HostWorkloadIdentity(pinned.profile.workload_identity_ref, namespace, HOST_APP_ID),
+                manifest_binding_policy=pinned.profile.manifest_binding_policy or "legacy",
+            ),
+            host_context,
+            digest,
             lambda d: load_frozen_manifest_by_digest(
                 postgres_dsn, deployment_namespace=namespace, manifest_digest=d
             ),
@@ -293,22 +290,183 @@ def test_worker_fails_closed_when_free_is_missing(
         PostgresHostConnectorRegistry,
     )
     from zebra_agent_worker.host_egress import HostEgressResolver
-    from zebra_agent_worker.tool_gateway_runtime import (
-        _frozen_or_discovered_manifest,
+    from zebra_agent_worker.host_gateway_resolution import (
+        frozen_or_discovered_manifest,
     )
 
     payload = _manifest_payload()
     digest = str(payload["manifestDigest"])  # deliberately NOT stored
     _register_connector(postgres_dsn, namespace, base_uri="https://unreachable.invalid")
-    registry = PostgresHostConnectorRegistry(
-        postgres_dsn, deployment_namespace=namespace
-    )
+    registry = PostgresHostConnectorRegistry(postgres_dsn, deployment_namespace=namespace)
     resolver = HostEgressResolver(registry, None)  # type: ignore[arg-type]
     host_context = _host_context(namespace)
     pinned = resolver.resolve(host_context)
     assert pinned is not None
     with pytest.raises(ValueError, match="frozen Host manifest is missing"):
-        _frozen_or_discovered_manifest(
-            pinned, host_context, digest,
+        frozen_or_discovered_manifest(
+            HostToolGateway(
+                pinned.endpoint,
+                HostWorkloadIdentity(pinned.profile.workload_identity_ref, namespace, HOST_APP_ID),
+                manifest_binding_policy=pinned.profile.manifest_binding_policy or "legacy",
+            ),
+            host_context,
+            digest,
             lambda d: None,
         )
+
+
+@pytest.fixture
+def namespace(postgres_dsn: str) -> str:
+    """Manifest/connector persistence needs PostgreSQL alone, independent of S3."""
+    from agent_storage import bootstrap_control_plane_epoch
+
+    value = f"host-freeze-{uuid4()}"
+    bootstrap_control_plane_epoch(postgres_dsn, deployment_namespace=value)
+    return value
+
+
+def test_declared_manifest_db_freeze_admission_recovery_and_neutral_tool(
+    postgres_dsn: str,
+    namespace: str,
+) -> None:
+    from types import SimpleNamespace
+
+    from agent_core.domain.identifiers import new_tool_call_id
+    from agent_core.domain.tools import ToolCall, ToolCallStatus
+    from agent_integrations import ConfiguredHmacHostCredentialResolver
+    from agent_integrations.host_tools import HostToolTransportResponse
+    from zebra_agent_api.host_manifest_freeze import (
+        HostManifestFreezeError,
+        resolve_frozen_manifest,
+    )
+    from zebra_agent_worker.host_gateway_resolution import (
+        frozen_or_discovered_manifest,
+        resolve_pinned_gateway,
+    )
+    from zebra_agent_worker.tool_gateway_runtime import WorkerToolGateway
+
+    from tests.agent_integrations.test_host_tools import _FakeTransport
+    from tests.worker.test_host_tool_runtime import _Local
+
+    raw = {
+        "workloadIdentity": "workload/neutral",
+        "tools": [
+            {
+                "name": "records.read",
+                "description": "Read a neutral record",
+                "scopes": ["record.read"],
+                "argumentProperties": {"query": {"type": "string"}},
+                "requiredArguments": ["query"],
+                "resourceBindings": [],
+            }
+        ],
+    }
+    declared = HostToolManifest.from_payload(raw, binding_policy="declared")
+    registry = PostgresHostConnectorRegistry(postgres_dsn, deployment_namespace=namespace)
+    profile = HostConnectorProfileVersion(
+        host_app_id="neutral-product",
+        connector_id="neutral-main",
+        profile_revision=2,
+        base_uri="https://neutral.invalid",
+        manifest_path="/manifest",
+        invoke_path_template="/invoke",
+        supported_protocol_versions=("v1",),
+        workload_identity_ref="workload/neutral",
+        credential_ref="credentials/neutral",
+        manifest_binding_policy="declared",
+    )
+    registry.publish_profile(profile)
+    registry.bind(
+        HostConnectorBinding(
+            host_app_id=profile.host_app_id,
+            namespace_id=namespace,
+            connector_id=profile.connector_id,
+            profile_revision=profile.profile_revision,
+            binding_revision=1,
+        )
+    )
+    context = _host_context(namespace).model_copy(
+        update={
+            "host_app_id": "neutral-product",
+            "scopes": ("record.read",),
+        }
+    )
+    settings = SimpleNamespace(
+        deployment="cloud",
+        storage_authority="postgresql",
+        database_url=postgres_dsn,
+    )
+    stores = SimpleNamespace(deployment_namespace=namespace)
+    # Old cached bytes cannot be admitted as the declared profile's freeze.
+    old = HostToolManifest.from_payload(raw)
+    store_frozen_manifest(
+        postgres_dsn,
+        deployment_namespace=namespace,
+        manifest_digest=old.digest,
+        connector_id=profile.connector_id,
+        profile_revision=1,
+        manifest_payload=old.to_payload(),
+    )
+    store_frozen_manifest(
+        postgres_dsn,
+        deployment_namespace=namespace,
+        manifest_digest=declared.digest,
+        connector_id=profile.connector_id,
+        profile_revision=2,
+        manifest_payload=declared.to_payload(),
+    )
+    assert resolve_frozen_manifest(settings, stores, context) == declared.to_payload()
+    gateway = resolve_pinned_gateway(
+        context,
+        registry,
+        ConfiguredHmacHostCredentialResolver("test-only-key"),
+    )
+    assert gateway is not None and gateway.manifest_binding_policy == "declared"
+    restored = frozen_or_discovered_manifest(
+        gateway,
+        context,
+        declared.digest,
+        lambda digest: load_frozen_manifest_by_digest(
+            postgres_dsn,
+            deployment_namespace=namespace,
+            manifest_digest=digest,
+        ),
+    )
+    assert restored.binding_policy == "declared"
+    assert restored.resource_bindings_for("records.read") == ()
+    gateway.transport = _FakeTransport(
+        [HostToolTransportResponse(200, {"output": "neutral record"})]
+    )
+    worker = WorkerToolGateway(
+        local=_Local(),
+        host=gateway,
+        host_context=context,
+        host_manifest=restored,
+    )
+    assert [tool.name for tool in worker.model_tools] == ["records.read"]
+    assert worker.model_tools[0].parameters["properties"] == {"query": {"type": "string"}}
+    from datetime import UTC, datetime
+
+    result = worker.execute(
+        ToolCall(
+            tool_call_id=new_tool_call_id(),
+            name="records.read",
+            arguments={"query": "hello"},
+            created_at=datetime.now(UTC),
+        )
+    )
+    assert result.status is ToolCallStatus.EXECUTED and result.output == "neutral record"
+    # Pointing a trusted declared profile at an old unmarked cache fails closed.
+    profile1 = profile.model_copy(update={"profile_revision": 1})
+    registry.publish_profile(profile1)
+    registry.bind(
+        HostConnectorBinding(
+            host_app_id=profile.host_app_id,
+            namespace_id=namespace,
+            connector_id=profile.connector_id,
+            profile_revision=1,
+            binding_revision=2,
+        )
+    )
+    with pytest.raises(HostManifestFreezeError, match="binding policy mismatch"):
+        resolve_frozen_manifest(settings, stores, context)

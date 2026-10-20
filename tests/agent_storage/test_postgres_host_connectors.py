@@ -87,9 +87,7 @@ def test_rebinding_a_revision_is_rejected_on_digest_change(
         )
 
 
-def test_binding_pins_namespace_and_cas_advances(
-    namespace: str, postgres_dsn: str
-) -> None:
+def test_binding_pins_namespace_and_cas_advances(namespace: str, postgres_dsn: str) -> None:
     registry = _registry(postgres_dsn, namespace)
     registry.publish_profile(_profile("host-c", revision=1))
     registry.publish_profile(_profile("host-c", revision=2))
@@ -155,3 +153,50 @@ def test_migration_v24_tables_exist(postgres_dsn: str, namespace: str) -> None:
         "host_connector_profiles",
         "host_connector_bindings",
     }
+
+
+def test_manifest_policy_persists_and_cannot_mutate_same_revision(
+    namespace: str,
+    postgres_dsn: str,
+) -> None:
+    registry = _registry(postgres_dsn, namespace)
+    original = _profile("neutral-product")
+    registry.publish_profile(original)
+    old = registry.get_profile(original.host_app_id, original.connector_id, 1)
+    assert old is not None and old.manifest_binding_policy is None
+    assert old.profile_digest == original.profile_digest
+    declared = original.model_copy(update={"manifest_binding_policy": "declared"})
+    with pytest.raises(ValueError, match="immutable"):
+        registry.publish_profile(declared)
+    declared = declared.model_copy(update={"profile_revision": 2})
+    registry.publish_profile(declared)
+    stored = registry.get_profile(declared.host_app_id, declared.connector_id, 2)
+    assert stored == declared
+    assert stored.profile_digest == declared.profile_digest
+    with connect(postgres_dsn) as connection:
+        with pytest.raises(Exception, match="check constraint"):
+            connection.execute(
+                "UPDATE host_connector_profiles SET manifest_binding_policy = 'auto' "
+                "WHERE deployment_namespace = %s",
+                (namespace,),
+            )
+
+
+def test_policy_migration_preserves_preexisting_rows_and_digest(postgres_dsn: str) -> None:
+    from agent_storage.postgres.host_manifest_policy_migration import HOST_MANIFEST_POLICY_MIGRATION
+
+    # A connection-local temporary table shadows the real table only in this
+    # session, allowing the exact upgrade statement to run without schema rollback.
+    with connect(postgres_dsn) as connection:
+        connection.execute(
+            "CREATE TEMP TABLE host_connector_profiles (profile_digest TEXT NOT NULL)"
+        )
+        connection.execute(
+            "INSERT INTO host_connector_profiles (profile_digest) VALUES (%s)",
+            ("a" * 64,),
+        )
+        for statement in HOST_MANIFEST_POLICY_MIGRATION.statements:
+            connection.execute(statement)
+        assert connection.execute(
+            "SELECT profile_digest, manifest_binding_policy FROM host_connector_profiles"
+        ).fetchone() == ("a" * 64, None)

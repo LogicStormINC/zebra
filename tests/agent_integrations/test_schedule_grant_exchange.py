@@ -45,6 +45,7 @@ def broker_settings(key: object) -> BrokerSettings:
         encryption_algorithm=serialization.NoEncryption(),
     ).decode()
     return BrokerSettings(
+        authority_mode="trench_legacy",
         issuer="https://broker.example",
         audience="zebra",
         host_app_id="trench",
@@ -156,6 +157,7 @@ def test_schedule_exchange_mints_and_verifies_fresh_narrowed_authority() -> None
     client = httpx.Client(transport=httpx.MockTransport(exchange))
     adapter = HttpScheduleAuthorityRevalidator(
         ScheduleGrantExchangeSettings(
+            protocol="legacy",
             exchange_url="https://broker.example/exchange",
             workload_identity="scheduler",
             workload_shared_secret="workload-secret",

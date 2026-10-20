@@ -36,3 +36,13 @@ def test_scheduler_settings_fail_before_process_start() -> None:
     values["ZEBRA_SCHEDULER_GRANT_EXCHANGE_URL"] = "http://broker.example/exchange"
     with pytest.raises(ValueError, match="HTTPS"):
         load_scheduler_settings(values)
+
+
+def test_scheduler_protocol_is_explicit_and_generic_by_default() -> None:
+    values = environment()
+    assert load_scheduler_settings(values).grant_exchange.protocol == "generic"
+    values["ZEBRA_SCHEDULER_GRANT_EXCHANGE_PROTOCOL"] = "legacy"
+    assert load_scheduler_settings(values).grant_exchange.protocol == "legacy"
+    values["ZEBRA_SCHEDULER_GRANT_EXCHANGE_PROTOCOL"] = "guess"
+    with pytest.raises(ValueError, match="protocol"):
+        load_scheduler_settings(values)

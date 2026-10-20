@@ -5,6 +5,7 @@ from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
 import pytest
+from agent_core.domain.coverage_legacy_source import LEGACY_COVERAGE_SOURCE
 from agent_core.domain.events import EventType
 from agent_storage.postgres import coverage_model_verification as verification
 from zebra_agent_worker import coverage_recovery as recovery
@@ -23,6 +24,7 @@ def recovery_phase(monkeypatch, *, state, accepted=False, native_read=None):
         started_at=now - timedelta(seconds=5),
         deadline=expiry,
     )
+    binding.contract.source_definition = LEGACY_COVERAGE_SOURCE
     binding.task_id = "task"
     binding.snapshot.expires_at = expiry
     binding.snapshot.source_resource_ref = "history"

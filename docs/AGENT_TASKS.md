@@ -1,5 +1,250 @@
 # AGENT_TASKS.md
 
+### CLOUD-EVAL-BASELINE-01 - Restore deterministic baseline verification trace
+
+- Status: Review (2026-10-20; eval30/30, make check exit0; make test
+  10075passed/2931skipped exit0; independent review approved).
+- Human owner: Luke Ding; executor: Codex.
+- Branch/worktree: existing cloud-agent primary checkout, explicit user override.
+- Owned paths: scripts/eval_release_check.py;
+  tests/agent_observability/test_eval_release_check.py; docs/AGENT_TASKS.md;
+  PROGRESS.md; WORKLOG.md; task_plan.md;
+  docs/superpowers/plans/2026-10-20-cloud-agent-decoupling.md.
+- Scope: trace six incomplete deterministic cases to the real verification
+  freshness contract; fix replay setup at source, not gate scores/thresholds.
+  No production policy weakening or fake postcondition/verification evidence.
+- Acceptance: meaningful positive/negative freshness regression, eval30/30,
+  then make check and make test both exit0 before batch02 implementation starts.
+- Delivery: preserve all batch01/user edits, no commit/push/live operations.
+
+### CLOUD-DECOUPLE-01 - Independent Runtime build, boot and release
+
+- Status: Review (2026-10-20; local first-batch implementation and native checks
+  complete; uncommitted, not merged/published; former eval baseline repaired
+  by CLOUD-EVAL-BASELINE-01, both full gates now green).
+- Human owner: Luke Ding; executor: Codex.
+- Branch/worktree: existing cloud-agent / primary checkout, explicitly selected by
+  user; overrides default new-branch/worktree workflow. Preserve unrelated edits.
+- Owned paths: docker/compose.application.yml; docker/compose.trench-compat.yml
+  (new); docker/compose.local-gvisor.yml; docker/local-gvisor/recreate-application.sh;
+  docker/.env.application.example; docker/README.md; scripts/validate_rollout_candidate.py;
+  scripts/validate_rollout_rehearsal.py; configs/cloud_rollout_candidate*.json;
+  configs/cloud_release_capabilities.example.json;
+  configs/cloud_release_capabilities.trench-joint.example.json; Makefile;
+  sdks/typescript/packages/react/src/components/agent-usage-analytics.tsx;
+  tests/test_validate_rollout_candidate.py; tests/test_validate_rollout_rehearsal.py;
+  tests/test_runtime_independence.py (new); tests/compose/application/;
+  docs/CLOUD_AGENT_DECOUPLING.md; docs/superpowers/plans/2026-10-20-cloud-agent-decoupling.md;
+  README.md; PROGRESS.md; WORKLOG.md; task_plan.md; this registry.
+- Scope: product-neutral base Compose, explicit compatibility overlay, v2 standalone
+  rollout contract retaining strict v1 joint validation, neutral SDK copy.
+  Keep scheduler available; do not weaken authority or runtime isolation.
+- Acceptance: real isolated image build and boot without Trench services/config,
+  deterministic standalone release CLI and fail-closed checks, legacy compatibility
+  tests; no production changes, data migration/rewrite or registry publication.
+- Validation: final focused105pass; SDK build/typecheck pass; real3image build
+  and isolated boot/restart pass;32existing container IDs preserved. Full suite
+  10067pass/2931skip/1inherited eval failure (same failure on pristine HEAD).
+  Full-suite snapshot predates last v2 capability guard; final105 cover that guard.
+  make check size/Ruff/mypy1319 pass, eval0.80 fails; remaining progress checks pass.
+  Spec/quality review approved; no production release acceptance claimed.
+- Successors: CLOUD-DECOUPLE-02 auth/manifest/schedule authority; -03 coverage
+  source contracts; -04 compatibility retirement and product acceptance migration.
+
+### CLOUD-DECOUPLE-02 - Product-neutral identity, tool binding and schedule renewal
+
+- Status: Review (2026-10-20; Ready unlocked and claimed after pre-batch
+  gates exit0; local implementation and verification complete, uncommitted).
+- Human owner: Luke Ding; executor: Codex. Existing cloud-agent primary checkout;
+  user override of new branch/worktree/merge workflow. No commit/push requested.
+- Owned paths: apps/host_grant_broker/; apps/scheduler/src/zebra_agent_scheduler/config.py;
+  packages/agent-integrations/src/agent_integrations/schedule_grant_exchange*.py;
+  packages/agent-integrations/src/agent_integrations/host_tools/;
+  packages/agent-core/src/agent_core/domain/host_connectors.py;
+  apps/api/src/zebra_agent_api/host_manifest_freeze.py, coverage_report_read.py;
+  tests/api/test_coverage_report_read.py;
+  apps/worker/src/zebra_agent_worker/host_egress.py, tool_gateway_runtime.py,
+  host_gateway_resolution.py; apps/config/src/zebra_agent_config/settings.py;
+  docker/compose.application.yml, compose.trench-compat.yml,
+  compose.trench-acceptance.yml, compose.rabbitmq-product-e2e.yml,
+  .env.application.example, README.md; scripts/register_host.py,
+  scripts/register_trench_host.py, scripts/publish_client_profile.py;
+  tests/host_grant_broker/; tests/agent_integrations/test_schedule_grant_exchange*.py,
+  tests/agent_integrations/test_host_tools*.py;
+  tests/agent_core/test_host_connector_contracts.py;
+  tests/worker/test_resource_binding_resolution.py, test_host_egress.py,
+  test_host_tool_runtime.py, test_task_binding_host_context.py;
+  packages/agent-storage/src/agent_storage/postgres/host_connectors.py,
+  migration_catalog_tail.py, host_manifest_policy_migration.py;
+  tests/agent_storage/test_branch_migration_catalog.py;
+  tests/agent_storage/test_postgres_host_manifest_freeze.py,
+  tests/agent_storage/test_postgres_host_connectors.py;
+  tests/api/test_host_manifest*.py; tests/scheduler/test_scheduler_config.py;
+  tests/integration/test_client_effect_suspend_resume.py;
+  tests/test_trench_client_profile.py; tests/test_runtime_independence.py;
+  README.md; PROGRESS.md; WORKLOG.md; task_plan.md; docs/AGENT_TASKS.md;
+  docs/CLOUD_AGENT_DECOUPLING*.md;
+  docs/superpowers/plans/2026-10-20-cloud-agent-decoupling.md.
+- Pre-batch evidence: .artifacts/cloud-decouple-02/pre-batch-make-{test,check}.log;
+  full test10075pass/2931skip, check including eval30/30 exit0. No batch02
+  runtime code changed before those results.
+- Validation: final make test10162pass/2934skip exit0; make check exit0
+  (mypy1323/eval30/30). Real PG focused88pass/2S3skip; client-effect PG12pass;
+  authority/renewal/frontend94pass; compatibility50pass. Spec/quality approved.
+  Five local images built; corrected worker-engine boot/preflight/401/restart
+  retention passed. Historical digest preserved, original32container IDs and
+  user files unchanged; own scratch removed. No commit/push/production DB work.
+  Evidence: .artifacts/cloud-decouple-02/validation-summary.json and design.
+  Initial full run's sole catalog expectation failure was fixed and the complete
+  suite rerun; failure log retained. Production/browser E2E not claimed.
+- Scope: move business Cookie/subscription authorization to product adapter;
+  reuse signed Host verification/registry, require explicit resource binding,
+  neutral authority renewal without scope/resource expansion. Token-pair issuer
+  remains overdoze/public identity boundary, not business auth imported into Core.
+- Acceptance: second neutral test product ordinary task, frontend effect, renewal,
+  denied cross-product resources, revocation and recovery; old authorized capability
+  preserved through explicit adapter until migrated. Exact paths narrowed at claim.
+
+### CLOUD-DECOUPLE-03 - Generic coverage contracts and business source adapter
+
+- Status: Review (2026-10-20; local implementation and validation complete;
+  uncommitted/unpushed, not integrated or deployed).
+- Human owner: Luke Ding; executor: Codex; existing cloud-agent primary checkout,
+  explicit user override of new branch/worktree/integration workflow.
+- Owned paths: packages/agent-core/src/agent_core/domain/coverage_contracts.py,
+  coverage_task_admission.py, coverage_snapshot.py, coverage_source*.py,
+  coverage_legacy*.py; packages/agent-core/src/agent_core/application/coverage_admission.py;
+  packages/agent-core/src/agent_core/ports/coverage.py;
+  packages/agent-integrations/src/agent_integrations/coverage_snapshot*.py;
+  apps/worker/src/zebra_agent_worker/coverage_bootstrap.py, coverage_dispatch.py,
+  coverage_effect.py, coverage_effect_validation.py, coverage_native_composition.py,
+  coverage_recovery.py; apps/api/src/zebra_agent_api/coverage_report_authority.py,
+  coverage_report_read.py, coverage_report_http.py, host_auth.py, http_host_auth.py;
+  packages/agent-storage/src/agent_storage/postgres/coverage_model_source.py;
+  tests/agent_core/test_coverage*.py; tests/agent_integrations/test_coverage*.py;
+  tests/worker/test_coverage*.py; tests/api/test_coverage*.py;
+  tests/agent_storage/test_coverage*.py; tests/agent_storage/test_postgres_coverage*.py;
+  tests/agent_storage/coverage_fixtures.py; tests/worker/coverage_model_cloud_fixtures.py;
+  docs/CLOUD_AGENT_DECOUPLING*.md; docs/AGENT_TASKS.md;
+  docs/superpowers/plans/2026-10-20-cloud-agent-decoupling.md;
+  README.md; PROGRESS.md; WORKLOG.md; task_plan.md.
+- Preservation: existing batch01/02 and user edits retained; pre-change file hashes,
+  original containers and legacy contract/admission golden in .artifacts/cloud-decouple-03/.
+  No commit/push/deployment, live migration or historical Event/Task rewrite.
+- Scope: move fixed dataset/history/subscription-period assumptions to product
+  adapter; version the generic snapshot contract, keep immutable identities,
+  budgets, proof checks, Effect replay and certified-publication guards.
+- Acceptance: non-Trench dataset complete/partial/expired/revoked cases,
+  interrupted recovery and every-output fail-closed certification; no historical
+  digest/event rewrite. Concrete migration and owned paths frozen before coding.
+
+- Validation: make test exit0,10222passed/2974skipped in1118.77s;
+  make check exit0 including mypy1324/eval30/30. Real scratch PostgreSQL proof/
+  Effect/recovery217pass and report/preconsume51pass, no skips. Source/contracts
+  focused1320pass; legacy JSON/digest/Manifest/CallID golden unchanged.
+  Independent design/spec/quality approved. Initial stale deadline-test patch
+  points repaired without weakening owner/deadline/no-delivery assertions;
+  all full gates rerun. Evidence: .artifacts/cloud-decouple-03/validation-summary.json.
+- Result: v2 frozen source/dataset/selector contract with fixed dataset.snapshot
+  ABI, Worker/API/storage recovery composition and readonly report permissions;
+  v1 compatibility explicit, no migration/history rewrite. Original32containers
+  and user files unchanged; scratch removed. Host/S3/model fixtures are not real
+  product acceptance. Fourth batch remains separate and Locked pending integration.
+
+### CLOUD-DECOUPLE-AUDIT-01 - Four-batch integration and compatibility audit
+
+- Status: Review (2026-10-20; implementation and full validation complete,
+  uncommitted/unpushed/undeployed; Ready task claimed before code).
+- Human owner: Luke Ding; executor: Codex; existing cloud-agent checkout at user direction.
+- Initial owned paths: scripts/check_runtime_product_boundary.py;
+  tests/test_runtime_product_boundary.py; docs/CLOUD_AGENT_DECOUPLING*.md;
+  docs/AGENT_TASKS.md; docs/superpowers/plans/2026-10-20-cloud-agent-decoupling.md;
+  README.md; PROGRESS.md; WORKLOG.md; task_plan.md.
+- Before-code extensions (confirmed audit findings, registered before edits):
+  apps/host_grant_broker/src/zebra_host_grant_broker/keys.py;
+  tests/host_grant_broker/test_keys.py; tests/conformance/product_v1/;
+  .github/workflows/product-conformance.yml; scripts/build_release_evidence.py;
+  tests/test_build_release_evidence.py; scripts/validate_rollout_candidate.py;
+  tests/test_validate_rollout_candidate.py; packages/agent-integrations/src/agent_integrations/
+  host_tools/gateway.py and endpoints.py; apps/worker/src/zebra_agent_worker/host_egress.py;
+  apps/api/src/zebra_agent_api/host_manifest_freeze.py;
+  packages/agent-storage/src/agent_storage/postgres/host_manifest_freeze.py,
+  host_manifest_revision_migration.py, migration_catalog_tail.py;
+  tests/agent_storage/test_postgres_host_manifest_freeze*.py;
+  tests/agent_storage/test_branch_migration_catalog.py;
+  tests/agent_integrations/test_host_tools*.py; tests/worker/test_host_egress.py;
+  tests/api/test_host_manifest_credentials.py.
+- Fix scope: neutral non-overwriting key bootstrap; complete/nonstale conformance
+  evidence separated from release results; respect configured connector routes;
+  immutable per-revision freeze associations, preserving historic digest reads.
+  New migration only validated in own scratch databases, not existing services.
+- Acceptance: trace actual default/runtime/legacy execution and operational entrypoints;
+  fix hidden dependencies or gaps with focused regressions, preserve immutable history/
+  proof and current capabilities, complete make test/check exit0 and formal record.
+- No commits/push/deploy, DB/queue mutations or existing-service restarts.
+- Preservation: .artifacts/cloud-decouple-audit/before.json includes previous work.
+
+- Findings closed: filtered/stale conformance PASS, auxiliary release-evidence collision,
+  product key default/overwriting, joint Runtime gate omission, configured paths across
+  all profile-based gateways, Host/revision freeze association and mixed writer conflicts.
+- Validation: final make test10376passed/2987skipped in1162.17s exit0;
+  make check exit0 including boundary/Ruff/mypy1328/eval30/30. Contract conformance
+ 161pass/0skip with original filtering env cleared; actual scratchPG87pass/0skip,
+  freeze concurrency13pass/0skip, report/custom+historical route8pass. Spec/security
+  GO and quality APPROVE, independent final focused45/59pass.
+- Preservation:129finalsource/config/test hashes and32originalcontainers/userfiles
+  unchanged; scratch removed. Historical freeze table/JSON/digests and Coverage proof
+  unchanged. v107 additive migration ONLY on scratch; requires coordinated API/Worker
+  upgrade after migration before new tasks; old Worker cannot consume new-only freezes.
+  No production migration/retirement or actual-model/Host/browser/remoteCI acceptance.
+- Evidence: docs/CLOUD_AGENT_DECOUPLING_AUDIT.md and
+  .artifacts/cloud-decouple-audit/validation-summary.json.
+
+### CLOUD-DECOUPLE-04 - Message ownership, compatibility retirement and product gates
+
+- Status: Review (2026-10-20; local implementation and full gates complete,
+  uncommitted/unpushed/undeployed). Explicit user continuation unlocked this slice
+  after batch02/03 local acceptance and overrides merge/branch/worktree defaults.
+- Human owner: Luke Ding; executor: Codex. One task/branch/checkout, no commit/push.
+- Owned paths: packages/agent-core/src/agent_core/contracts/broker_envelope.py;
+  packages/agent-integrations/src/agent_integrations/rabbitmq.py and trench_compat/;
+  scripts/provision_rabbitmq.py, scripts/provision_rabbitmq_trench.py,
+  scripts/check_runtime_product_boundary.py, scripts/validate_compatibility_retirement.py;
+  docs/contracts/broker*.json; docs/contracts/broker-envelope-v1.md;
+  tests/agent_core/test_broker_envelope.py;
+  tests/integrations/test_rabbitmq*.py, test_source_rabbitmq_live.py;
+  tests/integrations/test_trench_broker*.py; tests/test_rabbitmq_topology.py;
+  tests/test_runtime_independence.py; tests/test_runtime_product_boundary.py;
+  tests/test_compatibility_retirement.py; tests/conformance/product_v1/;
+  configs/compatibility_retirement*.json; .github/workflows/trench-e2e.yml;
+  .github/workflows/product-conformance.yml; Makefile; docker/README.md; docker/rabbitmq/README.md;
+  docs/CLOUD_AGENT_DECOUPLING*.md; docs/AGENT_TASKS.md;
+  docs/superpowers/plans/2026-10-20-cloud-agent-decoupling.md;
+  README.md; PROGRESS.md; WORKLOG.md; task_plan.md.
+- Scope: Runtime command schema/transport default excludes product Turn/source
+  messages. Product-owned compatibility contract and explicitly selected transport/
+  topology preserve old wire data and diagnostic/ACK semantics. No cross-repo edits.
+  Old tasks remain pinned: retirement requires explicit drain/version/rollback
+  evidence; no deletion, schema rewrite or production activation inferred.
+- Acceptance: default boundaries fail on product leakage; legacy wire golden;
+  neutral product conformance ordinary/frontend/renewal/Coverage/report isolation;
+  retirement refusal without evidence; full make test/check exit0. Existing data,
+  coverage proofs, broker semantics and running services preserved.
+- Preservation: .artifacts/cloud-decouple-04/before.json; prior batch changes remain.
+
+- Validation: make test exit0,10342passed/2974skipped in1139.10s;
+  make check exit0 including product boundary/mypy1326/eval30/30. Unified contract
+  conformance145pass/0skip; real scratch PostgreSQL87pass/0skip. Current-source
+  API/worker-engine/migrate images build and isolated cloud/gVisor preflight,
+  anonymous401, API-restart retained object/Host registry pass. No business Task.
+- Independent spec GO and quality APPROVE; prior joint schema/examples unchanged,
+ 94 mocked provisioning requests exactly HEAD-equivalent. Regression fixes bind
+  inventory compatibility selection and forbid actual trench_* implementation imports.
+- Preservation: original32containers/user files and123source/config/test fingerprints
+  unchanged at gates, all own scratch removed. Legacy history/proof paths retained;
+  production retirement, real Broker/model/product/browser acceptance NOT claimed.
+  Evidence: .artifacts/cloud-decouple-04/validation-summary.json.
+
 ### TRN-ASSET-RECOVERY-01 - Restore bounded historical asset listing and reads
 
 - Status: Done (2026-10-18; user-directed existing-target delivery).

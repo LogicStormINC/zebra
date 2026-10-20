@@ -8,8 +8,13 @@ from datetime import UTC, datetime
 from typing import Protocol
 from uuid import NAMESPACE_URL, uuid5
 
+from agent_core.domain.coverage_contracts import (
+    CoverageContract,
+    CoverageRefusedError,
+    coverage_digest,
+)
 from agent_core.domain.coverage_contracts import CoverageRefusalReason as Reason
-from agent_core.domain.coverage_contracts import CoverageRefusedError, coverage_digest
+from agent_core.domain.coverage_legacy_source import LEGACY_COVERAGE_SOURCE
 from agent_core.domain.host_authority import HostContextEnvelope, HostResourceRef
 from agent_core.domain.identifiers import ToolCallId, new_tool_call_id
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolIdempotency, ToolResult, ToolRisk
@@ -71,7 +76,9 @@ class CoverageInvocation:
         self,
         *,
         authority: HostContextEnvelope,
-        history_ref: str,
+        history_ref: str | None = None,
+        source_ref: HostResourceRef | None = None,
+        contract: CoverageContract | None = None,
         manifest: HostToolManifest | None,
         invoke: HostCoverageInvoke | None,
         admitted_effect_invoke: HostCoverageInvoke | None,
@@ -89,10 +96,27 @@ class CoverageInvocation:
             or not 0 < max_seconds <= 60
         ):
             raise ValueError("max_seconds must be in (0, 60]")
-        if not history_ref or history_ref != history_ref.strip():
-            raise ValueError("history_ref must be explicit and trimmed")
+        self.contract = contract
+        self.source = contract.source_definition if contract else LEGACY_COVERAGE_SOURCE
+        if contract is not None and contract.schema_version == 2:
+            if (
+                history_ref is not None
+                or source_ref is None
+                or source_ref.resource_type != self.source.resource_type
+            ):
+                raise ValueError("v2 requires matching source_ref and frozen contract")
+            self.resource = source_ref
+            self.resource_argument = "source_ref"
+        else:
+            if source_ref is not None:
+                if history_ref is not None or source_ref.resource_type != self.source.resource_type:
+                    raise ValueError("v1 source_ref must use the legacy resource type alone")
+                history_ref = source_ref.resource_id
+            if not history_ref or history_ref != history_ref.strip():
+                raise ValueError("v1 requires explicit trimmed history_ref")
+            self.resource = HostResourceRef(type=self.source.resource_type, id=history_ref)
+            self.resource_argument = "history_ref"
         self.bound = authority
-        self.resource = HostResourceRef(type=HISTORY_RESOURCE_TYPE, id=history_ref)
         # Round-trip pins and independently validates the frozen manifest digest.
         self.manifest = HostToolManifest.from_payload(manifest.to_payload()) if manifest else None
         self.invoke = invoke
@@ -114,12 +138,12 @@ class CoverageInvocation:
             or current >= authority.expires_at
             or self.resource not in authority.resource_refs
             or sum(
-                resource.resource_type == HISTORY_RESOURCE_TYPE
+                resource.resource_type == self.source.resource_type
                 for resource in authority.resource_refs
             )
             != 1
-            or "history.read" not in authority.scopes
-            or (write and "history.snapshot.write" not in authority.scopes)
+            or self.source.read_scope not in authority.scopes
+            or (write and self.source.create_scope not in authority.scopes)
         ):
             raise CoverageRefusedError(Reason.AUTHORITY_INVALID)
 
@@ -164,11 +188,12 @@ class CoverageInvocation:
             raise CoverageRefusedError(Reason.UNSUPPORTED)
         rules = self.manifest.resource_bindings_for(tool_name)
         if (
-            "history.read" not in contract.scopes
+            (self.resource_argument == "source_ref" and len(rules) != 1)
+            or self.source.read_scope not in contract.scopes
             or set(contract.scopes) - set(authority.scopes)
             or not any(
-                rule.argument_pointer == "/history_ref"
-                and rule.resource_type == HISTORY_RESOURCE_TYPE
+                rule.argument_pointer == "/" + self.resource_argument
+                and rule.resource_type == self.source.resource_type
                 and rule.required
                 and rule.match_mode == "exact"
                 for rule in rules
@@ -176,15 +201,22 @@ class CoverageInvocation:
             or (
                 write
                 and (
-                    "history.snapshot.write" not in contract.scopes
+                    self.source.create_scope not in contract.scopes
                     or contract.risk != ToolRisk.WRITE
                     or contract.idempotency != ToolIdempotency.REQUIRED
                 )
             )
             or (not write and contract.risk != ToolRisk.READ)
+            or (
+                self.resource_argument == "source_ref"
+                and not write
+                and contract.idempotency != ToolIdempotency.NONE
+            )
         ):
             raise CoverageRefusedError(Reason.UNSUPPORTED)
-        actual_arguments = {"history_ref": self.resource.resource_id, **arguments}
+        if self.resource_argument == "source_ref" and self.resource_argument in arguments:
+            raise CoverageRefusedError(Reason.UNSUPPORTED)
+        actual_arguments = {self.resource_argument: self.resource.resource_id, **arguments}
         if write:
             try:
                 # ponytail: reuse canonical coverage hashing; clocks never enter replay identity.

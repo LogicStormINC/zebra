@@ -1,0 +1,178 @@
+{
+  "$defs": {
+    "PrincipalScope": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "principal",
+          "title": "Kind",
+          "type": "string"
+        },
+        "tenant_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Tenant Id",
+          "type": "string"
+        },
+        "workspace_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Workspace Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "tenant_id",
+        "workspace_id"
+      ],
+      "title": "PrincipalScope",
+      "type": "object"
+    },
+    "ZebraCommandRef": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "zebra_command",
+          "title": "Kind",
+          "type": "string"
+        },
+        "id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "id"
+      ],
+      "title": "ZebraCommandRef",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "message_id": {
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+      "title": "Message Id",
+      "type": "string"
+    },
+    "schema_version": {
+      "maximum": 1,
+      "minimum": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "deployment_namespace": {
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Deployment Namespace",
+      "type": "string"
+    },
+    "aggregate_id": {
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Aggregate Id",
+      "type": "string"
+    },
+    "operation_id": {
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Operation Id",
+      "type": "string"
+    },
+    "wake_generation": {
+      "minimum": 0,
+      "title": "Wake Generation",
+      "type": "integer"
+    },
+    "idempotency_key": {
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Idempotency Key",
+      "type": "string"
+    },
+    "correlation_id": {
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Correlation Id",
+      "type": "string"
+    },
+    "causation_id": {
+      "anyOf": [
+        {
+          "maxLength": 256,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Causation Id"
+    },
+    "occurred_at": {
+      "format": "date-time",
+      "maxLength": 128,
+      "title": "Occurred At",
+      "type": "string"
+    },
+    "traceparent": {
+      "anyOf": [
+        {
+          "maxLength": 55,
+          "minLength": 55,
+          "pattern": "^00-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f]{2}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Traceparent"
+    },
+    "payload_ref": {
+      "$ref": "#/$defs/ZebraCommandRef"
+    },
+    "message_type": {
+      "const": "zebra.session.command.ready",
+      "title": "Message Type",
+      "type": "string"
+    },
+    "scope": {
+      "$ref": "#/$defs/PrincipalScope"
+    },
+    "accepted_event_id": {
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+      "title": "Accepted Event Id",
+      "type": "string"
+    },
+    "accepted_sequence": {
+      "exclusiveMinimum": 0,
+      "title": "Accepted Sequence",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "message_id",
+    "schema_version",
+    "deployment_namespace",
+    "aggregate_id",
+    "operation_id",
+    "wake_generation",
+    "idempotency_key",
+    "correlation_id",
+    "causation_id",
+    "occurred_at",
+    "traceparent",
+    "payload_ref",
+    "message_type",
+    "scope",
+    "accepted_event_id",
+    "accepted_sequence"
+  ],
+  "title": "ZebraCommandEnvelope",
+  "type": "object"
+}

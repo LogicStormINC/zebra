@@ -47,9 +47,7 @@ def resolve_frozen_manifest(
     )
 
     registry = PostgresHostConnectorRegistry(dsn, deployment_namespace=namespace)
-    binding = registry.resolve_binding(
-        host_context.host_app_id, host_context.namespace_id
-    )
+    binding = registry.resolve_binding(host_context.host_app_id, host_context.namespace_id)
     if binding is None:
         return None
     profile = registry.get_profile(
@@ -62,10 +60,16 @@ def resolve_frozen_manifest(
     frozen = load_frozen_manifest(
         dsn,
         deployment_namespace=namespace,
+        host_app_id=profile.host_app_id,
         connector_id=profile.connector_id,
         profile_revision=profile.profile_revision,
     )
     if frozen is not None:
+        from agent_integrations.host_tools import HostToolManifest
+
+        restored = HostToolManifest.from_payload(frozen)
+        if profile.manifest_binding_policy == "declared" and restored.binding_policy != "declared":
+            raise HostManifestFreezeError("cached manifest binding policy mismatch; failing closed")
         return frozen
     manifest = _discover_once(
         profile,
@@ -77,6 +81,7 @@ def resolve_frozen_manifest(
         dsn,
         deployment_namespace=namespace,
         manifest_digest=manifest.digest,
+        host_app_id=profile.host_app_id,
         connector_id=profile.connector_id,
         profile_revision=profile.profile_revision,
         manifest_payload=payload,
@@ -91,6 +96,7 @@ def _discover_once(
 ) -> Any:
     from agent_integrations import ConfiguredHmacHostCredentialResolver
     from agent_integrations.host_tools import HostToolGateway, HostWorkloadIdentity
+    from agent_integrations.host_tools.endpoints import profile_gateway_options
 
     if configured_secret is None or not configured_secret.strip():
         raise HostManifestFreezeError(
@@ -113,6 +119,7 @@ def _discover_once(
         profile.base_uri,
         identity,
         shared_secret=credential.token,
+        **profile_gateway_options(profile),
     )
     try:
         return gateway.discover(host_context)

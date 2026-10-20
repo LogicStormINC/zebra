@@ -6,6 +6,7 @@ import os
 import socket
 from collections.abc import Mapping
 from dataclasses import dataclass
+from typing import Literal, cast
 
 from agent_integrations import ScheduleGrantExchangeSettings
 from agent_security import HostGrantVerificationConfig, JwtAlgorithm
@@ -35,6 +36,9 @@ def load_scheduler_settings(env: Mapping[str, str] | None = None) -> SchedulerSe
         allowed_origins=_csv(values, "ZEBRA_SCHEDULER_ALLOWED_ORIGINS"),
         algorithms=frozenset({JwtAlgorithm.RS256}),
     )
+    protocol = values.get("ZEBRA_SCHEDULER_GRANT_EXCHANGE_PROTOCOL", "generic").strip()
+    if protocol not in {"generic", "legacy"}:
+        raise ValueError("scheduler grant exchange protocol must be generic or legacy")
     return SchedulerSettings(
         claimant=(values.get("ZEBRA_SCHEDULER_ID") or f"scheduler:{socket.gethostname()}").strip(),
         poll_seconds=_float(values, "ZEBRA_SCHEDULER_POLL_SECONDS", 1.0, 0.05, 60.0),
@@ -42,6 +46,7 @@ def load_scheduler_settings(env: Mapping[str, str] | None = None) -> SchedulerSe
         claim_ttl_seconds=_integer(values, "ZEBRA_SCHEDULER_CLAIM_TTL_SECONDS", 60, 1, 3600),
         max_attempts=_integer(values, "ZEBRA_SCHEDULER_MAX_ATTEMPTS", 3, 1, 20),
         grant_exchange=ScheduleGrantExchangeSettings(
+            protocol=cast(Literal["generic", "legacy"], protocol),
             exchange_url=_required(values, "ZEBRA_SCHEDULER_GRANT_EXCHANGE_URL"),
             workload_identity=_required(values, "ZEBRA_SCHEDULER_WORKLOAD_IDENTITY"),
             workload_shared_secret=_required(values, "ZEBRA_SCHEDULER_WORKLOAD_SHARED_SECRET"),

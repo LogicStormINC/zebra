@@ -2,10 +2,17 @@
 
 from __future__ import annotations
 
+import json
 from datetime import UTC, datetime
+from pathlib import Path
 
+import pytest
 from agent_core.application.mock_model import ScriptedModelGateway, ScriptedModelResponse
-from agent_core.domain.client_capabilities import ClientActionContract, ClientActionRisk
+from agent_core.domain.client_capabilities import (
+    ClientActionContract,
+    ClientActionRisk,
+    FrontendCapabilityProfileVersion,
+)
 from agent_core.domain.client_run_bindings import ClientRunBinding
 from agent_core.domain.events import EventActor, EventType
 from agent_core.domain.identifiers import (
@@ -96,13 +103,30 @@ def _final() -> ModelCompletion:
     )
 
 
-def test_client_tool_call_suspends_and_receipt_resumes() -> None:
+@pytest.mark.parametrize("action_name", ["app.ui.item.open", "catalog.ui.item.open"])
+def test_client_tool_call_suspends_and_receipt_resumes(action_name: str) -> None:
+    profile = FrontendCapabilityProfileVersion.model_validate(
+        json.loads(
+            (
+                Path(__file__).parents[1]
+                / "fixtures/conformance/fake-frontend-a_frontend_profile.json"
+            ).read_text()
+        )
+    )
+    contract = (
+        profile.actions[0]
+        if action_name.startswith("catalog.")
+        else ClientActionContract(
+            name=action_name,
+            risk=ClientActionRisk.PRESENTATION,
+        )
+    )
     task_id = new_task_id()
     from agent_core.domain.tools import ToolCall
 
     call = ToolCall(
         tool_call_id=new_tool_call_id(),
-        name="app.ui.item.open",
+        name=action_name,
         arguments={"itemId": "item-42"},
         created_at=CREATED_AT,
     )
@@ -111,10 +135,10 @@ def test_client_tool_call_suspends_and_receipt_resumes() -> None:
         task_id=task_id,
         run_id="run-1",
         client_session_id=new_client_session_id(),
-        profile_digest="a" * 64,
+        profile_digest=profile.profile_digest,
         mounted_snapshot_digest="b" * 64,
-        task_capability_scope=("app.ui.item.open",),
-        allowed_actions=("app.ui.item.open",),
+        task_capability_scope=(action_name,),
+        allowed_actions=(action_name,),
         binding_revision=1,
         created_at=CREATED_AT,
     )
@@ -125,12 +149,7 @@ def test_client_tool_call_suspends_and_receipt_resumes() -> None:
             fence_hash="d" * 64,
             session_id=new_session_id(),
             ui_revision=2,
-            action_contracts={
-                "app.ui.item.open": ClientActionContract(
-                    name="app.ui.item.open",
-                    risk=ClientActionRisk.PRESENTATION,
-                )
-            },
+            action_contracts={action_name: contract},
         ),
         dispatch=dispatch,
     )
@@ -181,7 +200,7 @@ def test_client_tool_call_suspends_and_receipt_resumes() -> None:
                         "client_effect_result": {
                             "client_effect_id": str(effect.effect_id),
                             "tool_call_id": str(call.tool_call_id),
-                            "action_name": "app.ui.item.open",
+                            "action_name": action_name,
                             "status": "succeeded",
                             "result": {"opened": True},
                         }

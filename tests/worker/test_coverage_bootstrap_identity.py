@@ -20,20 +20,24 @@ from tests.worker.test_coverage_bootstrap import (
 )
 
 
-def test_real_bootstrap_persists_verified_snapshot_history_ref(cloud):
+@pytest.mark.parametrize("cloud", [True, "v2"], indirect=True)
+def test_real_bootstrap_persists_verified_snapshot_source_ref(cloud):
     env = cloud
     result = module.bootstrap_cloud_coverage(**env.kwargs)
     assert (
         result.binding.snapshot.source_resource_ref
         == env.source.host.resource.resource_id
-        == env.admission.history_ref
+        == env.admission.source_resource.resource_id
     )
     event = next(
         event
         for event in env.events.list_for_session(env.session)
         if event.event_type == EventType.COVERAGE_MANIFEST_COMMITTED
     )
-    assert event.payload["binding"]["snapshot"]["source_resource_ref"] == env.admission.history_ref
+    assert (
+        event.payload["binding"]["snapshot"]["source_resource_ref"]
+        == env.admission.source_resource.resource_id
+    )
     # A fresh bootstrap must preserve the same persisted run identity.
     assert module.bootstrap_cloud_coverage(**env.kwargs).binding == result.binding
 

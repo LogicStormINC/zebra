@@ -11,11 +11,11 @@ from __future__ import annotations
 import asyncio
 import math
 from collections.abc import Awaitable, Callable
-from typing import TypeVar
+from typing import Protocol, TypeVar
 
 import aio_pika
 from agent_core.contracts.broker_diagnostic import parse_broker_diagnostic
-from agent_core.contracts.broker_envelope import BrokerEnvelope, parse_broker_envelope
+from agent_core.contracts.broker_envelope import parse_broker_envelope
 from aio_pika.abc import (
     AbstractChannel,
     AbstractIncomingMessage,
@@ -40,9 +40,20 @@ async def _bounded(operation: Awaitable[T], timeout: float) -> T:  # noqa: UP047
         raise RabbitMQError("RabbitMQ operation failed") from None
 
 
-def _parse(body: bytes) -> BrokerEnvelope:
+class BrokerMessage(Protocol):
+    @property
+    def message_id(self) -> str: ...
+
+    @property
+    def correlation_id(self) -> str: ...
+
+
+EnvelopeParser = Callable[[bytes], BrokerMessage]
+
+
+def _parse(body: bytes, parser: EnvelopeParser) -> BrokerMessage:
     try:
-        return parse_broker_envelope(body)
+        return parser(body)
     except Exception:
         raise RabbitMQError("invalid broker envelope") from None
 
@@ -56,8 +67,15 @@ class Delivery:
     Raw invalid messages are not forwarded to a DLQ by this adapter.
     """
 
-    def __init__(self, message: AbstractIncomingMessage, *, timeout: float) -> None:
+    def __init__(
+        self,
+        message: AbstractIncomingMessage,
+        *,
+        timeout: float,
+        envelope_parser: EnvelopeParser = parse_broker_envelope,
+    ) -> None:
         self._message = message
+        self._envelope_parser = envelope_parser
         self._timeout = timeout
 
     @property
@@ -68,8 +86,8 @@ class Delivery:
     def redelivered(self) -> bool:
         return bool(self._message.redelivered)
 
-    def parse(self) -> BrokerEnvelope:
-        return _parse(self.body)
+    def parse(self) -> BrokerMessage:
+        return _parse(self.body, self._envelope_parser)
 
     async def ack(self) -> None:
         await _bounded(self._message.ack(), self._timeout)
@@ -85,7 +103,14 @@ class RabbitMQTransport:
     Automatic recovery restores consumers, but never retries a publication.
     """
 
-    def __init__(self, url: str, *, prefetch: int = 16, timeout: float = 10.0) -> None:
+    def __init__(
+        self,
+        url: str,
+        *,
+        prefetch: int = 16,
+        timeout: float = 10.0,
+        envelope_parser: EnvelopeParser = parse_broker_envelope,
+    ) -> None:
         if (
             type(prefetch) is not int
             or not 1 <= prefetch <= 1024
@@ -95,6 +120,7 @@ class RabbitMQTransport:
         ):
             raise ValueError("invalid RabbitMQ prefetch or timeout")
         self._url = url
+        self._envelope_parser = envelope_parser
         self._prefetch = prefetch
         self._timeout = timeout
         self._connection: AbstractRobustConnection | None = None
@@ -143,7 +169,7 @@ class RabbitMQTransport:
         return self._channel
 
     async def publish(self, raw: bytes, *, exchange: str, routing_key: str) -> None:
-        envelope = _parse(raw)
+        envelope = _parse(raw, self._envelope_parser)
         await self._publish(
             raw, exchange, routing_key, envelope.message_id, envelope.correlation_id
         )
@@ -193,7 +219,9 @@ class RabbitMQTransport:
 
         async def callback(message: AbstractIncomingMessage) -> None:
             try:
-                await handler(Delivery(message, timeout=self._timeout))
+                await handler(
+                    Delivery(message, timeout=self._timeout, envelope_parser=self._envelope_parser)
+                )
             except Exception:
                 raise RabbitMQError("RabbitMQ delivery handler failed") from None
 

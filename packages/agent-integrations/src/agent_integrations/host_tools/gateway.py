@@ -9,7 +9,7 @@ import re
 from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from urllib.parse import quote, urlsplit, urlunsplit
+from urllib.parse import quote, urlsplit
 
 from agent_core.contracts.public_output import PublicOperationFacts, PublicReadFacts
 from agent_core.domain.effect_dispatch import EffectBusinessOutcome
@@ -30,6 +30,7 @@ from agent_integrations.host_tools.contracts import (
     HostWorkloadIdentity,
 )
 from agent_integrations.host_tools.effect_metadata import failure_outcomes, host_effect_metadata
+from agent_integrations.host_tools.endpoints import join_endpoint as _join_endpoint
 from agent_integrations.host_tools.http import HttpHostToolTransport
 
 
@@ -41,12 +42,15 @@ class HostToolGateway:
     transport: HostToolTransport | None = None
     manifest: HostToolManifest | None = None
     reconcile_path: str | None = None
+    manifest_binding_policy: str = "declared"
+    manifest_path: str = "/manifest"
+    invoke_path: str | None = None
 
     def discover(self, context: HostContextEnvelope) -> HostToolManifest:
         _ensure_context_live(context)
         self.workload_identity.assert_matches(context)
         transport = self.transport or HttpHostToolTransport()
-        url = _join_endpoint(self.endpoint, "/manifest")
+        url = _join_endpoint(self.endpoint, self.manifest_path)
         response = transport.request(
             "GET",
             url,
@@ -71,7 +75,9 @@ class HostToolGateway:
         if not isinstance(response.body, Mapping):
             raise HostToolGatewayError("Host Tool manifest body is invalid", reason="invalid_body")
         try:
-            manifest = HostToolManifest.from_payload(response.body)
+            manifest = HostToolManifest.from_payload(
+                response.body, binding_policy=self.manifest_binding_policy
+            )
         except HostToolGatewayError:
             raise
         if manifest.workload_identity != self.workload_identity.subject:
@@ -130,7 +136,9 @@ class HostToolGateway:
         except ValueError as exc:
             return _failure(tool_call, reason="transport_error", detail=str(exc))
         try:
-            url = _join_endpoint(self.endpoint, f"/tools/{quote(contract.name, safe='')}/invoke")
+            url = _join_endpoint(
+                self.endpoint, self.invoke_path or f"/tools/{quote(contract.name, safe='')}/invoke"
+            )
             body = _invoke_body(invocation)
             response = (self.transport or HttpHostToolTransport()).request(
                 "POST",
@@ -374,23 +382,6 @@ def _signature_input(
 def _ensure_context_live(context: HostContextEnvelope) -> None:
     if context.expires_at is not None and datetime.now(UTC) >= context.expires_at:
         raise HostToolGatewayError("Host Grant has expired", reason="grant_expired")
-
-
-def _join_endpoint(endpoint: str, suffix: str) -> str:
-    parsed = urlsplit(endpoint.strip())
-    if parsed.scheme != "https" or not parsed.netloc:
-        raise HostToolGatewayError("Host Tool endpoint must be an HTTPS URL", reason="ssrf_blocked")
-    if parsed.username is not None or parsed.password is not None:
-        raise HostToolGatewayError(
-            "Host Tool endpoint must not contain credentials", reason="ssrf_blocked"
-        )
-    if parsed.query or parsed.fragment:
-        raise HostToolGatewayError(
-            "Host Tool endpoint must not contain query or fragment", reason="ssrf_blocked"
-        )
-    base_path = parsed.path.rstrip("/")
-    path = f"{base_path}{suffix}"
-    return urlunsplit((parsed.scheme, parsed.netloc, path, "", ""))
 
 
 def _safe_http_error(body: object) -> tuple[str | None, str | None]:

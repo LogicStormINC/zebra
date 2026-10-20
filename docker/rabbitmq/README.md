@@ -10,14 +10,19 @@ Run from the isolated Zebra repository root:
 
 ```bash
 uv sync --all-packages --extra rabbitmq --frozen
-.venv/bin/python scripts/provision_rabbitmq.py prepare --env-file docker/rabbitmq/.env
+.venv/bin/python scripts/provision_rabbitmq.py prepare --trench-compat --env-file docker/rabbitmq/.env
 docker compose --env-file docker/rabbitmq/.env -p rabbitmq-infra-acceptance \
   -f docker/compose.rabbitmq.yml up -d --wait
-.venv/bin/python scripts/provision_rabbitmq.py apply --env-file docker/rabbitmq/.env
+.venv/bin/python scripts/provision_rabbitmq.py apply --trench-compat --env-file docker/rabbitmq/.env
 ZEBRA_RABBITMQ_LIVE=1 .venv/bin/python -m pytest -q tests/integrations/test_rabbitmq_live.py
 ```
 
-`prepare` exclusively creates a mode-0600 ignored file with five independent
+The commands above explicitly select the historical joint acceptance topology.
+Without `--trench-compat`, prepare/apply use Runtime-only credentials and topology;
+source-delivery preparation requires explicit compatibility. Existing private files
+are not rotated or rewritten by apply.
+
+`prepare` exclusively creates a mode-0600 ignored file with independent
 random credentials. Re-running it fails rather than silently rotating secrets.
 Use the same file on later starts; `apply` is repeatable. Never paste this file,
 `docker compose config` output, connection URLs or raw messages into logs/chat.
@@ -81,7 +86,9 @@ through this safe diagnostic route. Composition remains explicitly opt-in.
 ## Adapter contract
 
 Optional extra `rabbitmq` installs aio-pika 10.0.1. The two repositories use the
-same small implementation with their existing envelope imports. No dependency
+same transport semantics. Zebra defaults to the Runtime command parser; product
+Turn/source handling explicitly supplies
+`agent_integrations.trench_compat.broker_envelope.parse_broker_envelope`. No dependency
 or AMQP implementation is introduced into Zebra agent-core.
 
 `RabbitMQTransport` explicitly starts one robust connection/channel, uses

@@ -27,7 +27,10 @@ def test_generic_executor_preparation_never_skips_custom_authority():
 
 
 @pytest.mark.parametrize("native_worker", ["first_create"], indirect=True)
-@pytest.mark.parametrize("model_cloud", [{"validation_mode": "final_certification"}], indirect=True)
+@pytest.mark.parametrize("model_cloud", [
+    {"validation_mode": "final_certification"},
+    {"validation_mode": "final_certification", "v2": True},
+], indirect=True)
 def test_native_executor_only_owns_pure_preparation(native_worker, monkeypatch):
     import zebra_agent_worker.coverage_dispatch as dispatch
 

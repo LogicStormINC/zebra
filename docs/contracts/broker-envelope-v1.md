@@ -1,3 +1,11 @@
+> Ownership update (CLOUD-DECOUPLE-04): this combined schema and examples are
+> historical joint integration artifacts. Their original bytes remain frozen.
+> Zebra Runtime uses `broker-runtime-v1.schema.json` and
+> `agent_core.contracts.broker_envelope`; explicit product integration uses
+> `agent_integrations.trench_compat.broker_envelope`, verified by
+> `tests/integrations/test_trench_broker_envelope.py`. The old document below
+> describes the joint protocol, not the default Runtime acceptance boundary.
+
 # Broker envelope v1
 
 This foundation contract is a **wakeup hint**, not an authorization credential or

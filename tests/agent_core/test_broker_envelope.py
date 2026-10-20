@@ -15,7 +15,7 @@ ROOT = next(p for p in Path(__file__).resolve().parents if (p / "pyproject.toml"
 DOCS = ROOT / "docs/contracts"
 BASE = {
     "message_id": "01234567-89ab-4cde-8123-0123456789ab",
-    "message_type": "trench.ai.turn.ready",
+    "message_type": "zebra.session.command.ready",
     "schema_version": 1,
     "deployment_namespace": "dev",
     "scope": {"kind": "principal", "tenant_id": "tenant-1", "workspace_id": "workspace-1"},
@@ -27,7 +27,9 @@ BASE = {
     "causation_id": None,
     "occurred_at": "2026-09-04T10:00:00Z",
     "traceparent": None,
-    "payload_ref": {"kind": "trench_turn", "id": "turn-1"},
+    "payload_ref": {"kind": "zebra_command", "id": "turn-1"},
+    "accepted_event_id": "01234567-89ab-4cde-8123-0123456789ab",
+    "accepted_sequence": 1,
 }
 
 
@@ -74,8 +76,7 @@ def test_valid_and_frozen():
         ("payload", {}),
         ("credential", "secret"),
         ("accepted_event_id", None),
-        ("accepted_sequence", 1),
-        ("aggregate_id", "other"),
+        ("accepted_sequence", 0),
         ("payload_ref", {"kind": "source_fetch_command", "id": "turn-1"}),
         ("payload_ref", {"kind": "trench_turn", "id": "other"}),
         ("payload_ref", {"kind": "trench_turn", "id": "turn-1", "url": "https://bad"}),
@@ -156,17 +157,19 @@ def test_zebra_evidence():
 def test_artifacts():
     examples = json.loads((DOCS / "broker-envelope-v1.examples.json").read_text())
     for example in examples["valid"]:
-        decode(example)
+        if example["message_type"] == "zebra.session.command.ready":
+            decode(example)
+        else:
+            with pytest.raises(ValueError):
+                decode(example)
     for example in examples["invalid"]:
         with pytest.raises(ValueError):
             decode(example)
-    schema = json.loads((DOCS / "broker-envelope-v1.schema.json").read_text())
+    schema = json.loads((DOCS / "broker-runtime-v1.schema.json").read_text())
     assert schema == contract.broker_envelope_json_schema()
-    sibling = ROOT.parent / ("Trench" if ROOT.name == "zebra-agent" else "zebra-agent")
-    if (sibling / "docs/contracts/broker-envelope-v1.schema.json").exists():
-        for filename in ("broker-envelope-v1.schema.json", "broker-envelope-v1.examples.json"):
-            other = sibling / "docs/contracts" / filename
-            assert (DOCS / filename).read_bytes() == other.read_bytes()
+    assert "trench" not in json.dumps(schema)
+    assert not hasattr(contract, "TurnEnvelope")
+    assert not hasattr(contract, "SourceFetchEnvelope")
 
 
 @pytest.mark.parametrize("key", list(BASE))

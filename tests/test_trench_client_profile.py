@@ -61,6 +61,10 @@ def test_profile_release_is_idempotent_for_the_current_binding(monkeypatch, caps
             "publish_client_profile.py",
             "--profile",
             str(PROFILE),
+            "--host-app-id",
+            "trench",
+            "--namespace-id",
+            "trench",
             "--token",
             "operator-token",
         ],
@@ -80,7 +84,20 @@ def test_readonly_release_gate_does_not_publish_missing_profile(monkeypatch):
 
     monkeypatch.setattr(publish_client_profile, "_request", request)
     monkeypatch.setattr(
-        sys, "argv", ["publish", "--profile", str(PROFILE), "--token", "operator", "--verify-only"]
+        sys,
+        "argv",
+        [
+            "publish",
+            "--profile",
+            str(PROFILE),
+            "--host-app-id",
+            "trench",
+            "--namespace-id",
+            "trench",
+            "--token",
+            "operator",
+            "--verify-only",
+        ],
     )
     with pytest.raises(SystemExit, match="not published"):
         publish_client_profile.main()
@@ -95,7 +112,21 @@ def test_release_rejects_digest_mutation_before_binding(monkeypatch):
         return {"revision": 1, "profile_digest": "a" * 64}
 
     monkeypatch.setattr(publish_client_profile, "_request", request)
-    monkeypatch.setattr(sys, "argv", ["publish", "--profile", str(PROFILE), "--token", "operator"])
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "publish",
+            "--profile",
+            str(PROFILE),
+            "--host-app-id",
+            "trench",
+            "--namespace-id",
+            "trench",
+            "--token",
+            "operator",
+        ],
+    )
     with pytest.raises(SystemExit, match="different digest"):
         publish_client_profile.main()
     assert calls == ["GET"]
@@ -120,7 +151,33 @@ def test_new_release_uses_versions_endpoint_and_verifies_binding(monkeypatch):
         return next(answers)
 
     monkeypatch.setattr(publish_client_profile, "_request", request)
-    monkeypatch.setattr(sys, "argv", ["publish", "--profile", str(PROFILE), "--token", "operator"])
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "publish",
+            "--profile",
+            str(PROFILE),
+            "--host-app-id",
+            "trench",
+            "--namespace-id",
+            "trench",
+            "--token",
+            "operator",
+        ],
+    )
     assert publish_client_profile.main() == 0
     assert calls[2][1].endswith("/trench-web/versions")
     assert calls[-1][0] == "GET"
+
+
+def test_publishing_requires_explicit_product_binding(monkeypatch):
+    monkeypatch.setattr(sys, "argv", ["publish", "--profile", str(PROFILE), "--token", "operator"])
+    with pytest.raises(SystemExit) as exc:
+        publish_client_profile.main()
+    assert exc.value.code == 2
+
+
+def test_profile_validation_requires_no_product_or_backend(monkeypatch):
+    monkeypatch.setattr(sys, "argv", ["publish", "--profile", str(PROFILE), "--check-only"])
+    assert publish_client_profile.main() == 0

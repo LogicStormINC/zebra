@@ -64,21 +64,25 @@ def _execute_replay(case: EvalCase) -> tuple[ReplayResult, dict[str, object]]:
     """Run the real deterministic Harness; never synthesize metrics from thresholds."""
 
     created_at = datetime(2026, 9, 20, tzinfo=UTC)
+    inferred = infer_task_contract(case.prompt)
+    tool_names = ("eval.observe",) * max(1, case.min_tool_results)
+    if inferred.task_type in {AgentTaskType.CHANGE, AgentTaskType.OPERATE}:
+        tool_names = ("eval.mutate", *tool_names)
     tool_calls = tuple(
         ToolCall(
             tool_call_id=new_tool_call_id(),
-            name="eval.observe",
+            name=name,
             arguments={"case_id": case.case_id, "step": index + 1},
             created_at=created_at,
             provider_call_id=f"{case.case_id}-tool-{index + 1}",
         )
-        for index in range(max(1, case.min_tool_results))
+        for index, name in enumerate(tool_names)
     )
     source_url = f"https://eval.zebra.local/{case.case_id}"
     responses = tuple(
         ScriptedModelResponse(
             completion=_completion(
-                f"Collect deterministic evidence step {index + 1}.",
+                f"Execute {tool_call.name} step {index + 1}.",
                 created_at=created_at,
                 tool_call=tool_call,
             )
@@ -99,7 +103,6 @@ def _execute_replay(case: EvalCase) -> tuple[ReplayResult, dict[str, object]]:
             )
         ),
     )
-    inferred = infer_task_contract(case.prompt)
     contract = replace(
         inferred,
         require_evidence_reference=(inferred.require_evidence_reference or case.require_evidence),
@@ -176,18 +179,23 @@ class _AllowAllPolicy:
 
 
 class _EvalToolGateway:
+    read_only_tools = ("eval.observe",)
+    mutation_tools = ("eval.mutate",)
+
     def __init__(self, case: EvalCase) -> None:
         self._case = case
-        task_type = infer_task_contract(case.prompt).task_type
-        self.mutation_tools = (
-            ("eval.observe",)
-            if task_type in {AgentTaskType.CHANGE, AgentTaskType.OPERATE}
-            else ()
-        )
+        self._revision = 0
+        self._requires_mutation = infer_task_contract(case.prompt).task_type in {
+            AgentTaskType.CHANGE,
+            AgentTaskType.OPERATE,
+        }
 
     def execute(self, tool_call: ToolCall) -> ToolResult:
+        if tool_call.name == "eval.mutate":
+            self._revision += 1
         metadata: dict[str, object] = {
-            "postcondition_met": True,
+            "postcondition_met": not self._requires_mutation or self._revision > 0,
+            "revision": self._revision,
             "source_url": f"https://eval.zebra.local/{self._case.case_id}",
         }
         if self._case.require_artifact:
@@ -197,6 +205,7 @@ class _EvalToolGateway:
             status=ToolCallStatus.EXECUTED,
             output=(
                 f"evidence:{tool_call.arguments['step']} "
+                f"revision:{self._revision} "
                 f"https://eval.zebra.local/{self._case.case_id}"
             ),
             metadata=metadata,

@@ -15,7 +15,7 @@ pytest.importorskip("trench_core.rabbitmq")
 from trench_core.rabbitmq import RabbitMQError, RabbitMQTransport
 from trench_models.broker_envelope import SourceFetchEnvelope
 
-from scripts.provision_rabbitmq import read_settings, source_topology, topology
+from scripts.provision_rabbitmq_trench import read_settings, source_topology, topology
 
 ROOT = Path(__file__).resolve().parents[2]
 CONTAINER = "rabbitmq-infra-acceptance-rabbitmq-1"

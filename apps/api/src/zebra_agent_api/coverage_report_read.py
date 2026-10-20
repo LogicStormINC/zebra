@@ -17,11 +17,11 @@ from agent_core.domain.identifiers import SessionId, TaskId
 from agent_core.domain.tools import ToolCall, ToolResult
 from agent_integrations.coverage_model_derivation import derive_semantic_observation
 from agent_integrations.coverage_model_policy import REVIEWER_PROFILE
-from agent_integrations.coverage_snapshot_invocation import HISTORY_RESOURCE_TYPE
 from agent_integrations.coverage_snapshot_source import HostCoverageSnapshotSource
 from agent_integrations.coverage_snapshot_wire import Descriptor
 from agent_integrations.host_credentials import ConfiguredHmacHostCredentialResolver
 from agent_integrations.host_tools import HostToolGateway, HostToolManifest, HostWorkloadIdentity
+from agent_integrations.host_tools.endpoints import profile_gateway_options
 from agent_integrations.host_tools.http import HttpHostToolTransport
 from agent_security.host_grant import VerifiedHostGrant
 from agent_storage import PostgresCloudArtifactPayloadStore, S3ArtifactObjectStore
@@ -37,7 +37,11 @@ from agent_storage.postgres.database import (
 )
 from agent_storage.postgres.host_manifest_freeze import load_frozen_manifest_by_digest
 
-from zebra_agent_api.coverage_report_authority import current_report_profile, validate_report_grant
+from zebra_agent_api.coverage_report_authority import (
+    current_report_profile,
+    validate_report_grant,
+    validate_report_owner,
+)
 
 if TYPE_CHECKING:
     from zebra_agent_api.app import ZebraAgentApi
@@ -64,7 +68,9 @@ def _composition(api: ZebraAgentApi) -> tuple[str, str, CloudArtifactPayloadRead
     return settings.database_url, reader._namespace, reader
 
 
-def _run(database: PostgresDatabase, task: TaskId) -> tuple[CoverageRunBinding, str] | None:
+def _run(
+    database: PostgresDatabase, task: TaskId
+) -> tuple[CoverageRunBinding, HostResourceRef] | None:
     with database.connect() as connection:
         connection.execute("SET TRANSACTION READ ONLY")
         root = connection.execute(
@@ -100,7 +106,7 @@ def _run(database: PostgresDatabase, task: TaskId) -> tuple[CoverageRunBinding, 
             or prepared.coverage_admission.contract != binding.contract
         ):
             raise ValueError("report conflicts with strict Task contract")
-        return binding, prepared.coverage_admission.history_ref
+        return binding, prepared.coverage_admission.source_resource
 
 
 def read_coverage_report(
@@ -116,7 +122,10 @@ def read_coverage_report(
 
 
 def _read_coverage_report(
-    api: ZebraAgentApi, task_id: str, grant: VerifiedHostGrant, deadline: float,
+    api: ZebraAgentApi,
+    task_id: str,
+    grant: VerifiedHostGrant,
+    deadline: float,
 ) -> tuple[CoverageCertificate, str, bytes] | None:
     if type(grant) is not VerifiedHostGrant:
         raise PermissionError("verified report authority required")
@@ -132,23 +141,13 @@ def _read_coverage_report(
     frozen = control.load_task_binding(task)
     if frozen is None:
         raise PermissionError("report Task authority unavailable")
-    # Check owner before loading strict source metadata; no old grant expiry check.
-    histories = (
-        [
-            r.resource_id
-            for r in frozen.host_capability.host_context.resource_refs
-            if r.resource_type == HISTORY_RESOURCE_TYPE
-        ]
-        if frozen.host_capability.host_context
-        else []
-    )
-    if len(histories) != 1:
-        raise PermissionError("report Task has no exact history binding")
-    validate_report_grant(frozen, grant, history_ref=histories[0])
+    # No source metadata is read before current owner authorization.
+    validate_report_owner(frozen, grant)
     run = _run(PostgresDatabase(dsn, deployment_namespace=deployment), task)
     if run is None:
         return None
-    binding, history_ref = run
+    binding, source_ref = run
+    validate_report_grant(frozen, grant, source_ref=source_ref, contract=binding.contract)
     if (
         binding.namespace != grant.context.namespace_id
         or binding.snapshot.host_id != grant.context.host_app_id
@@ -158,11 +157,25 @@ def _read_coverage_report(
     def local_check() -> None:
         remaining_recovery_time(deadline)
         current_report_profile(
-            api, task, frozen, grant, history_ref=history_ref, dsn=dsn, deployment=deployment
+            api,
+            task,
+            frozen,
+            grant,
+            source_ref=source_ref,
+            contract=binding.contract,
+            dsn=dsn,
+            deployment=deployment,
         )
 
     profile = current_report_profile(
-        api, task, frozen, grant, history_ref=history_ref, dsn=dsn, deployment=deployment
+        api,
+        task,
+        frozen,
+        grant,
+        source_ref=source_ref,
+        contract=binding.contract,
+        dsn=dsn,
+        deployment=deployment,
     )
     raw = load_frozen_manifest_by_digest(
         dsn,
@@ -197,7 +210,7 @@ def _read_coverage_report(
             ),
             shared_secret=credential.token,
             manifest=manifest,
-            reconcile_path=profile.reconcile_path_template,
+            **profile_gateway_options(profile),
             transport=HttpHostToolTransport(client=client, deadline_monotonic=deadline),
         )
 
@@ -219,7 +232,9 @@ def _read_coverage_report(
             if result.metadata.get("http_status") in (401, 403):
                 raise PermissionError("current Host denied report source access")
             if result.metadata.get("reason") in (
-                "timeout", "transport_error", "host_transport_error",
+                "timeout",
+                "transport_error",
+                "host_transport_error",
             ):
                 raise RuntimeError("current Host report transport unavailable")
             return result
@@ -227,7 +242,8 @@ def _read_coverage_report(
         source = HostCoverageSnapshotSource(
             session_id=binding.session_id,
             authority=grant.context,
-            history_ref=history_ref,
+            source_ref=source_ref,
+            contract=binding.contract,
             manifest=manifest,
             invoke=invoke,
             max_calls=8,
@@ -236,6 +252,7 @@ def _read_coverage_report(
         expected = Descriptor.model_validate(
             binding.snapshot.model_dump(exclude={"manifest_artifact_ref", "source_resource_ref"}),
         )
+
         def check() -> None:
             local_check()
             descriptor = source._get_descriptor(binding.snapshot.snapshot_id, grant.context, budget)

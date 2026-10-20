@@ -103,3 +103,43 @@ def test_rehearsal_rejects_missing_rollback_scenario() -> None:
 
     with pytest.raises(ValueError, match="scenario set mismatch"):
         validate_rehearsal(candidate, attestation, rehearsal)
+
+
+def _v2_fixtures():
+    candidate, attestation, rehearsal = _fixtures()
+    candidate["schema_version"] = "zebra.cloud-rollout-candidate.v2"
+    digest = _canonical_digest(candidate)
+    attestation.update(schema_version="zebra.cloud-rollout-attestation.v2", candidate_sha256=digest)
+    rehearsal.update(schema_version="zebra.cloud-rollout-rehearsal.v2", candidate_sha256=digest)
+    for item in rehearsal["scenarios"]:
+        if item["id"] == "trench-browser-client-action":
+            item["id"] = "host-browser-client-action"
+    return candidate, attestation, rehearsal
+
+
+def test_independent_rehearsal_requires_neutral_host_action():
+    candidate, attestation, rehearsal = _v2_fixtures()
+    assert validate_rehearsal(candidate, attestation, rehearsal)["schema_version"].endswith(".v2")
+    for item in rehearsal["scenarios"]:
+        if item["id"] == "host-browser-client-action":
+            item["id"] = "trench-browser-client-action"
+    with pytest.raises(ValueError, match="scenario set mismatch"):
+        validate_rehearsal(candidate, attestation, rehearsal)
+
+
+@pytest.mark.parametrize("scenario", [
+    "application-rollback", "authority-revocation", "worker-crash-recovery",
+    "duplicate-delivery", "event-stream-integrity", "gvisor-execution-cleanup",
+])
+def test_v2_preserves_security_recovery_and_runtime_gates(scenario):
+    candidate, attestation, rehearsal = _v2_fixtures()
+    rehearsal["scenarios"] = [item for item in rehearsal["scenarios"] if item["id"] != scenario]
+    with pytest.raises(ValueError, match="scenario set mismatch"):
+        validate_rehearsal(candidate, attestation, rehearsal)
+
+
+def test_rehearsal_rejects_mixed_contract_versions():
+    candidate, attestation, rehearsal = _v2_fixtures()
+    attestation["schema_version"] = "zebra.cloud-rollout-attestation.v1"
+    with pytest.raises(ValueError, match="attestation schema"):
+        validate_rehearsal(candidate, attestation, rehearsal)

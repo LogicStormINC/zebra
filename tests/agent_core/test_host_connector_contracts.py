@@ -81,3 +81,23 @@ class TestHostConnectorBinding:
         )
         assert binding.active is True
         assert binding.profile_revision == 3
+
+
+def test_manifest_policy_is_explicit_and_preserves_historical_profile_json() -> None:
+    historical = _profile()
+    payload = historical.model_dump(mode="json")
+    assert historical.profile_digest == (
+        "d6e270b1ea1804527d50a8867119937b8d1630a4e94db7aabf84f542a32b2997"
+    )
+    assert "manifest_binding_policy" not in payload
+    assert (
+        HostConnectorProfileVersion.model_validate(payload).profile_digest
+        == historical.profile_digest
+    )
+    for policy in ("declared", "legacy"):
+        profile = _profile(manifest_binding_policy=policy)
+        assert profile.profile_digest != historical.profile_digest
+        assert profile.model_dump(mode="json")["manifest_binding_policy"] == policy
+        assert HostConnectorProfileVersion.model_validate_json(profile.model_dump_json()) == profile
+    with pytest.raises(ValidationError):
+        _profile(manifest_binding_policy="auto")

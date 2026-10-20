@@ -189,17 +189,22 @@ def native_worker(
     )
     monkeypatch.setattr(host_http, "_validate_endpoint", lambda *args, **kwargs: None)
     gateway = HostToolGateway(
-        "https://trench.example",
-        HostWorkloadIdentity("worker", "ns", "trench"),
+        env.host.origin,
+        HostWorkloadIdentity("worker", env.host.namespace_id, env.host.host_app_id),
         shared_secret="fixture-secret",
         manifest=env.host_source.host.manifest,
+        manifest_binding_policy=(
+            "declared" if env.admission.contract.schema_version == 2 else "legacy"
+        ),
     )
     monkeypatch.setattr(dispatch, "resolve_pinned_gateway", lambda *args: gateway)
     monkeypatch.setattr(
         "zebra_agent_worker.coverage_recovery.resolve_pinned_gateway", lambda *args: gateway
     )
     monkeypatch.setenv("COVERAGE_FIXTURE_KEY", "fixture-only")
-    scope = OpaqueAuthorityScope(authority_issuer="https://trench.example", namespace_id="ns")
+    scope = OpaqueAuthorityScope(
+        authority_issuer=env.host.origin, namespace_id=env.host.namespace_id,
+    )
     stores = postgres_control_plane_stores(
         env.dsn,
         deployment_namespace=NAMESPACE,
@@ -247,6 +252,8 @@ def native_worker(
             "ZEBRA_MODEL_API_KEY_ENV": "COVERAGE_FIXTURE_KEY",
             "ZEBRA_MODEL_BASE_URL": "https://api.deepseek.com",
             "ZEBRA_MODEL_NAME": "deepseek-v4-pro",
+            "DEEPSEEK_MODEL": "deepseek-v4-pro",
+            "DEEPSEEK_BASE_URL": "https://api.deepseek.com",
             "ZEBRA_DEEPSEEK_REVIEWER_PROFILE": "deepseek-v4-pro-reviewer-v1",
             "ZEBRA_HOST_TOOL_SHARED_SECRET": "fixture-secret",
             # Preserve explicit replacement-per-unit recovery stress cases.
@@ -294,7 +301,7 @@ def native_worker(
             namespace_id=env.host.namespace_id,
             issuer=env.task_binding.host_capability.authority_issuer,
             audience="fixture",
-            jwks_uri="https://trench.example/jwks",
+            jwks_uri=env.host.origin + "/jwks",
             allowed_origins=(env.host.origin,),
             algorithms=("RS256",),
             policy_version=env.host.policy_version,
@@ -485,6 +492,7 @@ def test_unregistered_consumer_refuses_before_expensive_proof(native_worker, mon
 
 
 @pytest.mark.parametrize("native_worker", ["recovered_snapshot", "first_create"], indirect=True)
+@pytest.mark.parametrize("model_cloud", [600, {"v2": True}], indirect=True)
 def test_native_worker_dispatch_reuses_governed_snapshot_and_certifies(native_worker):
     from agent_core.domain.events import EventType
     from agent_core.domain.sessions import SessionStatus

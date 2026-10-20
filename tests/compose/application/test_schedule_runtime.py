@@ -21,7 +21,7 @@ def _render(path: Path) -> dict[str, object]:
     env.update({key: "fixture" for key in re.findall(r"\$\{([A-Z0-9_]+):\?", path.read_text())})
     result = subprocess.run(
         ["docker", "compose", "--env-file", "/dev/null", "-f", str(path),
-         "config", "--format", "json"],
+         "--profile", "scheduler", "config", "--format", "json"],
         env=env, capture_output=True, text=True, timeout=20, check=False,
     )
     assert result.returncode == 0, result.stderr
@@ -32,10 +32,11 @@ def test_scheduler_is_independent_and_only_it_receives_workload_secret() -> None
     services = _render(BASE)["services"]
     scheduler = services["zebra-scheduler"]
 
+    assert scheduler["profiles"] == ["scheduler"]
     assert scheduler["build"]["target"] == "scheduler"
     assert scheduler["depends_on"]["zebra-migrate"]["condition"] == "service_completed_successfully"
     assert scheduler["read_only"] is True
-    assert scheduler["environment"]["ZEBRA_SCHEDULER_WORKLOAD_SHARED_SECRET"] == "fixture"
+    assert scheduler["environment"]["ZEBRA_SCHEDULER_WORKLOAD_SHARED_SECRET"] == ""
     for name in ("zebra-api", "zebra-worker", "zebra-migrate"):
         assert "ZEBRA_SCHEDULER_WORKLOAD_SHARED_SECRET" not in services[name]["environment"]
 

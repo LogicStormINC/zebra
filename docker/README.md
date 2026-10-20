@@ -93,6 +93,74 @@ for local/CI pulls; set `ZEBRA_APPLICATION_PYTHON_BASE_IMAGE` to the pinned
 Docker Hub digest when the upstream registry is reachable. The Dockerfile keeps
 that official digest as its standalone-build default.
 
+## Optional Scheduler and product compatibility
+
+Base application Compose starts API, Worker and migrations without a business
+product, private CA files or Scheduler authority configuration. The Scheduler is
+available with `--profile scheduler`. Configure its grant exchange URL, workload
+identity/secret, issuer, audience, JWKS URI and allowed origins before starting it.
+Compose rendering permits blanks; the existing Scheduler configuration loader
+rejects missing or invalid authority at process startup before any schedule work.
+
+Historical Trench deployments must explicitly add `compose.trench-compat.yml`.
+It restores `zebra-api-legacy` with the existing image identity and `trench-prod`
+namespace, API dependency, private CA mounts and always-on Scheduler with the
+historical `trench-scheduler` defaults. Keep the existing deployment environment
+and CA files; the neutral example intentionally supplies neither. This overlay
+does not rewrite credentials, registries, events or databases.
+
+With a local gVisor engine, set `ZEBRA_LOCAL_GVISOR_CLIENT_CERT_DIR` to the verified
+client certificate directory and retain the verified workspace root, VM address
+and certificate group. **Overlay order matters**: gVisor replaces Worker mounts
+to remove the local Docker socket; apply compatibility after it to restore Host
+and Broker TLS trust alongside the engine client certificates:
+
+```bash
+docker compose --env-file /absolute/path/to/existing-deployment.env \
+  -f docker/compose.application.yml \
+  -f docker/compose.local-gvisor.yml \
+  -f docker/compose.trench-compat.yml config --quiet
+```
+
+`compose.coverage-pro-test.yml` contains historical legacy API overrides and
+requires the compatibility overlay as well. For an independent deployment using
+private issuers, supply an explicit mount overlay and set the per-service
+`ZEBRA_API_SSL_CERT_FILE` / `ZEBRA_WORKER_SSL_CERT_FILE`; the public system bundle
+remains the base default.
+
+The user-operated activation script requires an environment file argument:
+`docker/local-gvisor/recreate-application.sh /absolute/path/to/deployment.env`.
+Append `--trench-compat` for the historical product; the script enforces the
+ordered overlays and runs runtime isolation preflight before replacing services.
+Run it only as an explicitly authorized activation step.
+
+`make test-runtime-independence` validates rendered composition and release
+contracts. The default rollout candidate is `zebra.cloud-rollout-candidate.v2`:
+it freezes only Runtime coordinates while retaining common evidence, protocol,
+rollback and capability checks. Its attestation and rehearsal use v2, with the
+`host-browser-client-action` scenario. The preserved
+`configs/cloud_rollout_candidate.trench-joint.example.json` uses strict v1 joint
+coordinates and the `trench-browser-client-action` rehearsal. Examples contain
+placeholders and cannot attest a release until populated with real evidence.
+Joint release evidence must use the explicit compatibility capabilities:
+
+```bash
+make release-evidence CAPABILITIES=configs/cloud_release_capabilities.trench-joint.example.json
+make validate-rollout-candidate \
+  ROLLOUT_CANDIDATE=/absolute/path/to/populated-joint-candidate.json
+```
+
+v1 requires a `trench-e2e` PASS gate for capability `trench`, including its
+nonplaceholder evidence digest. The evidence builder still rejects missing,
+stale, dirty or failed gate results. v2 allows omitted product gates; any Trench
+gate present must explicitly report `NOT_ENABLED`. v2 also requires every core,
+composition, integration and fault gate to pass; the integration gate binds all
+five dependency/recovery member digests. Runtime and memory capabilities must
+be explicit and their gate statuses must agree. Enabled gates require evidence
+digests; an empty gate inventory cannot attest an independent release.
+The default release capabilities mark Trench `not_enabled`; core, dependencies,
+recovery and security gates remain required.
+
 ## Start the optional Mem0 boot smoke
 
 Mem0's official Compose file is a development example. This repository instead
@@ -180,3 +248,36 @@ docker compose \
 
 Do not add `down --volumes` casually: it deletes Zebra PostgreSQL, MinIO, Mem0
 PostgreSQL and Mem0 history data for the whole `zebra-dependencies` project.
+
+
+## Generic Host authority and binding policy (batch02)
+
+New live Host discovery defaults to `ZEBRA_HOST_MANIFEST_BINDING_POLICY=declared`:
+every tool must contain `resourceBindings`, including an empty array. Published
+connector profiles pin this policy in a new immutable revision. Apply the additive
+v106 migration through the usual deployment process before running the new code;
+existing profile rows remain NULL and keep their old digest/compatibility behavior.
+
+The Scheduler defaults to `ZEBRA_SCHEDULER_GRANT_EXCHANGE_PROTOCOL=generic`.
+The Broker process defaults to `ZEBRA_GRANT_BROKER_AUTHORITY_MODE=generic` and
+requires a fixed HTTPS `ZEBRA_GRANT_BROKER_AUTHORITY_URL` plus explicit Host and
+namespace. That business endpoint verifies credentials and current entitlements;
+a scheduler HMAC alone is insufficient in generic mode. See
+[the developer contract](../docs/CLOUD_AGENT_DECOUPLING_BATCH2.md).
+
+Existing Trench deployments use `compose.trench-compat.yml` and the explicit
+`trench_legacy` Broker mode in their product overlay. Legacy mode preserves the
+historical entitlement trust model until the business authority is upgraded.
+No live services or existing databases are changed by editing these files.
+
+
+## Product integration ownership
+
+The default RabbitMQ provisioner prepares Runtime-only credentials/topology.
+Historical joint acceptance must explicitly pass `--trench-compat`; see
+[rabbitmq/README.md](rabbitmq/README.md). Existing vhosts/queues/credentials are
+not removed or rotated. Product-owned joint CI stays manual; product-neutral
+contract/storage conformance has separate Make targets and CI without business
+credentials. Compatibility retirement is an offline materials check described in
+[the fourth-batch plan](../docs/CLOUD_AGENT_DECOUPLING_BATCH4.md), not an automatic
+live cleanup, database migration or deployment instruction.

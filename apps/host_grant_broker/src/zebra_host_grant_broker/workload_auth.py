@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from uuid import NAMESPACE_URL, uuid5
 
 from zebra_host_grant_broker.config import BrokerSettings
-from zebra_host_grant_broker.trench_session import TrenchViewer, parse_agent_scopes
+from zebra_host_grant_broker.grant_minting import GrantIdentity
 
 
 class WorkloadAuthError(ValueError):
@@ -16,11 +16,17 @@ class WorkloadAuthError(ValueError):
 
 
 @dataclass(frozen=True, slots=True)
+class WorkloadIdentity:
+    user_id: str
+    workspace_id: str
+
+
+@dataclass(frozen=True, slots=True)
 class VerifiedWorkload:
     identity: str
     nonce: str
     issued_at: int
-    viewer: TrenchViewer
+    viewer: GrantIdentity
 
     @property
     def grant_id(self) -> str:
@@ -63,28 +69,19 @@ def verify_workload(
     principal = body.get("principal")
     if not isinstance(principal, dict):
         raise WorkloadAuthError("workload_principal_invalid")
-    try:
-        allowed_scopes = (
-            parse_agent_scopes(principal["agentScopes"]) if "agentScopes" in principal else None
-        )
-    except ValueError as exc:
-        raise WorkloadAuthError("workload_agent_scopes_invalid") from exc
     user_id = _text(principal.get("userId"), "workload_principal_invalid")
     workspace_id = _text(principal.get("workspaceId"), "workload_workspace_invalid")
-    raw_sources = principal.get("activeSourceIds", [])
-    if not isinstance(raw_sources, list) or len(raw_sources) > 4096:
-        raise WorkloadAuthError("workload_sources_invalid")
-    sources = frozenset(_text(value, "workload_sources_invalid") for value in raw_sources)
+    if settings.authority_mode == "generic":
+        return VerifiedWorkload(
+            normalized_identity,
+            normalized_nonce,
+            issued_at,
+            WorkloadIdentity(user_id, workspace_id),
+        )
+    from zebra_host_grant_broker.legacy_authority import legacy_workload_viewer
+
     return VerifiedWorkload(
-        identity=normalized_identity,
-        nonce=normalized_nonce,
-        issued_at=issued_at,
-        viewer=TrenchViewer(
-            user_id=user_id,
-            workspace_id=workspace_id,
-            active_source_ids=sources,
-            allowed_scopes=allowed_scopes,
-        ),
+        normalized_identity, normalized_nonce, issued_at, legacy_workload_viewer(principal)
     )
 
 

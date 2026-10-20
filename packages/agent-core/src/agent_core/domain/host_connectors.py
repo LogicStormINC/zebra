@@ -12,7 +12,7 @@ import hashlib
 import json
 import re
 from enum import StrEnum
-from typing import Self
+from typing import Literal, Self
 from urllib.parse import urlsplit
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -44,13 +44,14 @@ class HostConnectorProfileVersion(BaseModel):
     base_uri: str = Field(min_length=1, max_length=MAX_BASE_URI_LENGTH)
     manifest_path: str = Field(min_length=1, max_length=MAX_PATH_TEMPLATE_LENGTH)
     invoke_path_template: str = Field(min_length=1, max_length=MAX_PATH_TEMPLATE_LENGTH)
-    reconcile_path_template: str | None = Field(
-        default=None, max_length=MAX_PATH_TEMPLATE_LENGTH
-    )
+    reconcile_path_template: str | None = Field(default=None, max_length=MAX_PATH_TEMPLATE_LENGTH)
     supported_protocol_versions: tuple[str, ...] = Field(min_length=1)
     workload_identity_ref: str = Field(min_length=1, max_length=MAX_REFERENCE_LENGTH)
     credential_ref: str = Field(min_length=1, max_length=MAX_REFERENCE_LENGTH)
     network_policy_ref: str | None = Field(default=None, max_length=MAX_POLICY_REF_LENGTH)
+    manifest_binding_policy: Literal["declared", "legacy"] | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
     status: HostConnectorStatus = HostConnectorStatus.PUBLISHED
 
     @model_validator(mode="after")
@@ -87,6 +88,8 @@ class HostConnectorProfileVersion(BaseModel):
             "networkPolicyRef": self.network_policy_ref,
             "status": self.status.value,
         }
+        if self.manifest_binding_policy is not None:
+            canonical["manifestBindingPolicy"] = self.manifest_binding_policy
         encoded = json.dumps(canonical, sort_keys=True, separators=(",", ":")).encode()
         return hashlib.sha256(encoded).hexdigest()
 

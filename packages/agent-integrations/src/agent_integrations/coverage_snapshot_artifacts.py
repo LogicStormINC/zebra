@@ -64,8 +64,14 @@ class CoverageArtifacts:
         return None if loaded is None else (loaded[0].uri, loaded[1])
 
     def load_payload(
-        self, identifier: ArtifactId, kind: str, maximum: int, now: datetime,
-        *, mime_type: str = "application/octet-stream", expected_digest: str | None = None,
+        self,
+        identifier: ArtifactId,
+        kind: str,
+        maximum: int,
+        now: datetime,
+        *,
+        mime_type: str = "application/octet-stream",
+        expected_digest: str | None = None,
     ) -> tuple[StoredArtifactPayload, bytes] | None:
         """Return the same verified read's metadata, never a cross-read cache."""
         try:
@@ -75,19 +81,33 @@ class CoverageArtifacts:
                 with self.store.read_payload_scope((identifier,)) as reader:
                     scoped = CoverageArtifacts(reader, self.session, self.publication_lock)
                     return scoped._load_payload(
-                        identifier, kind, maximum, now,
-                        mime_type=mime_type, expected_digest=expected_digest,
+                        identifier,
+                        kind,
+                        maximum,
+                        now,
+                        mime_type=mime_type,
+                        expected_digest=expected_digest,
                     )
             return self._load_payload(
-                identifier, kind, maximum, now,
-                mime_type=mime_type, expected_digest=expected_digest,
+                identifier,
+                kind,
+                maximum,
+                now,
+                mime_type=mime_type,
+                expected_digest=expected_digest,
             )
         except (OSError, ValueError) as exc:
             raise CoverageRefusedError(CoverageRefusalReason.ARTIFACT_UNAVAILABLE) from exc
 
     def _load_payload(
-        self, identifier: ArtifactId, kind: str, maximum: int, now: datetime,
-        *, mime_type: str, expected_digest: str | None,
+        self,
+        identifier: ArtifactId,
+        kind: str,
+        maximum: int,
+        now: datetime,
+        *,
+        mime_type: str,
+        expected_digest: str | None,
     ) -> tuple[StoredArtifactPayload, bytes] | None:
         reason = CoverageRefusalReason.ARTIFACT_UNAVAILABLE
         try:

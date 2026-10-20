@@ -15,7 +15,7 @@ from agent_core.domain.coverage_snapshot import (
     CoverageRecord,
     CoverageSnapshot,
 )
-from agent_core.domain.host_authority import HostContextEnvelope
+from agent_core.domain.host_authority import HostContextEnvelope, HostResourceRef
 from agent_core.domain.identifiers import ArtifactId, SessionId
 
 from agent_integrations.coverage_snapshot_artifacts import artifact_id
@@ -29,6 +29,8 @@ from agent_integrations.coverage_snapshot_wire import (
     SnapshotWire,
     normalize_page,
     parse,
+    parse_snapshot_wire,
+    validate_snapshot_provenance,
     verify_manifest,
 )
 from agent_integrations.host_tools.contracts import HostToolManifest
@@ -58,7 +60,9 @@ class HostCoverageSnapshotSource:
         *,
         session_id: SessionId,
         authority: HostContextEnvelope,
-        history_ref: str,
+        history_ref: str | None = None,
+        source_ref: HostResourceRef | None = None,
+        contract: CoverageContract | None = None,
         manifest: HostToolManifest | None,
         invoke: HostCoverageInvoke | None,
         admitted_effect_invoke: HostCoverageInvoke | None = None,
@@ -71,6 +75,8 @@ class HostCoverageSnapshotSource:
         self.host = CoverageInvocation(
             authority=authority,
             history_ref=history_ref,
+            source_ref=source_ref,
+            contract=contract,
             manifest=manifest,
             invoke=invoke,
             admitted_effect_invoke=admitted_effect_invoke,
@@ -81,7 +87,7 @@ class HostCoverageSnapshotSource:
         )
 
     def _binding(self, snapshot: Descriptor | CoverageSnapshot) -> dict[str, object]:
-        return {
+        binding: dict[str, object] = {
             "host": snapshot.host_id,
             "namespace": snapshot.namespace,
             "workspace": self.host.bound.workspace_ref,
@@ -91,6 +97,9 @@ class HostCoverageSnapshotSource:
             "scope": snapshot.scope_digest,
             "contract": snapshot.contract_digest,
         }
+        if self.host.contract is not None and self.host.contract.schema_version == 2:
+            binding["source"] = self.host.resource.model_dump(mode="json", by_alias=True)
+        return binding
 
     def manifest_artifact_id(self, snapshot: Descriptor | CoverageSnapshot) -> ArtifactId:
         return artifact_id(self.session_id, {"kind": "manifest", **self._binding(snapshot)})
@@ -118,23 +127,20 @@ class HostCoverageSnapshotSource:
         snapshot_id: str | None = None,
         contract: CoverageContract | None = None,
     ) -> Descriptor:
-        wire = parse(SnapshotWire, value, Reason.SCOPE_MISMATCH)
+        frozen = self.host.contract
+        if frozen is not None and contract is not None and frozen != contract:
+            raise CoverageRefusedError(Reason.SCOPE_MISMATCH)
+        contract = frozen or contract
+        wire = (
+            parse_snapshot_wire(value, contract)
+            if contract is not None and contract.schema_version == 2
+            else parse(SnapshotWire, value, Reason.SCOPE_MISMATCH)
+        )
         snapshot = wire.snapshot
-        if (
-            snapshot.namespace != authority.namespace_id
-            or snapshot.host_id != authority.host_app_id
-            or (snapshot_id is not None and snapshot.snapshot_id != snapshot_id)
-            or wire.provenance.history_ref != self.host.resource.resource_id
-            or wire.provenance.workspace_ref != authority.workspace_ref
-            or wire.provenance.periods_digest != snapshot.authority_revision
-            or wire.content_capabilities != ("canonical_body",)
-            or wire.scope.digest != snapshot.scope_digest
-            or not snapshot.as_of <= wire.sealed_at < snapshot.expires_at
-            or (
-                contract is not None
-                and (wire.scope != contract.scope or snapshot.contract_digest != contract.digest)
-            )
-        ):
+        validate_snapshot_provenance(
+            wire, contract=contract, authority=authority, source_ref=self.host.resource
+        )
+        if snapshot_id is not None and snapshot.snapshot_id != snapshot_id:
             raise CoverageRefusedError(Reason.SCOPE_MISMATCH)
         self._live(snapshot)
         if snapshot.record_count > MAX_RECORDS:
@@ -236,6 +242,8 @@ class HostCoverageSnapshotSource:
         idempotency_key: str,
         budget: OperationBudget,
     ) -> Descriptor:
+        if contract.schema_version == 2 and self.host.contract != contract:
+            raise CoverageRefusedError(Reason.SCOPE_MISMATCH)
         value = self.host.call(
             "create",
             {
@@ -278,9 +286,7 @@ class HostCoverageSnapshotSource:
         descriptor = self._get_descriptor(snapshot_id, authority, budget)
         return self._collect(descriptor, authority, budget)
 
-    def get_descriptor(
-        self, snapshot_id: str, *, authority: HostContextEnvelope
-    ) -> Descriptor:
+    def get_descriptor(self, snapshot_id: str, *, authority: HostContextEnvelope) -> Descriptor:
         """Revalidate current Host authority without enumerating immutable parts."""
         budget = self.host.budget(authority)
         descriptor = self._get_descriptor(snapshot_id, authority, budget)

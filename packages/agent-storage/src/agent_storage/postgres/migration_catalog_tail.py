@@ -44,6 +44,8 @@ from agent_storage.postgres.full_gateway_migration import FULL_GATEWAY_MIGRATION
 from agent_storage.postgres.governed_memory_migration import GOVERNED_MEMORY_MIGRATION
 from agent_storage.postgres.handoff_migration import HANDOFF_MIGRATION
 from agent_storage.postgres.host_auth_migration import HOST_AUTH_MIGRATION
+from agent_storage.postgres.host_manifest_policy_migration import HOST_MANIFEST_POLICY_MIGRATION
+from agent_storage.postgres.host_manifest_revision_migration import HOST_MANIFEST_REVISION_MIGRATION
 from agent_storage.postgres.memory_delivery_migration import MEMORY_DELIVERY_MIGRATION
 from agent_storage.postgres.migration_recovery_migration import MIGRATION_RECOVERY_MIGRATION
 from agent_storage.postgres.native_memory_migration import NATIVE_MEMORY_MIGRATION
@@ -165,4 +167,6 @@ LATEST_MIGRATIONS = (
     TASK_PROJECTION_TRIGGER_PLAN_MIGRATION,
     RESEARCH_WEB_PROFILE_MIGRATION,
     PLUGIN_INSTALLATIONS_MIGRATION,
+    HOST_MANIFEST_POLICY_MIGRATION,
+    HOST_MANIFEST_REVISION_MIGRATION,
 )

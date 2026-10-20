@@ -25,7 +25,6 @@ from agent_core.ports.aggregate_mutation import WorkerMutationAuthority
 from agent_core.ports.artifact_payload_read import ArtifactPayloadReadUnavailableError
 from agent_core.ports.effect_dispatch import effect_input
 from agent_core.ports.policy_engine import PolicyEnginePort
-from agent_integrations.coverage_snapshot_invocation import HISTORY_RESOURCE_TYPE
 from agent_integrations.host_tools.contracts import HostToolManifest
 from agent_integrations.host_tools.gateway import HostToolGateway
 from agent_storage.artifact_payload_reads import CloudArtifactPayloadReader
@@ -104,13 +103,13 @@ class CloudCoverageEffectInvoke:
         self.fence = LeaseFence.model_validate(effect_input(fence), strict=True, extra="forbid")
         if gateway.manifest is None:
             raise ValueError("coverage requires a preconfigured frozen Host manifest")
-        self.manifest = frozen_manifest(gateway.manifest)
+        self.manifest = frozen_manifest(gateway.manifest, self.admission.contract)
         self.endpoint, self.workload = gateway.endpoint, gateway.workload_identity
         self.secret, self.transport = gateway.shared_secret, gateway.transport
         self.session = payloads._session_id
         self.authority, self.policy, self.check_authority = authority, policy, check_authority
         self.next_event, self.accept_event = next_event, accept_event
-        self.resource = HostResourceRef(type=HISTORY_RESOURCE_TYPE, id=self.admission.history_ref)
+        self.resource = self.admission.source_resource
         self._preflight()
 
     def _preflight(self, call: ToolCall | None = None) -> WorkerMutationAuthority:
@@ -134,7 +133,7 @@ class CloudCoverageEffectInvoke:
             or self.gateway.shared_secret != self.secret
             or self.gateway.transport is not self.transport
             or self.gateway.manifest is None
-            or frozen_manifest(self.gateway.manifest) != self.manifest
+            or frozen_manifest(self.gateway.manifest, self.admission.contract) != self.manifest
             or self.manifest.workload_identity != self.workload.subject
         ):
             raise ValueError("coverage current Cloud/Host authority conflicts")
@@ -244,7 +243,7 @@ class CloudCoverageEffectInvoke:
             or bound_context != self.context
             or resource != self.resource
             or manifest is None
-            or frozen_manifest(manifest) != self.manifest
+            or frozen_manifest(manifest, self.admission.contract) != self.manifest
             or call.name != CREATE
             or coverage_digest(call.arguments) != coverage_digest(arguments)
             or call.provider_call_id is not None

@@ -15,7 +15,8 @@ PRO_TEST = ROOT / "docker/compose.coverage-pro-test.yml"
 
 
 def _render(
-    platform: str | None = None, *, local_gvisor: bool = False, coverage_pro: bool = False,
+    platform: str | None = None, *, local_gvisor: bool = False,
+    coverage_pro: bool = False, compat: bool = False,
 ) -> dict[str, object]:
     if not shutil.which("docker"):
         pytest.skip("Docker Compose CLI unavailable")
@@ -36,6 +37,7 @@ def _render(
     if local_gvisor:
         env.update({"ZEBRA_LOCAL_GVISOR_ADDRESS": "192.0.2.10",
                     "ZEBRA_LOCAL_GVISOR_CERT_GID": "20",
+                    "ZEBRA_LOCAL_GVISOR_CLIENT_CERT_DIR": "/fixture/engine-certs",
                     "ZEBRA_WORKSPACE_VOLUME_ROOT": "/quota/zebra"})
     result = subprocess.run(
         [
@@ -46,6 +48,7 @@ def _render(
             "-f",
             str(COMPOSE),
             *(["-f", str(ROOT / "docker/compose.local-gvisor.yml")] if local_gvisor else []),
+            *(["-f", str(ROOT / "docker/compose.trench-compat.yml")] if compat else []),
             *(["-f", str(PRO_TEST)] if coverage_pro else []),
             "config",
             "--format",
@@ -100,7 +103,7 @@ def test_application_platform_is_explicit_and_shared_by_execution_services(platf
 
 
 def test_coverage_pro_pairs_api_worker_model_and_aliases():
-    services = _render("linux/arm64", local_gvisor=True, coverage_pro=True)
+    services = _render("linux/arm64", local_gvisor=True, coverage_pro=True, compat=True)
     for name in ("zebra-api", "zebra-api-legacy", "zebra-worker"):
         env = services[name]["environment"]
         assert env["ZEBRA_MODEL_PROVIDER"] == "deepseek"
@@ -112,8 +115,8 @@ def test_coverage_pro_pairs_api_worker_model_and_aliases():
 
 @pytest.mark.parametrize("local_gvisor", [False, True])
 def test_coverage_pro_changes_only_model_settings_not_authority_or_runtime(local_gvisor):
-    before = _render("linux/arm64", local_gvisor=local_gvisor)
-    after = _render("linux/arm64", local_gvisor=local_gvisor, coverage_pro=True)
+    before = _render("linux/arm64", local_gvisor=local_gvisor, compat=True)
+    after = _render("linux/arm64", local_gvisor=local_gvisor, coverage_pro=True, compat=True)
     changed = {
         "ZEBRA_MODEL_PROVIDER", "ZEBRA_MODEL_NAME", "DEEPSEEK_MODEL",
         "ZEBRA_MODEL_BASE_URL", "DEEPSEEK_BASE_URL", "ZEBRA_DEEPSEEK_REVIEWER_PROFILE",
@@ -124,3 +127,34 @@ def test_coverage_pro_changes_only_model_settings_not_authority_or_runtime(local
             assert key not in before[name]["environment"]
             del after[name]["environment"][key]
     assert after == before
+
+
+@pytest.mark.parametrize("local_gvisor", [False, True])
+def test_compat_preserves_legacy_scheduler_and_private_tls(local_gvisor):
+    services = _render(local_gvisor=local_gvisor, compat=True)
+    assert services["zebra-api"]["depends_on"]["zebra-api-legacy"]["condition"] == "service_started"
+    legacy = services["zebra-api-legacy"]
+    assert legacy["environment"]["ZEBRA_DEPLOYMENT_NAMESPACE"] == "trench-prod"
+    assert "build" not in legacy
+    assert legacy["image"] == "zebra-application-zebra-api"
+    scheduler = services["zebra-scheduler"]
+    assert not scheduler.get("profiles")
+    assert scheduler["environment"]["ZEBRA_SCHEDULER_ID"] == "trench-scheduler"
+    assert scheduler["environment"]["ZEBRA_SCHEDULER_WORKLOAD_IDENTITY"] == "trench-scheduler"
+    for name in ("zebra-api", "zebra-api-legacy", "zebra-worker", "zebra-scheduler"):
+        mounts = {mount["target"]: mount for mount in services[name]["volumes"]}
+        assert mounts["/etc/ssl/certs/zebra-local-unused.0"]["read_only"] is True
+        if name != "zebra-scheduler":
+            assert mounts["/etc/ssl/certs/zebra-acceptance-ca-bundle.crt"]["read_only"] is True
+    if local_gvisor:
+        mounts = {mount["target"] for mount in services["zebra-worker"]["volumes"]}
+        assert "/run/zebra-engine-tls" in mounts
+        assert "/var/run/docker.sock" not in mounts
+
+
+def test_base_has_no_legacy_scheduler_or_private_ca_prerequisites():
+    services = _render()
+    assert set(services) == {"zebra-migrate", "zebra-api", "zebra-worker"}
+    assert set(services["zebra-api"]["depends_on"]) == {"zebra-migrate"}
+    for service in services.values():
+        assert all("trench" not in mount["source"] for mount in service.get("volumes", []))

@@ -25,6 +25,8 @@ def frozen_or_discovered_manifest(
     if not isinstance(frozen, dict):
         raise ValueError("frozen Host manifest is missing; failing closed")
     manifest = HostToolManifest.from_payload(frozen)
+    if pinned.manifest_binding_policy == "declared" and manifest.binding_policy != "declared":
+        raise ValueError("frozen Host manifest binding policy mismatch; failing closed")
     if manifest.digest != manifest_digest:
         raise ValueError("frozen Host manifest digest drifted; failing closed")
     object.__setattr__(pinned, "manifest", manifest)

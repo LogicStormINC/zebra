@@ -42,6 +42,7 @@ def _version(value: object) -> object:
 
 
 CoverageSchemaVersion = Annotated[Literal[1], BeforeValidator(_version)]
+CoverageContractVersion = Annotated[Literal[1, 2], BeforeValidator(_version)]
 
 
 def coverage_digest(payload: object) -> str:
@@ -103,6 +104,24 @@ class CoverageScope(CoverageModel):
         return coverage_digest(self.model_dump(mode="json"))
 
 
+class CoverageSelectionScope(CoverageModel):
+    """Host-owned opaque selection; Core never interprets business selectors."""
+
+    selection_ref: CoverageName
+    selection_digest: CoverageDigest
+
+    @property
+    def digest(self) -> str:
+        return coverage_digest(self.model_dump(mode="json"))
+
+
+class CoverageSourceDefinition(CoverageModel):
+    protocol: Literal["coverage-source/2"] = "coverage-source/2"
+    resource_type: Annotated[str, Field(min_length=1, max_length=128), AfterValidator(_trimmed)]
+    read_scope: CoverageName
+    create_scope: CoverageName
+
+
 class CoverageCheck(CoverageModel):
     id: CoverageName
     version: CoverageName
@@ -112,10 +131,12 @@ class CoverageCheck(CoverageModel):
 
 
 class CoverageContract(CoverageModel):
-    schema_version: CoverageSchemaVersion = 1
+    schema_version: CoverageContractVersion = 1
     mode: Literal["exhaustive"] = "exhaustive"
-    dataset: Literal["trench.subscribed_events"] = "trench.subscribed_events"
-    scope: CoverageScope
+    dataset: CoverageName = "trench.subscribed_events"
+    dataset_revision: CoverageName | None = Field(default=None, exclude_if=lambda v: v is None)
+    source: CoverageSourceDefinition | None = Field(default=None, exclude_if=lambda v: v is None)
+    scope: CoverageScope | CoverageSelectionScope
     content_requirements: tuple[Literal["canonical_body"], ...] = ("canonical_body",)
     checks: tuple[CoverageCheck, ...] = Field(min_length=1, max_length=32)
     cross_record_checks: tuple[CoverageName, ...] = Field(default=(), max_length=0)
@@ -123,8 +144,29 @@ class CoverageContract(CoverageModel):
     publication_policy: Literal["certified_report_only"] = "certified_report_only"
     contract_revision: int = Field(default=1, strict=True, ge=1)
 
+    @model_validator(mode="before")
+    @classmethod
+    def require_explicit_v2_dataset(cls, value: object) -> object:
+        if isinstance(value, dict) and value.get("schema_version") == 2 and "dataset" not in value:
+            raise ValueError("v2 requires explicit dataset")
+        return value
+
     @model_validator(mode="after")
     def validate_shape(self) -> Self:
+        if self.schema_version == 1:
+            if (
+                self.dataset != "trench.subscribed_events"
+                or self.dataset_revision is not None
+                or self.source is not None
+                or not isinstance(self.scope, CoverageScope)
+            ):
+                raise ValueError("v1 requires its historical dataset and scope")
+        elif (
+            self.dataset_revision is None
+            or self.source is None
+            or not isinstance(self.scope, CoverageSelectionScope)
+        ):
+            raise ValueError("v2 requires dataset_revision, source and opaque selection scope")
         if self.content_requirements != ("canonical_body",):
             raise ValueError("v1 requires exactly canonical_body")
         identities = tuple(check.id for check in self.checks)
@@ -135,3 +177,11 @@ class CoverageContract(CoverageModel):
     @property
     def digest(self) -> str:
         return coverage_digest(self.model_dump(mode="json"))
+
+    @property
+    def source_definition(self) -> CoverageSourceDefinition:
+        if self.source is not None:
+            return self.source
+        from agent_core.domain.coverage_legacy_source import LEGACY_COVERAGE_SOURCE
+
+        return LEGACY_COVERAGE_SOURCE

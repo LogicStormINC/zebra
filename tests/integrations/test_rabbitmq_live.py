@@ -15,9 +15,15 @@ pytest.importorskip("aio_pika")
 if os.getenv("ZEBRA_RABBITMQ_LIVE_ADAPTER") == "trench":
     from trench_core.rabbitmq import RabbitMQError, RabbitMQTransport
 else:
-    from agent_integrations.rabbitmq import RabbitMQError, RabbitMQTransport
+    from agent_integrations.rabbitmq import RabbitMQError
+    from agent_integrations.rabbitmq import RabbitMQTransport as RuntimeTransport
+    from agent_integrations.trench_compat.broker_envelope import parse_broker_envelope
 
-from scripts.provision_rabbitmq import read_settings, topology
+    def RabbitMQTransport(*args, **kwargs):
+        return RuntimeTransport(*args, envelope_parser=parse_broker_envelope, **kwargs)
+
+
+from scripts.provision_rabbitmq_trench import read_settings, topology
 
 ROOT = Path(__file__).resolve().parents[2]
 CONTAINER = "rabbitmq-infra-acceptance-rabbitmq-1"

@@ -21,8 +21,8 @@ _INSERT_PROFILE = """
         deployment_namespace, host_app_id, connector_id, profile_revision,
         base_uri, manifest_path, invoke_path_template, reconcile_path_template,
         supported_protocol_versions, workload_identity_ref, credential_ref,
-        network_policy_ref, status, profile_digest
-    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        network_policy_ref, status, profile_digest, manifest_binding_policy
+    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
     ON CONFLICT (deployment_namespace, host_app_id, connector_id, profile_revision)
     DO NOTHING
     RETURNING host_app_id, connector_id, profile_revision
@@ -31,7 +31,7 @@ _INSERT_PROFILE = """
 _SELECT_PROFILE = """
     SELECT base_uri, manifest_path, invoke_path_template, reconcile_path_template,
         supported_protocol_versions, workload_identity_ref, credential_ref,
-        network_policy_ref, status
+        network_policy_ref, status, manifest_binding_policy
     FROM host_connector_profiles
     WHERE deployment_namespace = %s AND host_app_id = %s AND connector_id = %s
         AND profile_revision = %s
@@ -95,6 +95,7 @@ class PostgresHostConnectorRegistry:
                     profile.network_policy_ref,
                     profile.status.value,
                     profile.profile_digest,
+                    profile.manifest_binding_policy,
                 ),
             ).fetchone()
         if row is None:
@@ -140,6 +141,7 @@ class PostgresHostConnectorRegistry:
             credential_ref=row["credential_ref"],
             network_policy_ref=row["network_policy_ref"],
             status=HostConnectorStatus(row["status"]),
+            manifest_binding_policy=row["manifest_binding_policy"],
         )
 
     def resolve_binding(self, host_app_id: str, namespace_id: str) -> HostConnectorBinding | None:
