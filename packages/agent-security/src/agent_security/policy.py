@@ -130,7 +130,14 @@ class LocalPolicyEngine:
         tool_name = tool_call.name
         path_risk_reason = _path_risk_reason(tool_call, workspace_root=self.workspace_root)
         if path_risk_reason is not None:
-            return _deny(self.profile, path_risk_reason)
+            malformed = any(
+                value is not None and (not isinstance(value, str) or not value.strip())
+                for key in PATH_ARGUMENTS_BY_TOOL.get(tool_name, ())
+                for value in (tool_call.arguments.get(key),)
+            )
+            return _deny(
+                self.profile, path_risk_reason, route="invalid_arguments" if malformed else None
+            )
         egress = classify_tool_egress(
             tool_call,
             network_profile=self.network_profile,
@@ -311,6 +318,8 @@ def _path_risk_reason(tool_call: ToolCall, *, workspace_root: Path | None) -> st
             continue
         if not isinstance(raw_path, str):
             return f"{tool_call.name} path argument {argument_name} must be a string"
+        if not raw_path.strip():
+            return f"{tool_call.name} path argument {argument_name} must not be blank"
         if _is_authorized_absolute_cwd(
             tool_call.name,
             argument_name,
@@ -424,9 +433,10 @@ def _approval(profile: PolicyProfile, reason: str) -> PolicyDecision:
     )
 
 
-def _deny(profile: PolicyProfile, reason: str) -> PolicyDecision:
+def _deny(profile: PolicyProfile, reason: str, *, route: str | None = None) -> PolicyDecision:
     return PolicyDecision(
         decision=PolicyDecisionType.DENY,
         reason=reason,
         policy_profile=profile.value,
+        route=route,
     )

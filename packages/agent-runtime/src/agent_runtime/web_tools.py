@@ -61,7 +61,9 @@ def register_web_tools(
 ) -> frozenset[str]:
     """Register Web handlers and return the audited runtime-free subset."""
     search_endpoint = optional_web_search_endpoint(
-        web_search_endpoint, web_pipeline_v2=web_pipeline_v2
+        web_search_endpoint,
+        web_pipeline_v2=web_pipeline_v2,
+        private_backend=web_search_private_backend,
     )
     if web_pipeline_v2:
         if web_gateway_transport is not None or web_search_transport is not None:
@@ -108,9 +110,12 @@ def register_web_tools(
     )
     if "web.fetch" in enabled_names:
         tool = WebFetchTool(fetch_transport, max_output_bytes=max_output_bytes)
-        register(tool, parallel_safe=(
-            web_gateway_transport is None and type(fetch_transport) is LocalWebGatewayTransport
-        ))
+        register(
+            tool,
+            parallel_safe=(
+                web_gateway_transport is None and type(fetch_transport) is LocalWebGatewayTransport
+            ),
+        )
     if search_endpoint is not None and "web.search" in enabled_names:
         search_transport = web_search_transport or search_factory(
             use_system_proxy=trusted_local,
@@ -122,26 +127,26 @@ def register_web_tools(
             ),
         )
         search = WebSearchTool(endpoint=search_endpoint, transport=search_transport)
-        register(search, parallel_safe=(
-            web_search_transport is None and type(search_transport) is LocalWebSearchTransport
-        ))
+        register(
+            search,
+            parallel_safe=(
+                web_search_transport is None and type(search_transport) is LocalWebSearchTransport
+            ),
+        )
 
     return frozenset(runtime_free)
 
 
 def optional_web_search_endpoint(
-    value: str | None, *, web_pipeline_v2: bool = False
+    value: str | None, *, web_pipeline_v2: bool = False, private_backend: bool = False
 ) -> WebTarget | None:
     if value is None:
         return None
     try:
-        return parse_web_target(value)
+        return parse_web_target(value, allow_explicit_port=private_backend)
     except WebTargetError as exc:
-        if web_pipeline_v2:
-            raise ValueError(
-                f"web_search_endpoint is not a valid web target for web_pipeline_v2: {exc}"
-            ) from exc
-        return None
+        suffix = " for web_pipeline_v2" if web_pipeline_v2 else ""
+        raise ValueError(f"web_search_endpoint is not a valid web target{suffix}: {exc}") from exc
 
 
 def register_native_web_tools(

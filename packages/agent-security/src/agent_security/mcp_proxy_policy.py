@@ -117,7 +117,8 @@ def _classify_web_egress(
             reason=str(exc),
         )
     if network_profile.name in (
-        NetworkProfileName.FULL_GATEWAY, NetworkProfileName.FULL_TRUSTED_LOCAL
+        NetworkProfileName.FULL_GATEWAY,
+        NetworkProfileName.FULL_TRUSTED_LOCAL,
     ) or (
         network_profile.name is NetworkProfileName.DOMAIN_ALLOWLIST
         and target.hostname in network_profile.domain_allowlist
@@ -158,7 +159,8 @@ def _classify_web_search_egress(
             reason=str(exc),
         )
     try:
-        target = parse_web_target(endpoint)
+        # This endpoint is operator configuration, never a model argument.
+        target = parse_web_target(endpoint, allow_explicit_port=True)
     except WebTargetError as exc:
         return ToolEgressMetadata(
             tool_name=tool_call.name,
@@ -167,7 +169,8 @@ def _classify_web_search_egress(
             reason=str(exc),
         )
     if web_pipeline_v2 and network_profile.name not in (
-        NetworkProfileName.FULL_GATEWAY, NetworkProfileName.FULL_TRUSTED_LOCAL
+        NetworkProfileName.FULL_GATEWAY,
+        NetworkProfileName.FULL_TRUSTED_LOCAL,
     ):
         if parse_search_query(tool_call.arguments).auto_fetch:
             return ToolEgressMetadata(
@@ -178,7 +181,8 @@ def _classify_web_search_egress(
                 reason="web.search auto_fetch requires trusted-local network authority",
             )
     if network_profile.name in (
-        NetworkProfileName.FULL_GATEWAY, NetworkProfileName.FULL_TRUSTED_LOCAL
+        NetworkProfileName.FULL_GATEWAY,
+        NetworkProfileName.FULL_TRUSTED_LOCAL,
     ) or (
         network_profile.name is NetworkProfileName.DOMAIN_ALLOWLIST
         and target.hostname in network_profile.domain_allowlist

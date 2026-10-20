@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Mapping
 from dataclasses import dataclass, replace
 
 from agent_core.domain.events import EventType
 from agent_core.domain.tools import ToolCallStatus, ToolResult
+from agent_core.domain.web import WebTargetError, parse_web_target
 from agent_core.harness.models import HarnessEventDraft
 
 _REFERENCE_KEYS = frozenset(
@@ -33,6 +35,9 @@ _MEDIA_REFERENCE_KEYS = frozenset(
         "preview_url",
         "thumbnail",
         "thumbnail_url",
+        "videos",
+        "video_url",
+        "video_urls",
     }
 )
 
@@ -95,7 +100,13 @@ def evidence_ledger(
                 parsed = json.loads(output)
             except (TypeError, ValueError):
                 continue
-            _collect_refs(parsed, refs, artifacts, media_refs)
+            _collect_refs(
+                parsed,
+                refs,
+                artifacts,
+                media_refs,
+                source_body_links=_verified_source_read(payload.get("metadata")),
+            )
     return EvidenceLedger(
         successful_tool_results=successful,
         failed_tool_results=failed,
@@ -128,7 +139,13 @@ def record_tool_evidence(
                 parsed = json.loads(result.output)
             except (TypeError, ValueError):
                 parsed = None
-            _collect_refs(parsed, refs, artifacts, media_refs)
+            _collect_refs(
+                parsed,
+                refs,
+                artifacts,
+                media_refs,
+                source_body_links=_verified_source_read(result.metadata),
+            )
     else:
         failed += 1
     # ponytail: reserve actual source addresses within 128; excess discovered links are evicted.
@@ -147,9 +164,7 @@ def record_tool_evidence(
 
 def _ledger_from_metadata(metadata: Mapping[str, object]) -> EvidenceLedger:
     return EvidenceLedger(
-        successful_tool_results=_non_negative_int(
-            metadata.get("evidence_successful_tool_results")
-        ),
+        successful_tool_results=_non_negative_int(metadata.get("evidence_successful_tool_results")),
         failed_tool_results=_non_negative_int(metadata.get("evidence_failed_tool_results")),
         evidence_refs=_string_sequence(metadata.get("evidence_refs")),
         media_refs=_url_sequence(metadata.get("evidence_media_refs")),
@@ -182,8 +197,12 @@ def _collect_refs(
     refs: set[str],
     artifacts: set[str],
     media_refs: set[str] | None = None,
+    *,
+    source_body_links: bool = False,
 ) -> None:
     if isinstance(value, Mapping):
+        if source_body_links and media_refs is not None:
+            _collect_source_body_links(value, media_refs)
         for key, item in value.items():
             if key in _MEDIA_REFERENCE_KEYS and media_refs is not None:
                 _collect_media_refs(item, media_refs, artifacts)
@@ -194,10 +213,44 @@ def _collect_refs(
                     if normalized.startswith("artifact://"):
                         artifacts.add(normalized)
             elif isinstance(item, Mapping | list | tuple):
-                _collect_refs(item, refs, artifacts, media_refs)
+                _collect_refs(
+                    item, refs, artifacts, media_refs, source_body_links=source_body_links
+                )
     elif isinstance(value, list | tuple):
         for item in value[:100]:
-            _collect_refs(item, refs, artifacts, media_refs)
+            _collect_refs(item, refs, artifacts, media_refs, source_body_links=source_body_links)
+
+
+def _verified_source_read(metadata: object) -> bool:
+    if not isinstance(metadata, Mapping) or metadata.get("read_only") is not True:
+        return False
+    facts = metadata.get("public_facts")
+    return isinstance(facts, Mapping) and facts.get("evidence_basis") == "verified_result"
+
+
+def _collect_source_body_links(value: Mapping[str, object], media_refs: set[str]) -> None:
+    """Observed links in a returned source body are not independently read sources."""
+    source = value.get("original_url") or value.get("canonical_url")
+    body = value.get("content_text")
+    if not isinstance(body, str):
+        return
+    try:
+        parse_web_target(source)
+    except WebTargetError:
+        return
+    # ponytail: inspect at most 64 KiB/128 links per source record; larger bodies
+    # need an explicit bounded source read, never an unbounded text crawl.
+    for match in re.finditer(r"https://[^\s<>`\]\)\"']+", body[:65_536]):
+        url = match.group().rstrip(".,;:!?，。；：！？)]}")
+        if len(media_refs) >= 128:
+            break
+        if len(url) > 2_048:
+            continue
+        try:
+            parse_web_target(url)
+        except WebTargetError:
+            continue
+        media_refs.add(url)
 
 
 def _collect_media_refs(value: object, media_refs: set[str], artifacts: set[str]) -> None:

@@ -1,3 +1,18 @@
+## 2026-10-20 - CLOUD-RUNTIME-REPAIR-20261020
+
+Five minimal runtime/protocol fixes are deployed to production192.168.110.30:
+fixed operator search-port admission/registration, provider-safe clarification
+resume, correctable blank read paths, verified-source body link evidence and
+truthful blocked/partial suspension.326Zebra/30Trench no-model checks pass;
+Ruff/mypy1319/file sizes/progress checks pass. Full eval remains24/30, exactly
+reproduced on the unmodified baseline. No unrelated fixture repair was added.
+Original Session event hashes/model counts, high/stream-v2, permissions, runtime
+configuration, Search/TLS/Broker identities and Exa state are retained. No models
+or original Run replay. One NBOPC native search reached Yahoo but failed after
+6049.68ms with search_incomplete/upstream five-second timeout; no automatic
+repeat. Search E2E/recall acceptance remains open, not complete. See
+docs/CLOUD_RUNTIME_REPAIR_2026-10-20.md for proof boundaries and rollback.
+
 ## 2026-10-20 - Trench baseline archived; generic Cloud branch inherited
 
 Frozen compatibility tag cloud-agent-trench-archive-2026-10-20 is verified on

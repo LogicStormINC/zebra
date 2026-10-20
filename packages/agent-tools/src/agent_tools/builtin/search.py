@@ -33,7 +33,11 @@ files_search_contract = ToolContract(
             "enum": ["content", "files"],
             "description": "Search file contents or workspace-relative filenames.",
         },
-        "path": {"type": "string", "description": "Workspace-relative directory root."},
+        "path": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Workspace-relative directory root; omit or use '.' for root.",
+        },
         "glob": {"type": "string", "description": "Optional file glob such as **/*.py."},
         "limit": {"type": "integer", "minimum": 1, "maximum": MAX_LIMIT},
         "offset": {"type": "integer", "minimum": 0, "maximum": MAX_OFFSET},
@@ -64,13 +68,9 @@ class WorkspaceSearchTool:
         query = _string_argument(tool_call, "query", required=True, max_length=MAX_QUERY_LENGTH)
         mode = _mode_argument(tool_call.arguments.get("mode"))
         path = _string_argument(tool_call, "path", default=".", max_length=MAX_GLOB_LENGTH)
-        glob = _string_argument(
-            tool_call, "glob", default=None, max_length=MAX_GLOB_LENGTH
-        )
+        glob = _string_argument(tool_call, "glob", default=None, max_length=MAX_GLOB_LENGTH)
         limit = _integer_argument(tool_call, "limit", default=50, minimum=1, maximum=MAX_LIMIT)
-        offset = _integer_argument(
-            tool_call, "offset", default=0, minimum=0, maximum=MAX_OFFSET
-        )
+        offset = _integer_argument(tool_call, "offset", default=0, minimum=0, maximum=MAX_OFFSET)
         assert query is not None
         assert path is not None
 

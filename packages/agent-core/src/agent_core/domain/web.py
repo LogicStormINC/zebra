@@ -31,7 +31,7 @@ class WebTarget:
     hostname: str
 
 
-def parse_web_target(value: object) -> WebTarget:
+def parse_web_target(value: object, *, allow_explicit_port: bool = False) -> WebTarget:
     if not isinstance(value, str) or not value.strip():
         raise WebTargetError("web URL must be a non-blank string")
     raw_url = value.strip()
@@ -46,7 +46,7 @@ def parse_web_target(value: object) -> WebTarget:
         raise WebTargetError("web URL must use https")
     if parsed.username is not None or parsed.password is not None:
         raise WebTargetError("web URL must not contain user information")
-    if port is not None:
+    if port is not None and (not allow_explicit_port or port == 0):
         raise WebTargetError("web URL must not contain an explicit port")
     if parsed.fragment:
         raise WebTargetError("web URL must not contain a fragment")
@@ -73,6 +73,12 @@ def parse_web_target(value: object) -> WebTarget:
     ):
         raise WebTargetError("web URL hostname is invalid")
     normalized_url = urlunsplit(
-        ("https", ascii_hostname, parsed.path or "/", parsed.query, "")
+        (
+            "https",
+            f"{ascii_hostname}:{port}" if port is not None else ascii_hostname,
+            parsed.path or "/",
+            parsed.query,
+            "",
+        )
     )
     return WebTarget(url=normalized_url, hostname=ascii_hostname)

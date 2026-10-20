@@ -70,9 +70,15 @@ def project_budget_suspension_event(
         "model_call_budget_exhausted",
         "tool_call_budget_exhausted",
         "verification_required",
+        "delivery_requirements_unmet",
     }:
         return ()
-    if reason == "verification_required":
+    if reason == "delivery_requirements_unmet":
+        message = (
+            "The result is retained, but some delivery requirements remain unverified. "
+            "The task is paused; no additional work is running."
+        )
+    elif reason == "verification_required":
         metadata = event.payload.get("metadata")
         unverified_mutation = (
             isinstance(metadata, dict) and metadata.get("unverified_mutation") is True

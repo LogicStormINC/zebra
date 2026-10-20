@@ -1,5 +1,21 @@
 # Progress Log
 
+## 2026-10-20 - CLOUD-RUNTIME-REPAIR-20261020
+
+- Claimed before code on codex/cloud-runtime-repair-20261020, human Luke Ding.
+- Reused fixed endpoint authority and existing recovery/policy/projection paths;
+  no new dependency, model replay or provider/private-reasoning persistence.
+- Focused326Zebra and30Trench checks pass; static/type/size/progress gates pass.
+  Full eval remains24/30 on both baseline and patch; exact outcomes compared.
+- Snapshot replay proves corrected final video citation while invented URLs
+  still fail; both clarification transcripts serialize; full blocked stream
+  retains the original committed answer through the paired Host adapter.
+- Updated only live Worker/API/Trench API from exact-base offline overlays after
+  idle preflight. All healthy; Search/MCP/Broker/control/config and original
+  events unchanged. No global proxy/configuration/migration changes.
+- One NBOPC tool request failed at Yahoo5s; no repeat. Native tool registration
+  is restored, but real retrieval acceptance remains open. See focused doc.
+
 ## 2026-10-18 - TRN-SETTINGS-MEDIA-01
 
 - Root causes and local acceptance: docs/TRN_SETTINGS_MEDIA_REPAIR.md.

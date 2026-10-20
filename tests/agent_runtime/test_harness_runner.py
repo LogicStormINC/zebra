@@ -546,15 +546,13 @@ def test_local_tool_gateway_preserves_existing_external_artifact_uri(tmp_path) -
 
 def test_local_tool_gateway_registers_search_only_with_valid_configuration(tmp_path) -> None:
     unavailable = LocalToolGateway(tmp_path.resolve())
-    malformed = LocalToolGateway(
-        tmp_path.resolve(), web_search_endpoint="http://search.example.com"
-    )
+    with pytest.raises(ValueError, match="web_search_endpoint"):
+        LocalToolGateway(tmp_path.resolve(), web_search_endpoint="http://search.example.com")
     configured = LocalToolGateway(
         tmp_path.resolve(), web_search_endpoint="https://search.example.com/search"
     )
 
     assert "web.search" not in {tool.name for tool in unavailable.model_tools}
-    assert "web.search" not in {tool.name for tool in malformed.model_tools}
     assert "web.search" in {tool.name for tool in configured.model_tools}
 
 

@@ -35293,3 +35293,50 @@ old payloads remain byte-compatible by excluding None. No database migration.
   comparison and fresh ref/preservation checks pass; no full runtime rerun claimed.
   Archive task ref is removed after receipt integration/push; GitHub repositories
   remain active. No models/search/MCP, migration/restart/deployment or source edits.
+
+
+### CLOUD-RUNTIME-REPAIR-20261020 — Search, clarification and truthful delivery
+
+- Status: Ready (2026-10-20; user authorized the five minimal fixes, no-model
+  regression, production update and one NBOPC real search). Claimed In Progress.
+  Review: code deployed and no-model gates passed; NBOPC retrieval acceptance
+  remains open after the one Yahoo upstream timeout. No automatic repeat.
+- Human owner: Luke Ding; executor: Codex.
+- Branch: codex/cloud-runtime-repair-20261020; clean reused worktree
+  cloud-plugin-plan-01/zebra-agent from948b8a43; integrate into cloud-agent,
+  preserve frozen cloud-agent-trench/archive tags and unrelated dirty work.
+- Owned paths: core domain/web.py only a narrow configured-backend seam if
+  needed; runtime/web_tools.py,web_search.py and native transport paths only
+  required for explicitly trusted private search endpoint ports; core
+  harness/evidence_ledger.py,policy_step.py and bounded evidence extractor module;
+  security/policy.py; tools/builtin/search.py and shared read path contracts if
+  required; Worker clarification_continuation.py,continuation_dispatch.py and
+  child_wakeup_continuation.py shared provider-safe recovery seam; integrations
+  ag_ui/interrupts.py and projection.py; focused existing/new tests for these
+  paths; this card,PROGRESS.md,WORKLOG.md,docs/CLOUD_RUNTIME_REPAIR_2026-10-20.md;
+  task private artifacts .artifacts/cloud-runtime-repair-20261020/. Amend exact
+  paths before any additional production edit.
+- Scope/order: restore native web.search for the explicitly configured trusted
+  TLS backend without allowing user-chosen private targets/ports; fail configured
+  invalid search at composition. Rebase restored clarification using existing
+  public tool evidence plus user answer, retaining verification/dedupe/high.
+  Treat blank readonly path as bounded correctable argument failure, not fatal
+  authorization denial; keep traversal restrictions. Preserve bounded/provenanced
+  media links from successful source reads; never promote model arguments or
+  failed fetches. Project unmet delivery as authoritative blocked/partial rather
+  than generic execution failure; do not declare completed or rewrite history.
+- Validation: reproduce saved real snapshots first, focused no-model/security
+  regression and code gates; exact image source checks, production idle/drain
+  preflight, minimal service update preserving configuration/data/credentials,
+  Search process/MCP session/high/v2/Yahoo default. One real NBOPC native search
+  through normal Worker transport after gates; no model requests or original Run
+  replay, no quota probing, fallback/limit/error stops without automatic retry.
+- Deployment: explicitly authorized192.168.110.30 update of required Zebra roles;
+  preserve rollback images and original events/Run hashes, no schema changes.
+  No unrelated Trench product/semantic/prompt changes, no global proxy changes.
+- Exact additional owned paths: runtime/search_egress.py and
+  security/mcp_proxy_policy.py (fixed operator endpoint port only); Worker
+  durable_conversation.py if extracting the existing recovery helper; paired
+  Trench protocol-only adaptation trench_ai_zebra_event_map.py and focused test,
+  with a separate matching task/branch in the clean sibling checkout. No product
+  behavior changes beyond truthful partial/blocked protocol consumption.

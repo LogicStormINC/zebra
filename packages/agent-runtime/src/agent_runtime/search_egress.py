@@ -55,9 +55,11 @@ def search_network_options(
 ) -> tuple[dict[str, str], urllib.request.HTTPSHandler | None]:
     from agent_runtime.web_gateway import _proxy_configuration
 
-    target = parse_web_target(url)
+    # Only the fixed operator backend may use a private TLS port. Model-selected
+    # web targets and search result URLs retain the public HTTPS contract.
+    target = parse_web_target(url, allow_explicit_port=trusted_endpoint is not None)
     if trusted_endpoint is not None:
-        expected = parse_web_target(trusted_endpoint)
+        expected = parse_web_target(trusted_endpoint, allow_explicit_port=True)
         actual_parts = urllib.parse.urlsplit(target.url)
         expected_parts = urllib.parse.urlsplit(expected.url)
         # Search adds q/format/limit but cannot change the configured URL path,
@@ -72,7 +74,7 @@ def search_network_options(
                 reason="private_network_blocked",
             )
         try:
-            _backend_addresses(target.hostname, 443)
+            _backend_addresses(target.hostname, actual_parts.port or 443)
         except PublicAddressBlocked as exc:
             raise WebGatewayError(str(exc), reason="private_network_blocked") from exc
         except OSError as exc:

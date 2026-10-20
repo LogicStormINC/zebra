@@ -10,13 +10,18 @@ from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import ModelCompletion
 from agent_core.domain.tools import ToolCallStatus, ToolResult
 from agent_core.harness.attempt_result import action_fingerprint
+from agent_core.harness.clarification_step import clarification_tool_result
 from agent_core.harness.evidence_ledger import record_tool_evidence
+from agent_core.harness.model_step_support import tool_result_message
 from agent_core.harness.models import HarnessAttemptOutcome, HarnessAttemptResult, HarnessContext
 from agent_core.harness.orchestration_events import continuation_verification_scope_missing
 from agent_core.harness.sequential_support import durable_action_fingerprints
 
 from zebra_agent_worker.approved_continuation import ApprovedContinuation
-from zebra_agent_worker.child_wakeup_continuation import ChildWakeupContinuation
+from zebra_agent_worker.child_wakeup_continuation import (
+    ChildWakeupContinuation,
+    recover_durable_conversation,
+)
 from zebra_agent_worker.clarification_continuation import ClarificationContinuation
 from zebra_agent_worker.client_effect_resume import (
     ClientEffectWakeup,
@@ -62,7 +67,8 @@ def run_continuation(
                 "retryable": False,
                 "unverified_mutation": True,
                 "delivery_assessment": {
-                    "status": "partial", "unmet": ["verification_scope_unavailable"],
+                    "status": "partial",
+                    "unmet": ["verification_scope_unavailable"],
                 },
             },
         )
@@ -163,6 +169,53 @@ def run_continuation(
             metadata=continuation.metadata,
         )
     if clarification is not None:
+        # Reuse the child-resume boundary: private reasoning is never durable.
+        # Pair the real user receipt before rebasing so no orphan tool call is sent.
+        result = clarification_tool_result(
+            clarification.tool_call.tool_call_id,
+            str(clarification.tool_call.tool_call_id),
+            clarification.response,
+        )
+        restored = recover_durable_conversation(
+            [
+                *clarification.conversation,
+                tool_result_message(
+                    clarification.tool_call, result, created_at=clarification.tool_call.created_at
+                ),
+            ],
+            set(),
+        )
+        if restored.rebased_message_count:
+            metadata = {
+                **(clarification.metadata or {}),
+                "clarification_continuation": True,
+                "clarification_id": str(clarification.tool_call.tool_call_id),
+                "cache_boundary_reason": "private_reasoning_not_durable",
+                "exact_prefix_message_count": restored.exact_prefix_message_count,
+                "rebased_message_count": restored.rebased_message_count,
+                "durable_action_fingerprints": sorted(
+                    durable_action_fingerprints(clarification.metadata)
+                    | set(restored.action_fingerprints)
+                )[:64],
+            }
+            return orchestrator.continue_completed_tools(
+                context,
+                completion=ModelCompletion(
+                    assistant_message=SessionMessage(
+                        message_id=new_message_id(),
+                        role=MessageRole.ASSISTANT,
+                        content=clarification.assistant_message,
+                        created_at=clarification.tool_call.created_at,
+                    )
+                ),
+                tool_calls=(),
+                tool_results=(),
+                conversation=restored.messages,
+                model_calls_used=clarification.model_calls_used,
+                tool_calls_executed=clarification.tool_calls_executed,
+                assistant_message=clarification.assistant_message,
+                metadata=metadata,
+            )
         return orchestrator.continue_clarification(
             context,
             tool_call=clarification.tool_call,
@@ -274,10 +327,7 @@ def child_wakeup_evidence_conversation(
 
 
 def _has_frozen_delegation_calls(child_wakeup: ChildWakeupContinuation) -> bool:
-    expected = {
-        call.provider_call_id or str(call.tool_call_id)
-        for call in child_wakeup.tool_calls
-    }
+    expected = {call.provider_call_id or str(call.tool_call_id) for call in child_wakeup.tool_calls}
     present = {
         call.provider_call_id or str(call.tool_call_id)
         for message in child_wakeup.conversation

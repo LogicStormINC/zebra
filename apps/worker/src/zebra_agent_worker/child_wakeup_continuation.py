@@ -126,7 +126,7 @@ def recover_child_wakeup_continuation(
     aligned_results = tuple(
         results_by_child[_required_string(event.payload, "child_task_id")] for event in epoch
     )
-    conversation = _conversation_without_stubs(
+    conversation = recover_durable_conversation(
         epoch[-1].payload.get("conversation"),
         {
             call_id
@@ -238,9 +238,7 @@ class _RecoveredConversation:
     action_fingerprints: tuple[str, ...]
 
 
-def _conversation_without_stubs(
-    value: object, tool_call_ids: set[str]
-) -> _RecoveredConversation:
+def recover_durable_conversation(value: object, tool_call_ids: set[str]) -> _RecoveredConversation:
     """Drop stubs and rebase private provider continuations for durable resume.
 
     DeepSeek reasoning bytes are deliberately excluded from durable Events. A
@@ -256,9 +254,7 @@ def _conversation_without_stubs(
         messages = tuple(SessionMessage.model_validate(item) for item in value)
     except ValueError as exc:
         raise ChildWakeupContinuationError("delegated conversation is invalid") from exc
-    action_fingerprints = tuple(
-        sorted(executed_action_fingerprints(list(messages)))[:64]
-    )
+    action_fingerprints = tuple(sorted(executed_action_fingerprints(list(messages)))[:64])
     messages = tuple(
         message
         for message in messages

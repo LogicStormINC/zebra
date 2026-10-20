@@ -31,10 +31,11 @@ def test_search_backend_socket_is_pinned_and_tls_keeps_origin(monkeypatch):
 
 @pytest.mark.parametrize("operation", ["search", "search_json"])
 @pytest.mark.parametrize("trusted", [True, False])
+@pytest.mark.parametrize("port", [None, 18445])
 def test_native_protocol_preserves_trusted_search_tls(
-    tmp_path, monkeypatch, capsys, operation, trusted
+    tmp_path, monkeypatch, capsys, operation, trusted, port
 ):
-    endpoint = "https://source.example/search"
+    endpoint = f"https://source.example{':' + str(port) if port else ''}/search"
     with native_tls_source(tmp_path, monkeypatch, "normal", trusted=trusted) as (
         requests,
         _,
@@ -47,12 +48,15 @@ def test_native_protocol_preserves_trusted_search_tls(
         from agent_runtime.mcp_http_egress import PublicMcpHttpsConnection
 
         def scratch_addresses(hostname, port):
-            assert (hostname, port) == ("source.example", 443)
+            assert hostname == "source.example"
+            assert port in (443, 18445)
             return PublicMcpHttpsConnection.resolve_addresses(None)
 
         monkeypatch.setattr("agent_runtime.search_egress._backend_addresses", scratch_addresses)
         arguments = (
-            asdict(WebSearchRequest("call", parse_web_target(endpoint), "zebra", 2))
+            asdict(WebSearchRequest(
+                "call", parse_web_target(endpoint, allow_explicit_port=True), "zebra", 2
+            ))
             if operation == "search"
             else endpoint + "?q=zebra&format=json"
         )
@@ -69,9 +73,10 @@ def test_native_protocol_preserves_trusted_search_tls(
 
 
 @pytest.mark.parametrize("v2", [False, True])
-def test_both_gateway_registrations_bind_the_operator_endpoint(tmp_path, monkeypatch, v2):
+@pytest.mark.parametrize("port", ["", ":18445"])
+def test_both_gateway_registrations_bind_the_operator_endpoint(tmp_path, monkeypatch, v2, port):
     seen = []
-    endpoint = "https://search.zebra.test/search"
+    endpoint = f"https://search.zebra.test{port}/search"
     if v2:
 
         class Provider:
