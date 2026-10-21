@@ -1,0 +1,286 @@
+{
+  "$defs": {
+    "ArtifactPin": {
+      "additionalProperties": false,
+      "properties": {
+        "digest": {
+          "title": "Digest",
+          "type": "string"
+        },
+        "id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "image",
+            "baseline-config",
+            "component",
+            "provider-profile",
+            "output-schema",
+            "build-evidence"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "version": {
+          "maxLength": 64,
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "version",
+        "digest"
+      ],
+      "title": "ArtifactPin",
+      "type": "object"
+    },
+    "NativeScriptManifest": {
+      "additionalProperties": false,
+      "properties": {
+        "abi": {
+          "const": "cloud-agent.native-script/1",
+          "title": "Abi",
+          "type": "string"
+        },
+        "dependencies": {
+          "const": "stdlib-only",
+          "title": "Dependencies",
+          "type": "string"
+        },
+        "effects": {
+          "const": "none",
+          "title": "Effects",
+          "type": "string"
+        },
+        "entrypoint": {
+          "const": "execute",
+          "title": "Entrypoint",
+          "type": "string"
+        },
+        "input": {
+          "$ref": "#/$defs/ScriptShape"
+        },
+        "kind": {
+          "enum": [
+            "tool",
+            "context",
+            "verifier"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "max_output_bytes": {
+          "maximum": 32768,
+          "minimum": 256,
+          "title": "Max Output Bytes",
+          "type": "integer"
+        },
+        "name": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "output": {
+          "$ref": "#/$defs/ScriptShape"
+        },
+        "python": {
+          "const": "3.12",
+          "title": "Python",
+          "type": "string"
+        },
+        "source_digest": {
+          "title": "Source Digest",
+          "type": "string"
+        },
+        "timeout_seconds": {
+          "maximum": 30,
+          "minimum": 1,
+          "title": "Timeout Seconds",
+          "type": "integer"
+        },
+        "version": {
+          "maxLength": 64,
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "abi",
+        "name",
+        "version",
+        "kind",
+        "source_digest",
+        "python",
+        "dependencies",
+        "entrypoint",
+        "effects",
+        "input",
+        "output",
+        "timeout_seconds",
+        "max_output_bytes"
+      ],
+      "title": "NativeScriptManifest",
+      "type": "object"
+    },
+    "ScriptBinding": {
+      "additionalProperties": false,
+      "properties": {
+        "manifest": {
+          "$ref": "#/$defs/NativeScriptManifest"
+        },
+        "name": {
+          "pattern": "^native\\.[a-z][a-z0-9_]{1,63}$",
+          "title": "Name",
+          "type": "string"
+        },
+        "scopes": {
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_.:-]+$",
+            "type": "string"
+          },
+          "maxLength": 32,
+          "minLength": 1,
+          "title": "Scopes",
+          "type": "array"
+        }
+      },
+      "required": [
+        "name",
+        "manifest",
+        "scopes"
+      ],
+      "title": "ScriptBinding",
+      "type": "object"
+    },
+    "ScriptField": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "pattern": "^[a-z][a-z0-9_]{0,63}$",
+          "title": "Name",
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "string",
+            "integer",
+            "boolean"
+          ],
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "type"
+      ],
+      "title": "ScriptField",
+      "type": "object"
+    },
+    "ScriptRunnerProfile": {
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "enum": [
+            "development",
+            "production"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "python": {
+          "maxLength": 1024,
+          "minLength": 2,
+          "pattern": "^/[^\\x00]+$",
+          "title": "Python",
+          "type": "string"
+        },
+        "runtime_class": {
+          "enum": [
+            "os-sandbox",
+            "gvisor"
+          ],
+          "title": "Runtime Class",
+          "type": "string"
+        }
+      },
+      "required": [
+        "mode",
+        "runtime_class",
+        "python"
+      ],
+      "title": "ScriptRunnerProfile",
+      "type": "object"
+    },
+    "ScriptShape": {
+      "additionalProperties": false,
+      "properties": {
+        "fields": {
+          "items": {
+            "$ref": "#/$defs/ScriptField"
+          },
+          "maxItems": 32,
+          "title": "Fields",
+          "type": "array"
+        }
+      },
+      "required": [
+        "fields"
+      ],
+      "title": "ScriptShape",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "abi": {
+      "const": "cloud-agent.native-script/1",
+      "title": "Abi",
+      "type": "string"
+    },
+    "bindings": {
+      "items": {
+        "$ref": "#/$defs/ScriptBinding"
+      },
+      "maxLength": 8,
+      "minLength": 1,
+      "title": "Bindings",
+      "type": "array"
+    },
+    "lock": {
+      "items": {
+        "$ref": "#/$defs/ArtifactPin"
+      },
+      "maxLength": 16,
+      "minLength": 2,
+      "title": "Lock",
+      "type": "array"
+    },
+    "runner": {
+      "$ref": "#/$defs/ScriptRunnerProfile"
+    },
+    "schema_version": {
+      "const": "cloud-agent.native-script-plan/1",
+      "title": "Schema Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema_version",
+    "abi",
+    "runner",
+    "bindings",
+    "lock"
+  ],
+  "title": "NativeScriptPlan",
+  "type": "object"
+}

@@ -18,7 +18,7 @@ def version_from_row(row: dict[str, Any], connection: Any) -> AgentDefinitionVer
     schema = row["schema_version"]
     if schema == "agent-definition/1":
         return parse_definition_version(dict(row))
-    if schema != "agent-definition/2":
+    if schema not in {"agent-definition/2", "agent-definition/3"}:
         raise AgentRegistryStorageError("unsupported Definition Version schema")
     sidecar = connection.execute(
         "SELECT snapshot FROM agent_definition_bundle_versions WHERE authority_issuer=%s "

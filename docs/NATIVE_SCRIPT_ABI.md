@@ -13,7 +13,7 @@ Overdoze OD-P2-01A/B/C 已提供意图和成对 Worker/公开 HTTPS 验收；这
 | 顺序 | 工作 | 当前出口 |
 | --- | --- | --- |
 | CA-P3-01A | 生产者 ABI、纯变换 Runner、沙箱/超时/输出合同 | 本片；显式调用，无自动准入 |
-| CA-P3-01B | Worker Tool/Context/Verifier 接入 | 后续：Bundle 闭包/允许集、当前权限、取消、持久收据与恢复；Verifier 不取代 Coverage |
+| CA-P3-01B | Worker Tool/Context/Verifier 接入 | [B 实现与证据](NATIVE_SCRIPT_WORKER.md)：显式新闭包/快照、当前权限、取消与持久恢复；A 制品不变 |
 | OD-P3-02A | 可信原生资产最小上传/编辑/固定版本 | 后续：BC-ASSET，仅所属产品开发环境；依赖本 ABI 及 B 实际绑定合同 |
 | OD-P3-01A | 前端登记/bootstrap/Hook 与当前用户绑定 | 后续：BC-ACCESS，先核对既有 TS SDK/公开原生 Profile/Controller 接口 |
 | 后续 P3/P4/P5 | 真实业务写入/unknown、分发/撤销、交付 | 不以本片成功关闭这些依赖 |

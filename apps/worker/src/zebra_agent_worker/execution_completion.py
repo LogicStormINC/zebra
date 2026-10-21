@@ -5,7 +5,9 @@ from collections.abc import Callable
 from datetime import datetime
 from typing import Any
 
+from agent_core.application.native_script import NativeScriptReceiptUncertain
 from agent_core.domain.identifiers import SessionId
+from agent_core.domain.leases import LeaseLostError
 from agent_core.domain.turns import InteractionMode
 from agent_core.harness.models import HarnessAttemptResult, HarnessContext
 
@@ -43,7 +45,7 @@ def run_worker_continuation(
                 child_wakeup=child_wakeup,
                 client_effect=client_effect,
             )
-        except ExecutionInterrupted:
+        except (ExecutionInterrupted, LeaseLostError, NativeScriptReceiptUncertain):
             raise
         except Exception as error:
             result = exception_attempt_result(

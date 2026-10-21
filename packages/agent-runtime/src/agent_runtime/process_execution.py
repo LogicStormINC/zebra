@@ -3,9 +3,9 @@ from __future__ import annotations
 import os
 import signal
 import time
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
-from selectors import EVENT_READ, DefaultSelector
+from selectors import EVENT_READ, EVENT_WRITE, DefaultSelector
 from subprocess import PIPE, CompletedProcess, Popen, TimeoutExpired
 from threading import Thread
 from typing import BinaryIO
@@ -66,7 +66,16 @@ def run_process_tree(
     cwd: str | Path | None = None,
     env: Mapping[str, str] | None = None,
     max_output_bytes: int | None = None,
+    input_bytes: bytes | None = None,
+    cancellation_check: Callable[[], None] | None = None,
 ) -> CompletedProcess[str]:
+    if input_bytes is not None and (type(input_bytes) is not bytes or len(input_bytes) > 262_144):
+        raise ValueError("bounded bytes required for process stdin")
+    if input_bytes is not None or cancellation_check is not None:
+        if os.name != "posix" or max_output_bytes is None:
+            raise ValueError("private stdin/cancellation requires bounded POSIX capture")
+    if cancellation_check is not None:
+        cancellation_check()
     if not capture_output or not text or check:
         raise ValueError("runtime process execution requires captured text output and check=False")
     if max_output_bytes is not None and max_output_bytes <= 0:
@@ -78,6 +87,8 @@ def run_process_tree(
             cwd=cwd,
             env=env,
             max_output_bytes=max_output_bytes,
+            input_bytes=input_bytes,
+            cancellation_check=cancellation_check,
         )
     process = Popen(
         tuple(command),
@@ -104,9 +115,12 @@ def _run_bounded(
     cwd: str | Path | None,
     env: Mapping[str, str] | None,
     max_output_bytes: int,
+    input_bytes: bytes | None = None,
+    cancellation_check: Callable[[], None] | None = None,
 ) -> CapturedProcessResult:
     process = Popen(
         tuple(command),
+        stdin=PIPE if input_bytes is not None else None,
         stdout=PIPE,
         stderr=PIPE,
         cwd=cwd,
@@ -114,7 +128,9 @@ def _run_bounded(
         start_new_session=os.name == "posix",
     )
     if os.name == "posix":
-        return _capture_posix(process, command, timeout, max_output_bytes)
+        return _capture_posix(
+            process, command, timeout, max_output_bytes, input_bytes, cancellation_check
+        )
     assert process.stdout is not None and process.stderr is not None
     stdout = _BoundedCapture(max_output_bytes)
     stderr = _BoundedCapture(max_output_bytes)
@@ -152,6 +168,8 @@ def _capture_posix(
     command: Sequence[str],
     timeout: float | None,
     limit: int,
+    input_bytes: bytes | None = None,
+    cancellation_check: Callable[[], None] | None = None,
 ) -> CapturedProcessResult:
     """Use one deadline for leader exit AND inherited-pipe drain, without threads."""
     assert process.stdout is not None and process.stderr is not None
@@ -170,14 +188,42 @@ def _capture_posix(
         with DefaultSelector() as selector:
             selector.register(process.stdout, EVENT_READ, stdout)
             selector.register(process.stderr, EVENT_READ, stderr)
+            pending = memoryview(input_bytes or b"")
+            if process.stdin is not None:
+                selector.register(process.stdin, EVENT_WRITE, None)
             while selector.get_map():
-                for key, _ in selector.select(remaining()):
-                    chunk = os.read(key.fd, 65_536)
-                    if chunk:
-                        key.data.append(chunk)
+                if cancellation_check is not None:
+                    cancellation_check()
+                budget = remaining()
+                poll = budget if cancellation_check is None else min(budget or 0.05, 0.05)
+                for key, _ in selector.select(poll):
+                    if key.data is None:
+                        try:
+                            pending = (
+                                pending[os.write(key.fd, pending[:4096]) :] if pending else pending
+                            )
+                        except BrokenPipeError:
+                            pending = pending[:0]
+                        if not pending:
+                            selector.unregister(key.fd)
+                            assert process.stdin is not None
+                            process.stdin.close()
                     else:
-                        selector.unregister(key.fd)
-            process.wait(timeout=remaining())
+                        chunk = os.read(key.fd, 65_536)
+                        if chunk:
+                            key.data.append(chunk)
+                        else:
+                            selector.unregister(key.fd)
+            while process.poll() is None:
+                if cancellation_check is not None:
+                    cancellation_check()
+                budget = remaining()
+                try:
+                    process.wait(
+                        timeout=budget if cancellation_check is None else min(budget or 0.05, 0.05)
+                    )
+                except TimeoutExpired:
+                    remaining()
     except TimeoutExpired as exc:
         _terminate_process_tree(process)
         process.wait()
@@ -190,6 +236,8 @@ def _capture_posix(
         process.wait()
         raise
     finally:
+        if process.stdin is not None:
+            process.stdin.close()
         process.stdout.close()
         process.stderr.close()
     return CapturedProcessResult(
@@ -212,3 +260,14 @@ def _terminate_process_tree(process: Popen[str] | Popen[bytes]) -> None:
         os.killpg(process.pid, signal.SIGKILL)
     except ProcessLookupError:
         pass
+
+
+def bounded_process_output(
+    value: bytes | str | None, limit: int, *, already_truncated: bool
+) -> tuple[str, bool]:
+    if value is None:
+        return "", already_truncated
+    encoded = value if isinstance(value, bytes) else value.encode("utf-8", errors="replace")
+    truncated = already_truncated or len(encoded) > limit
+    output = encoded[:limit].decode("utf-8", errors="ignore" if truncated else "replace")
+    return output, truncated

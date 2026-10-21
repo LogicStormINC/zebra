@@ -10,6 +10,7 @@ from agent_core.application.agent_definitions import StaticPublisherGrantResolve
 from agent_core.domain.agent_definition_snapshots import AgentDefinitionSnapshot
 from agent_core.domain.bundle_definition import BundleDefinitionSnapshot, BundleDefinitionVersion
 from agent_core.domain.host_authority import HostContextEnvelope
+from agent_core.domain.script_bundle import ScriptRuntimeAssembly
 from agent_core.ports.agent_registry import AgentRegistryPort
 from agent_security.host_grant import VerifiedHostGrant
 from agent_storage.postgres.database import PostgresDatabase
@@ -75,6 +76,15 @@ def resolve_consumer_binding(
                 + version.runtime_assembly.bundle.bundle_digest.removeprefix("sha256:")
                 + "@1"
                 not in approval.references
+            ):
+                return ApiResponse(403, {"status": "forbidden"})
+            assembly = version.runtime_assembly
+            if isinstance(assembly, ScriptRuntimeAssembly) and (
+                assembly.required_reference not in approval.references
+                or any(
+                    not set(binding.scopes) <= set(context.scopes)
+                    for binding in assembly.native_scripts.bindings
+                )
             ):
                 return ApiResponse(403, {"status": "forbidden"})
             if (

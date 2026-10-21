@@ -43,7 +43,10 @@ Run `uv run python scripts/validate_runtime_bundle.py --input docs/contracts/run
 and pure Bundle checks to the control plane; it does not publish or execute a Bundle.
 [Public publication](docs/PUBLICATION_MANAGEMENT.md) and an opt-in offline
 [native script ABI/runner](docs/NATIVE_SCRIPT_ABI.md) are available on their feature branches.
-Bundle script admission/Worker integration remain unsupported; legacy history/Coverage stays intact.
+[Native script Worker binding, cancellation and receipt recovery](docs/NATIVE_SCRIPT_WORKER.md)
+uses explicit v3 snapshots and a separately versioned script extension; old contracts stay unchanged.
+Bundle1 and the pinned P2 scoped HTTP contracts retain their original unsupported script boundary;
+script execution requires the explicit new reader and approvals. Legacy history/Coverage stays intact.
 
 ## License
 

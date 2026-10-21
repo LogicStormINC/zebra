@@ -78,8 +78,16 @@ def load_execution_catalog(path: str | None) -> RuntimeExecutionCatalog:
         raise ValueError("BUNDLE_ASSEMBLY_NOT_CONFIGURED")
     try:
         raw = read_private_configuration(path, max_bytes=262_144)
-        return RuntimeExecutionCatalog.model_validate_json(
-            json.dumps(load_bundle_json(raw), ensure_ascii=True)
-        )
+        payload = load_bundle_json(raw)
+        if (
+            isinstance(payload, dict)
+            and payload.get("schema_version") == "cloud-agent.execution-catalog/2"
+        ):
+            from zebra_agent_config.native_script import ScriptExecutionCatalog
+
+            return ScriptExecutionCatalog.model_validate_json(
+                json.dumps(payload, ensure_ascii=True)
+            )
+        return RuntimeExecutionCatalog.model_validate_json(json.dumps(payload, ensure_ascii=True))
     except (OSError, ValueError, TypeError, RecursionError):
         raise ValueError("INVALID_EXECUTION_CATALOG") from None

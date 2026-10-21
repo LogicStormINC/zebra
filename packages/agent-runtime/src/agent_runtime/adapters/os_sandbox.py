@@ -6,6 +6,7 @@ from dataclasses import replace
 from pathlib import Path
 from shutil import which
 from subprocess import CompletedProcess, TimeoutExpired
+from typing import Any
 
 from agent_core.ports.runtime import (
     EffectiveRuntimeAuthority,
@@ -30,7 +31,7 @@ from agent_runtime.adapters.os_sandbox_platform import (
     build_probe_command,
     os_sandbox_engine,
 )
-from agent_runtime.process_execution import run_process_tree
+from agent_runtime.process_execution import bounded_process_output, run_process_tree
 from agent_runtime.runtime_failures import normalize_runtime_failure
 
 Runner = Callable[..., CompletedProcess[str]]
@@ -141,6 +142,8 @@ class OsSandboxRuntime(RuntimePort):
                 timeout=timeout,
                 cwd=cwd,
                 max_output_bytes=self._spec.limits.max_output_bytes,
+                input_bytes=request.stdin_input,
+                cancellation_check=request.cancellation_check,
             )
         except TimeoutExpired as exc:
             stdout, stdout_truncated = self._bounded_output(
@@ -272,8 +275,10 @@ class OsSandboxRuntime(RuntimePort):
         timeout: float | None = None,
         cwd: Path | None = None,
         max_output_bytes: int | None = None,
+        input_bytes: bytes | None = None,
+        cancellation_check: Callable[[], None] | None = None,
     ) -> CompletedProcess[str]:
-        kwargs = {
+        kwargs: dict[str, Any] = {
             "capture_output": True,
             "text": True,
             "check": False,
@@ -283,6 +288,10 @@ class OsSandboxRuntime(RuntimePort):
         }
         if max_output_bytes is not None:
             kwargs["max_output_bytes"] = max_output_bytes
+        if input_bytes is not None:
+            kwargs["input_bytes"] = input_bytes
+        if cancellation_check is not None:
+            kwargs["cancellation_check"] = cancellation_check
         return self._runner(tuple(command), **kwargs)
 
     def _unavailable(self, reason: str) -> RuntimeCapabilities:
@@ -299,11 +308,6 @@ class OsSandboxRuntime(RuntimePort):
         *,
         already_truncated: bool,
     ) -> tuple[str, bool]:
-        if value is None:
-            return "", already_truncated
-        encoded = value if isinstance(value, bytes) else value.encode("utf-8", errors="replace")
-        limit = self._spec.limits.max_output_bytes
-        truncated = already_truncated or len(encoded) > limit
-        return encoded[:limit].decode(
-            "utf-8", errors="ignore" if truncated else "replace"
-        ), truncated
+        return bounded_process_output(
+            value, self._spec.limits.max_output_bytes, already_truncated=already_truncated
+        )

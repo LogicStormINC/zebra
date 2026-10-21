@@ -1,0 +1,159 @@
+{
+  "$defs": {
+    "ScriptObservation": {
+      "additionalProperties": false,
+      "properties": {
+        "abi": {
+          "const": "cloud-agent.native-script/1",
+          "title": "Abi",
+          "type": "string"
+        },
+        "input_digest": {
+          "title": "Input Digest",
+          "type": "string"
+        },
+        "invocation_id": {
+          "title": "Invocation Id",
+          "type": "string"
+        },
+        "manifest_digest": {
+          "title": "Manifest Digest",
+          "type": "string"
+        },
+        "output_digest": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Output Digest"
+        },
+        "reason": {
+          "enum": [
+            "ok",
+            "timeout",
+            "process_failed",
+            "output_limit",
+            "invalid_response"
+          ],
+          "title": "Reason",
+          "type": "string"
+        },
+        "runtime_spec_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Runtime Spec Digest",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "succeeded",
+            "failed"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "abi",
+        "invocation_id",
+        "manifest_digest",
+        "input_digest",
+        "runtime_spec_digest",
+        "status",
+        "reason",
+        "output_digest"
+      ],
+      "title": "ScriptObservation",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "binding_digest": {
+      "title": "Binding Digest",
+      "type": "string"
+    },
+    "execution_attempt": {
+      "maximum": 3,
+      "minimum": 1,
+      "title": "Execution Attempt",
+      "type": "integer"
+    },
+    "input_digest": {
+      "title": "Input Digest",
+      "type": "string"
+    },
+    "invocation_id": {
+      "pattern": "^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$",
+      "title": "Invocation Id",
+      "type": "string"
+    },
+    "observation": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ScriptObservation"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "output_json": {
+      "anyOf": [
+        {
+          "maxLength": 32768,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Output Json"
+    },
+    "owner_fence": {
+      "title": "Owner Fence",
+      "type": "string"
+    },
+    "phase": {
+      "enum": [
+        "started",
+        "completed"
+      ],
+      "title": "Phase",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "cloud-agent.native-script-event/1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "snapshot_digest": {
+      "title": "Snapshot Digest",
+      "type": "string"
+    },
+    "task_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Task Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema_version",
+    "invocation_id",
+    "task_id",
+    "snapshot_digest",
+    "binding_digest",
+    "input_digest",
+    "owner_fence",
+    "execution_attempt",
+    "phase"
+  ],
+  "title": "NativeScriptEvent",
+  "type": "object"
+}

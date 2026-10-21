@@ -8,6 +8,7 @@ from agent_context import (
     context_inputs_from_delegated_snapshot,
     context_inputs_from_materialization,
 )
+from agent_context.native_script import NativeScriptContextCompiler
 from agent_core.domain.context_materialization import ContextMaterialization
 from agent_core.domain.events import EventActor, EventType
 from agent_core.domain.identifiers import SessionId
@@ -21,6 +22,7 @@ from agent_core.ports import MemoryReadPort, UserPersonalizationStorePort
 from agent_core.ports.context_compiler import ConfirmedMemoryInput, RuntimeEvidenceInput
 from agent_storage import list_confirmed_repo_memories
 from agent_tools import FencedEffectToolGateway
+from agent_tools.native_script import NativeScriptTools
 
 import zebra_agent_worker.provider_continuation_execution as provider_runtime
 from zebra_agent_worker.progress_recovery import WorkerProgressRecovery
@@ -80,6 +82,7 @@ def build_worker_orchestrator(
     user_input: str = "",
     attempt_number: int = 1,
     transient_output: TransientDeltaSink | None = None,
+    native_scripts: NativeScriptTools | None = None,
 ) -> SingleAttemptOrchestrator:
     persist_event, prepare_continuation = provider_runtime.build_worker_context_sinks(
         cloud_continuation,
@@ -90,6 +93,8 @@ def build_worker_orchestrator(
         local_store=local_continuation_store,
         session_id=session_id,
     )
+    if native_scripts is not None:
+        persist_event = native_scripts.fence_answer_sink(persist_event)
     if transient_output is not None and recorder.worker_mutation_authority is None:
         raise ValueError("transient output requires cloud authority and Worker progress")
     progress: ProgressiveEventSink | None = None
@@ -134,6 +139,14 @@ def build_worker_orchestrator(
         if isinstance(tool_gateway, FencedEffectToolGateway):
             tool_gateway.execution_finished_listener = _effect_terminal_observer(progress)
         persist_event = progress
+    if native_scripts is not None and native_scripts.context_binding is not None:
+        context_compiler = NativeScriptContextCompiler(
+            context_compiler,
+            native_scripts.service,
+            native_scripts.context_binding,
+        )
+    if native_scripts is not None:
+        persist_event = native_scripts.guard_answer_sink(persist_event)
     model_step = HarnessModelStep(
         context_compiler=context_compiler,
         available_tools=tool_gateway.model_tools,
@@ -306,3 +319,63 @@ def _deduplicate_memories(
         seen.add(key)
         selected.append(memory)
     return tuple(selected)
+
+
+def build_harness_context(
+    service: Any,
+    task: RecoveredTask,
+    claimed: Any,
+    network: Any,
+    gateway: Any,
+    materialization: Any,
+    attempt: int,
+    started_at: Any,
+) -> Any:
+    from agent_core.harness import HarnessAttempt, HarnessContext
+
+    return HarnessContext(
+        task=harness_task_for_recovered(
+            task,
+            network_profile=network,
+            tool_gateway=gateway,
+            memory_store=service._memory_store,
+            personalization_store=service._personalization_store,
+            materialization=materialization,
+        ),
+        session=claimed.recovery.session,
+        attempt=HarnessAttempt(number=attempt, started_at=started_at),
+    )
+
+
+def build_worker_policy(settings: Any, task: RecoveredTask, network: Any, gateway: Any) -> Any:
+    from agent_security import LocalPolicyEngine, PolicyProfile
+    from zebra_agent_config import unrestricted_policy_mode_enabled
+
+    return LocalPolicyEngine(
+        profile=PolicyProfile(task.policy_profile),
+        network_profile=network,
+        web_search_endpoint=settings.web_search_endpoint,
+        web_pipeline_v2=settings.web_pipeline_v2,
+        trusted_local=unrestricted_policy_mode_enabled(settings),
+        additional_read_only_tools=gateway.read_only_tools,
+        additional_write_tools=gateway.authorized_write_tools,
+        additional_approval_tools=gateway.approval_required_tools,
+    )
+
+
+def build_execution_orchestrator(
+    service: Any, task: RecoveredTask, context: Any, network: Any, local_gateway: Any, **inputs: Any
+) -> SingleAttemptOrchestrator:
+    return build_worker_orchestrator(
+        policy_engine=build_worker_policy(service._settings, task, network, local_gateway),
+        native_scripts=getattr(local_gateway, "native_scripts", None),
+        event_store=service._event_store,
+        lifecycle_store=service._context_lifecycle_store,
+        local_continuation_store=service._provider_continuation_store,
+        session_id=context.session.session_id,
+        invocation_policy=task.model_invocation_policy,
+        public_output_policy=service._settings.public_output,
+        user_input=task.user_input,
+        attempt_number=context.attempt.number,
+        **inputs,
+    )

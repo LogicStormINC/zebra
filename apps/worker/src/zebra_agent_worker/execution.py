@@ -5,7 +5,6 @@ from dataclasses import replace
 from datetime import datetime
 from pathlib import Path
 
-import agent_core.harness as core_harness
 import httpx
 import zebra_agent_config
 from agent_core.application import SessionTitleService
@@ -17,7 +16,7 @@ from agent_core.ports import EffectDispatchPort, WorkerProjectionTransactionPort
 from agent_core.ports.host_connector_registry import HostConnectorRegistryPort
 from agent_integrations import build_model_gateway
 from agent_runtime.workspace_runtime_resolver import WorkspaceRuntimeResolver
-from agent_security import LocalPolicyEngine, PolicyProfile, resolve_effective_network_profile
+from agent_security import resolve_effective_network_profile
 from agent_storage import ControlPlaneStores, PostgresControlPlaneStores
 
 import zebra_agent_worker.authority_types as authority_types
@@ -104,7 +103,8 @@ class SessionExecutionService(SessionExecutionEntrypoints):
     ) -> None:
         runtime_authority.validate_authority_wiring(
             execution_authority_resolver,
-            execution_authority_scope, execution_authority_scope_provider,
+            execution_authority_scope,
+            execution_authority_scope_provider,
         )
         cloud_artifact_factory = artifact_runtime.validate_cloud_artifact_factory(
             cloud_artifact_factory,
@@ -185,7 +185,8 @@ class SessionExecutionService(SessionExecutionEntrypoints):
         self._egress_registry, self._delegation_store = egress_registry, delegation_store
         self._frozen_manifest_loader = frozen_manifest_loader
         self._extensions = execution_gateway.extensions(
-            extension_snapshot_store, extension_skills, extension_mcp, extension_plugins)
+            extension_snapshot_store, extension_skills, extension_mcp, extension_plugins
+        )
         self._coverage_runtime = coverage_runtime
         self._transient_output_factory = transient_output_factory
 
@@ -197,7 +198,7 @@ class SessionExecutionService(SessionExecutionEntrypoints):
         ownership_check: Callable[[], None],
     ) -> ExecutedSession:
         session_id = claimed.lease.session_id
-        if (completed := recover_committed_completion(self, claimed, ownership_check, started_at)):
+        if completed := recover_committed_completion(self, claimed, ownership_check, started_at):
             return completed
         worker_progress = finish_preparation(
             lambda: recover_execution_progress(self, claimed, ownership_check), ownership_check
@@ -228,7 +229,6 @@ class SessionExecutionService(SessionExecutionEntrypoints):
             admitted_events=session_events,
         )
         trusted_local = zebra_agent_config.trusted_local_mode_enabled(self._settings)
-        policy_trusted = zebra_agent_config.unrestricted_policy_mode_enabled(self._settings)
         effective_network_profile = resolve_effective_network_profile(
             task.network_profile,
             trusted_local=trusted_local,
@@ -301,13 +301,19 @@ class SessionExecutionService(SessionExecutionEntrypoints):
                 ownership_check=ownership_check,
             )
             runtime_preparation = execution_runtime.compose_execution_runtime(
-                self._settings, self._database_path,
-                claimed=claimed, task=task, binding=task_binding,
+                self._settings,
+                self._database_path,
+                claimed=claimed,
+                task=task,
+                binding=task_binding,
                 materialization=materialized_context,
                 network_profile=effective_network_profile.name.value,
-                has_capsule=active_capsule is not None, attempt_number=attempt_number,
-                created_at=started_at, artifact_store=self._artifact_payload_store,
-                instance_factory=bound_instance_factory, compatible_session_ids=compatible_ids,
+                has_capsule=active_capsule is not None,
+                attempt_number=attempt_number,
+                created_at=started_at,
+                artifact_store=self._artifact_payload_store,
+                instance_factory=bound_instance_factory,
+                compatible_session_ids=compatible_ids,
                 recorder=lambda: effect_recorder[-1] if effect_recorder else authority_recorder,
                 trusted_local=trusted_local,
             )
@@ -315,7 +321,8 @@ class SessionExecutionService(SessionExecutionEntrypoints):
             if authority_persisted:
                 claimed = ClaimedSession(
                     recovery=self._recovery_service.recover_session(
-                        session_id, worker_lease=claimed.lease,
+                        session_id,
+                        worker_lease=claimed.lease,
                     ),
                     lease=claimed.lease,
                 )
@@ -335,6 +342,10 @@ class SessionExecutionService(SessionExecutionEntrypoints):
                 fence=claimed.lease.fence,
                 attempt_number=attempt_number,
                 network_cancellation_check=authority_recorder.require_active_execution,
+                script_recorder=lambda: effect_recorder[-1]
+                if effect_recorder
+                else authority_recorder,
+                instance_factory=bound_instance_factory,
             )
             tool_gateway = guard_worker_effects(
                 local_tool_gateway,
@@ -378,17 +389,15 @@ class SessionExecutionService(SessionExecutionEntrypoints):
         )
         try:
             context_compiler = bundle.context_compiler(task, include_workspace=task_binding is None)
-            context = core_harness.HarnessContext(
-                task=execution_context.harness_task_for_recovered(
-                    task,
-                    network_profile=effective_network_profile,
-                    tool_gateway=tool_gateway,
-                    memory_store=self._memory_store,
-                    personalization_store=self._personalization_store,
-                    materialization=materialized_context,
-                ),
-                session=claimed.recovery.session,
-                attempt=core_harness.HarnessAttempt(number=attempt_number, started_at=started_at),
+            context = execution_context.build_harness_context(
+                self,
+                task,
+                claimed,
+                effective_network_profile,
+                tool_gateway,
+                materialized_context,
+                attempt_number,
+                started_at,
             )
             setup_stage = "continuation_recovery"
             with sequence_race_guard("continuation start lost a sequence race"):
@@ -431,35 +440,25 @@ class SessionExecutionService(SessionExecutionEntrypoints):
                 )
             context = replace(context, session=recorder.session)
             setup_stage = "orchestrator_build"
-            orchestrator = execution_context.build_worker_orchestrator(
+            orchestrator = execution_context.build_execution_orchestrator(
+                self,
+                task,
+                context,
+                effective_network_profile,
+                local_tool_gateway,
                 model_gateway=model_gateway,
                 tool_gateway=tool_gateway,
-                policy_engine=LocalPolicyEngine(
-                    profile=PolicyProfile(task.policy_profile),
-                    network_profile=effective_network_profile,
-                    web_search_endpoint=self._settings.web_search_endpoint,
-                    web_pipeline_v2=self._settings.web_pipeline_v2,
-                    trusted_local=policy_trusted,
-                    additional_read_only_tools=local_tool_gateway.read_only_tools,
-                    additional_write_tools=local_tool_gateway.authorized_write_tools,
-                    additional_approval_tools=local_tool_gateway.approval_required_tools,
-                ),
                 context_compiler=context_compiler,
                 cloud_continuation=cloud_continuation,
                 recorder=recorder,
-                event_store=self._event_store,
-                lifecycle_store=self._context_lifecycle_store,
                 cloud_artifacts=cloud_artifacts,
-                local_continuation_store=self._provider_continuation_store,
-                session_id=session_id,
                 provider_continuation=provider_continuation,
-                invocation_policy=task.model_invocation_policy,
-                public_output_policy=self._settings.public_output,
                 worker_progress=worker_progress,
-                transient_output=(self._transient_output_factory(worker_progress, claimed.lease)
-                    if self._transient_output_factory and worker_progress else None),
-                user_input=task.user_input,
-                attempt_number=attempt_number,
+                transient_output=(
+                    self._transient_output_factory(worker_progress, claimed.lease)
+                    if self._transient_output_factory and worker_progress
+                    else None
+                ),
             )
             setup_stage = "continuation_run"
             attempt_result = run_worker_continuation(

@@ -26,6 +26,7 @@ def build_runtime(
     session_id: str = "local-session",
     attempt_number: int = 1,
     instance_factory: BoundInstanceFactory | None = None,
+    spec_override: SandboxSpec | None = None,
 ) -> RuntimePort:
     runtime_root = _runtime_root(database_path)
     if settings.runtime.require_workspace_quota:
@@ -43,6 +44,17 @@ def build_runtime(
         session_id=session_id,
         attempt_number=attempt_number,
     )
+    if spec_override is not None:
+        if (
+            spec_override.runtime_class != spec.runtime_class
+            or spec_override.image != spec.image
+            or spec_override.workspace_root != spec.workspace_root
+            or spec_override.engine != spec.engine
+            or spec_override.workspace_writable
+            or spec_override.network_profile != "none"
+        ):
+            raise ValueError("unsafe native script runtime override")
+        spec = spec_override
     if runtime_class is RuntimeClass.OS_SANDBOX:
         return OsSandboxRuntime(spec, snapshot_root=runtime_root)
     pinned = None

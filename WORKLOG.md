@@ -1,3 +1,30 @@
+# 2026-10-21 — CA-P3-01B implementation and verification
+
+Claimed on codex/ca-p3-01b-worker-script-binding from published d6729de3 in an isolated worktree.
+No edits to the original dirty cloud-agent checkout or Overdoze frontend mock.
+Added explicit ScriptBundle/Assembly, Definition3/Snapshot3, private catalog2 approval and exact script grant.
+Reused native Registry sidecar, leased Worker Event transaction, Policy, model gateway and Context compiler.
+Tool/Context/Verifier use actual native invocation service; verifier now runs BEFORE ANSWER_COMMITTED.
+Real Worker rejection exposed the too-late finalization approach; moved the constraint ahead of canonical
+answer commit and preserved the established already-committed-answer recovery rule.
+Short current Host fence serializes append/final answer with registry disable; no script I/O under DB lock.
+Real Worker also exposed native Run socket wrappers missing from work-unit deadline recognition;
+fixed the shared exact-wrapper boundary, retaining foreign database/schema/option refusal.
+Private bounded stdin, active cancellation, original lease/control failures and uncertain receipt propagation;
+completed receipts replay after current authorization, started-only work recomputes solely under a new fence.
+Focused64/zero skip, old ABI/Runtime/Worker entry regression124/zero skip, owned PG preservation74/zero skip.
+make check passed, mypy1381/eval30; 2899 source/contract entries frozen before final make test.
+Review additionally reproduced a final-answer rollback/cache sequence conflict; the final-answer outer
+transaction now raises the same uncertain-write signal as invocation receipts, with real rollback/lost-ACK
+regressions. The pre-review full run was deliberately interrupted, not counted as a passing gate.
+The next complete run found one old test still monkeypatching a moved composition import
+(10821pass/3008skip/1fail). Retargeted only that patch to agent_security.LocalPolicyEngine;
+all authority assertions retained, focused Worker core/entry13pass. Production source unchanged.
+Final full make test10822passed/3008existing dependency skips in1100.23s,exit0; make check passed
+(mypy1381/eval30). Frozen2899source/contracts,zero drift. Validation recorded in
+docs/evidence/ca-p3-01b/validation.json; scoped commit/push authorized, remote SHA verified in final receipt.
+No new migration/schema, main/cloud-agent integration, deployment or production migration.
+
 # CA-P3-01A — 2026-10-21
 
 先核对P2D/OD-P2C发布状态和P3合同依赖，再在独立分支认领精确路径。

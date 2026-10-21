@@ -379,7 +379,7 @@ def test_worker_execution_recovers_network_authority(tmp_path: Path, monkeypatch
         "zebra_agent_worker.execution.build_model_gateway",
         lambda settings: _assistant_only_gateway(settings=settings),
     )
-    monkeypatch.setattr("zebra_agent_worker.execution.LocalPolicyEngine", build_policy)
+    monkeypatch.setattr("agent_security.LocalPolicyEngine", build_policy)
 
     _build_execution_service(database_path).execute_session(
         session_id,

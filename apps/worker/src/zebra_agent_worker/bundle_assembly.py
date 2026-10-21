@@ -69,10 +69,16 @@ def require_snapshot_compatibility(
             r".+@sha256:[0-9a-f]{64}", settings.runtime.image
         ):
             raise ValueError("sandbox image must be content addressed")
+        from agent_core.domain.script_bundle import ScriptRuntimeAssembly
+
+        if isinstance(assembly, ScriptRuntimeAssembly):
+            from zebra_agent_worker.native_scripts import approved_scripts
+
+            approved_scripts(settings, assembly)
         if not os.environ.get(assembly.provider_profile.api_key_env, "").strip():
             raise ValueError("provider credential unavailable")
         return assembly
-    except (ValueError, TypeError, AssertionError):
+    except (ValueError, TypeError, AssertionError, PermissionError, OSError, RuntimeError):
         raise RetryableWorkerSetupError("INCOMPATIBLE_RUNTIME_BUNDLE") from None
 
 

@@ -1,12 +1,13 @@
 """A stdlib-only child program, passed to the configured isolated interpreter."""
 
-# Source and data are separate argv entries, never shell interpolation. They must
-# not be logged: script source can be proprietary and arguments can be business data.
+# Source/data use the bounded private stdin pipe, never argv or shell interpolation.
+# Neither the IPC payload nor raw stderr belongs in diagnostics.
 BOOTSTRAP = """\
 import json, sys
 if sys.version_info[:2] != (3, 12):
     raise RuntimeError("native script requires Python 3.12")
-source, request = sys.argv[1], json.loads(sys.argv[2])
+payload = json.load(sys.stdin)
+source, request = payload["source"], payload["invocation"]
 namespace = {"__name__": "native_capability"}
 exec(compile(source, "<native-script>", "exec"), namespace)
 output = namespace["execute"](request["arguments"])

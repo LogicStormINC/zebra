@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from collections.abc import Callable, Sequence
 from dataclasses import replace
+from functools import partial
 from pathlib import Path
 from subprocess import CompletedProcess, TimeoutExpired
 
@@ -25,8 +26,9 @@ from agent_runtime.adapters.local_snapshot_state import (
 )
 from agent_runtime.adapters.local_snapshots import LocalSnapshotBackend
 from agent_runtime.adapters.oci_instances import OciInstances
+from agent_runtime.adapters.oci_process import engine_failure, invoke_oci_process
 from agent_runtime.capability_checks import require_runtime_capabilities
-from agent_runtime.process_execution import run_process_tree
+from agent_runtime.process_execution import bounded_process_output, run_process_tree
 from agent_runtime.runtime_failures import normalize_runtime_failure
 from agent_runtime.runtime_instance_lifecycle import RuntimeInstanceLifecycle
 
@@ -66,8 +68,12 @@ class OciRuntime(RuntimePort):
         self._containers: dict[str, str] = {}
         self._handles: dict[str, RuntimeHandle] = {}
         self._active_handle_id: str | None = None
-        self._instances = (None if instance_lifecycle is None else
-                           OciInstances(instance_lifecycle, self._invoke, self._engine))
+        self._invoke = partial(invoke_oci_process, runner, cloud=instance_lifecycle is not None)
+        self._instances = (
+            None
+            if instance_lifecycle is None
+            else OciInstances(instance_lifecycle, self._invoke, self._engine)
+        )
 
     @property
     def spec(self) -> SandboxSpec:
@@ -75,25 +81,31 @@ class OciRuntime(RuntimePort):
 
     def inspect_capabilities(self) -> RuntimeCapabilities:
         engine_version: str | None
-        combined = (self._spec.runtime_class is RuntimeClass.GVISOR
-                    and Path(self._engine[0]).name == "docker")
+        combined = (
+            self._spec.runtime_class is RuntimeClass.GVISOR
+            and Path(self._engine[0]).name == "docker"
+        )
         if combined:
-            info = self._invoke((*self._engine, "info", "--format",
-                                 "{{.ServerVersion}}\n{{json .Runtimes}}"), timeout=2)
+            info = self._invoke(
+                (*self._engine, "info", "--format", "{{.ServerVersion}}\n{{json .Runtimes}}"),
+                timeout=2,
+            )
             version_text, separator, runtimes_text = info.stdout.partition("\n")
             if info.returncode != 0 or not separator or not version_text.strip():
                 return self._unavailable("OCI engine unavailable", retryable=info.returncode != 0)
             engine_version = version_text.strip()
         else:
             version = self._invoke(
-                (*self._engine, "version", "--format", "{{.Server.Version}}"), timeout=2)
+                (*self._engine, "version", "--format", "{{.Server.Version}}"), timeout=2
+            )
             if version.returncode != 0:
                 return self._unavailable("OCI engine is unavailable", retryable=True)
             engine_version = version.stdout.strip() or None
         if self._spec.runtime_class is RuntimeClass.GVISOR:
             if not combined:
                 info = self._invoke(
-                    (*self._engine, "info", "--format", "{{json .Runtimes}}"), timeout=2)
+                    (*self._engine, "info", "--format", "{{json .Runtimes}}"), timeout=2
+                )
                 runtimes_text = info.stdout
             try:
                 runtimes = json.loads(runtimes_text) if info.returncode == 0 else None
@@ -112,7 +124,8 @@ class OciRuntime(RuntimePort):
                 enforcement=f"gvisor:{self._gvisor_runtime}",
             )
         rootless = self._invoke(
-            (*self._engine, "info", "--format", "{{.Host.Security.Rootless}}"), timeout=2)
+            (*self._engine, "info", "--format", "{{.Host.Security.Rootless}}"), timeout=2
+        )
         if rootless.returncode != 0 or rootless.stdout.strip().lower() != "true":
             return self._unavailable(
                 "OCI engine did not prove rootless operation",
@@ -153,11 +166,16 @@ class OciRuntime(RuntimePort):
             authority=authority,
         )
         container_name = f"zebra-{handle.handle_id}"
-        labels = (() if self._instances is None else self._instances.reserve(
-            handle.handle_id, effective_spec.session_id, effective_spec.digest))
+        labels = (
+            ()
+            if self._instances is None
+            else self._instances.reserve(
+                handle.handle_id, effective_spec.session_id, effective_spec.digest
+            )
+        )
         created = self._invoke(self._create_command(container_name, root, effective_spec, labels))
         if created.returncode != 0:
-            raise RuntimeCapabilityError(self._engine_failure("container create", created))
+            raise RuntimeCapabilityError(engine_failure("container create", created))
         container_id = created.stdout.strip()
         if not container_id:
             if self._instances is None:
@@ -176,7 +194,7 @@ class OciRuntime(RuntimePort):
         started = self._invoke((*self._engine, "start", container_id))
         if started.returncode != 0:
             self.destroy(handle)
-            raise RuntimeCapabilityError(self._engine_failure("container start", started))
+            raise RuntimeCapabilityError(engine_failure("container start", started))
         if effective_spec.workspace_writable:
             writable = self._invoke(
                 (
@@ -216,6 +234,7 @@ class OciRuntime(RuntimePort):
         command = (
             *self._engine,
             "exec",
+            *(("--interactive",) if request.stdin_input is not None else ()),
             "--workdir",
             cwd,
             container_id,
@@ -226,6 +245,8 @@ class OciRuntime(RuntimePort):
                 command,
                 timeout=timeout,
                 max_output_bytes=self._spec.limits.max_output_bytes,
+                input_bytes=request.stdin_input,
+                cancellation_check=request.cancellation_check,
             )
         except TimeoutExpired as exc:
             self.destroy(handle)
@@ -247,6 +268,12 @@ class OciRuntime(RuntimePort):
                 stderr_truncated=stderr_truncated,
                 failure_reason="timeout",
             )
+        except BaseException as exc:
+            try:
+                self.destroy(handle)
+            except Exception as cleanup:
+                exc.add_note(f"native runtime cleanup failed: {type(cleanup).__name__}")
+            raise
         stdout, stdout_truncated = self._bounded_output(
             completed.stdout,
             already_truncated=bool(getattr(completed, "stdout_truncated", False)),
@@ -297,7 +324,7 @@ class OciRuntime(RuntimePort):
             return current
         completed = self._invoke((*self._engine, "pause", self._containers[current.handle_id]))
         if completed.returncode != 0:
-            raise RuntimeCapabilityError(self._engine_failure("container pause", completed))
+            raise RuntimeCapabilityError(engine_failure("container pause", completed))
         suspended = replace(current, suspended=True)
         self._handles[current.handle_id] = suspended
         return suspended
@@ -310,7 +337,7 @@ class OciRuntime(RuntimePort):
             return current
         completed = self._invoke((*self._engine, "unpause", self._containers[current.handle_id]))
         if completed.returncode != 0:
-            raise RuntimeCapabilityError(self._engine_failure("container unpause", completed))
+            raise RuntimeCapabilityError(engine_failure("container unpause", completed))
         resumed = replace(current, suspended=False)
         self._handles[current.handle_id] = resumed
         return resumed
@@ -325,7 +352,7 @@ class OciRuntime(RuntimePort):
         else:
             removed = self._invoke((*self._engine, "rm", "--force", "--volumes", container_id))
             if removed.returncode != 0:
-                raise RuntimeCapabilityError(self._engine_failure("container cleanup", removed))
+                raise RuntimeCapabilityError(engine_failure("container cleanup", removed))
         self._handles.pop(handle.handle_id)
         self._containers.pop(handle.handle_id)
         if self._active_handle_id == handle.handle_id:
@@ -345,12 +372,12 @@ class OciRuntime(RuntimePort):
             )
         )
         if listed.returncode != 0:
-            raise RuntimeCapabilityError(self._engine_failure("container list", listed))
+            raise RuntimeCapabilityError(engine_failure("container list", listed))
         container_ids = tuple(line.strip() for line in listed.stdout.splitlines() if line.strip())
         for container_id in container_ids:
             removed = self._invoke((*self._engine, "rm", "--force", "--volumes", container_id))
             if removed.returncode != 0:
-                raise RuntimeCapabilityError(self._engine_failure("container cleanup", removed))
+                raise RuntimeCapabilityError(engine_failure("container cleanup", removed))
         return len(container_ids)
 
     def close(self) -> None:
@@ -449,39 +476,16 @@ class OciRuntime(RuntimePort):
         *,
         already_truncated: bool,
     ) -> tuple[str, bool]:
-        if value is None:
-            return "", already_truncated
-        encoded = value if isinstance(value, bytes) else value.encode("utf-8", errors="replace")
-        limit = self._spec.limits.max_output_bytes
-        truncated = already_truncated or len(encoded) > limit
-        return encoded[:limit].decode(
-            "utf-8", errors="ignore" if truncated else "replace"
-        ), truncated
-
-    def _invoke(
-        self,
-        command: Sequence[str],
-        *,
-        timeout: float | None = None,
-        max_output_bytes: int | None = None,
-    ) -> CompletedProcess[str]:
-        try:
-            kwargs = {
-                "capture_output": True,
-                "text": True,
-                "check": False,
-                "timeout": 30 if self._instances is not None and timeout is None else timeout,
-            }
-            if max_output_bytes is not None:
-                kwargs["max_output_bytes"] = max_output_bytes
-            return self._runner(tuple(command), **kwargs)
-        except TimeoutExpired:
-            if self._instances is not None and timeout is None:
-                raise RuntimeCapabilityError("cloud runtime administration timed out") from None
-            raise
+        return bounded_process_output(
+            value, self._spec.limits.max_output_bytes, already_truncated=already_truncated
+        )
 
     def _unavailable(
-        self, reason: str, *, version: str | None = None, retryable: bool = False,
+        self,
+        reason: str,
+        *,
+        version: str | None = None,
+        retryable: bool = False,
     ) -> RuntimeCapabilities:
         return RuntimeCapabilities(
             runtime_class=self._spec.runtime_class,
@@ -491,8 +495,3 @@ class OciRuntime(RuntimePort):
             reason=reason,
             retryable=retryable,
         )
-
-    @staticmethod
-    def _engine_failure(operation: str, completed: CompletedProcess[str]) -> str:
-        detail = (completed.stderr or completed.stdout).strip()[:2048]
-        return f"OCI {operation} failed" + (f": {detail}" if detail else "")

@@ -1,3 +1,15 @@
+# CA-P3-01B implementation plan
+
+1. [x] Audit published A/P2 and existing Worker/lease/event/Registry paths; claim precise scope.
+2. [x] Define versioned script closure/Definition3 and private approval/Worker compatibility without rewriting v1/v2.
+3. [x] Add bounded private stdin IPC and active cancellation through existing RuntimePort/process adapters.
+4. [x] Implement native invocation state/journal and replay/recovery under current lease and authority.
+5. [x] Wire actual Tool/Context/Verifier Worker paths; verifier only narrows existing decisions/Coverage.
+6. [x] Actual sandbox/Worker/owned PG concurrency/restart/unknown and preservation tests; review before full gates.
+7. [x] Final frozen make check/test passed; formal docs/tasks/evidence synchronized. Authorized scoped commit/push; exact remote SHA verified in the delivery receipt. No deploy/migration.
+
+## Historical plans (preserved)
+
 # CA-P3-01A implementation plan
 
 1. [x] Audit P2/publication and P3 producer dependencies; claim exact paths before code.

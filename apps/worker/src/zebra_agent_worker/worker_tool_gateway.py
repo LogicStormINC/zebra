@@ -26,6 +26,7 @@ from agent_tools.extension_management import (
     ExtensionManagementTools,
     management_contracts,
 )
+from agent_tools.native_script import NativeScriptTools
 from agent_tools.registry import ToolRegistry
 
 from zebra_agent_worker.client_tool_gateway import ClientToolGateway
@@ -63,12 +64,15 @@ class WorkerToolGateway:
     management_names: frozenset[str] = frozenset()
     resource_authority_issuer: str | None = None
     host_media_importer: HostMediaArtifactImporter | None = None
+    native_scripts: NativeScriptTools | None = None
 
     @property
     def model_tools(self) -> tuple[ModelToolDefinition, ...]:
         tools = self.local.model_tools
         if not self.web_egress_enabled:
             tools = tuple(tool for tool in tools if tool.name not in NETWORKED_WEB_TOOLS)
+        if self.native_scripts is not None:
+            tools += self.native_scripts.registry.model_tools()
         tools += _host_model_tools(self.host_manifest, self.host_context)
         if self.management is not None:
             registry = ToolRegistry()
@@ -127,7 +131,14 @@ class WorkerToolGateway:
         from agent_tools.effect_guard_support import READ_ONLY_TOOLS
 
         native_read = NATIVE_WEB_READ_TOOLS if self.web_pipeline_v2 else frozenset()
-        return READ_ONLY_TOOLS | native_read | host_read | (self.management_names & READ_NAMES)
+        scripts = self.native_scripts.names if self.native_scripts is not None else frozenset()
+        return (
+            READ_ONLY_TOOLS
+            | native_read
+            | host_read
+            | scripts
+            | (self.management_names & READ_NAMES)
+        )
 
     @property
     def mutation_tools(self) -> frozenset[str]:
@@ -183,6 +194,8 @@ class WorkerToolGateway:
         return self._execute(toolCall)
 
     def _execute(self, tool_call: ToolCall) -> ToolResult:
+        if self.native_scripts is not None and tool_call.name in self.native_scripts.names:
+            return self.native_scripts.execute(tool_call)
         if self.management is not None and tool_call.name in self.management_names:
             return self.management.execute(tool_call)
         if self.client is not None and tool_call.name in {

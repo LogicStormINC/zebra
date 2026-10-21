@@ -14,6 +14,7 @@ from agent_core.domain.modeling import (
     ModelToolDefinition,
 )
 from agent_core.domain.runtime_assembly import RuntimeAssembly
+from agent_core.domain.script_bundle import parse_runtime_assembly
 
 from agent_integrations.deepseek_profiles import ResolvedDeepSeekInvocation
 from agent_integrations.openai_compatible import OpenAICompatibleModelGateway
@@ -22,7 +23,7 @@ from agent_integrations.request_metadata import ModelRequestMetadata
 
 class BundleModelGateway(OpenAICompatibleModelGateway):
     def __init__(self, assembly: RuntimeAssembly, *, client: httpx.Client | None = None) -> None:
-        self._assembly = RuntimeAssembly.model_validate(assembly)
+        self._assembly = parse_runtime_assembly(assembly)
         model = self._assembly.bundle.manifest.domains.model.parameters
         profile = self._assembly.provider_profile
         key = os.environ.get(profile.api_key_env, "").strip()

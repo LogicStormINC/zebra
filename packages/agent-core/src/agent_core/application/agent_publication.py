@@ -77,11 +77,17 @@ class AgentDefinitionPublicationService:
         gate: PublicationGateEvidence,
         effective_at: datetime,
     ) -> AgentRelease:
-        self._require_grant(scope, actor_ref)
+        ceiling = self._require_grant(scope, actor_ref)
         version = self._registry.get_version(scope, version_id)
         if version is None:
             raise AgentPublicationError("cannot publish an unknown Version")
         require_bundle_environment(version, environment)
+        from agent_core.domain.script_definition import ScriptDefinitionVersion
+
+        if isinstance(version, ScriptDefinitionVersion) and (
+            version.runtime_assembly.required_reference not in ceiling.allowed_references
+        ):
+            raise AgentPublicationError("exact script Bundle reference is not granted")
         if gate.version_id != version_id:
             raise PublicationGateNotPassedError(
                 "publication gate evidence targets a different Version"
@@ -113,9 +119,7 @@ class AgentDefinitionPublicationService:
         actor_ref: str,
         reason_class: str,
         effective_at: datetime,
-        enforcement_mode: AgentReleaseEnforcementMode = (
-            AgentReleaseEnforcementMode.SAFE_BOUNDARY
-        ),
+        enforcement_mode: AgentReleaseEnforcementMode = (AgentReleaseEnforcementMode.SAFE_BOUNDARY),
     ) -> AgentRelease | None:
         self._require_grant(scope, actor_ref)
         current = self._registry.resolve_published(scope, environment=environment)

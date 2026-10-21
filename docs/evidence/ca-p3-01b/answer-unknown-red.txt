@@ -1,0 +1,5 @@
+Controlled rollback regression before final-answer uncertain-write guard.
+=========================== short test summary info ============================
+FAILED tests/worker/test_native_script_control.py::test_final_answer_transaction_uncertainty_never_uses_recorder_cache[rollback]
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 8 deselected in 10.35s

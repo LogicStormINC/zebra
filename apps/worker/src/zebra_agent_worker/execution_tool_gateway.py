@@ -2,6 +2,7 @@
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Protocol
 
 import httpx
@@ -15,6 +16,7 @@ from agent_core.ports import (
     ModelGatewayPort,
     SessionHistoryPort,
 )
+from agent_core.ports.event_store import EventStorePort
 from agent_core.ports.host_connector_registry import HostConnectorRegistryPort
 from agent_core.ports.runtime import RuntimeHandle, RuntimePort
 from agent_integrations import ModelProviderSettings
@@ -24,8 +26,10 @@ from zebra_agent_config import ZebraAgentSettings
 
 import zebra_agent_worker.worker_skill_catalog as worker_skills
 from zebra_agent_worker.client_tool_gateway import ClientToolGateway
+from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
 from zebra_agent_worker.extension_recovery import RecoveredTurnExtension, WorkerExtensionStore
 from zebra_agent_worker.provider_configuration import model_provider_settings
+from zebra_agent_worker.runtime_instances import BoundInstanceFactory
 from zebra_agent_worker.task_recovery import RecoveredTask
 from zebra_agent_worker.tool_gateway_runtime import WorkerToolGateway, build_worker_tool_gateway
 from zebra_agent_worker.tool_output_artifacts import CloudToolOutputArtifactCoordinator
@@ -40,6 +44,8 @@ WorkerSkillSource = worker_skills.WorkerSkillCatalogSource
 
 
 class ExecutionComposition(Protocol):
+    _event_store: EventStorePort
+    _database_path: Path
     _settings: ZebraAgentSettings
     _model_http_client: httpx.Client | None
     _session_history: SessionHistoryPort
@@ -114,6 +120,8 @@ def build_execution_tool_gateway(
     fence: LeaseFence,
     attempt_number: int = 1,
     network_cancellation_check: Callable[[], None] | None = None,
+    script_recorder: Callable[[], DurableHarnessEventRecorder] | None = None,
+    instance_factory: BoundInstanceFactory | None = None,
 ) -> WorkerToolGateway:
     """Compose one execution gateway from already trusted Worker state."""
     plugin_guard = prepare_worker_plugins(
@@ -190,4 +198,21 @@ def build_execution_tool_gateway(
             gateway.management_names -= {"extensions.refresh_mcp"}
         if gateway.management.import_skill is None:
             gateway.management_names -= {"extensions.import_skill"}
+    if script_recorder is not None:
+        from zebra_agent_worker.native_scripts import prepare_native_scripts
+
+        scripts = prepare_native_scripts(
+            settings=service._settings,
+            database_path=service._database_path,
+            task=task,
+            binding=task_binding,
+            events=service._event_store,
+            recorder=script_recorder,
+            instance_factory=instance_factory,
+            attempt_number=attempt_number,
+        )
+        if scripts is not None:
+            if scripts.names & {tool.name for tool in gateway.model_tools}:
+                raise ValueError("native script tool name conflicts with an existing capability")
+            gateway.native_scripts = scripts
     return gateway

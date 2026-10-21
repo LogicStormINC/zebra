@@ -1,3 +1,20 @@
+# 2026-10-21 — CA-P3-01B Worker 原生脚本绑定与恢复
+
+状态 Review：实现、专项64passed/零跳过与独享临时PG保持74passed/零跳过已完成。
+[正式设计与配置/恢复边界](docs/NATIVE_SCRIPT_WORKER.md)；[机器合同](docs/contracts/native-script-worker-v1/README.md)。
+显式 ScriptBundle/Assembly 与 Definition3/Snapshot3，保留 A/P2 旧制品与 v1/v2 摘要。
+Worker Tool/Context/Verifier 接入既有模型/Policy/Context 路径；Verifier 在 ANSWER_COMMITTED 前约束，
+不改写已提交结果，不生成 Coverage/verification freshness。受租约保护的原事件流保存 started/completed，
+终态恢复先重新授权并重放，纯读未决仅新 fence 有界重算；私有 stdin、执行中 STOP/Host/lease 取消。
+实际 Host 当前授权与最后答案/收据在短事务串行化；脚本执行不持 DB 锁。
+最终 make check 通过（mypy1381、eval30/30）；make test10822passed/3008既有依赖跳过，1100.23秒、exit0。
+冻结2899项源码/合同，全量期间零漂移；旧入口回归124pass，策略构造替换入口修正后13pass。
+验证记录 docs/evidence/ca-p3-01b/validation.json；按授权提交/推送，远端SHA由最终回执核对。
+前端 mock、历史数据和 Coverage 机制保持；此分支不整合主线、不部署或执行生产迁移。
+可信资产管理/Go 公共脚本合同与生产 gVisor/HA 验收仍为后续任务。
+
+以下为历史记录。
+
 # 2026-10-21 — CA-P3-01A 原生脚本执行前置
 
 P2D公开发布/消费与成对OD-P2C已交付；按当前继续指令开始P3第一片。

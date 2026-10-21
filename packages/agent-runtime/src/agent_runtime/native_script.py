@@ -1,5 +1,7 @@
 """Opt-in one-shot transforms using the existing read-only sandbox boundary."""
 
+import sys
+from collections.abc import Callable
 from hashlib import sha256
 from pathlib import PurePosixPath
 from threading import BoundedSemaphore
@@ -51,7 +53,13 @@ class NativeScriptRunner:
         self._runtime, self._spec, self._python = runtime, spec, python
         self._slot = BoundedSemaphore(1)
 
-    def run(self, script: NativeScript, raw_invocation: bytes) -> ScriptRunResult:
+    def run(
+        self,
+        script: NativeScript,
+        raw_invocation: bytes,
+        *,
+        cancellation_check: Callable[[], None] | None = None,
+    ) -> ScriptRunResult:
         # Recheck immutable identities at the boundary, even for a hand-built value.
         NativeScript(script.manifest, script.source)
         try:
@@ -71,11 +79,14 @@ class NativeScriptRunner:
         if not self._slot.acquire(blocking=False):
             raise NativeScriptError("script_runner_busy")
         handle = None
+        check = cancellation_check or (lambda: None)
         try:
+            check()
             capabilities = self._runtime.inspect_capabilities()
             if not capabilities.available or capabilities.runtime_class != self._spec.runtime_class:
                 raise NativeScriptError("script_runtime_unavailable")
             handle = self._runtime.provision(spec=self._spec)
+            check()
             authority = handle.authority
             if (
                 authority is None
@@ -95,13 +106,16 @@ class NativeScriptRunner:
                         "-B",
                         "-c",
                         BOOTSTRAP,
-                        script.source.decode("utf-8"),
-                        raw_invocation.decode("utf-8"),
                     ),
+                    stdin_input=canonical_json_bytes(
+                        {"source": script.source.decode("utf-8"), "invocation": value}
+                    ),
+                    cancellation_check=cancellation_check,
                     cwd=self._spec.workspace_root,
                     timeout_seconds=script.manifest.timeout_seconds,
                 )
             )
+            check()
             reason: Literal["ok", "timeout", "process_failed", "output_limit", "invalid_response"]
             output: bytes | None = None
             if result.timed_out:
@@ -146,6 +160,14 @@ class NativeScriptRunner:
         finally:
             try:
                 if handle is not None:
-                    self._runtime.destroy(handle)
+                    original = sys.exception()
+                    try:
+                        self._runtime.destroy(handle)
+                    except Exception as cleanup:
+                        if original is None:
+                            raise
+                        original.add_note(
+                            f"native runtime cleanup failed: {type(cleanup).__name__}"
+                        )
             finally:
                 self._slot.release()

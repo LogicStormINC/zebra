@@ -32,6 +32,8 @@ from agent_core.domain.identifiers import (
     AgentDefinitionVersionId,
 )
 from agent_core.domain.runtime_assembly import RuntimeAssembly
+from agent_core.domain.script_bundle import ScriptRuntimeAssembly, parse_runtime_assembly
+from agent_core.domain.script_definition import ScriptDefinitionVersion
 from agent_core.ports.agent_registry import AgentRegistryPort
 
 
@@ -263,7 +265,12 @@ class AgentDefinitionDraftService:
         if issues:
             raise DraftValidationFailedError("draft content is not within the publisher grant")
         if runtime_assembly is not None:
-            runtime_assembly = RuntimeAssembly.model_validate(runtime_assembly)
+            runtime_assembly = parse_runtime_assembly(runtime_assembly)
+            if (
+                isinstance(runtime_assembly, ScriptRuntimeAssembly)
+                and runtime_assembly.required_reference not in ceiling.allowed_references
+            ):
+                raise PublisherGrantError("exact script Bundle reference is not granted")
             bundle_scope = runtime_assembly.bundle.manifest.scope
             reference = (
                 "runtime-bundle/"
@@ -291,9 +298,11 @@ class AgentDefinitionDraftService:
             runtime_profile_ref=draft.runtime_profile_ref,
         )
         if runtime_assembly is not None:
-            materialized = BundleDefinitionVersion(
-                **materialized.model_dump(exclude={"schema_version", "definition_digest"}),
-                runtime_assembly=runtime_assembly,
+            values = materialized.model_dump(exclude={"schema_version", "definition_digest"})
+            materialized = (
+                ScriptDefinitionVersion(**values, runtime_assembly=runtime_assembly)
+                if isinstance(runtime_assembly, ScriptRuntimeAssembly)
+                else BundleDefinitionVersion(**values, runtime_assembly=runtime_assembly)
             )
         saved = self._registry.save_version(materialized)
         metadata_updated = definition.model_copy(

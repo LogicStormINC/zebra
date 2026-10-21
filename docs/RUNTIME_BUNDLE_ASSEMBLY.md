@@ -1,5 +1,8 @@
 # Runtime Bundle binding and Worker assembly (CA-P2-01B)
 
+Current continuation: [CA-P3-01B native script Worker](NATIVE_SCRIPT_WORKER.md) adds explicit
+ScriptBundle/Definition3/Snapshot3 readers. The v2 boundary below remains unchanged.
+
 ## Delivered boundary
 
 CA-P2-01A defines immutable Bundle v1 bytes, pins and validation. This slice binds that exact contract to new Definition v2 and Task snapshot v2 formats and executes a bounded, explicit subset. Published Bundle v1 schemas/catalog/vectors and historical Definition/Snapshot v1 digest algorithms are unchanged.

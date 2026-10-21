@@ -121,7 +121,7 @@ class BundleDefinitionSnapshot(AgentDefinitionSnapshot):
             if name in AgentDefinitionVersion.model_fields
         }
         values.update(
-            snapshot_schema_version="agent-definition-snapshot/2",
+            snapshot_schema_version=cls.model_fields["snapshot_schema_version"].default,
             bound_version=version,
             resolved_at=resolved_at,
             binding_purpose=BindingPurpose.EVAL if release is None else BindingPurpose.PRODUCTION,
@@ -149,6 +149,10 @@ def parse_definition_version(value: object) -> AgentDefinitionVersion:
         return AgentDefinitionVersion.model_validate(payload)
     if schema == "agent-definition/2":
         return BundleDefinitionVersion.model_validate(payload)
+    if schema == "agent-definition/3":
+        from agent_core.domain.script_definition import ScriptDefinitionVersion
+
+        return ScriptDefinitionVersion.model_validate(payload)
     raise ValueError("unsupported Definition Version schema")
 
 
@@ -161,6 +165,10 @@ def parse_definition_snapshot(value: object) -> AgentDefinitionSnapshot:
         return AgentDefinitionSnapshot.model_validate(payload)
     if schema == "agent-definition-snapshot/2":
         return BundleDefinitionSnapshot.model_validate(payload)
+    if schema == "agent-definition-snapshot/3":
+        from agent_core.domain.script_definition import ScriptDefinitionSnapshot
+
+        return ScriptDefinitionSnapshot.model_validate(payload)
     raise ValueError("unsupported Definition snapshot schema")
 
 
@@ -175,11 +183,15 @@ def snapshot_from_version(
     *, version: AgentDefinitionVersion, resolved_at: datetime
 ) -> AgentDefinitionSnapshot:
     checked = parse_definition_version(version)
-    cls = (
+    cls: type[AgentDefinitionSnapshot] = (
         BundleDefinitionSnapshot
         if isinstance(checked, BundleDefinitionVersion)
         else AgentDefinitionSnapshot
     )
+    if checked.schema_version == "agent-definition/3":
+        from agent_core.domain.script_definition import ScriptDefinitionSnapshot
+
+        cls = ScriptDefinitionSnapshot
     return cls.from_version(version=checked, resolved_at=resolved_at)
 
 
@@ -187,11 +199,15 @@ def snapshot_from_release(
     *, release: AgentRelease, version: AgentDefinitionVersion, resolved_at: datetime
 ) -> AgentDefinitionSnapshot:
     checked = parse_definition_version(version)
-    cls = (
+    cls: type[AgentDefinitionSnapshot] = (
         BundleDefinitionSnapshot
         if isinstance(checked, BundleDefinitionVersion)
         else AgentDefinitionSnapshot
     )
+    if checked.schema_version == "agent-definition/3":
+        from agent_core.domain.script_definition import ScriptDefinitionSnapshot
+
+        cls = ScriptDefinitionSnapshot
     return cls.from_release(version=checked, release=release, resolved_at=resolved_at)
 
 
