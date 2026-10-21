@@ -1,4 +1,5 @@
 import type { ReceiptSubmission } from "@zebra-agent/contracts";
+import { clientHeaders } from "./runtime_transport.ts";
 import { scrubResult } from "./result_security.ts";
 
 export function normalizeReceipt(receipt: ReceiptSubmission): ReceiptSubmission {
@@ -15,7 +16,8 @@ export async function submitClientReceipt(
   deps: {
     fetchImpl: typeof fetch;
     baseUrl: string;
-    sessionCredential: string;
+    sessionCredential?: string | undefined;
+    mode?: "legacy" | "bff" | undefined;
     controllerFenceToken?: string | undefined;
   },
   submission: ReceiptSubmission,
@@ -40,10 +42,8 @@ export async function submitClientReceipt(
         {
           method: "POST",
           headers: {
-            "Content-Type": "application/json",
-            "X-Zebra-Client-Session": deps.sessionCredential,
+            ...clientHeaders(deps, true),
             "Idempotency-Key": `sdk-receipt:${receipt.effect_id}`,
-            "X-Zebra-Client-Fence": deps.controllerFenceToken ?? "",
           },
           body,
         },

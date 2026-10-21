@@ -1,0 +1,103 @@
+{
+  "task": "CA-P3-02C",
+  "status": "PASS",
+  "date": "2026-10-22",
+  "branch": "codex/ca-p3-02c-bff-browser",
+  "baseCommit": "0aa6e5585b15e56b4a93009137952b49bff11ab6",
+  "contract": "bff-browser-sdk/1",
+  "checks": {
+    "makeTest": {
+      "exitCode": 0,
+      "passed": 10906,
+      "skipped": 3014,
+      "seconds": 1181.02,
+      "logSha256": "b6a38409336a94fea9d8f5dbca3bebc8504a087b81319db88a3a882afcac3f27",
+      "skipBoundary": "Inherited environment/dependency conditions, including optional PostgreSQL tests; no additional isolated PostgreSQL run in this SDK-only slice."
+    },
+    "makeCheck": {
+      "exitCode": 0,
+      "mypyFiles": 1388,
+      "evalCases": 30,
+      "fileSizeInputs": 3366,
+      "logSha256": "63f312a7b80870f646dcbdc212d08e389dba44eaa913b0379b45883bedf39dac"
+    },
+    "sdkVerify": {
+      "exitCode": 0,
+      "unitTests": 117,
+      "passed": 117,
+      "failed": 0,
+      "skipped": 0,
+      "packageAudit": true,
+      "reactConsumerMatrix": "React18/19 x Vite/Next SSR+RSC",
+      "browserMatrix": [
+        "Chromium",
+        "WebKit",
+        "Next hydration"
+      ],
+      "logSha256": "abfd1a49395e1c7641ce68274fdccf66b6a469a160ef82c11eadf83abd5b3769",
+      "scope": "Actual packaged SDK Hook/DOM/action/receipt retry on isolated same-origin HTTP BFF/native wire fixture; not a real product IdP/Python Runtime/Worker end-to-end proof."
+    },
+    "pythonPublicContractFreeze": {
+      "files": 2941,
+      "changed": [],
+      "manifestSha256": "bc528b117b1af332505affa73991893bb32a1173ab41e7b6473c3431f80806d9",
+      "selection": "Python source, docs/contracts and Python manifests/lock before full native make test; generated reports excluded."
+    },
+    "verifiedSdkSourceSnapshot": {
+      "files": 76,
+      "changed": [],
+      "manifestSha256": "6370023cb99f473fc6ded29526fa154a209cd8488b91d07e3c05f7c60b27fd11",
+      "selection": "Tracked/new SDK source and package metadata captured after final successful SDK verify; not a pre-test whole-repository freeze."
+    },
+    "coveragePreservation": {
+      "sourceAndTestFiles": 280,
+      "changed": [],
+      "manifestSha256": "fb6944361f049702547657fc9c57a236ba288e4257c7a5f2993567f35fe27964",
+      "baseCommit": "0aa6e5585b15e56b4a93009137952b49bff11ab6"
+    },
+    "priorFailures": {
+      "correctedRedRegression": "3 failed/1 passed against old SDK after correcting initial command working directory",
+      "providerReplacementRed": "Old runtime kept polling after config replacement; fixed and included in final117 tests",
+      "fixtureDependency": "Vite fixture missing direct existing zod dependency; fixed fixture only",
+      "parallelBuildConflict": "Two SDK commands incorrectly ran builds concurrently and removed dist output; final SDK verification ran serially",
+      "passingGate": "Only final shipping logs above count as acceptance"
+    }
+  },
+  "sourceSha256": {
+    "sdks/typescript/package.json": "ef549b9a043f4eab6d0f4d7260f05240aa77227678e4cc3b398a72e70d3b4935",
+    "sdks/typescript/packages/client-core/src/bff_transport.ts": "08565d2ff4bf112d0efe818a3649967da3336ad0ed048cc0700c64210fd0e81a",
+    "sdks/typescript/packages/client-core/src/index.ts": "f746a71404405097f4c4fc4b5a6093c31b8c5c18af5c84a9a839ce609f2c1beb",
+    "sdks/typescript/packages/client-core/src/receipt_transport.ts": "766029ff558ad080db5d61e78ce534efa479446eda318fb381ec1605b0911878",
+    "sdks/typescript/packages/client-core/src/runtime_configuration.ts": "c4f69b86de46cad67009c66ccc1011987b3cdf4e9b627b0c9dfc207b7664d562",
+    "sdks/typescript/packages/client-core/src/runtime_transport.ts": "8abcc3da9e0d3ada59876e6645eb8ead1ef26f7e1f3c25f1668ccbd9b6d4a4c7",
+    "sdks/typescript/packages/client-core/tests/bff-browser.test.ts": "c6222e6d566c0a00b380539951b6e0d28a51852e83d8adc6c188663b8b1bde9c",
+    "sdks/typescript/packages/contracts/src/index.ts": "f6163a1cd6193b219e99483fbff02978a4f653ec0c7015f322a330e9e1cd7be9",
+    "sdks/typescript/packages/react/src/index.ts": "b178a3c0fdf073785a0b12e36bd037b287cff1d1967abb38a4dbf7fc69879d53",
+    "sdks/typescript/packages/react/tests/bff-provider.test.tsx": "67125d4e45f802fe5905a931d7d415793d97a64d4cd3ad0502675356d4b63649",
+    "sdks/typescript/scripts/bff-browser-fixture.mjs": "8b9c29cffc46c37a292b792949f94fa7da7c49187668ee2582298eb0082b82a7",
+    "sdks/typescript/scripts/react-browser-matrix.mjs": "b6a3f48e55c2785f38bfe22373dd10bf10a4b43da0891b35293c8ddc9f837255",
+    "docs/contracts/bff-browser-sdk/contract.json": "c52093175e53d5eac33b2ed185f1c7f1cb166c61326932086034c372f6a4ed76"
+  },
+  "boundaries": {
+    "frontendMock": "unchanged in independent Overdoze repository",
+    "pythonProductionOrTestsChanged": false,
+    "dataRewrite": false,
+    "storageMigration": null,
+    "nativeTaskRunEffectReceiptControllerAuthority": "unchanged",
+    "businessBffDurableMappingImplemented": false,
+    "realProductIdpRuntimeWorkerUiE2E": false,
+    "readableValuesUploaded": false,
+    "npmPublication": false,
+    "productionHaVerified": false,
+    "deployment": false,
+    "productionMigration": false,
+    "mainlineIntegration": false,
+    "followups": [
+      "Native public actionContractDigests facts",
+      "Hook mount / RunBinding / Controller fence synchronization",
+      "Trusted product BFF persistent current-auth mapping and paired real Runtime/browser acceptance",
+      "Readable value schema/permission/budget/lifetime/consumption contract"
+    ],
+    "compatibility": "Legacy secret config, required DI secret types and SSE retained; public status union adds unavailable and exhaustive three-state consumers need adaptation."
+  }
+}

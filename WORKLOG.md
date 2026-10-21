@@ -1,3 +1,14 @@
+# 2026-10-22 — CA-P3-02C
+
+Ready认领后审计新SDK/BFF路径；初次测试命令工作目录错误未运行，修正后旧SDK3failed/1passed，
+BFF基础4例变绿；额外Provider替换回归复现旧runtime轮询泄漏并修复。
+浏览器fixture先缺直接zod依赖，随后两个SDK构建误并行造成dist目录冲突；均保留日志并改串行，不计为通过。
+已验证完整SDK门禁/真实Chromium-WebKit一次；进一步明确旧DI类型、JSON配置类型和Observer Session heartbeat，
+最终shipping verify117passed/零跳过，根make test10906passed/3014条件跳过（1181.02秒）、make check通过。
+2941Python/合同、76已验证SDK源码、280Coverage无漂移；正式证据已保存，按授权限定提交推送。
+Python代码/存储/历史/Coverage未修改。
+wire BFF不是生产BFF，不是实际Python Worker/UI全链路；公开action摘要及mount/binding同步仍需下一片。
+
 # 2026-10-22 — CA-P3-02B
 
 先核对OD-P3-01B之后实际SDK/BFF依赖，发现三个Effect入口缺当前Task/Run授权。

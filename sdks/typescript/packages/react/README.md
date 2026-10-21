@@ -96,3 +96,44 @@ Use `ZebraAgentProvider` and the exported hooks for Agent runtime integration.
 Use `ZebraHitlProvider` for approval and clarification surfaces. A Host should
 adapt its domain state into these contracts rather than import package source
 files or duplicate runtime ownership.
+
+
+## Same-origin BFF browser mode
+
+Prefer `mode: "bff"` for embedded business UIs. The business BFF keeps native HostGrants,
+Session credentials and Controller fences; the browser gets public metadata only:
+
+```tsx
+const config = {
+  mode: "bff" as const,
+  baseUrl: "/api/agent/surfaces/public-binding-id",
+  clientSessionId: bootstrap.clientSessionId,
+  controller: bootstrap.controller,
+  taskId: bootstrap.taskId,
+  runId: bootstrap.runId,
+  runBindingId: bootstrap.runBindingId,
+  clientBindingDigest: bootstrap.clientBindingDigest,
+  actionContractDigests: bootstrap.actionContractDigests,
+  initialUiRevision: bootstrap.uiRevision,
+};
+// Pass config to ZebraAgentProvider and register actions with useZebraAction.
+```
+
+`bootstrap` above means the product BFF's sanitized native-admission response, not Overdoze's
+identity-only bootstrap. No extra Agent identity token is created. Existing business login/Cookie,
+current Agent identity, Origin/CSRF, durable surface mapping and native authorization stay server-owned.
+Public IDs and `controller` are hints; the BFF independently checks and rejects foreign scope/role.
+Never serialize `sessionCredential` or `controllerFenceToken` into this mode, or fabricate a value
+for the legacy validator. BFF v1 supports bounded polling, not an undocumented SSE proxy.
+
+`useZebraClientStatus()` observes `connecting`, `ready`, `unavailable`, or `stopped`.
+Ready follows mount/poll success; it does not prove native admission or task completion.
+Old callers that exhaustively type the former three-state union must handle `unavailable`.
+The existing native admission response does not directly return an action-digest map; production
+BFF integration still needs public native digest facts and mount/RunBinding/fence synchronization.
+`useZebraReadable` currently registers names and revisions only: no value-upload/Context proof.
+Local storage restrictions limit refresh deduplication; an already running JavaScript handler cannot
+be rolled back. Unknown business writes require their own operation/result reconciliation.
+
+The original config and legacy SSE remain available. This source addition is not an npm release,
+a production BFF, or real business IdP/Runtime/Worker end-to-end acceptance.

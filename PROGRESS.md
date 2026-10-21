@@ -1,3 +1,17 @@
+# CA-P3-02C — 显式BFF浏览器SDK（Review）
+
+2026-10-22；基于已发布0aa6e558；管理前端mock保持，未整合主线/部署/迁移。
+SDK新增mode=bff，浏览器只有公共绑定事实，原生HostGrant/Session credential/fence由业务BFF持有；
+同源相对路径/方法/头/JSON大小/5秒期限限制、真实connecting/ready/unavailable/stopped订阅，
+旧DI必填secret类型和legacy配置/SSE保持；修复Provider配置更换后旧runtime继续轮询。
+Observer只续Session不误申领Controller；当前控制权/Task/Effect/Receipt权威仍在原生，Go无执行代理。
+[方案与边界](docs/CA-P3-02C_bff_browser.md) · [制品](docs/contracts/bff-browser-sdk/contract.json)。
+最终SDK verify117passed/零跳过，包/React18-19消费/Chromium-WebKit/Next hydration通过；
+根make test10906passed/3014条件跳过（1181.02秒），make check通过（mypy1388/eval30）。
+2941Python/合同输入、76已验证SDK源码和280Coverage文件无漂移；[证据](docs/evidence/ca-p3-02c/validation.json)。
+实际Hook/DOM/wire BFF对验与真实IdP/Runtime/Worker联调分别记录，限定提交推送，远端SHA由回执核验。
+下一步需原生公开action摘要、mount/绑定/围栏生命周期和真实BFF持久映射，Readable值仍独立合同。
+
 # CA-P3-02B — UI Effect当前资源授权（Review）
 
 2026-10-22；从已发布8715d225独立继续，先核对实际SDK/BFF/Effect依赖。

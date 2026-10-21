@@ -1,0 +1,119 @@
+{
+  "contractVersion": "bff-browser-sdk/1",
+  "implementation": "native TypeScript SDK adapter; business BFF is supplied by the product",
+  "config": {
+    "mode": "bff",
+    "legacyMode": "omitted or legacy preserves the original credential/SSE config",
+    "baseUrl": "scoped same-origin relative path; max512; alphanumeric/underscore/hyphen path segments only",
+    "publicFields": [
+      "mode",
+      "baseUrl",
+      "clientSessionId",
+      "controller",
+      "taskId",
+      "runId",
+      "runBindingId",
+      "clientBindingDigest",
+      "actionContractDigests",
+      "initialUiRevision",
+      "storage",
+      "fetchImpl"
+    ],
+    "unknownFields": "reject",
+    "controller": "public dispatch hint only; never authorization",
+    "forbiddenSecrets": [
+      "sessionCredential",
+      "controllerFenceToken",
+      "HostGrant"
+    ],
+    "streams": "BFF v1 polling only; legacy SSE remains supported"
+  },
+  "transport": {
+    "methods": {
+      "GET": [
+        "/v1/client-sessions/{ownSession}/effects"
+      ],
+      "POST": [
+        "/v1/client-sessions/{ownSession}/mount",
+        "/v1/client-sessions/{ownSession}/heartbeat",
+        "/v1/client-sessions/{ownSession}/release",
+        "/v1/client-effects/{uuid}/receipts"
+      ]
+    },
+    "credentials": "same-origin",
+    "mode": "same-origin",
+    "redirect": "error",
+    "cache": "no-store",
+    "timeoutMilliseconds": 5000,
+    "requestBytes": 65536,
+    "effectsResponseBytes": 1048576,
+    "effectsResponseChunks": 4096,
+    "maxPendingEffects": 50,
+    "manualForbiddenHeaders": [
+      "Authorization",
+      "Cookie",
+      "Host",
+      "Origin",
+      "X-Zebra-Client-Session",
+      "X-Zebra-Client-Fence"
+    ],
+    "body": "JSON POST only, no GET body",
+    "customFetch": "Trusted product adapter must honor AbortSignal and preserve request restrictions"
+  },
+  "status": {
+    "values": [
+      "connecting",
+      "ready",
+      "unavailable",
+      "stopped"
+    ],
+    "ready": "registered mount completes and bounded poll succeeds; observation, not admission/execution success",
+    "dependencyFailure": "unavailable; no empty-success fallback",
+    "pollTerminalHttp": [
+      400,
+      401,
+      403,
+      404,
+      410,
+      422
+    ],
+    "poll409": "unavailable; current projection may recover",
+    "subscription": "React observes actual runtime status; old runtime stops on config replacement"
+  },
+  "recovery": {
+    "activePollCyclesPerRuntime": 1,
+    "activeHeartbeatCyclesPerRuntime": 1,
+    "receiptAttempts": 5,
+    "sameReceiptRetry": "same effect/key/result/body within an attempt cycle",
+    "unknownAction": "do not execute again merely because receipt is unknown",
+    "storage": "per-tab optional recovery hints, not authorization; denied storage means in-memory boundary",
+    "activeHandler": "already running JavaScript cannot be rolled back by stopping subsequent dispatch"
+  },
+  "authority": {
+    "businessIdentity": "business BFF",
+    "agentIdentity": "existing access/refresh/identity key",
+    "nativeSessionCredential": "BFF only",
+    "nativeHostGrant": "BFF only",
+    "nativeControllerFence": "BFF only",
+    "taskRunEffectReceiptController": "native",
+    "browserIdentifiersGrantAccess": false,
+    "goExecutionStateMachine": false
+  },
+  "bffRequirements": [
+    "Current business login/Agent identity/Origin and CSRF",
+    "Server-owned product/App/Session/Task/Run mapping",
+    "Ignore or reject browser-provided native secrets, role escalation and foreign coordinates",
+    "Per-request fresh resource-scoped native HostGrant and server-held credential/fence",
+    "Bound HTTP/body/response resources and current authorization without model/tool proxy through Go management",
+    "Return public facts only; server mapping and credentials need product-owned durable storage for production"
+  ],
+  "verificationBoundary": {
+    "browserSdkOnIsolatedWireBff": true,
+    "realProductIdpOrDurableBffImplemented": false,
+    "pythonNativeWorkerUiE2E": false,
+    "readableValuesUploaded": false,
+    "npmPublicationVerified": false,
+    "productionHaVerified": false,
+    "productionDeploymentOrMigration": false
+  }
+}

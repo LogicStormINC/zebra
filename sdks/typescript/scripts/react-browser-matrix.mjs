@@ -6,6 +6,8 @@ import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
 import { createServer as createNetServer } from "node:net";
 
+import { bffFixtureSource, createBffFixture, verifyBffBrowser } from "./bff-browser-fixture.mjs";
+
 import { chromium, webkit } from "@playwright/test";
 
 const sdkRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -54,9 +56,10 @@ async function packPackages() {
 async function verifyViteInteractions(browser, tarballs, browserName) {
   const root = join(workspace, "vite-browser");
   await writeFiles(root, {
-    "package.json": packageJson("zebra-browser-vite", tarballs, { vite: "6.4.3" }, "vite build"),
+    "package.json": packageJson("zebra-browser-vite", tarballs, { vite: "6.4.3", zod: "4.4.3" }, "vite build"),
     "index.html": '<style>html,body,#root{height:100%;margin:0}</style><div id="root"></div><script type="module" src="/src/main.tsx"></script>',
     "src/main.tsx": viteFixtureSource(),
+    "src/bff.tsx": bffFixtureSource(),
     "tsconfig.json": JSON.stringify({ compilerOptions: { jsx: "react-jsx", lib: ["ES2022", "DOM"], module: "ESNext", moduleResolution: "Bundler", noEmit: true, strict: true, target: "ES2022" }, include: ["src"] }, null, 2),
   });
   await installAndBuild(root);
@@ -170,6 +173,7 @@ async function verifyViteInteractions(browser, tarballs, browserName) {
     if (undersizedTargets.length) throw new Error(`${browserName}: undersized interaction targets: ${undersizedTargets.join(", ")}`);
     if (errors.length) throw new Error(`${browserName} Vite browser errors: ${errors.join(" | ")}`);
     await page.close();
+    await verifyBffBrowser(browser, server, browserName);
   } finally {
     await server.close();
   }
@@ -309,6 +313,7 @@ function viteFixtureSource() {
   return `
 import { createElement, useState } from "react";
 import { createRoot } from "react-dom/client";
+import { BffFixture } from "./bff";
 import { AgentChat, AgentComposer, AgentContentRenderer } from "@zebra-agent/react";
 import { AgentVegaLiteRenderer } from "@zebra-agent/react-charts";
 import "@zebra-agent/react/styles.css";
@@ -328,7 +333,7 @@ function App(){
   const complete=()=>{setPhase("completed");setTurns((items)=>items.map((turn)=>turn.id==="live"?{...turn,status:"completed",workSegments:[{id:"work",activities:[{activityId:"tool",kind:"tool",status:"completed",title:"Inspect"}]}],assistantMessage:{id:"answer",role:"assistant",content:"Done",status:"complete"}}:turn))};
   return <><nav><button id="activate" onClick={activate}>Activate</button><button id="complete" onClick={complete}>Complete</button><button id="disconnected" onClick={()=>setPhase("disconnected")}>Disconnect</button><button id="paused" onClick={()=>setPhase("paused")}>Pause state</button><button id="failed" onClick={()=>setPhase("failed")}>Fail state</button><button id="burst" onClick={()=>setTurns(Array.from({length:30},(_,index)=>({id:String(index),status:"completed",workSegments:[],assistantMessage:{id:"message-"+index,role:"assistant",content:"Long output "+index+" "+"x".repeat(180),status:"complete"}})))}>Burst</button><button id="append" onClick={()=>setTurns((items)=>[...items,{id:"latest",status:"completed",workSegments:[],assistantMessage:{id:"latest-message",role:"assistant",content:"Newest output",status:"complete"}}])}>Append</button><button id="thread-a" onClick={()=>setScrollKey("thread-a")}>Thread A</button><button id="thread-b" onClick={()=>setScrollKey("thread-b")}>Thread B</button></nav><span id="submits">{submits}</span><span id="actions">{actions.join(",")}</span><span id="scroll-key">{scrollKey}</span><AgentChat composer={composer} renderMessageContent={renderContent} runStatus={{state,onReconnect:()=>setActions((v)=>[...v,"reconnect"]),onResume:()=>setActions((v)=>[...v,"resume"]),onRetry:()=>setActions((v)=>[...v,"retry"])}} scrollKey={scrollKey} themeTokens={{input:"#123456",surface:"#101820"}} turns={turns} /></>;
 }
-createRoot(document.getElementById("root")).render(<App/>);
+createRoot(document.getElementById("root")).render(location.search.includes("bff=1") ? <BffFixture/> : <App/>);
 `;
 }
 
@@ -344,7 +349,9 @@ async function writeFiles(root, files) {
 }
 
 async function serveDirectory(root) {
+  const bff = createBffFixture();
   const server = createServer(async (request, response) => {
+    if (await bff.handle(request, response)) return;
     const raw = request.url === "/" ? "/index.html" : request.url;
     const target = join(root, raw.split("?")[0]);
     try { const body = await readFile(target); response.setHeader("content-type", mimeType(target)); response.end(body); }
@@ -353,7 +360,8 @@ async function serveDirectory(root) {
   await new Promise((resolveListen) => server.listen(0, "127.0.0.1", resolveListen));
   const address = server.address();
   if (!address || typeof address === "string") throw new Error("static server did not bind");
-  return { url: `http://127.0.0.1:${address.port}`, close: () => new Promise((resolveClose, rejectClose) => server.close((error) => error ? rejectClose(error) : resolveClose())) };
+  bff.state.origin = `http://127.0.0.1:${address.port}`;
+  return { bff, url: `http://127.0.0.1:${address.port}`, close: () => new Promise((resolveClose, rejectClose) => server.close((error) => error ? rejectClose(error) : resolveClose())) };
 }
 
 function mimeType(path) { return extname(path) === ".js" ? "text/javascript" : extname(path) === ".css" ? "text/css" : "text/html"; }

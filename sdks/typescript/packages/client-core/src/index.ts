@@ -7,11 +7,13 @@ import {
   CLIENT_SDK_ERRORS,
   type ClientEffectWire,
   type ReceiptSubmission,
-  type RuntimeClientConfig,
+  type RuntimeBrowserConfig,
 } from "@zebra-agent/contracts";
-import { browserSessionStorage, ClientRuntimeStateStore, UiRevisionClock } from "./runtime_state.ts";
+import { ClientRuntimeStateStore, UiRevisionClock } from "./runtime_state.ts";
 import { consumeClientEffectStream } from "./sse_stream.ts";
 import { normalizeReceipt, submitClientReceipt } from "./receipt_transport.ts";
+import { runtimeDependencies } from "./runtime_configuration.ts";
+import { clientHeaders, readPendingEffects } from "./runtime_transport.ts";
 import { MountedActionRegistry } from "./action_registry.ts";
 import { ClientRuntimeError } from "./errors.ts";
 export { scrubResult } from "./result_security.ts";
@@ -32,6 +34,7 @@ export interface ClientRuntimeDependencies extends StreamObserverOptions {
   baseUrl: string;
   clientSessionId: string;
   sessionCredential: string;
+  mode?: "legacy" | undefined;
   controllerFenceToken?: string | undefined;
   taskId?: string | undefined;
   runId?: string | undefined;
@@ -42,6 +45,19 @@ export interface ClientRuntimeDependencies extends StreamObserverOptions {
   streamUrl?: string | undefined;
   storage?: Storage | undefined;
 }
+
+/** Preserve the original required-secret DI type for existing server/legacy consumers. */
+export type BrowserRuntimeDependencies = ClientRuntimeDependencies | (
+  Omit<ClientRuntimeDependencies, "mode" | "sessionCredential" | "controllerFenceToken" | "streamUrl"> & {
+    mode: "bff";
+    controller: boolean;
+    sessionCredential?: never;
+    controllerFenceToken?: never;
+    streamUrl?: never;
+  }
+);
+
+export type ClientRuntimeStatus = "connecting" | "ready" | "unavailable" | "stopped";
 
 export class ZebraClientRuntime {
   readonly registry = new MountedActionRegistry();
@@ -59,10 +75,30 @@ export class ZebraClientRuntime {
   private pollTimer: ReturnType<typeof setInterval> | null = null;
   private queuedMount: MountOptions | null = null;
   private mountFlush: Promise<void> | null = null;
-  private deps: ClientRuntimeDependencies;
+  private deps: BrowserRuntimeDependencies;
   private stopped = false;
+  private polling = false;
+  private heartbeating = false;
+  private status: ClientRuntimeStatus = "connecting";
+  private readonly statusListeners = new Set<() => void>();
+  readonly getStatus = (): ClientRuntimeStatus => this.status;
+  readonly subscribeStatus = (listener: () => void): (() => void) => {
+    this.statusListeners.add(listener);
+    return () => { this.statusListeners.delete(listener); };
+  };
+  private setStatus(status: ClientRuntimeStatus): void {
+    if (this.status === status) return;
+    this.status = status;
+    for (const listener of this.statusListeners) listener();
+  }
+  private get controls(): boolean {
+    return this.deps.mode === "bff" ? this.deps.controller === true : this.deps.controllerFenceToken !== undefined;
+  }
 
-  constructor(deps: ClientRuntimeDependencies) {
+  constructor(deps: BrowserRuntimeDependencies) {
+    if (deps.mode === "bff" && (deps.sessionCredential !== undefined || deps.controllerFenceToken !== undefined)) {
+      throw new ClientRuntimeError("invalid_bff_config", "BFF runtime cannot hold native secrets");
+    }
     this.deps = deps;
     this.uiRevision = new UiRevisionClock(deps.initialUiRevision);
     this.stateStore = new ClientRuntimeStateStore(deps.storage, deps.clientSessionId);
@@ -74,72 +110,8 @@ export class ZebraClientRuntime {
     this.lastEventId = restored.lastEventId;
   }
 
-  static fromConfig(config: RuntimeClientConfig & StreamObserverOptions): ZebraClientRuntime {
-    const sessionSecret = config.sessionCredential.slice(config.clientSessionId.length + 1);
-    if (
-      !config.sessionCredential.startsWith(`${config.clientSessionId}:`) ||
-      sessionSecret.length < 16 ||
-      /\s/.test(sessionSecret)
-    ) {
-      throw new ClientRuntimeError(
-        "invalid_credential",
-        "session credential must be '<session-id>:<session-secret>'",
-      );
-    }
-    const controllerCoordinates = [
-      config.taskId,
-      config.runId,
-      config.runBindingId,
-      config.clientBindingDigest,
-      config.actionContractDigests,
-    ];
-    if (
-      config.controllerFenceToken !== undefined &&
-      (
-        config.controllerFenceToken.length < 16 ||
-        /\s/.test(config.controllerFenceToken) ||
-        controllerCoordinates.some(
-          (value) =>
-            value === undefined ||
-            (typeof value === "string" && value.trim() === ""),
-        ) ||
-        !/^[0-9a-f]{64}$/.test(config.clientBindingDigest ?? "") ||
-        Object.values(config.actionContractDigests ?? {}).some(
-          (digest) => !/^[0-9a-f]{64}$/.test(digest),
-        )
-      )
-    ) {
-      throw new ClientRuntimeError(
-        "invalid_controller_binding",
-        "controller fence requires binding coordinates and action digests",
-      );
-    }
-    if (
-      config.streamUrl !== undefined &&
-      new URL(config.streamUrl, config.baseUrl).origin !== new URL(config.baseUrl).origin
-    ) {
-      throw new ClientRuntimeError(
-        "cross_origin_stream",
-        "the AG-UI stream must share the Host BFF origin",
-      );
-    }
-    return new ZebraClientRuntime({
-      // Preserve window.fetch's receiver; an object-field call fails in Chromium.
-      fetchImpl: config.fetchImpl ?? ((input, init) => globalThis.fetch(input, init)),
-      baseUrl: config.baseUrl,
-      clientSessionId: config.clientSessionId,
-      sessionCredential: config.sessionCredential,
-      controllerFenceToken: config.controllerFenceToken,
-      taskId: config.taskId,
-      runId: config.runId,
-      runBindingId: config.runBindingId,
-      clientBindingDigest: config.clientBindingDigest,
-      actionContractDigests: config.actionContractDigests,
-      initialUiRevision: config.initialUiRevision,
-      streamUrl: config.streamUrl,
-      ...streamObserverOptions(config),
-      storage: config.storage ?? browserSessionStorage(),
-    });
+  static fromConfig(config: RuntimeBrowserConfig & StreamObserverOptions): ZebraClientRuntime {
+    return new ZebraClientRuntime(runtimeDependencies(config));
   }
 
   /** Mount declares the page's actions; digest drift stops mounting. */
@@ -217,26 +189,26 @@ export class ZebraClientRuntime {
 
   /** Reconnect replay of pending effects; each executes at most once. */
   async listPendingEffects(): Promise<ClientEffectWire[]> {
-    try {
-      const response = await this.deps.fetchImpl(
-        `${this.deps.baseUrl}/v1/client-sessions/${this.deps.clientSessionId}/effects`,
-        { headers: this.headers() },
-      );
-      if (!response.ok) return [];
-      const payload = (await response.json()) as { effects?: ClientEffectWire[] };
-      return payload.effects ?? [];
-    } catch {
-      return [];
+    const response = await this.deps.fetchImpl(
+      `${this.deps.baseUrl}/v1/client-sessions/${this.deps.clientSessionId}/effects`,
+      { headers: this.headers() },
+    );
+    if (!response.ok) {
+      if ([400, 401, 403, 404, 410, 422].includes(response.status)) this.stop();
+      throw new ClientRuntimeError("effects_unavailable", `effect poll rejected (${response.status})`);
     }
+    return readPendingEffects(response, this.deps.mode === "bff");
   }
 
   /** Start durable replay, heartbeat, and optional AG-UI SSE live tail. */
   async start(): Promise<void> {
     if (this.stopped) return;
-    for (const [effectId, receipt] of this.pendingReceipts) {
+    if (this.controls) for (const [effectId, receipt] of this.pendingReceipts) {
       if (await this.submitReceipt(receipt)) this.forgetReceipt(effectId);
       if (this.stopped) return;
     }
+    try { await this.mountFlush; } catch { this.stop(); return; }
+    if (this.stopped) return;
     // V2 reconciles the current pending set at its awaited recovery boundary.
     if (this.deps.streamVersion !== 2 || this.deps.streamUrl === undefined) await this.poll();
     this.heartbeatTimer ??= setInterval(() => void this.heartbeat(), 30_000);
@@ -265,33 +237,40 @@ export class ZebraClientRuntime {
 
   /** Fetch and execute the current durable pending set once. */
   async poll(): Promise<void> {
-    if (this.stopped) return;
-    for (const effect of await this.listPendingEffects()) await this.runEffect(effect);
+    if (this.stopped || this.polling) return;
+    this.polling = true;
+    try {
+      const effects = await this.listPendingEffects();
+      for (const effect of effects) await this.runEffect(effect);
+      if (!this.stopped) this.setStatus("ready");
+    } catch {
+      if (!this.stopped) this.setStatus("unavailable");
+    } finally { this.polling = false; }
   }
 
   async heartbeat(): Promise<boolean> {
-    if (this.stopped) return false;
-    for (const [effectId, receipt] of this.pendingReceipts) {
-      if (await this.submitReceipt(receipt)) this.forgetReceipt(effectId);
-    }
+    if (this.stopped || this.heartbeating) return false;
+    this.heartbeating = true;
     try {
+      if (this.controls) for (const [effectId, receipt] of this.pendingReceipts) {
+        if (await this.submitReceipt(receipt)) this.forgetReceipt(effectId);
+      }
+      if (this.stopped) return false;
       const response = await this.deps.fetchImpl(
         `${this.deps.baseUrl}/v1/client-sessions/${this.deps.clientSessionId}/heartbeat`,
-        {
-          method: "POST",
-          headers: this.controllerHeaders(),
-          body: JSON.stringify(this.controllerCoordinates()),
-        },
+        { method: "POST", headers: this.controllerHeaders(), body: JSON.stringify(this.controllerCoordinates()) },
       );
       if ([400, 401, 403, 409, 410].includes(response.status)) this.stop();
+      if (!response.ok && !this.stopped) this.setStatus("unavailable");
       return response.ok;
     } catch {
+      if (!this.stopped) this.setStatus("unavailable");
       return false;
-    }
+    } finally { this.heartbeating = false; }
   }
 
   async runEffect(effect: ClientEffectWire): Promise<void> {
-    if (this.stopped || this.deps.controllerFenceToken === undefined) return;
+    if (this.stopped || !this.controls) return;
     if (
       effect.surface_instance_id !== this.deps.clientSessionId ||
       effect.task_id !== this.deps.taskId ||
@@ -414,6 +393,7 @@ export class ZebraClientRuntime {
   private shutdown(releaseController: boolean): void {
     if (!this.stopped && releaseController) void this.releaseController();
     this.stopped = true;
+    this.setStatus("stopped");
     this.queuedMount = null;
     this.abortController?.abort();
     this.abortController = null;
@@ -451,21 +431,16 @@ export class ZebraClientRuntime {
   }
 
   private headers(): Record<string, string> {
-    return {
-      "Content-Type": "application/json",
-      "X-Zebra-Client-Session": this.deps.sessionCredential,
-    };
+    return clientHeaders(this.deps);
   }
 
   private controllerHeaders(): Record<string, string> {
-    return {
-      ...this.headers(),
-      "X-Zebra-Client-Fence": this.deps.controllerFenceToken ?? "",
-    };
+    return clientHeaders(this.deps, true);
   }
 
   private controllerCoordinates(): Record<string, string> {
     if (
+      !this.controls ||
       this.deps.taskId === undefined ||
       this.deps.runId === undefined ||
       this.deps.runBindingId === undefined
@@ -478,7 +453,7 @@ export class ZebraClientRuntime {
   }
 
   private async releaseController(): Promise<void> {
-    if (this.deps.controllerFenceToken === undefined) return;
+    if (!this.controls) return;
     try {
       await this.deps.fetchImpl(
         `${this.deps.baseUrl}/v1/client-sessions/${this.deps.clientSessionId}/release`,

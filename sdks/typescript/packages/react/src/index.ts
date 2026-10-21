@@ -17,6 +17,7 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
   type ReactNode,
 } from "react";
 import type { ZodType } from "zod";
@@ -25,8 +26,9 @@ import {
   ClientRuntimeError,
   ZebraClientRuntime,
   type ClientActionHandler,
+  type ClientRuntimeStatus,
 } from "@zebra-agent/client-core";
-import type { RuntimeClientConfig } from "@zebra-agent/contracts";
+import type { RuntimeBrowserConfig } from "@zebra-agent/contracts";
 
 export { ZebraHitlProvider, useZebraApproval, useZebraClarification } from "./hitl/index.ts";
 export type {
@@ -76,7 +78,7 @@ export { createAgentThemeStyle } from "./theme.ts";
 export type { AgentThemeTokens } from "./theme.ts";
 
 export interface ZebraAgentProviderProps {
-  config: RuntimeClientConfig;
+  config: RuntimeBrowserConfig;
   frontendAppId: string;
   profileRevision: number;
   profileDigest: string;
@@ -88,7 +90,7 @@ interface ZebraAgentContextValue {
   frontendAppId: string;
   profileRevision: number;
   profileDigest: string;
-  status: "connecting" | "ready" | "stopped";
+  status: ClientRuntimeStatus;
   mountedActions: string[];
   agentState: Record<string, unknown>;
   setAgentState: (next: Record<string, unknown>) => void;
@@ -101,25 +103,21 @@ export function ZebraAgentProvider(props: ZebraAgentProviderProps) {
     () => ZebraClientRuntime.fromConfig(props.config),
     [props.config],
   );
-  const [status, setStatus] = useState<"connecting" | "ready" | "stopped">(
-    "connecting",
-  );
+  const status = useSyncExternalStore(runtime.subscribeStatus, runtime.getStatus, runtime.getStatus);
   const [mountedActions, setMountedActions] = useState<string[]>([]);
   const [agentState, setAgentState] = useState<Record<string, unknown>>({});
   const lifecycleGeneration = useRef(0);
+  const currentRuntime = useRef(runtime);
+  currentRuntime.current = runtime;
   useEffect(() => {
     lifecycleGeneration.current += 1;
-    let active = true;
-    void runtime.start().then(() => {
-      if (active) setStatus("ready");
-    });
+    void runtime.start();
     return () => {
-      active = false;
       const cleanupGeneration = ++lifecycleGeneration.current;
       // React Strict Mode immediately re-runs effects; only a real unmount
       // survives this microtask and releases the controller lease.
       queueMicrotask(() => {
-        if (lifecycleGeneration.current === cleanupGeneration) runtime.stop();
+        if (currentRuntime.current !== runtime || lifecycleGeneration.current === cleanupGeneration) runtime.stop();
       });
     };
   }, [runtime]);
@@ -267,7 +265,7 @@ export function useZebraAction<
   return { mounted };
 }
 
-export function useZebraClientStatus(): "connecting" | "ready" | "stopped" {
+export function useZebraClientStatus(): ClientRuntimeStatus {
   return useZebra().status;
 }
 

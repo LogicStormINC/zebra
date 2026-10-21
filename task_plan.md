@@ -1,3 +1,15 @@
+# CA-P3-02C 当前计划
+
+1. [x] 审计实际SDK/BFF/Readable，Ready认领精确Owned paths和独立工作树。
+2. [x] 红绿回归显式BFF无秘密配置、失败不伪装ready和Provider替换泄漏。
+3. [x] 实现同源有界模式/实际状态、保留旧DI类型、Observer Session heartbeat。
+4. [x] 最终SDK verify含React18/19消费/Chromium/WebKit/Next与根make test/check。
+5. [x] 冻结Python/SDK输入和历史/Coverage、正式证据/任务更新、限定提交推送。
+
+无业务BFF生产实现、Readable值上传、部署/迁移或主线整合。
+
+## Historical plan
+
 # CA-P3-02B 当前计划
 
 1. [x] 审计后续SDK/BFF/Effect依赖，登记Ready并认领专属分支/路径。
