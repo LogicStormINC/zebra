@@ -192,6 +192,8 @@ class ZebraAgentApi(
             self.publisher_grants,
             parsed,
             host_context=host_context,
+            settings=self.settings,
+            verified_host_grant=verified_host_grant,
         )
         if isinstance(definition_snapshot, ApiResponse):
             return definition_snapshot

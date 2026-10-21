@@ -783,3 +783,5 @@ additive v106 nullable policy-column migration. Configuration, developer contrac
 and acceptance boundaries are in [the batch02 design](docs/CLOUD_AGENT_DECOUPLING_BATCH2.md).
 
 Scoped read-only Runtime management is documented in [RUNTIME_MANAGEMENT](docs/RUNTIME_MANAGEMENT.md); it does not establish deployment readiness or authorize Host writes.
+
+Scoped publisher/consumer HTTP and native gate evidence: [publication management](docs/PUBLICATION_MANAGEMENT.md).

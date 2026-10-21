@@ -1,0 +1,41 @@
+{
+  "task": "CA-P2-01D",
+  "status": "PASS",
+  "base_commit": "0fd592e1b8d97bdacf67a1472628e67e060e991d",
+  "make_test": {
+    "exit_code": 0,
+    "passed": 10710,
+    "skipped": 3008,
+    "seconds": 1128.38
+  },
+  "make_check": {
+    "exit_code": 0,
+    "eval_cases": 30,
+    "typed_sources": 1364
+  },
+  "focused": {
+    "passed": 21,
+    "skipped": 0
+  },
+  "owned_postgres_preservation": {
+    "passed": 74,
+    "skipped": 0
+  },
+  "frozen_python_files": 2833,
+  "source_drift": false,
+  "frontend_modified": false,
+  "production_migration": false,
+  "deployed": false,
+  "integrated_main": false,
+  "log_sha256": {
+    "postgres-preservation.log": "4d9208537f177412104f3d9914a1c01f5a4f33e52c21644cd00d048ee3ae61db",
+    "make-test.log": "c905bf0e8da66899d0ecaeba73648b86a7d48a1415b6846b53539190a6ba2596",
+    "make-check.log": "38a588ce722c090bffa44b5a565f6446d48e3bc2a85f69606edbbf802496e0df",
+    "focused.log": "445e32cbc0064f6930072d3bab89e034df866bfad9d51900baa7cde6f0b82877"
+  },
+  "limitations": [
+    "Default full suite retains explicit external infrastructure skips; no production acceptance.",
+    "Evaluation evidence must come from a trusted native evaluator; no browser/Go self-certified gate.",
+    "Go paired public HTTPS acceptance is recorded independently in Overdoze."
+  ]
+}

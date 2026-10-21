@@ -14,6 +14,12 @@ def test_api_only_path_preserves_published_baseline_digest(tmp_path: Path) -> No
     assert getattr(configured, "bundle_management_config", None) == str(tmp_path / "approval.json")
     expected = "sha256:c7748ed8d32a5c534d4c7c8290fd71f5d5d3c01d46c3d38c53665a5cce900fdc"
     original = settings()
+    assert (
+        baseline_digest(
+            replace(original, publication_management_config="/private/publisher"), "ab" * 32
+        )
+        == expected
+    )
     assert baseline_digest(original, "ab" * 32) == expected
     assert (
         baseline_digest(

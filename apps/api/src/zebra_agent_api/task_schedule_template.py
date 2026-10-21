@@ -54,6 +54,8 @@ def validate_schedule_template(
         app.publisher_grants,
         parsed,
         host_context=request.host_context,
+        settings=app.settings,
+        verified_host_grant=request.verified_host_grant,
     )
     if isinstance(definition, ApiResponse):
         return definition

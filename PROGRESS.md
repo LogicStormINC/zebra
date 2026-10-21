@@ -1,3 +1,14 @@
+# 2026-10-21 — CA-P2-01D 公开发布与消费链路
+
+状态：Review；最终原生make test10710passed/3008skipped，1128.38秒，exit0；make check通过，mypy1364源文件、eval30/30。
+专用rtpub私有配置和当前共享审批；复用原生Draft/Version/Release服务，原生评估证据门禁，
+原子CAS/收据/回滚；HTTP工厂装配Registry，独立消费Host授权与完整Bundle scope/精确引用。
+普通及计划Task使用同一绑定边界；既有默认发布者允许集仍为空，不自动补权。
+临时PG专项74项通过；冻结2833个Python源文件，全量门禁期间零漂移。专项21项、临时PG保持专项74项零跳过；最终证据见docs/evidence/ca-p2-01d/。
+无历史改写、Coverage算法/Worker语义改变、部署、生产迁移或主线整合。
+
+以下为历史记录。
+
 # 2026-10-21 — CA-P2-01C scoped native Bundle validation
 
 Dependency audit identified the missing native pure validation prerequisite for

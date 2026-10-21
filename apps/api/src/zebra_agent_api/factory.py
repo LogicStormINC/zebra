@@ -166,13 +166,13 @@ def create_app(
                 active_settings.database_url,
                 deployment_namespace=namespace,
             )
-    if agent_registry is None and composed_stores is not None:
+    if agent_registry is None and isinstance(active_stores, PostgresControlPlaneStores):
         from agent_core.application.agent_definitions import (
             StaticPublisherGrantResolver,
         )
         from agent_storage import PostgresAgentRegistry
 
-        namespace = getattr(composed_stores, "deployment_namespace", None)
+        namespace = getattr(active_stores, "deployment_namespace", None)
         if isinstance(namespace, str) and namespace.strip():
             agent_registry = PostgresAgentRegistry(
                 active_settings.database_url,

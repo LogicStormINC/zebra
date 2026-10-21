@@ -23,6 +23,7 @@ from agent_storage.postgres.agent_registry_common import AgentRegistryStorageErr
 from agent_storage.postgres.agent_registry_drafts import AgentDraftAuthorityMixin
 from agent_storage.postgres.agent_registry_evidence import AgentDefinitionEvalEvidence
 from agent_storage.postgres.database import PostgresDatabase
+from agent_storage.postgres.publication import lock_definition
 
 __all__ = [
     "AgentDefinitionEvalEvidence",
@@ -270,6 +271,7 @@ class PostgresAgentRegistry(AgentDraftAuthorityMixin):
             evidence.definition_id,
         )
         with self._database.connect() as connection:
+            lock_definition(connection, scope_key)
             connection.execute(
                 """
                 INSERT INTO agent_definition_eval_evidence (

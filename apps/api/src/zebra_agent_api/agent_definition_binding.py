@@ -24,11 +24,19 @@ def resolve_definition_binding(
     parsed: CreateSessionPayload,
     *,
     host_context: HostContextEnvelope | None,
+    settings: object | None = None,
+    verified_host_grant: object | None = None,
 ) -> AgentDefinitionSnapshot | ApiResponse | None:
     """Resolve the production snapshot for a requested definition; None unbound."""
     definition_id = parsed.get("definition_id")
     if definition_id is None:
         return None
+    if getattr(settings, "publication_management_config", None):
+        from zebra_agent_api.publication_consumer import resolve_consumer_binding
+
+        return resolve_consumer_binding(
+            settings, registry, parsed, host_context, verified_host_grant
+        )
     if registry is None or publisher_grants is None:
         return service_unavailable(
             status="registry_unavailable",

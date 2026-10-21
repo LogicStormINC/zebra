@@ -1,3 +1,11 @@
+# CA-P2-01D 实施清单
+
+- [x] 核对A/B/C与P2A/B依赖，独立分支认领及路径边界。
+- [x] 私有发布授权、公开物化/发布、原子原生操作、独立消费授权与范围隔离。
+- [x] HTTP/PG授权、失败/回滚/重放/CAS/消费测试，历史Bundle与Coverage保持专项。
+- [x] 最终冻结源码make test10710pass/3008skip与make check通过，证据归档。
+- 按用户授权显式文件提交/推送本任务分支；远端SHA以交付回执核对，不合并/部署/迁移生产。
+
 # CA-P2-01C current task
 
 - [x] Audit published B, Overdoze P2 task sequencing and missing pure native validation prerequisite.

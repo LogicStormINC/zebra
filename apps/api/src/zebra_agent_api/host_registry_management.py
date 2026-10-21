@@ -104,3 +104,11 @@ def register_management_routes(
     from zebra_agent_api.host_connector_management import register_host_connector_management
 
     register_host_connector_management(app, host_settings, current)
+
+def deployment_namespace(api: object) -> str | None:
+    stores = getattr(api, "stores", None)
+    namespace = getattr(stores, "deployment_namespace", None)
+    if isinstance(namespace, str) and namespace.strip():
+        return namespace
+    settings = getattr(api, "settings", None)
+    return "local" if getattr(settings, "deployment", None) == "local" else None

@@ -4,7 +4,9 @@ import asyncio
 from collections.abc import AsyncIterator, Mapping
 from pathlib import Path
 
+from agent_core.application.agent_definitions import PublisherGrantPort
 from agent_core.application.plugin_installations import PluginInstallationService
+from agent_core.ports.agent_registry import AgentRegistryPort
 from agent_core.ports.event_store import BoundedSessionEventReadPort
 from agent_core.ports.extensions import ExtensionStore
 from agent_integrations import GitHubPullRequestTransport
@@ -38,6 +40,7 @@ from zebra_agent_api.extension_reads import (
     extension_error,
     is_extension_path,
 )
+from zebra_agent_api.host_registry_management import deployment_namespace as _deployment_namespace
 from zebra_agent_api.host_registry_management import register_management_routes
 from zebra_agent_api.http_host_auth import (
     HostGrantHttpRequest as HostGrantHttpRequest,
@@ -56,6 +59,7 @@ from zebra_agent_api.http_stream_routing import (
     _is_stream_request,
     _stream_resource_id,
 )
+from zebra_agent_api.publication_management import register_publication_management
 from zebra_agent_api.request_cursor import after_sequence
 from zebra_agent_api.responses import ApiResponse
 from zebra_agent_api.routes import RouteAdapter, RouteRequest
@@ -93,6 +97,8 @@ def create_http_app(
     mcp_credential_management: McpCredentialManagement | None = None,
     mcp_catalog_refresh: McpCatalogRefresh | None = None,
     plugin_installation_service: PluginInstallationService | None = None,
+    agent_registry: AgentRegistryPort | None = None,
+    publisher_grants: PublisherGrantPort | None = None,
 ) -> FastAPI:
     active_settings = settings or load_settings()
     active_database_path = Path(database_path or active_settings.database_url)
@@ -116,6 +122,8 @@ def create_http_app(
         credential_broker=credential_broker,
         credential_env=credential_env,
         github_transport=github_transport,
+        agent_registry=agent_registry,
+        publisher_grants=publisher_grants,
     )
     task_io_connections = None
     if (
@@ -449,6 +457,7 @@ def create_http_app(
         _ = task_id, artifact_id
         return await handle(request)
 
+    register_publication_management(app, active_settings, api, cloud_composition)
     register_management_routes(
         app, active_settings, lambda: _deployment_namespace(api), cloud_composition
     )
@@ -489,12 +498,3 @@ def _compose_production_host_grant_authorizer(
         deployment_namespace=stores.deployment_namespace,
         **({"task_io_connections": task_io_connections} if task_io_connections is not None else {}),
     )
-
-
-def _deployment_namespace(api: object) -> str | None:
-    stores = getattr(api, "stores", None)
-    namespace = getattr(stores, "deployment_namespace", None)
-    if isinstance(namespace, str) and namespace.strip():
-        return namespace
-    settings = getattr(api, "settings", None)
-    return "local" if getattr(settings, "deployment", None) == "local" else None
