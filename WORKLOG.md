@@ -1,3 +1,14 @@
+# 2026-10-22 — CA-P3-02B
+
+先核对OD-P3-01B之后实际SDK/BFF依赖，发现三个Effect入口缺当前Task/Run授权。
+Ready认领后，修正测试组装中的frozen dataclass使用方式，重跑红例得到23failed/6passed，
+再补共同检查得到29passed；新增3个本地兼容用例后专项32passed。
+既有client链路回归94passed/1环境条件跳过；独享新PG容器18passed/零跳过，已清理。
+最终make test10906passed/3014条件跳过（1133.69秒），make check通过（mypy1388/eval30）。
+3435受检输入和280Coverage源码/测试保持；旧合同/SDK及Effect领域/存储126文件逐字节一致。
+正式证据见docs/evidence/ca-p3-02b/validation.json；按授权限定提交推送，远端身份由交付回执核验。
+无Go业务/SDK/前端更改；平台独立OD-P3-00C只固定生产者合同。
+
 # 2026-10-22 CA-P3-02A
 
 Owner Luke Ding / executor Codex；codex/ca-p3-02a-frontend-admission，独立工作树。

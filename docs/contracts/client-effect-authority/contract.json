@@ -1,0 +1,84 @@
+{
+  "contractVersion": "client-effect-authority/1",
+  "status": "implemented-native-prerequisite",
+  "versionMeaning": "Published semantic contract; existing HTTP payloads and SDK version unchanged; no new negotiation flag.",
+  "paths": {
+    "GET /v1/client-sessions/{sessionId}/effects": "filtered pending Effect envelopes",
+    "GET /v1/client-effects/{effectId}": "authorized current Effect metadata",
+    "POST /v1/client-effects/{effectId}/receipts": "authorized durable terminal receipt and optional parent resume command"
+  },
+  "authentication": {
+    "cloud": "Fresh verified HostGrant plus active Client Session for the same signed subject, Host, namespace and Origin",
+    "requiredScope": "agent.run",
+    "headers": [
+      "Authorization",
+      "X-Zebra-Client-Session"
+    ],
+    "receiptHeaders": [
+      "X-Zebra-Client-Fence",
+      "Idempotency-Key"
+    ],
+    "browserHoldsHostGrant": false,
+    "businessBff": "Must map browser requests to fixed authorized Session/Task/Run and inject server-held native secrets; no arbitrary proxy"
+  },
+  "resourceAuthority": [
+    "current signed principal",
+    "Host/namespace/Origin",
+    "authority issuer",
+    "opaque thread",
+    "effect task_id",
+    "exact effect run_id"
+  ],
+  "list": {
+    "maxCandidates": 50,
+    "filterBeforeSerialization": true,
+    "deduplicateAuthorization": "Task/Run only within one request",
+    "crossRequestAuthorizationCache": false,
+    "unauthorizedResource": "omit",
+    "dependencyFailure": "fail entire request",
+    "pagination": "Existing bounded reconnect poll, not a complete scoped list; first50 candidates can exclude later authorized items."
+  },
+  "responses": {
+    "200": "Authorized read or accepted/replayed receipt",
+    "400": "Existing malformed input behavior",
+    "401": "Missing/expired/session-subject authentication",
+    "403": "Insufficient signed scope or invalid current envelope",
+    "404": "Missing or other-resource effect; list omits other-resource rows",
+    "409": "Existing fence/revision/receipt conflict or projection not ready",
+    "410": "Existing effect expiry rejection",
+    "503": "Required authority store unavailable; no success or empty fallback"
+  },
+  "receipt": {
+    "authorizeBeforeParseAndReplay": true,
+    "atomicAuthority": "Existing native ClientEffectReceiptPort",
+    "unchanged": [
+      "request digest",
+      "Controller fence",
+      "UI revision",
+      "effect expiry",
+      "idempotency and result consistency",
+      "receipt/terminal/resume transaction"
+    ],
+    "lostResponse": "Query current authorized effect status; replay same effect/idempotency key and consistent result, never re-execute business action automatically."
+  },
+  "compatibility": {
+    "storageMigration": null,
+    "localBehavior": "Existing Session-only developer path unchanged",
+    "history": "No rewrite or deletion; terminal replay still requires current resource authority",
+    "mixedVersions": "Drain or upgrade all API/BFF routes handling effects before relying on this guard",
+    "profileRevocation": "No new claim of immediate running-effect cancellation or push revocation",
+    "signedGrantRevocation": "Already signed grants retain their validity window; no online revocation guarantee"
+  },
+  "authority": {
+    "effect": "native",
+    "receipt": "native",
+    "taskRun": "native",
+    "controllerFence": "native",
+    "platformExecutionStateMachine": false
+  },
+  "verification": {
+    "browserUiEffectExecuted": false,
+    "workerResumeExecuted": false,
+    "productionHaVerified": false
+  }
+}

@@ -1,3 +1,15 @@
+# CA-P3-02B — UI Effect当前资源授权（Review）
+
+2026-10-22；从已发布8715d225独立继续，先核对实际SDK/BFF/Effect依赖。
+Effect列表/详情/回执统一复用当前Task/Run、线程、主体、issuer/namespace/scope检查；
+本地兼容、原生Controller fence/expiry/revision/收据幂等与原子恢复命令保持，无迁移。
+[正式方案](docs/CA-P3-02B_effect_authority.md) · [语义制品](docs/contracts/client-effect-authority/contract.json)。
+原生专项32项和真实独享PG18项通过/零跳过；最终make test10906passed/3014条件跳过，make check通过。
+3435输入和280Coverage源码/测试零漂移；[证据](docs/evidence/ca-p3-02b/validation.json)区分条件跳过与实际PG。
+按授权提交推送独立分支，实际远端SHA由交付回执核验。
+下一SDK片必须先明确BFF浏览器传输和Readable值合同及错误ready，管理前端mock保持；
+不把本前置称为浏览器UI/Worker已消费收据或完整P3/生产HA验收。无部署、生产迁移或主线整合。
+
 # CA-P3-02A — 产品范围Profile与可信BFF准入
 
 2026-10-22；Owner Luke Ding；基于已发布f154f5d1继续，未整合cloud-agent/main。

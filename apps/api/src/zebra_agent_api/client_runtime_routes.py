@@ -98,7 +98,12 @@ def _session_route(
     if auth.client_session_id != parsed_session_id:
         return ApiResponse(403, {"status": "forbidden", "reason": "session_authority_mismatch"})
     if method == "GET" and tail == "/effects":
-        return list_pending_client_effects(app, auth=auth)
+        return list_pending_client_effects(
+            app,
+            auth=auth,
+            host_context=request.host_context,
+            verified_host_grant=request.verified_host_grant,
+        )
     if (
         app.settings.deployment == "cloud"
         and method == "POST"
@@ -160,7 +165,13 @@ def _effect_route(
     tail = path.removeprefix(_EFFECT_PREFIX)
     parts = [part for part in tail.split("/") if part]
     if len(parts) == 1 and method == "GET":
-        return get_client_effect(app, parts[0], auth=auth)
+        return get_client_effect(
+            app,
+            parts[0],
+            auth=auth,
+            host_context=request.host_context,
+            verified_host_grant=request.verified_host_grant,
+        )
     if len(parts) == 2 and parts[1] == "receipts" and method == "POST":
         idempotency_key = _header(request.headers, "Idempotency-Key")
         if not idempotency_key.strip():
@@ -173,6 +184,8 @@ def _effect_route(
             fence_token=_header(request.headers, "X-Zebra-Client-Fence"),
             controller=True,
             idempotency_key=idempotency_key.strip(),
+            host_context=request.host_context,
+            verified_host_grant=request.verified_host_grant,
         )
     return bad_request("unsupported client effect operation")
 

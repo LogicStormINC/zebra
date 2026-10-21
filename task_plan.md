@@ -1,3 +1,15 @@
+# CA-P3-02B 当前计划
+
+1. [x] 审计后续SDK/BFF/Effect依赖，登记Ready并认领专属分支/路径。
+2. [x] 先写可复现越界回归，再统一复用Task/Run授权。
+3. [x] 真实独享PostgreSQL收据/TaskBinding/并发/恢复专项。
+4. [x] 完整make test/check、冻结源码及Coverage保持性验证。
+5. [x] 正式方案/机器制品/证据/任务更新；按授权交付独立分支，远端SHA由回执核验。
+
+前端mock和数据/证明机制保持；无部署、生产迁移或主线整合。
+
+## Historical plan
+
 # CA-P3-02A 本轮实施计划
 
 - [x] 核对OD-P3-01A后续依赖、现有Profile/Host批准/Broker/Session/Controller边界，独立分支认领。

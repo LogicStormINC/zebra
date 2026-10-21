@@ -1,3 +1,14 @@
+# CA-P3-02B — Current Task/Run authority for UI Effect reads and receipts
+
+- Status: Review; make test10906passed/3014conditions and make check passed; focused32/0 and ownedPG18/0;3435inputs/280Coverage files stable. Created Ready -> In Progress before code2026-10-22. Human owner Luke Ding; executor Codex.
+- Branch codex/ca-p3-02b-effect-authority; isolated worktree from published8715d225; authorized stacked continuation, no main/cloud-agent merge.
+- Dependencies: CA-P3-02A verified subject/Task/Run admission. Audit found pending-effect list/detail/receipt paths only checked ClientSession, not current effect Task/Run authority. Fix this shared native boundary before browser SDK acceptance.
+- Owned paths: apps/api/src/zebra_agent_api/client_effect_receipts.py,client_runtime_routes.py; tests/api/test_client_effect_authority.py,test_client_effect_authority_postgres.py; tests/api/test_client_effect_agui_stream.py (affected fixture corrections only); docs/CA-P3-02B_effect_authority.md; docs/contracts/client-effect-authority/; docs/evidence/ca-p3-02b/; docs/AGENT_TASKS.md,PROGRESS.md,WORKLOG.md,task_plan.md,README.md; docs/实施任务拆解与阶段验收.md.
+- DDD: reuse immutable ClientEffectRequest task_id/run_id and existing native task_access_response/receipt service/atomic port. No new aggregate, storage state machine, migration, or Go execution authority.
+- Invariants: authenticated current subject plus exact current signed Task/Run/thread/issuer/namespace before exposing effects or submitting/replaying receipts; filter list before serialization, deny unknown/cross-resource details, dependency errors fail closed. Local compatibility, historical receipts, existing Controller fence and immutable request digests remain.
+- Concurrency: read at most existing50 pending items; reuse one authorization per distinct resource/request, no external network/DB locks or authorization cache across requests. Existing receipt transaction owns fence/expiry/idempotency; current signed grant has explicit residual validity window.
+- Acceptance: reproduce pre-fix resource bypass, positive/hostile HTTP dispatcher and real isolated PostgreSQL receipt/replay/restart/fence checks; full make test/check, preservation fingerprints, formal docs/task/evidence, scoped commit/push. Preserve frontend mock/history/Coverage; no deploy/production migration or browser UI execution claim.
+
 # CA-P3-02A — Product-scoped frontend Profile and trusted admission
 
 - Status: Review; final make test10874passed/3008existing dependency skips and make check passed2026-10-22; focused77passed/2conditions plus ownedPG45passed/zero skips;3074inputs and280Coverage files preserved. Created Ready and claimed before code2026-10-22. Human owner Luke Ding; executor Codex.

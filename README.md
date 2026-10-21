@@ -48,7 +48,7 @@ uses explicit v3 snapshots and a separately versioned script extension; old cont
 [Scoped native script package validation](docs/SCRIPT_VALIDATION.md) adds pure ABI/digest/syntax
 checks with independent authority; it neither executes source nor approves publication.
 Bundle1 and the pinned P2 scoped HTTP contracts retain their original unsupported script boundary;
-script execution requires the explicit new reader and approvals. Legacy history/Coverage stays intact.
+script execution requires the explicit new reader and approvals. Legacy history/Coverage stays intact; [UI Effect authorization](docs/CA-P3-02B_effect_authority.md) checks cloud reads and receipts.
 
 ## License
 
