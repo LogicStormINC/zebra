@@ -1,3 +1,23 @@
+# 2026-10-21 — CA-P1-01B2
+
+Claimed a focused stacked branch from e2da40d0 before code. Reused native Profile/Binding,
+B1 current-approval transaction and bounded Task I/O/HTTP transport; no dependencies.
+Separate owned storage/HTTP implementation and independent static spec/security/contract
+review resolved legacy owner attribution, actual bind CAS, nullable historic Profile wire,
+no-repoint disable, expiry/late-thread and uncertain COMMIT/replay boundaries.
+
+Focused final102passed/zero skip and make check passed; final make test exit0:
+10457passed/3007skipped in1025.55s, frozen sources unchanged. Scratch migration109 preserved nine v108 seeded tables
+including frozen bytes, B1 receipts and consumed Grant protection. Wider native PG90/2skip
+is delegated captured output, not a retained source-hashed gate log. All new disposable
+containers cleaned; no existing DSN/services/data/Task/model used. Existing legacy freeze
+fixtures now establish owner before freeze and supply actual expected revision, retaining
+prior assertions. Old no-owner freeze publication fails closed without changing old digests.
+
+Native source publication and Overdoze public-contract pin are separate commits; no Go/UI
+implementation, main/cloud-agent merge, deployment or production migration. Exact final
+gates/source hashes and migration report live under docs/evidence/ca-p1-01b2/.
+
 # 2026-10-21 — CA-P1-01B1
 
 User continued paired Overdoze/Runtime work with routine decisions delegated. Claimed

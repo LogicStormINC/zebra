@@ -12,10 +12,12 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from agent_core.domain.host_connectors import HostConnectorProfileVersion
 from agent_storage import HostRegistryRecord
 from agent_storage.postgres.host_management import HostManagementTrust
 
 from zebra_agent_api.extension_request_body import _unique_object
+from zebra_agent_api.host_connector_config import profile_from_wire
 
 _SCOPE_FIELDS = ("deploymentId", "deploymentNamespace", "audience", "productId", "environment")
 _REGISTRY_FIELDS = {
@@ -38,6 +40,7 @@ class HostManagementConfig:
     actions: frozenset[str]
     credential_sha256: str
     scope: dict[str, str]
+    connector_profile: HostConnectorProfileVersion | None = None
 
 
 def load_host_management_config(path: str | None, namespace: str | None) -> HostManagementConfig:
@@ -60,7 +63,7 @@ def load_host_management_config(path: str | None, namespace: str | None) -> Host
         "actions",
         "registry",
     }
-    if not isinstance(value, dict) or set(value) != fields:
+    if not isinstance(value, dict) or set(value) not in (fields, fields | {"connectorProfile"}):
         raise ValueError("invalid configuration fields")
     for field in _SCOPE_FIELDS:
         if not isinstance(value[field], str) or not re.fullmatch(
@@ -80,7 +83,7 @@ def load_host_management_config(path: str | None, namespace: str | None) -> Host
         raise ValueError("UTC credential deadline required")
     expires_at = datetime.fromisoformat(expiry)
     actions = value["actions"]
-    allowed = {"host-registry.read", "host-registry.write"}
+    allowed = {"host-registry.read", "host-registry.write", "connector.read", "connector.write"}
     if (
         not isinstance(actions, list)
         or any(not isinstance(a, str) or a not in allowed for a in actions)
@@ -106,6 +109,13 @@ def load_host_management_config(path: str | None, namespace: str | None) -> Host
         algorithms=tuple(record["algorithms"]),
         policy_version=record["policyVersion"],
     )
+    connector = (
+        profile_from_wire(value["connectorProfile"], registry.host_app_id)
+        if "connectorProfile" in value
+        else None
+    )
+    if any(a.startswith("connector.") for a in actions) and connector is None:
+        raise ValueError("connector actions require an approved profile")
     fingerprint = hashlib.sha256(
         json.dumps(value, sort_keys=True, separators=(",", ":")).encode()
     ).hexdigest()
@@ -121,7 +131,7 @@ def load_host_management_config(path: str | None, namespace: str | None) -> Host
         expires_at=expires_at,
     )
     return HostManagementConfig(
-        trust, registry, frozenset(actions), digest, {f: value[f] for f in _SCOPE_FIELDS}
+        trust, registry, frozenset(actions), digest, {f: value[f] for f in _SCOPE_FIELDS}, connector
     )
 
 

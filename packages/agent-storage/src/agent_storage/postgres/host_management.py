@@ -127,8 +127,7 @@ class HostManagementStore:
             self._live(connection, trust)
 
     def read(self, trust: HostManagementTrust) -> ManagedHostRegistry:
-        with self._locked(trust) as connection:
-            self._authorize(connection, trust)
+        with self.authorized(trust) as connection:
             row = connection.execute(
                 f"SELECT * FROM host_authority_registries WHERE {_BINDING_WHERE} FOR SHARE",
                 self._binding(trust),
@@ -155,8 +154,7 @@ class HostManagementStore:
             "registry": asdict(record),
         }
         digest = sha256(_canonical(payload).encode()).hexdigest()
-        with self._locked(trust) as connection:
-            self._authorize(connection, trust)
+        with self.authorized(trust) as connection:
             receipt = connection.execute(
                 f"SELECT * FROM host_management_receipts WHERE {_BINDING_WHERE} "
                 "AND operation_id=%s",
@@ -223,6 +221,13 @@ class HostManagementStore:
             self._audit(connection, trust, "apply", revision, operation_id)
             self._live(connection, trust)
             return _snapshot(changed)
+
+    @contextmanager
+    def authorized(self, trust: HostManagementTrust) -> Any:
+        """Hold the current approval and native binding lock through COMMIT."""
+        with self._locked(trust) as connection:
+            self._authorize(connection, trust)
+            yield connection
 
     @contextmanager
     def _locked(self, trust: HostManagementTrust) -> Any:

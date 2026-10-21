@@ -1,0 +1,91 @@
+{
+  "task": "CA-P1-01B2",
+  "status": "PASS",
+  "source_sha256": {
+    "apps/api/src/zebra_agent_api/host_registry_config.py": "9047f3837f7be10f5c2c995ef21a39f34c823665a11aba845f79b91d048a6d25",
+    "apps/api/src/zebra_agent_api/host_registry_management.py": "04d90540cc8c04321247915386bed5277448628eb97a6208ae62f0925a9ec2ef",
+    "packages/agent-storage/src/agent_storage/postgres/host_connectors.py": "3e67f306a844b8e2e74ee65475bed70626dd42d88df099337fa32e284a1052e9",
+    "packages/agent-storage/src/agent_storage/postgres/host_management.py": "405521f5094817755241e88396acbddced461b001781e59828cfbfc1830cb116",
+    "packages/agent-storage/src/agent_storage/postgres/migration_catalog_tail.py": "04c6426d6a1f9f7d5a6c943a3e02a986c3adf727cab7bc6c69c7d4be78a0ddcf",
+    "tests/agent_storage/test_branch_migration_catalog.py": "7b91d74d43601f9ec8f8114d93ee08e5f2e70ab89dd927759dcc8b90493e46be",
+    "tests/agent_storage/test_postgres_host_manifest_freeze.py": "bc98dbbcbf9cdcfbc934491a127ed2fdc727938b5585264dab990602325d828f",
+    "tests/agent_storage/test_postgres_host_manifest_freeze_revisions.py": "2e3eed55570f39b8157b30abc90681b31c94932f0d91520bff7955bcc6a7b878",
+    "apps/api/src/zebra_agent_api/host_connector_config.py": "894a262b263ef69d263d02a864d95cd79bd6a821eae7de9029d152dd16af9498",
+    "apps/api/src/zebra_agent_api/host_connector_management.py": "848d72f5642b553c7d9870d01e74c0313f76921c67876d989230ae34404b9fe0",
+    "apps/api/src/zebra_agent_api/management_transport.py": "d298c398afd3f0983f04ae08eb4279de62db5e65977bcd5280388e73120bebb3",
+    "packages/agent-storage/src/agent_storage/postgres/host_connector_management.py": "ac93a0e3eeabba7ef2789749c69c27cf265a28a5726d3915affdf0def57fcfa2",
+    "packages/agent-storage/src/agent_storage/postgres/host_connector_management_migration.py": "3eff3cbeac77f42256305592761121eb83a9caa5cfe5d21c7ee53220909090dd",
+    "tests/agent_storage/test_host_connector_management.py": "0b7584b86c0ab8a111edc105ced8a8fb7f902ccb8ed8531dc459a4ae8ad36977",
+    "tests/api/test_host_connector_management.py": "88f0a9218dff26a0979503b59a6c32147bb8aa7d490d605131ece185255a401b"
+  },
+  "base_commit": "e2da40d0d528da6aae8ab7277be7951f1db0dae3",
+  "make_check": {
+    "exit_code": 0,
+    "mypy_files": 1339,
+    "eval_passed": 30,
+    "eval_cases": 30,
+    "file_size_violations": 0,
+    "log_sha256": "f782790a91bc09a60eb485ef50ee9098272b46dc0925fcb9379390daa7c21834",
+    "command": "make check"
+  },
+  "reviews": {
+    "design_plan": "APPROVED",
+    "implementation_spec": "APPROVED",
+    "quality_security": "APPROVED",
+    "contract_docs": "APPROVED",
+    "boundary": "Read-only reviewers, no independent test execution claimed"
+  },
+  "not_claimed": [
+    "Go client/intent workflow or frontend backend integration",
+    "business IdP/Host secrets/network/protocol readiness",
+    "live Profile deprecate/revoke or running Task/stream cancellation",
+    "production migration/deploy/HA/load/S3 acceptance",
+    "main/cloud-agent merge or branch cleanup"
+  ],
+  "focused": {
+    "command": "uv run pytest -q tests/api/test_host_connector_management.py tests/api/test_host_registry_management.py tests/api/test_runtime_management.py tests/agent_storage/test_host_connector_management.py tests/agent_storage/test_host_management.py tests/agent_storage/test_branch_migration_catalog.py",
+    "exit_code": 0,
+    "passed": 102,
+    "skipped": 0,
+    "log_sha256": "8aa05eadac8a1ed700c69d982acc4d605762feaadd761bc8b29b255ac6dc1034"
+  },
+  "wider_native_pg": {
+    "execution": "delegated storage implementer; captured tool output, no disk log or per-run source hashes recorded",
+    "passed": 90,
+    "skipped": 2,
+    "seconds": 18.24,
+    "exit_code": 0,
+    "files": [
+      "tests/agent_storage/test_host_connector_management.py",
+      "tests/agent_storage/test_host_management.py",
+      "tests/agent_storage/test_postgres_host_connectors.py",
+      "tests/agent_storage/test_postgres_host_manifest_freeze.py",
+      "tests/agent_storage/test_postgres_host_manifest_freeze_revisions.py",
+      "tests/agent_core/test_host_connector_contracts.py"
+    ],
+    "database": "Three fresh owned postgres:17-alpine containers, checked cleanup; no existing DSN",
+    "skip_boundary": "Two existing S3-dependent admission cases; not counted as pass",
+    "captured_summary": "90 passed, 2 skipped in 18.24s"
+  },
+  "migration_preservation_report": "migration-preservation.json",
+  "migration_probe_sha256": "e35df3f6a730c23da24c3d57f791ee077db03a0e054f0076a262b45959daa9ee",
+  "recorded_at": "2026-10-21T04:56:07.862769+00:00",
+  "make_test": {
+    "command": "make test",
+    "exit_code": 0,
+    "passed": 10457,
+    "skipped": 3007,
+    "seconds": 1025.55,
+    "log_sha256": "e19e921d0d7fee28742467170c88e7ae3758b32520954ce146a8c3ca47543ef2",
+    "skip_boundary": "Existing opt-in integration/environment gates; new final focused HTTP/PG/process102 checks have zero skips"
+  },
+  "source_freeze_matches_after_gates": true,
+  "document_validation": {
+    "decoded_relative_links": "PASS",
+    "focused_markdown_line_limits": "PASS; historical task/progress/worklog files are existing oversized history",
+    "openapi_local_refs_and_two_operations": "PASS",
+    "diff_whitespace": "PASS",
+    "credential_signature_scan": "No common credential/private-key signatures in new operator/contract/evidence documents; synthetic test credentials reviewed separately",
+    "scope": "15 Python source/test files plus explicit task-owned documentation; no dependency/settings/http composition file changes"
+  }
+}

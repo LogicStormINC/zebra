@@ -1,0 +1,24 @@
+{
+  "status": "PASS",
+  "baseline_migration": 108,
+  "target_migration": 109,
+  "preserved_row_counts": {
+    "host_connector_profiles": 1,
+    "host_connector_bindings": 1,
+    "host_manifest_freezes": 1,
+    "host_authority_registries": 1,
+    "host_management_approvals": 1,
+    "host_management_receipts": 1,
+    "host_management_audit": 2,
+    "host_grant_replay_ledger": 1,
+    "host_grant_audit": 1
+  },
+  "snapshot_sha256": "dc1721e03507b504cfcdd922be3b3cb77f740a512014bde7c489b7d1ca9441d3",
+  "checks": [
+    "preexisting nullable-policy Profile/digest, Binding and legacy manifest bytes unchanged",
+    "B1 Host registry/current approvals/receipts/audit unchanged",
+    "consumed grant ledger/audit unchanged; replay still rejected"
+  ],
+  "boundary": "Own disposable synthetic PG only; no production or business Coverage acceptance",
+  "cleanup": "owned container removed"
+}

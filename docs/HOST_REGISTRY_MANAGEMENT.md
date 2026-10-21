@@ -7,6 +7,8 @@ Date2026-10-21; CA-P1-01B1, owner Luke Ding. [OpenAPI](contracts/host-registry-m
 This optional interface manages one operator-approved inbound Host trust binding.
 It reuses the native HostRegistryRecord, PostgreSQL registry and current Host admission/replay checks.
 Outbound connector profiles/bindings are separate; B1 does not implement their management.
+The subsequent [B2 connector contract](CONNECTOR_MANAGEMENT.md) explicitly reuses this current approval
+and private channel with optional connectorProfile and connector.read/write actions; B1-only credentials gain no permission.
 Go must consume the published public contract, never access Runtime SQL or internal modules.
 
 ## Credential, scope and explicit preparation

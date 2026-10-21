@@ -1,3 +1,32 @@
+# 2026-10-21 — CA-P1-01B2 scoped outbound connector management
+
+Implemented GET/PUT /management/v1/host-connector with fixed operator-approved immutable
+Profile and actual Binding CAS/disable/reactivation. B1 current approval, private scoped
+credential and bounded transport are reused; connector actions are explicit and existing
+B1-only fingerprints/permissions stay unchanged. Shared approval rotation fences B1/B2
+replicas together. Profile/Binding, separate receipt and audit commit atomically; unknown
+COMMIT requires exact currently-authorized replay or current GET, never blind new writes.
+
+Shared native publication now locks manifest revision and preserves frozen legacy ownership;
+legacy bind enforces actual expected-current revision. No historical bytes/digests rewritten.
+Additive v109 adds B2 evidence only. Upgrade all writers/API/Worker consistently; rollback
+closes B2 on a v109-compatible binary, not an automatic schema/binary downgrade.
+No external I/O under locks; existing request/DB/expiry deadlines and bounded capacity apply.
+
+Final focused HTTP/storage/independent-process checks:102passed/zero skip. make check passed
+(mypy1339, eval30/30, zero file-size violations). Final make test exit0:
+10457passed/3007skipped in1025.55s, frozen sources unchanged after both gates. Wider native PG regressions
+90passed/2existing S3-dependent skips; delegated output lacks a retained log/source snapshot,
+separate from the frozen-source final gates. Owned scratch v108->v109 preservation probe
+kept nine seeded table snapshots unchanged and consumed Grant replay rejected.
+
+Independent design/spec/quality/contract reviews approved. Evidence and proof limits:
+docs/evidence/ca-p1-01b2/validation.json; operator/API guide docs/CONNECTOR_MANAGEMENT.md.
+Binding disable is not global Profile revocation or running Task cancellation. Go authorized
+intent/unknown reconciliation remains pending; frontend remains mock. No production migration,
+deploy, business network/model/Task/IdP proof, main/cloud-agent merge or original checkout change.
+Earlier records are historical snapshots.
+
 # 2026-10-21 — CA-P1-01B1 native scoped Host registry management
 
 Implemented optional GET/PUT /management/v1/host-registry with independent rthm_ service
