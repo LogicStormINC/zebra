@@ -1,3 +1,19 @@
+# 2026-10-21 — CA-P1-01B1
+
+User continued paired Overdoze/Runtime work with routine decisions delegated. Claimed
+focused stacked branch from325333ae and disjoint storage/transport paths before code.
+Reused native registry/HostGrant consumption and existing bounded Task I/O, no dependencies.
+Design/implementation-spec and quality reviews passed; fixed expiry-under-lock race in
+design, nested JSON error handling, lost-COMMIT acknowledgment test and cloud DSN composition.
+CORS preflight is explicitly transport-only outside handler response contract.
+48 focused HTTP/storage/process checks passed; final make test10403passed/3007skipped and
+make check passed. Details and hashes
+recorded separately in docs/evidence/ca-p1-01b1/validation.json. Initial size gate required
+keeping optional route composition outside near-limit http.py; first full run was interrupted
+after composition refinements and is not counted as final validation. Only new disposable PG
+containers used, no existing DSN/services/Task/model/production change. Remaining B2 connector
+and Go intent/unknown workflow are separate tasks; no main/cloud-agent integration authorized.
+
 # 2026-10-21 CA-P1-01A
 
 User authorized the Runtime prerequisite alongside Overdoze P1-D. Work occurs on an isolated

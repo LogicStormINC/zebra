@@ -161,6 +161,7 @@ class PostgresHostAuthorityStore:
                     algorithms = EXCLUDED.algorithms,
                     policy_version = EXCLUDED.policy_version,
                     active = EXCLUDED.active,
+                    revision = host_authority_registries.revision + 1,
                     updated_at = transaction_timestamp()
                 RETURNING host_app_id, namespace_id, issuer, audience, jwks_uri,
                     allowed_origins, algorithms, policy_version, active

@@ -1,0 +1,430 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Native scoped Host registry management",
+    "version": "1.0.0"
+  },
+  "security": [
+    {
+      "hostManagementBearer": []
+    }
+  ],
+  "paths": {
+    "/management/v1/host-registry": {
+      "get": {
+        "operationId": "readHostRegistry",
+        "description": "One operator-approved native Host binding. No cookies/query/duplicate headers. Independent rthm_ service bearer and current shared approval required; not target.describe or Agent auth. All responses no-store.",
+        "parameters": [
+          {
+            "name": "X-Runtime-Deployment",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Runtime-Audience",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Runtime-Product",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Runtime-Environment",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Runtime-Trust-Revision",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current GET or original idempotent PUT snapshot",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Snapshot"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_ARGUMENT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "SCOPE_MISMATCH or PERMISSION_DENIED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED; Retry-After:1",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "MANAGEMENT_UNAVAILABLE; commit outcome may be unknown, reconcile before new writes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Handler METHOD_NOT_ALLOWED; Allow:GET,PUT. Full-app CORS preflight is handled separately with200/400 and no registry facts."
+          }
+        }
+      },
+      "put": {
+        "operationId": "applyHostRegistry",
+        "description": "One operator-approved native Host binding. No cookies/query/duplicate headers. Independent rthm_ service bearer and current shared approval required; not target.describe or Agent auth. All responses no-store.",
+        "parameters": [
+          {
+            "name": "X-Runtime-Deployment",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Runtime-Audience",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Runtime-Product",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Runtime-Environment",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Runtime-Trust-Revision",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current GET or original idempotent PUT snapshot",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Snapshot"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_ARGUMENT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "SCOPE_MISMATCH or PERMISSION_DENIED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED; Retry-After:1",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "MANAGEMENT_UNAVAILABLE; commit outcome may be unknown, reconcile before new writes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Handler METHOD_NOT_ALLOWED; Allow:GET,PUT. Full-app CORS preflight is handled separately with200/400 and no registry facts."
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Apply"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "hostManagementBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "rthm_ plus43 URL-safe random characters; never an end-user credential"
+      }
+    },
+    "schemas": {
+      "Registry": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "hostAppId",
+          "namespaceId",
+          "issuer",
+          "audience",
+          "jwksUri",
+          "allowedOrigins",
+          "algorithms",
+          "policyVersion",
+          "active"
+        ],
+        "properties": {
+          "hostAppId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "namespaceId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          },
+          "issuer": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048
+          },
+          "audience": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          },
+          "jwksUri": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048
+          },
+          "policyVersion": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "allowedOrigins": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 2048
+            },
+            "maxItems": 64,
+            "minItems": 1,
+            "uniqueItems": true
+          },
+          "algorithms": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 2,
+            "uniqueItems": true,
+            "items": {
+              "enum": [
+                "RS256",
+                "ES256"
+              ]
+            }
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "Apply": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "expectedRevision",
+          "operationId",
+          "active"
+        ],
+        "properties": {
+          "expectedRevision": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740990
+          },
+          "operationId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Canonical lowercase hyphenated UUID; reuse exact payload to reconcile a lost response."
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "Snapshot": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "contractVersion",
+          "registry",
+          "revision",
+          "replayed"
+        ],
+        "properties": {
+          "contractVersion": {
+            "const": "host-registry-management/1"
+          },
+          "registry": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Registry"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "replayed": {
+            "type": "boolean",
+            "description": "True means original successful snapshot, not current state. Use GET to reconcile current state."
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "code"
+            ],
+            "properties": {
+              "code": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

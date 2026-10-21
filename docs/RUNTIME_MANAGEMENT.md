@@ -80,8 +80,9 @@ No performance/production HA target is claimed from these limits or unit tests.
 
 The route/configuration are additive and disabled by default. No existing tables,
 Host registry CLI semantics, user identity, Task admission, Coverage formats or
-historical proofs change. CA-P1-01B remains a separate, unimplemented Host/connector
-write/CAS/audit contract; this endpoint's credential must never authorize it.
+historical proofs change in this A slice. Subsequent [CA-P1-01B1 Host management](HOST_REGISTRY_MANAGEMENT.md)
+adds a separate GET/PUT contract, independent credential and explicit v108/CAS/audit. Outbound connector
+management remains pending. This read-only endpoint's credential must never authorize B1 writes.
 
 Focused tests cover actual HTTP composition, wrong tokens/scopes/expiry, strict
 configuration, two apps sharing rotations and bounded timed-out reads. Full

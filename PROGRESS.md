@@ -1,3 +1,27 @@
+# 2026-10-21 — CA-P1-01B1 native scoped Host registry management
+
+Implemented optional GET/PUT /management/v1/host-registry with independent rthm_ service
+credential, exact deployment/product/environment/Host binding, approved immutable template
+and shared current PostgreSQL approval/fingerprint fencing. Additive v108 preserves registry
+rows and all replay/Coverage/history evidence; legacy privileged upsert advances revision.
+CAS, successful audit and operation receipt commit atomically. Unknown acknowledgment is
+503 and identical currently-authenticated replay recovers the original single mutation.
+
+Request/body/config/DB work is bounded, no network under locks. Credential expiry bounds
+lock waits and transaction exit; late results cannot bypass current trust. Optional disabled
+composition stays lazy; configured cloud uses actual CloudCompositionSettings DSN when
+provided, never a second settings database. API has no automatic migrations/approval.
+Upgrade all registry writers before enabling B1; old writers do not advance revision.
+
+48 focused real PG/HTTP/independent-process and existing descriptor checks passed; final
+make test10403passed/3007skipped and make check passed. Full gates and source hashes are recorded in docs/evidence/ca-p1-01b1/validation.json.
+Independent spec/quality reviews approved after nested-JSON/uncertain-COMMIT coverage and
+CORS preflight contract clarification. This is inbound Host trust, not outbound connector,
+Go orchestration, Task/model/business IdP/browser, storageHA or production deployment proof.
+Original checkout dirty paths/services/data remain unchanged; no cloud-agent/main merge,
+deployment or production migration. Source/remote SHA is confirmed in the delivery receipt.
+[Native operator/contract guide](docs/HOST_REGISTRY_MANAGEMENT.md).
+
 # 2026-10-21 — CA-P1-01A read-only scoped management
 
 Implemented native runtime-management/1 GET /management/v1/target with separate opaque
