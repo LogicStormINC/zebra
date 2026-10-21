@@ -35540,6 +35540,46 @@ old payloads remain byte-compatible by excluding None. No database migration.
   remain active. No models/search/MCP, migration/restart/deployment or source edits.
 
 
+### CLOUD-PLUGIN-PROD-20261021 — restore production Plugin management/runtime
+
+- Status: Done (2026-10-21; configuration activation, isolated native lifecycle
+  and authenticated production-page reads accepted; local integration, no push).
+- Human owner: Luke Ding; executor Codex. Branch codex/cloud-plugin-prod-20261021;
+  reused clean cloud-plugin-plan-01 worktree from cloud-agent703c3c03. Production
+  stays on accepted6bca5053 images; do not deploy generic Runtime changes.
+- Owned paths: this card, PROGRESS.md, WORKLOG.md,
+  docs/CLOUD_PLUGIN_PRODUCTION_2026-10-21.md, optional existing Plugin config/
+  regressions only if a demonstrated shared defect requires an explicit amendment;
+  private .artifacts/cloud-plugin-prod-20261021/ and production
+  /home/ubuntu/releases/20261021-plugin-production/.
+- Scope: confirm frontend404 -> upstream disabled service, compare validated local
+  composition, reuse current image/schema105 and strict package-integrity flow.
+  Prepare only the existing approved read-only Skill package da4f2627...ce1f5fa;
+  exclude test lifecycle bundles/other packages and credentials. Activate necessary
+  scoped read/manage/Turn/Skill flags, one read-only approved-bundle mount and
+  matched API/Worker configuration after fresh idle check; preserve all other
+  environments/security/mounts, Task ceilings, grants and original Runs.
+- No model/search requests, Run replay, forced tool/engine use, arbitrary package
+  installation, local DB/account/key copy, new MCP credentials, Search/TLS/Yahoo/
+  Exa restart or cooldown reset, new generic Runtime/source deployment, global
+  proxy changes, dirty-work integration or GitHub push.
+- Validate bounded native no-model regressions and real signed scope checks;
+  browser reads must use real backend responses. Lifecycle writes only under an
+  isolated operator test principal/workspace, never normal user installation.
+  Prove Worker can read pinned Skill bytes without dispatching a model/Run and
+  prove revocation/tenant isolation still deny access. State browser/login and
+  MCP credential boundaries accurately; do not claim an enabled flag is E2E.
+
+- Result: reproduced upstream404; activated exact approved Skill pilot with strict
+  digest allowlist and paired API/Worker flags, no image/source/schema change.
+  Real logged-in market/installations GET200, normal account remains empty.
+  Isolated digest-only install/enable/disable persists; Worker reads216-byte Skill
+  and28-byte marker, empty selection/revoked frozen source denied; four auth/scope
+  negative checks pass. Synthetic Task bootstrap only, then cancelled,0accepted
+  commands/model/tool/search/MCP calls. Search/cooldown/proxy/original events exact.
+  Production MCP credentials/worker remain disabled; no actual-model E2E claimed.
+  See docs/CLOUD_PLUGIN_PRODUCTION_2026-10-21.md.
+
 ### CLOUD-VERSION-SYNC-20261020 — complete committed production source alignment
 
 - Status: Done (2026-10-20; production source/schema alignment and scoped

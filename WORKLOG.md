@@ -16939,3 +16939,34 @@ Filegate3223/0 and docs-only/source/ancestry/preservation checks pass. This fina
 receipt goes only to cloud-agent; frozen branch/tag staya4d0e90f. Archive task
 branch detaches at final receipt and is deleted after its GitHub push verifies.
 No new runtime tests/model/search/MCP, remote deployment or full-readiness claim.
+
+
+## 2026-10-21 — CLOUD-PLUGIN-PROD-20261021
+
+Claimed isolated codex/cloud-plugin-prod-20261021 from703c3c03 before change;
+no product source edits. Root cause: previous source sync left Plugin/manage
+flags off with no approved bundle or allowlist; actual signed upstream404.
+Existing Broker already allows read/manage, no auth expansion required. Reused
+only approved read-only Skill pilot da4f2627...ce1f5fa, excluded other lifecycle
+bundle and all credentials. Offline current-image composition and digest rejection
+passed. Fresh schema105/leases0/pending0/Trench active Turns0, then stop API,
+recheck Worker idle, replace paired API/Worker configuration only. Health and
+exact expected env/read-only mount checks pass; original images unchanged.
+
+User logged into controlled Chrome. Actual settings market lists pilot and real
+BFF market/installations return200; normal account0installed. No interception or
+normal-user write. Isolated signed operator digest-only installation, enable and
+disable persist; managed Skill bound, four authentication/scope negatives pass.
+Native live Worker loads pinned216-byte SKILL and28-byte marker, snapshot roundtrip,
+empty selection denial and disabled frozen source denial pass. Bootstrap Task
+1dee5e23-60e5-4c6d-a4e8-f49a2e1d3aeb never executed, then cancelled; database confirms
+0model starts/0tool starts/0pending commands. No new business Run, model or search.
+
+Final original4Session hashes/counts, Worker source/runtime/high/v2, other inspected
+container identities/start/config, Searchsettings/Exacontrol match baseline. Dedicated
+Yahoo outlet healthy/restarts0, global proxy file/runtime exact,0Exa frames/rate-limit
+logs. Removed temporary preflight env files. No new MCP credentials; MCP worker stays
+off. Screenshot save to worktree rejected by browser workspace-root restriction;
+actual DOM/network200 evidence retained, no permission workaround needed. No full
+suite or actual-model E2E claimed. Focused production receipt and rollback documented;
+only owned governance/docs committed for local cloud-agent integration, no push.

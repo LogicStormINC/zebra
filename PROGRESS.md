@@ -1,3 +1,24 @@
+# 2026-10-21 — Production Plugin configuration restored
+
+CLOUD-PLUGIN-PROD-20261021, Luke Ding owner/Codex executor. Production code/UI
+already contained Plugins, but flag/manage/approved-bundle composition was off;
+signed upstream GET404 reproduced. Kept accepted6bca5053 images/schema105,
+activated scoped Plugin/Skill configuration and one read-only approved pilot
+bundle da4f2627...ce1f5fa; no generic703c3c03 runtime deployment or Trench edit.
+
+Actual logged-in LAN marketplace and installed list GET200; normal user remains
+unmodified. Isolated digest-only install/enable/disable persists, managed Skill
+binding and native Worker pinned Skill/marker reads pass. Four auth/scope negative
+checks plus empty selection and revoked frozen snapshot denial pass. Synthetic
+Task bootstrap only, then cancelled; no accepted execution commands/model/search
+or MCP frames. Production MCP worker remains off without configured credentials.
+
+Paired API/Worker config activation after idle guards, healthy, same source/images;
+other inspected services/Search/config/cooldown/global proxy and four protected
+Session event hashes exact. Temporary env files removed. No image build/migration,
+original Run replay, normal-user installation, full-suite/model E2E or GitHub push.
+Evidence and rollback: docs/CLOUD_PLUGIN_PRODUCTION_2026-10-21.md. Historical notes follow.
+
 # 2026-10-20 — Four-batch decoupling audit locally verified
 
 CLOUD-DECOUPLE-AUDIT-01 on cloud-agent, Luke Ding owner/Codex executor. Preserved
