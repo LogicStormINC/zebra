@@ -94,6 +94,7 @@ class ZebraAgentSettings:
     runtime_bundle_config: str | None = None
     publication_management_config: str | None = None
     bundle_management_config: str | None = None
+    script_validation_config: str | None = field(default=None, kw_only=True)
     host_management_config: str | None = None
     skill_roots: tuple[str, ...] = ()
     skill_roots_system: tuple[str, ...] = ()
@@ -256,6 +257,7 @@ def load_settings(
         runtime_bundle_config=_read_optional(values, "ZEBRA_RUNTIME_BUNDLE_CONFIG"),
         publication_management_config=_read_optional(values, "ZEBRA_PUBLICATION_MANAGEMENT_CONFIG"),
         bundle_management_config=_read_optional(values, "ZEBRA_BUNDLE_MANAGEMENT_CONFIG"),
+        script_validation_config=_read_optional(values, "ZEBRA_SCRIPT_VALIDATION_CONFIG"),
         host_management_config=_read_optional(values, "ZEBRA_HOST_REGISTRY_MANAGEMENT_CONFIG"),
         skill_roots=_read_paths(values, "ZEBRA_SKILL_ROOTS"),
         skill_roots_system=_read_paths(values, "ZEBRA_SKILL_ROOTS_SYSTEM"),

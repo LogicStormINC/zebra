@@ -45,6 +45,8 @@ and pure Bundle checks to the control plane; it does not publish or execute a Bu
 [native script ABI/runner](docs/NATIVE_SCRIPT_ABI.md) are available on their feature branches.
 [Native script Worker binding, cancellation and receipt recovery](docs/NATIVE_SCRIPT_WORKER.md)
 uses explicit v3 snapshots and a separately versioned script extension; old contracts stay unchanged.
+[Scoped native script package validation](docs/SCRIPT_VALIDATION.md) adds pure ABI/digest/syntax
+checks with independent authority; it neither executes source nor approves publication.
 Bundle1 and the pinned P2 scoped HTTP contracts retain their original unsupported script boundary;
 script execution requires the explicit new reader and approvals. Legacy history/Coverage stays intact.
 

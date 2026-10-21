@@ -1,3 +1,14 @@
+# CA-P3-01C implementation plan
+
+1. [x] Audit published B and platform P3 readiness; claim scoped native validation prerequisite.
+2. [x] Specify independent scoped authority, byte identity, native validation and limits; reuse old ABI and HTTP transport.
+3. [x] Implement pure public endpoints/config/export; keep all old contract bytes and baseline HMAC.
+4. [x] Validate trust/input/transport failures, retained slots, current approval races and real HTTP process; review.
+5. [x] Freeze sources, run make check/test, preserve history/Coverage and record exact evidence.
+6. [x] Formal docs/tasks synchronized; separate OD-P3-00B consumer pin prepared pending published C SHA. Scoped commit/push authorized; exact remote SHA confirmed in delivery receipt.
+
+## Historical plans (preserved)
+
 # CA-P3-01B implementation plan
 
 1. [x] Audit published A/P2 and existing Worker/lease/event/Registry paths; claim precise scope.

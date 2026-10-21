@@ -89,12 +89,16 @@ def register_management_routes(
         settings.runtime_management_config
         or settings.host_management_config
         or settings.bundle_management_config
+        or settings.script_validation_config
     )
     current = namespace() if enabled else None
     register_runtime_management(app, settings, current)
     from zebra_agent_api.bundle_management import register_bundle_management
 
     register_bundle_management(app, settings, current)
+    from zebra_agent_api.script_validation import register_script_validation
+
+    register_script_validation(app, settings, current)
     host_settings = (
         replace(settings, database_url=cloud_composition.dsn)
         if cloud_composition is not None

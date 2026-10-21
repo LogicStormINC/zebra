@@ -34,18 +34,18 @@ def test_report_bytes_match_original_certificate_and_do_not_read_after_final_gat
     certificate = _certify(env)
     before = source_counts(env)
     checks, reads = [], []
-    original = env.artifacts.read_payload_bytes_bounded
+    original = env.artifacts.read_payload_verified_bounded
 
     def authority():
         checks.append(True)
 
-    def bounded(artifact_id, *, max_bytes):
+    def bounded(artifact_id, *, session_id, digest, max_bytes):
         assert len(checks) < 3, "report must not be re-read after final authority"
         reads.append(artifact_id)
-        return original(artifact_id, max_bytes=max_bytes)
+        return original(artifact_id, session_id=session_id, digest=digest, max_bytes=max_bytes)
 
     with monkeypatch.context() as patch:
-        patch.setattr(env.artifacts, "read_payload_bytes_bounded", bounded)
+        patch.setattr(env.artifacts, "read_payload_verified_bounded", bounded)
         result = report(env, check_authority=authority)
     assert result == (certificate, env.report_artifact.uri, env.report.canonical_bytes)
     assert len(checks) == 3 and reads
@@ -153,22 +153,23 @@ def test_report_refuses_forged_original_certificate_event(
 ):
     env = cloud_publication
     _certify(env)
+    assignment = {
+        "actor": "actor='user'",
+        "fence": "payload=payload-'fence'",
+        "timestamp": "created_at=created_at-interval '1 hour'",
+    }[forgery]
+    statement = ("UPDATE session_events SET " + assignment
+                 + " WHERE event_type='coverage_report_certified'")
     with psycopg.connect(env.dsn) as connection:
-        if forgery == "actor":
-            connection.execute(
-                "UPDATE session_events SET actor='user' "
-                "WHERE event_type='coverage_report_certified'"
-            )
-        elif forgery == "fence":
-            connection.execute(
-                "UPDATE session_events SET payload=payload-'fence' "
-                "WHERE event_type='coverage_report_certified'"
-            )
-        else:
-            connection.execute(
-                "UPDATE session_events SET created_at=created_at-interval '1 hour' "
-                "WHERE event_type='coverage_report_certified'"
-            )
+        # Prove the production guard first; use a savepoint/transaction rollback
+        # so the controlled corruption below cannot leave a failed transaction.
+        with pytest.raises(psycopg.errors.ObjectNotInPrerequisiteState):
+            with connection.transaction():
+                connection.execute(statement)
+        # Corruption injection in this disposable schema only. The LOCAL setting
+        # ends at commit; no production trigger/schema or proof check is changed.
+        connection.execute("SET LOCAL session_replication_role=replica")
+        connection.execute(statement)
     before = source_counts(env)
     with pytest.raises(ValueError):
         report(env)

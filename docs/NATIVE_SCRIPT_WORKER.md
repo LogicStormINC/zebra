@@ -117,3 +117,8 @@ Context 输入固定 user_input，Verifier 输入固定 tool_status/tool_output�
 冻结2899项源码/合同，全量期间零漂移；旧入口回归124pass，策略构造入口13pass。
 [验证记录](evidence/ca-p3-01b/validation.json) 区分受控失败复现、被中断/未通过轮次和最终通过结果；
 不以这些开发证据关闭后续线上资产授权、分发与 gVisor/HA 接入验收。
+
+## 后续消费前置
+
+[CA-P3-01C公开纯脚本包校验](SCRIPT_VALIDATION.md)在独立合同/凭据下供平台资产管理消费；
+不改变本片Worker绑定或旧P2 Bundle1-only准入，也不代表Go上传业务/分发已完成。

@@ -1,3 +1,15 @@
+# 2026-10-21 CA-P3-01C
+
+- 核对B已推送及OD-P3-02A消费前置；独立认领C，保留原始cloud-agent脏改动。
+- 新公开纯包校验、独立私有凭据/current scope、精确字节/合同观察；旧transport复用，无执行/存储副作用。
+- 50项专项通过；额外PG检查发现4个旧夹具问题，在B60893da8同样复现。
+- 在编码前扩展Owned paths，仅修正证书读取的真实Port和临时schema受控损坏；生产trigger/证明算法无修改。
+- 中断首轮全量（7414passed/2119skipped），冻结与日志保留；修正后重跑全量/PG，最终证据另记。
+- 2026-10-22最终make test10856pass/3008既有跳过、1109.12秒；make check1385typed/eval30，PG保持106pass零跳过；3613输入零漂移。
+- 正式文档/任务已同步，按授权准备提交推送；实际远端SHA在交付回执核对。无生产迁移/部署/主线整合。
+
+## Historical log (preserved)
+
 # 2026-10-21 — CA-P3-01B implementation and verification
 
 Claimed on codex/ca-p3-01b-worker-script-binding from published d6729de3 in an isolated worktree.

@@ -1,0 +1,9 @@
+[
+  {
+    "name": "native-abi1-package",
+    "raw": "{\"schema_version\":\"cloud-agent.script-validation-request/1\",\"scope\":{\"authority_issuer\":\"https://business.example\",\"namespace_id\":\"local\",\"product_id\":\"product-a\",\"environment\":\"test\",\"target_id\":\"target/native\",\"deployment_id\":\"deployment/declared\"},\"manifest_base64\":\"ewogICJhYmkiOiAiY2xvdWQtYWdlbnQubmF0aXZlLXNjcmlwdC8xIiwKICAibmFtZSI6ICJkZW1vL3Rvb2wiLAogICJ2ZXJzaW9uIjogIjEuMC4wIiwKICAia2luZCI6ICJ0b29sIiwKICAic291cmNlX2RpZ2VzdCI6ICJzaGEyNTY6ZTkxZjNlZWI3ODA4ZjFlNTA4N2E5NGQyMTNkNDkzYWE5ZDA1ZDNlMjEzNDIwNWNhN2YyOTVjOWRmOGRjNTFlYyIsCiAgInB5dGhvbiI6ICIzLjEyIiwKICAiZGVwZW5kZW5jaWVzIjogInN0ZGxpYi1vbmx5IiwKICAiZW50cnlwb2ludCI6ICJleGVjdXRlIiwKICAiZWZmZWN0cyI6ICJub25lIiwKICAiaW5wdXQiOiB7CiAgICAiZmllbGRzIjogWwogICAgICB7CiAgICAgICAgIm5hbWUiOiAicXVlcnkiLAogICAgICAgICJ0eXBlIjogInN0cmluZyIKICAgICAgfQogICAgXQogIH0sCiAgIm91dHB1dCI6IHsKICAgICJmaWVsZHMiOiBbCiAgICAgIHsKICAgICAgICAibmFtZSI6ICJ2YWx1ZSIsCiAgICAgICAgInR5cGUiOiAic3RyaW5nIgogICAgICB9CiAgICBdCiAgfSwKICAidGltZW91dF9zZWNvbmRzIjogMiwKICAibWF4X291dHB1dF9ieXRlcyI6IDIwNDgKfQo=\",\"source_base64\":\"ZGVmIGV4ZWN1dGUoYXJndW1lbnRzKToKICAgIHJldHVybiB7J3ZhbHVlJzogJ2hlbGxvJ30K\"}",
+    "inputDigest": "sha256:1e8d9d3cf47e6f55eaa2bf0496ad1a23443fad6a9e9ed372f1b37866f2eb0b62",
+    "manifestDigest": "sha256:7dc15a8d607a3789fb6affb864cecb9f959919a178300236e325b753414ae6e0",
+    "sourceDigest": "sha256:e91f3eeb7808f1e5087a94d213d493aa9d05d3e2134205ca7f295c9df8dc51ec"
+  }
+]

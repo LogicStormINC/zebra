@@ -1,3 +1,18 @@
+# CA-P3-01C — 原生公开脚本包校验前置（Review）
+
+2026-10-21；基于已发布B60893da8独立分支继续，先核对下一OD-P3-02A的消费依赖。
+新增script-validation/1独立scope/凭据合同，只调用既有ABI解析/摘要/源码语法；不执行/批准/发布代码。
+旧A/B/P2制品、基线HMAC和历史/Coverage权威保持；共享有界transport保留旧Bundle接口语义。
+专项50项通过（零跳过），实际独立socket和批准轮换/最终复核/取消/超时/背压已覆盖。
+新增PG专项暴露4处旧夹具失败并在B原样复现；只修正实际Verified reader观察点及独享schema损坏注入，生产保护不改。
+首次全量为此主动中断，旧日志保持。2026-10-22最终make test10856passed/3008既有环境依赖跳过（1109.12秒）和make check通过（mypy1385/eval30）。
+独享PG保持专项106项全过/零跳过；3613受检输入零漂移。[最终证据](docs/evidence/ca-p3-01c/validation.json)区分失败/中断和最终通过轮次。
+完成正式文档与任务，按授权准备提交推送；远端SHA由交付回执核对。
+[正式合同](docs/SCRIPT_VALIDATION.md)说明下一平台资产业务和仍缺的脚本Bundle scoped发布扩展。
+前端继续mock；无main/cloud-agent整合、部署或生产迁移。
+
+## Historical progress (preserved)
+
 # 2026-10-21 — CA-P3-01B Worker 原生脚本绑定与恢复
 
 状态 Review：实现、专项64passed/零跳过与独享临时PG保持74passed/零跳过已完成。

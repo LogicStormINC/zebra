@@ -1,0 +1,89 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contractVersion",
+    "contractDigest",
+    "scope",
+    "trustRevision",
+    "observedAt",
+    "inputDigest",
+    "manifestDigest",
+    "sourceDigest",
+    "name",
+    "version",
+    "kind",
+    "sourceBytes",
+    "checks",
+    "capabilities"
+  ],
+  "properties": {
+    "contractVersion": {
+      "const": "script-validation/1"
+    },
+    "contractDigest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "scope": {
+      "$ref": "./request.schema.json#/$defs/BundleScope"
+    },
+    "trustRevision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "observedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "inputDigest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "manifestDigest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "sourceDigest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "name": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    },
+    "kind": {
+      "enum": [
+        "tool",
+        "context",
+        "verifier"
+      ]
+    },
+    "sourceBytes": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 16384
+    },
+    "checks": {
+      "const": {
+        "manifest": "passed",
+        "sourceDigest": "passed",
+        "sourceSyntax": "passed"
+      }
+    },
+    "capabilities": {
+      "const": {
+        "validation": "supported",
+        "sourceExecution": "not_performed",
+        "assetApproval": "not_performed",
+        "worker": "not_checked",
+        "publication": "not_performed",
+        "persistence": "not_performed",
+        "coverageAuthority": false
+      }
+    }
+  }
+}
