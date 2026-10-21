@@ -5,7 +5,6 @@ import hmac
 import json
 import re
 from dataclasses import asdict
-from pathlib import Path
 from typing import Annotated, Literal, Self
 
 from agent_core.domain.runtime_assembly import RuntimeAssembly, RuntimeProviderProfile
@@ -14,6 +13,7 @@ from agent_core.domain.runtime_bundle_json import load_bundle_json
 from agent_core.domain.runtime_bundle_types import ArtifactPin, BundleScope, BundleValue
 from pydantic import Field, model_validator
 
+from zebra_agent_config.private_configuration import read_private_configuration
 from zebra_agent_config.settings import ZebraAgentSettings
 
 
@@ -24,6 +24,7 @@ def baseline_digest(settings: ZebraAgentSettings, key: str) -> str:
     values = asdict(settings)
     del values["model"]
     del values["runtime_bundle_config"]
+    del values["bundle_management_config"]
     encoded = json.dumps(
         values, sort_keys=True, ensure_ascii=True, allow_nan=False, separators=(",", ":")
     ).encode()
@@ -75,8 +76,7 @@ def load_execution_catalog(path: str | None) -> RuntimeExecutionCatalog:
     if not path:
         raise ValueError("BUNDLE_ASSEMBLY_NOT_CONFIGURED")
     try:
-        with Path(path).open("rb") as source:
-            raw = source.read(262_145)
+        raw = read_private_configuration(path, max_bytes=262_144)
         return RuntimeExecutionCatalog.model_validate_json(
             json.dumps(load_bundle_json(raw), ensure_ascii=True)
         )

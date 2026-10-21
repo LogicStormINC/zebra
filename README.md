@@ -39,6 +39,8 @@ Native [Runtime Bundle v1](docs/RUNTIME_BUNDLE.md) provides strict versioned
 offline configuration/closure/digest validation and reader compatibility checks.
 Run `uv run python scripts/validate_runtime_bundle.py --input docs/contracts/runtime-bundle-v1/example-envelope.json`.
 [v2 Task/Worker assembly](docs/RUNTIME_BUNDLE_ASSEMBLY.md) is an explicit opt-in continuation.
+[Scoped native validation](docs/BUNDLE_MANAGEMENT.md) exposes the producer contract
+and pure Bundle checks to the control plane; it does not publish or execute a Bundle.
 Online Bundle management and native scripts remain unsupported; legacy history/Coverage stays intact.
 
 ## License

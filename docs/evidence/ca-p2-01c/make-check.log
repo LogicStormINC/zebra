@@ -1,0 +1,26 @@
+uv run python scripts/check_runtime_product_boundary.py
+Runtime product boundary: PASS
+uv run python scripts/check_file_sizes.py
+file size gate: passed=True checked=3308 violations=0
+uv run ruff check .
+All checks passed!
+uv run mypy packages apps
+Success: no issues found in 1357 source files
+uv run python scripts/eval_release_check.py
+eval release gate: passed=True pass_rate=1.00 average_score=1.00 cases=30
+deterministic trace artifact: evals/reports/deterministic-harness.json
+uv run python scripts/check_progress_postcommit_repair.py
+worker_progress_timeout stage=checkpoint canonical_committed=True location=persist:179;repair_commentary:55;catch_up:91;timeout_after_commentary:86
+worker_progress_timeout stage=canonical_append canonical_committed=False location=persist:175;unknown:123
+confirmed-source deferral and exact-once repair pass; unknown commit propagates
+timer and store-owned effect observation retain unknown-write failures
+uv run python scripts/check_progress_risk_boundaries.py
+priority passed
+membership_read passed
+evidence_retention passed
+postcommit_dedup passed
+unknown_write passed
+pending_recovery_stage passed
+verified_source_reuse passed
+progress_head_read passed
+signature_membership_batch passed

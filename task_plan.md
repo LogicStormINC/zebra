@@ -1,3 +1,13 @@
+# CA-P2-01C current task
+
+- [x] Audit published B, Overdoze P2 task sequencing and missing pure native validation prerequisite.
+- [x] Create Ready/claim task on independent branch; preserve prior pins/dirty checkout.
+- [x] Spec/plan review; implement scoped native validation and preserve B baseline hash.
+- [x] Producer artifacts + real HTTP consumer checks; independent reviews.
+- [x] Full gates, formal docs/task update and prepare scoped commit/push; remote SHA confirmation accompanies delivery. No deploy/migration.
+
+---
+
 # CA-P2-01B current task
 
 - [x] Inspect Definition → Task recovery → Worker and preserve isolated baseline.

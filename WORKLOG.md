@@ -1,3 +1,30 @@
+# 2026-10-21 — CA-P2-01C
+
+Audited native published P2A/P2B and Overdoze P2 readiness before selecting pure
+native validation as a missing prerequisite. Claimed Ready task in independent
+codex/ca-p2-01c-bundle-validation from92f494cb; retained original dirty checkout
+and P1/P2A/P2B pins. make sync succeeded; old targeted baseline20passed.
+
+Approved written design/plan with final approval equality covering full scope,
+even unchanged Token/revision/header cases. Implementer delivered scoped transport,
+configuration and meaningful red/green tests; root published static contract and
+portable vectors, independent subprocess HTTP acceptance and consumer checks.
+Red cases detected absentsetting/routes, unsafecatalogmode, Content-Length mismatch,
+extension method error bypass and shared nested contract dictionary mutation;
+all fixed with regressions. Final focused58passed in18.58s, zero skip.
+
+Only current catalog validation reads and pure receipts; no DB/model/tool/Worker
+mutation path. Private baseline key never returned; new API-only setting excluded
+from old HMAC byte calculation, fixed old digest remains c7748ed8...900fdc.
+Final independent quality review approved; make test10705passed/3007skipped in
+1059.97s,exit0; make check passed30/30eval/mypy1357sources/3308sizechecks with
+zero violations. All11frozen Python files and producer artifacts unchanged.
+Structured receipt and final summaries under docs/evidence/ca-p2-01c/. Scoped
+commit/push prepared; remote SHA is the post-push delivery check. Primary checkout
+concurrent operator docs commit8ee49ec1 and existing dirty files retained; clean
+P1/P2A/P2B pins preserved.
+No deployment, production migration, branch integration or real business data use.
+
 # 2026-10-21 — CA-P2-01B
 
 Claimed Ready task on independent codex/ca-p2-01b-bundle-assembly from published

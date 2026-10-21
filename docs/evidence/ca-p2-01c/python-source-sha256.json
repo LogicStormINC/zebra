@@ -1,0 +1,13 @@
+{
+  "apps/api/src/zebra_agent_api/bundle_management.py": "4c43c2ddd63baad109d145cec685b218a5d4373014ad78faca7afc02d111c495",
+  "apps/api/src/zebra_agent_api/bundle_management_config.py": "36345823cfa709d5ecda6aa451ad8ba13614c4cac292d657f8221e66b3fb3e1c",
+  "apps/api/src/zebra_agent_api/bundle_management_contract.py": "a6d21d974a7e78e68710834e3cb9963c1d9ad67ee8ae1363339d4ef7fe2c7112",
+  "apps/api/src/zebra_agent_api/host_registry_management.py": "9305392525945aed5db3edbdd77bfa3dec1e79a36a64c4845f029e9bba051148",
+  "apps/config/src/zebra_agent_config/bundle_settings.py": "ef295487696b214563c83246b02a4ba5474e6a60d8de2f767d165dd670afac46",
+  "apps/config/src/zebra_agent_config/private_configuration.py": "da6f3a2b5d5f4018c8942bf95cac6f5f836ea398ccd9ec4e6e8999e0961a24aa",
+  "apps/config/src/zebra_agent_config/settings.py": "b013c0882febd5fb2a067517d996032c3dd0dda820f1a53307bd5e97fdead843",
+  "tests/api/test_bundle_management.py": "fd5dc3dfcd476d49edad5d8f1c38fb3b0e17a623b5626a4c190002e5ff959f3f",
+  "tests/api/test_bundle_management_process.py": "01c0fa63b17d1dc311ad0ca091685e3c31382170f68e1fee438b2a3b60bf7026",
+  "tests/config/test_bundle_management_config.py": "ac171631060ed5bac406b7f0aed16c06d5da75fbac13691b52c50c0e7cd701b5",
+  "tests/test_bundle_management_contract.py": "5da0bd907bee6ca17cb328dee4a63aa64c55043223ef123ae94820e52d354059"
+}

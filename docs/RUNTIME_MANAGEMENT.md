@@ -97,3 +97,11 @@ skipped checks, the initial lazy-composition regression and the corrected rerun.
 bounded offline validator. It does not add an HTTP action or widen rtmg_ credentials.
 The descriptor still reports bundleManagement/nativeScriptAbi=unsupported; valid
 declared configuration is not a stored/effective Bundle or Worker assembly proof.
+
+## CA-P2-01C validation entry
+
+[Scoped Bundle contract and validation](BUNDLE_MANAGEMENT.md) adds separately
+authorized GET contract and pure POST native validation endpoints. Old artifacts,
+Definition/Task formats and the existing target descriptor are unchanged.
+Persistence/publication, Worker readiness and native scripts remain outside this
+validation contract. The API-only settings path preserves the P2B baseline HMAC.

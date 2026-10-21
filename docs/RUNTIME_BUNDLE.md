@@ -188,3 +188,11 @@ sandbox/HTTP/production acceptance belongs to later tasks.
 ## Execution continuation
 
 [CA-P2-01B binding and Worker assembly](RUNTIME_BUNDLE_ASSEMBLY.md) adds explicit v2 Definition/Task binding and a bounded executable subset without changing the published Bundle v1 contract. Online Bundle management and native scripts remain separate work.
+
+## CA-P2-01C validation entry
+
+[Scoped Bundle contract and validation](BUNDLE_MANAGEMENT.md) adds separately
+authorized GET contract and pure POST native validation endpoints. Old artifacts,
+Definition/Task formats and the existing target descriptor are unchanged.
+Persistence/publication, Worker readiness and native scripts remain outside this
+validation contract. The API-only settings path preserves the P2B baseline HMAC.

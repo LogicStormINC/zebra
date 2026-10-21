@@ -106,3 +106,11 @@ No startup or production migration is executed by this feature. Before future pr
 ## Evidence
 
 See [CA-P2-01B evidence](evidence/ca-p2-01b/README.md) for final source fingerprint, focused tests, real disposable PostgreSQL acceptance, legacy/Coverage regression and full gate results. Local mock provider HTTP requests prove assembly consumption, not production provider or OCI/gVisor acceptance.
+
+## CA-P2-01C validation entry
+
+[Scoped Bundle contract and validation](BUNDLE_MANAGEMENT.md) adds separately
+authorized GET contract and pure POST native validation endpoints. Old artifacts,
+Definition/Task formats and the existing target descriptor are unchanged.
+Persistence/publication, Worker readiness and native scripts remain outside this
+validation contract. The API-only settings path preserves the P2B baseline HMAC.

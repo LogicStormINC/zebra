@@ -1,0 +1,12 @@
+tests/worker/test_turn_close_admitted_identity.py ....                   [ 99%]
+tests/worker/test_web_pipeline_v2_authority.py ..                        [ 99%]
+tests/worker/test_worker_context_lifecycle.py .....                      [ 99%]
+tests/worker/test_worker_host_vocabulary_gate.py ..                      [ 99%]
+tests/worker/test_worker_mcp_catalog.py ...                              [ 99%]
+tests/worker/test_worker_plugin_composition.py ..........                [ 99%]
+tests/worker/test_worker_progress_recovery.py ..........                 [ 99%]
+tests/worker/test_worker_projection_transaction.py .........             [ 99%]
+tests/worker/test_worker_storage_composition.py ....                     [ 99%]
+tests/worker/test_workspace_runtime_resolution.py .                      [100%]
+
+=============== 10705 passed, 3007 skipped in 1059.97s (0:17:39) ===============

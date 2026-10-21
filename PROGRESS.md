@@ -1,3 +1,33 @@
+# 2026-10-21 — CA-P2-01C scoped native Bundle validation
+
+Dependency audit identified the missing native pure validation prerequisite for
+Overdoze OD-P2-01A. This explicit stacked continuation starts at published P2B
+92f494cb on codex/ca-p2-01c-bundle-validation, preserving prior worktree pins and
+the original dirty cloud-agent checkout. No main/cloud-agent integration.
+
+Added separate bundle-validation/1 contract discovery and raw Bundle validation
+with explicit scoped private approvals, distinct rtbv credentials/actions and
+full approval reauthorization before return. Exact native parser/asset/assembly
+semantics remain authority. Receipts bind contract/input/assembly/public approval
+snapshot and full scope/trust; they do not publish or prove Worker readiness.
+One shared8-slot body/thread limit retains timed-out/cancelled work until the
+actual thread finishes; bounded private regular file reads run off the event loop.
+
+Published native OpenAPI/schema/catalog document and positive/negative vectors;
+actual loopback subprocess HTTP checks permissions/rotation/no data writes.
+Existing Bundle v1 artifacts, v1/v2 historical formats and Coverage proof rules
+are unchanged. The API-only setting preserves the exact P2B baseline HMAC.
+Execution catalogs now enforce documented private0400/0600 regular file mode;
+operator mounts must meet that requirement before future activation.
+
+Design/plan and implementation spec approved; focused58passed/zero skip.
+Independent quality review approved; make test10705passed/3007skipped in1059.97s,
+exit0; make check pass30/30eval, mypy1357sources,3308sizechecks/zero violations.
+All11frozen Python files and producer artifacts unchanged through full gates. Formal contract/flow/limitations are in
+docs/BUNDLE_MANAGEMENT.md; evidence under docs/evidence/ca-p2-01c/.
+Next separate task is Go OD-P2-01A consuming the pinned native contract, then
+paired OD-P2-01B acceptance. No native scripts, deployment or production migration.
+
 # 2026-10-21 — CA-P2-01B Bundle binding and Worker assembly
 
 Owner Luke Ding/Codex; branch codex/ca-p2-01b-bundle-assembly from e56f8272,

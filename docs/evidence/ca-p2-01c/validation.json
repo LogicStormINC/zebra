@@ -1,0 +1,46 @@
+{
+  "task": "CA-P2-01C",
+  "base": "92f494cb9a9da596e5c7418e7d7a57b6deaf82e7",
+  "branch": "codex/ca-p2-01c-bundle-validation",
+  "contract_digest": "sha256:4350a319ac359fa841cea0efb870e40ceb3771aba1c25d4846d3e7ff9e4c4275",
+  "focused": {
+    "passed": 58,
+    "skipped": 0,
+    "seconds": 18.58,
+    "new_tests": 20,
+    "real_loopback_subprocess_passed": 1
+  },
+  "make_test": {
+    "exit_code": 0,
+    "passed": 10705,
+    "skipped": 3007,
+    "failed": 0,
+    "seconds": 1059.97,
+    "stdout_sha256": "61e6968803244074221d42423597aec1499971792629c1d9635a9192e266491e"
+  },
+  "make_check": {
+    "exit_code": 0,
+    "eval_passed": 30,
+    "eval_cases": 30,
+    "mypy_source_files": 1357,
+    "size_files_checked": 3308,
+    "size_violations": 0,
+    "stdout_sha256": "4e1dd5794861577bb8387a7a8a4d3a4818b8e6e3c8fb56b4887d4d63f4ebdebc"
+  },
+  "frozen_python_files": 11,
+  "source_freeze_unchanged": true,
+  "producer_freeze_unchanged": true,
+  "prior_core_and_bundle_v1_unchanged": true,
+  "independent_reviews": {
+    "design_plan": "approved",
+    "implementation_spec": "approved",
+    "quality": "approved"
+  },
+  "boundaries": [
+    "No deployment, production migration or branch integration by this task",
+    "Existing opt-in external-service skips are not live acceptance",
+    "Pure validation snapshot; no publication, Worker readiness or provider call",
+    "Original dirty checkout and prior pinned worktrees retained; concurrent operator docs commit not modified",
+    "Next Go OD-P2-01A and paired OD-P2-01B remain separate work"
+  ]
+}

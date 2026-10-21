@@ -85,9 +85,16 @@ def register_management_routes(
     cloud_composition: CloudCompositionSettings | None = None,
 ) -> None:
     """Keep optional management composition lazy when both routes are disabled."""
-    enabled = settings.runtime_management_config or settings.host_management_config
+    enabled = (
+        settings.runtime_management_config
+        or settings.host_management_config
+        or settings.bundle_management_config
+    )
     current = namespace() if enabled else None
     register_runtime_management(app, settings, current)
+    from zebra_agent_api.bundle_management import register_bundle_management
+
+    register_bundle_management(app, settings, current)
     host_settings = (
         replace(settings, database_url=cloud_composition.dsn)
         if cloud_composition is not None
