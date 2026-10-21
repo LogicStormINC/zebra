@@ -1,3 +1,32 @@
+# 2026-10-21 — CA-P2-01A native Runtime Bundle validation
+
+Owner Luke Ding/Codex; branch codex/ca-p2-01a-bundle-contract from published6dbb2a8d,
+new isolated worktree, preserving the P1pinned worktree and original cloud-agent dirty work.
+Implemented independent cloud-agent.bundle-envelope/1 + runtime-bundle/1 immutable
+contract, all20explicit domain bindings, exact validation-only native catalog/asset
+closure, bounded strict JSON/canonical bytes/SHA256 and trusted-reader compatibility.
+Model/instruction candidate parameters have strict schemas; other18domains stay
+pinned/empty with reasons. Published native schema/catalog/example/canonical/digest
+artifacts and offline --input/--schema/--catalog CLI. No new dependency/framework.
+
+The descriptor stays bundleManagement/nativeScriptAbi=unsupported. No HTTP/credential
+expansion, storage/migration, effective Release/Task binding or Worker assembly.
+Asset/image/baseline config pins are declared closure, not verified assets or proof
+of executable configuration. Component hashes identify descriptors, not loaded code.
+Old Definition/Snapshot v1 bytes/digests, recovery and Coverage source unchanged;
+deterministic baseline v1goldens cover eval/production snapshots without reading
+any existing database or rewriting history.
+
+Design/plan/spec and independent quality/security reviews approved. Baseline21passed;
+new focused163passed/zero skip; preserved Definition/binding/Coverage82passed/1PGskip.
+make check passed (30/30eval); final r2 make test10620passed/3007skipped,exit0.
+Superseded SIGINT partial run is recorded separately; sourcefreeze matches final gates.
+Final counts, source/golden/log hashes and delivery boundary are recorded in
+[validation](docs/evidence/ca-p2-01a/validation.json). [Public contract](docs/RUNTIME_BUNDLE.md).
+No deployment/production migration or main/cloud-agent integration; native feature
+commit/push after completed final gates, remoteSHA confirmed in separate delivery receipt.
+Prior sections below retain historical meaning.
+
 # 2026-10-21 — CA-P1-01B2 scoped outbound connector management
 
 Implemented GET/PUT /management/v1/host-connector with fixed operator-approved immutable

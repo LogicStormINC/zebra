@@ -35,6 +35,12 @@ and Worker upgrades before admitting tasks with new Host-scoped manifest freezes
 older Workers cannot read freezes stored only in the new table. Historical
 records and their digest lookup remain available after migration.
 
+Native [Runtime Bundle v1](docs/RUNTIME_BUNDLE.md) provides strict versioned
+offline configuration/closure/digest validation and reader compatibility checks.
+Run `uv run python scripts/validate_runtime_bundle.py --input docs/contracts/runtime-bundle-v1/example-envelope.json`.
+This does not publish/admit a Bundle; Task/Worker assembly and online management
+remain unsupported, with existing Definition/Snapshot/history/Coverage unchanged.
+
 ## License
 
 Zebra Agent is released under the GNU General Public License v3.0 or later

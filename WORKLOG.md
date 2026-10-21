@@ -1,3 +1,30 @@
+# 2026-10-21 — CA-P2-01A
+
+Explicit user request: implement native versioned Bundle/configuration validation/
+compatibility, preserve capability/history/Coverage, validate/commit/push, no deploy
+or production migration. New isolated worktree from6dbb2a8d keeps P1pin repeatable.
+Task was created Ready/claimed before code, design/plan committed and independently
+approved; one delegated core implementation lane, root CLI/goldens/docs; no overlap.
+
+Red/green: missing core import and missing CLI schema command rejected before
+implementation; core147passed, total focused163passed, baseline21passed, existing
+Definition/binding/Coverage82passed/1explicit PGskip. Initial mypy/
+style issues were corrected before gates; issuer edge cases now reject explicit0/empty port/DEL.
+Independent implementation spec approved; independent quality probe reproduced
+canonical bytes/SHA/schema/catalog, rejected hostile JSON/forged nested instances,
+confirmed legacy source pins. make check passed30/30eval; final r2 make test
+10620passed/3007skipped in1045.08s,exit0, sourcefreeze unchanged.
+Final test review strengthened semantic negatives with independently recomputed
+outer digests and11portable negative vectors; neutral product-a example/goldens.
+The first full run was deliberately SIGINT-stopped69% (7341pass/2120skip,exit2)
+to run final tests/goldens from a renewed freeze; it is not complete acceptance.
+The r2 full run and make check bind the final source; product/CLI code unchanged.
+Final gate counts/evidence are in docs/evidence/ca-p2-01a/validation.json; exact push
+receipt is separate. Next native work CA-P2-01B owns asset trust, storage/
+publication and actual versioned Task/Worker assembly. No such behavior started here.
+
+Prior work logs (historical; preserved):
+
 # 2026-10-21 — CA-P1-01B2
 
 Claimed a focused stacked branch from e2da40d0 before code. Reused native Profile/Binding,

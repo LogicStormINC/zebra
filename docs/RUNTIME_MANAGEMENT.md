@@ -90,3 +90,10 @@ configuration, two apps sharing rotations and bounded timed-out reads. Full
 separately from real Go/Python integration, production and fault/load acceptance.
 [Final validation](evidence/ca-p1-01a/validation.json) records both completed gates,
 skipped checks, the initial lazy-composition regression and the corrected rerun.
+
+## CA-P2-01A offline Bundle validation
+
+[Native Bundle v1](RUNTIME_BUNDLE.md) adds producer-owned schema/catalog and a
+bounded offline validator. It does not add an HTTP action or widen rtmg_ credentials.
+The descriptor still reports bundleManagement/nativeScriptAbi=unsupported; valid
+declared configuration is not a stored/effective Bundle or Worker assembly proof.
