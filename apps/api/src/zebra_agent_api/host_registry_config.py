@@ -12,6 +12,10 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from agent_core.domain.client_capabilities import (
+    FrontendCapabilityProfileVersion,
+    validate_profile_for_publish,
+)
 from agent_core.domain.host_connectors import HostConnectorProfileVersion
 from agent_storage import HostRegistryRecord
 from agent_storage.postgres.host_management import HostManagementTrust
@@ -41,6 +45,7 @@ class HostManagementConfig:
     credential_sha256: str
     scope: dict[str, str]
     connector_profile: HostConnectorProfileVersion | None = None
+    frontend_profile: FrontendCapabilityProfileVersion | None = None
 
 
 def load_host_management_config(path: str | None, namespace: str | None) -> HostManagementConfig:
@@ -63,7 +68,10 @@ def load_host_management_config(path: str | None, namespace: str | None) -> Host
         "actions",
         "registry",
     }
-    if not isinstance(value, dict) or set(value) not in (fields, fields | {"connectorProfile"}):
+    if not isinstance(value, dict) or not fields <= set(value) <= fields | {
+        "connectorProfile",
+        "frontendProfile",
+    }:
         raise ValueError("invalid configuration fields")
     for field in _SCOPE_FIELDS:
         if not isinstance(value[field], str) or not re.fullmatch(
@@ -83,7 +91,14 @@ def load_host_management_config(path: str | None, namespace: str | None) -> Host
         raise ValueError("UTC credential deadline required")
     expires_at = datetime.fromisoformat(expiry)
     actions = value["actions"]
-    allowed = {"host-registry.read", "host-registry.write", "connector.read", "connector.write"}
+    allowed = {
+        "host-registry.read",
+        "host-registry.write",
+        "connector.read",
+        "connector.write",
+        "frontend-profile.read",
+        "frontend-profile.write",
+    }
     if (
         not isinstance(actions, list)
         or any(not isinstance(a, str) or a not in allowed for a in actions)
@@ -116,6 +131,14 @@ def load_host_management_config(path: str | None, namespace: str | None) -> Host
     )
     if any(a.startswith("connector.") for a in actions) and connector is None:
         raise ValueError("connector actions require an approved profile")
+    frontend = None
+    if "frontendProfile" in value:
+        frontend = FrontendCapabilityProfileVersion.model_validate(value["frontendProfile"])
+        validate_profile_for_publish(frontend)
+        if frontend.published_at is not None:
+            raise ValueError("publication timestamp is Runtime-owned")
+    if any(a.startswith("frontend-profile.") for a in actions) and frontend is None:
+        raise ValueError("frontend actions require an approved exact profile")
     fingerprint = hashlib.sha256(
         json.dumps(value, sort_keys=True, separators=(",", ":")).encode()
     ).hexdigest()
@@ -131,7 +154,13 @@ def load_host_management_config(path: str | None, namespace: str | None) -> Host
         expires_at=expires_at,
     )
     return HostManagementConfig(
-        trust, registry, frozenset(actions), digest, {f: value[f] for f in _SCOPE_FIELDS}, connector
+        trust,
+        registry,
+        frozenset(actions),
+        digest,
+        {f: value[f] for f in _SCOPE_FIELDS},
+        connector,
+        frontend,
     )
 
 

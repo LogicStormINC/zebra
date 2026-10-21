@@ -41,7 +41,9 @@ def handle_client_runtime_route(
     path = request.path
     method = request.method.upper()
     if path == _SESSION_PREFIX and method == "POST":
-        return open_client_session(app, request.body or {}, request.host_context)
+        return open_client_session(
+            app, request.body or {}, request.host_context, request.verified_host_grant
+        )
     if not (
         path.startswith(_SESSION_PREFIX)
         or path.startswith(_EFFECT_PREFIX)
@@ -57,6 +59,7 @@ def handle_client_runtime_route(
         request.headers,
         host_context=request.host_context,
         require_host_context=app.settings.deployment == "cloud",
+        verified_host_grant=request.verified_host_grant,
     )
     if auth is None:
         return ApiResponse(
@@ -96,6 +99,25 @@ def _session_route(
         return ApiResponse(403, {"status": "forbidden", "reason": "session_authority_mismatch"})
     if method == "GET" and tail == "/effects":
         return list_pending_client_effects(app, auth=auth)
+    if (
+        app.settings.deployment == "cloud"
+        and method == "POST"
+        and (tail == "/release" or tail == "/heartbeat" and request.body)
+    ):
+        from zebra_agent_api.tenant_guard import task_access_response
+
+        body = request.body or {}
+        if not isinstance(body.get("task_id"), str) or not isinstance(body.get("run_id"), str):
+            return bad_request("controller_target_required")
+        denied = task_access_response(
+            app,
+            body["task_id"],
+            request.host_context,
+            verified_host_grant=request.verified_host_grant,
+            run_id=body["run_id"],
+        )
+        if denied is not None:
+            return denied
     if method == "POST" and tail == "/heartbeat":
         return heartbeat_client_session(
             app,
@@ -177,4 +199,5 @@ def _binding_route(
         request.body or {},
         auth,
         request.host_context,
+        request.verified_host_grant,
     )

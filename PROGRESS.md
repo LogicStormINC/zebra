@@ -1,3 +1,21 @@
+# CA-P3-02A — 产品范围Profile与可信BFF准入
+
+2026-10-22；Owner Luke Ding；基于已发布f154f5d1继续，未整合cloud-agent/main。
+新增frontend-profile-management/1：复用原有批准/CAS和Profile服务，产品/环境/Host/App精确版本授权、
+原生不可变归属、发布/绑定/撤销及当前查询，v112加法收据/审计事务；不下发万能operator Token。
+修复实际公开装配发现的显式Postgres stores命名空间读取；cloud ClientSession要求已验签sub匹配user_ref，
+原始bind检查Task/Run/当前Profile，Controller续期/释放检查当前资源；本地/历史/deprecated已有Run兼容保留。
+最终make test10874passed/3008既有依赖跳过（1090.05秒）和make check通过（mypy1388/eval30）。
+专项77passed/2条件跳过，独享PG45passed/零跳过补齐持久化/围栏；3074输入和280Coverage文件保持。
+[evidence](docs/evidence/ca-p3-02a/validation.json)保留中断/旧夹具失败及最终通过记录。
+修复显式stores factory和旧夹具，补历史共享App保护：旧operator绑定与产品撤销共享App锁，
+存在其它Host/namespace引用则拒绝新的范围写入；不删除旧绑定/能力，历史收据仍可只读对账。
+[正式方案与合同](docs/CA-P3-02A_frontend_admission.md)明确一次性credential丢失/部分提交、当前观察和后续UI/HA边界。
+Overdoze使用公开HTTPS与generic Broker串联真实Task/Session/mount/Controller；Go不访问原生数据库。
+前端mock、历史数据/Coverage均保持；无部署、生产迁移或主线整合。
+
+## Historical progress (preserved)
+
 # CA-P3-01C — 原生公开脚本包校验前置（Review）
 
 2026-10-21；基于已发布B60893da8独立分支继续，先核对下一OD-P3-02A的消费依赖。

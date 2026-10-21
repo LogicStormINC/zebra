@@ -41,6 +41,9 @@ from agent_storage.postgres.execution_input_compaction_migration import (
     EXECUTION_INPUT_COMPACTION_MIGRATION,
 )
 from agent_storage.postgres.execution_inputs_migration import EXECUTION_INPUTS_MIGRATION
+from agent_storage.postgres.frontend_profile_management_migration import (
+    FRONTEND_PROFILE_MANAGEMENT_MIGRATION,
+)
 from agent_storage.postgres.full_gateway_migration import FULL_GATEWAY_MIGRATION
 from agent_storage.postgres.governed_memory_migration import GOVERNED_MEMORY_MIGRATION
 from agent_storage.postgres.handoff_migration import HANDOFF_MIGRATION
@@ -179,4 +182,5 @@ LATEST_MIGRATIONS = (
     HOST_CONNECTOR_MANAGEMENT_MIGRATION,
     BUNDLE_DEFINITION_MIGRATION,
     PUBLICATION_MIGRATION,
+    FRONTEND_PROFILE_MANAGEMENT_MIGRATION,
 )

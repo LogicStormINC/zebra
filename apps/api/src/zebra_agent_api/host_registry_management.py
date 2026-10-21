@@ -108,6 +108,10 @@ def register_management_routes(
     from zebra_agent_api.host_connector_management import register_host_connector_management
 
     register_host_connector_management(app, host_settings, current)
+    from zebra_agent_api.frontend_profile_management import register_frontend_profile_management
+
+    register_frontend_profile_management(app, host_settings, current)
+
 
 def deployment_namespace(api: object) -> str | None:
     stores = getattr(api, "stores", None)

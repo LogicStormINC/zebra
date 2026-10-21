@@ -1,3 +1,16 @@
+# 2026-10-22 CA-P3-02A
+
+Owner Luke Ding / executor Codex；codex/ca-p3-02a-frontend-admission，独立工作树。
+先登记Owned paths再实施。新增受产品范围限制的Profile适配、不可变归属/v112收据，复用原服务与transaction work unit。
+联调发现显式stores factory错误并修复；补已验签主体和原始Task/Run/Profile/Controller授权，保留本地与旧Run兼容。
+最终make test10874passed/3008既有条件跳过（1090.05秒），make check通过（mypy1388/eval30）。
+专项77passed/2条件与独享PG45passed/零跳过；3074实现输入和280Coverage文件保持，deprecated已有Run不漂移。
+此前中断/迁移catalog期望/8个旧夹具失败已单列；共享历史App的跨Host写入并发保护已回归，
+正式结果/限制见docs/evidence/ca-p3-02a/validation.json；源码准备按授权提交推送。
+无现有业务库、生产迁移、部署、主线合并或原始工作区无关文件操作。
+
+## Historical log (preserved)
+
 # 2026-10-21 CA-P3-01C
 
 - 核对B已推送及OD-P3-02A消费前置；独立认领C，保留原始cloud-agent脏改动。

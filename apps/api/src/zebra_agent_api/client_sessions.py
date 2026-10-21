@@ -25,9 +25,10 @@ from agent_core.domain.client_sessions import (
 )
 from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.identifiers import ClientSessionId, TaskId
+from agent_security.host_grant import VerifiedHostGrant
 
 from zebra_agent_api.app import ZebraAgentApi
-from zebra_agent_api.client_grant_auth import ClientAuthContext
+from zebra_agent_api.client_grant_auth import ClientAuthContext, current_client_subject
 from zebra_agent_api.responses import ApiResponse
 
 
@@ -35,6 +36,7 @@ def open_client_session(
     app: ZebraAgentApi,
     body: dict[str, Any],
     host_context: HostContextEnvelope | None = None,
+    verified_host_grant: VerifiedHostGrant | None = None,
 ) -> ApiResponse:
     if app.settings.deployment == "cloud" and host_context is None:
         return ApiResponse(
@@ -50,6 +52,10 @@ def open_client_session(
         grant = ClientSessionGrant.model_validate(body.get("grant") or {})
     except ValueError as exc:
         return ApiResponse(400, {"status": "invalid", "reason": str(exc)[:256]})
+    if app.settings.deployment == "cloud" and not current_client_subject(
+        grant.user_ref, host_context, verified_host_grant
+    ):
+        return ApiResponse(403, {"status": "forbidden", "reason": "client_subject_mismatch"})
     if host_context is not None:
         try:
             grant.ensure_matches(
@@ -203,6 +209,7 @@ def bind_client_run(
     body: dict[str, Any],
     auth: ClientAuthContext,
     host_context: HostContextEnvelope | None = None,
+    verified_host_grant: VerifiedHostGrant | None = None,
 ) -> ApiResponse:
     platform = app.client_platform
     if (
@@ -232,6 +239,13 @@ def bind_client_run(
     except ValueError:
         return ApiResponse(400, {"status": "invalid", "reason": "invalid_task_id"})
     if app.settings.deployment == "cloud":
+        from zebra_agent_api.tenant_guard import task_access_response
+
+        denied = task_access_response(
+            app, task_id, host_context, verified_host_grant=verified_host_grant, run_id=run_id
+        )
+        if denied is not None:
+            return denied
         task = app.stores.tasks.get_task(parsed_task_id)
         if task is None:
             return ApiResponse(404, {"status": "not_found", "reason": "unknown_task"})
@@ -245,6 +259,29 @@ def bind_client_run(
                 403,
                 {"status": "forbidden", "reason": "task_namespace_mismatch"},
             )
+    if platform.frontend_capabilities is None:
+        return ApiResponse(503, {"status": "unavailable"})
+    client = platform.client_sessions.get_session(auth.client_session_id)
+    if client is None:
+        return ApiResponse(401, {"status": "unauthorized"})
+    current_profile = platform.frontend_capabilities.get_profile_by_digest(
+        client.grant.frontend_app_id, client.grant.profile_digest
+    )
+    previous = platform.client_sessions.get_run_binding(
+        parsed_task_id, run_id, auth.client_session_id
+    )
+    if (
+        current_profile is None
+        or current_profile.lifecycle is ProfileLifecycle.REVOKED
+        or (previous is None and current_profile.lifecycle is not ProfileLifecycle.PUBLISHED)
+    ):
+        return ApiResponse(409, {"status": "conflict", "reason": "grant_profile_not_active"})
+    if host_context is not None and previous is None:
+        current_binding = platform.frontend_capabilities.get_binding_for_host(
+            host_context.host_app_id, host_context.namespace_id, client.grant.frontend_app_id
+        )
+        if current_binding is None or current_binding.profile_digest != client.grant.profile_digest:
+            return ApiResponse(403, {"status": "forbidden", "reason": "frontend_profile_not_bound"})
     try:
         admission = ClientBindingService(
             platform.client_sessions, platform.client_control_leases

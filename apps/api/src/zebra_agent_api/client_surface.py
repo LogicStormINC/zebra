@@ -90,7 +90,8 @@ def mount_client_surface(
         with (
             task_io_deadline(deadline),
             postgres_connection_scope(bounded=True)
-            if app.settings.deployment == "cloud" else nullcontext(),
+            if app.settings.deployment == "cloud"
+            else nullcontext(),
         ):
             denied = task_access_response(
                 app,
@@ -130,6 +131,7 @@ def _mount_and_bind(
         },
         auth,
         request.host_context,
+        request.verified_host_grant,
     )
     if binding.status_code != 201:
         return binding
@@ -169,7 +171,8 @@ def open_client_surface(app: "ZebraAgentApi", request: "RouteRequest") -> ApiRes
         with (
             task_io_deadline(deadline),
             postgres_connection_scope(bounded=True)
-            if app.settings.deployment == "cloud" else nullcontext(),
+            if app.settings.deployment == "cloud"
+            else nullcontext(),
         ):
             denied = task_access_response(
                 app,
@@ -180,7 +183,9 @@ def open_client_surface(app: "ZebraAgentApi", request: "RouteRequest") -> ApiRes
             )
             if denied is not None:
                 return denied
-            opened = open_client_session(app, {"grant": grant.model_dump(mode="json")}, context)
+            opened = open_client_session(
+                app, {"grant": grant.model_dump(mode="json")}, context, request.verified_host_grant
+            )
             if opened.status_code != 201:
                 return opened
             platform = app.client_platform
@@ -191,6 +196,7 @@ def open_client_surface(app: "ZebraAgentApi", request: "RouteRequest") -> ApiRes
                 {"X-Zebra-Client-Session": credential},
                 host_context=context,
                 require_host_context=True,
+                verified_host_grant=request.verified_host_grant,
             )
             if auth is None:
                 return ApiResponse(401, {"status": "unauthorized"})

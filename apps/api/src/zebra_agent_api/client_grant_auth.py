@@ -10,6 +10,7 @@ routes authenticate the *client session* through the dedicated
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from hmac import compare_digest
 from typing import Protocol
 from uuid import UUID
@@ -21,6 +22,7 @@ from agent_core.domain.client_sessions import (
 from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.identifiers import ClientSessionId
 from agent_core.ports.client_session_registry import ClientSessionRegistryPort
+from agent_security.host_grant import VerifiedHostGrant
 
 
 class ClientGrantAuthorizer(Protocol):
@@ -30,6 +32,7 @@ class ClientGrantAuthorizer(Protocol):
         *,
         host_context: HostContextEnvelope | None = None,
         require_host_context: bool = False,
+        verified_host_grant: VerifiedHostGrant | None = None,
     ) -> ClientAuthContext | None: ...
 
 
@@ -51,6 +54,7 @@ class SessionBackedClientGrantAuthorizer:
         *,
         host_context: HostContextEnvelope | None = None,
         require_host_context: bool = False,
+        verified_host_grant: VerifiedHostGrant | None = None,
     ) -> ClientAuthContext | None:
         header = next(
             (
@@ -75,6 +79,10 @@ class SessionBackedClientGrantAuthorizer:
             session.ensure_active()
             if require_host_context and host_context is None:
                 return None
+            if require_host_context and not current_client_subject(
+                session.grant.user_ref, host_context, verified_host_grant
+            ):
+                return None
             if host_context is not None:
                 session.grant.ensure_matches(
                     host_app_id=host_context.host_app_id,
@@ -87,3 +95,17 @@ class SessionBackedClientGrantAuthorizer:
         if not compare_digest(session.credential_hash, credential.credential_hash):
             return None
         return ClientAuthContext(client_session_id=client_session_id)
+
+
+def current_client_subject(
+    user_ref: str, context: HostContextEnvelope | None, verified: VerifiedHostGrant | None
+) -> bool:
+    """A secret-bearing BFF request still needs fresh signed subject authority."""
+    return bool(
+        context is not None
+        and verified is not None
+        and verified.context == context
+        and verified.subject_ref == user_ref
+        and context.expires_at is not None
+        and context.expires_at > datetime.now(UTC)
+    )

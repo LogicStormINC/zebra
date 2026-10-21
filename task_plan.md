@@ -1,3 +1,14 @@
+# CA-P3-02A 本轮实施计划
+
+- [x] 核对OD-P3-01A后续依赖、现有Profile/Host批准/Broker/Session/Controller边界，独立分支认领。
+- [x] 产品范围精确Profile管理合同、同事务CAS/原生发布绑定撤销/收据与当前查询。
+- [x] 原生签名主体、原始Task/Run/Profile/Controller准入及显式stores启动修复。
+- [x] 独享PG/两HTTP实例/并发/CAS/批准/审计回滚及兼容专项40项通过。
+- [x] 最终make test/check、3074输入冻结/280Coverage保持、正式文档和证据完成；按授权提交推送，实际远端SHA由交付回执确认。
+- [ ] 实际产品SDK Hook/UI Effect/Receipt/断线恢复及生产HA仍后续验收。
+
+## Historical plans (preserved)
+
 # CA-P3-01C implementation plan
 
 1. [x] Audit published B and platform P3 readiness; claim scoped native validation prerequisite.
