@@ -33,6 +33,7 @@ from agent_core.domain.identifiers import (
     TaskId,
 )
 from agent_core.ports.client_session_registry import ClientSessionRegistryPort
+from psycopg.errors import LockNotAvailable
 from psycopg.types.json import Jsonb
 
 from agent_storage.postgres.client_control_leases import (
@@ -148,6 +149,11 @@ class PostgresClientSessionRegistry(ClientSessionRegistryPort):
 
     def save_mounted_snapshot(self, snapshot: MountedCapabilitySnapshot) -> None:
         with self._database.connect() as connection:
+            # Serialize this Session only; validate inside the committing transaction.
+            self._lock_session(connection, snapshot.client_session_id)
+            prior = self._select_snapshot(connection, snapshot.client_session_id)
+            if prior is not None:
+                snapshot.ensure_narrows(prior)
             saved = connection.execute(
                 """
                 INSERT INTO client_mounted_capability_snapshots (
@@ -217,6 +223,16 @@ class PostgresClientSessionRegistry(ClientSessionRegistryPort):
 
     def save_run_binding(self, binding: ClientRunBinding) -> None:
         with self._database.connect() as connection:
+            self._lock_session(connection, binding.client_session_id, required=False)
+            snapshot = self._select_snapshot(connection, binding.client_session_id)
+            # ponytail: legacy bindings without a stored mount stay readable/writable;
+            # all admitted surfaces have a snapshot and must reference its exact bytes.
+            if snapshot is not None and (
+                binding.mounted_snapshot_digest != snapshot.snapshot_digest
+                or binding.profile_digest != snapshot.profile_digest
+                or set(binding.allowed_actions) - set(snapshot.mounted_actions)
+            ):
+                raise ClientBindingNarrowingError("binding must reference the current mount")
             existing = connection.execute(
                 """
                 SELECT * FROM client_run_bindings
@@ -243,7 +259,9 @@ class PostgresClientSessionRegistry(ClientSessionRegistryPort):
                     raise ClientBindingNarrowingError("binding revisions must advance exactly once")
                 prior = _binding_from_row(existing)
                 if (
-                    prior.profile_digest != binding.profile_digest
+                    prior.binding_id != binding.binding_id
+                    or prior.created_at != binding.created_at
+                    or prior.profile_digest != binding.profile_digest
                     or prior.task_capability_scope != binding.task_capability_scope
                     or set(binding.allowed_actions) - set(prior.allowed_actions)
                 ):
@@ -322,6 +340,44 @@ class PostgresClientSessionRegistry(ClientSessionRegistryPort):
                 (self._namespace, execution_session_id, datetime.now(UTC)),
             ).fetchall()
         return _binding_from_row(rows[0]) if len(rows) == 1 else None
+
+    def _lock_session(self, connection: Any, session_id: UUID, *, required: bool = True) -> None:
+        # Bound the new row-lock wait even for callers without a request deadline;
+        # keep a shorter operator/request lock_timeout instead of lengthening it.
+        connection.execute(
+            "SELECT set_config('lock_timeout', "
+            "LEAST(NULLIF(EXTRACT(epoch FROM current_setting('lock_timeout')::interval) "
+            "* 1000, 0), 1000)::int::text || 'ms', true)"
+        )
+        try:
+            row = connection.execute(
+                "SELECT * FROM client_sessions WHERE deployment_namespace = %s "
+                "AND client_session_id = %s FOR UPDATE",
+                (self._namespace, session_id),
+            ).fetchone()
+        except LockNotAvailable as exc:
+            raise ClientSessionError("client session mutation is busy") from exc
+        if row is None:
+            if required:
+                raise ClientSessionExpiredError("client session not found")
+            # ponytail: preserve legacy registry-only bindings without Session rows;
+            # public admission always requires a current authenticated Session first.
+            return
+        _session_from_row(row).ensure_active()
+
+    def _select_snapshot(
+        self,
+        connection: Any,
+        session_id: UUID,
+    ) -> MountedCapabilitySnapshot | None:
+        row = connection.execute(
+            "SELECT snapshot_json FROM client_mounted_capability_snapshots "
+            "WHERE deployment_namespace = %s AND client_session_id = %s",
+            (self._namespace, session_id),
+        ).fetchone()
+        return (
+            None if row is None else MountedCapabilitySnapshot.model_validate(row["snapshot_json"])
+        )
 
     def _select_session(self, connection: Any, session_id: ClientSessionId) -> Any:
         return connection.execute(

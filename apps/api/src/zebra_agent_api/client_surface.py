@@ -135,6 +135,8 @@ def _mount_and_bind(
     )
     if binding.status_code != 201:
         return binding
+    if binding.body["mounted_snapshot_digest"] != body.mount.snapshot_digest:
+        return ApiResponse(409, {"status": "conflict", "reason": "client_surface_changed"})
     # ponytail: keep the original partial-commit/retry semantics. A retry
     # reuses the binding and rotates its fence; no bearer response is stored.
     return ApiResponse(201, {**mounted.body, **binding.body})

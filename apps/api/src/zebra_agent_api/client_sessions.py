@@ -13,9 +13,12 @@ from agent_control_plane.client_admission import (
 )
 from agent_core.domain.client_capabilities import (
     CAPABILITY_NAME_PATTERN,
+    MountedCapabilityNarrowingError,
     MountedCapabilitySnapshot,
     ProfileLifecycle,
+    canonical_client_capability_digest,
 )
+from agent_core.domain.client_run_bindings import ClientRunBindingError
 from agent_core.domain.client_sessions import (
     ClientControlFence,
     ClientControlLease,
@@ -191,7 +194,11 @@ def mount_client_session(
         admission = ClientAdmissionService(platform.client_sessions).mount(
             ClientSessionId(_uuid(session_id)), snapshot, profile=profile
         )
-    except (ClientAdmissionError, ClientSessionError) as exc:
+    except (
+        ClientAdmissionError,
+        ClientSessionError,
+        MountedCapabilityNarrowingError,
+    ) as exc:
         return ApiResponse(409, {"status": "conflict", "reason": str(exc)[:256]})
     return ApiResponse(
         200,
@@ -292,12 +299,45 @@ def bind_client_run(
             task_capability_scope=scope,
             controller=controller,
         )
-    except (ClientAdmissionError, ClientSessionError) as exc:
+    except (
+        ClientAdmissionError,
+        ClientSessionError,
+        ClientRunBindingError,
+        MountedCapabilityNarrowingError,
+    ) as exc:
         return ApiResponse(409, {"status": "conflict", "reason": str(exc)[:256]})
     binding, lease = admission.binding, admission.lease
+    snapshot = platform.client_sessions.get_mounted_snapshot(auth.client_session_id)
+    current = platform.client_sessions.get_run_binding(
+        parsed_task_id, run_id, auth.client_session_id
+    )
+    if (
+        snapshot is None
+        or current != binding
+        or snapshot.snapshot_digest != binding.mounted_snapshot_digest
+        or snapshot.profile_digest != current_profile.profile_digest
+    ):
+        return ApiResponse(409, {"status": "conflict", "reason": "client_surface_changed"})
+    digests = {
+        action.name: canonical_client_capability_digest(action.model_dump(mode="json"))
+        for action in current_profile.actions
+        if action.name in binding.allowed_actions
+    }
+    active_lease = platform.client_control_leases.get_active(binding.binding_id)
+    if set(digests) != set(binding.allowed_actions) or (
+        admission.controller_fence is not None
+        and (active_lease is None or not active_lease.matches_fence(admission.controller_fence))
+    ):
+        return ApiResponse(409, {"status": "conflict", "reason": "client_surface_changed"})
     return ApiResponse(
         201,
         {
+            "client_surface_metadata_contract_version": 1,
+            "profile_digest": binding.profile_digest,
+            "ui_revision": snapshot.ui_revision,
+            "mounted_snapshot_digest": snapshot.snapshot_digest,
+            "binding_mounted_snapshot_digest": binding.mounted_snapshot_digest,
+            "action_contract_digests": digests,
             "binding_id": str(binding.binding_id),
             "binding_revision": binding.binding_revision,
             "binding_digest": binding.binding_digest,

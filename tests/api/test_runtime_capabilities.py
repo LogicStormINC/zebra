@@ -16,6 +16,7 @@ def test_runtime_capabilities_match_task_network_profiles(tmp_path) -> None:
         "schema_version": MIGRATIONS[-1].version,
         "network_profiles": list(SUPPORTED_NETWORK_PROFILES),
         "client_surface_contract_version": 0,
+        "client_surface_metadata_contract_version": 0,
         "client_surface_open_contract_version": 0,
     }
     assert "full-gateway" in response.body["network_profiles"]

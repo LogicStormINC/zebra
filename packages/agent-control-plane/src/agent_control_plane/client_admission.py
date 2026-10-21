@@ -13,7 +13,6 @@ from datetime import UTC, datetime, timedelta
 
 from agent_core.domain.client_capabilities import (
     FrontendCapabilityProfileVersion,
-    MountedCapabilityNarrowingError,
     MountedCapabilitySnapshot,
     ProfileLifecycle,
 )
@@ -112,10 +111,9 @@ class ClientAdmissionService:
         if session.grant.profile_digest != snapshot.profile_digest:
             raise ClientAdmissionError("snapshot profile digest does not match the grant")
         snapshot.ensure_subset_of(profile)
-        if session.mounted_snapshot_digest is not None:
-            prior = self._sessions.get_mounted_snapshot(session_id)
-            if prior is not None:
-                ensure_mount_narrows(prior, snapshot)
+        prior = self._sessions.get_mounted_snapshot(session_id)
+        if prior is not None:
+            ensure_mount_narrows(prior, snapshot)
         self._sessions.save_mounted_snapshot(snapshot)
         updated = self._sessions.get_session(session_id)
         assert updated is not None
@@ -167,10 +165,17 @@ class ClientBindingService:
                 binding_revision=1,
                 created_at=datetime.now(UTC),
             )
-        elif existing.allowed_actions == allowed:
+        elif (
+            existing.allowed_actions == allowed
+            and existing.mounted_snapshot_digest == snapshot.snapshot_digest
+        ):
             binding = existing
         else:
-            binding = existing.narrow(mounted_actions=allowed, revision_reason="mount")
+            binding = existing.narrow(
+                mounted_actions=allowed,
+                revision_reason="mount",
+                mounted_snapshot_digest=snapshot.snapshot_digest,
+            )
         self._sessions.save_run_binding(binding)
         lease: ClientControlLease | None = None
         fence: ClientControlFence | None = None
@@ -194,19 +199,4 @@ class ClientBindingService:
 def ensure_mount_narrows(prior: MountedCapabilitySnapshot, new: MountedCapabilitySnapshot) -> None:
     """A new mount may only narrow the previously mounted capabilities."""
 
-    if (
-        new.frontend_app_id != prior.frontend_app_id
-        or new.profile_revision != prior.profile_revision
-        or new.profile_digest != prior.profile_digest
-    ):
-        raise MountedCapabilityNarrowingError("remounts must keep the same published profile")
-    if set(new.mounted_readables) - set(prior.mounted_readables):
-        raise MountedCapabilityNarrowingError("remounts may not add readables")
-    if set(new.mounted_actions) - set(prior.mounted_actions):
-        raise MountedCapabilityNarrowingError("remounts may not add actions")
-    if new.ui_revision < prior.ui_revision:
-        raise MountedCapabilityNarrowingError("remount UI revision cannot move backwards")
-    if new.ui_revision == prior.ui_revision and new.snapshot_digest != prior.snapshot_digest:
-        raise MountedCapabilityNarrowingError(
-            "the same UI revision cannot describe a different mount"
-        )
+    new.ensure_narrows(prior)

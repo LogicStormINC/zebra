@@ -1,3 +1,13 @@
+# CA-P3-02D 当前计划
+
+1. [x] 核对现有公开调用及并发不变量，认领独立任务/路径。
+2. [x] 红绿回归摘要缺口、同名重挂载旧binding与并发收窄。
+3. [x] 最小原生metadata/域规则/持久事务修复，无迁移。
+4. [x] 真实独享PG与全量make test/check、旧SDK/合同/Coverage保持。
+5. [x] 正式证据/任务完成，按授权准备限定提交推送；远端SHA交付回执核验，消费pin独立后续任务。
+
+## Historical plan
+
 # CA-P3-02C 当前计划
 
 1. [x] 审计实际SDK/BFF/Readable，Ready认领精确Owned paths和独立工作树。

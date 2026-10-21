@@ -434,3 +434,21 @@ class MountedCapabilitySnapshot(BaseModel):
             raise MountedCapabilityNarrowingError(
                 f"actions not published: {sorted(unknown_actions)}"
             )
+
+    def ensure_narrows(self, prior: MountedCapabilitySnapshot) -> None:
+        """Validate a remount against the current persisted snapshot."""
+        if (
+            self.client_session_id != prior.client_session_id
+            or self.frontend_app_id != prior.frontend_app_id
+            or self.profile_revision != prior.profile_revision
+            or self.profile_digest != prior.profile_digest
+        ):
+            raise MountedCapabilityNarrowingError("remounts must keep the same session and profile")
+        if set(self.mounted_readables) - set(prior.mounted_readables):
+            raise MountedCapabilityNarrowingError("remounts may not add readables")
+        if set(self.mounted_actions) - set(prior.mounted_actions):
+            raise MountedCapabilityNarrowingError("remounts may not add actions")
+        if self.ui_revision < prior.ui_revision:
+            raise MountedCapabilityNarrowingError("remount UI revision cannot move backwards")
+        if self.ui_revision == prior.ui_revision and self.snapshot_digest != prior.snapshot_digest:
+            raise MountedCapabilityNarrowingError("the same UI revision cannot change the mount")

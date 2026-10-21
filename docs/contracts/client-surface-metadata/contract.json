@@ -1,0 +1,60 @@
+{
+  "contractVersion": "client-surface-metadata/1",
+  "capability": "client_surface_metadata_contract_version",
+  "capabilityVersion": 1,
+  "endpoints": [
+    "POST /v1/tasks/{task_id}/runs/{run_id}/client-bindings",
+    "POST /v1/tasks/{task_id}/runs/{run_id}/client-surface"
+  ],
+  "authority": {
+    "currentSubjectTaskRun": "native existing HostGrant and ClientSession authorization",
+    "profileActionDigests": "native canonical_client_capability_digest(action.model_dump(mode=json))",
+    "browserIdentifiersGrantAccess": false,
+    "credentialCustody": "trusted business BFF only",
+    "goExecutionStateMachine": false
+  },
+  "metadata": {
+    "versionField": "client_surface_metadata_contract_version",
+    "actionDigestsField": "action_contract_digests",
+    "actionDigestKeys": "exactly allowed_actions; no unmounted or forbidden action",
+    "profileField": "profile_digest",
+    "uiRevisionField": "ui_revision",
+    "snapshotField": "mounted_snapshot_digest",
+    "bindingSnapshotField": "binding_mounted_snapshot_digest",
+    "bindingFields": [
+      "binding_id",
+      "binding_digest",
+      "binding_revision"
+    ],
+    "snapshotEqualityRequired": true
+  },
+  "lifecycle": {
+    "sameActionsNewSnapshot": "same binding_id; next binding_revision and new binding_digest/current mounted_snapshot_digest",
+    "sameExactSnapshot": "same binding_id/revision/digest; Controller request still rotates native fence",
+    "narrowOnly": true,
+    "concurrentMountValidation": "short per-Session row lock; validate current snapshot before commit",
+    "bindingCommitValidation": "same Session lock; require current mounted snapshot if present; preserve revision and narrowing guards",
+    "mixedFacts": "409 client_surface_changed without secret-bearing success",
+    "observer": "no fence issued; does not implicitly release an existing lease",
+    "partialCommit": "mount, binding and lease are separate commits; no stored bearer response or automatic credential retry",
+    "responseGuarantee": "current observed facts, not cross-request atomic authority or immediate revocation",
+    "lockWaitMilliseconds": 1000,
+    "shorterLockTimeoutPreserved": true
+  },
+  "compatibility": {
+    "migration": false,
+    "historicalBindingBytesRewritten": false,
+    "legacyRegistryOnlyBindingWithoutSessionPreserved": true,
+    "oldSdkAndContractArtifactsChanged": false,
+    "priorMethodsAndFieldsRetained": true
+  },
+  "verificationBoundary": {
+    "nativeHttpAndOwnedPostgres": true,
+    "sdkConsumesRemountMetadata": false,
+    "realProductBffBrowserWorkerE2E": false,
+    "readableValuesUploaded": false,
+    "npmPublication": false,
+    "productionHaVerified": false,
+    "deploymentOrProductionMigration": false
+  }
+}

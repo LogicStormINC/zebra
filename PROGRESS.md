@@ -1,3 +1,14 @@
+# CA-P3-02D — 原生挂载摘要与绑定同步（Review）
+
+2026-10-22；基于已发布a1635a9c，先补公开action摘要与实际重挂载绑定前置。
+同名action的UI revision变化应同步新的mounted snapshot，持久层须在短Session锁内复核收窄。
+最终make test10914passed/3020条件跳过（1135.58秒），make check通过（mypy1388/eval30）。
+API56passed/1条件、独享PG62passed/零跳过；3669源码和414旧SDK/合同/Coverage文件无漂移，其中280Coverage保持。
+[正式方案](docs/CA-P3-02D_surface_metadata.md) · [证据](docs/evidence/ca-p3-02d/validation.json)。
+前轮漏更新旧能力列表严格断言已修正，最终完整复验另记，不把失败/中断轮次计为通过。
+按授权准备限定提交推送，远端SHA由交付回执核验；管理前端mock/历史/Coverage保持。
+实际SDK/BFF应用同步结果及成对浏览器联调仍后续；无部署/迁移/主线整合。
+
 # CA-P3-02C — 显式BFF浏览器SDK（Review）
 
 2026-10-22；基于已发布0aa6e558；管理前端mock保持，未整合主线/部署/迁移。

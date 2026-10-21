@@ -1,3 +1,17 @@
+# 2026-10-22 — CA-P3-02D
+
+核对C后依赖，发现同名action重挂载保留旧绑定摘要，以及并发mount服务读校验的窗口。
+Ready认领原生metadata/共享域规则/PG边界，消费方只固定公开合同；保留旧SDK和旧pin。
+API先红4失败后补齐canonical map/旧snapshot/竞争冲突；首个PG轮次48通过4失败，
+发现旧registry-only binding无Session的兼容路径，保留后通过58项。
+再补组合请求与返回前fence竞争检查至60项；复核新增锁对原始分步接口的期限，加入至多1秒并保留更短配置，
+最新独享PG62通过/零跳过且容器已清理，make check通过。两轮先前全量因新增上述检查主动中断，不能计为最终通过。
+bounded全量结束为1失败/10913通过/3020条件跳过（1123.48秒）：漏更新原有runtime capabilities严格整对象断言，
+新增加法metadata字段后更新该期待值，保留原有严格断言；生产源码未再修改，重新冻结后完整复验。
+最终shipping全量10914通过/3020条件跳过（1135.58秒），make check通过；API56/1、独享PG62/零跳过分别记证。
+3669输入冻结和414旧SDK/合同/Coverage保持，280Coverage源文件未变；正式证据/Review状态完成，按授权准备限定交付。
+SDK源码/旧合同/Coverage均保持。
+
 # 2026-10-22 — CA-P3-02C
 
 Ready认领后审计新SDK/BFF路径；初次测试命令工作目录错误未运行，修正后旧SDK3failed/1passed，
