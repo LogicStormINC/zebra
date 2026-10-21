@@ -1,0 +1,29 @@
+{
+  "abi": "cloud-agent.native-script/1",
+  "name": "demo/tool",
+  "version": "1.0.0",
+  "kind": "tool",
+  "source_digest": "sha256:e91f3eeb7808f1e5087a94d213d493aa9d05d3e2134205ca7f295c9df8dc51ec",
+  "python": "3.12",
+  "dependencies": "stdlib-only",
+  "entrypoint": "execute",
+  "effects": "none",
+  "input": {
+    "fields": [
+      {
+        "name": "query",
+        "type": "string"
+      }
+    ]
+  },
+  "output": {
+    "fields": [
+      {
+        "name": "value",
+        "type": "string"
+      }
+    ]
+  },
+  "timeout_seconds": 2,
+  "max_output_bytes": 2048
+}

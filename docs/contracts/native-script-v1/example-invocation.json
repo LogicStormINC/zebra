@@ -1,0 +1,8 @@
+{
+  "abi": "cloud-agent.native-script/1",
+  "invocation_id": "88888888-8888-4888-8888-888888888888",
+  "manifest_digest": "sha256:7dc15a8d607a3789fb6affb864cecb9f959919a178300236e325b753414ae6e0",
+  "arguments": {
+    "query": "sample"
+  }
+}

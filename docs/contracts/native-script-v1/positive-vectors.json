@@ -1,0 +1,140 @@
+[
+  {
+    "name": "tool",
+    "source": "def execute(arguments):\n    return {'value': 'hello'}\n",
+    "manifest": {
+      "abi": "cloud-agent.native-script/1",
+      "name": "demo/tool",
+      "version": "1.0.0",
+      "kind": "tool",
+      "source_digest": "sha256:e91f3eeb7808f1e5087a94d213d493aa9d05d3e2134205ca7f295c9df8dc51ec",
+      "python": "3.12",
+      "dependencies": "stdlib-only",
+      "entrypoint": "execute",
+      "effects": "none",
+      "input": {
+        "fields": [
+          {
+            "name": "query",
+            "type": "string"
+          }
+        ]
+      },
+      "output": {
+        "fields": [
+          {
+            "name": "value",
+            "type": "string"
+          }
+        ]
+      },
+      "timeout_seconds": 2,
+      "max_output_bytes": 2048
+    },
+    "manifest_digest": "sha256:7dc15a8d607a3789fb6affb864cecb9f959919a178300236e325b753414ae6e0",
+    "invocation": {
+      "abi": "cloud-agent.native-script/1",
+      "invocation_id": "88888888-8888-4888-8888-888888888888",
+      "manifest_digest": "sha256:7dc15a8d607a3789fb6affb864cecb9f959919a178300236e325b753414ae6e0",
+      "arguments": {
+        "query": "sample"
+      }
+    },
+    "output": {
+      "value": "hello"
+    },
+    "output_digest": "sha256:5e99d76e946ff987af1402a9ef575fb4fbf3d2bc668d8be30ad48aac48cc3878"
+  },
+  {
+    "name": "context",
+    "source": "def execute(arguments):\n    return {'text': 'hello'}\n",
+    "manifest": {
+      "abi": "cloud-agent.native-script/1",
+      "name": "demo/context",
+      "version": "1.0.0",
+      "kind": "context",
+      "source_digest": "sha256:8094b41e4d2f447ad1f8aea353b506fb17feeb1607fb9d58721ade0903ab1288",
+      "python": "3.12",
+      "dependencies": "stdlib-only",
+      "entrypoint": "execute",
+      "effects": "none",
+      "input": {
+        "fields": [
+          {
+            "name": "query",
+            "type": "string"
+          }
+        ]
+      },
+      "output": {
+        "fields": [
+          {
+            "name": "text",
+            "type": "string"
+          }
+        ]
+      },
+      "timeout_seconds": 2,
+      "max_output_bytes": 2048
+    },
+    "manifest_digest": "sha256:06c12206a33b97e762ce490299d95a89a036bb71cb544ead57cbc9c87c3d936d",
+    "invocation": {
+      "abi": "cloud-agent.native-script/1",
+      "invocation_id": "88888888-8888-4888-8888-888888888888",
+      "manifest_digest": "sha256:06c12206a33b97e762ce490299d95a89a036bb71cb544ead57cbc9c87c3d936d",
+      "arguments": {
+        "query": "sample"
+      }
+    },
+    "output": {
+      "text": "hello"
+    },
+    "output_digest": "sha256:cbbbdcd27692344de5dbab3abcaba413fb0f45307267de7081401576df1cb176"
+  },
+  {
+    "name": "verifier",
+    "source": "def execute(arguments):\n    return {'passed': True}\n",
+    "manifest": {
+      "abi": "cloud-agent.native-script/1",
+      "name": "demo/verifier",
+      "version": "1.0.0",
+      "kind": "verifier",
+      "source_digest": "sha256:8296e4ef48be220fdf351d8294e82a8ff677d5fef164cee4adb52cfb928a36ab",
+      "python": "3.12",
+      "dependencies": "stdlib-only",
+      "entrypoint": "execute",
+      "effects": "none",
+      "input": {
+        "fields": [
+          {
+            "name": "query",
+            "type": "string"
+          }
+        ]
+      },
+      "output": {
+        "fields": [
+          {
+            "name": "passed",
+            "type": "boolean"
+          }
+        ]
+      },
+      "timeout_seconds": 2,
+      "max_output_bytes": 2048
+    },
+    "manifest_digest": "sha256:e4adc1f4719e84b13c30267ba944a0700ce23e37d471714bcdb4602eedeb6056",
+    "invocation": {
+      "abi": "cloud-agent.native-script/1",
+      "invocation_id": "88888888-8888-4888-8888-888888888888",
+      "manifest_digest": "sha256:e4adc1f4719e84b13c30267ba944a0700ce23e37d471714bcdb4602eedeb6056",
+      "arguments": {
+        "query": "sample"
+      }
+    },
+    "output": {
+      "passed": true
+    },
+    "output_digest": "sha256:11c11db30f4b3f6c758722ba3e27eea08145b7d212f6a157451e364b48475280"
+  }
+]

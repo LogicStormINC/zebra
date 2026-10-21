@@ -1,3 +1,14 @@
+# CA-P3-01A — 2026-10-21
+
+先核对P2D/OD-P2C发布状态和P3合同依赖，再在独立分支认领精确路径。
+读取现有Bundle JSON/RuntimePort/OS/OCI/ToolRegistry/Skill ZIP实现；复用既有沙箱与严格JSON。
+最初实际开发沙箱拒绝工作区外venv/Framework解释器；以只读真实安装根装配可重定位Python，未扩大profile。
+POSIX继承管道回归在旧实现1.61秒后未抛超时而失败，修复后6项通过。
+专项最终141通过/零跳过，独享PG保持74通过/零跳过；CLI入口通过。
+全量make test10756通过/3008既有跳过，1098.60秒；make check通过，冻结2853项零漂移。
+最终证据在docs/evidence/ca-p3-01a/；按授权提交推送，远端SHA在交付回执核对。
+无main/cloud-agent整合、部署/生产迁移或原工作区改动。
+
 # CA-P2-01D 工作记录
 
 - [x] 核对A/B/C与P2A/B依赖，独立分支认领及路径边界。

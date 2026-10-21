@@ -1,3 +1,18 @@
+# 2026-10-21 — CA-P3-01A 原生脚本执行前置
+
+P2D公开发布/消费与成对OD-P2C已交付；按当前继续指令开始P3第一片。
+生产者固定只读script ABI、严格输入输出/摘要、基于既有RuntimePort的受限一次执行，
+并修复POSIX共享输出管道deadline。DDD领域值与Runtime I/O分离，不引入新存储/依赖。
+当前实现和未接入范围见[正式合同](docs/NATIVE_SCRIPT_ABI.md)。
+Bundle脚本准入/Worker Tool/Context/Verifier与持久收据/取消/恢复仍由CA-P3-01B承接；
+可信资产最小链/前端接入在后续OD-P3。无历史/Coverage改写、部署、生产迁移或主线整合。
+全量make test10756passed/3008既有外部依赖跳过，1098.60秒，exit0；make check通过（mypy1368、eval30/30）。
+专项141passed/零跳过，独享临时PG保持专项74passed/零跳过；CLI纯校验与实际Seatbelt通过。
+冻结2853项源码/合同，期间零漂移；证据见docs/evidence/ca-p3-01a/validation.json。
+源码交付为Review，按授权提交推送；实际远端SHA在交付回执核对，旧证据保留。
+
+以下为历史记录。
+
 # 2026-10-21 — CA-P2-01D 公开发布与消费链路
 
 状态：Review；最终原生make test10710passed/3008skipped，1128.38秒，exit0；make check通过，mypy1364源文件、eval30/30。

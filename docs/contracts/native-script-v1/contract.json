@@ -1,0 +1,29 @@
+{
+  "abi": "cloud-agent.native-script/1",
+  "status": "offline-read-only-runner",
+  "kinds": [
+    "tool",
+    "context",
+    "verifier"
+  ],
+  "python": "3.12",
+  "effects": [
+    "none"
+  ],
+  "dependencies": [
+    "stdlib-only"
+  ],
+  "limits": {
+    "sourceBytes": 16384,
+    "inputBytes": 16384,
+    "outputBytes": 32768,
+    "timeoutSeconds": 30,
+    "fieldsPerRecord": 32,
+    "stringBytes": 4096,
+    "manifestBytes": 16384
+  },
+  "workerAdmission": false,
+  "bundleScriptAbi": "unsupported",
+  "coverageAuthority": false,
+  "unknownRetry": false
+}

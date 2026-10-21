@@ -41,7 +41,9 @@ Run `uv run python scripts/validate_runtime_bundle.py --input docs/contracts/run
 [v2 Task/Worker assembly](docs/RUNTIME_BUNDLE_ASSEMBLY.md) is an explicit opt-in continuation.
 [Scoped native validation](docs/BUNDLE_MANAGEMENT.md) exposes the producer contract
 and pure Bundle checks to the control plane; it does not publish or execute a Bundle.
-Online Bundle management and native scripts remain unsupported; legacy history/Coverage stays intact.
+[Public publication](docs/PUBLICATION_MANAGEMENT.md) and an opt-in offline
+[native script ABI/runner](docs/NATIVE_SCRIPT_ABI.md) are available on their feature branches.
+Bundle script admission/Worker integration remain unsupported; legacy history/Coverage stays intact.
 
 ## License
 

@@ -1,3 +1,15 @@
+# CA-P3-01A implementation plan
+
+1. [x] Audit P2/publication and P3 producer dependencies; claim exact paths before code.
+2. [x] Define closed immutable ABI and executable positive/negative contract artifacts.
+3. [x] Fix shared inherited-pipe deadline with a red/green regression.
+4. [x] Implement one-shot read-only runner through existing RuntimePort, fail closed on isolation/digest/schema/budget.
+5. [x] Exercise actual sandbox, refusal, timeout, concurrency, and preserved legacy/Bundle/Coverage behavior.
+6. [x] Review diff, run make check then frozen full make test; record exact skips and limits.
+7. [x] Update formal docs/tasks and authorized scoped commit/push prepared; consumer pins actual published producer afterward. Remote SHA verified in delivery receipt.
+
+## Historical plans (preserved)
+
 # CA-P2-01D 实施清单
 
 - [x] 核对A/B/C与P2A/B依赖，独立分支认领及路径边界。

@@ -1,0 +1,29 @@
+{
+  "checked": [
+    {
+      "document": "docs/NATIVE_SCRIPT_ABI.md",
+      "target": "AGENT_TASKS.md"
+    },
+    {
+      "document": "docs/NATIVE_SCRIPT_ABI.md",
+      "target": "contracts/native-script-v1/contract.json"
+    },
+    {
+      "document": "docs/NATIVE_SCRIPT_ABI.md",
+      "target": "PUBLICATION_MANAGEMENT.md"
+    },
+    {
+      "document": "docs/NATIVE_SCRIPT_ABI.md",
+      "target": "contracts/native-script-v1/positive-vectors.json"
+    },
+    {
+      "document": "docs/NATIVE_SCRIPT_ABI.md",
+      "target": "contracts/native-script-v1/negative-vectors.json"
+    },
+    {
+      "document": "docs/contracts/native-script-v1/README.md",
+      "target": "../../NATIVE_SCRIPT_ABI.md"
+    }
+  ],
+  "broken": 0
+}
