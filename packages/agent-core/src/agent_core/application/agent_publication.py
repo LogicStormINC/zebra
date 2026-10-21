@@ -23,6 +23,7 @@ from agent_core.domain.agent_definitions import (
     AgentReleaseEnforcementMode,
     AgentReleaseStatus,
 )
+from agent_core.domain.bundle_definition import require_bundle_environment
 from agent_core.domain.identifiers import (
     AgentDefinitionVersionId,
     AgentReleaseId,
@@ -80,6 +81,7 @@ class AgentDefinitionPublicationService:
         version = self._registry.get_version(scope, version_id)
         if version is None:
             raise AgentPublicationError("cannot publish an unknown Version")
+        require_bundle_environment(version, environment)
         if gate.version_id != version_id:
             raise PublicationGateNotPassedError(
                 "publication gate evidence targets a different Version"

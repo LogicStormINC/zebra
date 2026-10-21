@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from agent_core.domain.agent_definition_snapshots import AgentDefinitionSnapshot
+from agent_core.domain.bundle_definition import parse_definition_snapshot
 from agent_core.domain.events import EventType, SessionEvent
 from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.identifiers import AgentDefinitionId
@@ -95,7 +96,7 @@ def governed_memory_scope_from_events(
                 return None
         if isinstance(raw_definition, dict):
             try:
-                definition_snapshot = AgentDefinitionSnapshot.model_validate(raw_definition)
+                definition_snapshot = parse_definition_snapshot(raw_definition)
             except ValueError:
                 return None
     return governed_memory_scope(

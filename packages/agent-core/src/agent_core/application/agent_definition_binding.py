@@ -13,9 +13,14 @@ from datetime import datetime
 from agent_core.application.agent_definitions import PublisherGrantPort
 from agent_core.domain.agent_definition_snapshots import (
     AgentDefinitionSnapshot,
-    canonical_agent_definition_snapshot_digest,
 )
 from agent_core.domain.agent_definitions import AgentDefinitionScope
+from agent_core.domain.bundle_definition import (
+    parse_definition_snapshot,
+    require_bundle_environment,
+    snapshot_from_release,
+    snapshot_from_version,
+)
 from agent_core.domain.identifiers import AgentDefinitionVersionId
 from agent_core.ports.agent_registry import AgentRegistryPort
 
@@ -62,7 +67,8 @@ class DefinitionBindingService:
                 "Published Release references a Version that is missing or"
                 " digest-mismatched; failing closed"
             )
-        return AgentDefinitionSnapshot.from_release(
+        require_bundle_environment(version, environment)
+        return snapshot_from_release(
             release=release,
             version=version,
             resolved_at=resolved_at,
@@ -89,10 +95,9 @@ class DefinitionBindingService:
             )
         version = self._registry.get_version(scope, version_id)
         if version is None:
-            raise DefinitionBindingError(
-                "candidate Version does not exist in this scope"
-            )
-        return AgentDefinitionSnapshot.from_version(
+            raise DefinitionBindingError("candidate Version does not exist in this scope")
+        require_bundle_environment(version, environment)
+        return snapshot_from_version(
             version=version,
             resolved_at=resolved_at,
         )
@@ -103,10 +108,10 @@ def validate_recovered_snapshot(
 ) -> None:
     """Recovery-side digest check; never reads Registry or mutable drafts.
 
-    Parsing through the model already recomputed both canonical digests; this
-    explicit check only guards against a snapshot whose self-digest is valid
-    but whose definition digest was never verified against a Version. Callers
-    that hold the bound Version must use ``version_digest_matches_snapshot``.
+    V2 revalidates the full embedded Version and assembly. Legacy v1 keeps
+    its historical self-digest check without acquiring a new Registry dependency.
     """
-    if canonical_agent_definition_snapshot_digest(snapshot) != snapshot.snapshot_digest:
-        raise DefinitionBindingError("recovered Definition snapshot digest mismatch")
+    try:
+        parse_definition_snapshot(snapshot)
+    except ValueError as exc:
+        raise DefinitionBindingError("recovered Definition snapshot digest mismatch") from exc

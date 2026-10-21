@@ -26,10 +26,12 @@ from agent_core.domain.agent_definitions import (
     AgentDefinitionScope,
     AgentDefinitionVersion,
 )
+from agent_core.domain.bundle_definition import BundleDefinitionVersion
 from agent_core.domain.identifiers import (
     AgentDefinitionId,
     AgentDefinitionVersionId,
 )
+from agent_core.domain.runtime_assembly import RuntimeAssembly
 from agent_core.ports.agent_registry import AgentRegistryPort
 
 
@@ -212,9 +214,7 @@ class AgentDefinitionDraftService:
             raise DraftNotFoundError("no draft exists for this Definition")
         issues = validate_draft_content(draft, ceiling=ceiling)
         status = (
-            AgentDraftValidationStatus.PASSED
-            if not issues
-            else AgentDraftValidationStatus.FAILED
+            AgentDraftValidationStatus.PASSED if not issues else AgentDraftValidationStatus.FAILED
         )
         validation = AgentDefinitionDraftValidation(
             definition_id=definition_id,
@@ -239,6 +239,7 @@ class AgentDefinitionDraftService:
         version_id: AgentDefinitionVersionId,
         version: int,
         created_at: datetime,
+        runtime_assembly: RuntimeAssembly | None = None,
     ) -> AgentDefinitionVersion:
         scope, ceiling = self._resolve_authority(namespace_id, definition_id, actor_ref)
         draft = self._registry.get_draft(scope)
@@ -260,9 +261,22 @@ class AgentDefinitionDraftService:
             )
         issues = validate_draft_content(draft, ceiling=ceiling)
         if issues:
-            raise DraftValidationFailedError(
-                "draft content is not within the publisher grant"
+            raise DraftValidationFailedError("draft content is not within the publisher grant")
+        if runtime_assembly is not None:
+            runtime_assembly = RuntimeAssembly.model_validate(runtime_assembly)
+            bundle_scope = runtime_assembly.bundle.manifest.scope
+            reference = (
+                "runtime-bundle/"
+                + runtime_assembly.bundle.bundle_digest.removeprefix("sha256:")
+                + "@1"
             )
+            if reference not in ceiling.allowed_references:
+                raise PublisherGrantError("exact runtime Bundle reference is not granted")
+            if (bundle_scope.authority_issuer, bundle_scope.namespace_id) != (
+                ceiling.authority_issuer,
+                namespace_id,
+            ):
+                raise PublisherGrantError("runtime Bundle scope is outside publisher authority")
         materialized = AgentDefinitionVersion.from_definition(
             definition,
             version_id=version_id,
@@ -276,13 +290,16 @@ class AgentDefinitionDraftService:
             evaluation_profile_ref=draft.evaluation_profile_ref,
             runtime_profile_ref=draft.runtime_profile_ref,
         )
+        if runtime_assembly is not None:
+            materialized = BundleDefinitionVersion(
+                **materialized.model_dump(exclude={"schema_version", "definition_digest"}),
+                runtime_assembly=runtime_assembly,
+            )
         saved = self._registry.save_version(materialized)
         metadata_updated = definition.model_copy(
             update={"name": draft.name, "description": draft.description}
         )
-        self._registry.save_definition(
-            metadata_updated, expected_revision=definition.revision
-        )
+        self._registry.save_definition(metadata_updated, expected_revision=definition.revision)
         return saved
 
     def _resolve_authority(
@@ -298,9 +315,7 @@ class AgentDefinitionDraftService:
                 f" {namespace_id!r}; failing closed"
             )
         if ceiling.namespace_id != namespace_id:
-            raise MissingPublisherGrantError(
-                "publisher grant namespace mismatch; failing closed"
-            )
+            raise MissingPublisherGrantError("publisher grant namespace mismatch; failing closed")
         return (
             AgentDefinitionScope(
                 authority_issuer=ceiling.authority_issuer,
@@ -333,10 +348,7 @@ def validate_draft_content(
                 AgentDraftValidationIssue(
                     code="reference-not-granted",
                     field=field,
-                    message=(
-                        f"reference {reference!r} is not within the publisher"
-                        " grant ceiling"
-                    ),
+                    message=(f"reference {reference!r} is not within the publisher grant ceiling"),
                 )
             )
     return tuple(issues)

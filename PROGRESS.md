@@ -1,3 +1,34 @@
+# 2026-10-21 — CA-P2-01B Bundle binding and Worker assembly
+
+Owner Luke Ding/Codex; branch codex/ca-p2-01b-bundle-assembly from e56f8272,
+isolated managed worktree preserving original cloud-agent dirty work and P1/P2A pins.
+Explicit v2 Definition/Task snapshots freeze validated Bundle + public provider
+configuration. Scoped publisher grants, fresh draft validation and exact Version
+Release gates remain. PostgreSQL v110 is additive sidecar storage, base+payload
+atomic; v1 reads and published Bundle/v1 Definition golden bytes unchanged.
+
+Private operator execution catalog approves scope/image/baseline/provider/text
+output/evidence; HMAC pins full nonmodel Worker settings without exposing secrets.
+Task-local Chat/auto/text model parameters and instructions actually reach the
+provider. Incompatible workers retain READY via existing retryable setup refusal;
+committed/pending-close healing precedes compatibility and capability rejection.
+Workspace materialization and optional completion-title recovery now respect the
+same frozen boundary. V1 Coverage/proof and all existing providers remain intact;
+unsupported v2 Coverage/DeepSeek routing/Responses/structured output fail closed.
+No latest Release/provider lookup on recovery; no shared settings mutation.
+
+Focused deterministic/actual Worker mock-provider/concurrent checks and real owned
+PostgreSQL migration/rollback/retry tests implemented. Independent core spec/quality
+approved after fixing creation-time retry idempotency; integration review caught and
+fixed preflight Coverage/workspace/title sibling paths. Final independent spec/quality review approved; focused65passed including11real
+disposable PG tests, affected legacy entry regression9passed. Final r2 make test
+10685passed/3007skipped in1043.90s,exit0; make check pass with30/30eval and1353
+typed sources. No frozen production source drift; only an old test substitute
+needed its existing nullable definition_snapshot field made explicit. V2 refuses
+unversioned local Skill roots/MCP because paths do not freeze content.
+See docs/evidence/ca-p2-01b/README.md for evidence and skipped/live gate boundaries.
+No deployment, production migration or main/cloud-agent integration.
+
 # 2026-10-21 — CA-P2-01A native Runtime Bundle validation
 
 Owner Luke Ding/Codex; branch codex/ca-p2-01a-bundle-contract from published6dbb2a8d,

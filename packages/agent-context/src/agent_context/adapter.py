@@ -32,8 +32,11 @@ MAX_CONTINUITY_ITEM_TOKENS = 1_000
 
 
 class LocalContextCompiler:
-    def __init__(self, *, include_workspace: bool = True) -> None:
+    def __init__(
+        self, *, include_workspace: bool = True, configured_instructions: str = ""
+    ) -> None:
         self._include_workspace = include_workspace
+        self._configured_instructions = configured_instructions
 
     def compact_conversation(
         self,
@@ -75,10 +78,12 @@ class LocalContextCompiler:
                 attachment_items=attachment_items,
             )
         )
-        if not compiled.items:
-            return None
-        layout = build_prompt_layout(compiled)
-        return layout.rendered_text
+        rendered = build_prompt_layout(compiled).rendered_text if compiled.items else ""
+        if self._configured_instructions:
+            rendered = "\n\n".join(
+                part for part in (rendered, self._configured_instructions) if part
+            )
+        return rendered or None
 
 
 def _attachment_items(

@@ -26,6 +26,7 @@ from agent_tools.skill_publications import SkillPublicationService
 from zebra_agent_config import ZebraAgentSettings
 
 from zebra_agent_worker.ag_ui_projection_work import AgUiProjectionWorkService
+from zebra_agent_worker.bundle_assembly import build_bundle_title_service
 from zebra_agent_worker.claims import SessionClaimService
 from zebra_agent_worker.client_effect_runtime import compose_client_runtime
 from zebra_agent_worker.cloud_composition import CloudWorkerComposition, compose_cloud_worker
@@ -403,6 +404,9 @@ def build_worker_loop_service(
             projection_store=execution_stores.sessions,
             workspace_store=execution_stores.workspaces,
             replay_reader=replay_reader,
+            bound_title_service_factory=lambda snapshot: build_bundle_title_service(
+                settings, snapshot, client=model_http_client
+            ),
             title_service_factory=lambda: SessionTitleService(
                 build_model_gateway(model_provider_settings(settings), client=model_http_client)
                 if model_http_client is not None

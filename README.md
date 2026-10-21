@@ -38,8 +38,8 @@ records and their digest lookup remain available after migration.
 Native [Runtime Bundle v1](docs/RUNTIME_BUNDLE.md) provides strict versioned
 offline configuration/closure/digest validation and reader compatibility checks.
 Run `uv run python scripts/validate_runtime_bundle.py --input docs/contracts/runtime-bundle-v1/example-envelope.json`.
-This does not publish/admit a Bundle; Task/Worker assembly and online management
-remain unsupported, with existing Definition/Snapshot/history/Coverage unchanged.
+[v2 Task/Worker assembly](docs/RUNTIME_BUNDLE_ASSEMBLY.md) is an explicit opt-in continuation.
+Online Bundle management and native scripts remain unsupported; legacy history/Coverage stays intact.
 
 ## License
 

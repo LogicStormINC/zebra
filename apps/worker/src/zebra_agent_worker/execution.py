@@ -8,7 +8,6 @@ from pathlib import Path
 import agent_core.harness as core_harness
 import httpx
 import zebra_agent_config
-from agent_context import LocalContextCompiler
 from agent_core.application import SessionTitleService
 from agent_core.domain.events import EventActor, EventType
 from agent_core.domain.identifiers import SessionId
@@ -22,6 +21,7 @@ from agent_security import LocalPolicyEngine, PolicyProfile, resolve_effective_n
 from agent_storage import ControlPlaneStores, PostgresControlPlaneStores
 
 import zebra_agent_worker.authority_types as authority_types
+import zebra_agent_worker.bundle_assembly as bundle
 import zebra_agent_worker.execution_context as execution_context
 import zebra_agent_worker.execution_continuations as execution_continuations
 import zebra_agent_worker.execution_errors as errors
@@ -185,8 +185,7 @@ class SessionExecutionService(SessionExecutionEntrypoints):
         self._egress_registry, self._delegation_store = egress_registry, delegation_store
         self._frozen_manifest_loader = frozen_manifest_loader
         self._extensions = execution_gateway.extensions(
-            extension_snapshot_store, extension_skills, extension_mcp, extension_plugins
-        )
+            extension_snapshot_store, extension_skills, extension_mcp, extension_plugins)
         self._coverage_runtime = coverage_runtime
         self._transient_output_factory = transient_output_factory
 
@@ -243,6 +242,7 @@ class SessionExecutionService(SessionExecutionEntrypoints):
             attempt_number=attempt_number,
             started_at=started_at,
             events=session_events,
+            compatibility_check=lambda: bundle.require_task_compatibility(self._settings, task),
             event_store=execution_events,
         )
         if preflight_failure is not None:
@@ -251,7 +251,8 @@ class SessionExecutionService(SessionExecutionEntrypoints):
             if self._coverage_runtime is None:
                 raise WorkerExecutionError("coverage_unsupported")
             return self._coverage_runtime.execute(self, inputs, authority_recorder, ownership_check)
-        model_gateway = execution_gateway.model_gateway(self, build_model_gateway)
+        task = bundle.resolve_bound_workspace(task, self._workspace_resolver, session_id)
+        model_gateway = execution_gateway.model_gateway(self, build_model_gateway, task=task)
         effect_recorder: list[DurableHarnessEventRecorder] = []
         try:
             prepared_context = prepare_worker_context(
@@ -376,7 +377,7 @@ class SessionExecutionService(SessionExecutionEntrypoints):
             tool_gateway, authority_recorder, started_at=started_at, attempt_number=attempt_number
         )
         try:
-            context_compiler = LocalContextCompiler(include_workspace=task_binding is None)
+            context_compiler = bundle.context_compiler(task, include_workspace=task_binding is None)
             context = core_harness.HarnessContext(
                 task=execution_context.harness_task_for_recovered(
                     task,

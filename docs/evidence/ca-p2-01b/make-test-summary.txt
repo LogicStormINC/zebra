@@ -1,0 +1,20 @@
+uv run pytest
+============================= test session starts ==============================
+platform darwin -- Python 3.12.9, pytest-8.4.2, pluggy-1.6.0
+rootdir: /Users/lukeding/.codex/worktrees/ca-p2-01b-bundle-assembly/zebra-agent
+configfile: pyproject.toml
+testpaths: tests
+plugins: anyio-4.14.2
+collected 13691 items / 1 skipped
+
+...
+tests/worker/test_worker_context_lifecycle.py .....                      [ 99%]
+tests/worker/test_worker_host_vocabulary_gate.py ..                      [ 99%]
+tests/worker/test_worker_mcp_catalog.py ...                              [ 99%]
+tests/worker/test_worker_plugin_composition.py ..........                [ 99%]
+tests/worker/test_worker_progress_recovery.py ..........                 [ 99%]
+tests/worker/test_worker_projection_transaction.py .........             [ 99%]
+tests/worker/test_worker_storage_composition.py ....                     [ 99%]
+tests/worker/test_workspace_runtime_resolution.py .                      [100%]
+
+=============== 10685 passed, 3007 skipped in 1043.90s (0:17:23) ===============

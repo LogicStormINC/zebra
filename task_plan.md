@@ -1,3 +1,13 @@
+# CA-P2-01B current task
+
+- [x] Inspect Definition → Task recovery → Worker and preserve isolated baseline.
+- [x] Claim Ready task; write design and implementation plan.
+- [x] Review spec/plan, implement core binding/storage and approved runtime assembly.
+- [x] Review complete behavior, run focused and full gates.
+- [x] Update evidence and prepare scoped commit/push; no deploy/migration. Delivery remote SHA reported after push.
+
+---
+
 # Current task: CA-P2-01A
 
 - [x] Inspect existing producer and platform P2 prerequisite; isolated worktree, task claimed.

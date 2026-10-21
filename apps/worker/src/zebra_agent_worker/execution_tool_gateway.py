@@ -18,6 +18,7 @@ from agent_core.ports import (
 from agent_core.ports.host_connector_registry import HostConnectorRegistryPort
 from agent_core.ports.runtime import RuntimeHandle, RuntimePort
 from agent_integrations import ModelProviderSettings
+from agent_integrations.bundle_model import BundleModelGateway
 from agent_tools.extension_management import READ_NAMES, WRITE_NAMES
 from zebra_agent_config import ZebraAgentSettings
 
@@ -58,7 +59,17 @@ class ModelGatewayBuilder(Protocol):
     ) -> ModelGatewayPort: ...
 
 
-def model_gateway(service: ExecutionComposition, builder: ModelGatewayBuilder) -> ModelGatewayPort:
+def model_gateway(
+    service: ExecutionComposition,
+    builder: ModelGatewayBuilder,
+    *,
+    task: RecoveredTask | None = None,
+) -> ModelGatewayPort:
+    from zebra_agent_worker.bundle_assembly import task_assembly
+
+    assembly = task_assembly(task) if task is not None else None
+    if assembly is not None:
+        return BundleModelGateway(assembly, client=service._model_http_client)
     settings = model_provider_settings(service._settings)
     if service._model_http_client is not None:
         return builder(settings, client=service._model_http_client)

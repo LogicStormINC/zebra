@@ -12,6 +12,7 @@ from zebra_agent_config.coverage_settings import CoverageWorkSettings, load_cove
 from zebra_agent_config.egress_settings import load_egress_endpoint
 from zebra_agent_config.mcp_credentials import McpCredentialSettings, load_mcp_credentials
 from zebra_agent_config.memory_settings import MemoryGatewaySettings, load_memory_gateway_settings
+from zebra_agent_config.model_settings import ModelSettings as ModelSettings
 from zebra_agent_config.plugin_settings import PluginSettings, load_plugins
 from zebra_agent_config.public_output_settings import PublicOutputPolicy, load_public_output_policy
 from zebra_agent_config.runtime_settings import RuntimeSettings as RuntimeSettings
@@ -22,24 +23,6 @@ MAX_MCP_SERVERS = mcp_settings.MAX_MCP_SERVERS
 McpHttpServerSettings = mcp_settings.McpHttpServerSettings
 McpServerSettings = mcp_settings.McpServerSettings
 _read_mcp_servers = mcp_settings._read_mcp_servers
-
-
-@dataclass(frozen=True)
-class ModelSettings:
-    provider: str
-    api_key_env: str
-    base_url: str
-    model: str
-    wire_api: str = "chat_completions"
-    executor_profile: str | None = None
-    planner_profile: str | None = None
-    reviewer_profile: str | None = None
-    summarizer_profile: str | None = None
-    analyst_profile: str | None = None
-    classifier_profile: str | None = None
-    max_retries: int = 1
-    deepseek_beta_enabled: bool = False
-    deepseek_beta_base_url: str | None = None
 
 
 @dataclass(frozen=True)
@@ -108,6 +91,7 @@ class ZebraAgentSettings:
     cloud_skills_publish_enabled: bool = False
     platform_operator_token: str | None = None
     runtime_management_config: str | None = None
+    runtime_bundle_config: str | None = None
     host_management_config: str | None = None
     skill_roots: tuple[str, ...] = ()
     skill_roots_system: tuple[str, ...] = ()
@@ -267,6 +251,7 @@ def load_settings(
         ),
         platform_operator_token=_read_optional(values, "ZEBRA_PLATFORM_OPERATOR_TOKEN"),
         runtime_management_config=_read_optional(values, "ZEBRA_RUNTIME_MANAGEMENT_CONFIG"),
+        runtime_bundle_config=_read_optional(values, "ZEBRA_RUNTIME_BUNDLE_CONFIG"),
         host_management_config=_read_optional(values, "ZEBRA_HOST_REGISTRY_MANAGEMENT_CONFIG"),
         skill_roots=_read_paths(values, "ZEBRA_SKILL_ROOTS"),
         skill_roots_system=_read_paths(values, "ZEBRA_SKILL_ROOTS_SYSTEM"),

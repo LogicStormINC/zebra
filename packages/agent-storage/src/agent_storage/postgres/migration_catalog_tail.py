@@ -2,6 +2,7 @@
 
 from agent_storage.postgres.agent_registry_migration import AGENT_REGISTRY_MIGRATION
 from agent_storage.postgres.artifact_payload_migration import ARTIFACT_PAYLOAD_MIGRATION
+from agent_storage.postgres.bundle_definition_migration import BUNDLE_DEFINITION_MIGRATION
 from agent_storage.postgres.command_coverage_admission_migration import (
     COMMAND_COVERAGE_ADMISSION_MIGRATION,
 )
@@ -175,4 +176,5 @@ LATEST_MIGRATIONS = (
     HOST_MANIFEST_REVISION_MIGRATION,
     HOST_MANAGEMENT_MIGRATION,
     HOST_CONNECTOR_MANAGEMENT_MIGRATION,
+    BUNDLE_DEFINITION_MIGRATION,
 )

@@ -1,3 +1,30 @@
+# 2026-10-21 — CA-P2-01B
+
+Claimed Ready task on independent codex/ca-p2-01b-bundle-assembly from published
+P2A e56f8272. Baseline162passed/1legacyPGskip. Design/plan reviewed; delegated
+core/storage lane, root config/API/Worker integration. Preserved publishedP2A
+schemas/catalog/vectors and v1 model source bytes. Existing make sync completed.
+
+Core/storage delivered strict v2 nested immutable snapshots, dispatch at every
+Task/workspace/memory/recovery reader, exact Bundle grant/environment and additive
+v110 sidecar. Real disposable PostgreSQL exercises old-schema/data preservation,
+atomic rollback/missing/corrupt sidecar/conflicts/concurrency, v1/v2 retry returning
+original durable creation metadata. No existing database used or migrated.
+
+Actual Worker tests cover frozen model/request limits/temperature/instructions,
+changed current profile/default, concurrent tasks, incompatible→matching worker
+recovery and durable close healing. Independent integration review found preflight
+Coverage capability rejection, workspace materialization and background title
+model siblings; unified ordering/frozen compatibility with regressions. Provider
+credential availability checked before workspace effects, never stored in snapshots.
+First full make test found3legacy entry tests whose shared task substitute lacked
+the existing nullable definition_snapshot field. Added explicit None, preserving
+all cancellation/progress assertions; focused9passed. Production source unchanged;
+r2 full rerun10685passed/3007skipped in1043.90s,exit0; make check passed
+30/30eval/mypy1353sources. All41frozen Python files retained; final independent
+quality approved fixture correction. Source hashes/summary/receipt under
+docs/evidence/ca-p2-01b/. No deployment/production migration/branch integration.
+
 # 2026-10-21 — CA-P2-01A
 
 Explicit user request: implement native versioned Bundle/configuration validation/

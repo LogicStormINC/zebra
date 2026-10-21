@@ -184,3 +184,7 @@ gates, canonical/schema/CLI/legacy checks, source hashes and skipped boundaries.
 Legacy fixtures are deterministic examples from unmodified v1 code at the base pin,
 not production data or proof of a live database upgrade. Real business/Worker/model/
 sandbox/HTTP/production acceptance belongs to later tasks.
+
+## Execution continuation
+
+[CA-P2-01B binding and Worker assembly](RUNTIME_BUNDLE_ASSEMBLY.md) adds explicit v2 Definition/Task binding and a bounded executable subset without changing the published Bundle v1 contract. Online Bundle management and native scripts remain separate work.

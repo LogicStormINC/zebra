@@ -13,6 +13,7 @@ from agent_core.application.agent_definition_binding import (
 from agent_core.application.coverage_admission import validate_coverage_admission
 from agent_core.domain.agent_definition_snapshots import AgentDefinitionSnapshot
 from agent_core.domain.attachments import AttachmentContextInput
+from agent_core.domain.bundle_definition import parse_definition_snapshot
 from agent_core.domain.client_context import ClientStateSnapshot
 from agent_core.domain.context_capsule import ContextCapsule
 from agent_core.domain.context_inheritance import DelegatedContextSnapshot
@@ -377,7 +378,7 @@ def _definition_snapshot(value: object) -> AgentDefinitionSnapshot | None:
     if not isinstance(value, dict):
         raise ValueError("queued session definition_snapshot must be an object")
     try:
-        snapshot = AgentDefinitionSnapshot.model_validate(value)
+        snapshot = parse_definition_snapshot(value)
         validate_recovered_snapshot(snapshot)
         return snapshot
     except (ValueError, DefinitionBindingError) as exc:
