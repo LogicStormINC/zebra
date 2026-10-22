@@ -1,3 +1,11 @@
+# CA-P3-02J — Cross-device unknown request discovery and manual handling
+
+- Status: Review; make test 10971通过/3022条件跳过（1220.28s），make check通过（1393类型文件/30eval）；SDK139、React18/19与双浏览器矩阵、新跨设备及旧恢复联合验收通过；3768保护文件未变。 Ready dependency audit and claim before code2026-10-22. Human owner Luke Ding; executor Codex. One isolated codex/ca-p3-02j-request-discovery branch/worktree; stacked on published E b710e4a / I be4b442c. No main integration.
+- Owned paths: sdks/typescript/packages/client-core/src/request_discovery.ts,index.ts; sdks/typescript/packages/client-core/tests/request-discovery.test.ts; sdks/typescript/scripts/request-discovery-browser.mjs; sdks/typescript/package.json; docs/CA-P3-02J_request_discovery.md; docs/contracts/request-discovery/; docs/evidence/ca-p3-02j/; docs/AGENT_TASKS.md,PROGRESS.md,WORKLOG.md,task_plan.md; docs/实施任务拆解与阶段验收.md.
+- Dependencies: published receipt1 and immutable BFF original mapping/SDK recovery1. No new native execution endpoint or Python/schema change. Reuse original Session/Target receipt lookup, no credential substitution.
+- DDD: business journal owns scoped request discovery; separate append-only manual disposition records CAS/audit, never change native admission status. Current subject/resource listing authority and separate explicit handling permission; resource-scoped inbox independent of current device Task/bootstrap. Unknown including handled stays blocking, no automatic or manual replay path.
+- Acceptance: bounded owner-filtered keyset pages, explicit additive business-only initialization, CAS/current authorization/concurrency/restart/negative tests with owned PG; SDK strict response/read-only discovery/manual action tests and browser flow; both repositories make test/check; preserve management/mock/history/Coverage/old contracts. Update formal docs/evidence and commit/push; no deploy/production migration/npm publish.
+
 # CA-P3-02I — SDK durable unknown command markers and receipt-only recovery
 
 - Status: Review; 最终make test 10971通过/3022条件跳过（1230.21s），make check通过（1393类型文件、30eval）；SDK verify136及双浏览器/双Go进程/重启/原生收据联合验收通过，3757保护文件不变。 Ready claim before code2026-10-22. Human owner Luke Ding; executor Codex. Published H be9f7cd2 dependency; authorized stacked continuation, no main integration.

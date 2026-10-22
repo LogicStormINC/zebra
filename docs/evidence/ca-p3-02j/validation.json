@@ -1,0 +1,129 @@
+{
+  "task": "CA-P3-02J",
+  "status": "Review",
+  "nativeBase": "be4b442c03d4753012e0543f9c22148eee71657a",
+  "nativePythonChanged": false,
+  "gates": {
+    "makeTest": {
+      "exit": 0,
+      "passed": 10971,
+      "conditionallySkipped": 3022,
+      "seconds": 1220.28
+    },
+    "makeCheck": {
+      "exit": 0,
+      "mypyFiles": 1393,
+      "evalPassed": 30
+    },
+    "sdkVerify": {
+      "exit": 0,
+      "tests": 139,
+      "react": [
+        "18",
+        "19"
+      ],
+      "browsers": [
+        "Chromium",
+        "WebKit"
+      ]
+    }
+  },
+  "pairedBusinessGoCandidateSource": {
+    "backend/pkg/bffcommands/domain.go": "32b419a0e41323b0842a9a9efb7e890302c56f1559117934829fe1185c945e16",
+    "backend/pkg/bffcommands/http.go": "916a1f9005f22f34edc93b6db548e2f2fd5c4ed013e0dde5ad05ccb208cc562c",
+    "backend/pkg/bffcommands/native_http.go": "3db6ad67e30a121ceed8593564145e56199a90fb9693509ed4c339aea154e062",
+    "backend/pkg/bffcommands/postgres.go": "1b8c55fd71f200f8309af64f7e3f4ff3805ca5a522a5ae59e11eff1364e8e535",
+    "backend/pkg/bffcommands/prepared_request.go": "b9421fc3c8571ad2669c85bcfb76d1ae76ef0f9ebecee060d2cc41ad4adf252d",
+    "backend/pkg/bffcommands/recovery.go": "97df1b3ceda161dc459585a308a7a66ad122b9e06f55c62c4a986d1ae4ae2e78",
+    "backend/pkg/bffcommands/recovery_http.go": "bb241b4b170203da5cae7e6ff59958522054c9ad7f519b5e9379a63f5e758305",
+    "backend/pkg/bffcommands/recovery_postgres.go": "f4bd80a53e834e12cdb371434604d609b7ad5911fcabbe993b6a04a7575132f0",
+    "backend/pkg/bffcommands/recovery_test.go": "0a89fa1614e61eeb6c4822c625eb11b440f1dd6d32005b9eb001953354e0e058",
+    "backend/pkg/bffcommands/service.go": "ad87de4582a80dcc98c4aebf6591e580cc012140ebc5f93759d213ada623d314",
+    "backend/pkg/bffcommands/service_test.go": "dabbc7f86287d8f6a20e438da15f27bea30fe66346a81d032a3bb33ad7e2f68e",
+    "backend/tests/bff_command_acceptance.go": "4b659fb72aed0cd4b53724895021aa57ab6150790a0212ab33c1c0102da0acf2"
+  },
+  "pairedAcceptance": {
+    "contract": "request-discovery/1",
+    "boundary": "actual Go business journal in separate owned PostgreSQL DB; native HTTP/local authority/SQLite commands and Worker Context; fixture Cookie and private bridge, not production IdP/cloud/HA",
+    "reports": [
+      {
+        "browser": "chromium",
+        "commands": 1,
+        "crossDeviceEmptyStorage": true,
+        "twoGoProcesses": true,
+        "unobservableRefused": true,
+        "manualCAS": true,
+        "unknownStillBlocking": true,
+        "restartAuditPreserved": true,
+        "lateOriginalReceipt": true,
+        "noResend": true,
+        "originalStatePreserved": true,
+        "privateStorageSafe": true
+      },
+      {
+        "browser": "webkit",
+        "commands": 1,
+        "crossDeviceEmptyStorage": true,
+        "twoGoProcesses": true,
+        "unobservableRefused": true,
+        "manualCAS": true,
+        "unknownStillBlocking": true,
+        "restartAuditPreserved": true,
+        "lateOriginalReceipt": true,
+        "noResend": true,
+        "originalStatePreserved": true,
+        "privateStorageSafe": true
+      }
+    ]
+  },
+  "legacyAcceptance": {
+    "contract": "sdk-command-recovery/1",
+    "boundary": "actual Go business journal in separate owned PostgreSQL DB; native HTTP/local authority/SQLite commands and Worker Context; fixture Cookie and private bridge, not production IdP/cloud/HA",
+    "reports": [
+      {
+        "browser": "chromium",
+        "commands": 1,
+        "goProcessRestart": true,
+        "concurrentGoProcesses": true,
+        "bffInitialReplicaCalls": 2,
+        "browserPosts": 1,
+        "browserReload": true,
+        "receiptAccepted": true,
+        "noResend": true,
+        "originalStatePreserved": true,
+        "freshMount": true,
+        "privateStorageSafe": true
+      },
+      {
+        "browser": "webkit",
+        "commands": 1,
+        "goProcessRestart": true,
+        "concurrentGoProcesses": true,
+        "bffInitialReplicaCalls": 2,
+        "browserPosts": 1,
+        "browserReload": true,
+        "receiptAccepted": true,
+        "noResend": true,
+        "originalStatePreserved": true,
+        "freshMount": true,
+        "privateStorageSafe": true
+      }
+    ]
+  },
+  "preservedExistingFiles": 3768,
+  "logs": {
+    ".artifacts/ca-p3-02j/make-test.log": "cda5158a6235340f92c987c9b517791f71d5175846716c35fb3426a0c62d4c84",
+    ".artifacts/ca-p3-02j/sdk-verify.log": "ec0b2984dab28cc47e5c2f70664f5caf1ccbac930514463654b68df0e607deab",
+    ".artifacts/ca-p3-02j/joint-browser.log": "68ace847d09cf6f3c513190ccdf9759e62b356e06c93ba6aa10a5d24bd79184b",
+    ".artifacts/ca-p3-02j/legacy-joint-browser.log": "08e661fa6054cbc388c8ee2b582462bb389d07e900de4add27bf766c23eed02a",
+    ".artifacts/ca-p3-02j/make-check-final.log": "0702d068cf826f1526918fc5ff15547939a8f8f7b5bf1f1d594d82d01f00aa09"
+  },
+  "notCertified": [
+    "production IdP/cloud signatures",
+    "cross-user operator delegation",
+    "authoritative noncommit termination",
+    "atomic global new-key admission lock",
+    "production capacity/storage HA",
+    "npm publication/deployment/production migration/main integration"
+  ]
+}

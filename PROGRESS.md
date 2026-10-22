@@ -1,3 +1,8 @@
+# CA-P3-02J — 跨设备待对账与人工处置（Review）
+
+复用H收据/I原映射，新增可选资源收件箱SDK；unknown无自动重发/清除，人工处置独立CAS审计。原生生产Python/schema/历史/Coverage不变。
+[方案与交互](docs/CA-P3-02J_request_discovery.md)；make test 10971通过/3022条件跳过（1220.28s），make check通过（1393类型文件/30eval）；SDK139、React18/19与双浏览器矩阵、新跨设备及旧恢复联合验收通过；3768保护文件未变。 [证据](docs/evidence/ca-p3-02j/validation.json)。无部署/生产迁移/npm发布/主线整合。
+
 # CA-P3-02I（Review）
 
 已核对 H 公开收据和 G SDK；显式恢复1、原请求标识持久化和只读对账已实现；业务BFF事实在自有DB，不接mock。补可选原Segment前置条件，保留原Runtime/原生key，未知不重发。

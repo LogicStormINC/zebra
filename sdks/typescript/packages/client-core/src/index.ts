@@ -1,3 +1,4 @@
+export { createCommandRecoveryInbox, type PendingRequest, type PendingRequestsPage, type UnknownHandling } from "./request_discovery.ts";
 import { CommandRecovery, submitRecoverableCommand, type CommandRecoveryView } from "./command_recovery.ts";
 import { copyReadableJson, sendReadableCommand, type ReadableCommandOptions, type ReadableSurface } from "./readable_commands.ts";
 import { streamObserverOptions, type StreamObserverOptions } from "./conversation_stream.ts";
@@ -31,7 +32,6 @@ export interface MountOptions {
   mountedActions: readonly string[];
   mountedReadables?: readonly string[];
 }
-
 export interface ClientRuntimeDependencies extends StreamObserverOptions {
   fetchImpl: typeof fetch;
   baseUrl: string;
