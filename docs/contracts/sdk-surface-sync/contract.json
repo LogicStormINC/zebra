@@ -1,0 +1,42 @@
+{
+  "contractVersion": "sdk-surface-sync/1",
+  "producerTask": "CA-P3-02E",
+  "nativeContract": "client-surface-metadata/1",
+  "mode": "bff",
+  "optIn": "surfaceMetadataVersion:1",
+  "initialUiRevision": "required actual admitted UI revision",
+  "authority": {
+    "credentialCustody": "trusted business BFF only",
+    "browserIdentifiersGrantAccess": false,
+    "goExecutionStateMachine": false,
+    "nativeOwns": ["Session", "RunBinding", "Controller", "Effect", "Receipt"]
+  },
+  "lifecycle": {
+    "pauseDuringMount": ["poll", "new action", "heartbeat"],
+    "drainMilliseconds": 5000,
+    "responseMaxBytes": 65536,
+    "responseMaxChunks": 4096,
+    "mountRetry": false,
+    "unknownMount": "disconnect without automatic release; trusted BFF reconciles",
+    "unresolvedRecovery": "preserve pending receipts and inflight markers; block remount",
+    "metadata": "exact public whitelist; profile/UI/binding/role/snapshot/digest map validated before coordinate replacement",
+    "narrowOnly": true
+  },
+  "compatibility": {
+    "legacyAndUnnegotiatedBffRetained": true,
+    "historicalDataRewritten": false,
+    "nativeProductionPythonChanged": false,
+    "migration": false
+  },
+  "verificationBoundary": {
+    "referenceBusinessLogin": true,
+    "localNativeCompatibilityAuthority": true,
+    "realNativeHttpAndPostgres": true,
+    "workerGatewayAndDurableResumeCommand": true,
+    "realGoBrokerBusinessIdp": false,
+    "fullWorkerHarnessModel": false,
+    "productionMultiReplicaBff": false,
+    "npmPublication": false,
+    "deploymentOrProductionMigration": false
+  }
+}

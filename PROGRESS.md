@@ -1,3 +1,14 @@
+# CA-P3-02E — SDK挂载同步（Review）
+
+2026-10-22；先核对D公开metadata，认领SDK实际应用与原生浏览器联调。
+显式协商、旧动作/收据排空、严格公共事实应用；真实本地HTTP/PG与Worker客户端通道，生产IdP/HA另验。
+前端mock/历史/Coverage保持；无部署/迁移/主线整合。
+
+最终make test10914passed/3020条件跳过（1309.26s），make check通过；SDK verify125项、包审计、React18/19消费和双浏览器/Next hydration通过。
+实际HTTP/PG/Worker gateway双浏览器各2动作/2回执/2恢复命令，回执replay/新binding/秘密隔离/撤销拒绝通过。
+3,042既有Python/合同/证据/Coverage文件未变。见[正式方案](docs/CA-P3-02E_sdk_surface_sync.md)与[证据](docs/evidence/ca-p3-02e/validation.json)。
+按授权限定提交推送；生产Go Broker/IdP/共享CAS和完整Worker harness仍独立验收。
+
 # CA-P3-02D — 原生挂载摘要与绑定同步（Review）
 
 2026-10-22；基于已发布a1635a9c，先补公开action摘要与实际重挂载绑定前置。

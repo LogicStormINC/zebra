@@ -90,6 +90,8 @@ export interface BffRuntimeClientConfig extends Omit<RuntimeClientConfig,
   baseUrl: string;
   /** Display/dispatch hint only; the BFF independently checks native control. */
   controller: boolean;
+  /** Explicitly negotiate public native mount facts; no implicit upgrade. */
+  surfaceMetadataVersion?: 1;
   sessionCredential?: never;
   controllerFenceToken?: never;
   streamUrl?: never;

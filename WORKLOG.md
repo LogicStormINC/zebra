@@ -1,3 +1,14 @@
+# 2026-10-22 — CA-P3-02E
+
+D之后核对实际SDK mount忽略响应，认领显式同步、排空旧回执和真实本地浏览器联调；不新增Go执行代理。
+
+SDK check/test125、package audit、React18/19 Vite/Next与Chromium/WebKit/Next hydration已通过。
+真实原生HTTP/PG与Worker gateway的两浏览器验收各调度2次、接受2条回执和2条resume command，
+覆盖原生提交后回执响应丢失的幂等重试、同名action新UI revision绑定、Origin/资源拒绝和秘密不进浏览器。
+补充fixture必填created_at与实际加载组件源路径复核；仅测试接线，无Python生产改动。
+本机磁盘满导致早期测试收集失败，重启/会话中断的部分全量不算通过；最终make test10914passed/3020skipped（1309.26s），make check通过。
+3,042既有Python/合同/证据/Coverage文件与基线字节相同；测试容器退出已清理。
+
 # 2026-10-22 — CA-P3-02D
 
 核对C后依赖，发现同名action重挂载保留旧绑定摘要，以及并发mount服务读校验的窗口。

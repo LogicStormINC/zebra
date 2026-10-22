@@ -1,3 +1,13 @@
+# CA-P3-02E 当前计划
+
+1. [x] 核对依赖和不变量，Ready认领路径/分支。
+2. [x] 红绿回归同步、暂停/排空、秘密/畸形响应和unknown保留。
+3. [x] 真实Python HTTP/PG/Worker通道与Chromium/WebKit挂载/动作/回执联调。
+4. [x] SDK verify、make test/check、冻结/保持性、正式证据。
+5. [x] 文档/任务及限定交付准备；消费方精确pin在发布该原生提交后复核。
+
+## Historical plan
+
 # CA-P3-02D 当前计划
 
 1. [x] 核对现有公开调用及并发不变量，认领独立任务/路径。

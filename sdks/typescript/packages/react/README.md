@@ -137,3 +137,7 @@ be rolled back. Unknown business writes require their own operation/result recon
 
 The original config and legacy SSE remain available. This source addition is not an npm release,
 a production BFF, or real business IdP/Runtime/Worker end-to-end acceptance.
+
+## Synchronized native surfaces
+
+BFF integration with client-surface-metadata/1 opts in using `surfaceMetadataVersion: 1` and the actual admitted `initialUiRevision`. Provide the native binding/action digest facts; the trusted BFF retains all native credentials and returns only `publicClientSurfaceMetadata(nativeResponse)` after persisting its new fence. The runtime pauses dispatch, drains old work, validates the public response and updates binding coordinates. Unknown outcomes stop without automatic remount/release. Persisted unresolved work requires trusted reconciliation. See [protocol and evidence boundaries](../../../../docs/CA-P3-02E_sdk_surface_sync.md). Legacy/unnegotiated mode remains compatible and does not consume remount metadata.

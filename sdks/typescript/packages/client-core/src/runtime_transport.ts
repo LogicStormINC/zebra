@@ -16,6 +16,16 @@ export function clientHeaders(deps: {
 
 /** Bounded JSON rather than an unbounded response.json() allocation. */
 export async function readPendingEffects(response: Response, strict: boolean): Promise<ClientEffectWire[]> {
+  const payload = await readClientJson(response);
+  if (payload === null || typeof payload !== "object" || Array.isArray(payload)) throw new ClientRuntimeError("invalid_effects", "invalid effect response");
+  const effects = (payload as { effects?: unknown }).effects ?? (strict ? undefined : []);
+  if (!Array.isArray(effects) || effects.length > 50 || effects.some(effect => !validEffect(effect, strict))) {
+    throw new ClientRuntimeError("invalid_effects", "invalid bounded effect list");
+  }
+  return effects;
+}
+
+export async function readClientJson(response: Response, maxBytes = 1_048_576): Promise<unknown> {
   const reader = response.body?.getReader();
   if (!reader) throw new ClientRuntimeError("invalid_effects", "missing effect response");
   const chunks: Uint8Array[] = [];
@@ -25,20 +35,14 @@ export async function readPendingEffects(response: Response, strict: boolean): P
       const chunk = await reader.read();
       if (chunk.done) break;
       total += chunk.value.byteLength;
-      if (total > 1_048_576 || chunks.length >= 4096) throw new ClientRuntimeError("invalid_effects", "effect response exceeds byte budget");
+      if (total > maxBytes || chunks.length >= 4096) throw new ClientRuntimeError("invalid_effects", "effect response exceeds byte budget");
       chunks.push(chunk.value);
     }
   } finally { await reader.cancel(); reader.releaseLock(); }
   const bytes = new Uint8Array(total);
   let offset = 0;
   for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength; }
-  const payload: unknown = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
-  if (payload === null || typeof payload !== "object" || Array.isArray(payload)) throw new ClientRuntimeError("invalid_effects", "invalid effect response");
-  const effects = (payload as { effects?: unknown }).effects ?? (strict ? undefined : []);
-  if (!Array.isArray(effects) || effects.length > 50 || effects.some(effect => !validEffect(effect, strict))) {
-    throw new ClientRuntimeError("invalid_effects", "invalid bounded effect list");
-  }
-  return effects;
+  return JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
 }
 
 function validEffect(value: unknown, strict: boolean): value is ClientEffectWire {

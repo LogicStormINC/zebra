@@ -12,6 +12,7 @@ import {
 import { ClientRuntimeStateStore, UiRevisionClock } from "./runtime_state.ts";
 import { consumeClientEffectStream } from "./sse_stream.ts";
 import { normalizeReceipt, submitClientReceipt } from "./receipt_transport.ts";
+import { synchronizedMount, drainSurfaceWork, sendRuntimeMount, releaseRuntimeController } from "./runtime_mount.ts";
 import { runtimeDependencies } from "./runtime_configuration.ts";
 import { clientHeaders, readPendingEffects } from "./runtime_transport.ts";
 import { MountedActionRegistry } from "./action_registry.ts";
@@ -51,6 +52,7 @@ export type BrowserRuntimeDependencies = ClientRuntimeDependencies | (
   Omit<ClientRuntimeDependencies, "mode" | "sessionCredential" | "controllerFenceToken" | "streamUrl"> & {
     mode: "bff";
     controller: boolean;
+    surfaceMetadataVersion?: 1 | undefined;
     sessionCredential?: never;
     controllerFenceToken?: never;
     streamUrl?: never;
@@ -77,6 +79,9 @@ export class ZebraClientRuntime {
   private mountFlush: Promise<void> | null = null;
   private deps: BrowserRuntimeDependencies;
   private stopped = false;
+  private readonly jobs = new Set<Promise<unknown>>();
+  private mounting = false;
+  private bindingRevision = 0;
   private polling = false;
   private heartbeating = false;
   private status: ClientRuntimeStatus = "connecting";
@@ -95,7 +100,10 @@ export class ZebraClientRuntime {
     return this.deps.mode === "bff" ? this.deps.controller === true : this.deps.controllerFenceToken !== undefined;
   }
 
+  private get surfacePending(): boolean { return this.mounting || synchronizedMount(this.deps) && this.bindingRevision === 0; }
+
   constructor(deps: BrowserRuntimeDependencies) {
+    if (deps.mode === "bff" && deps.surfaceMetadataVersion !== undefined && (deps.surfaceMetadataVersion !== 1 || deps.initialUiRevision === undefined)) throw new ClientRuntimeError("invalid_surface_version", "explicit surface version1 and initial revision required");
     if (deps.mode === "bff" && (deps.sessionCredential !== undefined || deps.controllerFenceToken !== undefined)) {
       throw new ClientRuntimeError("invalid_bff_config", "BFF runtime cannot hold native secrets");
     }
@@ -130,31 +138,23 @@ export class ZebraClientRuntime {
         "profile digest changed without a remount",
       );
     }
-    this.uiRevision.bump();
-    const body = {
-      client_session_id: this.deps.clientSessionId,
-      frontend_app_id: options.frontendAppId,
-      profile_revision: options.profileRevision,
-      profile_digest: options.profileDigest,
-      mounted_readables: options.mountedReadables ?? [],
-      mounted_actions: options.mountedActions,
-      ui_revision: this.uiRevision.current,
-      mounted_at: new Date().toISOString(),
-    };
-    const response = await this.deps.fetchImpl(
-      `${this.deps.baseUrl}/v1/client-sessions/${this.deps.clientSessionId}/mount`,
-      {
-        method: "POST",
-        headers: this.headers(),
-        body: JSON.stringify(body),
-      },
-    );
-    if (!response.ok) {
-      throw new ClientRuntimeError(
-        "mount_rejected",
-        `mount failed with ${response.status}`,
-      );
-    }
+    const sync = synchronizedMount(this.deps);
+    if (sync && this.mounting) throw new ClientRuntimeError("surface_busy", "mount is already in progress");
+    if (sync) { this.mounting = true; this.setStatus("connecting"); }
+    try {
+      if (sync) {
+        await drainSurfaceWork(this.jobs, () => this.stopped);
+        if (this.pendingReceipts.size || this.recoveredInflightEffects.size) throw new ClientRuntimeError("surface_unresolved", "reconcile old receipts before remounting");
+      }
+      if (this.stopped) return;
+      const metadata = await sendRuntimeMount(this.deps, options, this.uiRevision.bump(), this.bindingRevision);
+      if (this.stopped) return;
+      if (metadata) {
+        this.deps = { ...this.deps, clientBindingDigest: metadata.binding_digest, actionContractDigests: metadata.action_contract_digests };
+        this.bindingRevision = metadata.binding_revision;
+      }
+    } catch (error) { if (sync) this.disconnect(); throw error; }
+    finally { this.mounting = false; }
   }
 
   /** Coalesce one React commit into one initial/narrowing mount snapshot. */
@@ -236,20 +236,24 @@ export class ZebraClientRuntime {
   }
 
   /** Fetch and execute the current durable pending set once. */
-  async poll(): Promise<void> {
-    if (this.stopped || this.polling) return;
+  poll(): Promise<void> { return this.track(this.pollOnce()); }
+
+  private async pollOnce(): Promise<void> {
+    if (this.stopped || this.surfacePending || this.polling) return;
     this.polling = true;
     try {
       const effects = await this.listPendingEffects();
       for (const effect of effects) await this.runEffect(effect);
-      if (!this.stopped) this.setStatus("ready");
+      if (!this.stopped && !this.mounting) this.setStatus("ready");
     } catch {
       if (!this.stopped) this.setStatus("unavailable");
     } finally { this.polling = false; }
   }
 
-  async heartbeat(): Promise<boolean> {
-    if (this.stopped || this.heartbeating) return false;
+  heartbeat(): Promise<boolean> { return this.track(this.heartbeatOnce()); }
+
+  private async heartbeatOnce(): Promise<boolean> {
+    if (this.stopped || this.surfacePending || this.heartbeating) return false;
     this.heartbeating = true;
     try {
       if (this.controls) for (const [effectId, receipt] of this.pendingReceipts) {
@@ -269,8 +273,10 @@ export class ZebraClientRuntime {
     } finally { this.heartbeating = false; }
   }
 
-  async runEffect(effect: ClientEffectWire): Promise<void> {
-    if (this.stopped || !this.controls) return;
+  runEffect(effect: ClientEffectWire): Promise<void> { return this.track(this.executeEffect(effect)); }
+
+  private async executeEffect(effect: ClientEffectWire): Promise<void> {
+    if (this.stopped || this.surfacePending || !this.controls) return;
     if (
       effect.surface_instance_id !== this.deps.clientSessionId ||
       effect.task_id !== this.deps.taskId ||
@@ -375,7 +381,12 @@ export class ZebraClientRuntime {
   }
 
   /** Receipt submission retries until the server accepts it. */
-  async submitReceipt(submission: ReceiptSubmission): Promise<boolean> {
+  submitReceipt(submission: ReceiptSubmission): Promise<boolean> {
+    if (synchronizedMount(this.deps) && this.mounting && !this.pendingReceipts.has(submission.effect_id)) return Promise.resolve(false);
+    return this.track(this.sendReceipt(submission));
+  }
+
+  private async sendReceipt(submission: ReceiptSubmission): Promise<boolean> {
     const outcome = await submitClientReceipt(
       this.deps,
       submission,
@@ -452,23 +463,18 @@ export class ZebraClientRuntime {
     };
   }
 
-  private async releaseController(): Promise<void> {
-    if (!this.controls) return;
-    try {
-      await this.deps.fetchImpl(
-        `${this.deps.baseUrl}/v1/client-sessions/${this.deps.clientSessionId}/release`,
-        {
-          method: "POST",
-          headers: this.controllerHeaders(),
-          body: JSON.stringify(this.controllerCoordinates()),
-          keepalive: true,
-        },
-      );
-    } catch {
-      // The bounded lease remains the crash-safe fallback.
-    }
+  private releaseController(): Promise<void> {
+    return this.controls ? releaseRuntimeController(this.deps, this.controllerCoordinates()) : Promise.resolve();
+  }
+
+  private track<T>(work: Promise<T>): Promise<T> {
+    this.jobs.add(work);
+    void work.then(() => this.jobs.delete(work), () => this.jobs.delete(work));
+    return work;
   }
 }
 export { ConversationStreamReducer, STREAM_V2_CAPABILITIES } from "./conversation_stream.ts";
 export type { ConversationMessage, ConversationStreamEvent } from "./conversation_stream.ts";
 export { openClientSurface, type ClientSurfaceOpenOptions, type ClientSurfaceOpened, mountClientSurface, type ClientSurfaceOptions, type ClientSurfaceAdmission, type ClientSurfaceMount } from "./client_surface.ts";
+
+export { publicClientSurfaceMetadata, validateSurfaceMetadata, type PublicClientSurfaceMetadata } from "./surface_metadata.ts";

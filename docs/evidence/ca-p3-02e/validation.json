@@ -1,0 +1,71 @@
+{
+  "task": "CA-P3-02E",
+  "status": "Review",
+  "base": "d85a613c844576f0da93cf6fa3a5be0cefb308f7",
+  "makeTest": {
+    "exitCode": 0,
+    "passed": 10914,
+    "skipped": 3020,
+    "seconds": 1309.26
+  },
+  "makeCheck": {
+    "passed": true,
+    "mypyFiles": 1388,
+    "evalCases": 30,
+    "fileSizeViolations": 0
+  },
+  "sdk": {
+    "verifyPassed": true,
+    "unitPassed": 125,
+    "newRegressionCases": 8,
+    "node": "22.23.1",
+    "consumers": "React18/19 x Vite/Next SSR+RSC",
+    "browserMatrix": "Chromium/WebKit + Next hydration"
+  },
+  "nativeBrowser": {
+    "contract": "sdk-surface-sync/1",
+    "boundary": "local compatibility HTTP; real PostgreSQL; Worker gateway and durable resume command; fixture business login",
+    "reports": [
+      {
+        "browser": "Chromium",
+        "scheduled": 2,
+        "receipts": 2,
+        "resumes": 2,
+        "receiptReplay": true,
+        "remount": true,
+        "secretRedaction": true,
+        "unauthorizedStopped": true
+      },
+      {
+        "browser": "WebKit",
+        "scheduled": 2,
+        "receipts": 2,
+        "resumes": 2,
+        "receiptReplay": true,
+        "remount": true,
+        "secretRedaction": true,
+        "unauthorizedStopped": true
+      }
+    ]
+  },
+  "preservation": {
+    "base": "d85a613c844576f0da93cf6fa3a5be0cefb308f7",
+    "protectedFileCount": 3042,
+    "scope": "all pre-existing tracked Python; old native contracts/evidence; Coverage-named files; byte equality against base",
+    "changed": [],
+    "manifestSha256": "8fc349de273e3944cf79a880740cd14b8e69c4675f1ded56c9dbd8425920b470"
+  },
+  "verificationLimits": [
+    "fixture business login and local native compatibility authority",
+    "Worker gateway plus durable resume command, not full model/harness consumption",
+    "single-host reference BFF, not production HA or shared CAS",
+    "no deployment, production migration, npm publication or main/cloud-agent merge"
+  ],
+  "interruptedRuns": "earlier disk-full collection failure and interrupted partial runs excluded; final complete make test is authoritative",
+  "logSha256": {
+    "make-test.log": "e57e99008b3bde77091bc07178fe43e1997bfa8de4483d44bad4a11aacdbafdd",
+    "native-browser-final.log": "a94b5fb8241dfe37e127fb6169d14a72f00983b8ee6ebb3f36b4943a252e62f4",
+    "make-check.log": "556f0b8dac61743b4985167b60b03e9d2b0ece292e28319b5610659e50ad62ae",
+    "sdk-verify.log": "8225f9b6570a462f2224f60cb1b5d9061077e52625db0683f09e72ed6eb2ca2a"
+  }
+}

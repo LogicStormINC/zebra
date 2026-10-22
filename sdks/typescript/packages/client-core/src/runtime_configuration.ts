@@ -15,22 +15,26 @@ export function runtimeDependencies(config: RuntimeBrowserConfig & StreamObserve
   }
   if (config.mode === "bff") {
     const allowed = ["mode", "baseUrl", "clientSessionId", "controller", "taskId", "runId", "runBindingId",
-      "clientBindingDigest", "actionContractDigests", "initialUiRevision", "storage", "fetchImpl"];
+      "clientBindingDigest", "actionContractDigests", "initialUiRevision", "storage", "fetchImpl", "surfaceMetadataVersion"];
     if (Object.keys(config).some(key => !allowed.includes(key))) {
       throw new ClientRuntimeError("invalid_bff_config", "BFF mode forbids native secrets and streaming configuration");
     }
     if (typeof config.controller !== "boolean" || !uuid(config.clientSessionId)) {
       throw new ClientRuntimeError("invalid_bff_config", "BFF mode requires a public session identifier and role hint");
     }
+    if (config.surfaceMetadataVersion !== undefined && config.surfaceMetadataVersion !== 1 ||
+      config.surfaceMetadataVersion === 1 && (!Number.isSafeInteger(config.initialUiRevision) || Number(config.initialUiRevision) < 0)) {
+      throw new ClientRuntimeError("invalid_bff_config", "synchronized surface requires version1 and an actual initial UI revision");
+    }
     const actions = config.actionContractDigests;
-    if (config.controller && (!uuid(config.taskId) || typeof config.runId !== "string" ||
+    if ((config.controller || config.surfaceMetadataVersion === 1) && (!uuid(config.taskId) || typeof config.runId !== "string" ||
       config.runId.length < 1 || config.runId.length > 128 || !uuid(config.runBindingId) ||
       !digest(config.clientBindingDigest) || !actions || typeof actions !== "object" || Array.isArray(actions) ||
       Object.keys(actions).length > 128 || Object.entries(actions).some(([name, value]) => !name || name.length > 128 || !digest(value)))) {
       throw new ClientRuntimeError("invalid_bff_config", "controller metadata is incomplete or malformed");
     }
     return {
-      mode: "bff", controller: config.controller,
+      mode: "bff", controller: config.controller, surfaceMetadataVersion: config.surfaceMetadataVersion,
       fetchImpl: createBffFetch(config.baseUrl, config.clientSessionId, config.fetchImpl ?? ((input, init) => globalThis.fetch(input, init))),
       baseUrl: config.baseUrl, clientSessionId: config.clientSessionId,
       taskId: config.taskId, runId: config.runId, runBindingId: config.runBindingId,

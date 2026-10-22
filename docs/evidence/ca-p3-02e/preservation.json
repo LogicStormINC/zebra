@@ -1,0 +1,7 @@
+{
+  "base": "d85a613c844576f0da93cf6fa3a5be0cefb308f7",
+  "protectedFileCount": 3042,
+  "scope": "all pre-existing tracked Python; old native contracts/evidence; Coverage-named files; byte equality against base",
+  "changed": [],
+  "manifestSha256": "8fc349de273e3944cf79a880740cd14b8e69c4675f1ded56c9dbd8425920b470"
+}
