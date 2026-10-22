@@ -1,0 +1,71 @@
+{
+  "contractVersion": "auth-lifecycle/1",
+  "producerTask": "CA-P3-02L",
+  "consumerTask": "OD-P3-01G-D",
+  "parentAuthentication": "bff-auth/1",
+  "sdk": {
+    "export": "createAuthenticatedRuntime",
+    "runtimePort": [
+      "stop",
+      "isStopped"
+    ],
+    "callbacks": [
+      "bootstrap(AbortSignal)",
+      "create(publicBootstrap)",
+      "mount(runtime, publicBootstrap, AbortSignal)"
+    ],
+    "methods": [
+      "start",
+      "stop",
+      "sync",
+      "refresh",
+      "retire",
+      "inspect"
+    ],
+    "currentGetter": "null when no Runtime or native Runtime already stopped",
+    "epochFence": true,
+    "singleInflightStart": true,
+    "authBeforeAndAfterBootstrapAndMount": true,
+    "nativeStoppedNotSuccessfulMount": true,
+    "stopBeforeAuthMutation": true,
+    "unknownAutoRetry": false,
+    "automaticRestart": false,
+    "tokensStored": false,
+    "serverAuthorizationReplaced": false,
+    "cancelledLateBootstrapCreatesRuntime": false,
+    "cancelledLateMountResurrectsRuntime": false
+  },
+  "businessLogin": {
+    "verificationOwner": "business IdP callback adapter",
+    "trustedCallbackID": "server-generated canonical UUID bound to verified callback/login/identity mapping; never browser override",
+    "credentialOwner": "BFF encrypted CredentialSession",
+    "beforeIssue": "commit shared unique LoginIntent claim unknown",
+    "sameCallbackRepeat": "local receipt only, never Issue again",
+    "sameCredentialSlot": "unique tenant/resource/session/expectedRevision prevents replacement with another callback ID",
+    "unknownRecovery": "observe exact original G-B Install receipt; missing observation is not noncommit proof",
+    "unknownReissue": false,
+    "newLoginAfterClosed": "explicit fresh verified callback, same immutable identity, original session CAS"
+  },
+  "runtimeAdmission": {
+    "bootstrapAndActions": "BFF current callback receipt plus G-B Access and existing native authorization",
+    "nativeSessionTaskRunMapping": "original private mapping preserved; new local Runtime does not substitute history",
+    "freshMountFence": true,
+    "controllerRelease": "best effort under current business/native authorization; local stop does not prove global immediate revocation"
+  },
+  "proofBoundary": {
+    "actualPlatformIdentityHTTP": true,
+    "actualNativeMountHTTP": true,
+    "businessVerificationFixture": true,
+    "nativeLocalCompatibilityFixture": true,
+    "productionIdPOrSignedCloudAdmissionProven": false,
+    "productionHAProven": false
+  },
+  "compatibility": {
+    "optIn": true,
+    "legacySDKKept": true,
+    "pythonChanged": false,
+    "frontendMockConnected": false,
+    "coverageChanged": false,
+    "oldContractsChanged": false
+  }
+}

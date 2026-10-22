@@ -1,0 +1,27 @@
+{
+  "base": "ec4bb07faabd1dfc628504da879500a1ba4769d9",
+  "files": {
+    "backend/internal/identity/adapters/bff_login_browser_test.go": "f076672208c64c39332ab2434852ae43d410901cd51aab3a97cf92febb4f8939",
+    "backend/internal/identity/adapters/bff_login_integration_test.go": "e9abc9e19be0aaf53eba881de31bdc38614e81c3d4468ab2e8a2149b95fd2012",
+    "backend/pkg/bffauth/http.go": "c32bf3e87c6304dec3434cb05b80e50f863ba131227b983b030327fa3f340790",
+    "backend/pkg/bffauth/http_test.go": "fea3ec640cab983dc1fbf0abab04c258e6b5068b4506552275133ab50a016b28",
+    "backend/pkg/bffidentity/client.go": "55bb88e950901e5a6a80e073dee48470a04f89afdd941f77baf89465cdbe5381",
+    "backend/pkg/bffidentity/client_test.go": "0631a9c2580f4e42bdd6f679f25e46e2d20fc0419cc90a676993da3b46b12df5",
+    "backend/pkg/bffidentity/http.go": "d7ee184f0c963211e0f61597c1c4743ef65df9791ac04cf6d27a628f9d82111f",
+    "backend/pkg/bffidentity/identity.go": "86a34d8dd516978463b379225157ba546108f8ae5bf22bb22730482effafe83a",
+    "backend/pkg/bfflogin/intent.go": "aa1e48a6f287e1d84a9bc8b60fa218a82ce7e0f3cb04cf58b9337bedf230be49",
+    "backend/pkg/bfflogin/intent_test.go": "930a0b171c0a2a8faba7f8dff4925dc09884c45e9f2e799cc46f5306596239f0",
+    "backend/pkg/bfflogin/postgres.go": "bed8f46d4636fefd396788a8ed030b9a991dae2c5062a6512166f58bab9436dd",
+    "backend/pkg/bfflogin/service.go": "3130b0bcc731da815f829638f0848c3ba22169afd24efeee3c0a69af218be210",
+    "backend/pkg/bffsessions/crypto.go": "e830d758ce0799695af451be766d328533114783d989d0c3260b10a51f3d6162",
+    "backend/pkg/bffsessions/crypto_test.go": "94590a73094c2326d4231f6e9f1da6310de269c35a08eada9eb4476840f8a223",
+    "backend/pkg/bffsessions/postgres.go": "c41f9c743ece9a5a45f57ebe185d338eb1692e100d594a259bf6c603932b0e2d",
+    "backend/pkg/bffsessions/postgres_writes.go": "b1e2749f4975e00bf93ddadff7bb667799b2c462be735a5437e5950f4463b601",
+    "backend/pkg/bffsessions/rotation.go": "dbbe4a7c95c540f0c094db32ef3617ca5faa1025f674639a7c89fa01bdd7b850",
+    "backend/pkg/bffsessions/service.go": "71144e4e3e37621f74212a6e67a1a16bd5952d0ace38b79bc049a754cd144e59",
+    "backend/pkg/bffsessions/session.go": "d35626189cddbfb22341c6f88d8c782d6c27183eb791838de8479687783a7a93",
+    "backend/pkg/bffsessions/state.go": "23da6594a7d65321b648eb85e5be7b52c098569cdc3d07b7732dbeabe2ad2f98",
+    "contracts/bff-login-lifecycle/v1/contract.json": "de20ed48f764ce36cd50b3769b8f9c0701ae4175fd2980c23a62af874eecbb98"
+  },
+  "note": "Actual paired Go fixture binary produced from these source bytes; consumer checks before delivery. No circular commit pin."
+}

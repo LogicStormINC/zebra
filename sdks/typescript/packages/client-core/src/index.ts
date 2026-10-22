@@ -1,3 +1,4 @@
+export { createAuthenticatedRuntime, type AuthenticatedRuntimeOptions } from "./auth_lifecycle.ts";
 export { createBFFAuth, type BFFAuthState } from "./bff_auth.ts";
 export { createCommandRecoveryInbox, type PendingRequest, type PendingRequestsPage, type UnknownHandling } from "./request_discovery.ts";
 import { CommandRecovery, submitRecoverableCommand, type CommandRecoveryView } from "./command_recovery.ts";
@@ -63,7 +64,6 @@ export type BrowserRuntimeDependencies = ClientRuntimeDependencies | (
   }
 );
 export type ClientRuntimeStatus = "connecting" | "ready" | "unavailable" | "stopped";
-
 export class ZebraClientRuntime {
   readonly registry = new MountedActionRegistry();
   readonly readableNames = new Set<string>();

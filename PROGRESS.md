@@ -1,3 +1,9 @@
+# CA-P3-02L — 认证回调与 Runtime 生命周期（Review）
+
+[正式方案与交互](docs/CA-P3-02L_auth_lifecycle.md)。复用K，增加本地epoch/取消围栏与显式启停，凭据留在BFF，unknown不自动重试。
+make test10971通过/3022条件跳过（1201.65s）、make check、SDK151及实际平台/独立业务PG/原生HTTP双浏览器通过；Go24个race包通过，4610旧文件保持。 [证据](docs/evidence/ca-p3-02l/validation.json)。生产IdP/签名云准入仍独立。
+无Python/schema/旧合同/历史/Coverage变更，不部署/生产迁移/npm发布。
+
 # CA-P3-02K — 同源业务认证 SDK（Review）
 
 依赖J与G-A/G-B，新增无凭据认证状态/显式刷新退出/原操作marker及只读恢复。
