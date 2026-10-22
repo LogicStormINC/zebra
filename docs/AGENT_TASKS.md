@@ -35775,7 +35775,7 @@ old payloads remain byte-compatible by excluding None. No database migration.
 
 ### CLOUD-WORKSPACE-QUOTA-20261022 — production hard-quota deployment repair
 
-- Status: In Progress (claimed 2026-10-22; diagnosis/plan only, storage approval pending).
+- Status: Done (2026-10-22; approved second-disk migration validated and locally integrated).
 - Human owner Luke Ding; executor Codex; branch codex/cloud-workspace-quota-20261022;
   worktree cloud-plugin-plan-01, base aed0f7bf; target cloud-agent, no push.
 - Owned paths: this card, docs/CLOUD_WORKSPACE_QUOTA_2026-10-22.md, WORKLOG.md,
@@ -35786,9 +35786,17 @@ old payloads remain byte-compatible by excluding None. No database migration.
   against10737418240bytes configured. Preserve quota; never enlarge to host disk
   or disable enforcement. Prepare persistent bounded filesystem migration with
   original directory/data retained, reboot persistence and guarded rollback.
-- Online storage mutation awaits the user's explicit decision because it changes
-  the persistent filesystem/mount arrangement. No code/runtime migration yet.
+- User approved persistent10GiB storage on /data, preserving original directory,
+  short API/Worker interruption, no formatting disk or touching dbgpt/Search/MCP.
+  Use a native dedicated mount unit ordered before Docker on host boot; no Docker restart.
 - No models/search/replay/newRun or original failed-status rewriting. Preserve
   Search/MCP/Exa, Yahoo default/fast, high/v2, grants/leases/cancel and partial Runs.
 - Validation: exact failed events and model count, actual require_workspace_quota,
   read-only engine preflight, data/mount/ownership/capacity and post-restart identity.
+
+
+- Result: same-image/config API/Worker healthy; persistent10GiB ext4 on /data,
+  actual quota checker both passes. Original root backup/data hashes/modes/owners
+  preserved. Native no-model filesystem safety checks/engine preflight pass; no
+  full sandbox/model/page/reboot E2E. Search/MCP/cooldown/protected/original events
+  unchanged; no rerun or push.

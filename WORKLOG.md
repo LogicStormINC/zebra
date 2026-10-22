@@ -17035,3 +17035,18 @@ Follow-up read-only disk inventory: /dev/sda1 mounted /data,417GiB available,
 existing dbgpt directory preserved; /data fstab entry exists. Prefer bounded
 10GiB backing filesystem on /data, not the system disk. Plain directory migration
 does not satisfy hard-quota validation. No online changes or model/search calls.
+
+
+## 2026-10-22 CLOUD-WORKSPACE-QUOTA-20261022 activation
+
+User explicitly approved second-disk10GiB migration. Idle leases/commands/Turns0.
+Native ext4 image under /data/zebra, exact original root backup retained. Only
+API/Worker stopped/recreated, same immutable images/config/security/five layers.
+Quota checker passes both, physical backing reserved, data hashes/owner/modes
+match original. Both HTTP readiness200, engine preflight ready; native Worker
+write/read/list/escape/non-mount-quota/cleanup checks pass, no sandbox/model/search.
+Mount unit active/enabled ordered after data and required before Docker. No reboot
+E2E. Rollback script explicitly reloads/removes Docker dependency before unmount.
+Search/MCP/control/protected and original events unchanged. Original Runs failed
+as before, no replay. Operational evidence in private same-task local/remote path.
+No app source, migration, proxy/IP, unrelated container or Trench product changes.

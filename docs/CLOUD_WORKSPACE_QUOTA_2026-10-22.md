@@ -18,7 +18,7 @@ The workspace tree is16KiB; host root has69GiB available. Filesystem ext4.
 Prior ownership repair remains effective; Worker restarts0. This is a separate
 storage-enforcement deployment gap after the earlier PermissionError repair.
 
-## Minimal repair prepared, not activated
+## Approved repair plan (completed below)
 
 Keep source and quota policy unchanged. Provide the existing workspace path with
 one durable ext4 filesystem bounded by the configured10GiB. A preallocated image
@@ -52,9 +52,8 @@ never auto-delete either copy. Original failed Run is not retried or rewritten.
 
 ## Permission and boundaries
 
-Persistent storage/mount change and brief API/Worker interruption have been asked
-through the user-input tool. Until explicit authorization arrives, no filesystem,
-service, runtime configuration or original Run mutations are permitted.
+Persistent storage/mount change and brief API/Worker interruption were explicitly
+authorized through the user-input tool after the second-disk inspection.
 No new model/search requests were sent during diagnosis. No source fix is claimed.
 Follow-up error classification can reuse the existing runtime_unavailable contract,
 but hiding the message alone does not fix the storage-capacity rejection.
@@ -78,4 +77,65 @@ existing /var/lib/zebra/workspaces mount target. Reuse existing second-disk moun
 no disk repartitioning, formatting /dev/sda1, or alteration of /data/dbgpt. A plain
 move to /data would still expose440GiB and fail the unchanged10GiB validator.
 Reboot ordering must require /data before the workspace loop mount, and the mount
-before API/Worker. This remains a proposed migration requiring explicit approval.
+before API/Worker. The user subsequently explicitly approved this second-disk migration.
+
+
+## Completed production activation
+
+User approved the exact second-disk plan. No product source or application image
+changed. Fresh guards showed0active leases,0pending commands,0active Trench Turns.
+Only API and Worker were stopped/recreated with the exact existing five Compose
+layers; image digests, environment values, commands, user, mounts and security
+settings matched before/after. Both services healthy; both readiness URLs return200.
+
+- New backing file: /data/zebra/workspaces-10g-20261022.ext4,
+ 10737418240bytes. Physical backing allocation10737422336bytes was verified after
+ mkfs (which can discard preallocated holes); original content unchanged.
+- Existing application mount target: /var/lib/zebra/workspaces.
+ Native ext4 loop mount; statvfs capacity10464022528bytes <=10737418240bytes.
+ Quota flag remains true in both API and Worker; actual validator passes in both.
+- Original directory: /var/lib/zebra/workspaces.pre-quota-20261022.
+ Full file hashes, directory/file modes, UID/GID match the mounted copy after
+ activation and the self-cleaning acceptance check. Root remains65532:65532/755.
+ /data/dbgpt is untouched; no physical disk/partition was formatted.
+- Persistence: /etc/systemd/system/var-lib-zebra-workspaces.mount, active+enabled,
+ RequiresMountsFor=/data/zebra and Before=docker.service. RequiredBy=docker.service
+ creates the exact dependency symlink; systemctl confirms both dependency directions.
+ No Docker/server reboot was performed. This verifies configuration, not boot E2E.
+ The mount dependency intentionally prevents Docker startup if workspace storage
+ cannot mount; operator rollback must remove/reload that dependency BEFORE stopping
+ the mount, otherwise systemd could stop dependent Docker services.
+
+No-model checks: real quota validator in API/Worker; OCI engine preflight ready;
+Worker65532 writes/reads a private temporary file; real WorkspaceListTool lists it;
+path escape and independent quota claims by non-mount subdirectories are rejected;
+temporary directory removed. No sandbox was created by this acceptance check;
+no real-model or full sandbox-lifecycle/page E2E claim is made.
+
+Original failed Runs eca40e4a... and5602158d... remain failed, with exact events and
+model counts unchanged. Four protected prior Sessions also unchanged. Search/TLS/
+Yahoo/MCP and other stable service IDs/start times/restart counters/configuration
+match baseline, Exa control hash unchanged. Existing Caddy/pgAdmin restart loops
+remain outside scope; their container IDs/configurations are preserved.
+
+Operator scripts and receipts: /home/ubuntu/releases/20261022-workspace-quota/,
+local private .artifacts/cloud-workspace-quota-20261022/. Maintenance used a short-
+lived network-none pinned-image operator helper with explicit host mount/admin
+capabilities, never exposed to API/model tools; application privileges unchanged.
+No database migration, model/search call, original Run replay, global proxy/IP change or
+Search/MCP restart. Public generic error classification was not changed; the
+underlying quota configuration fault is removed for subsequent work.
+
+Recheck without models (only a private self-cleaning workspace directory):
+
+```sh
+docker exec -i zebra-application-zebra-worker-1 python - \
+  < /home/ubuntu/releases/20261022-workspace-quota/verify_worker.py
+```
+
+Rollback under idle guards: stop only API/Worker, disable the mount unit and
+explicitly daemon-reload; assert docker.service Requires no longer includes this
+mount BEFORE stopping it. Unmount exact workspace, restore preserved original
+root, remove only the new mount unit, daemon-reload, then recreate API/Worker from
+unchanged five layers. Keep backing file/new writes for reconciliation. Never
+reformat an existing filesystem, delete either data copy or retry an original Run.

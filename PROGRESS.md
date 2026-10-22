@@ -1,3 +1,22 @@
+# 2026-10-22 — Production workspace hard quota repaired on second disk
+
+CLOUD-WORKSPACE-QUOTA-20261022. After explicit user approval, a persistent10GiB
+ext4 backing filesystem on /data now mounts at the unchanged application workspace
+path. Original directory retained; complete contents/ownership/modes verified.
+Original failure: one successful model response, then files.list triggers quota
+rejection because system filesystem499694788608bytes exceeds10GiB configured.
+Actual validator now passes API/Worker with10464022528bytes; flag stays enabled.
+
+Only idle API/Worker recreated, same images/five-layer config/security. No app
+source/schema/Trench change. Native Worker filesystem/list/path-boundary checks
+pass; OCI read-only preflight ready. Boot mount dependencies active+enabled and
+verified, no server/Docker reboot or full sandbox/model/page E2E claimed.
+Search/MCP/cooldown and protected/original Run events unchanged,0new model/search
+requests. Original failed Runs remain failed, no automatic rerun. Backup preserved.
+Mount RequiredBy Docker fail-closes boot; rollback removes/reloads that dependency
+before unmounting to avoid stopping other services. See
+ docs/CLOUD_WORKSPACE_QUOTA_2026-10-22.md. Local integration only, no GitHub push.
+
 # 2026-10-22 — Production workspace startup loading repaired
 
 CLOUD-WORKSPACE-LOADING-20261022, Luke Ding owner/Codex executor. At actual server
