@@ -792,3 +792,5 @@ and acceptance boundaries are in [the batch02 design](docs/CLOUD_AGENT_DECOUPLIN
 Scoped read-only Runtime management is documented in [RUNTIME_MANAGEMENT](docs/RUNTIME_MANAGEMENT.md); it does not establish deployment readiness or authorize Host writes.
 
 Scoped publisher/consumer HTTP and native gate evidence: [publication management](docs/PUBLICATION_MANAGEMENT.md).
+
+Readable values use the existing AG-UI command and [bound native admission](docs/CA-P3-02F_readable_admission.md). The SDK value-submission adapter remains a separate slice; historical command recovery and Coverage stay intact.

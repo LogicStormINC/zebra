@@ -15,7 +15,7 @@ def project_client_state(event: SessionEvent, *, timestamp: int) -> tuple[Event,
     if not isinstance(client, dict):
         return None
     state = client.get("state_snapshot")
-    if not isinstance(state, dict) or not state:
+    if not isinstance(state, dict):
         return None
     encoded = json.dumps(state, sort_keys=True, separators=(",", ":")).encode()
     digest = sha256(encoded).hexdigest()

@@ -1,0 +1,7 @@
+{
+  "base": "61e2cb217b7b3fbc23f0bd0ef45f04863bcf1267",
+  "protectedFiles": 936,
+  "scope": "existing SDK, Worker, agent-storage, contracts/evidence and Coverage-named files; exact base bytes",
+  "changed": [],
+  "manifestSha256": "16170466d504dc4f375fe08bc1cd004ec13f8ac29a24e3ad3bb733fb10ccd9fa"
+}

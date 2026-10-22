@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -47,6 +48,49 @@ class ClientStateSnapshot(BaseModel):
         return len(encoded)
 
 
+def validate_client_state_json(state: object) -> None:
+    """Bound raw JSON before coercion, redaction or recursive schema work."""
+    if not isinstance(state, dict):
+        raise ClientStateError("client state must be a JSON object")
+    stack: list[tuple[Any, int]] = [(state, 0)]
+    count = 0
+    while stack:
+        item, depth = stack.pop()
+        count += 1
+        if depth > 32 or count + len(stack) > 4096:
+            raise ClientStateError("client state exceeds its structural budget")
+        if isinstance(item, dict | list) and len(item) > 4096 - count - len(stack):
+            raise ClientStateError("client state exceeds its structural budget")
+        if isinstance(item, dict):
+            if any(not isinstance(key, str) for key in item):
+                raise ClientStateError("client state keys must be strings")
+            for key in item:
+                _validate_client_text(key)
+            stack.extend((value, depth + 1) for value in item.values())
+        elif isinstance(item, list):
+            stack.extend((value, depth + 1) for value in item)
+        elif isinstance(item, str):
+            _validate_client_text(item)
+        elif type(item) not in (int, float, bool, type(None)):
+            raise ClientStateError("client state must contain JSON values")
+        elif isinstance(item, float) and not math.isfinite(item):
+            raise ClientStateError("client state numbers must be finite")
+    if (
+        len(json.dumps(state, sort_keys=True, separators=(",", ":"), allow_nan=False).encode())
+        > MAX_CLIENT_STATE_BYTES
+    ):
+        raise ClientStateError("client state exceeds its byte budget")
+
+
+def _validate_client_text(value: str) -> None:
+    if "\x00" in value:
+        raise ClientStateError("client state text must not contain NUL")
+    try:
+        value.encode("utf-8")
+    except UnicodeEncodeError as exc:
+        raise ClientStateError("client state text must be valid UTF-8 scalars") from exc
+
+
 def sanitize_client_state(state: dict[str, Any]) -> tuple[dict[str, Any], tuple[str, ...]]:
     """Deep-redact sensitive keys; the raw payload never persists."""
 
@@ -74,12 +118,9 @@ def validate_client_state_snapshot(snapshot: ClientStateSnapshot) -> None:
     """Enforce the byte budget and reject unsanitized sensitive keys."""
 
     if snapshot.state_bytes > MAX_CLIENT_STATE_BYTES:
+        raise ClientStateError(f"client state snapshot exceeds {MAX_CLIENT_STATE_BYTES} bytes")
+    sanitized, sensitive = sanitize_client_state(snapshot.state)
+    if sanitized != snapshot.state:
         raise ClientStateError(
-            f"client state snapshot exceeds {MAX_CLIENT_STATE_BYTES} bytes"
-        )
-    _, still_sensitive = sanitize_client_state(snapshot.state)
-    if still_sensitive:
-        raise ClientStateError(
-            "client state carries unsanitized sensitive keys:"
-            f" {list(still_sensitive)[:8]}"
+            f"client state carries unsanitized sensitive keys: {list(sensitive)[:8]}"
         )

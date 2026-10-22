@@ -120,7 +120,7 @@ def handle_agui_command(
     except (TypeError, ValueError, ValidationError) as exc:
         return _problem(400, "invalid_request", _safe_validation_detail(exc), path)
 
-    admission_error = _admit_client_mounts(app, command_payload, path)
+    admission_error = _admit_client_mounts(app, command_payload, path, request=request)
     if admission_error is not None:
         return admission_error
 
@@ -205,6 +205,18 @@ def _command_payload(envelope: AgUiCommandEnvelope) -> dict[str, object]:
     candidate.setdefault("tools", [])
     candidate.setdefault("context", [])
     candidate.setdefault("forwardedProps", {})
+    forwarded = candidate.get("forwardedProps")
+    if (
+        isinstance(forwarded, dict)
+        and any(
+            key in forwarded
+            for key in ("clientStateVersion", "frontendAppId", "clientSessionId", "uiRevision")
+        )
+        or candidate.get("tools")
+    ):
+        from agent_core.domain.client_context import validate_client_state_json
+
+        validate_client_state_json(candidate["state"])
     run_input = RunAgentInput.model_validate(candidate)
     if run_input.thread_id != envelope.thread_id or run_input.run_id != envelope.run_id:
         raise ValueError("input threadId/runId must match the command envelope")
@@ -225,19 +237,24 @@ def _command_kind(action: str) -> SessionCommandKind:
 
 
 def _admit_client_mounts(
-    app: _AgUiCommandApp, command_payload: dict[str, object], path: str
+    app: _AgUiCommandApp,
+    command_payload: dict[str, object],
+    path: str,
+    *,
+    request: object | None = None,
 ) -> ApiResponse | None:
     """Convert AG-UI tools/state into bounded client mount references.
 
-    Disabled flag or absent platform: commands pass through unchanged.
-    Enabled: the published frontend profile is the source of truth;
+    Legacy local/headless commands retain their original admission path.
+    Versioned or cloud mounts require current native authority; published
+    frontend profiles are the source of truth;
     undeclared tools, digest drift or handler code fail closed.
     """
 
     platform = getattr(app, "client_platform", None)
     capabilities = getattr(platform, "frontend_capabilities", None)
     run_input = command_payload.get("input")
-    if capabilities is None or not isinstance(run_input, dict):
+    if not isinstance(run_input, dict):
         return None
     forwarded = run_input.get("forwardedProps")
     forwarded = forwarded if isinstance(forwarded, dict) else {}
@@ -247,13 +264,29 @@ def _admit_client_mounts(
     tools = run_input.get("tools")
     if (
         not any(value is not None for value in (frontend_app_id, client_session_id, ui_revision))
+        and "clientStateVersion" not in forwarded
         and not tools
     ):
         # AG-UI state also carries server-owned run configuration. It becomes
         # client-owned Shared State only through an explicit frontend mount.
         return None
+    mounted = any(
+        value is not None for value in (frontend_app_id, client_session_id, ui_revision)
+    ) or bool(tools)
+    bound = "clientStateVersion" in forwarded or (
+        mounted and getattr(getattr(app, "settings", None), "deployment", None) == "cloud"
+    )
     profile = None
-    if isinstance(frontend_app_id, str) and frontend_app_id.strip():
+    if bound:
+        from zebra_agent_api.ag_ui_client_state import bound_client_state_profile
+
+        result = bound_client_state_profile(app, request, command_payload, forwarded)
+        if isinstance(result, ApiResponse):
+            return _problem_from_response(result, path)
+        profile = result
+    elif capabilities is None:
+        return None
+    elif isinstance(frontend_app_id, str) and frontend_app_id.strip():
         sessions = getattr(platform, "client_sessions", None)
         if _valid_client_session_id(client_session_id):
             if sessions is not None:
@@ -279,7 +312,7 @@ def _admit_client_mounts(
         return _problem(422, "client_admission_rejected", str(exc), path)
     except (TypeError, ValueError) as exc:
         return _problem(400, "invalid_request", _safe_validation_detail(exc), path)
-    command_payload["client"] = {
+    client_payload: dict[str, object] = {
         "mounted_tools": list(admission.mounted_tools),
         "state_digest": admission.state_digest,
         "state_bytes": admission.state_bytes,
@@ -302,6 +335,9 @@ def _admit_client_mounts(
             "clientSessionId and uiRevision are required for mounted client state",
             path,
         )
+    if bound:
+        client_payload["client_state_admission_contract_version"] = 1
+    command_payload["client"] = client_payload
     # Keep only the validated/redacted client-owned fields in the durable command.
     run_input["state"] = admission.sanitized_state
     return None

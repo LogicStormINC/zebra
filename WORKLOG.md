@@ -1,3 +1,12 @@
+# 2026-10-22 — CA-P3-02F
+
+先审计后Ready认领：AG-UI已有值载荷和恢复，但仅按转发ID选Profile，未验证当前Session credential/mount；Core把已redacted sentinel误判为敏感原值。复用原生状态与命令，先补原生可信入口。
+
+最终定向60通过/1个独享PG条件跳过：原始NaN在AG-UI模型可能归一化，已前移严格JSON边界；共享键脱敏的sentinel可恢复。
+新增预算只用于新准入，旧宽结构历史快照仍恢复；空快照明确清除Context和/client投影。
+API全路径用内存Registry+真实SQLite事件/重开/幂等/Worker Context，不冒充PG/业务IdP/模型E2E。
+make check通过（1389类型文件/30eval/零文件超限）；首轮全量10944通过；额外JSONB探测发现数值表示漂移，补齐新输入数值规范化及文本兼容边界，独享PG4通过/零跳过，最终make test10949通过/3021条件跳过（1199.57s），check通过；证据已冻结，按授权准备提交推送。936个既有SDK/Worker/storage/合同证据/Coverage源字节未变。
+
 # 2026-10-22 — CA-P3-02E
 
 D之后核对实际SDK mount忽略响应，认领显式同步、排空旧回执和真实本地浏览器联调；不新增Go执行代理。

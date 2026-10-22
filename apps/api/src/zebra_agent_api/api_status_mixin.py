@@ -23,6 +23,7 @@ class ApiStatusMixin:
             "network_profiles": list(SUPPORTED_NETWORK_PROFILES),
             "client_surface_contract_version": 1 if available else 0,
             "client_surface_metadata_contract_version": 1 if available else 0,
+            "client_state_admission_contract_version": 1 if available else 0,
             "client_surface_open_contract_version": (
                 1 if available and self.settings.deployment == "cloud" else 0
             ),

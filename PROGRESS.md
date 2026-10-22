@@ -1,3 +1,9 @@
+# CA-P3-02F — Readable原生准入（Review）
+
+已核对E后AG-UI现有state/持久命令/Context路径，先补当前Session/挂载绑定与脱敏恢复，不创建新上传接口或Go执行代理。SDK值提交另片；保留旧模式/历史/Coverage，不部署迁移。
+
+最终 make test10949通过/3021条件跳过（1199.57s），make check通过；定向60通过/1条件跳过，独享PG另跑4通过/零跳过。936个保护文件未变。见[正式方案](docs/CA-P3-02F_readable_admission.md)与[证据](docs/evidence/ca-p3-02f/validation.json)。按授权限定提交推送，远端SHA由交付回执核验。
+
 # CA-P3-02E — SDK挂载同步（Review）
 
 2026-10-22；先核对D公开metadata，认领SDK实际应用与原生浏览器联调。
