@@ -1,3 +1,9 @@
+# CA-P3-02K — 同源业务认证 SDK（Review）
+
+依赖J与G-A/G-B，新增无凭据认证状态/显式刷新退出/原操作marker及只读恢复。
+过期Access保留业务授权CAS元数据但阻止bootstrap。Python/schema/历史/Coverage保持。
+[正式合同和交互](docs/CA-P3-02K_bff_auth.md)。make test 10971通过/3022条件跳过（1244.42s），make check/SDK145及实际平台HTTP+独立业务PG双浏览器通过，4601旧文件保持。 [证据](docs/evidence/ca-p3-02k/validation.json)。不部署/生产迁移/npm发布/主线整合。
+
 # CA-P3-02J — 跨设备待对账与人工处置（Review）
 
 复用H收据/I原映射，新增可选资源收件箱SDK；unknown无自动重发/清除，人工处置独立CAS审计。原生生产Python/schema/历史/Coverage不变。

@@ -1,0 +1,21 @@
+{
+  "base": "4b11b8afd9c26e84fc16606109b8e5a2f49c2295",
+  "files": {
+    "backend/internal/identity/adapters/bff_auth_integration_test.go": "e53266fd3b2b5016a887f616f340d207c31e82c27e605c17df33d808cf0f2431",
+    "backend/pkg/bffauth/http.go": "c32bf3e87c6304dec3434cb05b80e50f863ba131227b983b030327fa3f340790",
+    "backend/pkg/bffauth/http_test.go": "fea3ec640cab983dc1fbf0abab04c258e6b5068b4506552275133ab50a016b28",
+    "backend/pkg/bffidentity/client.go": "55bb88e950901e5a6a80e073dee48470a04f89afdd941f77baf89465cdbe5381",
+    "backend/pkg/bffidentity/client_test.go": "0631a9c2580f4e42bdd6f679f25e46e2d20fc0419cc90a676993da3b46b12df5",
+    "backend/pkg/bffidentity/http.go": "d7ee184f0c963211e0f61597c1c4743ef65df9791ac04cf6d27a628f9d82111f",
+    "backend/pkg/bffidentity/identity.go": "86a34d8dd516978463b379225157ba546108f8ae5bf22bb22730482effafe83a",
+    "backend/pkg/bffsessions/crypto.go": "e830d758ce0799695af451be766d328533114783d989d0c3260b10a51f3d6162",
+    "backend/pkg/bffsessions/crypto_test.go": "94590a73094c2326d4231f6e9f1da6310de269c35a08eada9eb4476840f8a223",
+    "backend/pkg/bffsessions/postgres.go": "c41f9c743ece9a5a45f57ebe185d338eb1692e100d594a259bf6c603932b0e2d",
+    "backend/pkg/bffsessions/postgres_writes.go": "b1e2749f4975e00bf93ddadff7bb667799b2c462be735a5437e5950f4463b601",
+    "backend/pkg/bffsessions/rotation.go": "dbbe4a7c95c540f0c094db32ef3617ca5faa1025f674639a7c89fa01bdd7b850",
+    "backend/pkg/bffsessions/service.go": "71144e4e3e37621f74212a6e67a1a16bd5952d0ace38b79bc049a754cd144e59",
+    "backend/pkg/bffsessions/session.go": "d35626189cddbfb22341c6f88d8c782d6c27183eb791838de8479687783a7a93",
+    "backend/pkg/bffsessions/state.go": "23da6594a7d65321b648eb85e5be7b52c098569cdc3d07b7732dbeabe2ad2f98"
+  },
+  "note": "Paired browser binary built from these Go library/test bytes; consumer verifies before delivery. No circular Git SHA pin."
+}

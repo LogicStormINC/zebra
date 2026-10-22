@@ -1,3 +1,12 @@
+# CA-P3-02K — Same-origin business authentication facade and SDK
+
+- Status: Review; make test 10971 passed/3022 conditional skips (1244.42s), make check passed (1393 mypy/30 eval/3393 size files); SDK145, package/React18/19/Next/browser matrix and paired actual platform HTTP/separate business PG Chromium/WebKit passed;4601 baseline files unchanged. No main integration. Ready dependency audit and claim before code 2026-10-22. Human owner Luke Ding; executor Codex. Branch codex/ca-p3-02k-bff-auth; isolated stacked worktree, no main integration.
+- Owned paths: sdks/typescript/packages/client-core/src/bff_auth.ts,index.ts; sdks/typescript/packages/client-core/tests/bff-auth.test.ts; sdks/typescript/scripts/bff-auth-browser.mjs; sdks/typescript/package.json; docs/CA-P3-02K_bff_auth.md; docs/contracts/bff-auth/; docs/evidence/ca-p3-02k/; docs/AGENT_TASKS.md,PROGRESS.md,WORKLOG.md,task_plan.md; docs/实施任务拆解与阶段验收.md.
+- Dependencies: published G-A94885ce / G-B4b11b8a and SDK J4e629a5a. Platform public identity1 and BFF encrypted shared CredentialSession remain authority; no Python endpoint/schema changes.
+- DDD: HTTP facade translates safe DTOs to existing BFF application use cases; business owns current login/cookie/mapping. SDK has opaque operation locators only. No browser Token/identity override or Issue endpoint.
+- Invariants: fixed same origin/current business resolution, CSRF guard and bounded ingress; GET never rotates/issues, mutations CAS and original op receipts via G-B. Unknown blocks new refresh/bootstrap, only original read reconciliation; explicit retirement is separate. Credentials remain BFF. Initial install/fresh reauthentication remains trusted business server flow, no automatic Issue retry.
+- Acceptance: strict wire/CSRF/auth/CAS/unknown/reload checks, real platform plus separate business PG and SDK browser flow; full make test/check and SDK verify; preserve mock/history/Coverage/old contracts/evidence, formal docs/tasks and scoped commit/push. No deploy/production migration/npm publication/HA claim.
+
 # CA-P3-02J — Cross-device unknown request discovery and manual handling
 
 - Status: Review; make test 10971通过/3022条件跳过（1220.28s），make check通过（1393类型文件/30eval）；SDK139、React18/19与双浏览器矩阵、新跨设备及旧恢复联合验收通过；3768保护文件未变。 Ready dependency audit and claim before code2026-10-22. Human owner Luke Ding; executor Codex. One isolated codex/ca-p3-02j-request-discovery branch/worktree; stacked on published E b710e4a / I be4b442c. No main integration.

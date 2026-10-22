@@ -1,3 +1,4 @@
+export { createBFFAuth, type BFFAuthState } from "./bff_auth.ts";
 export { createCommandRecoveryInbox, type PendingRequest, type PendingRequestsPage, type UnknownHandling } from "./request_discovery.ts";
 import { CommandRecovery, submitRecoverableCommand, type CommandRecoveryView } from "./command_recovery.ts";
 import { copyReadableJson, sendReadableCommand, type ReadableCommandOptions, type ReadableSurface } from "./readable_commands.ts";
@@ -48,7 +49,6 @@ export interface ClientRuntimeDependencies extends StreamObserverOptions {
   streamUrl?: string | undefined;
   storage?: Storage | undefined;
 }
-
 /** Preserve the original required-secret DI type for existing server/legacy consumers. */
 export type BrowserRuntimeDependencies = ClientRuntimeDependencies | (
   Omit<ClientRuntimeDependencies, "mode" | "sessionCredential" | "controllerFenceToken" | "streamUrl"> & {

@@ -1,0 +1,33 @@
+{
+  "version": "1",
+  "reports": [
+    {
+      "browser": "chromium",
+      "actualPlatformHTTP": true,
+      "separateBusinessPG": true,
+      "refreshPosts": 3,
+      "lossFlowRefreshPosts": 2,
+      "expiredAccessCASAndExplicitRefresh": true,
+      "lostResponseReload": true,
+      "crossDeviceUnknown": true,
+      "explicitRetirement": true,
+      "freshBusinessReauthFixture": true,
+      "noCredentialExposure": true,
+      "noAutomaticRetry": true
+    },
+    {
+      "browser": "webkit",
+      "actualPlatformHTTP": true,
+      "separateBusinessPG": true,
+      "refreshPosts": 3,
+      "lossFlowRefreshPosts": 2,
+      "expiredAccessCASAndExplicitRefresh": true,
+      "lostResponseReload": true,
+      "crossDeviceUnknown": true,
+      "explicitRetirement": true,
+      "freshBusinessReauthFixture": true,
+      "noCredentialExposure": true,
+      "noAutomaticRetry": true
+    }
+  ]
+}

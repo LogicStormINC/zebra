@@ -1,0 +1,120 @@
+{
+  "contractVersion": "bff-auth/1",
+  "producerTask": "CA-P3-02K",
+  "consumerTask": "OD-P3-01G-C",
+  "credentialOwner": "business-bff",
+  "identityContract": "agent-identity/1",
+  "sessionContract": "bff-sessions/1",
+  "transport": {
+    "relativePathOnly": true,
+    "sameOrigin": true,
+    "noBrowserAuthorization": true,
+    "customHeader": {
+      "X-Overdoze-Auth": "1"
+    },
+    "writeOriginRequired": true,
+    "noCORS": true,
+    "cache": "no-store",
+    "redirect": "error",
+    "requestBytes": 256,
+    "responseBytes": 4096,
+    "maxConcurrentDefault": 8,
+    "maxConcurrentCeiling": 32,
+    "httpBudgetSeconds": 9,
+    "sdkBudgetSeconds": 10
+  },
+  "routes": {
+    "GET base": "business-authorized metadata; active revalidates platform Current, denied access returns refresh_required with CAS metadata",
+    "GET base/receipt": "Idempotency-Key original UUID; current state plus original receipt, never dispatch",
+    "POST base/refresh": "Idempotency-Key UUID and JSON revision; G-B single durable claim then once public Refresh",
+    "POST base/retire": "explicit user action; G-B original retained refresh Revoke; may fence unknown refresh"
+  },
+  "response": {
+    "exactFields": [
+      "version",
+      "status",
+      "revision",
+      "currentOperation",
+      "receipt"
+    ],
+    "version": "1",
+    "status": [
+      "active",
+      "refresh_required",
+      "unknown",
+      "closed"
+    ],
+    "revision": "positive safe integer",
+    "currentOperation": "canonical lowercase nonzero UUID",
+    "receiptFields": [
+      "operation",
+      "kind",
+      "outcome"
+    ],
+    "operation": "requested/current canonical lowercase nonzero UUID",
+    "kind": [
+      "install",
+      "refresh",
+      "retire",
+      ""
+    ],
+    "outcome": [
+      "completed",
+      "unknown",
+      "not_observed"
+    ],
+    "absent": "not_observed with empty kind; never permission to resend"
+  },
+  "errors": {
+    "400": "invalid",
+    "401": "unauthenticated",
+    "403": "origin or authority header rejected",
+    "404": "unknown route",
+    "405": "wrong method",
+    "409": "conflict",
+    "413": "body limit",
+    "503": "unavailable or unknown; no retry"
+  },
+  "sdk": {
+    "export": "createBFFAuth",
+    "methods": [
+      "state",
+      "pending",
+      "inspect",
+      "refresh",
+      "retire",
+      "assertActive"
+    ],
+    "storage": "sessionStorage opaque operation UUID and kind only; persist and readback BEFORE POST",
+    "unknownBlocksBootstrap": true,
+    "unknownAutoRefresh": false,
+    "unknownAutoIssue": false,
+    "readOnlyRecovery": true,
+    "explicitRetirementReplacesLocalLocator": true,
+    "originalUnknownAuditPreserved": true,
+    "stateNeverStartsRuntime": true,
+    "browserCheckIsAuthorization": false
+  },
+  "businessIntegration": {
+    "currentResolverRequired": true,
+    "privateBindingFromServer": true,
+    "beforeAfterCurrentAuthorization": true,
+    "backendAdmissionRequiresAccess": true,
+    "initialIssueAndInstall": "trusted business login path only; no browser Issue route, no non-idempotent Issue retry",
+    "freshReauthAfterClosed": true,
+    "cookie": "business-owned Secure HttpOnly SameSite, server-side mapping; fixture cookie is not production IdP"
+  },
+  "compatibility": {
+    "optIn": true,
+    "pythonRuntimeChanged": false,
+    "frontendMockConnected": false,
+    "historicalContractsModified": false,
+    "coverageChanged": false,
+    "nativeAdmissionReplaced": false,
+    "productionHAProven": false
+  },
+  "dependencyContracts": {
+    "contracts/bff-identity/v1/contract.json": "cde2e190b557757dfa42e601d0881f7d6c45162728f2ff2061fd95ec24e7ca03",
+    "contracts/bff-sessions/v1/contract.json": "2523a771d981cbab001273b65be2e40c8f6570d2a52b2fc8718cd4395a1adfc5"
+  }
+}
