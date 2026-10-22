@@ -17030,3 +17030,8 @@ WorkspaceQuotaError during first tool batch, real quota checker reproduces
 Persistent10GiB mount migration plan prepared in focused doc; user decision pending.
 No online storage/service/Run changes. Next: await explicit storage authorization,
 then exact idle/data/mount preservation gates before migration; do not retry Run.
+
+Follow-up read-only disk inventory: /dev/sda1 mounted /data,417GiB available,
+existing dbgpt directory preserved; /data fstab entry exists. Prefer bounded
+10GiB backing filesystem on /data, not the system disk. Plain directory migration
+does not satisfy hard-quota validation. No online changes or model/search calls.

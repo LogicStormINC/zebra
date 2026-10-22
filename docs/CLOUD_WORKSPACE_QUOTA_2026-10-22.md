@@ -58,3 +58,24 @@ service, runtime configuration or original Run mutations are permitted.
 No new model/search requests were sent during diagnosis. No source fix is claimed.
 Follow-up error classification can reuse the existing runtime_unavailable contract,
 but hiding the message alone does not fix the storage-capacity rejection.
+
+
+## Second-disk inspection, still read-only
+
+User clarified that two physical disks are mounted; this was not authorization
+for the proposed migration. Fresh lsblk/findmnt/df inspection confirms:
+
+- NVMe512GB system disk: ext4 root466GiB, available69GiB; current workspace
+  resides here. Existing dedicated bind still exposes the entire filesystem.
+- SATA480GB disk: /dev/sda1 ext4 mounted /data, filesystem440GiB,
+  available417GiB. Root-owned755. Existing top-level dbgpt and lost+found remain
+  untouched; no claim that the disk is empty. /data already has an fstab entry.
+- /data mount options rw,relatime; no active project-quota mount option observed.
+
+Preferred bounded backing location is a NEW dedicated /data/zebra directory,
+with a persistent10GiB filesystem backing file there, keeping the application's
+existing /var/lib/zebra/workspaces mount target. Reuse existing second-disk mount;
+no disk repartitioning, formatting /dev/sda1, or alteration of /data/dbgpt. A plain
+move to /data would still expose440GiB and fail the unchanged10GiB validator.
+Reboot ordering must require /data before the workspace loop mount, and the mount
+before API/Worker. This remains a proposed migration requiring explicit approval.
