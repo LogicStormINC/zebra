@@ -1,3 +1,10 @@
+# CA-P3-01D current task
+
+1. [x] Audit P3 asset gap and claim exact owned paths on isolated branch.
+2. [x] Add explicit versioned script publication transport reusing native assembly/registry/receipts.
+3. [x] Verify real PG/current authorization/CAS/channel/Eval negatives and old behavior.
+4. [x] Run complete gates and archive evidence; authorized scoped commit/push follows, remote receipt separate; no deployment/migration.
+
 # CA-P3-02M — 业务 OIDC 与签名云准入（Review）
 
 [正式方案与边界](docs/CA-P3-02M_signed_cloud.md)；[证据](docs/evidence/ca-p3-02m/validation.json)。

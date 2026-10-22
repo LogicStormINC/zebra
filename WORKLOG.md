@@ -1,3 +1,12 @@
+# 2026-10-23 CA-P3-01D
+
+- 审计G-G后的P3缺口：资产sealed与脚本Worker已有，scoped公开发布仅旧Bundle1。
+- 已认领隔离分支/Owned paths；新增显式脚本合同，复用发布者/原生装配/事务收据，不新增执行状态。
+- 首轮测试夹具Path/合同整数限制修正；扩大回归发现既有stop断言不接受取消同时撤销lease的合法竞态，补最小断言修复，保留无晚到输出要求。首次全量测试主动中断以先处理该门禁，最终完整复验另记。
+- 最终信任边界复核发现共享UUID解析缺类型检查，非字符串可抛AttributeError；先用新旧渠道回归复现，再在共享入口修复，并从最终源码重新全量验证。
+- 最终源码冻结后29专项通过；make test10985通过/3022条件跳过，make check1394类型文件/30eval通过。Overdoze26个race包和make check通过，74既有警告不变；授权源码交付另核对远端SHA。
+- 全部资源为自建测试；保留原工作树/历史/Coverage，无部署/生产迁移。
+
 # CA-P3-02M — 业务 OIDC 与签名云准入（Review）
 
 [正式方案与边界](docs/CA-P3-02M_signed_cloud.md)；[证据](docs/evidence/ca-p3-02m/validation.json)。

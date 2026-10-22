@@ -1,0 +1,84 @@
+{
+  "contractVersion": "script-publication/1",
+  "path": "/management/v1/script-publication",
+  "methods": [
+    "GET",
+    "POST"
+  ],
+  "requiredHeader": "x-runtime-publication-contract",
+  "credential": "rtpub_",
+  "approval": "cloud-agent.publication-approval/1",
+  "scope": [
+    "authority_issuer",
+    "namespace_id",
+    "deployment_id",
+    "target_id",
+    "product_id",
+    "environment"
+  ],
+  "materialize": {
+    "fields": [
+      "action",
+      "operationId",
+      "expectedRevision",
+      "versionId",
+      "version",
+      "bundle"
+    ],
+    "bundle": "cloud-agent.script-bundle/1",
+    "catalog": "cloud-agent.execution-catalog/2",
+    "definition": "agent-definition/3",
+    "assembly": "cloud-agent.script-assembly/1"
+  },
+  "publish": {
+    "fields": [
+      "action",
+      "operationId",
+      "expectedRevision",
+      "versionId",
+      "evidenceId"
+    ],
+    "gate": "current trusted evaluator, policy, passed exact Definition digest"
+  },
+  "references": [
+    "exact runtime-bundle/<base digest>@1",
+    "exact script-bundle/<outer digest>@1"
+  ],
+  "receipt": {
+    "selector": "X-Runtime-Operation",
+    "sameOperationAcrossChannels": "conflict",
+    "missing": "not proof of non-commit"
+  },
+  "resultFields": [
+    "publicationContract",
+    "scriptBundleDigest",
+    "operationId",
+    "revision",
+    "inputDigest",
+    "action",
+    "definitionId",
+    "versionId",
+    "definitionDigest",
+    "bundleDigest",
+    "assemblyDigest"
+  ],
+  "publishResultFields": [
+    "releaseId",
+    "releaseRevision",
+    "evidenceId"
+  ],
+  "limits": {
+    "bodyBytes": 262144,
+    "sharedPublisherSlots": 4,
+    "bodyMillis": 500,
+    "responseSeconds": 6
+  },
+  "capabilities": {
+    "sourceUpload": false,
+    "execute": false,
+    "createEvalEvidence": false,
+    "coverageAuthority": false,
+    "automaticRetry": false
+  },
+  "contractDigest": "sha256:601b0054766bd64078aad1315d7b7296f74461b08d934e9958b2ebec4d7cd0ab"
+}

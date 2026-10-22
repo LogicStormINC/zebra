@@ -11,12 +11,15 @@ from agent_core.application.agent_publication import (
 )
 from agent_core.domain.bundle_definition import BundleDefinitionVersion
 from agent_core.domain.identifiers import AgentDefinitionVersionId
+from agent_core.domain.runtime_assembly import RuntimeAssembly
 from agent_core.domain.runtime_bundle import parse_runtime_bundle
 from agent_core.domain.runtime_bundle_json import canonical_json_bytes
+from agent_core.domain.script_bundle import ScriptBundle, ScriptRuntimeAssembly
 from agent_storage.postgres.agent_registry import PostgresAgentRegistry
-from zebra_agent_config.bundle_settings import load_execution_catalog
 
+from zebra_agent_api.bundle_assembly import resolve_bundle_assembly
 from zebra_agent_api.publication_config import PublicationApproval
+from zebra_agent_api.script_publication_contract import CONTRACT as SCRIPT_CONTRACT
 
 
 def mutate_publication(
@@ -24,6 +27,8 @@ def mutate_publication(
     payload: dict[str, Any],
     registry: PostgresAgentRegistry,
     catalog_path: str | None,
+    *,
+    scripts: bool = False,
 ) -> dict[str, Any]:
     now = datetime.now(UTC)
     action = payload["action"]
@@ -41,10 +46,20 @@ def mutate_publication(
             raise ValueError("INVALID_ARGUMENT")
         if type(payload["version"]) is not int or not 1 <= payload["version"] <= 2**53 - 1:
             raise ValueError("INVALID_ARGUMENT")
-        bundle = parse_runtime_bundle(canonical_json_bytes(payload["bundle"]))
+        raw_bundle = payload["bundle"]
+        expected_schema = (
+            "cloud-agent.script-bundle/1" if scripts else "cloud-agent.bundle-envelope/1"
+        )
+        if not isinstance(raw_bundle, dict) or raw_bundle.get("schema_version") != expected_schema:
+            raise ValueError("BUNDLE_CONTRACT_MISMATCH")
+        bundle = (
+            ScriptBundle.model_validate(raw_bundle).base_bundle
+            if scripts
+            else parse_runtime_bundle(canonical_json_bytes(raw_bundle))
+        )
         if bundle.manifest.scope != approval.scope:
             raise PermissionError("SCOPE_MISMATCH")
-        assembly = load_execution_catalog(catalog_path).resolve(bundle)
+        assembly = resolve_bundle_assembly(raw_bundle, catalog_path)
         service = AgentDefinitionDraftService(registry, approval.resolver())
         draft = registry.get_draft(scope)
         if draft is None:
@@ -86,6 +101,7 @@ def mutate_publication(
             "definitionDigest": version.definition_digest,
             "bundleDigest": bundle.bundle_digest,
             "assemblyDigest": assembly.assembly_digest,
+            **_script_facts(assembly),
         }
     if action != "publish" or set(payload) != {
         "action",
@@ -99,7 +115,10 @@ def mutate_publication(
     evidence = registry.latest_eval_evidence(scope, version_id)
     if (
         not isinstance(published_version, BundleDefinitionVersion)
+        or isinstance(published_version.runtime_assembly, ScriptRuntimeAssembly) != scripts
         or published_version.runtime_assembly.bundle.manifest.scope != approval.scope
+        or isinstance(published_version.runtime_assembly, ScriptRuntimeAssembly)
+        and published_version.runtime_assembly.required_reference not in approval.references
         or evidence is None
         or str(evidence.evidence_id) != payload["evidenceId"]
         or evidence.evaluator_actor not in approval.evaluator_actors
@@ -112,6 +131,13 @@ def mutate_publication(
         not in approval.references
     ):
         raise PermissionError("PUBLICATION_GATE_REQUIRED")
+    assembly = published_version.runtime_assembly
+    if (
+        isinstance(assembly, ScriptRuntimeAssembly)
+        and resolve_bundle_assembly(assembly.script_bundle.model_dump(mode="json"), catalog_path)
+        != assembly
+    ):
+        raise PermissionError("SCRIPT_CATALOG_CHANGED")
     release = AgentDefinitionPublicationService(registry, approval.resolver()).publish(
         scope,
         version_id=version_id,
@@ -132,4 +158,14 @@ def mutate_publication(
         "releaseId": str(release.release_id),
         "releaseRevision": release.revision,
         "evidenceId": str(evidence.evidence_id),
+        **_script_facts(published_version.runtime_assembly),
     }
+
+
+def _script_facts(assembly: RuntimeAssembly) -> dict[str, str]:
+    if isinstance(assembly, ScriptRuntimeAssembly):
+        return {
+            "publicationContract": SCRIPT_CONTRACT,
+            "scriptBundleDigest": assembly.script_bundle.bundle_digest,
+        }
+    return {}

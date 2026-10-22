@@ -24,6 +24,18 @@ from zebra_agent_config import ZebraAgentSettings
 from zebra_agent_api.publication_config import load_publication_approval
 from zebra_agent_api.publication_service import mutate_publication
 from zebra_agent_api.runtime_management import _HEADERS, _error
+from zebra_agent_api.script_publication_contract import (
+    CONTRACT as SCRIPT_CONTRACT,
+)
+from zebra_agent_api.script_publication_contract import (
+    HEADER as SCRIPT_HEADER,
+)
+from zebra_agent_api.script_publication_contract import (
+    PATH as SCRIPT_PATH,
+)
+from zebra_agent_api.script_publication_contract import (
+    script_publication_contract,
+)
 
 if TYPE_CHECKING:
     from zebra_agent_api.app import ZebraAgentApi
@@ -39,6 +51,8 @@ def perform(
     headers: dict[str, list[str]],
     method: str,
     raw: bytes,
+    *,
+    scripts: bool = False,
 ) -> JSONResponse:
     try:
         approval = load_publication_approval(settings.publication_management_config, namespace)
@@ -59,6 +73,9 @@ def perform(
         return _error(403, "SCOPE_MISMATCH")
     if namespace is None:
         raise ValueError("NAMESPACE_REQUIRED")
+    contract = script_publication_contract() if scripts else None
+    if contract is not None and headers[SCRIPT_HEADER] != [contract["contractDigest"]]:
+        return _error(409, "CONTRACT_MISMATCH")
     store = PublicationStore(settings.database_url, namespace)
     if method == "GET":
         operation = headers["x-runtime-operation"]
@@ -77,6 +94,8 @@ def perform(
             payload["action"] not in {"materialize", "publish"}
             or type(payload.get("expectedRevision")) is not int
             or not 0 <= payload["expectedRevision"] < 2**53 - 1
+            or not isinstance(payload.get("operationId"), str)
+            or not isinstance(payload.get("versionId"), str)
             or str(UUID(payload["operationId"])) != payload["operationId"]
             or str(UUID(payload["versionId"])) != payload["versionId"]
         ):
@@ -97,12 +116,19 @@ def perform(
             digest,
             approval.definition_scope.scope_key,
             payload["expectedRevision"],
-            lambda: mutate_publication(approval, payload, registry, settings.runtime_bundle_config),
+            lambda: mutate_publication(
+                approval, payload, registry, settings.runtime_bundle_config, scripts=scripts
+            ),
             recheck,
+        )
+    if (result.get("publicationContract") == SCRIPT_CONTRACT) != scripts:
+        return _error(
+            404 if method == "GET" else 409, "NOT_FOUND" if method == "GET" else "CONFLICT"
         )
     return JSONResponse(
         content={
-            "contractVersion": CONTRACT,
+            "contractVersion": SCRIPT_CONTRACT if scripts else CONTRACT,
+            **({"contractDigest": contract["contractDigest"]} if contract is not None else {}),
             "scope": approval.scope.model_dump(mode="json"),
             "trustRevision": approval.trust_revision,
             "result": result,
@@ -128,7 +154,14 @@ def register_publication_management(
         token = tokens[0].removeprefix("Bearer ") if len(tokens) == 1 else ""
         if re.fullmatch(r"rtpub_[A-Za-z0-9_-]{43}", token) is None:
             return _error(401, "UNAUTHENTICATED")
-        names = (*_HEADERS.values(), "content-type", "content-length", "x-runtime-operation")
+        scripts = request.url.path.endswith(SCRIPT_PATH)
+        names = (
+            *_HEADERS.values(),
+            "content-type",
+            "content-length",
+            "x-runtime-operation",
+            SCRIPT_HEADER,
+        )
         if (
             request.url.query
             or request.headers.getlist("cookie")
@@ -162,7 +195,9 @@ def register_publication_management(
         namespace = getattr(api.stores, "deployment_namespace", None)
         headers = {name: request.headers.getlist(name) for name in names}
         task = asyncio.create_task(
-            asyncio.to_thread(perform, settings, namespace, token, headers, request.method, raw)
+            asyncio.to_thread(
+                perform, settings, namespace, token, headers, request.method, raw, scripts=scripts
+            )
         )
 
         def finished(done: asyncio.Task[JSONResponse]) -> None:
@@ -182,6 +217,8 @@ def register_publication_management(
         except (OSError, psycopg.Error, TimeoutError, RuntimeError):
             return _error(503, "MANAGEMENT_UNAVAILABLE")
 
-    route = Route(PATH, handle)
-    route.methods = None
-    app.router.routes.append(route)
+    # Both channels share the same per-instance resource budget and durable CAS.
+    for path in (PATH, SCRIPT_PATH):
+        route = Route(path, handle)
+        route.methods = None
+        app.router.routes.append(route)

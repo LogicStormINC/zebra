@@ -79,7 +79,9 @@ def test_live_script_control_has_no_late_receipt(script_dsn, tmp_path, monkeypat
                 host_context=bound.host_capability.host_context,
                 workspace_ref=bound.host_capability.host_context.workspace_ref,
             )
-            expected = ExecutionInterrupted
+            # Cancel revokes the lease as well as the session. Either current
+            # check may observe that transaction first; both must stop output.
+            expected = (ExecutionInterrupted, LeaseLostError)
         with pytest.raises(expected):
             future.result(timeout=3)
         assert monotonic() - start < 2
