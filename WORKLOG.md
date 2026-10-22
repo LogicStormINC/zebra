@@ -17050,3 +17050,25 @@ E2E. Rollback script explicitly reloads/removes Docker dependency before unmount
 Search/MCP/control/protected and original events unchanged. Original Runs failed
 as before, no replay. Operational evidence in private same-task local/remote path.
 No app source, migration, proxy/IP, unrelated container or Trench product changes.
+
+
+## 2026-10-22 CLOUD-TURN-ADMISSION-COMMENTARY-20261022
+
+Actual production-byte and saved-event diagnosis: newly authorized source/topic
+selection reused a frozen Task; normal generation omitted those resources. Fixed
+existing bounded generation (actual saved keys50characters), no ceiling weakening.
+Terminal done reused commentary identity, overwriting80char source with61char wait
+notice while retaining SHA proof; shared API/browser projections now separate it.
+Initial HTTP hypothesis disproved against actual image's working Noble fallback;
+duplicate candidate discarded, accepted compatibility source/lock now synchronized.
+74API/83frontend/TSC/Ruff plus actual network-none saved replay/corruption rejection.
+Only Trench API/frontend replaced under idle gates; preserve all other processes,
+Zebra mount/security/high/v2/Exa and original/protected events. Exact derived metadata
+repair uses original events + row locks/native watermark, preserves all statuses,
+answers, requests and cursors. Real logged-in page reload works with6messages,
+conflict banner gone, original failed/awaiting states retained,0suggestion POSTs.
+No models/search/Run replay or subscription retry. Readiness not substituted for
+page evidence; new live-model successor admission was not performed. Evidence and
+rollback in focused doc and same-task private release. No GitHub push.
+User's commercial root-cause/robustness requirement saved in an authorized memory
+extension note; do not claim absolute reliability from these bounded checks.

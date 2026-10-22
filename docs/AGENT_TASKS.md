@@ -35800,3 +35800,42 @@ old payloads remain byte-compatible by excluding None. No database migration.
   preserved. Native no-model filesystem safety checks/engine preflight pass; no
   full sandbox/model/page/reboot E2E. Search/MCP/cooldown/protected/original events
   unchanged; no rerun or push.
+
+
+### CLOUD-TURN-ADMISSION-COMMENTARY-20261022 — frozen ceiling reuse and terminal projection
+
+- Status: Done (2026-10-22; targeted regressions, production activation and authenticated page restore accepted).
+- Human owner Luke Ding; executor Codex; branch codex/cloud-turn-admission-commentary-20261022
+  in paired clean cloud-plugin-plan-01 Zebra/Trench worktrees; targets cloud-agent
+  and Trench main, preserving unrelated primary dirty work; no GitHub push.
+- Owned paths: this card, PROGRESS.md, WORKLOG.md,
+  docs/CLOUD_TURN_ADMISSION_COMMENTARY_2026-10-22.md; private same-task .artifacts/;
+  Trench services/api/src/trench_api/trench_ai_zebra_contract.py,
+  tests/api/test_trench_ai_zebra_contract.py, tests/api/test_trench_ai_zebra_runtime.py;
+  toc-frontend/src/lib/strategy-ordered-items.ts, strategy-coverage-report.ts,
+  strategy-ordered-items.test.ts, services/api/src/trench_api/trench_ai_turn_items.py,
+  tests/api/test_trench_ai_progressive_items.py; Trench toc-frontend/package.json,
+  pnpm-lock.yaml and src/lib/browser-sha256.ts, browser-sha256.test.ts for syncing
+  the already deployed HTTP compatibility baseline (no new production dependency).
+- Scope: preserve immutable Task ceilings; include canonical source/topic resource
+  selection in existing Task reuse generation. Changed resources hand off BEFORE
+  appending/submitting commands, no automatic command retry or old Run replay.
+  Actual HTTP IP has no subtle, but production already has Noble fallback; this
+  hypothesis was disproved and its duplicate patch discarded. Exact replay finds
+  terminal done overwrites immutable commentary text/proof in API and browser;
+  give terminal output its own identity, preserving all digest/identity checks.
+- Validate saved real request/resource deltas and commentary bytes, canonical
+  order/duplicates/narrowing/modes, missing WebCrypto and corruption rejection.
+  Real saved-event/snapshot checks; bounded repair of only proven corrupt derived
+  commentary metadata from original durable events. Keep Run status/answer/events;
+  no model/search/probe or command replay.
+- Deployment only minimal Trench API/frontend patches after idle/config/data gates;
+  preserve Zebra API/Worker and persistent quota mount, Search/MCP/cooldown/high/v2.
+
+- Result: canonical resource/Skill generation fits64characters; API/browser terminal
+  replies preserve commentary proof.74API/83frontend checks, TSC/Ruff, real image
+  replay/corruption rejection and authenticated original-page reload pass. One exact
+  derived projection repaired from immutable events, all Run status/answer/events
+  preserved. Existing HTTP compatibility baseline synchronized to source. Zebra
+  API/Worker/quota/Search/MCP unchanged;0models/search or original command retries.
+  No new live-model successor admission proof. See focused doc; no GitHub push.

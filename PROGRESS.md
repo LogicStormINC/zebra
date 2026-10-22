@@ -1,3 +1,21 @@
+# 2026-10-22 — Production Turn authority reuse and terminal projection repaired
+
+CLOUD-TURN-ADMISSION-COMMENTARY-20261022. New subscription/topic authority was sent
+against an old frozen Task ceiling, causing correct403 rejection. Canonical resource
+sets plus Skills now use the existing bounded generation digest and successor path;
+no widening/command retry. Terminal done overwrote immutable commentary text/proof
+in API/browser; it now has a separate identity. Exact saved events repaired only
+one derived Turn/history/legacy projection, preserving Run states/answers/events.
+
+74API/83frontend tests, TSC/Ruff, actual image offline replay/tamper rejection pass.
+Authenticated Chrome original-page refresh restores6messages, no commentary conflict;
+original failed third submission remains failed, first remains awaiting input.
+Only Trench API/frontend changed, same configuration/security; Zebra API/Worker,
+10GiB mount/Search/MCP/cooldown/protected events unchanged.0models/search/newRun/replay.
+No new real-model successor acceptance claimed. The already deployed HTTP checksum
+baseline is also committed to prevent source-only rebuild regression. Details:
+docs/CLOUD_TURN_ADMISSION_COMMENTARY_2026-10-22.md. Local integration only/no push.
+
 # 2026-10-22 — Production workspace hard quota repaired on second disk
 
 CLOUD-WORKSPACE-QUOTA-20261022. After explicit user approval, a persistent10GiB
