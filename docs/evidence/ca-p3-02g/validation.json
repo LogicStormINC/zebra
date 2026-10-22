@@ -1,0 +1,110 @@
+{
+  "task": "CA-P3-02G",
+  "status": "Review",
+  "base": "fb72ef6fce72ac171f947d1c18c57334f587be02",
+  "contractVersion": "sdk-readable-commands/1",
+  "nativeAdmission": "client-state-admission/1",
+  "focused": {
+    "passed": 6,
+    "missingCommandIdRed": {
+      "passed": 4,
+      "failed": 1
+    },
+    "finalGreen": true
+  },
+  "sdkVerify": {
+    "passed": true,
+    "tests": 131,
+    "failed": 0,
+    "react18And19Consumers": true,
+    "chromiumAndWebkit": true,
+    "nextHydration": true
+  },
+  "jointAcceptance": {
+    "browsers": [
+      "Chromium",
+      "WebKit"
+    ],
+    "perBrowser": {
+      "readableCommands": 3,
+      "actions": 2,
+      "receipts": 2,
+      "resumeCommands": 2
+    },
+    "commandReplayNoDuplicateWrite": true,
+    "staleCasAndCallerAuthorityRejected": true,
+    "immutableHistoryAndEmptyClear": true,
+    "reopenedWorkerContext": true,
+    "serverOnlyNativeSecrets": true,
+    "authority": "reference Cookie BFF/local compatibility native authority",
+    "storage": "owned PG17 Registry/mounts/Effects; real SQLite Task/commands reopened for current Worker recovery and ContextCompiler"
+  },
+  "makeTest": {
+    "passed": 10949,
+    "skipped": 3021,
+    "seconds": 1244.07,
+    "exit": 0
+  },
+  "makeCheck": {
+    "passed": true,
+    "typeFiles": 1389,
+    "evalCases": 30,
+    "sizeViolations": 0
+  },
+  "preservation": {
+    "base": "fb72ef6fce72ac171f947d1c18c57334f587be02",
+    "protectedFiles": 2318,
+    "scope": "existing native production apps/packages/configs, old contracts/evidence and Coverage; exact base bytes",
+    "changed": [],
+    "manifestSha256": "9b81033ae4372b737237b4cd19dc7d30f73e24ba545a340f523378aecd8fbd99"
+  },
+  "sourceFreeze": {
+    "sdkAndAcceptanceFiles": 94,
+    "semanticInputsUnchanged": true,
+    "whitespaceNormalizationAfterSdkVerify": [
+      "sdks/typescript/scripts/native-readable-browser.mjs"
+    ],
+    "normalizedJointAcceptancePassed": true,
+    "manifestSha256": "edb4eab9c21fcadd30755881975f7c940349967856737451c10cd32876942636"
+  },
+  "environmentRecovery": {
+    "environmentFailuresExcluded": true,
+    "failures": [
+      "native full run interrupted by disk exhaustion before summary",
+      "consumer full run failed with Docker unavailable",
+      "consumer retry failed after renewed disk exhaustion"
+    ],
+    "recovery": {
+      "ownedIdleTestScratchRemoved": true,
+      "pnpmStorePrune": {
+        "unusedFiles": 16021,
+        "unusedPackages": 439
+      },
+      "activeUvCachePreserved": true,
+      "forceUvPruneUsed": false,
+      "existingContainersImagesVolumesPruned": false,
+      "dockerBuildCacheOldUnusedPruneReclaimedBytes": 0,
+      "diskAvailableAfterCleanupGiBAtLeast": 36,
+      "dockerDaemonAvailable": true
+    },
+    "dataBoundary": "No application deployment or production migration; no source/history/Coverage deletion; only known idle reproducible dependencies/cache/test scratch; fresh final gates recorded separately"
+  },
+  "boundaries": [
+    "No native production Python/schema changes or Go execution proxy",
+    "Snapshots are untrusted interaction input, never business/Controller/Coverage authority; no general DLP",
+    "Single-host reference BFF and fixture business identity; not production IdP/Go Broker/cloud signed identity or shared-CAS multi-replica BFF",
+    "No full model/harness E2E or production HA certification",
+    "No deployment, production migration, npm publication or main/cloud-agent merge"
+  ],
+  "logSha256": {
+    "focused-red.log": "69eaade4ec0ed87bc2d1e6f0987d173bc2cc1f7a1fc0a059962d35854f9f0b64",
+    "result-shape-red.log": "9ebda96311b15df7fb5cbd8eb27647cab436ab073ce364097f2e17c2d13ab4dc",
+    "focused-final.log": "4bc8ee825e76f91472fcac3e29a9cc668432050da4f16b8986f7c065c149863a",
+    "sdk-verify-revalidated.log": "10dbb0c1fe8d2521d794206adaa6ed4607b5ba0364fa179b893e79b91111015f",
+    "native-readable-complete.log": "98c9296cce867e1f5a8d38c46cfe5b82b8fb822d8f788609df3bdea28a70f0ee",
+    "make-test.log": "2113fbc528694b436365d37d7db55dedcc745b24f0870aab5d7c4f43b4d7270e",
+    "make-check-revalidated.log": "391303a6972035a521cda9f427d59170adbc06ea8ecdc81bdec14252b64d5fe6",
+    "make-check-final.log": "391303a6972035a521cda9f427d59170adbc06ea8ecdc81bdec14252b64d5fe6",
+    "native-readable-publish.log": "0a2375175e588a37d60bfd9e1a507ae64de49d54ea16f78dc619ae524015bca7"
+  }
+}

@@ -1,3 +1,5 @@
+2026-10-22增量：[SDK/BFF Readable值命令](docs/CA-P3-02G_readable_submit.md)，显式版本和原生准入；参考联合验收与生产身份/HA边界见正式证据。
+
 ![Zebra Agent](./assets/logo.png)
 
 # Zebra Agent

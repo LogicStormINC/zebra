@@ -27,6 +27,7 @@ import {
   ZebraClientRuntime,
   type ClientActionHandler,
   type ClientRuntimeStatus,
+  type ReadableCommandOptions,
 } from "@zebra-agent/client-core";
 import type { RuntimeBrowserConfig } from "@zebra-agent/contracts";
 
@@ -178,20 +179,7 @@ export function useZebraReadable(
   const serialized = JSON.stringify(value);
   const reported = useRef(serialized);
   useEffect(() => {
-    if (reported.current === serialized) return;
-    reported.current = serialized;
-    const mount = synchronizeMount(
-      runtime,
-      frontendAppId,
-      profileRevision,
-      profileDigest,
-    );
-    void mount
-      .then(() => setRevision(runtime.uiRevision.current))
-      .catch(() => runtime.stop());
-  }, [serialized, runtime, frontendAppId, profileRevision, profileDigest]);
-  useEffect(() => {
-    runtime.mountReadable(name);
+    runtime.mountReadable(name, value);
     const mount = synchronizeMount(runtime, frontendAppId, profileRevision, profileDigest);
     void mount
       .then(() => setRevision(runtime.uiRevision.current))
@@ -204,6 +192,20 @@ export function useZebraReadable(
       );
     };
   }, [name, runtime, frontendAppId, profileRevision, profileDigest]);
+  useEffect(() => {
+    if (reported.current === serialized) return;
+    reported.current = serialized;
+    runtime.updateReadable(name, value);
+    const mount = synchronizeMount(
+      runtime,
+      frontendAppId,
+      profileRevision,
+      profileDigest,
+    );
+    void mount
+      .then(() => setRevision(runtime.uiRevision.current))
+      .catch(() => runtime.stop());
+  }, [serialized, name, runtime, frontendAppId, profileRevision, profileDigest]);
   return { revision };
 }
 
@@ -280,4 +282,10 @@ export function useZebraAgentState(): [
 ] {
   const { agentState, setAgentState } = useZebra();
   return [agentState, setAgentState];
+}
+
+/** Explicit one-attempt command; accepted means durable intent, never execution completion. */
+export function useZebraReadableCommand() {
+  const { runtime } = useZebra();
+  return useMemo(() => (options: ReadableCommandOptions) => runtime.submitReadableCommand(options), [runtime]);
 }

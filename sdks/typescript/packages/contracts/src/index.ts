@@ -92,6 +92,8 @@ export interface BffRuntimeClientConfig extends Omit<RuntimeClientConfig,
   controller: boolean;
   /** Explicitly negotiate public native mount facts; no implicit upgrade. */
   surfaceMetadataVersion?: 1;
+  /** Explicit native Readable command admission/1; requires synchronized surface. */
+  clientStateVersion?: 1;
   sessionCredential?: never;
   controllerFenceToken?: never;
   streamUrl?: never;

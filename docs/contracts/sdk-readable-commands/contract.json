@@ -1,0 +1,84 @@
+{
+  "contractVersion": "sdk-readable-commands/1",
+  "producerTask": "CA-P3-02G",
+  "nativeAdmission": "client-state-admission/1",
+  "nativeAdmissionProducer": "fb72ef6fce72ac171f947d1c18c57334f587be02",
+  "negotiation": {
+    "mode": "bff",
+    "clientStateVersion": 1,
+    "surfaceMetadataVersion": 1,
+    "nativeCapability": "client_state_admission_contract_version=1"
+  },
+  "publicApi": [
+    "useZebraReadable(name,value)",
+    "useZebraReadableCommand()",
+    "ZebraClientRuntime.submitReadableCommand(options)",
+    "nativeReadableCommand(body,trustedSurface)"
+  ],
+  "command": {
+    "route": "POST /agui/threads/{taskId}/runs/{runId}/commands",
+    "actions": [
+      "run",
+      "resume"
+    ],
+    "explicitExpectedRevision": true,
+    "explicitIdempotencyKey": true,
+    "browserInputFields": [
+      "messages",
+      "resume"
+    ],
+    "trustedBffDerivesForwardedProps": true,
+    "acceptedMeans": "durable intent only; duplicate retains original commandId",
+    "resultFields": [
+      "status",
+      "commandId"
+    ]
+  },
+  "snapshots": {
+    "copiedAtRegistrationAndCommand": true,
+    "mountedValues": true,
+    "emptyClears": true,
+    "browserStorage": false,
+    "boundedJson": {
+      "bytes": 65536,
+      "depth": 32,
+      "nodes": 4096,
+      "finiteOnly": true,
+      "text": "UTF-8 scalar strings without NUL"
+    },
+    "nativeSchemaRedactionDigestAuthority": true,
+    "clientRecomputesDigest": false,
+    "generalDlp": false
+  },
+  "concurrency": {
+    "waitQueuedMount": true,
+    "remountDrainsCommand": true,
+    "attempts": 1,
+    "unknown": "disconnect without releasing Controller; trusted BFF reconciles original native idempotency identity",
+    "crossStoreLinearizable": false
+  },
+  "authority": {
+    "businessAuthentication": "trusted business BFF; Cookie reference fixture only",
+    "nativeCredentialsInBrowser": false,
+    "goOnExecutionPath": false,
+    "grantsController": false
+  },
+  "compatibility": {
+    "oldModesRetained": true,
+    "oldPinsRewritten": false,
+    "nativeProductionPythonChanged": false,
+    "historyRewritten": false,
+    "coverageChanged": false,
+    "migration": false
+  },
+  "verificationBoundary": {
+    "referenceHttpPgRegistrySqliteCommandsWorkerContext": true,
+    "chromiumWebkit": true,
+    "productionBusinessIdpGoBroker": false,
+    "sharedCasMultiReplicaBff": false,
+    "fullModelHarness": false,
+    "productionHa": false,
+    "deployment": false,
+    "npmPublication": false
+  }
+}

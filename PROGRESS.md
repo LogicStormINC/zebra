@@ -1,3 +1,9 @@
+# CA-P3-02G — SDK/BFF Readable值提交（Review）
+
+基于已发布fb72ef6f的原生准入合同，复用挂载调度和持久命令，显式协商值提交；不新增Go执行代理、原生表或自动重试，旧模式/历史/Coverage保留。
+
+最终make test10949通过/3021条件跳过（1244.07s），make check通过；SDK verify131、双浏览器各3值命令及原有2动作/收据/恢复链通过。2318生产/旧合同/Coverage保护文件与94 SDK/验收输入保持。见[正式方案](docs/CA-P3-02G_readable_submit.md)和[证据](docs/evidence/ca-p3-02g/validation.json)。环境中断运行排除，最终完整门禁重跑；按授权限定提交推送，实际远端SHA以交付回执核验。
+
 # CA-P3-02F — Readable原生准入（Review）
 
 已核对E后AG-UI现有state/持久命令/Context路径，先补当前Session/挂载绑定与脱敏恢复，不创建新上传接口或Go执行代理。SDK值提交另片；保留旧模式/历史/Coverage，不部署迁移。

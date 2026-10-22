@@ -6,6 +6,7 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium, webkit } from "@playwright/test";
+import { readableFixtureSource, exerciseReadables } from "./native-readable-browser.mjs";
 import { createNativeSurfaceBff } from "./native-surface-bff.mjs";
 const sdk = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const repo = resolve(sdk, "../..");
@@ -13,11 +14,12 @@ const work = await mkdtemp(join(tmpdir(), "native-surface-"));
 const container = "ca-surface-" + process.pid + "-" + Date.now();
 let nativeProcess, server;
 const reports = [];
+const readable = process.env.ZEBRA_NATIVE_READABLE_ACCEPTANCE === "1";
 function run(command, args, cwd = repo) { return new Promise((ok, fail) => { const child = spawn(command, args, { cwd, stdio: "inherit" }); child.on("error", fail); child.on("exit", code => code === 0 ? ok() : fail(new Error(`${command} failed: ${code}`))); }); }
 async function until(read, message) { for (let n = 0; n < 200; n++) { try { const value = await read(); if (value) return value; } catch {} await new Promise(r => setTimeout(r, 100)); } throw new Error(message); }
 try {
   await run("docker", ["run", "--detach", "--name", container, "-e", "POSTGRES_PASSWORD=fixture", "-e", "POSTGRES_DB=fixture", "-p", "127.0.0.1::5432", "postgres:17-alpine"]);
-  await until(() => { execFileSync("docker", ["exec", container, "pg_isready", "-U", "postgres"], { stdio: "ignore" }); return true; }, "owned PG readiness");
+  await until(() => { execFileSync("docker", ["exec", container, "pg_isready", "-h", "127.0.0.1", "-U", "postgres"], { stdio: "ignore" }); return true; }, "owned PG readiness");
   const port = execFileSync("docker", ["port", container, "5432/tcp"], { encoding: "utf8" }).trim().split(":").at(-1);
   const web = join(work, "web"); const packs = join(work, "packs"); await mkdir(web); await mkdir(packs);
   const deps = { react: "19.2.8", "react-dom": "19.2.8", vite: "6.4.3", zod: "4.4.3" };
@@ -31,12 +33,12 @@ try {
   await writeFile(join(web, "index.html"), '<div id="root"></div><script type="module" src="/main.tsx"></script>');
   for (const [label, engine] of [["Chromium", chromium], ["WebKit", webkit]]) {
     const folder = join(work, label); await mkdir(folder);
-    await writeFile(join(folder, "native-input.json"), JSON.stringify({ dsn: `postgresql://postgres:fixture@127.0.0.1:${port}/fixture` }), { mode: 0o600 });
+    await writeFile(join(folder, "native-input.json"), JSON.stringify({ dsn: `postgresql://postgres:fixture@127.0.0.1:${port}/fixture`, ...(readable ? { readable: true } : {}) }), { mode: 0o600 });
     nativeProcess = spawn(join(repo, ".venv/bin/python"), ["-m", "tests.acceptance.native_surface_server", folder], { cwd: repo, env: Object.fromEntries(Object.entries(process.env).filter(([key]) => !/^(ZEBRA_|OVERDOZE_|PG|AWS_|OPENAI_|DEEPSEEK_|PYTHONPATH$|HTTP_PROXY$|HTTPS_PROXY$|ALL_PROXY$)/i.test(key))), stdio: ["ignore", "pipe", "pipe"] });
     nativeProcess.stderr.on("data", data => { process.stderr.write(data); });
     const native = await until(async () => JSON.parse(await readFile(join(folder, "native-ready.json"), "utf8")), "native startup failed (inspect fixture stderr)");
     const bff = await createNativeSurfaceBff(native, join(folder, "mapping.json"));
-    await writeFile(join(web, "main.tsx"), source(bff.config, native.profile));
+    await writeFile(join(web, "main.tsx"), readable ? readableFixtureSource(bff.config, native.profile, native.commandRevision) : source(bff.config, native.profile));
     await run("pnpm", ["exec", "vite", "build"], web);
     server = createServer(async (req, res) => { if (await bff.handle(req, res)) return; if (req.url !== "/" && !/^\/assets\/[A-Za-z0-9_-]+\.js$/.test(req.url)) { res.writeHead(404); res.end(); return; } try { const file = join(web, "dist", req.url === "/" ? "index.html" : req.url); res.setHeader("content-type", file.endsWith(".js") ? "text/javascript" : "text/html"); res.end(await readFile(file)); } catch { res.writeHead(404); res.end(); } });
     await new Promise(r => server.listen(0, "127.0.0.1", r)); bff.state.origin = `http://127.0.0.1:${server.address().port}`;
@@ -59,15 +61,16 @@ try {
       assert.deepEqual(bff.state.receipts[0], bff.state.receipts[1]); assert.equal(await page.evaluate(() => document.cookie), "");
       const visible = JSON.stringify(wire) + JSON.stringify(bff.config) + await page.evaluate(() => JSON.stringify(sessionStorage) + document.documentElement.outerHTML);
       for (const secret of [native.credential, ...bff.state.fences]) assert.ok(!visible.includes(secret));
+      const readableReport = readable ? await exerciseReadables(page, native, bff) : {};
       const before = bff.state.calls;
       assert.equal(await page.evaluate(async config => (await fetch(config.baseUrl + `/v1/client-sessions/${config.clientSessionId}/heartbeat`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ task_id: "foreign" }) })).status, bff.config), 403);
       assert.equal((await page.request.post(bff.state.origin + bff.config.baseUrl + `/v1/client-sessions/${native.session}/heartbeat`, { headers: { Origin: "https://foreign.example" }, data: {} })).status(), 403);
       assert.equal(bff.state.calls, before);
       bff.state.authorized = false; await page.locator("#status").filter({ hasText: "stopped" }).waitFor();
-      assert.deepEqual(errors, []); reports.push({ browser: label, ...report, receiptReplay: true, remount: true, secretRedaction: true, unauthorizedStopped: true });
+      assert.deepEqual(errors, []); reports.push({ browser: label, ...report, ...readableReport, receiptReplay: true, remount: true, secretRedaction: true, unauthorizedStopped: true });
     } finally { await browser.close(); await new Promise(r => server.close(r)); server = undefined; nativeProcess.kill(); await new Promise(r => nativeProcess.once("exit", r)); nativeProcess = undefined; }
   }
-  console.log(JSON.stringify({ contract: "sdk-surface-sync/1", boundary: "local compatibility HTTP; real PostgreSQL; Worker gateway and durable resume command; fixture business login", reports }, null, 2));
+  console.log(JSON.stringify({ contract: readable ? "sdk-readable-commands/1" : "sdk-surface-sync/1", boundary: "local compatibility HTTP; real PostgreSQL; Worker gateway and durable resume command; fixture business login", reports }, null, 2));
 } finally { nativeProcess?.kill(); server?.close(); execFileSync("docker", ["rm", "-f", "-v", container], { stdio: "ignore" }); await rm(work, { recursive: true, force: true }); }
 function source(config, profile) { return `
 import {createElement,StrictMode,useState} from 'react'; import {createRoot} from 'react-dom/client'; import {z} from 'zod';

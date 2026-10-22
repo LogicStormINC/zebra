@@ -1,3 +1,4 @@
+import { copyReadableJson, sendReadableCommand, type ReadableCommandOptions, type ReadableSurface } from "./readable_commands.ts";
 import { streamObserverOptions, type StreamObserverOptions } from "./conversation_stream.ts";
 /** React-free browser runtime (ADR-CLIENT-01).
  * Never stores Host Grants; handlers and profiles must be mounted and fenced.
@@ -53,6 +54,7 @@ export type BrowserRuntimeDependencies = ClientRuntimeDependencies | (
     mode: "bff";
     controller: boolean;
     surfaceMetadataVersion?: 1 | undefined;
+    clientStateVersion?: 1 | undefined;
     sessionCredential?: never;
     controllerFenceToken?: never;
     streamUrl?: never;
@@ -82,6 +84,8 @@ export class ZebraClientRuntime {
   private readonly jobs = new Set<Promise<unknown>>();
   private mounting = false;
   private bindingRevision = 0;
+  private readonly readableValues = new Map<string, Record<string, unknown>>();
+  private readableSurface: ReadableSurface | null = null;
   private polling = false;
   private heartbeating = false;
   private status: ClientRuntimeStatus = "connecting";
@@ -107,6 +111,7 @@ export class ZebraClientRuntime {
     if (deps.mode === "bff" && (deps.sessionCredential !== undefined || deps.controllerFenceToken !== undefined)) {
       throw new ClientRuntimeError("invalid_bff_config", "BFF runtime cannot hold native secrets");
     }
+    if (deps.mode === "bff" && deps.clientStateVersion !== undefined && (deps.clientStateVersion !== 1 || deps.surfaceMetadataVersion !== 1)) throw new ClientRuntimeError("invalid_readable_version", "Readable version1 requires synchronized BFF surface");
     this.deps = deps;
     this.uiRevision = new UiRevisionClock(deps.initialUiRevision);
     this.stateStore = new ClientRuntimeStateStore(deps.storage, deps.clientSessionId);
@@ -152,6 +157,7 @@ export class ZebraClientRuntime {
       if (metadata) {
         this.deps = { ...this.deps, clientBindingDigest: metadata.binding_digest, actionContractDigests: metadata.action_contract_digests };
         this.bindingRevision = metadata.binding_revision;
+        this.readableSurface = { frontendAppId: options.frontendAppId, clientSessionId: this.deps.clientSessionId, taskId: this.deps.taskId!, runId: this.deps.runId!, metadata };
       }
     } catch (error) { if (sync) this.disconnect(); throw error; }
     finally { this.mounting = false; }
@@ -178,13 +184,27 @@ export class ZebraClientRuntime {
     });
     return this.mountFlush;
   }
-
-  mountReadable(name: string): void {
+  mountReadable(name: string, value?: Record<string, unknown>): void {
+    if (this.deps.mode === "bff" && this.deps.clientStateVersion === 1) {
+      if (this.readableNames.has(name)) throw new ClientRuntimeError("readable_already_mounted", "Readable already mounted");
+      this.readableValues.set(name, copyReadableJson(value));
+    }
     this.readableNames.add(name);
+  }
+  updateReadable(name: string, value: Record<string, unknown>): void {
+    if (this.deps.mode !== "bff" || this.deps.clientStateVersion !== 1) return;
+    if (!this.readableNames.has(name)) throw new ClientRuntimeError("readable_not_mounted", "Readable not mounted");
+    this.readableValues.set(name, copyReadableJson(value));
+  }
+  async submitReadableCommand(options: ReadableCommandOptions) {
+    await this.mountFlush;
+    if (this.stopped || this.surfacePending || this.deps.mode !== "bff" || this.deps.clientStateVersion !== 1 || !this.readableSurface) throw new ClientRuntimeError("readable_not_ready", "Readable surface not ready");
+    try { return await this.track(sendReadableCommand(this.deps.fetchImpl, this.deps.baseUrl, this.readableSurface, options, this.readableValues)); }
+    catch (error) { if (error instanceof ClientRuntimeError && error.code === "readable_command_unknown") this.disconnect(); throw error; }
   }
 
   unmountReadable(name: string): void {
-    this.readableNames.delete(name);
+    this.readableNames.delete(name); this.readableValues.delete(name);
   }
 
   /** Reconnect replay of pending effects; each executes at most once. */
@@ -462,11 +482,9 @@ export class ZebraClientRuntime {
       run_binding_id: this.deps.runBindingId,
     };
   }
-
   private releaseController(): Promise<void> {
     return this.controls ? releaseRuntimeController(this.deps, this.controllerCoordinates()) : Promise.resolve();
   }
-
   private track<T>(work: Promise<T>): Promise<T> {
     this.jobs.add(work);
     void work.then(() => this.jobs.delete(work), () => this.jobs.delete(work));
@@ -476,5 +494,5 @@ export class ZebraClientRuntime {
 export { ConversationStreamReducer, STREAM_V2_CAPABILITIES } from "./conversation_stream.ts";
 export type { ConversationMessage, ConversationStreamEvent } from "./conversation_stream.ts";
 export { openClientSurface, type ClientSurfaceOpenOptions, type ClientSurfaceOpened, mountClientSurface, type ClientSurfaceOptions, type ClientSurfaceAdmission, type ClientSurfaceMount } from "./client_surface.ts";
-
 export { publicClientSurfaceMetadata, validateSurfaceMetadata, type PublicClientSurfaceMetadata } from "./surface_metadata.ts";
+export { nativeReadableCommand, type ReadableCommandOptions, type ReadableCommandResult } from "./readable_commands.ts";

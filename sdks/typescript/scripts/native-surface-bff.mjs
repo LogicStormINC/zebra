@@ -1,11 +1,15 @@
 import { randomUUID } from "node:crypto";
 import { readFile, writeFile, rename, open } from "node:fs/promises";
-import { publicClientSurfaceMetadata } from "../packages/client-core/dist/index.js";
+import { nativeReadableCommand, publicClientSurfaceMetadata } from "../packages/client-core/dist/index.js";
 
 /** ponytail: single-host test adapter only; production needs shared CAS storage and business auth. */
 export async function createNativeSurfaceBff(native, mappingFile) {
+  if (native.clientStateVersion === 1) {
+    const response = await fetch(native.nativeUrl + "/capabilities/runtime", { signal: AbortSignal.timeout(5000) });
+    if (!response.ok || (await response.json()).client_state_admission_contract_version !== 1) throw new Error("native Readable admission1 required");
+  }
   const login = randomUUID();
-  const state = { origin: "", authorized: true, calls: 0, mounts: [], receipts: [], replayed: false, releases: 0, fences: [native.metadata.controller_fence_token] };
+  const state = { origin: "", authorized: true, calls: 0, mounts: [], receipts: [], replayed: false, releases: 0, commands: [], fences: [native.metadata.controller_fence_token] };
   let busy = false;
   const prefix = "/api/agent/surfaces/reference";
   async function save(value) {
@@ -21,7 +25,7 @@ export async function createNativeSurfaceBff(native, mappingFile) {
   const config = { mode: "bff", surfaceMetadataVersion: 1, baseUrl: prefix, clientSessionId: native.session,
     controller: true, taskId: native.task, runId: "run-1", runBindingId: native.metadata.binding_id,
     clientBindingDigest: native.metadata.binding_digest, actionContractDigests: native.metadata.action_contract_digests,
-    initialUiRevision: native.metadata.ui_revision };
+    initialUiRevision: native.metadata.ui_revision, ...(native.clientStateVersion === 1 ? { clientStateVersion: 1 } : {}) };
   const reply = (res, code, body) => { res.writeHead(code, { "content-type": "application/json", "cache-control": "no-store" }); res.end(JSON.stringify(body)); };
   async function handle(req, res) {
     if (req.url === "/fixture/login") { res.setHeader("set-cookie", `business=${login}; HttpOnly; SameSite=Strict; Path=/`); reply(res, 200, {}); return true; }
@@ -30,8 +34,9 @@ export async function createNativeSurfaceBff(native, mappingFile) {
     if (req.method === "POST" && req.headers.origin !== state.origin || ["authorization", "x-zebra-client-session", "x-zebra-client-fence"].some(k => req.headers[k])) { reply(res, 403, {}); return true; }
     const path = req.url.slice(prefix.length);
     const sessionPrefix = `/v1/client-sessions/${native.session}/`;
-    const action = path.startsWith(sessionPrefix) ? path.slice(sessionPrefix.length) : /^\/v1\/client-effects\/[0-9a-f-]{36}\/receipts$/.test(path) ? "receipts" : "";
-    if (!["mount", "effects", "heartbeat", "release", "receipts"].includes(action)) { reply(res, 404, {}); return true; }
+    const command = native.clientStateVersion === 1 && path === `/agui/threads/${native.task}/runs/run-1/commands`;
+    const action = command ? "commands" : path.startsWith(sessionPrefix) ? path.slice(sessionPrefix.length) : /^\/v1\/client-effects\/[0-9a-f-]{36}\/receipts$/.test(path) ? "receipts" : "";
+    if (!["mount", "effects", "heartbeat", "release", "receipts", "commands"].includes(action)) { reply(res, 404, {}); return true; }
     if (req.method !== (action === "effects" ? "GET" : "POST")) { reply(res, 405, {}); return true; }
     const chunks = []; let size = 0;
     for await (const chunk of req) { size += chunk.length; if (size > 65536) { reply(res, 413, {}); return true; } chunks.push(chunk); }
@@ -49,6 +54,14 @@ export async function createNativeSurfaceBff(native, mappingFile) {
       const headers = { "Content-Type": "application/json", "X-Zebra-Client-Session": native.credential };
       if (action !== "mount" && action !== "effects") headers["X-Zebra-Client-Fence"] = mapping.metadata.controller_fence_token;
       if (req.headers["idempotency-key"]) headers["Idempotency-Key"] = req.headers["idempotency-key"];
+      if (action === "commands") {
+        if (typeof req.headers["idempotency-key"] !== "string" || !/^[\x21-\x7e]{1,256}$/.test(req.headers["idempotency-key"])) { reply(res, 400, {}); return true; }
+        let translated;
+        try { translated = nativeReadableCommand(body, { frontendAppId: native.profile.frontend_app_id,
+          clientSessionId: native.session, taskId: native.task, runId: "run-1", metadata: publicClientSurfaceMetadata(mapping.metadata) }); }
+        catch { reply(res, 409, {}); return true; }
+        body = translated;
+      }
       if (action === "mount") await save({ ...mapping, phase: "mounting" });
       state.calls++;
       const response = await fetch(native.nativeUrl + (action === "mount" ? native.path : path), {
@@ -64,6 +77,10 @@ export async function createNativeSurfaceBff(native, mappingFile) {
       } else if (action === "receipts") {
         state.receipts.push({ body, key: req.headers["idempotency-key"] }); state.replayed ||= result.replayed === true;
         reply(res, state.receipts.length === 1 ? 503 : 200, result);
+      } else if (action === "commands") {
+        if (!["accepted", "duplicate"].includes(result.status) || typeof result.command_id !== "string") throw new Error("invalid command result");
+        state.commands.push({ body: JSON.parse(Buffer.concat(chunks).toString("utf8")), key: req.headers["idempotency-key"] });
+        reply(res, 200, { status: "accepted", commandId: result.command_id });
       } else { if (action === "release") state.releases++; reply(res, response.status, result); }
     } catch { reply(res, 503, {}); } finally { busy = false; }
     return true;

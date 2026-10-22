@@ -1,3 +1,7 @@
+## Readable value commands (explicit opt-in)
+
+With `mode: "bff", surfaceMetadataVersion: 1, clientStateVersion: 1`, `useZebraReadable(name, value)` copies mounted JSON values and updates/removes them with the Hook lifecycle. `useZebraReadableCommand()` returns a one-attempt `submit({action: "run", expectedRevision, idempotencyKey, input: {messages: []}})` function; `resume` requires `input.resume`. Revision is the native command revision, not UI revision. Accepted means durable intent only. A trusted authenticated business BFF compares the public surface and translates using `nativeReadableCommand`; this helper is not an authentication/authorization server. Native credentials remain server-only. Native schema/redaction/digest/command authority stays unchanged. Do not automatically retry CAS/unknown; reconcile the original native idempotency identity at the BFF. Values are not browser-persisted. Old modes remain names/revision only. See [full contract and boundaries](../../../../docs/CA-P3-02G_readable_submit.md).
+
 # @zebra-agent/react
 
 React bindings and host-neutral UI primitives for Zebra Cloud Agent.

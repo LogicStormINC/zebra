@@ -1,7 +1,7 @@
 import { ClientRuntimeError } from "./errors.ts";
 
 /** Browser-only locator transport. Actual identity/control live in the business BFF. */
-export function createBffFetch(baseUrl: string, sessionId: string, fetchImpl: typeof fetch): typeof fetch {
+export function createBffFetch(baseUrl: string, sessionId: string, fetchImpl: typeof fetch, commandPath?: string): typeof fetch {
   if (baseUrl.length > 512 || !/^\/[A-Za-z0-9_-]+(?:\/[A-Za-z0-9_-]+)*$/.test(baseUrl)) {
     throw new ClientRuntimeError("invalid_bff_url", "BFF base URL must be a scoped same-origin relative path");
   }
@@ -10,7 +10,7 @@ export function createBffFetch(baseUrl: string, sessionId: string, fetchImpl: ty
     const tail = url.startsWith(baseUrl + "/") ? url.slice(baseUrl.length) : "";
     const method = (init.method ?? "GET").toUpperCase();
     const sessionPrefix = `/v1/client-sessions/${sessionId}/`;
-    const allowed = (tail === sessionPrefix + "effects" && method === "GET") ||
+    const allowed = (commandPath !== undefined && tail === commandPath && method === "POST") || (tail === sessionPrefix + "effects" && method === "GET") ||
       (["mount", "heartbeat", "release"].some(action => tail === sessionPrefix + action) && method === "POST") ||
       (/^\/v1\/client-effects\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/receipts$/.test(tail) && method === "POST");
     const headers = new Headers(init.headers);

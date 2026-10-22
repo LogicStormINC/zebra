@@ -1,3 +1,7 @@
+# 2026-10-22 — CA-P3-02G
+
+先核对F发布合同与names-only路径并Ready认领；实现显式值快照与可信BFF翻译，保持原生执行权威。6项定向/SDK verify131及双浏览器真实PG registry/SQLite命令/Worker Context通过。主机磁盘耗尽导致Docker停止/全量中断；仅清理可重建闲置缓存，保留活跃uv缓存/容器镜像卷，恢复约36GiB后重新完整验证。环境失败记录不计最终通过；最终10949通过/3021条件跳过（1244.07s）、check、SDK131和双浏览器验收通过，2318/94保护与冻结检查通过，准备限定提交推送。
+
 # 2026-10-22 — CA-P3-02F
 
 先审计后Ready认领：AG-UI已有值载荷和恢复，但仅按转发ID选Profile，未验证当前Session credential/mount；Core把已redacted sentinel误判为敏感原值。复用原生状态与命令，先补原生可信入口。

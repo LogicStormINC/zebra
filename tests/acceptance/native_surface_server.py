@@ -64,11 +64,17 @@ def serve(folder: Path) -> None:
         client_effect_receipts=receipts,
     )
     db = str(folder / "native-local.sqlite")
+    command_revision = None
+    if cfg.get("readable"):
+        from tests.acceptance.native_readable_server import prepare_readable_fixture
+
+        db, ready_task, command_revision = prepare_readable_fixture(folder)
+        db = str(db)
     app = ZebraAgentApi(
         database_path=db, settings=replace(_settings(), database_url=db), client_platform=platform
     )
     adapter = RouteAdapter(app)
-    task_id = TaskId(uuid4())
+    task_id = ready_task if cfg.get("readable") else TaskId(uuid4())
     parent_id = SessionId(uuid4())
     opened = adapter.handle(
         RouteRequest(
@@ -135,6 +141,10 @@ def serve(folder: Path) -> None:
             if self.path.startswith("/fixture/"):
                 if self.headers.get("X-Fixture-Key") != fixture_key:
                     return self.reply(401, {})
+                if self.path == "/fixture/readable-report" and cfg.get("readable"):
+                    from tests.acceptance.native_readable_server import readable_report
+
+                    return self.reply(200, readable_report(db, task_id, folder))
                 if self.path == "/fixture/schedule":
                     client = UUID(session_id)
                     current = sessions.get_run_binding(task_id, "run-1", client)
@@ -194,6 +204,11 @@ def serve(folder: Path) -> None:
         "path": path,
         "profile": {**profile.model_dump(mode="json"), "profile_digest": profile.profile_digest},
         "metadata": initial.body,
+        **(
+            {"clientStateVersion": 1, "commandRevision": command_revision}
+            if cfg.get("readable")
+            else {}
+        ),
     }
     file = folder / "native-ready.json"
     fd = os.open(file, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
