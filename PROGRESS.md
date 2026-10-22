@@ -1,3 +1,9 @@
+# CA-P3-02I（Review）
+
+已核对 H 公开收据和 G SDK；显式恢复1、原请求标识持久化和只读对账已实现；业务BFF事实在自有DB，不接mock。补可选原Segment前置条件，保留原Runtime/原生key，未知不重发。
+
+最终make test 10971通过/3022条件跳过（1230.21s），make check通过（1393类型文件、30eval）；SDK verify136及双浏览器/双Go进程/重启/原生收据联合验收通过，3757保护文件不变。[正式方案](docs/CA-P3-02I_command_recovery.md) · [证据](docs/evidence/ca-p3-02i/validation.json)。原生schema/历史/Worker/Coverage不变；生产IdP/完整模型/HA、跨设备发现及非提交证明仍后续。不部署/生产迁移/npm发布/主线整合。按授权限定提交推送，实际SHA另核验。
+
 # CA-P3-02H — 命令接纳收据只读对账前置（Review）
 
 G之后先补P3 unknown的原生可授权、定点只读观察；使用原Segment/幂等键与现有索引，不创建状态表或放开重发。SDK/BFF持久恢复后续独立消费。

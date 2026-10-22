@@ -80,13 +80,14 @@ export function nativeReadableCommand(value: unknown, surface: ReadableSurface) 
 
 export async function sendReadableCommand(
   request: typeof fetch, baseUrl: string, surface: ReadableSurface,
-  options: ReadableCommandOptions, values: Map<string, Record<string, unknown>>,
+  options: ReadableCommandOptions, values: Map<string, Record<string, unknown>>, beforeDispatch?: () => void,
 ): Promise<ReadableCommandResult> {
   const opts = object(options); fields(opts, ["action", "expectedRevision", "idempotencyKey", "input"]); envelope(opts);
   if (typeof opts.idempotencyKey !== "string" || !/^[\x21-\x7e]{1,256}$/.test(opts.idempotencyKey)) reject();
   const input = commandInput(opts.input, false);
   const body = copyReadableJson({ action: options.action, expectedRevision: options.expectedRevision,
     input: { ...input, state: Object.fromEntries(values) }, surface: observation(surface) });
+  beforeDispatch?.();
   let response: Response;
   try { response = await request(`${baseUrl}/agui/threads/${surface.taskId}/runs/${encodeURIComponent(surface.runId)}/commands`, {
     method: "POST", headers: { "Content-Type": "application/json", "Idempotency-Key": options.idempotencyKey }, body: JSON.stringify(body),

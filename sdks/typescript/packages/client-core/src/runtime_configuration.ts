@@ -15,7 +15,7 @@ export function runtimeDependencies(config: RuntimeBrowserConfig & StreamObserve
   }
   if (config.mode === "bff") {
     const allowed = ["mode", "baseUrl", "clientSessionId", "controller", "taskId", "runId", "runBindingId",
-      "clientBindingDigest", "actionContractDigests", "initialUiRevision", "storage", "fetchImpl", "surfaceMetadataVersion", "clientStateVersion"];
+      "clientBindingDigest", "actionContractDigests", "initialUiRevision", "storage", "fetchImpl", "surfaceMetadataVersion", "clientStateVersion", "commandRecoveryVersion"];
     if (Object.keys(config).some(key => !allowed.includes(key))) {
       throw new ClientRuntimeError("invalid_bff_config", "BFF mode forbids native secrets and streaming configuration");
     }
@@ -27,6 +27,7 @@ export function runtimeDependencies(config: RuntimeBrowserConfig & StreamObserve
       throw new ClientRuntimeError("invalid_bff_config", "synchronized surface requires version1 and an actual initial UI revision");
     }
     if (config.clientStateVersion !== undefined && (config.clientStateVersion !== 1 || config.surfaceMetadataVersion !== 1)) throw new ClientRuntimeError("invalid_readable_version", "Readable version1 requires synchronized BFF surface");
+    if (config.commandRecoveryVersion !== undefined && (config.commandRecoveryVersion !== 1 || config.clientStateVersion !== 1)) throw new ClientRuntimeError("invalid_recovery_version", "recovery1 requires Readable1");
     const actions = config.actionContractDigests;
     if ((config.controller || config.surfaceMetadataVersion === 1) && (!uuid(config.taskId) || typeof config.runId !== "string" ||
       config.runId.length < 1 || config.runId.length > 128 || !uuid(config.runBindingId) ||
@@ -35,7 +36,7 @@ export function runtimeDependencies(config: RuntimeBrowserConfig & StreamObserve
       throw new ClientRuntimeError("invalid_bff_config", "controller metadata is incomplete or malformed");
     }
     return {
-      mode: "bff", controller: config.controller, surfaceMetadataVersion: config.surfaceMetadataVersion, clientStateVersion: config.clientStateVersion,
+      mode: "bff", controller: config.controller, surfaceMetadataVersion: config.surfaceMetadataVersion, clientStateVersion: config.clientStateVersion, commandRecoveryVersion: config.commandRecoveryVersion,
       fetchImpl: createBffFetch(config.baseUrl, config.clientSessionId, config.fetchImpl ?? ((input, init) => globalThis.fetch(input, init)), config.clientStateVersion === 1 ? `/agui/threads/${config.taskId}/runs/${encodeURIComponent(config.runId!)}/commands` : undefined),
       baseUrl: config.baseUrl, clientSessionId: config.clientSessionId,
       taskId: config.taskId, runId: config.runId, runBindingId: config.runBindingId,

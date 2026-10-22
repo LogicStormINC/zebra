@@ -1,3 +1,4 @@
+import { CommandRecovery, submitRecoverableCommand, type CommandRecoveryView } from "./command_recovery.ts";
 import { copyReadableJson, sendReadableCommand, type ReadableCommandOptions, type ReadableSurface } from "./readable_commands.ts";
 import { streamObserverOptions, type StreamObserverOptions } from "./conversation_stream.ts";
 /** React-free browser runtime (ADR-CLIENT-01).
@@ -55,12 +56,12 @@ export type BrowserRuntimeDependencies = ClientRuntimeDependencies | (
     controller: boolean;
     surfaceMetadataVersion?: 1 | undefined;
     clientStateVersion?: 1 | undefined;
+    commandRecoveryVersion?: 1 | undefined;
     sessionCredential?: never;
     controllerFenceToken?: never;
     streamUrl?: never;
   }
 );
-
 export type ClientRuntimeStatus = "connecting" | "ready" | "unavailable" | "stopped";
 
 export class ZebraClientRuntime {
@@ -86,6 +87,7 @@ export class ZebraClientRuntime {
   private bindingRevision = 0;
   private readonly readableValues = new Map<string, Record<string, unknown>>();
   private readableSurface: ReadableSurface | null = null;
+  private readonly commandRecovery: CommandRecovery | null;
   private polling = false;
   private heartbeating = false;
   private status: ClientRuntimeStatus = "connecting";
@@ -103,15 +105,15 @@ export class ZebraClientRuntime {
   private get controls(): boolean {
     return this.deps.mode === "bff" ? this.deps.controller === true : this.deps.controllerFenceToken !== undefined;
   }
-
   private get surfacePending(): boolean { return this.mounting || synchronizedMount(this.deps) && this.bindingRevision === 0; }
-
   constructor(deps: BrowserRuntimeDependencies) {
     if (deps.mode === "bff" && deps.surfaceMetadataVersion !== undefined && (deps.surfaceMetadataVersion !== 1 || deps.initialUiRevision === undefined)) throw new ClientRuntimeError("invalid_surface_version", "explicit surface version1 and initial revision required");
     if (deps.mode === "bff" && (deps.sessionCredential !== undefined || deps.controllerFenceToken !== undefined)) {
       throw new ClientRuntimeError("invalid_bff_config", "BFF runtime cannot hold native secrets");
     }
     if (deps.mode === "bff" && deps.clientStateVersion !== undefined && (deps.clientStateVersion !== 1 || deps.surfaceMetadataVersion !== 1)) throw new ClientRuntimeError("invalid_readable_version", "Readable version1 requires synchronized BFF surface");
+    if (deps.mode === "bff" && deps.commandRecoveryVersion !== undefined && (deps.commandRecoveryVersion !== 1 || deps.clientStateVersion !== 1)) throw new ClientRuntimeError("invalid_recovery_version", "recovery1 requires Readable1");
+    this.commandRecovery = deps.mode === "bff" && deps.commandRecoveryVersion === 1 ? new CommandRecovery(deps.storage, deps.clientSessionId, deps.taskId!, deps.runId!, deps.fetchImpl, `${deps.baseUrl}/agui/threads/${deps.taskId}/runs/${encodeURIComponent(deps.runId!)}/commands/receipt`) : null;
     this.deps = deps;
     this.uiRevision = new UiRevisionClock(deps.initialUiRevision);
     this.stateStore = new ClientRuntimeStateStore(deps.storage, deps.clientSessionId);
@@ -121,14 +123,14 @@ export class ZebraClientRuntime {
     this.recoveredInflightEffects = restored.inflightEffects;
     this.pendingReceipts = restored.pendingReceipts;
     this.lastEventId = restored.lastEventId;
+    if (this.commandRecovery?.pending().length) this.disconnect();
   }
-
   static fromConfig(config: RuntimeBrowserConfig & StreamObserverOptions): ZebraClientRuntime {
     return new ZebraClientRuntime(runtimeDependencies(config));
   }
-
   /** Mount declares the page's actions; digest drift stops mounting. */
   async mount(options: MountOptions): Promise<void> {
+    this.commandRecovery?.ensureClear();
     if (this.stopped) {
       throw new ClientRuntimeError(
         CLIENT_SDK_ERRORS.FENCE_EXPIRED,
@@ -199,14 +201,13 @@ export class ZebraClientRuntime {
   async submitReadableCommand(options: ReadableCommandOptions) {
     await this.mountFlush;
     if (this.stopped || this.surfacePending || this.deps.mode !== "bff" || this.deps.clientStateVersion !== 1 || !this.readableSurface) throw new ClientRuntimeError("readable_not_ready", "Readable surface not ready");
-    try { return await this.track(sendReadableCommand(this.deps.fetchImpl, this.deps.baseUrl, this.readableSurface, options, this.readableValues)); }
-    catch (error) { if (error instanceof ClientRuntimeError && error.code === "readable_command_unknown") this.disconnect(); throw error; }
+    return this.track(submitRecoverableCommand(this.commandRecovery, options.idempotencyKey,
+      before => sendReadableCommand(this.deps.fetchImpl, this.deps.baseUrl, this.readableSurface!, options, this.readableValues, before), () => this.disconnect()));
   }
-
+  get readableCommandRecovery(): CommandRecoveryView | null { return this.commandRecovery; }
   unmountReadable(name: string): void {
     this.readableNames.delete(name); this.readableValues.delete(name);
   }
-
   /** Reconnect replay of pending effects; each executes at most once. */
   async listPendingEffects(): Promise<ClientEffectWire[]> {
     const response = await this.deps.fetchImpl(
@@ -496,3 +497,4 @@ export type { ConversationMessage, ConversationStreamEvent } from "./conversatio
 export { openClientSurface, type ClientSurfaceOpenOptions, type ClientSurfaceOpened, mountClientSurface, type ClientSurfaceOptions, type ClientSurfaceAdmission, type ClientSurfaceMount } from "./client_surface.ts";
 export { publicClientSurfaceMetadata, validateSurfaceMetadata, type PublicClientSurfaceMetadata } from "./surface_metadata.ts";
 export { nativeReadableCommand, type ReadableCommandOptions, type ReadableCommandResult } from "./readable_commands.ts";
+export type { CommandRecoveryView } from "./command_recovery.ts";

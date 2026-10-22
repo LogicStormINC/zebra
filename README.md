@@ -800,3 +800,7 @@ Readable values use the existing AG-UI command and [bound native admission](docs
 ## CA-P3-02H 命令收据前置
 
 [当前授权收据查询](docs/CA-P3-02H_command_receipts.md)补齐 unknown 的原生只读观察；BFF 持久对账和 SDK 恢复独立后续，不关闭 P3。
+
+## CA-P3-02I 原请求与恢复
+
+[当前合同与恢复流程](docs/CA-P3-02I_command_recovery.md)：原 Segment 可选前置条件、共享业务日志、SDK 持久标识和只读对账；不关闭完整 P3。

@@ -10,7 +10,7 @@ export function createBffFetch(baseUrl: string, sessionId: string, fetchImpl: ty
     const tail = url.startsWith(baseUrl + "/") ? url.slice(baseUrl.length) : "";
     const method = (init.method ?? "GET").toUpperCase();
     const sessionPrefix = `/v1/client-sessions/${sessionId}/`;
-    const allowed = (commandPath !== undefined && tail === commandPath && method === "POST") || (tail === sessionPrefix + "effects" && method === "GET") ||
+    const allowed = (commandPath !== undefined && ((tail === commandPath && method === "POST") || (tail === commandPath + "/receipt" && method === "GET"))) || (tail === sessionPrefix + "effects" && method === "GET") ||
       (["mount", "heartbeat", "release"].some(action => tail === sessionPrefix + action) && method === "POST") ||
       (/^\/v1\/client-effects\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/receipts$/.test(tail) && method === "POST");
     const headers = new Headers(init.headers);

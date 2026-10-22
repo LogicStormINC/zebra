@@ -112,6 +112,14 @@ def handle_agui_command(
     task = app.stores.tasks.get_task(task_id)
     if task is None:
         return _problem(404, "not_found", "AG-UI thread was not found", path)
+    headers = {k.lower(): v for k, v in (getattr(request, "headers", None) or {}).items()}
+    if "x-zebra-command-segment" in headers:
+        try:
+            expected_segment = UUID(headers["x-zebra-command-segment"])
+        except (ValueError, TypeError, AttributeError):
+            return _problem(400, "invalid_segment", "original Segment UUID required", path)
+        if expected_segment != task.active_segment_id:
+            return _problem(409, "segment_changed", "original Segment is no longer active", path)
     if app.stores.sessions.get_session(task.active_segment_id) is None:
         return _problem(409, "projection_incomplete", "active Segment is unavailable", path)
 

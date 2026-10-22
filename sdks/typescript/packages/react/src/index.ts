@@ -1,4 +1,5 @@
 "use client";
+import type { CommandRecoveryView } from "@zebra-agent/client-core";
 
 /**
  * Zebra React bindings: provider + standard hooks (ADR-CLIENT-01).
@@ -288,4 +289,10 @@ export function useZebraAgentState(): [
 export function useZebraReadableCommand() {
   const { runtime } = useZebra();
   return useMemo(() => (options: ReadableCommandOptions) => runtime.submitReadableCommand(options), [runtime]);
+}
+
+/** Query original admission only; obtain fresh bootstrap/runtime before mounting again. */
+export function useZebraReadableCommandRecovery(): CommandRecoveryView | null {
+  const { runtime } = useZebra();
+  return useMemo(() => runtime.readableCommandRecovery, [runtime]);
 }

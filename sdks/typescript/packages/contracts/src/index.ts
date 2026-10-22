@@ -94,6 +94,8 @@ export interface BffRuntimeClientConfig extends Omit<RuntimeClientConfig,
   surfaceMetadataVersion?: 1;
   /** Explicit native Readable command admission/1; requires synchronized surface. */
   clientStateVersion?: 1;
+  /** Durable opaque command markers and receipt-only reconciliation. */
+  commandRecoveryVersion?: 1;
   sessionCredential?: never;
   controllerFenceToken?: never;
   streamUrl?: never;

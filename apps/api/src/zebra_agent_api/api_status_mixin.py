@@ -23,6 +23,7 @@ class ApiStatusMixin:
             200,
             {
                 "contract_version": 1,
+                "client_command_segment_precondition_contract_version": 1,
                 "schema_version": MIGRATIONS[-1].version,
                 "network_profiles": list(SUPPORTED_NETWORK_PROFILES),
                 "client_surface_contract_version": 1 if available else 0,

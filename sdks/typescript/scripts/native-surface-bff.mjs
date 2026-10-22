@@ -3,10 +3,11 @@ import { readFile, writeFile, rename, open } from "node:fs/promises";
 import { nativeReadableCommand, publicClientSurfaceMetadata } from "../packages/client-core/dist/index.js";
 
 /** ponytail: single-host test adapter only; production needs shared CAS storage and business auth. */
-export async function createNativeSurfaceBff(native, mappingFile) {
+export async function createNativeSurfaceBff(native, mappingFile, commandAdapter) {
   if (native.clientStateVersion === 1) {
     const response = await fetch(native.nativeUrl + "/capabilities/runtime", { signal: AbortSignal.timeout(5000) });
-    if (!response.ok || (await response.json()).client_state_admission_contract_version !== 1) throw new Error("native Readable admission1 required");
+    const capabilities = response.ok ? await response.json() : {};
+    if (!response.ok || capabilities.client_state_admission_contract_version !== 1 || native.commandRecoveryVersion === 1 && (capabilities.client_command_receipt_contract_version !== 1 || capabilities.client_command_segment_precondition_contract_version !== 1)) throw new Error("native Readable admission1 required");
   }
   const login = randomUUID();
   const state = { origin: "", authorized: true, calls: 0, mounts: [], receipts: [], replayed: false, releases: 0, commands: [], fences: [native.metadata.controller_fence_token] };
@@ -25,7 +26,7 @@ export async function createNativeSurfaceBff(native, mappingFile) {
   const config = { mode: "bff", surfaceMetadataVersion: 1, baseUrl: prefix, clientSessionId: native.session,
     controller: true, taskId: native.task, runId: "run-1", runBindingId: native.metadata.binding_id,
     clientBindingDigest: native.metadata.binding_digest, actionContractDigests: native.metadata.action_contract_digests,
-    initialUiRevision: native.metadata.ui_revision, ...(native.clientStateVersion === 1 ? { clientStateVersion: 1 } : {}) };
+    initialUiRevision: native.metadata.ui_revision, ...(native.clientStateVersion === 1 ? { clientStateVersion: 1 } : {}), ...(native.commandRecoveryVersion === 1 ? { commandRecoveryVersion: 1 } : {}) };
   const reply = (res, code, body) => { res.writeHead(code, { "content-type": "application/json", "cache-control": "no-store" }); res.end(JSON.stringify(body)); };
   async function handle(req, res) {
     if (req.url === "/fixture/login") { res.setHeader("set-cookie", `business=${login}; HttpOnly; SameSite=Strict; Path=/`); reply(res, 200, {}); return true; }
@@ -35,9 +36,10 @@ export async function createNativeSurfaceBff(native, mappingFile) {
     const path = req.url.slice(prefix.length);
     const sessionPrefix = `/v1/client-sessions/${native.session}/`;
     const command = native.clientStateVersion === 1 && path === `/agui/threads/${native.task}/runs/run-1/commands`;
-    const action = command ? "commands" : path.startsWith(sessionPrefix) ? path.slice(sessionPrefix.length) : /^\/v1\/client-effects\/[0-9a-f-]{36}\/receipts$/.test(path) ? "receipts" : "";
-    if (!["mount", "effects", "heartbeat", "release", "receipts", "commands"].includes(action)) { reply(res, 404, {}); return true; }
-    if (req.method !== (action === "effects" ? "GET" : "POST")) { reply(res, 405, {}); return true; }
+    const commandReceipt = native.commandRecoveryVersion === 1 && path === `/agui/threads/${native.task}/runs/run-1/commands/receipt`;
+    const action = commandReceipt ? "commandReceipt" : command ? "commands" : path.startsWith(sessionPrefix) ? path.slice(sessionPrefix.length) : /^\/v1\/client-effects\/[0-9a-f-]{36}\/receipts$/.test(path) ? "receipts" : "";
+    if (!["mount", "effects", "heartbeat", "release", "receipts", "commands", "commandReceipt"].includes(action)) { reply(res, 404, {}); return true; }
+    if (req.method !== (["effects", "commandReceipt"].includes(action) ? "GET" : "POST")) { reply(res, 405, {}); return true; }
     const chunks = []; let size = 0;
     for await (const chunk of req) { size += chunk.length; if (size > 65536) { reply(res, 413, {}); return true; } chunks.push(chunk); }
     let body;
@@ -61,6 +63,10 @@ export async function createNativeSurfaceBff(native, mappingFile) {
           clientSessionId: native.session, taskId: native.task, runId: "run-1", metadata: publicClientSurfaceMetadata(mapping.metadata) }); }
         catch { reply(res, 409, {}); return true; }
         body = translated;
+      }
+      if (["commands", "commandReceipt"].includes(action) && commandAdapter) {
+        const result = await commandAdapter(action, body, req.headers["idempotency-key"]);
+        reply(res, result.code, result.body); return true;
       }
       if (action === "mount") await save({ ...mapping, phase: "mounting" });
       state.calls++;
