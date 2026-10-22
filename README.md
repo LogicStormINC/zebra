@@ -796,3 +796,7 @@ Scoped read-only Runtime management is documented in [RUNTIME_MANAGEMENT](docs/R
 Scoped publisher/consumer HTTP and native gate evidence: [publication management](docs/PUBLICATION_MANAGEMENT.md).
 
 Readable values use the existing AG-UI command and [bound native admission](docs/CA-P3-02F_readable_admission.md). The SDK value-submission adapter remains a separate slice; historical command recovery and Coverage stay intact.
+
+## CA-P3-02H 命令收据前置
+
+[当前授权收据查询](docs/CA-P3-02H_command_receipts.md)补齐 unknown 的原生只读观察；BFF 持久对账和 SDK 恢复独立后续，不关闭 P3。

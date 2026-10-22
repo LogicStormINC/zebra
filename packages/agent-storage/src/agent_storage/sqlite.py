@@ -3,8 +3,9 @@ import sqlite3
 from pathlib import Path
 
 from agent_core.domain.events import SessionEvent
-from agent_core.domain.identifiers import SessionId
+from agent_core.domain.identifiers import ClientSessionId, SessionId, TaskId
 from agent_core.domain.sessions import SessionStatus
+from agent_core.ports.client_command_receipts import ClientCommandReceipt
 from agent_core.ports.event_store import EventStorePort
 from agent_core.ports.session_recovery import SessionEventPage
 from agent_core.ports.task_projection_checkpoints import CheckpointNotReady
@@ -23,6 +24,21 @@ class SQLiteEventStore(EventStorePort):
     def __init__(self, database_path: str | Path) -> None:
         self._database = SQLiteDatabase(database_path)
         self._initialize()
+
+    def read_client_command_receipt(
+        self,
+        segment_id: SessionId,
+        key: str,
+        task_id: TaskId,
+        run_id: str,
+        client_session_id: ClientSessionId,
+    ) -> ClientCommandReceipt | None:
+        from agent_storage.client_command_receipts import read_receipt
+
+        with self._database.connect() as connection:
+            return read_receipt(
+                connection, (str(segment_id), key, str(task_id), run_id, str(client_session_id))
+            )
 
     def append(self, event: SessionEvent) -> SessionEvent:
         with self._database.connect() as connection:

@@ -18,11 +18,18 @@ def test_runtime_capabilities_match_task_network_profiles(tmp_path) -> None:
         "client_surface_contract_version": 0,
         "client_surface_metadata_contract_version": 0,
         "client_state_admission_contract_version": 0,
+        "client_command_receipt_contract_version": 0,
         "client_surface_open_contract_version": 0,
     }
     assert "full-gateway" in response.body["network_profiles"]
-    assert _required_scopes_for_request(
-        HostGrantHttpRequest(
-            method="GET", path="/capabilities/runtime", origin=None, authorization="Bearer grant"
+    assert (
+        _required_scopes_for_request(
+            HostGrantHttpRequest(
+                method="GET",
+                path="/capabilities/runtime",
+                origin=None,
+                authorization="Bearer grant",
+            )
         )
-    ) == ()  # The Host authorizer applies its default agent.run scope.
+        == ()
+    )  # The Host authorizer applies its default agent.run scope.

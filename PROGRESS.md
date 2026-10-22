@@ -1,3 +1,9 @@
+# CA-P3-02H — 命令接纳收据只读对账前置（Review）
+
+G之后先补P3 unknown的原生可授权、定点只读观察；使用原Segment/幂等键与现有索引，不创建状态表或放开重发。SDK/BFF持久恢复后续独立消费。
+
+最终 make test 10970通过/3022条件跳过（1171.24s），make check通过（1393类型文件、30eval）；定向22通过/1可选PG跳过，独享PG17另跑5通过。3838个既有代码/SDK/合同/证据/Coverage保护文件未变。[正式方案](docs/CA-P3-02H_command_receipts.md) · [证据](docs/evidence/ca-p3-02h/validation.json)。整次PG读取共享两秒预算；首次全量轮次因补齐该预算而中止，最终完整重跑单独计入。按授权限定提交推送，远端SHA由交付回执核验；无部署、生产迁移或主线整合。
+
 # CA-P3-02G — SDK/BFF Readable值提交（Review）
 
 基于已发布fb72ef6f的原生准入合同，复用挂载调度和持久命令，显式协商值提交；不新增Go执行代理、原生表或自动重试，旧模式/历史/Coverage保留。

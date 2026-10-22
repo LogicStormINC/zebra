@@ -1,0 +1,87 @@
+{
+  "contractVersion": "client-command-receipts/1",
+  "producerTask": "CA-P3-02H",
+  "route": "GET /agui/threads/{taskId}/runs/{runId}/command-receipt",
+  "capability": "client_command_receipt_contract_version=1",
+  "headers": {
+    "credential": "X-Zebra-Client-Session",
+    "key": "Idempotency-Key",
+    "segment": "X-Zebra-Command-Segment"
+  },
+  "input": {
+    "body": false,
+    "query": false,
+    "key": "exact original printable ASCII, 1..256 bytes",
+    "segment": "explicit original Segment UUID; no activeSegment fallback"
+  },
+  "authority": {
+    "currentClientSession": true,
+    "cloudVerifiedHostSubject": true,
+    "taskScope": "agent.run",
+    "taskRunBeforeAndAfterRead": true,
+    "segmentBelongsToTask": true,
+    "samePersistedClientSession": true,
+    "requiresCurrentMount": false,
+    "crossStoreLinearizableRevocation": false
+  },
+  "responses": {
+    "accepted": {
+      "status": "accepted",
+      "commandId": "nonzero UUID"
+    },
+    "missing": {
+      "status": "not_observed"
+    },
+    "errors": {
+      "400": "malformed input",
+      "401": "invalid current ClientSession or missing verified cloud principal",
+      "403": "current resource authority refused",
+      "404": "resource or Segment outside Task",
+      "405": "method not allowed",
+      "503": "unavailable dependency or corrupt receipt",
+      "409": "existing Task projection not ready; preserve unknown"
+    }
+  },
+  "acceptance": "durable command admission only; not execution or business outcome",
+  "absence": "not_observed never proves noncommit or authorizes resend",
+  "storage": {
+    "source": "existing session_command_accepted event",
+    "admissionVersion": 1,
+    "lookup": [
+      "deployment namespace (PostgreSQL)",
+      "original Segment",
+      "original idempotency key",
+      "Task",
+      "Run",
+      "ClientSession"
+    ],
+    "selectedFields": [
+      "command_id"
+    ],
+    "selectedCommandIdMaxCharacters": 37,
+    "maxRows": 1,
+    "existingIndexes": true,
+    "fullEventHydration": false,
+    "historyScanFallback": false,
+    "writes": false,
+    "newMigration": false,
+    "postgresSharedRequestBudgetSeconds": 2,
+    "postgresBudgetScope": "receipt handler ClientSession/Task checks and receipt query; existing HTTP HostGrant preflight has its separate budget"
+  },
+  "compatibility": {
+    "sdkChanged": false,
+    "historyRewritten": false,
+    "coverageChanged": false,
+    "oldContractsRewritten": false
+  },
+  "verificationBoundary": {
+    "sqliteApiAndAsgi": true,
+    "ownedPostgresTwoReaders": true,
+    "productionBusinessIdp": false,
+    "sharedCasBffReconciliation": false,
+    "sdkUnknownReconnect": false,
+    "fullModelHarness": false,
+    "productionHa": false,
+    "deployment": false
+  }
+}
