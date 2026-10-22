@@ -17020,3 +17020,13 @@ Dockerinspect mount order differs nondeterministically, canonicalized by destina
 for comparison. No Search/TLS/Yahoo/MCP restart, Trench product edit, global proxy/IP
 change, model/search/newRun, full-suite claim or GitHub push. Focused receipt committed
 for local cloud-agent integration; unrelated dirty files/archive refs preserved.
+
+
+## 2026-10-22 CLOUD-WORKSPACE-QUOTA-20261022
+
+Read-only diagnosis of conv_1792651644999_cea0c6: one successful model response,
+WorkspaceQuotaError during first tool batch, real quota checker reproduces
+499694788608 > 10737418240 bytes. OCI read-only preflight ready, no new models/search.
+Persistent10GiB mount migration plan prepared in focused doc; user decision pending.
+No online storage/service/Run changes. Next: await explicit storage authorization,
+then exact idle/data/mount preservation gates before migration; do not retry Run.

@@ -35771,3 +35771,24 @@ old payloads remain byte-compatible by excluding None. No database migration.
   Trench protocol-only adaptation trench_ai_zebra_event_map.py and focused test,
   with a separate matching task/branch in the clean sibling checkout. No product
   behavior changes beyond truthful partial/blocked protocol consumption.
+
+
+### CLOUD-WORKSPACE-QUOTA-20261022 — production hard-quota deployment repair
+
+- Status: In Progress (claimed 2026-10-22; diagnosis/plan only, storage approval pending).
+- Human owner Luke Ding; executor Codex; branch codex/cloud-workspace-quota-20261022;
+  worktree cloud-plugin-plan-01, base aed0f7bf; target cloud-agent, no push.
+- Owned paths: this card, docs/CLOUD_WORKSPACE_QUOTA_2026-10-22.md, WORKLOG.md,
+  PROGRESS.md, private .artifacts/cloud-workspace-quota-20261022/ and matching
+  remote release directory. Expand explicitly before any source change.
+- Scope: Session83042ed6 has one successful model response, then a local files.list
+  triggers hard-quota rejection. Existing dedicated bind exposes499694788608bytes
+  against10737418240bytes configured. Preserve quota; never enlarge to host disk
+  or disable enforcement. Prepare persistent bounded filesystem migration with
+  original directory/data retained, reboot persistence and guarded rollback.
+- Online storage mutation awaits the user's explicit decision because it changes
+  the persistent filesystem/mount arrangement. No code/runtime migration yet.
+- No models/search/replay/newRun or original failed-status rewriting. Preserve
+  Search/MCP/Exa, Yahoo default/fast, high/v2, grants/leases/cancel and partial Runs.
+- Validation: exact failed events and model count, actual require_workspace_quota,
+  read-only engine preflight, data/mount/ownership/capacity and post-restart identity.
