@@ -35540,6 +35540,52 @@ old payloads remain byte-compatible by excluding None. No database migration.
   remain active. No models/search/MCP, migration/restart/deployment or source edits.
 
 
+### CLOUD-WORKSPACE-LOADING-20261022 — persist workspace setup I/O failure
+
+- Status: Done (2026-10-22; minimal source/config repair deployed, original
+  startup failure synchronized without model execution; local integration, no push).
+- Human owner Luke Ding; executor Codex; branch codex/cloud-workspace-loading-20261022,
+  reused clean cloud-plugin-plan-01 checkout from8ee49ec1; local target cloud-agent.
+- Owned paths: this card, PROGRESS.md, WORKLOG.md,
+  docs/CLOUD_WORKSPACE_LOADING_2026-10-22.md,
+  packages/agent-runtime/src/agent_runtime/workspace_provisioner.py,
+  apps/worker/src/zebra_agent_worker/execution_recovery.py,
+  tests/worker/test_coverage_task_recovery.py,
+  scripts/check_workspace_setup_io.py;
+  private .artifacts/cloud-workspace-loading-20261022/ and remote matching release.
+- Scope: original conversation conv_1792648502376_eee0f2 maps to namespaced Turn
+  743f1490... and Sessiond8654a8d...; accepted but0model starts. Root-owned755 empty
+  workspace bind root denies Worker65532 marker write; uncaught PermissionError
+  escapes recovery and crashes process, leaving provisioning/accepted Run unclosed.
+  Reuse workspace uncertain transitions and fenced setup-failure finalization;
+  repair only exact empty workspace-root ownership; preserve all child data.
+- Prepare source-only overlays on accepted6bca5053 production images, same schema105,
+  settings/Plugin flags/allowlist/credentials/mounts/proxy/high/v2; no generic703
+  source deployment. Idle gates and immutable rollback before application replace.
+- Operational guard correction: compare Env by key/value and mount destinations,
+  not ordering. Baseline trench-caddy46restarts and pgAdmin185restarts are existing
+  autonomous loops; require unchanged IDs/configs, record their changing counters
+  separately. Stable Search/TLS/Yahoo/Broker/Trench process preservation remains strict.
+  Workspace owner repair uses a short-lived network-none/read-only trusted image
+  with only CHOWN on the single empty app bind; production cap-drop/UID unchanged.
+- Finalize original startup failure under a fresh lease without preparing inputs,
+  executing a command/Run/model/search, replay/resume, or changing partial Runs.
+  Use existing finalizer and observer sync, never direct event/status SQL edits.
+- No Search/TLS/Yahoo/Exa/MCP restart, quota/cooldown reset, unrelated Trench changes,
+  new dependencies, global proxy/network changes, GitHub push or dirty-work loss.
+- Validate filesystem fault paths, actual recovery classification, fenced no-model
+  finalization and real original-Turn sync. Browser control limitations reported
+  separately; HTTP health is not page acceptance.
+
+- Result: source diff only OSError classification and existing uncertain transitions;
+  51targeted tests/4filesystem checks pass, actual API/Worker images each4offline checks,
+  Ruff/filegate pass. Paired current images2files/1file overlays healthy; exact root
+  owner65532:65532/mode755 and marker materialization verified. Fresh fenced existing
+  finalizer closes original Run failed,0model/search/newRun/replay. Normal Trench
+  observer synchronizes same Run failed; native owned snapshot active_turn=null.
+  Search/MCP/cooldown/high/v2/protectedpartialevents unchanged. Browser control unavailable;
+  no actual page-click acceptance claimed. See focused production receipt.
+
 ### CLOUD-PLUGIN-PROD-20261021 — restore production Plugin management/runtime
 
 - Status: Done (2026-10-21; configuration activation, isolated native lifecycle

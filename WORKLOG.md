@@ -16970,3 +16970,53 @@ off. Screenshot save to worktree rejected by browser workspace-root restriction;
 actual DOM/network200 evidence retained, no permission workaround needed. No full
 suite or actual-model E2E claimed. Focused production receipt and rollback documented;
 only owned governance/docs committed for local cloud-agent integration, no push.
+
+
+## 2026-10-22 — CLOUD-WORKSPACE-LOADING-20261022
+
+User requested repair of production conv_1792648502376_eee0f2 on192.168.110.42.
+Verified original SSH host key alias. HTTP health200/containershealthy did not prove
+Run health. Initial bare conversation-key lookup missed tenant-prefixed storage;
+corrected lookup found Turn743f1490.../Run5602158d.../Sessiond8654a8d..., running with
+0answer/0model calls. Only4sessionevents throughacceptedcommand. Worker traceback
+PermissionError on empty /var/lib/zebra/workspaces/.zebra-host-reference; root755
+bindroot/nonroot65532, lease released, pendingcommand already absent, workspace
+provisioning. Claimed focused Ready card/branch in clean reused worktree before edits.
+
+Changed only2sourcefiles: include reset in provision try, catchOSError in3workspace
+lifecycle paths, recover input OSError through WorkerExecutionError existing close.
+No new abstraction/dependency. Existing actual recovery matrix now checks permission/
+filesystem failures; standalone stdlib4case check covers reset/materialize/restore/
+reconcile. Check's initial dummy digest/Mock return corrected before acceptance;
+final51pytest+4check pass, Ruff and filegate3258/0 pass. No unrelated tests repaired.
+
+Built offline source overlays from accepted production images, hashes equal local
+fixed files. First compile failed on nonroot pycache; root only during image build,
+restored exact runtimeUser. Actual API/Worker images each4offline checks pass. First
+activation stopped API but ownership operation lackedCAP_CHOWN in hardened container,
+rolled back healthy. Used short-lived trusted immutable image, networknone/read-only,
+cap-dropALL+onlyCHOWN, exact empty app bind, no hostroot/credentials/network; repaired
+owner only,mode755 retained, no recursive mutation/production privilege widening.
+Next activation rolled back due Env list ordering, values identical. Next rolled back
+because unrelated baseline restartloops (trench-caddy46,pgAdmin185) changed counters.
+Corrected guards to semantic Env/mount comparison, exact allIDs/configs, strict stable
+service process preservation; preexisting unstable process counters separately reported.
+Failed attempts/once markers/logs retained, no data/Run rewrite. Final paired config
+activation healthy, same env/commands/mount/security/Plugin settings; schema105.
+
+Original startup failure finalized using existing Worker factory/claim/heartbeat/
+finalize_worker_setup_failure/rebuild_task_index, exact4events+Run guard. Never invoked
+execution service/Run/input preparation/model; rejected model transport guard present.
+Existing workspace transition provisioning->uncertain then bounded reconcile onlyWID
+d65585d7... (sole uncertain entry) ->ready; real marker owns65532. Normal Trench observer
+syncs original Run failed/zebra_run_failed/Worker execution could not start.; native
+owned snapshot active_turn=null/latestfailed/2messages. Observation reclaim attempt_count
+5 is not model attempts; actual model event count remains0. Browser extension debugger
+unattached and native UI could not reliably target tab; no visual/page E2E claimed.
+
+Before/after protected4Session hashes/runtimehigh/v2/Searchconfig/Exacontrol exact;
+activeleases0/pending0, stable serviceIDs/start/config unchanged since final switch.
+Dockerinspect mount order differs nondeterministically, canonicalized by destination
+for comparison. No Search/TLS/Yahoo/MCP restart, Trench product edit, global proxy/IP
+change, model/search/newRun, full-suite claim or GitHub push. Focused receipt committed
+for local cloud-agent integration; unrelated dirty files/archive refs preserved.

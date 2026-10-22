@@ -293,12 +293,16 @@ def test_no_binding_still_revalidates_clock_and_forged_nested_identity(tmp_path:
         apply_bound_host_context(replace(task, coverage_admission=forged), binding(context()))
 
 
+@pytest.mark.parametrize(
+    "workspace_error", [None, PermissionError("workspace denied"), OSError("disk full")]
+)
 @pytest.mark.parametrize("strict", [True, False])
 @pytest.mark.parametrize("cloud_deployment", [True, False])
 def test_actual_execution_recovery_refuses_unconfigured_strict_before_workspace(
     tmp_path: Path,
     strict: bool,
     cloud_deployment: bool,
+    workspace_error: OSError | None,
 ) -> None:
     raw = events(tmp_path, strict=strict)
     now = datetime.now(UTC)
@@ -325,6 +329,7 @@ def test_actual_execution_recovery_refuses_unconfigured_strict_before_workspace(
     )
     resolver = Mock()
     resolver.resolve.return_value = tmp_path / "resolved"
+    resolver.resolve.side_effect = workspace_error
     inputs = dict(
         claimed=claimed,
         session_id=session_id,
@@ -352,6 +357,11 @@ def test_actual_execution_recovery_refuses_unconfigured_strict_before_workspace(
             recover_execution_inputs(**inputs)
         assert refused.value.coverage_refusal_reason is CoverageRefusalReason.UNSUPPORTED
         resolver.resolve.assert_not_called()
+    elif workspace_error is not None:
+        with pytest.raises(WorkerExecutionError, match=str(workspace_error)) as failed:
+            recover_execution_inputs(**inputs)
+        assert failed.value.__cause__ is workspace_error
+        resolver.resolve.assert_called_once_with(str(tmp_path), session_id=session_id)
     else:
         recovered = recover_execution_inputs(**inputs)
         assert recovered.claimed is claimed

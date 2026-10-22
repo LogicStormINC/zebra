@@ -101,10 +101,10 @@ class PostgresWorkspaceProvisioner(WorkspaceProvisionerPort):
             return existing
         self._store.transition(workspace_id, WorkspaceAction.PROVISION_START)
         target = self._volume_path(workspace_id)
-        _reset_target(target)
         try:
+            _reset_target(target)
             revision, digest = self._materialize(existing.source, target)
-        except WorkspaceMaterializationError:
+        except (WorkspaceMaterializationError, OSError):
             self._store.transition(workspace_id, WorkspaceAction.PROVISION_MARK_UNCERTAIN)
             raise
         instance, _ = self._store.transition(
@@ -168,7 +168,7 @@ class PostgresWorkspaceProvisioner(WorkspaceProvisionerPort):
                 raise WorkspaceMaterializationError(
                     "digest_mismatch", "restored tree differs from the durable snapshot"
                 )
-        except WorkspaceMaterializationError:
+        except (WorkspaceMaterializationError, OSError):
             self._store.transition(command.workspace_id, WorkspaceAction.PROVISION_MARK_UNCERTAIN)
             raise
         restored, _ = self._store.transition(
@@ -209,7 +209,7 @@ class PostgresWorkspaceProvisioner(WorkspaceProvisionerPort):
                     content_digest=digest,
                     volume_ref=str(target),
                 )
-            except WorkspaceMaterializationError:
+            except (WorkspaceMaterializationError, OSError):
                 _, receipt = self._store.transition(
                     instance.workspace_id,
                     WorkspaceAction.UNCERTAIN_RESOLVE_FAIL,

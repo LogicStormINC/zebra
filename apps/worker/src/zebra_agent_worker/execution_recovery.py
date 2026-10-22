@@ -244,7 +244,7 @@ def recover_execution_inputs(
         raise WorkerExecutionError(
             f"strict coverage refused: {exc.reason.value}", coverage_refusal_reason=exc.reason
         ) from None
-    except (FileNotFoundError, ValueError) as exc:
+    except (OSError, ValueError) as exc:
         raise WorkerExecutionError(str(exc)) from exc
     return RecoveredExecutionInputs(
         claimed=claimed,

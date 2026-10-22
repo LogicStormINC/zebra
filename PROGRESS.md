@@ -1,3 +1,28 @@
+# 2026-10-22 — Production workspace startup loading repaired
+
+CLOUD-WORKSPACE-LOADING-20261022, Luke Ding owner/Codex executor. At actual server
+192.168.110.42 (same SSH host identity), original conversationeee0f2 accepted Run
+but0model starts. Empty root-owned755 workspace bind denied nonroot65532 marker
+write; uncaught PermissionError escaped recovery, crashed Worker, left workspace
+provisioning and Run without terminal event. Healthy restarted container hid failure.
+
+Minimal shared fix: workspace provision/restore/reconcile handle filesystem OSError
+through existing uncertain/fail transitions; reset is inside the provision guard.
+Worker input recovery classifies OSError into existing fenced setup-failure close.
+51targeted tests/4filesystem checks/Ruff/filegate pass; actual current API/Worker
+images each4offline checks. Source-only overlays keep6bca5053 composition/schema105,
+Plugin flags/allowlist/security/env/mounts unchanged. No generic Runtime deployment.
+
+Exact empty bind root owner repaired65532:65532,mode755; no recursive chmod/chown.
+Existing finalizer under fresh fenced lease closed original startup failure only;
+no Run replay/input preparation/model/search. Original Run5602158d... now failed,
+normal Trench observer synchronized, owned native snapshot active_turn=null. Exact
+workspace reconciled ready. Protected4Session hashes,high/v2,Search/MCP/config/cooldown
+and stable service identities unchanged. Preexisting trench-caddy/pgAdmin restart
+loops recorded separately, not repaired. No Trench source edit/model/page E2E/push.
+Browser control unavailable; final proof is native snapshot and durable sync.
+Receipt/rollback: docs/CLOUD_WORKSPACE_LOADING_2026-10-22.md. Historical notes follow.
+
 # 2026-10-21 — Production Plugin configuration restored
 
 CLOUD-PLUGIN-PROD-20261021, Luke Ding owner/Codex executor. Production code/UI
