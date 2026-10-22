@@ -1,3 +1,7 @@
+# CA-P3-01E — 纯 ScriptBundle 校验（Review）
+
+[正式合同和边界](docs/CA-P3-01E_script_bundle_validation.md)。D物化创建Version，不能替代草稿纯校验；C只检单包，本片新增显式script-bundle-validation/1，复用原生模型/catalog与有界传输，新增动作需显式批准，不自动扩旧凭据。56专项及完整门禁通过：make test11002通过/3022条件跳过（1166.10s），make check1396类型文件/30eval通过。[证据](docs/evidence/ca-p3-01e/validation.json)记录socket/Schema/零执行与HA边界。无源码执行、Registry写入或新表；Go消费者另片，保留旧合同/历史/Coverage，未部署/生产迁移/主线整合。
+
 # CA-P3-01D — 脚本 Bundle 公开发布前置（Review）
 
 [合同与边界](docs/CA-P3-01D_script_publication.md) · [验证证据](docs/evidence/ca-p3-01d/validation.json)。最终make test10985通过/3022条件跳过（1117.01s），make check1394类型文件/30eval通过，29专项通过；Overdoze26个race包及make check通过（74既有警告）。新增显式script-publication/1渠道，复用现有原生装配/精确发布者引用、Registry事务/CAS/原操作收据与可信Eval门禁；旧P2公开合同/历史/Coverage不改。Go消费者下一片，前端mock保持；无部署/生产迁移/主线整合。

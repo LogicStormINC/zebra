@@ -44,7 +44,7 @@ def register_validation_routes(
     slots = asyncio.Semaphore(8)
 
     async def handle(request: Request) -> JSONResponse:
-        method = "GET" if request.url.path == contract_path else "POST"
+        method = "GET" if request.url.path.endswith(contract_path) else "POST"
         if request.method != method:
             response = _error(405, "METHOD_NOT_ALLOWED")
             response.headers["Allow"] = method

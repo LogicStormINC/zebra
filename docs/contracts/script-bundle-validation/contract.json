@@ -1,0 +1,788 @@
+{
+  "contractVersion": "script-bundle-validation/1",
+  "requestSchema": {
+    "$defs": {
+      "ArtifactPin": {
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "enum": [
+              "image",
+              "baseline-config",
+              "component",
+              "provider-profile",
+              "output-schema",
+              "build-evidence"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "version": {
+            "maxLength": 64,
+            "title": "Version",
+            "type": "string"
+          },
+          "digest": {
+            "title": "Digest",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "id",
+          "version",
+          "digest"
+        ],
+        "title": "ArtifactPin",
+        "type": "object"
+      },
+      "BundleScope": {
+        "additionalProperties": false,
+        "properties": {
+          "authority_issuer": {
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "Authority Issuer",
+            "type": "string"
+          },
+          "namespace_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Namespace Id",
+            "type": "string"
+          },
+          "product_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Product Id",
+            "type": "string"
+          },
+          "environment": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Environment",
+            "type": "string"
+          },
+          "target_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Target Id",
+            "type": "string"
+          },
+          "deployment_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Deployment Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "authority_issuer",
+          "namespace_id",
+          "product_id",
+          "environment",
+          "target_id",
+          "deployment_id"
+        ],
+        "title": "BundleScope",
+        "type": "object"
+      },
+      "EmptyParameters": {
+        "additionalProperties": false,
+        "description": "Pinned domains cannot smuggle configuration through a mutable mapping.",
+        "properties": {},
+        "title": "EmptyParameters",
+        "type": "object"
+      },
+      "EngineBinding": {
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "cloud-agent",
+            "title": "Kind",
+            "type": "string"
+          },
+          "image": {
+            "$ref": "#/$defs/ArtifactPin"
+          },
+          "bundle_abi": {
+            "const": "cloud-agent.bundle/1",
+            "title": "Bundle Abi",
+            "type": "string"
+          },
+          "script_abi": {
+            "const": "unsupported",
+            "title": "Script Abi",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "image",
+          "bundle_abi",
+          "script_abi"
+        ],
+        "title": "EngineBinding",
+        "type": "object"
+      },
+      "InstructionsDomain": {
+        "additionalProperties": false,
+        "properties": {
+          "component": {
+            "$ref": "#/$defs/ArtifactPin"
+          },
+          "mode": {
+            "const": "configurable",
+            "title": "Mode",
+            "type": "string"
+          },
+          "parameters": {
+            "$ref": "#/$defs/InstructionsParameters"
+          }
+        },
+        "required": [
+          "component",
+          "mode",
+          "parameters"
+        ],
+        "title": "InstructionsDomain",
+        "type": "object"
+      },
+      "InstructionsParameters": {
+        "additionalProperties": false,
+        "properties": {
+          "system_text": {
+            "maxLength": 32768,
+            "title": "System Text",
+            "type": "string"
+          },
+          "business_text": {
+            "maxLength": 32768,
+            "title": "Business Text",
+            "type": "string"
+          },
+          "locale": {
+            "maxLength": 64,
+            "title": "Locale",
+            "type": "string"
+          },
+          "output_schema": {
+            "$ref": "#/$defs/ArtifactPin"
+          }
+        },
+        "required": [
+          "system_text",
+          "business_text",
+          "locale",
+          "output_schema"
+        ],
+        "title": "InstructionsParameters",
+        "type": "object"
+      },
+      "ModelDomain": {
+        "additionalProperties": false,
+        "properties": {
+          "component": {
+            "$ref": "#/$defs/ArtifactPin"
+          },
+          "mode": {
+            "const": "configurable",
+            "title": "Mode",
+            "type": "string"
+          },
+          "parameters": {
+            "$ref": "#/$defs/ModelParameters"
+          }
+        },
+        "required": [
+          "component",
+          "mode",
+          "parameters"
+        ],
+        "title": "ModelDomain",
+        "type": "object"
+      },
+      "ModelParameters": {
+        "additionalProperties": false,
+        "properties": {
+          "provider_profile": {
+            "$ref": "#/$defs/ArtifactPin"
+          },
+          "model": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Model",
+            "type": "string"
+          },
+          "context_window_tokens": {
+            "maximum": 1048576,
+            "minimum": 1,
+            "title": "Context Window Tokens",
+            "type": "integer"
+          },
+          "max_output_tokens": {
+            "maximum": 1048576,
+            "minimum": 1,
+            "title": "Max Output Tokens",
+            "type": "integer"
+          },
+          "max_retries": {
+            "maximum": 3,
+            "minimum": 0,
+            "title": "Max Retries",
+            "type": "integer"
+          },
+          "temperature_milli": {
+            "maximum": 2000,
+            "minimum": 0,
+            "title": "Temperature Milli",
+            "type": "integer"
+          },
+          "thinking": {
+            "enum": [
+              "auto",
+              "enabled",
+              "disabled"
+            ],
+            "title": "Thinking",
+            "type": "string"
+          }
+        },
+        "required": [
+          "provider_profile",
+          "model",
+          "context_window_tokens",
+          "max_output_tokens",
+          "max_retries",
+          "temperature_milli",
+          "thinking"
+        ],
+        "title": "ModelParameters",
+        "type": "object"
+      },
+      "NativeScriptManifest": {
+        "additionalProperties": false,
+        "properties": {
+          "abi": {
+            "const": "cloud-agent.native-script/1",
+            "title": "Abi",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "version": {
+            "maxLength": 64,
+            "title": "Version",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "tool",
+              "context",
+              "verifier"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "source_digest": {
+            "title": "Source Digest",
+            "type": "string"
+          },
+          "python": {
+            "const": "3.12",
+            "title": "Python",
+            "type": "string"
+          },
+          "dependencies": {
+            "const": "stdlib-only",
+            "title": "Dependencies",
+            "type": "string"
+          },
+          "entrypoint": {
+            "const": "execute",
+            "title": "Entrypoint",
+            "type": "string"
+          },
+          "effects": {
+            "const": "none",
+            "title": "Effects",
+            "type": "string"
+          },
+          "input": {
+            "$ref": "#/$defs/ScriptShape"
+          },
+          "output": {
+            "$ref": "#/$defs/ScriptShape"
+          },
+          "timeout_seconds": {
+            "maximum": 30,
+            "minimum": 1,
+            "title": "Timeout Seconds",
+            "type": "integer"
+          },
+          "max_output_bytes": {
+            "maximum": 32768,
+            "minimum": 256,
+            "title": "Max Output Bytes",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "abi",
+          "name",
+          "version",
+          "kind",
+          "source_digest",
+          "python",
+          "dependencies",
+          "entrypoint",
+          "effects",
+          "input",
+          "output",
+          "timeout_seconds",
+          "max_output_bytes"
+        ],
+        "title": "NativeScriptManifest",
+        "type": "object"
+      },
+      "NativeScriptPlan": {
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": "cloud-agent.native-script-plan/1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "abi": {
+            "const": "cloud-agent.native-script/1",
+            "title": "Abi",
+            "type": "string"
+          },
+          "runner": {
+            "$ref": "#/$defs/ScriptRunnerProfile"
+          },
+          "bindings": {
+            "items": {
+              "$ref": "#/$defs/ScriptBinding"
+            },
+            "maxLength": 8,
+            "minLength": 1,
+            "title": "Bindings",
+            "type": "array"
+          },
+          "lock": {
+            "items": {
+              "$ref": "#/$defs/ArtifactPin"
+            },
+            "maxLength": 16,
+            "minLength": 2,
+            "title": "Lock",
+            "type": "array"
+          }
+        },
+        "required": [
+          "schema_version",
+          "abi",
+          "runner",
+          "bindings",
+          "lock"
+        ],
+        "title": "NativeScriptPlan",
+        "type": "object"
+      },
+      "PinnedDomain": {
+        "additionalProperties": false,
+        "properties": {
+          "component": {
+            "$ref": "#/$defs/ArtifactPin"
+          },
+          "mode": {
+            "const": "pinned",
+            "title": "Mode",
+            "type": "string"
+          },
+          "reason": {
+            "const": "requires-runtime-assembly",
+            "title": "Reason",
+            "type": "string"
+          },
+          "parameters": {
+            "$ref": "#/$defs/EmptyParameters"
+          }
+        },
+        "required": [
+          "component",
+          "mode",
+          "reason",
+          "parameters"
+        ],
+        "title": "PinnedDomain",
+        "type": "object"
+      },
+      "ResolvedRuntimeBundle": {
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": "cloud-agent.runtime-bundle/1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "scope": {
+            "$ref": "#/$defs/BundleScope"
+          },
+          "engine": {
+            "$ref": "#/$defs/EngineBinding"
+          },
+          "baseline_config": {
+            "$ref": "#/$defs/ArtifactPin"
+          },
+          "catalog_digest": {
+            "title": "Catalog Digest",
+            "type": "string"
+          },
+          "domains": {
+            "$ref": "#/$defs/RuntimeDomains"
+          },
+          "lock": {
+            "items": {
+              "$ref": "#/$defs/ArtifactPin"
+            },
+            "maxLength": 128,
+            "minLength": 25,
+            "title": "Lock",
+            "type": "array"
+          },
+          "build_evidence": {
+            "items": {
+              "$ref": "#/$defs/ArtifactPin"
+            },
+            "maxLength": 32,
+            "minLength": 1,
+            "title": "Build Evidence",
+            "type": "array"
+          }
+        },
+        "required": [
+          "schema_version",
+          "scope",
+          "engine",
+          "baseline_config",
+          "catalog_digest",
+          "domains",
+          "lock",
+          "build_evidence"
+        ],
+        "title": "ResolvedRuntimeBundle",
+        "type": "object"
+      },
+      "RuntimeBundleEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": "cloud-agent.bundle-envelope/1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "bundle_digest": {
+            "title": "Bundle Digest",
+            "type": "string"
+          },
+          "manifest": {
+            "$ref": "#/$defs/ResolvedRuntimeBundle"
+          }
+        },
+        "required": [
+          "schema_version",
+          "bundle_digest",
+          "manifest"
+        ],
+        "title": "RuntimeBundleEnvelope",
+        "type": "object"
+      },
+      "RuntimeDomains": {
+        "additionalProperties": false,
+        "properties": {
+          "engine": {
+            "$ref": "#/$defs/PinnedDomain"
+          },
+          "execution": {
+            "$ref": "#/$defs/PinnedDomain"
+          },
+          "model": {
+            "$ref": "#/$defs/ModelDomain"
+          },
+          "instructions": {
+            "$ref": "#/$defs/InstructionsDomain"
+          },
+          "context": {
+            "$ref": "#/$defs/PinnedDomain"
+          },
+          "memory": {
+            "$ref": "#/$defs/PinnedDomain"
+          },
+          "content": {
+            "$ref": "#/$defs/PinnedDomain"
+          },
+          "native": {
+            "$ref": "#/$defs/PinnedDomain"
+          },
+          "addons": {
+            "$ref": "#/$defs/PinnedDomain"
+          },
+          "tools": {
+            "$ref": "#/$defs/PinnedDomain"
+          },
+          "lifecycle": {
+            "$ref": "#/$defs/PinnedDomain"
+          },
+          "policy": {
+            "$ref": "#/$defs/PinnedDomain"
+          },
+          "sandbox": {
+            "$ref": "#/$defs/PinnedDomain"
+          },
+          "storage": {
+            "$ref": "#/$defs/PinnedDomain"
+          },
+          "transport": {
+            "$ref": "#/$defs/PinnedDomain"
+          },
+          "frontend": {
+            "$ref": "#/$defs/PinnedDomain"
+          },
+          "triggers": {
+            "$ref": "#/$defs/PinnedDomain"
+          },
+          "budget": {
+            "$ref": "#/$defs/PinnedDomain"
+          },
+          "verification": {
+            "$ref": "#/$defs/PinnedDomain"
+          },
+          "operations": {
+            "$ref": "#/$defs/PinnedDomain"
+          }
+        },
+        "required": [
+          "engine",
+          "execution",
+          "model",
+          "instructions",
+          "context",
+          "memory",
+          "content",
+          "native",
+          "addons",
+          "tools",
+          "lifecycle",
+          "policy",
+          "sandbox",
+          "storage",
+          "transport",
+          "frontend",
+          "triggers",
+          "budget",
+          "verification",
+          "operations"
+        ],
+        "title": "RuntimeDomains",
+        "type": "object"
+      },
+      "ScriptBinding": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "pattern": "^native\\.[a-z][a-z0-9_]{1,63}$",
+            "title": "Name",
+            "type": "string"
+          },
+          "manifest": {
+            "$ref": "#/$defs/NativeScriptManifest"
+          },
+          "scopes": {
+            "items": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9_.:-]+$",
+              "type": "string"
+            },
+            "maxLength": 32,
+            "minLength": 1,
+            "title": "Scopes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "name",
+          "manifest",
+          "scopes"
+        ],
+        "title": "ScriptBinding",
+        "type": "object"
+      },
+      "ScriptField": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "pattern": "^[a-z][a-z0-9_]{0,63}$",
+            "title": "Name",
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "string",
+              "integer",
+              "boolean"
+            ],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "type"
+        ],
+        "title": "ScriptField",
+        "type": "object"
+      },
+      "ScriptRunnerProfile": {
+        "additionalProperties": false,
+        "properties": {
+          "mode": {
+            "enum": [
+              "development",
+              "production"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "runtime_class": {
+            "enum": [
+              "os-sandbox",
+              "gvisor"
+            ],
+            "title": "Runtime Class",
+            "type": "string"
+          },
+          "python": {
+            "maxLength": 1024,
+            "minLength": 2,
+            "pattern": "^/[^\\x00]+$",
+            "title": "Python",
+            "type": "string"
+          }
+        },
+        "required": [
+          "mode",
+          "runtime_class",
+          "python"
+        ],
+        "title": "ScriptRunnerProfile",
+        "type": "object"
+      },
+      "ScriptShape": {
+        "additionalProperties": false,
+        "properties": {
+          "fields": {
+            "items": {
+              "$ref": "#/$defs/ScriptField"
+            },
+            "maxItems": 32,
+            "title": "Fields",
+            "type": "array"
+          }
+        },
+        "required": [
+          "fields"
+        ],
+        "title": "ScriptShape",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "properties": {
+      "schema_version": {
+        "const": "cloud-agent.script-bundle/1",
+        "title": "Schema Version",
+        "type": "string"
+      },
+      "base_bundle": {
+        "$ref": "#/$defs/RuntimeBundleEnvelope"
+      },
+      "scripts": {
+        "$ref": "#/$defs/NativeScriptPlan"
+      },
+      "bundle_digest": {
+        "title": "Bundle Digest",
+        "type": "string"
+      }
+    },
+    "required": [
+      "schema_version",
+      "base_bundle",
+      "scripts",
+      "bundle_digest"
+    ],
+    "title": "ScriptBundle",
+    "type": "object"
+  },
+  "paths": {
+    "contract": "/management/v1/script-bundle-contract",
+    "validation": "/management/v1/script-bundle-validation"
+  },
+  "requiredHeader": "x-runtime-script-bundle-contract",
+  "actions": [
+    "script-bundle.contract.read",
+    "script-bundle.validate"
+  ],
+  "credential": "rtbv_",
+  "approval": "cloud-agent.bundle-management-approval/1",
+  "abi": "cloud-agent.native-script/1",
+  "nativeFormats": {
+    "bundle": "cloud-agent.script-bundle/1",
+    "assembly": "cloud-agent.script-assembly/1",
+    "catalog": "cloud-agent.execution-catalog/2"
+  },
+  "resultFields": [
+    "inputDigest",
+    "scriptBundleDigest",
+    "baseBundleDigest",
+    "assemblyDigest",
+    "approvalDigest",
+    "checks",
+    "capabilities"
+  ],
+  "checks": {
+    "scriptBundle": "passed",
+    "assetApproval": "passed",
+    "worker": "not_checked",
+    "publication": "not_performed"
+  },
+  "transport": {
+    "maxRequestBytes": 262144,
+    "slotsPerInstance": 8,
+    "bodyTimeoutMilliseconds": 200,
+    "responseTimeoutSeconds": 1
+  },
+  "capabilities": {
+    "validation": "supported",
+    "assetApproval": "observed",
+    "sourceExecution": "not_performed",
+    "worker": "not_checked",
+    "publication": "not_performed",
+    "persistence": "not_performed",
+    "evalAuthority": false,
+    "coverageAuthority": false
+  },
+  "contractDigest": "sha256:1c148fff4dba646c0555e03d8abd4d15e6bcdeeaced258c7e200b8af35190d2b"
+}

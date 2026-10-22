@@ -10,7 +10,12 @@ from agent_core.domain.runtime_bundle_types import BundleScope, BundleValue, Ide
 from pydantic import BeforeValidator, Field, model_validator
 from zebra_agent_config.private_configuration import read_private_configuration
 
-Action = Literal["bundle.contract.read", "bundle.validate"]
+Action = Literal[
+    "bundle.contract.read",
+    "bundle.validate",
+    "script-bundle.contract.read",
+    "script-bundle.validate",
+]
 
 
 class BundleManagementApproval(BundleValue):
@@ -23,7 +28,7 @@ class BundleManagementApproval(BundleValue):
     actions: Annotated[
         tuple[Action, ...],
         BeforeValidator(lambda value: tuple(value) if type(value) is list else value),
-        Field(min_length=1, max_length=2),
+        Field(min_length=1, max_length=4),
     ]
 
     @model_validator(mode="after")

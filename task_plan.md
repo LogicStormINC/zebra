@@ -1,3 +1,10 @@
+# CA-P3-01E current slice
+
+1. [x] Audit D and claim E/owned paths before code.
+2. [x] Add explicit pure ScriptBundle validation through existing domain/catalog/transport.
+3. [x] Verify negatives, independent socket and zero mutation/source execution.
+4. [x] Complete native gates/evidence/docs; platform pin/check and authorized scoped source delivery follow, remote receipt separate; no deployment/migration.
+
 # CA-P3-01D current task
 
 1. [x] Audit P3 asset gap and claim exact owned paths on isolated branch.

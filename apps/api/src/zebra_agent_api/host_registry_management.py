@@ -99,6 +99,9 @@ def register_management_routes(
     from zebra_agent_api.script_validation import register_script_validation
 
     register_script_validation(app, settings, current)
+    from zebra_agent_api.script_bundle_validation import register_script_bundle_validation
+
+    register_script_bundle_validation(app, settings, current)
     host_settings = (
         replace(settings, database_url=cloud_composition.dsn)
         if cloud_composition is not None
