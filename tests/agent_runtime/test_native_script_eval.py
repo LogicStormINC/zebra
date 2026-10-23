@@ -112,3 +112,16 @@ def test_authorization_failure_never_runs(tmp_path):
         evaluate_scripts(
             suite_for(assembly), assembly, authorize=denied, execute=unexpected, source=unexpected
         )
+
+
+def test_exported_suite_schema_keeps_array_cardinality_contract():
+    from pathlib import Path
+
+    schema = ScriptEvalSuite.model_json_schema()
+    cases = schema["properties"]["cases"]
+    assert cases["minItems"] == 1 and cases["maxItems"] == 32
+    assert "minLength" not in cases and "maxLength" not in cases
+    exported = json.loads(
+        Path("docs/contracts/native-script-evaluation/suite.schema.json").read_text()
+    )
+    assert exported == schema

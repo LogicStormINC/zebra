@@ -37,8 +37,8 @@ class ScriptEvalSuite(ScriptValue):
     policy_version: Identifier
     cases: Annotated[
         tuple[ScriptEvalCase, ...],
-        BeforeValidator(lambda v: tuple(v) if type(v) is list else v),
         Field(min_length=1, max_length=32),
+        BeforeValidator(lambda v: tuple(v) if type(v) is list else v),
     ]
 
     @property

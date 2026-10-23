@@ -156,8 +156,8 @@
       "items": {
         "$ref": "#/$defs/ScriptEvalCase"
       },
-      "maxLength": 32,
-      "minLength": 1,
+      "maxItems": 32,
+      "minItems": 1,
       "title": "Cases",
       "type": "array"
     }
