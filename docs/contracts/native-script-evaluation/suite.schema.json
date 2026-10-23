@@ -1,0 +1,178 @@
+{
+  "$defs": {
+    "BundleScope": {
+      "additionalProperties": false,
+      "properties": {
+        "authority_issuer": {
+          "maxLength": 2048,
+          "minLength": 1,
+          "title": "Authority Issuer",
+          "type": "string"
+        },
+        "namespace_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Namespace Id",
+          "type": "string"
+        },
+        "product_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Product Id",
+          "type": "string"
+        },
+        "environment": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Environment",
+          "type": "string"
+        },
+        "target_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Target Id",
+          "type": "string"
+        },
+        "deployment_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Deployment Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "authority_issuer",
+        "namespace_id",
+        "product_id",
+        "environment",
+        "target_id",
+        "deployment_id"
+      ],
+      "title": "BundleScope",
+      "type": "object"
+    },
+    "ScriptEvalCase": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "binding": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Binding",
+          "type": "string"
+        },
+        "arguments": {
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "boolean"
+              }
+            ]
+          },
+          "title": "Arguments",
+          "type": "object"
+        },
+        "expected": {
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "boolean"
+              }
+            ]
+          },
+          "title": "Expected",
+          "type": "object"
+        }
+      },
+      "required": [
+        "name",
+        "binding",
+        "arguments",
+        "expected"
+      ],
+      "title": "ScriptEvalCase",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "cloud-agent.native-script-evaluation/1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "scope": {
+      "$ref": "#/$defs/BundleScope"
+    },
+    "definition_id": {
+      "format": "uuid",
+      "title": "Definition Id",
+      "type": "string"
+    },
+    "version_id": {
+      "format": "uuid",
+      "title": "Version Id",
+      "type": "string"
+    },
+    "definition_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Definition Digest",
+      "type": "string"
+    },
+    "assembly_digest": {
+      "title": "Assembly Digest",
+      "type": "string"
+    },
+    "evaluator_actor": {
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Evaluator Actor",
+      "type": "string"
+    },
+    "policy_version": {
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Policy Version",
+      "type": "string"
+    },
+    "cases": {
+      "items": {
+        "$ref": "#/$defs/ScriptEvalCase"
+      },
+      "maxLength": 32,
+      "minLength": 1,
+      "title": "Cases",
+      "type": "array"
+    }
+  },
+  "required": [
+    "schema_version",
+    "scope",
+    "definition_id",
+    "version_id",
+    "definition_digest",
+    "assembly_digest",
+    "evaluator_actor",
+    "policy_version",
+    "cases"
+  ],
+  "title": "ScriptEvalSuite",
+  "type": "object"
+}

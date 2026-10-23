@@ -1,3 +1,11 @@
+# CA-P3-01F 当前切片
+
+- [x] 登记Ready/认领、核对A–E及固定C消费者；建立单任务分支。
+- [x] 原生固定suite/真实沙箱评分、共享PG原unknown/CAS/原子证据、显式初始化与私有运维入口。
+- [x] 14专项、格式/类型/边界检查通过；旧D/E和历史/Coverage源码保持。
+- [x] 完整make test/check和正式证据通过、任务Review；限定提交推送的远端回执另记。
+- [ ] Overdoze独立固定F并完成公开D到Worker完整联合，不提前声称生产HA。
+
 # CA-P3-01E current slice
 
 1. [x] Audit D and claim E/owned paths before code.

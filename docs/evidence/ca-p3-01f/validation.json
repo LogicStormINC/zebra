@@ -1,0 +1,70 @@
+{
+  "task": "CA-P3-01F",
+  "status": "PASS",
+  "at": "2026-10-23T04:42:08.034497+00:00",
+  "base": "416f6d8a4e22ced129c783a3eb861f06ba55b096",
+  "branch": "codex/ca-p3-01f-trusted-script-eval",
+  "commands": {
+    "make_test": {
+      "exit_code": 0,
+      "passed": 11016,
+      "conditional_skips": 3022,
+      "seconds": 1240.5
+    },
+    "make_check": {
+      "exit_code": 0,
+      "mypy_sources": 1399,
+      "eval_cases": 30
+    },
+    "focused": {
+      "exit_code": 0,
+      "passed": 14,
+      "seconds": 11.82
+    }
+  },
+  "source_sha256": {
+    "apps/worker/src/zebra_agent_worker/script_evaluation.py": "9f3a1ba1fd0b0fcf4cd7a71bcc43cf8ab247b149c5209d565847511b2f32416a",
+    "packages/agent-runtime/src/agent_runtime/native_script_eval.py": "dfbbaf8f95a8426249f7ded86cef4eea6a7fcce823c04af06caac7433dfbbe3e",
+    "packages/agent-storage/src/agent_storage/postgres/script_evaluation.py": "3ab14ebb4b561168e94b694f93321c808d37ad12c7c0d427bc1f827ec47fee11",
+    "tests/agent_runtime/test_native_script_eval.py": "d4a07a7a54d9c22a68c21557044ff4399a292428f8c5039a6d2b9dfd87a51a28",
+    "tests/agent_storage/test_script_evaluation.py": "38011d0149f3116fa8344f50e10a0b7dd8017b7892e5a57fdd3c68b5f494d214"
+  },
+  "preservation": {
+    "existing_files_unchanged": 4650,
+    "existing_files_changed": [
+      "PROGRESS.md",
+      "WORKLOG.md",
+      "docs/AGENT_TASKS.md",
+      "docs/实施任务拆解与阶段验收.md",
+      "task_plan.md"
+    ],
+    "old_D_E_and_all_existing_execution_source": "unchanged",
+    "history_coverage_frontend": "old source/data contracts preserved; complete regression; only explicit newly-created PG test schemas used"
+  },
+  "logs": {
+    "ca-p3-01f-focused-delivery.log": {
+      "path": "/Users/lukeding/.codex/tmp/ca-p3-01f-focused-delivery.log",
+      "sha256": "0ca3688efe84a21619e6e0b16516b39824cfc46ec48f2307649e4d3ea8660ea2"
+    },
+    "ca-p3-01f-test.log": {
+      "path": "/Users/lukeding/.codex/tmp/ca-p3-01f-test.log",
+      "sha256": "ea111209e150241a49aceb729cea7e331b5d4cf05600d224fcb0d384e752a7d6"
+    },
+    "ca-p3-01f-check-delivery.log": {
+      "path": "/Users/lukeding/.codex/tmp/ca-p3-01f-check-delivery.log",
+      "sha256": "8b5e1979d3763ae4ea49e4ce89c10b9f1deed22a312a9f4a2728f448c7f7038c"
+    }
+  },
+  "boundary": [
+    "actual Seatbelt output scoring and immutable Version binding",
+    "actual isolated PostgreSQL original unknown claim, atomic evidence/receipt and current approval fences",
+    "independent Python processes claim/read shared state",
+    "no submitted passed import API or auto unknown rerun",
+    "no deployment, production migration or main integration"
+  ],
+  "not_proven": [
+    "Overdoze C/E/D to actual Eval and Worker same-run joint: independent OD-P3-02D follows after source publication",
+    "live model/business correctness/production evaluator or gVisor/HA"
+  ],
+  "delivery": "scoped feature commit/push authorized; remote SHA checked separately"
+}

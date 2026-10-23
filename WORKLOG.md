@@ -17257,3 +17257,9 @@ Filegate3223/0 and docs-only/source/ancestry/preservation checks pass. This fina
 receipt goes only to cloud-agent; frozen branch/tag staya4d0e90f. Archive task
 branch detaches at final receipt and is deleted after its GitHub push verifies.
 No new runtime tests/model/search/MCP, remote deployment or full-readiness claim.
+
+## 2026-10-23 CA-P3-01F
+
+Owner Luke Ding / Codex；独立功能分支。复用原有沙箱/当前批准/Registry锁与事务，不新增依赖或公开passed导入API。14真实沙箱/PG/独立进程专项通过，完整门禁执行中。只处理自建测试资源，未部署、生产迁移或主线整合。
+
+CA-P3-01F最终完整门禁：11016 passed/3022 skipped，1240.50秒；make check1399类型文件/30eval通过，14专项通过。4650既有文件保持，证据已写入docs/evidence/ca-p3-01f。Native前置限定提交/推送后由Overdoze固定来源并执行独立完整联合；未部署或迁移生产。

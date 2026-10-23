@@ -1,3 +1,7 @@
+# CA-P3-01F — 可信脚本 Eval 生产者（Review）
+
+[正式运维合同/SE01–07](docs/CA-P3-01F_trusted_script_eval.md)与原生机器schema已添加；实际沙箱评分、当前批准、共享原unknown/唯一领取、原子证据收据，14专项通过。完整make test11016通过/3022条件跳过（1240.50秒）、make check1399类型文件/30eval通过。[证据](docs/evidence/ca-p3-01f/validation.json)记录4650旧文件保持与真实PG/独立进程/Seatbelt边界。限定提交推送回执另记，无部署/生产迁移/main合并，历史/Coverage保持；Overdoze完整D→Worker联合由OD-P3-02D独立验收。
+
 # CA-P3-01E — 纯 ScriptBundle 校验（Review）
 
 [正式合同和边界](docs/CA-P3-01E_script_bundle_validation.md)。D物化创建Version，不能替代草稿纯校验；C只检单包，本片新增显式script-bundle-validation/1，复用原生模型/catalog与有界传输，新增动作需显式批准，不自动扩旧凭据。56专项及完整门禁通过：make test11002通过/3022条件跳过（1166.10s），make check1396类型文件/30eval通过。[证据](docs/evidence/ca-p3-01e/validation.json)记录socket/Schema/零执行与HA边界。无源码执行、Registry写入或新表；Go消费者另片，保留旧合同/历史/Coverage，未部署/生产迁移/主线整合。
