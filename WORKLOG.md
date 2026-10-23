@@ -17263,3 +17263,11 @@ No new runtime tests/model/search/MCP, remote deployment or full-readiness claim
 Owner Luke Ding / Codex；独立功能分支。复用原有沙箱/当前批准/Registry锁与事务，不新增依赖或公开passed导入API。14真实沙箱/PG/独立进程专项通过，完整门禁执行中。只处理自建测试资源，未部署、生产迁移或主线整合。
 
 CA-P3-01F最终完整门禁：11016 passed/3022 skipped，1240.50秒；make check1399类型文件/30eval通过，14专项通过。4650既有文件保持，证据已写入docs/evidence/ca-p3-01f。Native前置限定提交/推送后由Overdoze固定来源并执行独立完整联合；未部署或迁移生产。
+
+下游合同/联合验收发现schema数组约束导出错误和公开v3准入Definition/Snapshot摘要混用。
+修正schema注解并增加回归；因发现新源码缺陷，停止仅schema版本的全量复验（6998通过/2049条件跳过，未完成不计全绿）。
+更新Owned paths后修正共享v3准入，保留v1/v2及Worker严格校验；2项绑定回归修复前1失败/1通过、修复后全过。
+41项Eval/D/Worker/兼容专项与make check通过，完整最终门禁重新执行。修正代码本地固定5c0a6d87，待全量后推送；
+OD-P3-02D本地候选16项联合通过，最终以发布SHA重跑记录为准。未部署或生产迁移。
+
+最终修正源5c0a6d87完整复验：make test11019 passed/3022 skipped（1191.37s）、make check1399类型文件/30eval、41专项通过。Native旧4649文件保持，source仅新v3准入一处共享修正。final-validation.json保留初次schema/实际Worker拒绝和中断复验记录，原validation.json不覆盖。限定功能分支FF推送后由Overdoze完成远端pin终验；没有部署或生产迁移。

@@ -58,3 +58,19 @@ Overdoze同次完整联合在独立任务OD-P3-02D维护，不借历史Worker用
 实际模型/业务正确性/生产gVisor/真实产品和HA仍未验证；旧历史、任务及Coverage机制保持。
 
 最终门禁：make test11016通过/3022条件跳过，make check1399类型文件/30eval通过；[机器证据](evidence/ca-p3-01f/validation.json)。旧4650个文件保持，修改的五个既有文件仅为规划/日志。
+
+## 联合验收发现与兼容性修正（2026-10-23）
+
+初版4a40c104全量门禁通过后，下游AJV发现生成schema的案例数组长度被错误写为字符串minLength/maxLength。
+运行时始终拒绝空案例，但生成合同不一致；调整Field/BeforeValidator注解顺序生成minItems/maxItems，
+增加schema/运行时一致性回归，不降低消费者约束。旧初版证据保留，修正后的全量记录另列。
+
+同次公开D→签名TaskRun→Worker发现原session_queue._derive_binding将Definition digest写入v3的
+AgentCapabilityCeiling.definition_snapshot_digest，严格Worker因此拒绝。共享准入生产者现在仅对
+ScriptDefinitionSnapshot写入完整snapshot_digest；v1/v2和无snapshot的字节规则保持。
+新回归已验证修复前失败/修复后通过；Worker校验不放宽，不在读取时迁移或重写任何历史绑定。
+原本具有正确Snapshot摘要的旧任务继续恢复；既有错误v3绑定保持拒绝，若实际存在需以后显式受权修复，
+不能通过“允许Definition或Snapshot任一摘要”的降级绕过。
+评测证据仍绑定Version的definition_digest，与Task Snapshot摘要是不同事实，禁止混用。
+
+最终修正版门禁：11019 passed/3022条件跳过（1191.37秒），make check1399类型文件/30eval，41专项通过；[最终机器证据](evidence/ca-p3-01f/final-validation.json)保留修复前后与中断状态。

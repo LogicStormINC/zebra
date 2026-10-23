@@ -1,0 +1,119 @@
+{
+  "task": "CA-P3-01F",
+  "status": "PASS",
+  "validated_source_commit": "5c0a6d876ca7114b8eeb9e48e671193a93125601",
+  "at": "2026-10-23T05:15:30.011287+00:00",
+  "commands": {
+    "make_test": {
+      "exit_code": 0,
+      "passed": 11019,
+      "conditional_skips": 3022,
+      "seconds": 1191.37
+    },
+    "make_check": {
+      "exit_code": 0,
+      "mypy_files": 1399,
+      "eval_cases": 30
+    },
+    "focused": {
+      "exit_code": 0,
+      "passed": 41,
+      "seconds": 46.77
+    },
+    "schema_focused": {
+      "exit_code": 0,
+      "passed": 15
+    },
+    "snapshot_binding_red_green": {
+      "before_fix": {
+        "failed": 1,
+        "passed": 1
+      },
+      "after_fix": {
+        "passed": 2
+      }
+    }
+  },
+  "initial_findings": [
+    {
+      "phase": "initial producer4a40c104",
+      "full_gates": "11016 passed/3022 skipped; make check passed; original validation.json retained immutable",
+      "finding": "AJV refused generated tuple cardinality: minLength/maxLength exported instead of minItems/maxItems; runtime always rejected empty cases",
+      "repair": "Field before BeforeValidator; generated-schema regression and consumer negative case preserved"
+    },
+    {
+      "phase": "schema-only full rerun",
+      "status": "INTERRUPTED for necessary new source repair; not a passing full run",
+      "counts_before_interrupt": {
+        "passed": 6998,
+        "skipped": 2049,
+        "seconds": 409.31
+      }
+    },
+    {
+      "phase": "actual public D->signed Task/Run->Worker candidate",
+      "finding": "public v3 admission stored immutable Definition digest where strict Worker requires full Snapshot digest",
+      "repair": "shared session_queue._derive_binding pins snapshot_digest for ScriptDefinitionSnapshot only; v1/v2/None unchanged; strict Worker check unchanged",
+      "historical_binding": "no auto rewrite or dual-digest acceptance; previously invalid historical v3 bindings remain fail-closed and require separately authorized repair if present"
+    }
+  ],
+  "preservation": {
+    "existing_files_unchanged": 4649,
+    "existing_files_changed": [
+      "PROGRESS.md",
+      "WORKLOG.md",
+      "apps/api/src/zebra_agent_api/session_queue.py",
+      "docs/AGENT_TASKS.md",
+      "docs/实施任务拆解与阶段验收.md",
+      "task_plan.md"
+    ],
+    "only_existing_source_change": "apps/api/src/zebra_agent_api/session_queue.py: new v3 binding producer correction",
+    "old_D_E_history_coverage": "old public contract artifacts and existing execution/Worker/Coverage source unchanged; complete regression; no production mutation"
+  },
+  "source_sha256": {
+    "apps/api/src/zebra_agent_api/session_queue.py": "3eecc469d19dbf2b686826b0ad2017fd7142b16e076644d9454490ed832a2a8a",
+    "apps/worker/src/zebra_agent_worker/script_evaluation.py": "9f3a1ba1fd0b0fcf4cd7a71bcc43cf8ab247b149c5209d565847511b2f32416a",
+    "packages/agent-runtime/src/agent_runtime/native_script_eval.py": "1912e335f255d0e0de8aeeb2f19b50c991b006622d18ca12f73331f6277c8ead",
+    "packages/agent-storage/src/agent_storage/postgres/script_evaluation.py": "3ab14ebb4b561168e94b694f93321c808d37ad12c7c0d427bc1f827ec47fee11",
+    "tests/api/test_script_snapshot_binding.py": "dc1bc0be97c34c2e135741d59ff29519214fbf3cbc871dcce5449db803786994",
+    "tests/agent_runtime/test_native_script_eval.py": "312a8ec463f953f7f3ec1f338f34e33f8fac1c086c5591d8ae48a3444a4124e2",
+    "tests/agent_storage/test_script_evaluation.py": "38011d0149f3116fa8344f50e10a0b7dd8017b7892e5a57fdd3c68b5f494d214"
+  },
+  "logs": {
+    "ca-p3-01f-test.log": {
+      "path": "/Users/lukeding/.codex/tmp/ca-p3-01f-test.log",
+      "sha256": "ea111209e150241a49aceb729cea7e331b5d4cf05600d224fcb0d384e752a7d6"
+    },
+    "ca-p3-01f-schema-focused.log": {
+      "path": "/Users/lukeding/.codex/tmp/ca-p3-01f-schema-focused.log",
+      "sha256": "cc6779db1da8b8fa2c8a1670749af396ba9a32d3fa281f817c52e06796b5d9c8"
+    },
+    "ca-p3-01f-binding-red.log": {
+      "path": "/Users/lukeding/.codex/tmp/ca-p3-01f-binding-red.log",
+      "sha256": "b20250bdea8304e1e429fce3d03d5bbc6c8e909c22448fe41a17a011ccca55c9"
+    },
+    "ca-p3-01f-binding-focused.log": {
+      "path": "/Users/lukeding/.codex/tmp/ca-p3-01f-binding-focused.log",
+      "sha256": "a160b06d023151e0bb6c98e8962b5abbbbc39c7370c9c2170e21cc840f4ec24c"
+    },
+    "ca-p3-01f-binding-check.log": {
+      "path": "/Users/lukeding/.codex/tmp/ca-p3-01f-binding-check.log",
+      "sha256": "3b98ae6e8ee8d661237635928942f7ad794d35c910554709f5acd6c970a7eae3"
+    },
+    "ca-p3-01f-test-final.log": {
+      "path": "/Users/lukeding/.codex/tmp/ca-p3-01f-test-final.log",
+      "sha256": "a7b102c28d47143d992024a0a9ca25d709ca72347f2dd4605178acd90da31ebd"
+    },
+    "ca-p3-01f-test-joint-final.log": {
+      "path": "/Users/lukeding/.codex/tmp/ca-p3-01f-test-joint-final.log",
+      "sha256": "6f101f38bf7e714b8b6af3e06b0fc3a7b233ea74895722d7cda9984788d61cb8"
+    }
+  },
+  "downstream": "OD-P3-02D candidate full16 checks passed with actual three-kind Eval/Worker/oldTask/incompatible/unknown; final remote-source receipt and joint rerun belong to Overdoze",
+  "not_proven": [
+    "live model/business quality",
+    "production evaluator or gVisor/image/HA",
+    "automatic repair of historical invalid v3 bindings"
+  ],
+  "delivery": "scoped feature FF push after final documentation; remote SHA checked separately; no main integration/deployment/production migration"
+}

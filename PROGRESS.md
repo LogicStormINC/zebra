@@ -1,6 +1,6 @@
-# CA-P3-01F — 可信脚本 Eval 生产者（Review）
+# CA-P3-01F — 可信脚本 Eval 与公开v3绑定（Review）
 
-[正式运维合同/SE01–07](docs/CA-P3-01F_trusted_script_eval.md)与原生机器schema已添加；实际沙箱评分、当前批准、共享原unknown/唯一领取、原子证据收据，14专项通过。完整make test11016通过/3022条件跳过（1240.50秒）、make check1399类型文件/30eval通过。[证据](docs/evidence/ca-p3-01f/validation.json)记录4650旧文件保持与真实PG/独立进程/Seatbelt边界。限定提交推送回执另记，无部署/生产迁移/main合并，历史/Coverage保持；Overdoze完整D→Worker联合由OD-P3-02D独立验收。
+[正式合同及修正边界](docs/CA-P3-01F_trusted_script_eval.md)；[最终证据](docs/evidence/ca-p3-01f/final-validation.json)。实际只读无网络脚本评分、共享原unknown和原子证据收据；补齐生成schema数组约束及公开v3准入Snapshot摘要，Worker严格检查、v1/v2和历史数据不降级。最终make test11019通过/3022条件跳过（1191.37秒）、make check1399类型文件/30eval通过，41专项通过。4649既有文件保持，仅session_queue.py修正新v3绑定；初版11016全量与中断复验保留为历史记录。Overdoze实际16项候选完整联合通过，最终发布SHA验收由OD-P3-02D独立记录。限定功能分支提交推送；无部署/生产迁移/main合并，Coverage保持。
 
 # CA-P3-01E — 纯 ScriptBundle 校验（Review）
 

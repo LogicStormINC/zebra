@@ -4,7 +4,7 @@
 - [x] 原生固定suite/真实沙箱评分、共享PG原unknown/CAS/原子证据、显式初始化与私有运维入口。
 - [x] 14专项、格式/类型/边界检查通过；旧D/E和历史/Coverage源码保持。
 - [x] 完整make test/check和正式证据通过、任务Review；限定提交推送的远端回执另记。
-- [ ] Overdoze独立固定F并完成公开D到Worker完整联合，不提前声称生产HA。
+- [x] Overdoze独立固定源码并完成16项候选公开D到Worker完整联合；最终远端pin重跑由OD-P3-02D单独记录，不声称生产HA。
 
 # CA-P3-01E current slice
 
