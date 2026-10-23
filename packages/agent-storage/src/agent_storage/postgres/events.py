@@ -40,6 +40,16 @@ class PostgresEventStore(EventStorePort):
             deployment_namespace=deployment_namespace,
         )
 
+    def approval_operation_unit(self, segment: SessionId) -> Any:
+        from agent_storage.postgres.client_approval_operations import operation_unit
+
+        return operation_unit(self._database, segment)
+
+    def read_approval_operation(self, segment: SessionId, key: str) -> SessionEvent | None:
+        from agent_storage.postgres.client_approval_operations import read_operation
+
+        return read_operation(self._database, segment, key)
+
     def read_client_command_receipt(
         self,
         segment_id: SessionId,

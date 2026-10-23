@@ -1,3 +1,10 @@
+# CA-P3-02O 当前切片
+
+- [x] K之后依赖复核/原生前置与Owned paths认领。
+- [x] 当前Controller公开查询、精确原操作与有界原子决定/投影/继续执行。
+- [x] 最终make test/check、正式证据及限定提交推送准备；远端SHA以实际交付回执核对。
+- [ ] 发布后由OD-P3-01L固定来源，完成真实BFF跨副本/SDK/Worker联合。
+
 # CA-P3-02N 当前切片
 
 - [x] 核对任务/依赖/Owned paths，认领独立原生分支。

@@ -1,3 +1,7 @@
+# CA-P3-02O — 审批原操作及当前 Controller 公开查询
+
+为OD-P3-01L补齐当前授权精确原操作GET、原子决定/投影/继续执行及Controller观察；复用既有PG事件唯一键/短事务，无新表或迁移。[合同](docs/CA-P3-02O_approval_operations.md)。API13/真实PG3专项及最终make test11046通过/3029条件跳过、make check1403类型文件/30eval均通过；旧接口/历史/原收据/Coverage保留，无部署/生产迁移/主线整合。
+
 # CA-P3-02N — Client Action Worker 兼容前置
 
 OD-P3-01K同次联合暴露可选描述/schema转换、审批响应重建吞命令及继续执行空Run三个衔接问题；修复共享入口，原合同/摘要/严格Run与审批/历史/Coverage保持。准备增量113仅作用后续header，独享PG21项/本地89专项已通过。[方案](docs/CA-P3-02N_client_tool_compatibility.md)。最终make test11039通过/3026条件跳过、make check1400类型文件/30eval通过；文件边界修正后完整重跑，无部署/生产迁移/主线整合。

@@ -17,12 +17,20 @@ class ApiStatusMixin:
             getattr(platform, name, None) is not None
             for name in ("client_sessions", "frontend_capabilities", "client_control_leases")
         )
+        from agent_core.ports.client_approval_operations import ClientApprovalOperationPort
         from agent_core.ports.client_command_receipts import ClientCommandReceiptReadPort
 
         return ApiResponse(
             200,
             {
                 "contract_version": 1,
+                "client_approval_operation_contract_version": int(
+                    available
+                    and isinstance(
+                        getattr(getattr(self, "stores", None), "events", None),
+                        ClientApprovalOperationPort,
+                    )
+                ),
                 "client_command_segment_precondition_contract_version": 1,
                 "schema_version": MIGRATIONS[-1].version,
                 "network_profiles": list(SUPPORTED_NETWORK_PROFILES),

@@ -13,6 +13,7 @@ def test_runtime_capabilities_match_task_network_profiles(tmp_path) -> None:
     assert response.status_code == 200
     assert response.body == {
         "contract_version": 1,
+        "client_approval_operation_contract_version": 0,
         "client_command_segment_precondition_contract_version": 1,
         "schema_version": MIGRATIONS[-1].version,
         "network_profiles": list(SUPPORTED_NETWORK_PROFILES),
