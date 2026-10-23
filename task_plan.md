@@ -1,3 +1,10 @@
+# CA-P3-02N 当前切片
+
+- [x] 核对任务/依赖/Owned paths，认领独立原生分支。
+- [x] 先复现公开可选 metadata 到严格模型工具的转换失败，再补共享边界默认展示。
+- [x] 最终专项/完整 make test/check、文档和 scoped commit/push 准备；远端SHA由交付回执核对。
+- [ ] 已发布来源固定后 Overdoze 同次 SDK/审批/Effect/Worker 联合，由 OD-P3-01K 独立记录。
+
 # CA-P3-01F 当前切片
 
 - [x] 登记Ready/认领、核对A–E及固定C消费者；建立单任务分支。

@@ -1,3 +1,5 @@
+2026-10-23：[Client Action Worker兼容说明](docs/CA-P3-02N_client_tool_compatibility.md)：已发布可选描述/schema只在模型展示处补缺省，审批、原合同及历史/Coverage保持。
+
 2026-10-22增量：[SDK/BFF Readable值命令](docs/CA-P3-02G_readable_submit.md)，显式版本和原生准入；参考联合验收与生产身份/HA边界见正式证据。
 
 ![Zebra Agent](./assets/logo.png)

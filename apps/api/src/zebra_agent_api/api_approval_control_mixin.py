@@ -10,6 +10,7 @@ from agent_core.application import (
 )
 from agent_core.application.session_projection import apply_event
 from agent_core.application.workspace_projection import apply_event as apply_workspace_event
+from agent_core.domain.events import EventActor
 from agent_core.domain.identifiers import SessionId
 from agent_storage import ControlPlaneStores
 
@@ -98,13 +99,15 @@ class ApiApprovalControlMixin:
                     "kind": "resume",
                     "expected_revision": updated_session.current_sequence,
                 },
-                idempotency_key=(
-                    f"approval:{session_key}:{event.sequence}:resume"
-                ),
+                actor=EventActor.HARNESS,
+                idempotency_key=(f"approval-resume:{session_key}:{event.sequence}:resume"),
             )
             if resume_response.status_code not in {200, 202}:
                 return resume_response
-        task_id = self.stores.tasks.ensure_for_session(session_key).task_id
+        # A known Task lookup must not rebuild projections past the pending resume command.
+        task_id = self.stores.tasks.task_id_for_session(session_key)
+        if task_id is None:
+            task_id = self.stores.tasks.ensure_for_session(session_key).task_id
         body: dict[str, object] = {
             "approval_id": approval_id,
             "session_id": str(task_id),

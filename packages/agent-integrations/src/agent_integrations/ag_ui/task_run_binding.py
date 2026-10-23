@@ -97,6 +97,6 @@ def _is_internal_continuation(entry: TaskEvent) -> bool:
         entry.event.actor is EventActor.HARNESS
         and payload.get("kind") == "resume"
         and isinstance(key, str)
-        and key.startswith(("child-wakeup:", "client-effect-resume:"))
+        and key.startswith(("child-wakeup:", "client-effect-resume:", "approval-resume:"))
         and command_run_id(entry) is None
     )

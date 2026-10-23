@@ -70,8 +70,8 @@ class ClientToolGateway:
             tools.append(
                 ModelToolDefinition(
                     name=name,
-                    description=contract.description,
-                    parameters=contract.parameters,
+                    description=contract.description if contract.description.strip() else name,
+                    parameters={"type": "object", "properties": {}, **contract.parameters},
                     origin=ModelToolOrigin.CLIENT,
                     source_id=name,
                 )

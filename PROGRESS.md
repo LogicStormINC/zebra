@@ -1,3 +1,7 @@
+# CA-P3-02N — Client Action Worker 兼容前置
+
+OD-P3-01K同次联合暴露可选描述/schema转换、审批响应重建吞命令及继续执行空Run三个衔接问题；修复共享入口，原合同/摘要/严格Run与审批/历史/Coverage保持。准备增量113仅作用后续header，独享PG21项/本地89专项已通过。[方案](docs/CA-P3-02N_client_tool_compatibility.md)。最终make test11039通过/3026条件跳过、make check1400类型文件/30eval通过；文件边界修正后完整重跑，无部署/生产迁移/主线整合。
+
 # CA-P3-01F — 可信脚本 Eval 与公开v3绑定（Review）
 
 [正式合同及修正边界](docs/CA-P3-01F_trusted_script_eval.md)；[最终证据](docs/evidence/ca-p3-01f/final-validation.json)。实际只读无网络脚本评分、共享原unknown和原子证据收据；补齐生成schema数组约束及公开v3准入Snapshot摘要，Worker严格检查、v1/v2和历史数据不降级。最终make test11019通过/3022条件跳过（1191.37秒）、make check1399类型文件/30eval通过，41专项通过。4649既有文件保持，仅session_queue.py修正新v3绑定；初版11016全量与中断复验保留为历史记录。Overdoze实际16项候选完整联合通过，最终发布SHA验收由OD-P3-02D独立记录。限定功能分支提交推送；无部署/生产迁移/main合并，Coverage保持。

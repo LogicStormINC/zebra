@@ -122,3 +122,26 @@ def test_header_rejects_untrusted_future_or_invalid_highwater(header_store, valu
     store, _, task = header_store
     with pytest.raises(ValueError):
         store.read_run_header(task.task_id, "run-one", through_sequence=value)
+
+
+@pytest.mark.parametrize(
+    "actor,run,internal",
+    [
+        (EventActor.HARNESS, None, True),
+        (EventActor.USER, None, False),
+        (EventActor.HARNESS, "different-run", False),
+    ],
+)
+def test_approval_resume_only_trusted_null_run_continues_original(
+    header_store, actor, run, internal
+):
+    store, events, task = header_store
+    original = _command(events, task)
+    resumed = _command(events, task, kind="resume", run=run, actor=actor, key="approval-resume:")
+    header = store.read_event_header(task.task_id, resumed.sequence)
+    assert header.internal_continuation is internal
+    assert store.read_run_header(task.task_id, "run-one").stop == (
+        None if internal else resumed.sequence
+    )
+    if internal:
+        assert store.read_latest_run_header(task.task_id).anchor.event_id == original.event_id

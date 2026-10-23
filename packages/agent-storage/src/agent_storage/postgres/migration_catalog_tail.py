@@ -1,6 +1,7 @@
 """Latest additive migrations kept separate from the primary catalog."""
 
 from agent_storage.postgres.agent_registry_migration import AGENT_REGISTRY_MIGRATION
+from agent_storage.postgres.approval_resume_migration import APPROVAL_RESUME_MIGRATION
 from agent_storage.postgres.artifact_payload_migration import ARTIFACT_PAYLOAD_MIGRATION
 from agent_storage.postgres.bundle_definition_migration import BUNDLE_DEFINITION_MIGRATION
 from agent_storage.postgres.command_coverage_admission_migration import (
@@ -183,4 +184,5 @@ LATEST_MIGRATIONS = (
     BUNDLE_DEFINITION_MIGRATION,
     PUBLICATION_MIGRATION,
     FRONTEND_PROFILE_MANAGEMENT_MIGRATION,
+    APPROVAL_RESUME_MIGRATION,
 )

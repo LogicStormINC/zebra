@@ -378,3 +378,34 @@ def test_cold_actual_visits_are_bounded_for_point_and_runstop_with_huge_body(tmp
             }
         )
     )
+
+
+def test_approval_trigger_upgrade_preserves_history_and_guards_new_sources(tmp_path):
+    task = TaskId(uuid4())
+    connection = header_database(tmp_path / "upgrade.sqlite", task)
+    for name in ["session_events_scalar_insert", "session_events_scalar_guard"]:
+        definition = connection.execute(
+            "SELECT sql FROM sqlite_master WHERE type='trigger' AND name=?", (name,)
+        ).fetchone()[0]
+        connection.execute("DROP TRIGGER " + name)
+        connection.execute(definition.replace("LIKE 'approval-resume:%'", "LIKE 'old-other:%'"))
+    connection.execute(INSERT, source_row(task, 0, run="original"))
+    before = tuple(connection.execute("SELECT * FROM session_events").fetchone())
+    initialize_task_replay_headers(connection)
+    assert tuple(connection.execute("SELECT * FROM session_events").fetchone()) == before
+    connection.execute(
+        INSERT,
+        source_row(task, 1, kind="resume", run=None, actor="harness", key="approval-resume:"),
+    )
+    connection.execute(
+        INSERT, source_row(task, 2, kind="resume", run=None, actor="user", key="approval-resume:")
+    )
+    rows = connection.execute(
+        "SELECT replay_internal_continuation FROM session_events ORDER BY sequence"
+    ).fetchall()
+    assert [row[0] for row in rows] == [0, 1, 0]
+    with pytest.raises(sqlite3.IntegrityError):
+        connection.execute(
+            "UPDATE session_events SET replay_internal_continuation=1 WHERE sequence=0"
+        )
+    connection.close()
