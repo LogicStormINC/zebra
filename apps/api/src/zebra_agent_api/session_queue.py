@@ -6,6 +6,7 @@ from agent_core.application import SessionBootstrapCommand, SessionBootstrapServ
 from agent_core.application.workspace_projection import rebuild_workspace
 from agent_core.domain.agent_definition_snapshots import AgentDefinitionSnapshot
 from agent_core.domain.host_authority import HostContextEnvelope
+from agent_core.domain.script_definition import ScriptDefinitionSnapshot
 from agent_core.domain.task_bindings import TaskBindingSnapshot
 from agent_core.domain.tool_profiles import ToolProfile
 from agent_core.ports.idempotency_store import IdempotencyRecord
@@ -219,7 +220,13 @@ def _derive_binding(
         session_id,
         host_context=host_context,
         definition_snapshot_digest=(
-            definition_snapshot.definition_digest if definition_snapshot else None
+            # ponytail: v3 native execution binds the full frozen snapshot; retain v1/v2
+            # admission bytes until a separately versioned migration changes their contract.
+            definition_snapshot.snapshot_digest
+            if isinstance(definition_snapshot, ScriptDefinitionSnapshot)
+            else definition_snapshot.definition_digest
+            if definition_snapshot
+            else None
         ),
         deployment_namespace=deployment_namespace,
         frozen_manifest_digest=frozen_manifest_digest,
