@@ -1,3 +1,7 @@
+## CA-P3-02R：派发前终止证明（验证通过，Review）
+
+make test 11059 passed/3036 conditional skips; make check1406 types/30eval; API13 and real owned PG7 focused passed. Pre-dispatch candidate Chromium/WebKit passed; published-source consumer joint is separate. 已核对N/Q依赖；证明仅限新pre-dispatch/1原请求，持久start/terminate第一写者门闩。已开始、旧claim、无claim、超时无非提交证明；unknown不重发、不领取Controller、不清pending。边界及验收见[正式设计](docs/CA-P3-02R_admission_termination.md)。保留历史/原收据/Coverage，无部署/生产迁移。
+
 # CA-P3-02O — 审批原操作及当前 Controller 公开查询
 
 为OD-P3-01L补齐当前授权精确原操作GET、原子决定/投影/继续执行及Controller观察；复用既有PG事件唯一键/短事务，无新表或迁移。[合同](docs/CA-P3-02O_approval_operations.md)。API13/真实PG3专项及最终make test11046通过/3029条件跳过、make check1403类型文件/30eval均通过；旧接口/历史/原收据/Coverage保留，无部署/生产迁移/主线整合。

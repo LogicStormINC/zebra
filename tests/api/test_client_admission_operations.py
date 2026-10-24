@@ -54,3 +54,11 @@ def test_task_creation_uses_full_original_authority_scope(monkeypatch):
 def test_observation_endpoint_cannot_dispatch_post():
     request = RouteRequest("POST", f"/v1/admission-operations/{uuid4()}/observation", body={})
     assert api.handle_admission_operation(SimpleNamespace(), request).status_code == 405
+
+
+@pytest.mark.parametrize("body,query", [({}, None), (None, {"replay": "true"})])
+def test_termination_rejects_input_before_storage(body, query):
+    request = RouteRequest(
+        "POST", f"/v1/admission-operations/{uuid4()}/termination", body=body, query=query
+    )
+    assert api.handle_admission_operation(SimpleNamespace(), request).status_code == 400

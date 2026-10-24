@@ -1,3 +1,7 @@
+## CA-P3-02R：派发前终止证明（验证通过，Review）
+
+make test 11059 passed/3036 conditional skips; make check1406 types/30eval; API13 and real owned PG7 focused passed. Pre-dispatch candidate Chromium/WebKit passed; published-source consumer joint is separate. 已核对N/Q依赖；证明仅限新pre-dispatch/1原请求，持久start/terminate第一写者门闩。已开始、旧claim、无claim、超时无非提交证明；unknown不重发、不领取Controller、不清pending。边界及验收见[正式设计](docs/CA-P3-02R_admission_termination.md)。保留历史/原收据/Coverage，无部署/生产迁移。
+
 2026-10-23 O最终：首次完整仅capabilities精确字典新0字段失败（11045通过/3028条件跳过）；更新Owned paths，保留完整断言并加入reject/禁止全历史读取专项，API13/独享PG3通过。最终make test11046通过/3029条件跳过（1276.76秒），make check1403类型/30eval通过，3413文件/零违规。旧4671文件中4661保持原字节，既有迁移/历史/原收据/Coverage保持。限定源码交付准备，L发布pin终验另记，无部署/生产迁移/主线整合。
 
 2026-10-23 O：K之后实际BFF原审批恢复缺少精确原生收据。先登记再编码；原事件唯一键与PG事务复用，无新迁移。API12专项和真实独享PG2专项通过，包含并发同请求、只读恢复、异请求和继续执行失败整事务回滚。存储专项桩授权不充当真实云授权证据；后续由L公开签名云联合验收。旧合同/历史/原收据/Coverage保持，不部署或迁移生产。

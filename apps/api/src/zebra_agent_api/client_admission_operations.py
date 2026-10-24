@@ -122,8 +122,11 @@ def handle_admission_operation(app: Any, request: Any) -> ApiResponse | None:
     if not request.path.startswith(_PREFIX):
         return None
     observation = request.path.endswith("/observation")
+    termination = request.path.endswith("/termination")
     if observation and request.method.upper() != "GET":
         return ApiResponse(405, {"status": "method_not_allowed"})
+    if termination and request.body is not None:
+        return ApiResponse(400, {"status": "invalid_termination"})
     if request.query or request.method.upper() == "GET" and request.body is not None:
         return ApiResponse(400, {"status": "invalid_admission_observation"})
     if request.method.upper() not in {"GET", "POST"}:
@@ -131,8 +134,14 @@ def handle_admission_operation(app: Any, request: Any) -> ApiResponse | None:
     if not isinstance(app.stores, PostgresControlPlaneStores):
         return ApiResponse(503, {"status": "admission_operations_unavailable"})
     try:
-        operation = str(UUID(request.path.removeprefix(_PREFIX).removesuffix("/observation")))
-        if observation:
+        operation = str(
+            UUID(
+                request.path.removeprefix(_PREFIX)
+                .removesuffix("/observation")
+                .removesuffix("/termination")
+            )
+        )
+        if observation or termination:
             digest = _header(request, "X-Zebra-Admission-Hash")
             if len(digest) != 64 or any(c not in "0123456789abcdef" for c in digest):
                 raise ValueError("invalid original hash")
@@ -164,7 +173,15 @@ def handle_admission_operation(app: Any, request: Any) -> ApiResponse | None:
     assert scoped is not None
     try:
         with task_io_deadline(monotonic() + 2):
-            return _handle(app, request, operation, scoped, key, observation=observation)
+            return _handle(
+                app,
+                request,
+                operation,
+                scoped,
+                key,
+                observation=observation,
+                termination=termination,
+            )
     except IdempotencyConflictError:
         return ApiResponse(409, {"status": "admission_operation_conflict"})
     except TimeoutError:
@@ -172,7 +189,14 @@ def handle_admission_operation(app: Any, request: Any) -> ApiResponse | None:
 
 
 def _handle(
-    app: Any, request: Any, operation: str, scoped: str, key: bytes, *, observation: bool = False
+    app: Any,
+    request: Any,
+    operation: str,
+    scoped: str,
+    key: bytes,
+    *,
+    observation: bool = False,
+    termination: bool = False,
 ) -> ApiResponse:
     store = app.stores.idempotency
     claim = store.get(action=_CLAIM, idempotency_key=scoped)
@@ -182,8 +206,11 @@ def _handle(
         _header(request, "X-Zebra-Client-Session").encode()
     ).hexdigest()
     key_hash = hashlib.sha256(key).hexdigest()
-    if request.method.upper() == "POST":
+    if request.method.upper() == "POST" and not termination:
         try:
+            protocol = _header(request, "X-Zebra-Admission-Protocol")
+            if protocol not in {"", "pre-dispatch/1"}:
+                raise ValueError("unsupported dispatch protocol")
             body = Admission.model_validate(request.body or {})
             _bounded_numbers(body.payload)
             if body.kind == "task_create":
@@ -206,6 +233,7 @@ def _handle(
         if not isinstance(mount, dict):
             return ApiResponse(400, {"status": "invalid_admission_operation"})
         meta = {
+            "dispatch_protocol": protocol,
             "frontend_app": mount.get("frontend_app_id"),
             "profile": mount.get("profile_digest"),
             "kind": body.kind,
@@ -216,6 +244,12 @@ def _handle(
         }
     elif claim is None:
         denied = host_list_context_response(request.host_context, request.verified_host_grant)
+        if termination:
+            from zebra_agent_api.client_admission_termination import termination_response
+
+            return denied or termination_response(
+                operation, digest, "", {"state": "not_observed", "recorded_at": ""}
+            )
         return denied or (
             _observation(operation, digest, None, None)
             if observation
@@ -232,6 +266,10 @@ def _handle(
         or claim.response_body["credential_hash"] != credential_hash
     ):
         return ApiResponse(409, {"status": "admission_operation_conflict"})
+    if termination:
+        from zebra_agent_api.client_admission_termination import terminate_admission
+
+        return terminate_admission(app, request, operation, scoped, digest, meta)
     if observation:
         result = store.get(action=_RESULT, idempotency_key=scoped)
         denied = _authorize(app, request, meta)
@@ -253,6 +291,12 @@ def _handle(
             )
         )
         if claim.response_body["claim"] == nonce:
+            if meta.get("dispatch_protocol") == "pre-dispatch/1":
+                fence = store.admission_fence(scoped, digest, terminate=False)
+                if fence["state"] != "started":
+                    return ApiResponse(
+                        200, {"status": "unknown", "operation": operation, "request_hash": digest}
+                    )
             # ponytail: existing admission can partially commit. A crash here remains
             # unknown forever until an original result exists; never take over/retry.
             response = _dispatch(app, request, body, scoped)
