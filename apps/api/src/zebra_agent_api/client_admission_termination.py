@@ -13,15 +13,20 @@ def terminate_admission(
     from zebra_agent_api.client_admission_operations import _authorize
 
     store = app.stores.idempotency
-    if request.path.endswith("/atomic-termination"):
+    if request.path.endswith(("/atomic-termination", "/task-termination")):
+        task = request.path.endswith("/task-termination")
         from agent_storage.postgres.admission_atomic_surface import observe_atomic_termination
 
         fence = observe_atomic_termination(
-            store, scoped, digest, write=request.method.upper() == "POST"
+            store,
+            scoped,
+            digest,
+            write=request.method.upper() == "POST",
+            protocol="atomic-task/1" if task else "atomic-surface/1",
         )
         denied = _authorize(app, request, meta)
         response = termination_response(operation, digest, meta["kind"], fence)
-        return denied or ApiResponse(200, {**response.body, "contract_version": 2})
+        return denied or ApiResponse(200, {**response.body, "contract_version": 3 if task else 2})
     if request.method.upper() == "POST":
         fence = store.admission_fence(scoped, digest, terminate=True)
     else:

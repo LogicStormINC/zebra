@@ -122,8 +122,10 @@ def handle_admission_operation(app: Any, request: Any) -> ApiResponse | None:
     if not request.path.startswith(_PREFIX):
         return None
     observation = request.path.endswith("/observation")
-    termination = request.path.endswith("/termination") or request.path.endswith(
-        "/atomic-termination"
+    termination = (
+        request.path.endswith("/termination")
+        or request.path.endswith("/atomic-termination")
+        or request.path.endswith("/task-termination")
     )
     if observation and request.method.upper() != "GET":
         return ApiResponse(405, {"status": "method_not_allowed"})
@@ -142,6 +144,7 @@ def handle_admission_operation(app: Any, request: Any) -> ApiResponse | None:
                 .removesuffix("/observation")
                 .removesuffix("/termination")
                 .removesuffix("/atomic-termination")
+                .removesuffix("/task-termination")
             )
         )
         if observation or termination:
@@ -212,7 +215,7 @@ def _handle(
     if request.method.upper() == "POST" and not termination:
         try:
             protocol = _header(request, "X-Zebra-Admission-Protocol")
-            if protocol not in {"", "pre-dispatch/1", "atomic-surface/1"}:
+            if protocol not in {"", "pre-dispatch/1", "atomic-surface/1", "atomic-task/1"}:
                 raise ValueError("unsupported dispatch protocol")
             body = Admission.model_validate(request.body or {})
             if protocol == "atomic-surface/1":
@@ -220,6 +223,10 @@ def _handle(
 
                 if body.kind == "task_create" or not eligible_atomic_surface(app):
                     raise ValueError("atomic surface requires exact same PG ports")
+            if protocol == "atomic-task/1":
+                from zebra_agent_api.client_admission_task import validate_atomic_task
+
+                validate_atomic_task(app, body)
             _bounded_numbers(body.payload)
             if body.kind == "task_create":
                 if body.task or body.run or body.payload.get("execute") is not False:
@@ -233,7 +240,11 @@ def _handle(
                     **body.model_dump(),
                     "key_hash": key_hash,
                     "credential_hash": credential_hash,
-                    **({"dispatch_protocol": protocol} if protocol == "atomic-surface/1" else {}),
+                    **(
+                        {"dispatch_protocol": protocol}
+                        if protocol in {"atomic-surface/1", "atomic-task/1"}
+                        else {}
+                    ),
                 }
             )
         except ValueError:
@@ -261,7 +272,9 @@ def _handle(
                 digest,
                 "",
                 {"state": "not_observed", "recorded_at": ""},
-                version=2 if request.path.endswith("/atomic-termination") else 1,
+                version=3
+                if request.path.endswith("/task-termination")
+                else (2 if request.path.endswith("/atomic-termination") else 1),
             )
         return denied or (
             _observation(operation, digest, None, None)
@@ -310,7 +323,7 @@ def _handle(
                     return ApiResponse(
                         200, {"status": "unknown", "operation": operation, "request_hash": digest}
                     )
-            if meta.get("dispatch_protocol") == "atomic-surface/1":
+            if meta.get("dispatch_protocol") in {"atomic-surface/1", "atomic-task/1"}:
                 from zebra_agent_api.client_admission_atomic import execute_atomic_surface
 
                 execute_atomic_surface(app, request, body, scoped, key, digest, operation)

@@ -38,11 +38,19 @@ def execute_atomic_surface(
     from zebra_agent_api.client_admission_operations import _authorize, _dispatch, _persist_result
 
     store = app.stores.idempotency
-    if not start_atomic_surface(store, scoped, digest):
+    protocol = "atomic-task/1" if body.kind == "task_create" else "atomic-surface/1"
+    prepared = None
+    if protocol == "atomic-task/1":
+        from zebra_agent_api.client_admission_task import prepare_atomic_task
+
+        prepared = prepare_atomic_task(app, request, body, scoped)
+        if prepared is None:
+            return
+    if not start_atomic_surface(store, scoped, digest, protocol=protocol):
         return
     try:
         with atomic_surface_transaction(store, scoped, digest):
-            response = _dispatch(app, request, body, scoped)
+            response = prepared() if prepared is not None else _dispatch(app, request, body, scoped)
             # Any partial error, budget/receipt failure or final denial rolls back every
             # surface write. No external I/O/Worker execution is admitted by this protocol.
             meta = store.get(

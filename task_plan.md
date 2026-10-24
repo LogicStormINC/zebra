@@ -1,3 +1,10 @@
+# CA-P3-02T current task
+
+Claimed Luke Ding, codex/ca-p3-02t-atomic-task-termination; see docs/CA-P3-02T_atomic_task_termination.md.
+1. Boundary/claim complete.
+2. Implement atomic Task protocol and storage/HTTP checks.
+3. Full Native gates complete; candidate joint passed. Publish Native, then separately pin/revalidate consumer; scoped push authorized.
+
 ## CA-P3-02S：已开始的原子Surface准入终止（验证通过，Review）
 
 make test 11060 passed/3045 conditional skips; make check1408 types/30eval; API14 and real owned PG16 focused passed. Started atomic-surface candidate Chromium/WebKit passed; published-source consumer joint is separate. 新atomic-surface/1仅open/mount，同PG业务效果/原收据同事务，提交点STOP门禁；持执行锁时pending无证明，退出且STOP/无原子收据才证明，提交先胜只恢复原结果。旧started/部分提交/Task创建不升级，不重发/重领/清pending。真实PG30项及候选双浏览器联合通过；完整门禁通过，发布后固定源消费者联合另记。见[正式边界](docs/CA-P3-02S_atomic_surface_termination.md)。

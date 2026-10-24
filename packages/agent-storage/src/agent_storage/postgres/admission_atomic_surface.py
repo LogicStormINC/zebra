@@ -48,12 +48,12 @@ def _save(store: Any, connection: Any, action: str, scoped: str, digest: str, st
     )
 
 
-def start_atomic_surface(store: Any, scoped: str, digest: str) -> bool:
+def start_atomic_surface(store: Any, scoped: str, digest: str, *, protocol: str = PROTOCOL) -> bool:
     database = store._database
     with database.connect() as connection, postgres_transaction_work_unit(database, connection):
         connection.execute("SET TRANSACTION ISOLATION LEVEL READ COMMITTED")
         claim = _claim(store, connection, scoped, digest)
-        if claim is None or claim["response_body"].get("dispatch_protocol") != PROTOCOL:
+        if claim is None or claim["response_body"].get("dispatch_protocol") != protocol:
             raise AtomicSurfaceAborted("atomic protocol missing")
         if store.get(action=STOP, idempotency_key=scoped) is not None:
             return False
@@ -84,7 +84,7 @@ def atomic_surface_transaction(store: Any, scoped: str, digest: str) -> Iterator
 
 
 def observe_atomic_termination(
-    store: Any, scoped: str, digest: str, *, write: bool
+    store: Any, scoped: str, digest: str, *, write: bool, protocol: str = PROTOCOL
 ) -> dict[str, str]:
     database = store._database
     if write:
@@ -93,7 +93,7 @@ def observe_atomic_termination(
             claim = _claim(store, connection, scoped, digest)
             if claim is None:
                 return {"state": "not_observed", "recorded_at": ""}
-            if claim["response_body"].get("dispatch_protocol") != PROTOCOL:
+            if claim["response_body"].get("dispatch_protocol") != protocol:
                 return {"state": "unsupported", "recorded_at": ""}
             # Durable stop first; a successful commit holding the same claim row wins first.
             if store.get(action=RESULT, idempotency_key=scoped) is None:
@@ -111,7 +111,7 @@ def observe_atomic_termination(
             claim = _claim(store, connection, scoped, digest, nowait=True)
             if claim is None:
                 return {"state": "not_observed", "recorded_at": ""}
-            if claim["response_body"].get("dispatch_protocol") != PROTOCOL:
+            if claim["response_body"].get("dispatch_protocol") != protocol:
                 return {"state": "unsupported", "recorded_at": ""}
             result = store.get(action=RESULT, idempotency_key=scoped)
             if result is not None:

@@ -73,3 +73,22 @@ def test_atomic_surface_never_silently_admits_task_creation():
     )
     app = SimpleNamespace(stores=SimpleNamespace(idempotency=SimpleNamespace(get=lambda **k: None)))
     assert api._handle(app, request, str(uuid4()), "owned", bytes(range(32))).status_code == 400
+
+
+@pytest.mark.parametrize(
+    "extra",
+    [
+        {"execute": True},
+        {"attachments": [{"text": "x"}]},
+        {"workspace_source": {"kind": "git"}},
+        {"mcp_resource_ids": ["server:resource"]},
+        {"mcp_prompt_id": "server:prompt"},
+        {"coverage_admission": {}},
+    ],
+)
+def test_atomic_task_rejects_external_effects_before_ports(extra):
+    from zebra_agent_api.client_admission_task import validate_atomic_task
+
+    body = api.Admission(kind="task_create", payload={"execute": False, **extra})
+    with pytest.raises(ValueError):
+        validate_atomic_task(SimpleNamespace(), body)
