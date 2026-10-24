@@ -1,3 +1,17 @@
+# Latest production repair: Redis / terminal observation (2026-10-24)
+
+CLOUD-REDIS-OBSERVER-20261024. Redis full-volume backup retained; native offline
+check found1477 invalid AOF suffix bytes. Copy repaired/tested, valid prefix
+compared, same Redis container restored without clearing data. API draft cache
+failures no longer abort authoritative observation or cancellation. Trench77bcb7f
+prepared/deployed with53 no-model tests and actual-image network-none check.
+Original Run now failed/null observation problem;128 events/6 model requests
+unchanged,0search. No Worker/frontend/Search/MCP restart or schema change.
+Source awaits maintainer integration, no push/main merge. Conversation later
+soft-deleted; deletion preserved, no authenticated page acceptance claimed.
+Lock incident narrowed to post-model storage path; exact SQL/holder absent from
+retained logs, not claimed fixed. See docs/CLOUD_REDIS_OBSERVER_2026-10-24.md.
+
 # 2026-10-22 — Production Turn authority reuse and terminal projection repaired
 
 CLOUD-TURN-ADMISSION-COMMENTARY-20261022. New subscription/topic authority was sent

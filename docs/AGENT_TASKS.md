@@ -35839,3 +35839,32 @@ old payloads remain byte-compatible by excluding None. No database migration.
   preserved. Existing HTTP compatibility baseline synchronized to source. Zebra
   API/Worker/quota/Search/MCP unchanged;0models/search or original command retries.
   No new live-model successor admission proof. See focused doc; no GitHub push.
+
+
+### CLOUD-REDIS-OBSERVER-20261024 — Redis recovery and authoritative terminal delivery
+
+- Status: Review (2026-10-24; source committed, no-model regression and API activation
+  complete; awaiting maintainer source integration; historical lock SQL remains unresolved).
+- Human owner Luke Ding; executor Codex; branch codex/cloud-redis-observer-20261024
+  in paired cloud-plugin-plan-01 worktrees; targets Zebra cloud-agent / Trench main.
+- Owned paths: this card, PROGRESS.md, WORKLOG.md,
+  docs/CLOUD_REDIS_OBSERVER_2026-10-24.md, private .artifacts/cloud-redis-observer-20261024/;
+  Trench services/api/src/trench_api/trench_ai_turn_dispatcher.py,
+  trench_ai_turn_transient.py and trench_ai_strategy_runtime_types.py in same directory;
+  tests/api/test_trench_ai_turn_dispatcher*.py
+  and test_trench_ai_turn_transient*.py. Explicitly expand before other code changes.
+- User authorizes Redis backup/offline AOF check and bounded repair, production API
+  update after no-model regression, original Run terminal synchronization, and
+  continued read-only PostgreSQL lock investigation. No model/search, task retry,
+  database clearing, Search/MCP change or original failure-status rewriting.
+- Preserve all unrelated dirty work, auth/lease/cancel bounds, high/v2, Redis
+  original backup and stable other service identities. No push.
+
+- Result: Trench77bcb7f;53 focused tests,0 skipped with isolated Redis/PostgreSQL;
+  exact image network-none check; same Redis container restored after full backup
+  and bounded1477-byte AOF suffix repair. Only API recreated; all other service
+  identities/security/schema/cooldown preserved. Original128 events unchanged,
+  original6 models/0search; native observation now failed/null, no replay.
+- Boundary: conversation was subsequently soft-deleted; preserve deletion. Browser
+  logged out; no authenticated page claim. Exact historical lock SQL/holder cannot
+  be reconstructed from retained logs; no speculative Worker fix or model retry.
