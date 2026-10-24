@@ -8068,3 +8068,6 @@ unmeasured. See docs/CLOUD_MCP_PREPARE_TIMING.md.
 
 ## CA-P3-02P 原 Task/surface 操作（2026-10-23）
 复用PG不可变claim/result，当前Host/Task/Profile授权及加密原响应；原UUID GET只观察，不重发/重领Controller。候选跨BFF三处丢响应联合通过，make test11056通过/3031条件跳过、make check1404类型/30eval通过；发布后消费者固定pin证据另记；[合同](docs/CA-P3-02P_admission_operations.md)。既有部分提交窗口仍保留unknown，无迁移/部署/历史或Coverage重写。
+
+## CA-P3-02Q 原准入只读观察（2026-10-24）
+P之后追加原claim/result只读观察，不输出凭据，不推断当前Controller或非提交证明。API/真实PG及消费者实际挂载后丢原收据候选通过；完整make test11057通过/3032条件跳过、check1404类型/30eval通过，[合同](docs/CA-P3-02Q_admission_observation.md)。原unknown不重发/不接管，旧数据/收据/Coverage保留，无迁移/部署。

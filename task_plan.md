@@ -1440,3 +1440,10 @@ Production cutover OFF; final actual SQL80/browser/fleet remains OPEN. No push/d
 - [x] make test/check完整复验、证据/正式文档。
 - [ ] 提交推送并核对远端SHA。
 - [ ] 消费者M固定发布来源后的联合验收（由独立消费者记录）。
+
+## CA-P3-02Q
+- [x] 核对M/P，Ready登记/领取/分支/Owned paths。
+- [x] 只读原观察与当前权限、API/真实PG检查。
+- [x] 完整make test/check、正式文档和证据。
+- [ ] 提交推送、远端SHA核对。
+- [ ] 消费者固定发布版本后的联合证据另记。

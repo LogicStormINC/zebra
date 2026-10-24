@@ -5,6 +5,7 @@ import hashlib
 import json
 import os
 from dataclasses import replace
+from datetime import UTC, datetime
 from time import monotonic
 from typing import Any, Literal
 from uuid import UUID, uuid4
@@ -120,6 +121,9 @@ def _dispatch(app: Any, request: Any, body: Admission, operation: str) -> ApiRes
 def handle_admission_operation(app: Any, request: Any) -> ApiResponse | None:
     if not request.path.startswith(_PREFIX):
         return None
+    observation = request.path.endswith("/observation")
+    if observation and request.method.upper() != "GET":
+        return ApiResponse(405, {"status": "method_not_allowed"})
     if request.query or request.method.upper() == "GET" and request.body is not None:
         return ApiResponse(400, {"status": "invalid_admission_observation"})
     if request.method.upper() not in {"GET", "POST"}:
@@ -127,7 +131,11 @@ def handle_admission_operation(app: Any, request: Any) -> ApiResponse | None:
     if not isinstance(app.stores, PostgresControlPlaneStores):
         return ApiResponse(503, {"status": "admission_operations_unavailable"})
     try:
-        operation = str(UUID(request.path.removeprefix(_PREFIX)))
+        operation = str(UUID(request.path.removeprefix(_PREFIX).removesuffix("/observation")))
+        if observation:
+            digest = _header(request, "X-Zebra-Admission-Hash")
+            if len(digest) != 64 or any(c not in "0123456789abcdef" for c in digest):
+                raise ValueError("invalid original hash")
         raw_key = _header(request, "X-Zebra-Admission-Key")
         key = bytes.fromhex(raw_key)
         if len(key) != 32 or len(raw_key) != 64:
@@ -156,14 +164,16 @@ def handle_admission_operation(app: Any, request: Any) -> ApiResponse | None:
     assert scoped is not None
     try:
         with task_io_deadline(monotonic() + 2):
-            return _handle(app, request, operation, scoped, key)
+            return _handle(app, request, operation, scoped, key, observation=observation)
     except IdempotencyConflictError:
         return ApiResponse(409, {"status": "admission_operation_conflict"})
     except TimeoutError:
         return ApiResponse(503, {"status": "unknown", "operation": operation})
 
 
-def _handle(app: Any, request: Any, operation: str, scoped: str, key: bytes) -> ApiResponse:
+def _handle(
+    app: Any, request: Any, operation: str, scoped: str, key: bytes, *, observation: bool = False
+) -> ApiResponse:
     store = app.stores.idempotency
     claim = store.get(action=_CLAIM, idempotency_key=scoped)
     body = None
@@ -206,7 +216,11 @@ def _handle(app: Any, request: Any, operation: str, scoped: str, key: bytes) -> 
         }
     elif claim is None:
         denied = host_list_context_response(request.host_context, request.verified_host_grant)
-        return denied or ApiResponse(200, {"status": "not_observed", "operation": operation})
+        return denied or (
+            _observation(operation, digest, None, None)
+            if observation
+            else ApiResponse(200, {"status": "not_observed", "operation": operation})
+        )
     else:
         meta = claim.response_body
     denied = _authorize(app, request, meta)
@@ -218,6 +232,14 @@ def _handle(app: Any, request: Any, operation: str, scoped: str, key: bytes) -> 
         or claim.response_body["credential_hash"] != credential_hash
     ):
         return ApiResponse(409, {"status": "admission_operation_conflict"})
+    if observation:
+        result = store.get(action=_RESULT, idempotency_key=scoped)
+        denied = _authorize(app, request, meta)
+        if denied is not None:
+            return denied
+        if result is not None and result.request_hash != digest:
+            return ApiResponse(503, {"status": "observation_unavailable"})
+        return _observation(operation, digest, meta, result)
     if claim is None:
         assert body is not None
         nonce = str(uuid4())
@@ -284,3 +306,23 @@ def _bounded_numbers(value: Any) -> None:
     elif isinstance(value, list):
         for child in value:
             _bounded_numbers(child)
+
+
+def _observation(operation: str, digest: str, claim: Any, result: Any) -> ApiResponse:
+    # Original immutable facts only. A missing result cannot prove that dispatch
+    # stopped or that no native effect committed; never inspect/repair Controller.
+    return ApiResponse(
+        200,
+        {
+            "contract_version": 1,
+            "operation": operation,
+            "request_hash": digest,
+            "kind": claim["kind"] if claim else "",
+            "claim_recorded": claim is not None,
+            "result_recorded": result is not None,
+            "partial_commit_possible": claim is not None and result is None,
+            "retry_allowed": False,
+            "controller_reclaim_allowed": False,
+            "observed_at": datetime.now(UTC).isoformat(),
+        },
+    )

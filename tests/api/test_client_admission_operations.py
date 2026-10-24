@@ -49,3 +49,8 @@ def test_task_creation_uses_full_original_authority_scope(monkeypatch):
         api._dispatch(None, request, body, scope)
     assert calls[0]["idempotency_key"] != calls[1]["idempotency_key"]
     assert calls[0]["idempotency_key"] == "admission-v1:first-thread-issuer"
+
+
+def test_observation_endpoint_cannot_dispatch_post():
+    request = RouteRequest("POST", f"/v1/admission-operations/{uuid4()}/observation", body={})
+    assert api.handle_admission_operation(SimpleNamespace(), request).status_code == 405

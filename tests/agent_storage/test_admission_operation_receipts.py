@@ -95,3 +95,41 @@ def test_crash_after_effect_never_reclaims_or_dispatches(isolated_migration_dsn,
         observed = api._handle(app, request, op, op, key)
         assert observed.body["status"] == "unknown"
     assert len(calls) == 1
+
+
+def test_missing_result_observation_is_read_only_and_cannot_prove_no_effect(
+    isolated_migration_dsn, monkeypatch
+):
+    app, request, op, key = fixture(isolated_migration_dsn, monkeypatch)
+    calls = []
+
+    def crash(*args):
+        calls.append(1)
+        raise RuntimeError("possible partial commit")
+
+    monkeypatch.setattr(api, "_dispatch", crash)
+    with pytest.raises(RuntimeError):
+        api._handle(app, request, op, op, key)
+    claim = app.stores.idempotency.get(action=api._CLAIM, idempotency_key=op)
+    read = replace(
+        request,
+        method="GET",
+        body=None,
+        headers={
+            "X-Zebra-Admission-Hash": claim.request_hash,
+        },
+    )
+    for _ in range(2):
+        observed = api._handle(app, read, op, op, key, observation=True)
+        assert observed.status_code == 200
+        assert observed.body["claim_recorded"] is True
+        assert observed.body["result_recorded"] is False
+        assert observed.body["partial_commit_possible"] is True
+        assert observed.body["retry_allowed"] is False
+        assert observed.body["controller_reclaim_allowed"] is False
+        assert observed.body["request_hash"] == claim.request_hash
+        assert "sealed_response" not in observed.body
+    assert calls == [1]
+    assert app.stores.idempotency.get(action=api._RESULT, idempotency_key=op) is None
+    wrong = replace(read, headers={"X-Zebra-Admission-Hash": "0" * 64})
+    assert api._handle(app, wrong, op, op, key, observation=True).status_code == 409
