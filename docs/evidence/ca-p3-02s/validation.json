@@ -1,0 +1,91 @@
+{
+  "task": "CA-P3-02S",
+  "status": "PASS",
+  "at": "2026-10-24T04:37:46.404660+00:00",
+  "base_commit": "543d8c890093df7698e9b700ca07460c626df784",
+  "test_summary": {
+    "passed": 11060,
+    "conditional_skips": 3045,
+    "pytest_seconds": 1230.69,
+    "type_files": 1408,
+    "eval_cases": 30,
+    "file_gate_checked": 3427,
+    "file_violations": 0
+  },
+  "focused": {
+    "passed": 30,
+    "api_cases": 14,
+    "real_owned_postgres_cases": 16,
+    "skips": 0
+  },
+  "proof_boundary": {
+    "only_new_protocol": "atomic-surface/1",
+    "kinds": [
+      "surface_open",
+      "surface_mount"
+    ],
+    "atomic_effects_and_original_result": true,
+    "execution_lock_free_and_durable_stop_required": true,
+    "pending_never_proves_noncommit": true,
+    "post_start_proof": "Only new same-PG surface transaction fenced before commit; not legacy/Task/Worker or external effects",
+    "legacy_proof": false,
+    "absent_claim_proof": false,
+    "unknown_auto_retry": false,
+    "controller_reclaim": false,
+    "clears_pending": false,
+    "hostgrant_audit_claim_fence_writes_excluded_from_business_noncommit": true
+  },
+  "candidate_joint": "Actual owned SDK/OIDC/signed cloud/Worker Chromium and WebKit started SQL201/pending-no-proof/rollback/original GET proof recovery passed; diagnostic before producer publication, not final pinned acceptance",
+  "preservation": {
+    "old_tracked_files": 4690,
+    "old_unchanged_files": 4682,
+    "changed_old_paths": [
+      "PROGRESS.md",
+      "WORKLOG.md",
+      "apps/api/src/zebra_agent_api/client_admission_operations.py",
+      "apps/api/src/zebra_agent_api/client_admission_termination.py",
+      "docs/AGENT_TASKS.md",
+      "docs/实施任务拆解与阶段验收.md",
+      "task_plan.md",
+      "tests/api/test_client_admission_operations.py"
+    ],
+    "issued_migrations_history_coverage_unchanged": true,
+    "frontend_mock_unchanged": true
+  },
+  "deployment": false,
+  "production_migration": false,
+  "main_merge": false,
+  "production_ha_verified": false,
+  "logs": {
+    "ca-p3-02s-test.log": {
+      "path": "/Users/lukeding/.codex/tmp/ca-p3-02s-test.log",
+      "sha256": "2eaeb31ab2d954ccd9b6ba301fb32ffec07a783f9ee1f420301d2e69fd5bd744"
+    },
+    "ca-p3-02s-focused.log": {
+      "path": "/Users/lukeding/.codex/tmp/ca-p3-02s-focused.log",
+      "sha256": "2d44ef0470751b537a67361fcb168fc941afdf8f0bd1b1abc0f2fb916582dc69"
+    },
+    "ca-p3-02s-check-staged.log": {
+      "path": "/Users/lukeding/.codex/tmp/ca-p3-02s-check-staged.log",
+      "sha256": "2c260de1ca62b86312792bf47d3fb658d965bb47b6f0c6572ccfeb249de54cd4"
+    },
+    "ca-p3-02s-check-final.log": {
+      "path": "/Users/lukeding/.codex/tmp/ca-p3-02s-check-final.log",
+      "sha256": "2c260de1ca62b86312792bf47d3fb658d965bb47b6f0c6572ccfeb249de54cd4"
+    }
+  },
+  "commands": [
+    {
+      "target": "real-PG focused",
+      "exit": 0
+    },
+    {
+      "target": "make test",
+      "exit": 0
+    },
+    {
+      "target": "make check",
+      "exit": 0
+    }
+  ]
+}

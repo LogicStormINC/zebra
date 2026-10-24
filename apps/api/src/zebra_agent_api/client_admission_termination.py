@@ -13,6 +13,15 @@ def terminate_admission(
     from zebra_agent_api.client_admission_operations import _authorize
 
     store = app.stores.idempotency
+    if request.path.endswith("/atomic-termination"):
+        from agent_storage.postgres.admission_atomic_surface import observe_atomic_termination
+
+        fence = observe_atomic_termination(
+            store, scoped, digest, write=request.method.upper() == "POST"
+        )
+        denied = _authorize(app, request, meta)
+        response = termination_response(operation, digest, meta["kind"], fence)
+        return denied or ApiResponse(200, {**response.body, "contract_version": 2})
     if request.method.upper() == "POST":
         fence = store.admission_fence(scoped, digest, terminate=True)
     else:
@@ -34,12 +43,12 @@ def terminate_admission(
 
 
 def termination_response(
-    operation: str, digest: str, kind: str, fence: dict[str, str]
+    operation: str, digest: str, kind: str, fence: dict[str, str], *, version: int = 1
 ) -> ApiResponse:
     return ApiResponse(
         200,
         {
-            "contract_version": 1,
+            "contract_version": version,
             "operation": operation,
             "request_hash": digest,
             "kind": kind,

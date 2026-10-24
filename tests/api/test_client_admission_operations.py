@@ -62,3 +62,14 @@ def test_termination_rejects_input_before_storage(body, query):
         "POST", f"/v1/admission-operations/{uuid4()}/termination", body=body, query=query
     )
     assert api.handle_admission_operation(SimpleNamespace(), request).status_code == 400
+
+
+def test_atomic_surface_never_silently_admits_task_creation():
+    request = RouteRequest(
+        "POST",
+        "/unused",
+        headers={"X-Zebra-Admission-Protocol": "atomic-surface/1"},
+        body={"kind": "task_create", "payload": {"execute": False}},
+    )
+    app = SimpleNamespace(stores=SimpleNamespace(idempotency=SimpleNamespace(get=lambda **k: None)))
+    assert api._handle(app, request, str(uuid4()), "owned", bytes(range(32))).status_code == 400

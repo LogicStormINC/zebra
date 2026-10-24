@@ -122,7 +122,9 @@ def handle_admission_operation(app: Any, request: Any) -> ApiResponse | None:
     if not request.path.startswith(_PREFIX):
         return None
     observation = request.path.endswith("/observation")
-    termination = request.path.endswith("/termination")
+    termination = request.path.endswith("/termination") or request.path.endswith(
+        "/atomic-termination"
+    )
     if observation and request.method.upper() != "GET":
         return ApiResponse(405, {"status": "method_not_allowed"})
     if termination and request.body is not None:
@@ -139,6 +141,7 @@ def handle_admission_operation(app: Any, request: Any) -> ApiResponse | None:
                 request.path.removeprefix(_PREFIX)
                 .removesuffix("/observation")
                 .removesuffix("/termination")
+                .removesuffix("/atomic-termination")
             )
         )
         if observation or termination:
@@ -209,9 +212,14 @@ def _handle(
     if request.method.upper() == "POST" and not termination:
         try:
             protocol = _header(request, "X-Zebra-Admission-Protocol")
-            if protocol not in {"", "pre-dispatch/1"}:
+            if protocol not in {"", "pre-dispatch/1", "atomic-surface/1"}:
                 raise ValueError("unsupported dispatch protocol")
             body = Admission.model_validate(request.body or {})
+            if protocol == "atomic-surface/1":
+                from zebra_agent_api.client_admission_atomic import eligible_atomic_surface
+
+                if body.kind == "task_create" or not eligible_atomic_surface(app):
+                    raise ValueError("atomic surface requires exact same PG ports")
             _bounded_numbers(body.payload)
             if body.kind == "task_create":
                 if body.task or body.run or body.payload.get("execute") is not False:
@@ -225,6 +233,7 @@ def _handle(
                     **body.model_dump(),
                     "key_hash": key_hash,
                     "credential_hash": credential_hash,
+                    **({"dispatch_protocol": protocol} if protocol == "atomic-surface/1" else {}),
                 }
             )
         except ValueError:
@@ -248,7 +257,11 @@ def _handle(
             from zebra_agent_api.client_admission_termination import termination_response
 
             return denied or termination_response(
-                operation, digest, "", {"state": "not_observed", "recorded_at": ""}
+                operation,
+                digest,
+                "",
+                {"state": "not_observed", "recorded_at": ""},
+                version=2 if request.path.endswith("/atomic-termination") else 1,
             )
         return denied or (
             _observation(operation, digest, None, None)
@@ -297,29 +310,15 @@ def _handle(
                     return ApiResponse(
                         200, {"status": "unknown", "operation": operation, "request_hash": digest}
                     )
-            # ponytail: existing admission can partially commit. A crash here remains
-            # unknown forever until an original result exists; never take over/retry.
-            response = _dispatch(app, request, body, scoped)
-            raw = json.dumps(response.body, sort_keys=True, separators=(",", ":")).encode()
-            if len(raw) > 131072:
-                return ApiResponse(503, {"status": "unknown", "operation": operation})
-            iv = os.urandom(12)
-            sealed = base64.b64encode(iv + AESGCM(key).encrypt(iv, raw, digest.encode())).decode()
-            store.save(
-                new_idempotency_record(
-                    action=_RESULT,
-                    idempotency_key=scoped,
-                    request_hash=digest,
-                    status_code=200,
-                    response_body={
-                        "status": "completed",
-                        "operation": operation,
-                        "request_hash": digest,
-                        "response_status": response.status_code,
-                        "sealed_response": sealed,
-                    },
-                )
-            )
+            if meta.get("dispatch_protocol") == "atomic-surface/1":
+                from zebra_agent_api.client_admission_atomic import execute_atomic_surface
+
+                execute_atomic_surface(app, request, body, scoped, key, digest, operation)
+            else:
+                # Legacy partial commits and their original receipts remain unchanged.
+                response = _dispatch(app, request, body, scoped)
+                if not _persist_result(store, response, operation, scoped, key, digest):
+                    return ApiResponse(503, {"status": "unknown", "operation": operation})
     result = store.get(action=_RESULT, idempotency_key=scoped)
     denied = _authorize(app, request, meta)
     if denied is not None:
@@ -334,6 +333,32 @@ def _handle(
             "request_hash": digest,
         },
     )
+
+
+def _persist_result(
+    store: Any, response: ApiResponse, operation: str, scoped: str, key: bytes, digest: str
+) -> bool:
+    raw = json.dumps(response.body, sort_keys=True, separators=(",", ":")).encode()
+    if len(raw) > 131072:
+        return False
+    iv = os.urandom(12)
+    sealed = base64.b64encode(iv + AESGCM(key).encrypt(iv, raw, digest.encode())).decode()
+    store.save(
+        new_idempotency_record(
+            action=_RESULT,
+            idempotency_key=scoped,
+            request_hash=digest,
+            status_code=200,
+            response_body={
+                "status": "completed",
+                "operation": operation,
+                "request_hash": digest,
+                "response_status": response.status_code,
+                "sealed_response": sealed,
+            },
+        )
+    )
+    return True
 
 
 def _request_hash(value: dict[str, Any]) -> str:
