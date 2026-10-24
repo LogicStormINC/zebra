@@ -325,6 +325,12 @@ def load_task_binding(
     database = PostgresDatabase(
         dsn, deployment_namespace=deployment_namespace, task_io_connections=task_io_connections
     )
+    from agent_storage.postgres.work_unit import borrow_work_unit
+
+    unit = borrow_work_unit((dsn, deployment_namespace))
+    if unit is not None:
+        with unit as connection:
+            return _read_task_binding(connection, deployment_namespace, task_id)
     with database.connect_task_io() as connection:
         connection.execute("SET TRANSACTION READ ONLY")
         return _read_task_binding(connection, deployment_namespace, task_id)

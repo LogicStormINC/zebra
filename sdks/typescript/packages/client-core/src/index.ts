@@ -1,3 +1,5 @@
+export {prepareInitialClientSurface} from "./initial_surface.ts";
+import {initialSurfaceMetadata} from "./initial_surface.ts";
 export { createAuthenticatedRuntime, type AuthenticatedRuntimeOptions } from "./auth_lifecycle.ts";
 export { createBFFAuth, type BFFAuthState } from "./bff_auth.ts";
 export { createCommandRecoveryInbox, type PendingRequest, type PendingRequestsPage, type UnknownHandling } from "./request_discovery.ts";
@@ -27,42 +29,8 @@ export { canonicalDigest } from "./canonical_digest.ts";
 export { MountedActionRegistry, type ClientActionHandler } from "./action_registry.ts";
 export { ClientRuntimeError } from "./errors.ts";
 export { UiRevisionClock } from "./runtime_state.ts";
-export interface MountOptions {
-  frontendAppId: string;
-  profileRevision: number;
-  profileDigest: string;
-  mountedActions: readonly string[];
-  mountedReadables?: readonly string[];
-}
-export interface ClientRuntimeDependencies extends StreamObserverOptions {
-  fetchImpl: typeof fetch;
-  baseUrl: string;
-  clientSessionId: string;
-  sessionCredential: string;
-  mode?: "legacy" | undefined;
-  controllerFenceToken?: string | undefined;
-  taskId?: string | undefined;
-  runId?: string | undefined;
-  runBindingId?: string | undefined;
-  clientBindingDigest?: string | undefined;
-  actionContractDigests?: Readonly<Record<string, string>> | undefined;
-  initialUiRevision?: number | undefined;
-  streamUrl?: string | undefined;
-  storage?: Storage | undefined;
-}
-/** Preserve the original required-secret DI type for existing server/legacy consumers. */
-export type BrowserRuntimeDependencies = ClientRuntimeDependencies | (
-  Omit<ClientRuntimeDependencies, "mode" | "sessionCredential" | "controllerFenceToken" | "streamUrl"> & {
-    mode: "bff";
-    controller: boolean;
-    surfaceMetadataVersion?: 1 | undefined;
-    clientStateVersion?: 1 | undefined;
-    commandRecoveryVersion?: 1 | undefined;
-    sessionCredential?: never;
-    controllerFenceToken?: never;
-    streamUrl?: never;
-  }
-);
+export type {MountOptions, ClientRuntimeDependencies, BrowserRuntimeDependencies} from "./runtime_dependencies.ts";
+import type {MountOptions, BrowserRuntimeDependencies} from "./runtime_dependencies.ts";
 export type ClientRuntimeStatus = "connecting" | "ready" | "unavailable" | "stopped";
 export class ZebraClientRuntime {
   readonly registry = new MountedActionRegistry();
@@ -163,6 +131,16 @@ export class ZebraClientRuntime {
       }
     } catch (error) { if (sync) this.disconnect(); throw error; }
     finally { this.mounting = false; }
+  }
+
+  /** Adopt the original atomic admission. Never sends mount or rotates Controller. */
+  adoptInitialSurface(value: unknown, options: MountOptions): void {
+    if (this.stopped || this.mounting || this.bindingRevision || this.mountedProfileDigest || this.commandRecovery?.pending().length)
+      throw new ClientRuntimeError("initial_surface_invalid", "initial binding already used or unresolved");
+    const metadata = initialSurfaceMetadata(value, options, this.deps, this.uiRevision.current, this.registry.names(), [...this.readableNames]);
+    this.bindingRevision = metadata.binding_revision;
+    this.mountedProfileDigest = options.profileDigest;
+    this.readableSurface = {frontendAppId: options.frontendAppId, clientSessionId: this.deps.clientSessionId, taskId: this.deps.taskId!, runId: this.deps.runId!, metadata};
   }
 
   /** Coalesce one React commit into one initial/narrowing mount snapshot. */

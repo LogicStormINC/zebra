@@ -43,6 +43,8 @@ def execute_atomic_surface(
 
     if _header(request, "X-Zebra-Admission-Protocol") == "atomic-task-run/1":
         protocol = "atomic-task-run/1"
+    if _header(request, "X-Zebra-Admission-Protocol") == "atomic-task-run-surface/1":
+        protocol = "atomic-task-run-surface/1"
     prepared = None
     if protocol in {"atomic-task/1", "atomic-task-run/1"}:
         from zebra_agent_api.client_admission_task import prepare_atomic_task
@@ -50,6 +52,12 @@ def execute_atomic_surface(
         prepared = prepare_atomic_task(
             app, request, body, scoped, initial_run=protocol == "atomic-task-run/1"
         )
+        if prepared is None:
+            return
+    if protocol == "atomic-task-run-surface/1":
+        from zebra_agent_api.client_admission_task_surface import prepare_initial_surface
+
+        prepared = prepare_initial_surface(app, request, body, scoped)
         if prepared is None:
             return
     if not start_atomic_surface(store, scoped, digest, protocol=protocol):

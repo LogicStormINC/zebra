@@ -38,8 +38,12 @@ class PostgresProjectionStore(ProjectionStorePort):
             )
 
     def get_session(self, session_id: SessionId) -> Session | None:
-        with self._database.connect_task_io() as connection:
-            connection.execute("SET TRANSACTION READ ONLY")
+        from agent_storage.postgres.work_unit import borrow_work_unit
+
+        owned = borrow_work_unit((self._database._dsn, self._database.deployment_namespace))
+        with owned if owned is not None else self._database.connect_task_io() as connection:
+            if owned is None:
+                connection.execute("SET TRANSACTION READ ONLY")
             return get_session_in_transaction(
                 connection,
                 self._database.deployment_namespace,
@@ -66,7 +70,7 @@ class PostgresProjectionStore(ProjectionStorePort):
         return SessionStatus(row["status"]) if row is not None else None
 
     def get_session_namespace(self, session_id: SessionId) -> tuple[bool, str | None]:
-        with self._database.connect_task_io() as connection:
+        with self._database.connect_task_io(join_work_unit=True) as connection:
             return read_session_namespace(
                 connection, self._database.deployment_namespace, session_id
             )

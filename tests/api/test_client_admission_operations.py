@@ -141,3 +141,20 @@ def test_first_run_keeps_existing_coverage_default_and_freezes_explicit_identity
     assert event.payload["payload"] == ({} if run_id is None else {"run_id": run_id})
     assert event.sequence == bootstrap.session.current_sequence + 1
     assert body["expected_revision"] == bootstrap.session.current_sequence
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"execute": True},
+        {"task": {"execute": False}, "surface": {}, "input": {}},
+        {"task": {"execute": True}, "surface": {}, "input": {}, "unexpected": {}},
+    ],
+)
+def test_initial_surface_rejects_invalid_envelope_without_ports(payload):
+    from zebra_agent_api.client_admission_task_surface import validate_initial_surface
+
+    with pytest.raises(ValueError):
+        validate_initial_surface(
+            SimpleNamespace(), api.Admission(kind="task_create", run="owned-run", payload=payload)
+        )

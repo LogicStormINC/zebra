@@ -48,7 +48,7 @@ def _authorize(app: Any, request: Any, meta: dict[str, Any]) -> ApiResponse | No
     denied = host_list_context_response(context, request.verified_host_grant)
     if denied is not None:
         return denied
-    if meta.get("dispatch_protocol") == "atomic-task-run/1":
+    if meta.get("dispatch_protocol") in {"atomic-task-run/1", "atomic-task-run-surface/1"}:
         runs = [ref.resource_id for ref in context.resource_refs if ref.resource_type == "run"]
         if runs != [meta["run"]]:
             return ApiResponse(403, {"status": "run_authority_required"})
@@ -62,7 +62,10 @@ def _authorize(app: Any, request: Any, meta: dict[str, Any]) -> ApiResponse | No
         )
         if denied is not None:
             return denied
-    if meta["kind"] != "task_create":
+    if (
+        meta["kind"] != "task_create"
+        or meta.get("dispatch_protocol") == "atomic-task-run-surface/1"
+    ):
         platform = app.client_platform
         if platform is None or platform.frontend_capabilities is None:
             return ApiResponse(503, {"status": "unavailable"})
@@ -129,7 +132,9 @@ def handle_admission_operation(app: Any, request: Any) -> ApiResponse | None:
     termination = (
         request.path.endswith("/termination")
         or request.path.endswith("/atomic-termination")
-        or request.path.endswith(("/task-termination", "/task-run-termination"))
+        or request.path.endswith(
+            ("/task-termination", "/task-run-termination", "/task-surface-termination")
+        )
     )
     if observation and request.method.upper() != "GET":
         return ApiResponse(405, {"status": "method_not_allowed"})
@@ -150,6 +155,7 @@ def handle_admission_operation(app: Any, request: Any) -> ApiResponse | None:
                 .removesuffix("/atomic-termination")
                 .removesuffix("/task-termination")
                 .removesuffix("/task-run-termination")
+                .removesuffix("/task-surface-termination")
             )
         )
         if observation or termination:
@@ -226,6 +232,7 @@ def _handle(
                 "atomic-surface/1",
                 "atomic-task/1",
                 "atomic-task-run/1",
+                "atomic-task-run-surface/1",
             }:
                 raise ValueError("unsupported dispatch protocol")
             body = Admission.model_validate(request.body or {})
@@ -238,10 +245,14 @@ def _handle(
                 from zebra_agent_api.client_admission_task import validate_atomic_task
 
                 validate_atomic_task(app, body, initial_run=protocol == "atomic-task-run/1")
+            if protocol == "atomic-task-run-surface/1":
+                from zebra_agent_api.client_admission_task_surface import validate_initial_surface
+
+                validate_initial_surface(app, body)
             _bounded_numbers(body.payload)
             if body.kind == "task_create":
                 if body.task or (
-                    protocol != "atomic-task-run/1"
+                    protocol not in {"atomic-task-run/1", "atomic-task-run-surface/1"}
                     and (body.run or body.payload.get("execute") is not False)
                 ):
                     raise ValueError("only explicit non-executing creation is supported")
@@ -256,14 +267,22 @@ def _handle(
                     "credential_hash": credential_hash,
                     **(
                         {"dispatch_protocol": protocol}
-                        if protocol in {"atomic-surface/1", "atomic-task/1", "atomic-task-run/1"}
+                        if protocol
+                        in {
+                            "atomic-surface/1",
+                            "atomic-task/1",
+                            "atomic-task-run/1",
+                            "atomic-task-run-surface/1",
+                        }
                         else {}
                     ),
                 }
             )
         except ValueError:
             return ApiResponse(400, {"status": "invalid_admission_operation"})
-        mount = body.payload.get("mount", {})
+        mount = (
+            body.payload["surface"] if protocol == "atomic-task-run-surface/1" else body.payload
+        ).get("mount", {})
         if not isinstance(mount, dict):
             return ApiResponse(400, {"status": "invalid_admission_operation"})
         meta = {
@@ -286,7 +305,9 @@ def _handle(
                 digest,
                 "",
                 {"state": "not_observed", "recorded_at": ""},
-                version=4
+                version=5
+                if request.path.endswith("/task-surface-termination")
+                else 4
                 if request.path.endswith("/task-run-termination")
                 else 3
                 if request.path.endswith("/task-termination")
@@ -343,6 +364,7 @@ def _handle(
                 "atomic-surface/1",
                 "atomic-task/1",
                 "atomic-task-run/1",
+                "atomic-task-run-surface/1",
             }:
                 from zebra_agent_api.client_admission_atomic import execute_atomic_surface
 

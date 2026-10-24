@@ -1,3 +1,6 @@
+# CA-P3-02W verified / Review
+See [CA-P3-02W](docs/CA-P3-02W_initial_ui_run.md). Initial UI/Readable/RUN commit boundary fixed; Review; make test 11075 passed/3052 conditional skips; make check passed;45 focused real-PG/API cases (no skips); SDK full check and 153 tests passed. Candidate Chromium/WebKit same NEW initial UI/Readable/RUN -> Worker/approval/DOM/receipt/terminal and v5 rollback passed; old SDK/UI/U compatibility candidate passed. Published-source consumer acceptance recorded separately.
+
 # CA-P3-02V full gates complete / Review
 See [CA-P3-02V](docs/CA-P3-02V_task_run_worker.md). Admission, Worker result and termination proof are separate; Review; fresh make test 11072 passed/3050 conditional skips; make check passed; 40 focused real-PG/API cases passed without skips; candidate Chromium/WebKit new protocol canonical RUN to actual Worker terminal answer passed. Final published-source consumer joint is separate.
 

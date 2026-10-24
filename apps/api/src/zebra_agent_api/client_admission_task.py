@@ -55,7 +55,13 @@ def validate_atomic_task(app: Any, body: Any, *, initial_run: bool = False) -> N
 
 
 def prepare_atomic_task(
-    app: Any, request: Any, body: Any, scoped: str, *, initial_run: bool = False
+    app: Any,
+    request: Any,
+    body: Any,
+    scoped: str,
+    *,
+    initial_run: bool = False,
+    defer_initial_run: bool = False,
 ) -> Callable[[], ApiResponse] | None:
     validate_atomic_task(app, body, initial_run=initial_run)
     parsed = parse_create_session_payload(body.payload)
@@ -90,7 +96,7 @@ def prepare_atomic_task(
             host_context=request.host_context,
             definition_snapshot=snapshot,
             verified_host_grant=request.verified_host_grant,
-            initial_run_id=body.run if initial_run else None,
+            initial_run_id=body.run if initial_run and not defer_initial_run else None,
             public_idempotency_key=original_key,
             **kwargs,
         )
@@ -102,7 +108,7 @@ def prepare_atomic_task(
                 active_segment_sequence=response.body["current_sequence"],
                 idempotency_key=original_key,
             )
-            if initial_run:
+            if initial_run and not defer_initial_run:
                 response.body.update(
                     run_id=body.run,
                     current_sequence=cast(int, response.body["current_sequence"]) + 1,

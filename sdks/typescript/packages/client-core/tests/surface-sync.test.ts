@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { ZebraClientRuntime } from "../src/index.ts";
+import { ZebraClientRuntime, MountedActionRegistry, prepareInitialClientSurface } from "../src/index.ts";
 
 const session = "11111111-1111-4111-8111-111111111111";
 const task = "22222222-2222-4222-8222-222222222222";
@@ -110,4 +110,29 @@ test("mount response parsing is bounded, exact and no late success revives a dis
   const rt = ZebraClientRuntime.fromConfig(config(async () => new Promise(resolve => { done = resolve; })));
   const mount = rt.mount(options); await new Promise(resolve => setTimeout(resolve, 0)); rt.disconnect();
   done(Response.json(metadata(1))); await mount; assert.equal(rt.getStatus(), "stopped");
+});
+
+test("adopt original atomic Surface without any network or Controller rotation", async () => {
+  let requests=0;
+  const deps={...config(async()=>{requests++;throw Error('must not mount');}),initialUiRevision:1,clientBindingDigest:'1'.repeat(64)};
+  const runtime=new ZebraClientRuntime(deps);
+  runtime.registry.mount(action,()=>({opened:true}));
+  runtime.adoptInitialSurface(metadata(1), options);
+  assert.equal(requests,0);
+  assert.throws(()=>runtime.adoptInitialSurface(metadata(1),options));
+  const mismatch=new ZebraClientRuntime(deps);mismatch.registry.mount(action,()=>({}));
+  assert.throws(()=>mismatch.adoptInitialSurface(metadata(2),options));
+  assert.throws(()=>mismatch.adoptInitialSurface({...metadata(1),controller_fence_token:'forged'},options));
+  const empty=new ZebraClientRuntime(deps);assert.throws(()=>empty.adoptInitialSurface(metadata(1),options));
+});
+
+test("initial preparation freezes registered names and Readable JSON before dispatch", () => {
+ const registry=new MountedActionRegistry();registry.mount(action,()=>({opened:true}));
+ const values={"app.ui.route":{route:"/item/1"}};
+ const prepared=prepareInitialClientSurface(registry,values);values["app.ui.route"].route="/item/2";
+ assert.deepEqual(prepared.input.state,{"app.ui.route":{route:"/item/1"}});
+ assert.deepEqual(prepared.mountedActions,[action]);
+ assert.throws(()=>prepareInitialClientSurface(registry,{"app.ui.route":{n:NaN}}));
+ assert.throws(()=>prepareInitialClientSurface(registry,{"app.ui.route":{n:1.5}}));
+ assert.throws(()=>prepareInitialClientSurface(registry,{"invalid":{}}));
 });
