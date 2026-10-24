@@ -17285,3 +17285,6 @@ CA-P3-01F最终完整门禁：11016 passed/3022 skipped，1240.50秒；make chec
 OD-P3-02D本地候选16项联合通过，最终以发布SHA重跑记录为准。未部署或生产迁移。
 
 最终修正源5c0a6d87完整复验：make test11019 passed/3022 skipped（1191.37s）、make check1399类型文件/30eval、41专项通过。Native旧4649文件保持，source仅新v3准入一处共享修正。final-validation.json保留初次schema/实际Worker拒绝和中断复验记录，原validation.json不覆盖。限定功能分支FF推送后由Overdoze完成远端pin终验；没有部署或生产迁移。
+
+## 2026-10-23 CA-P3-02P
+核对L/O后缺口，Ready登记并领取，独立叠加P分支。原Task幂等不足以恢复mount的原credential/fence；增加一次claim及密文结果，保留部分提交unknown。候选真实签名云/双浏览器三处原收据恢复通过；完整test11056通过/3031条件跳过、check1404类型/30eval通过，PG/API12通过。作用域复核后重跑完整门禁；无生产操作。

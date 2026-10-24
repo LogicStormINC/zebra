@@ -8065,3 +8065,6 @@ APIs/Search/TLS/MCP sessions and original partialRuns preserved;17heads/127snaps
 model-tool counts unchanged,0leases/pending. No model/search/remoteMCP/newRun,
 Trench/prompt/rounds/reuse change,push or remote deploy. Real-page speedup remains
 unmeasured. See docs/CLOUD_MCP_PREPARE_TIMING.md.
+
+## CA-P3-02P 原 Task/surface 操作（2026-10-23）
+复用PG不可变claim/result，当前Host/Task/Profile授权及加密原响应；原UUID GET只观察，不重发/重领Controller。候选跨BFF三处丢响应联合通过，make test11056通过/3031条件跳过、make check1404类型/30eval通过；发布后消费者固定pin证据另记；[合同](docs/CA-P3-02P_admission_operations.md)。既有部分提交窗口仍保留unknown，无迁移/部署/历史或Coverage重写。

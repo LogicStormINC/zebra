@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from zebra_agent_api.routes import RouteRequest
 
 from zebra_agent_api.app import ZebraAgentApi
+from zebra_agent_api.client_admission_operations import handle_admission_operation
 from zebra_agent_api.client_effect_receipts import (
     get_client_effect,
     list_pending_client_effects,
@@ -38,6 +39,9 @@ def handle_client_runtime_route(
     app: ZebraAgentApi,
     request: RouteRequest,
 ) -> ApiResponse | None:
+    admission = handle_admission_operation(app, request)
+    if admission is not None:
+        return admission
     path = request.path
     method = request.method.upper()
     if path == _SESSION_PREFIX and method == "POST":

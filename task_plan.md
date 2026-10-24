@@ -1433,3 +1433,10 @@ hashes stable. Consolidated review closed original-key GC binding; lost ledger
 does not authorize mutable-record deletion or automatic empty-ledger reset.
 Prepare ownedcommit/localFF preserving primary17dirtyfiles, then claim CONTROL.
 Production cutover OFF; final actual SQL80/browser/fleet remains OPEN. No push/deploy.
+
+## CA-P3-02P
+- [x] 审核L/O依赖、登记任务/owner/Owned paths/分支。
+- [x] 原claim/result、精确scope、加密原响应、GET-only与PG/API回归。
+- [x] make test/check完整复验、证据/正式文档。
+- [ ] 提交推送并核对远端SHA。
+- [ ] 消费者M固定发布来源后的联合验收（由独立消费者记录）。
