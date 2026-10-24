@@ -39,11 +39,17 @@ def execute_atomic_surface(
 
     store = app.stores.idempotency
     protocol = "atomic-task/1" if body.kind == "task_create" else "atomic-surface/1"
+    from zebra_agent_api.client_admission_operations import _header
+
+    if _header(request, "X-Zebra-Admission-Protocol") == "atomic-task-run/1":
+        protocol = "atomic-task-run/1"
     prepared = None
-    if protocol == "atomic-task/1":
+    if protocol in {"atomic-task/1", "atomic-task-run/1"}:
         from zebra_agent_api.client_admission_task import prepare_atomic_task
 
-        prepared = prepare_atomic_task(app, request, body, scoped)
+        prepared = prepare_atomic_task(
+            app, request, body, scoped, initial_run=protocol == "atomic-task-run/1"
+        )
         if prepared is None:
             return
     if not start_atomic_surface(store, scoped, digest, protocol=protocol):

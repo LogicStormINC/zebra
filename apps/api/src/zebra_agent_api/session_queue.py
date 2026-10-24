@@ -35,7 +35,15 @@ def create_queued_session(
     verified_host_grant: VerifiedHostGrant | None = None,
     coverage_configuration_digest: str | None = None,
     public_idempotency_key: str | None = None,
+    initial_run_id: str | None = None,
 ) -> ApiResponse:
+    if initial_run_id is not None and (
+        not admission_dsn
+        or not admission_namespace
+        or parsed["execute"] is not True
+        or "coverage_admission" in parsed
+    ):
+        raise ValueError("atomic first RUN requires non-Coverage PG admission")
     if "coverage_admission" in parsed and coverage_configuration_digest is None:
         preflight = parse_create_session_payload(dict(parsed))
         if isinstance(preflight, ApiResponse):
@@ -108,10 +116,10 @@ def create_queued_session(
         },
     )
     response.body["idempotency_key"] = idempotency_key
-    if coverage_configuration_digest is not None:
+    if coverage_configuration_digest is not None or initial_run_id is not None:
         from zebra_agent_api.coverage_http_admission import initial_run
 
-        command_event, command_body = initial_run(bootstrap, idempotency_key)
+        command_event, command_body = initial_run(bootstrap, idempotency_key, run_id=initial_run_id)
         events = (*events, command_event)
         response.body.update(status="queued", executed=False, command=command_body)
         response.body["idempotency_key"] = public_idempotency_key

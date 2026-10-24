@@ -92,3 +92,52 @@ def test_atomic_task_rejects_external_effects_before_ports(extra):
     body = api.Admission(kind="task_create", payload={"execute": False, **extra})
     with pytest.raises(ValueError):
         validate_atomic_task(SimpleNamespace(), body)
+
+
+@pytest.mark.parametrize(
+    "payload,run",
+    [
+        ({"execute": False}, "run:one"),
+        ({"execute": True}, ""),
+        ({"execute": True, "attachments": ["x"]}, "run:one"),
+    ],
+)
+def test_atomic_task_run_refuses_before_any_port(payload, run):
+    from zebra_agent_api.client_admission_task import validate_atomic_task
+
+    with pytest.raises(ValueError):
+        validate_atomic_task(
+            SimpleNamespace(),
+            api.Admission(kind="task_create", run=run, payload=payload),
+            initial_run=True,
+        )
+
+
+def test_atomic_task_run_requires_current_exact_signed_run(monkeypatch):
+    monkeypatch.setattr(api, "host_list_context_response", lambda *a: None)
+    request = SimpleNamespace(
+        host_context=SimpleNamespace(
+            resource_refs=[SimpleNamespace(resource_type="run", resource_id="other")]
+        ),
+        verified_host_grant=object(),
+    )
+    response = api._authorize(
+        None,
+        request,
+        {"kind": "task_create", "dispatch_protocol": "atomic-task-run/1", "run": "run:one"},
+    )
+    assert response.status_code == 403
+
+
+@pytest.mark.parametrize("run_id", [None, "run:exact"])
+def test_first_run_keeps_existing_coverage_default_and_freezes_explicit_identity(run_id):
+    from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
+    from zebra_agent_api.coverage_http_admission import initial_run
+
+    bootstrap = SessionBootstrapService().build(
+        SessionBootstrapCommand(title="owned", user_input="x", workspace_root="/tmp/owned")
+    )
+    event, body = initial_run(bootstrap, "owned-key", run_id=run_id)
+    assert event.payload["payload"] == ({} if run_id is None else {"run_id": run_id})
+    assert event.sequence == bootstrap.session.current_sequence + 1
+    assert body["expected_revision"] == bootstrap.session.current_sequence

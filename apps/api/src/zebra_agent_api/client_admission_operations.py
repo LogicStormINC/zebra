@@ -48,6 +48,10 @@ def _authorize(app: Any, request: Any, meta: dict[str, Any]) -> ApiResponse | No
     denied = host_list_context_response(context, request.verified_host_grant)
     if denied is not None:
         return denied
+    if meta.get("dispatch_protocol") == "atomic-task-run/1":
+        runs = [ref.resource_id for ref in context.resource_refs if ref.resource_type == "run"]
+        if runs != [meta["run"]]:
+            return ApiResponse(403, {"status": "run_authority_required"})
     if meta["kind"] != "task_create":
         denied = task_access_response(
             app,
@@ -125,7 +129,7 @@ def handle_admission_operation(app: Any, request: Any) -> ApiResponse | None:
     termination = (
         request.path.endswith("/termination")
         or request.path.endswith("/atomic-termination")
-        or request.path.endswith("/task-termination")
+        or request.path.endswith(("/task-termination", "/task-run-termination"))
     )
     if observation and request.method.upper() != "GET":
         return ApiResponse(405, {"status": "method_not_allowed"})
@@ -145,6 +149,7 @@ def handle_admission_operation(app: Any, request: Any) -> ApiResponse | None:
                 .removesuffix("/termination")
                 .removesuffix("/atomic-termination")
                 .removesuffix("/task-termination")
+                .removesuffix("/task-run-termination")
             )
         )
         if observation or termination:
@@ -215,7 +220,13 @@ def _handle(
     if request.method.upper() == "POST" and not termination:
         try:
             protocol = _header(request, "X-Zebra-Admission-Protocol")
-            if protocol not in {"", "pre-dispatch/1", "atomic-surface/1", "atomic-task/1"}:
+            if protocol not in {
+                "",
+                "pre-dispatch/1",
+                "atomic-surface/1",
+                "atomic-task/1",
+                "atomic-task-run/1",
+            }:
                 raise ValueError("unsupported dispatch protocol")
             body = Admission.model_validate(request.body or {})
             if protocol == "atomic-surface/1":
@@ -223,13 +234,16 @@ def _handle(
 
                 if body.kind == "task_create" or not eligible_atomic_surface(app):
                     raise ValueError("atomic surface requires exact same PG ports")
-            if protocol == "atomic-task/1":
+            if protocol in {"atomic-task/1", "atomic-task-run/1"}:
                 from zebra_agent_api.client_admission_task import validate_atomic_task
 
-                validate_atomic_task(app, body)
+                validate_atomic_task(app, body, initial_run=protocol == "atomic-task-run/1")
             _bounded_numbers(body.payload)
             if body.kind == "task_create":
-                if body.task or body.run or body.payload.get("execute") is not False:
+                if body.task or (
+                    protocol != "atomic-task-run/1"
+                    and (body.run or body.payload.get("execute") is not False)
+                ):
                     raise ValueError("only explicit non-executing creation is supported")
             elif not body.run or any(ord(c) < 33 for c in body.run):
                 raise ValueError("invalid run")
@@ -242,7 +256,7 @@ def _handle(
                     "credential_hash": credential_hash,
                     **(
                         {"dispatch_protocol": protocol}
-                        if protocol in {"atomic-surface/1", "atomic-task/1"}
+                        if protocol in {"atomic-surface/1", "atomic-task/1", "atomic-task-run/1"}
                         else {}
                     ),
                 }
@@ -272,7 +286,9 @@ def _handle(
                 digest,
                 "",
                 {"state": "not_observed", "recorded_at": ""},
-                version=3
+                version=4
+                if request.path.endswith("/task-run-termination")
+                else 3
                 if request.path.endswith("/task-termination")
                 else (2 if request.path.endswith("/atomic-termination") else 1),
             )
@@ -323,7 +339,11 @@ def _handle(
                     return ApiResponse(
                         200, {"status": "unknown", "operation": operation, "request_hash": digest}
                     )
-            if meta.get("dispatch_protocol") in {"atomic-surface/1", "atomic-task/1"}:
+            if meta.get("dispatch_protocol") in {
+                "atomic-surface/1",
+                "atomic-task/1",
+                "atomic-task-run/1",
+            }:
                 from zebra_agent_api.client_admission_atomic import execute_atomic_surface
 
                 execute_atomic_surface(app, request, body, scoped, key, digest, operation)

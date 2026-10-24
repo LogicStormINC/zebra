@@ -1,3 +1,5 @@
+CA-P3-02U: claimed Luke Ding; first RUN admission only, never post-commit Worker noncommit proof. Boundary in docs/CA-P3-02U_atomic_task_run.md; Native full gates and40 focused passed; candidate joint passed; publication and fixed-source consumer joint separately recorded.
+
 CA-P3-02T：Task原子准入与安全终止，依赖S/P已发布；协议和证明范围先固定，复用原事务，完整门禁、32定向及候选双浏览器通过；发布后消费者固定源联合另记。详见docs/CA-P3-02T_atomic_task_termination.md。
 
 ## CA-P3-02S：已开始的原子Surface准入终止（验证通过，Review）

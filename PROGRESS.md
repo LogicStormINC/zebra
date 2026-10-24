@@ -1,3 +1,7 @@
+# CA-P3-02U validation complete / Review
+
+See [CA-P3-02U](docs/CA-P3-02U_atomic_task_run.md). Atomic Task/RUN admission boundary fixed before code; Review; make test 11072 passed/3050 conditional skips; make check passed; 40 focused (26 API +14 real PG), no skips; candidate Chromium/WebKit atomic Task joint passed. Published-source consumer joint remains separate.
+
 # CA-P3-02T validation complete / Review
 
 See [CA-P3-02T](docs/CA-P3-02T_atomic_task_termination.md). Atomic Task proof boundary fixed before implementation; Review; make test 11066 passed/3048 conditional skips; make check passed; 32 focused (20 API +12 real PG), no skips; candidate Chromium/WebKit atomic Task joint passed. Published-source consumer joint remains separate.

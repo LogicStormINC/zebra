@@ -1,7 +1,7 @@
 """Prepare bounded Task admission before locks; reuse the existing atomic bootstrap."""
 
 from collections.abc import Callable
-from typing import Any
+from typing import Any, cast
 
 from agent_storage import PostgresControlPlaneStores
 
@@ -12,16 +12,18 @@ from zebra_agent_api.session_payloads import parse_create_session_payload
 from zebra_agent_api.session_queue import create_queued_session
 
 
-def validate_atomic_task(app: Any, body: Any) -> None:
+def validate_atomic_task(app: Any, body: Any, *, initial_run: bool = False) -> None:
     # ponytail: explicit narrow protocol; attachments/MCP/workspace allocation and
     # executing Coverage require separate external-effect protocols, never rollback claims.
     if (
         body.kind != "task_create"
         or body.task
-        or body.run
-        or body.payload.get("execute") is not False
+        or (not initial_run and body.run)
+        or body.payload.get("execute") is not initial_run
     ):
         raise ValueError("atomic Task requires non-executing root creation")
+    if initial_run and (not body.run or any(ord(c) < 33 for c in body.run)):
+        raise ValueError("atomic first RUN requires an exact Run identity")
     if (
         any(
             body.payload.get(k)
@@ -53,9 +55,9 @@ def validate_atomic_task(app: Any, body: Any) -> None:
 
 
 def prepare_atomic_task(
-    app: Any, request: Any, body: Any, scoped: str
+    app: Any, request: Any, body: Any, scoped: str, *, initial_run: bool = False
 ) -> Callable[[], ApiResponse] | None:
-    validate_atomic_task(app, body)
+    validate_atomic_task(app, body, initial_run=initial_run)
     parsed = parse_create_session_payload(body.payload)
     if isinstance(parsed, ApiResponse):
         return None
@@ -88,6 +90,8 @@ def prepare_atomic_task(
             host_context=request.host_context,
             definition_snapshot=snapshot,
             verified_host_grant=request.verified_host_grant,
+            initial_run_id=body.run if initial_run else None,
+            public_idempotency_key=original_key,
             **kwargs,
         )
         if response.status_code == 201:
@@ -98,6 +102,11 @@ def prepare_atomic_task(
                 active_segment_sequence=response.body["current_sequence"],
                 idempotency_key=original_key,
             )
+            if initial_run:
+                response.body.update(
+                    run_id=body.run,
+                    current_sequence=cast(int, response.body["current_sequence"]) + 1,
+                )
         return response
 
     return admit

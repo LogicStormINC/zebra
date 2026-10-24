@@ -1,3 +1,5 @@
+CA-P3-02U: claimed Luke Ding; first RUN admission only, never post-commit Worker noncommit proof. Boundary in docs/CA-P3-02U_atomic_task_run.md; Native full gates and40 focused passed; candidate joint passed; publication and fixed-source consumer joint separately recorded.
+
 # CA-P3-02T current task
 
 Claimed Luke Ding, codex/ca-p3-02t-atomic-task-termination; see docs/CA-P3-02T_atomic_task_termination.md.
