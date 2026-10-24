@@ -1,3 +1,5 @@
+CA-P3-02V: claimed Luke Ding; reuse published U, fresh Native full gates/focused PG and candidate positive Worker joint passed; final published-source consumer acceptance remains separate. See docs/CA-P3-02V_task_run_worker.md.
+
 CA-P3-02U: claimed Luke Ding; first RUN admission only, never post-commit Worker noncommit proof. Boundary in docs/CA-P3-02U_atomic_task_run.md; Native full gates and40 focused passed; candidate joint passed; publication and fixed-source consumer joint separately recorded.
 
 # CA-P3-02T current task

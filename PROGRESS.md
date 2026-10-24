@@ -1,3 +1,6 @@
+# CA-P3-02V full gates complete / Review
+See [CA-P3-02V](docs/CA-P3-02V_task_run_worker.md). Admission, Worker result and termination proof are separate; Review; fresh make test 11072 passed/3050 conditional skips; make check passed; 40 focused real-PG/API cases passed without skips; candidate Chromium/WebKit new protocol canonical RUN to actual Worker terminal answer passed. Final published-source consumer joint is separate.
+
 # CA-P3-02U validation complete / Review
 
 See [CA-P3-02U](docs/CA-P3-02U_atomic_task_run.md). Atomic Task/RUN admission boundary fixed before code; Review; make test 11072 passed/3050 conditional skips; make check passed; 40 focused (26 API +14 real PG), no skips; candidate Chromium/WebKit atomic Task joint passed. Published-source consumer joint remains separate.
