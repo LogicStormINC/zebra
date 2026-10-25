@@ -1,4 +1,5 @@
 "use client";
+export {useZebraInitialSurface,useZebraInitialAction,useZebraInitialReadable,type ZebraInitialSurface} from "./initial_surface.ts";
 import type { CommandRecoveryView } from "@zebra-agent/client-core";
 
 /**

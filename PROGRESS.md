@@ -1,3 +1,6 @@
+# CA-P3-02X verified / Review
+See [CA-P3-02X](docs/CA-P3-02X_react_initial_ui.md). Explicit React preparation, existing Native contract; Review; fresh make test 11075 passed/3052 conditional skips; make check passed; SDK check and156 tests passed, focused React4 passed. Candidate packed React Chromium/WebKit same initial TaskRun/Readable/Worker/approval/DOM/receipt/terminal and real owner unmount passed. Python/Worker/storage/core SDK unchanged; published-source consumer result recorded separately.
+
 # CA-P3-02W verified / Review
 See [CA-P3-02W](docs/CA-P3-02W_initial_ui_run.md). Initial UI/Readable/RUN commit boundary fixed; Review; make test 11075 passed/3052 conditional skips; make check passed;45 focused real-PG/API cases (no skips); SDK full check and 153 tests passed. Candidate Chromium/WebKit same NEW initial UI/Readable/RUN -> Worker/approval/DOM/receipt/terminal and v5 rollback passed; old SDK/UI/U compatibility candidate passed. Published-source consumer acceptance recorded separately.
 

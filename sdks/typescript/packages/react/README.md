@@ -1,3 +1,7 @@
+# 显式初始React Surface（CA-P3-02X）
+
+新增useZebraInitialSurface/useZebraInitialReadable/useZebraInitialAction；capture一次后通过业务BFF原子准入，adopt不发mount、不重领Controller。旧Provider不自动切换。完整交互、StrictMode/unknown/修订边界见[合同](../../../../docs/CA-P3-02X_react_initial_ui.md)。本地准备不是认证或执行证明，不发布npm。
+
 ## Readable value commands (explicit opt-in)
 
 With `mode: "bff", surfaceMetadataVersion: 1, clientStateVersion: 1`, `useZebraReadable(name, value)` copies mounted JSON values and updates/removes them with the Hook lifecycle. `useZebraReadableCommand()` returns a one-attempt `submit({action: "run", expectedRevision, idempotencyKey, input: {messages: []}})` function; `resume` requires `input.resume`. Revision is the native command revision, not UI revision. Accepted means durable intent only. A trusted authenticated business BFF compares the public surface and translates using `nativeReadableCommand`; this helper is not an authentication/authorization server. Native credentials remain server-only. Native schema/redaction/digest/command authority stays unchanged. Do not automatically retry CAS/unknown; reconcile the original native idempotency identity at the BFF. Values are not browser-persisted. Old modes remain names/revision only. See [full contract and boundaries](../../../../docs/CA-P3-02G_readable_submit.md).

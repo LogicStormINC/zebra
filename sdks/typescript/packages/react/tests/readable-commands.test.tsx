@@ -34,3 +34,48 @@ test("StrictMode Hook values follow updates/name changes, commands stay immutabl
   assert.equal(JSON.stringify(dom.window.sessionStorage).includes('/one'),false);
  } finally { await act(async()=>{root.unmount();await Promise.resolve();});dom.window.close(); }
 });
+
+test("initial React Hooks capture once after StrictMode commit and adopt without a remote mount", async () => {
+ const {useZebraInitialSurface,useZebraInitialReadable,useZebraInitialAction}=await import('../src/index.ts');
+ const {ZebraClientRuntime}=await import('@zebra-agent/client-core');const {z}=await import('zod');
+ const dom=new JSDOM('<!doctype html><div id="initial"></div>',{url:'https://business.example/'});
+ Object.assign(globalThis,{window:dom.window,document:dom.window.document,Node:dom.window.Node,HTMLElement:dom.window.HTMLElement});
+ const root=createRoot(dom.window.document.getElementById('initial')!);
+ let surface!:ReturnType<typeof useZebraInitialSurface>;let calls=0;
+ const schema=z.object({});
+ function Panel({route}:{route:string}){surface=useZebraInitialSurface();useZebraInitialReadable(surface,'app.ui.route',{route});useZebraInitialAction(surface,'app.ui.item.open',{parameters:schema,result:schema,handler:()=>({})});return null;}
+ const config={mode:'bff' as const,surfaceMetadataVersion:1 as const,clientStateVersion:1 as const,baseUrl:'/surface',clientSessionId:'11111111-1111-4111-8111-111111111111',taskId:'22222222-2222-4222-8222-222222222222',runId:'run-1',runBindingId:'33333333-3333-4333-8333-333333333333',controller:true,clientBindingDigest:'b'.repeat(64),actionContractDigests:{'app.ui.item.open':'a'.repeat(64)},initialUiRevision:1,fetchImpl:(async()=>{calls++;return Response.json({effects:[]});}) as typeof fetch};
+ const metadata={client_surface_metadata_contract_version:1,profile_digest:'c'.repeat(64),ui_revision:1,mounted_snapshot_digest:'d'.repeat(64),binding_mounted_snapshot_digest:'d'.repeat(64),binding_id:config.runBindingId,binding_digest:config.clientBindingDigest,binding_revision:1,allowed_actions:['app.ui.item.open'],action_contract_digests:config.actionContractDigests,controller:true};
+ const profile={frontendAppId:'fixture-web',profileRevision:1,profileDigest:'c'.repeat(64)};
+ try{
+  await act(async()=>{root.render(createElement(StrictMode,null,createElement(Panel,{route:'/one'})));await Promise.resolve();});
+  assert.equal(calls,0);const captured=surface.capture();assert.deepEqual(captured.input.state,{'app.ui.route':{route:'/one'}});assert.throws(()=>surface.capture());
+  (captured.input.state['app.ui.route'] as Record<string,unknown>).route='/tampered';
+  const runtime=ZebraClientRuntime.fromConfig(config);surface.adopt(runtime,metadata,profile);assert.equal(calls,0);assert.equal(runtime.isStopped,false);
+  assert.throws(()=>surface.adopt(runtime,metadata,profile));assert.equal(runtime.isStopped,false,'duplicate adoption must not disconnect the already owned runtime');
+  const duplicate=ZebraClientRuntime.fromConfig(config);assert.throws(()=>surface.adopt(duplicate,metadata,profile));assert.equal(duplicate.isStopped,true);assert.equal(calls,0,'unadopted duplicate must not release the active Controller');assert.equal(runtime.isStopped,false);
+  await act(async()=>{root.render(createElement(StrictMode,null,createElement(Panel,{route:'/changed'})));await Promise.resolve();});
+  assert.equal(runtime.isStopped,true);assert.equal(calls,1,'drift releases only the known adopted owner');assert.throws(()=>surface.capture());
+  const late=ZebraClientRuntime.fromConfig(config);assert.throws(()=>surface.adopt(late,metadata,profile));assert.equal(calls,1);
+ }finally{await act(async()=>{root.unmount();await Promise.resolve();});dom.window.close();}
+});
+
+test("initial Hook owner rejects capture before commit and late adoption after unmount", async()=>{
+ const {useZebraInitialSurface,useZebraInitialReadable}=await import('../src/index.ts');
+ const {ZebraClientRuntime}=await import('@zebra-agent/client-core');
+ const dom=new JSDOM('<div id="initial"></div>');Object.assign(globalThis,{window:dom.window,document:dom.window.document});const root=createRoot(dom.window.document.getElementById('initial')!);
+ let surface!:ReturnType<typeof useZebraInitialSurface>;let calls=0;
+ function Panel(){surface=useZebraInitialSurface();assert.throws(()=>surface.capture());useZebraInitialReadable(surface,'app.ui.route',{route:'/one'});return null;}
+ await act(async()=>root.render(createElement(StrictMode,null,createElement(Panel))));surface.capture();await act(async()=>{root.unmount();await Promise.resolve();});
+ const runtime=new ZebraClientRuntime({mode:'bff',controller:true,clientSessionId:'owned',baseUrl:'/surface',fetchImpl:(async()=>{calls++;return Response.json({});}) as typeof fetch});
+ assert.throws(()=>surface.adopt(runtime,{}, {frontendAppId:'app',profileRevision:1,profileDigest:'c'.repeat(64)}));assert.equal(runtime.isStopped,true);assert.equal(calls,0);dom.window.close();
+});
+
+test("duplicate initial Readables reject the whole page rather than silently overwriting a Hook", async()=>{
+ const {useZebraInitialSurface,useZebraInitialReadable}=await import('../src/index.ts');
+ const dom=new JSDOM('<div id="duplicate"></div>');Object.assign(globalThis,{window:dom.window,document:dom.window.document});const root=createRoot(dom.window.document.getElementById('duplicate')!);
+ let surface!:ReturnType<typeof useZebraInitialSurface>;
+ function Panel(){surface=useZebraInitialSurface();useZebraInitialReadable(surface,'app.ui.route',{route:'/one'});useZebraInitialReadable(surface,'app.ui.route',{route:'/other'});return null;}
+ try{await assert.rejects(async()=>{await act(async()=>root.render(createElement(StrictMode,null,createElement(Panel))));});assert.throws(()=>surface.capture());}
+ finally{await act(async()=>{root.unmount();await Promise.resolve();});dom.window.close();}
+});
