@@ -1,3 +1,5 @@
+CA-P3-02Y: claimed Luke Ding; public atomic-surface revision contract acceptance, no production Native change; Review; fresh make test 11075 passed/3052 conditional skips; make check passed; unchanged SDK check/156 tests passed. Candidate Chromium/WebKit React first Worker/UI terminal then explicit same-Run Native revision, lost-reply two-BFF GET-only/current mapping CAS passed. Native production/SDK unchanged; final published-source consumer evidence separate. See docs/CA-P3-02Y_explicit_surface_revision.md.
+
 CA-P3-02X: claimed Luke Ding; React explicit capture/adopt, existing W protocol; implementation/full gates and React candidate passed; scoped publication checked separately. See docs/CA-P3-02X_react_initial_ui.md.
 
 CA-P3-02W: claimed Luke Ding; atomic initial UI/Readable/RUN, old protocols retained; implementation/full gates/45 PG-API/153 SDK tests and new/old candidate joints passed; published-source consumer remains separate. See docs/CA-P3-02W_initial_ui_run.md.

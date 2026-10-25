@@ -1,3 +1,6 @@
+# CA-P3-02Y verified / Review
+See [CA-P3-02Y](docs/CA-P3-02Y_explicit_surface_revision.md). Explicit same-Run revision prerequisite; Review; fresh make test 11075 passed/3052 conditional skips; make check passed; unchanged SDK check/156 tests passed. Candidate Chromium/WebKit React first Worker/UI terminal then explicit same-Run Native revision, lost-reply two-BFF GET-only/current mapping CAS passed. Native production/SDK unchanged; final published-source consumer evidence separate.
+
 # CA-P3-02X verified / Review
 See [CA-P3-02X](docs/CA-P3-02X_react_initial_ui.md). Explicit React preparation, existing Native contract; Review; fresh make test 11075 passed/3052 conditional skips; make check passed; SDK check and156 tests passed, focused React4 passed. Candidate packed React Chromium/WebKit same initial TaskRun/Readable/Worker/approval/DOM/receipt/terminal and real owner unmount passed. Python/Worker/storage/core SDK unchanged; published-source consumer result recorded separately.
 
