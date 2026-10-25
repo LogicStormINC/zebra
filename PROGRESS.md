@@ -1,3 +1,6 @@
+# CA-P3-02Z verified / Review
+See [CA-P3-02Z](docs/CA-P3-02Z_react_surface_revision.md). Explicit React revision capture/adoption; Review; fresh make test 11075 passed/3052 conditional skips and make check passed after filesystem recovery; SDK check/158 tests and6 focused React cases passed. Candidate Chromium/WebKit actual new React owner capture -> BFF original GET/current mapping -> zero-HTTP adoption -> current heartbeat/unmount passed. Runtime/Worker/core SDK/schema unchanged; final published-source consumer separate. No second Worker/new Run claim.
+
 # CA-P3-02Y verified / Review
 See [CA-P3-02Y](docs/CA-P3-02Y_explicit_surface_revision.md). Explicit same-Run revision prerequisite; Review; fresh make test 11075 passed/3052 conditional skips; make check passed; unchanged SDK check/156 tests passed. Candidate Chromium/WebKit React first Worker/UI terminal then explicit same-Run Native revision, lost-reply two-BFF GET-only/current mapping CAS passed. Native production/SDK unchanged; final published-source consumer evidence separate.
 

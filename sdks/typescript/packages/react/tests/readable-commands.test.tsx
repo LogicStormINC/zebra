@@ -79,3 +79,44 @@ test("duplicate initial Readables reject the whole page rather than silently ove
  try{await assert.rejects(async()=>{await act(async()=>root.render(createElement(StrictMode,null,createElement(Panel))));});assert.throws(()=>surface.capture());}
  finally{await act(async()=>{root.unmount();await Promise.resolve();});dom.window.close();}
 });
+
+test("explicit React revision pins prior coordinates, adopts once and submits its committed values without remount",async()=>{
+ const {useZebraSurfaceRevision,useZebraInitialReadable,useZebraInitialAction}=await import('../src/index.ts');const {z}=await import('zod');
+ const dom=new JSDOM('<div id="revision"></div>',{url:'https://business.example/'});Object.assign(globalThis,{window:dom.window,document:dom.window.document});const root=createRoot(dom.window.document.getElementById('revision')!);
+ const requests:{url:string;body:any}[]=[];const schema=z.object({});
+ const baseConfig={mode:'bff' as const,surfaceMetadataVersion:1 as const,clientStateVersion:1 as const,baseUrl:'/surface',controller:true,clientSessionId:'11111111-1111-4111-8111-111111111111',taskId:'22222222-2222-4222-8222-222222222222',runId:'run-1',runBindingId:'33333333-3333-4333-8333-333333333333',clientBindingDigest:'b'.repeat(64),initialUiRevision:1,actionContractDigests:{'app.ui.item.open':'a'.repeat(64)},fetchImpl:(async(url,init)=>{requests.push({url:String(url),body:JSON.parse(String(init?.body??'null'))});return Response.json(String(url).endsWith('/commands')?{status:'accepted',commandId:'44444444-4444-4444-8444-444444444444'}:{effects:[]});}) as typeof fetch};
+ const old={client_surface_metadata_contract_version:1,profile_digest:'c'.repeat(64),ui_revision:1,mounted_snapshot_digest:'d'.repeat(64),binding_mounted_snapshot_digest:'d'.repeat(64),binding_id:baseConfig.runBindingId,binding_digest:baseConfig.clientBindingDigest,binding_revision:1,allowed_actions:['app.ui.item.open'],action_contract_digests:baseConfig.actionContractDigests,controller:true};
+ const next={...old,ui_revision:2,binding_revision:2,binding_digest:'e'.repeat(64),mounted_snapshot_digest:'f'.repeat(64),binding_mounted_snapshot_digest:'f'.repeat(64)},config={...baseConfig,initialUiRevision:2,clientBindingDigest:next.binding_digest},profile={frontendAppId:'fixture-web',profileRevision:1,profileDigest:old.profile_digest};
+ let revision!:ReturnType<typeof useZebraSurfaceRevision>;
+ function Panel({route}:{route:string}){revision=useZebraSurfaceRevision({config:baseConfig,publicMetadata:old,profile});useZebraInitialReadable(revision.surface,'app.ui.route',{route});useZebraInitialAction(revision.surface,'app.ui.item.open',{parameters:schema,result:schema,handler:()=>({})});return null;}
+ try{
+  await act(async()=>root.render(createElement(StrictMode,null,createElement(Panel,{route:'/revision-two'}))));
+  const capture=revision.surface.capture();assert.throws(()=>revision.surface.capture());(capture.input.state['app.ui.route'] as any).route='/mutated';
+  for(const changed of [{taskId:baseConfig.clientSessionId},{runId:'other'},{clientSessionId:baseConfig.taskId},{runBindingId:baseConfig.taskId},{baseUrl:'/foreign'}])assert.throws(()=>revision.adopt({...config,...changed},next,profile));
+  for(const changed of [{ui_revision:1},{ui_revision:3},{binding_revision:1},{binding_digest:old.binding_digest},{profile_digest:'f'.repeat(64)},{allowed_actions:['foreign.ui.open'],action_contract_digests:{'foreign.ui.open':'a'.repeat(64)}}])assert.throws(()=>revision.adopt(config,{...next,...changed},profile));
+  assert.throws(()=>revision.adopt(config,next,{...profile,frontendAppId:"foreign"}));assert.throws(()=>revision.adopt(config,next,{...profile,profileRevision:2}));
+  assert.equal(requests.length,0);
+  const originalRun=baseConfig.runId;old.binding_digest='0'.repeat(64);baseConfig.runId='caller-mutated';
+  const runtime=revision.adopt(config,next,profile);old.binding_digest=baseConfig.clientBindingDigest;baseConfig.runId=originalRun;assert.equal(requests.length,0);assert.equal(runtime.uiRevision.current,2);assert.equal(runtime.isStopped,false);
+  assert.throws(()=>revision.adopt(config,next,profile));assert.equal(runtime.isStopped,false);assert.equal(requests.length,0);
+  await runtime.submitReadableCommand({action:'run',expectedRevision:2,idempotencyKey:'new-command'});
+  assert.deepEqual(requests[0]?.body.input.state,{'app.ui.route':{route:'/revision-two'}});assert.equal(requests.length,1);assert.ok(requests.every(r=>!r.url.endsWith('/mount')));
+  await act(async()=>root.render(createElement(StrictMode,null,createElement(Panel,{route:'/drift'}))));assert.equal(runtime.isStopped,true);assert.equal(requests.filter(r=>r.url.endsWith('/release')).length,1);
+  assert.throws(()=>revision.adopt(config,next,profile));assert.equal(requests.filter(r=>r.url.endsWith('/release')).length,1);
+ }finally{await act(async()=>{root.unmount();await Promise.resolve();});dom.window.close();}
+});
+
+test("explicit React revision rejects late adoption and preserves pending original command markers",async()=>{
+ const {useZebraSurfaceRevision,useZebraInitialReadable}=await import('../src/index.ts');
+ const dom=new JSDOM('<div id="revision"></div>',{url:'https://business.example/'});Object.assign(globalThis,{window:dom.window,document:dom.window.document});let root=createRoot(dom.window.document.getElementById('revision')!);let calls=0;
+ const config={mode:'bff' as const,surfaceMetadataVersion:1 as const,clientStateVersion:1 as const,commandRecoveryVersion:1 as const,baseUrl:'/surface',controller:true,clientSessionId:'11111111-1111-4111-8111-111111111111',taskId:'22222222-2222-4222-8222-222222222222',runId:'run-1',runBindingId:'33333333-3333-4333-8333-333333333333',clientBindingDigest:'b'.repeat(64),initialUiRevision:1,actionContractDigests:{},storage:dom.window.sessionStorage,fetchImpl:(async()=>{calls++;return Response.json({});}) as typeof fetch};
+ const old={client_surface_metadata_contract_version:1,profile_digest:'c'.repeat(64),ui_revision:1,mounted_snapshot_digest:'d'.repeat(64),binding_mounted_snapshot_digest:'d'.repeat(64),binding_id:config.runBindingId,binding_digest:config.clientBindingDigest,binding_revision:1,allowed_actions:[],action_contract_digests:{},controller:true};
+ const next={...old,ui_revision:2,binding_revision:2,binding_digest:'e'.repeat(64)},nextConfig={...config,initialUiRevision:2,clientBindingDigest:next.binding_digest},profile={frontendAppId:'app',profileRevision:1,profileDigest:old.profile_digest};
+ let revision!:ReturnType<typeof useZebraSurfaceRevision>;
+ function Panel(){revision=useZebraSurfaceRevision({config,publicMetadata:old,profile});useZebraInitialReadable(revision.surface,'app.ui.route',{route:'/two'});return null;}
+ await act(async()=>root.render(createElement(StrictMode,null,createElement(Panel))));revision.surface.capture();await act(async()=>{root.unmount();await Promise.resolve();});assert.throws(()=>revision.adopt(nextConfig,next,profile));assert.equal(calls,0);
+ root=createRoot(dom.window.document.getElementById('revision')!);await act(async()=>root.render(createElement(StrictMode,null,createElement(Panel))));revision.surface.capture();
+ const key=`zebra:command-recovery:${config.clientSessionId}:${config.taskId}:${config.runId}`,pending=JSON.stringify(['44444444-4444-4444-8444-444444444444']);dom.window.sessionStorage.setItem(key,pending);
+ assert.throws(()=>revision.adopt(nextConfig,next,profile));assert.equal(dom.window.sessionStorage.getItem(key),pending);assert.equal(calls,0);
+ await act(async()=>{root.unmount();await Promise.resolve();});dom.window.close();
+});

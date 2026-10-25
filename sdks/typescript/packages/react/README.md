@@ -1,3 +1,7 @@
+## Explicit same-Run revision
+
+Use `useZebraSurfaceRevision({config:previousPublicConfig,publicMetadata:previousMetadata,profile})` on a **new committed owner after the old owner stops**. Register using the existing initial Hooks on `revision.surface`, capture once, then explicitly ask the trusted BFF for one durable revision. On unknown, observe only its original receipt. After current mapping confirmation, `revision.adopt(publicConfig,publicMetadata,profile)` returns the real runtime without HTTP; explicitly start it. It requires the exact prior target/Profile, next UI revision and advancing binding metadata, preserves command pending markers, and reuses fail-closed drift/unmount. No automatic remount, authentication, new Run or old Provider upgrade. See [full flow and boundaries](../../../../docs/CA-P3-02Z_react_surface_revision.md).
+
 # 显式初始React Surface（CA-P3-02X）
 
 新增useZebraInitialSurface/useZebraInitialReadable/useZebraInitialAction；capture一次后通过业务BFF原子准入，adopt不发mount、不重领Controller。旧Provider不自动切换。完整交互、StrictMode/unknown/修订边界见[合同](../../../../docs/CA-P3-02X_react_initial_ui.md)。本地准备不是认证或执行证明，不发布npm。
