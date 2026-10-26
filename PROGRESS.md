@@ -1,3 +1,7 @@
+# CA-P3-03D 原消息条件挂载
+
+[正式合同](docs/CA-P3-03D_message_surface_anchor.md)。原生atomic-message-surface/1在同PG事务内检查原收据、源Event及stream tail，并原子消费/挂载/封存结果。22真实PG与46 API、全量make test/check及SDK check158通过。原消息日志/SDK生产恢复仍为AB-B；不宣称RUN/Worker取消。
+
 # CA-P3-03C 原消息坐标
 
 [显式v2合同](docs/CA-P3-03C_message_coordinates.md)。31定向API通过，全量make test/check、8真实PG和SDK check158通过；原坐标不随header漂移，不证明提交时锚点CAS。

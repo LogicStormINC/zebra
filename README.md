@@ -1,3 +1,5 @@
+2026-10-26：[原消息条件挂载合同](docs/CA-P3-03D_message_surface_anchor.md)，显式新协议、原GET与Surface专属STOP证明，旧协议保持。
+
 2026-10-23：[审批原操作与Controller当前性合同](docs/CA-P3-02O_approval_operations.md)，业务BFF跨副本恢复的Native公开前置。
 
 2026-10-23：[Client Action Worker兼容说明](docs/CA-P3-02N_client_tool_compatibility.md)：已发布可选描述/schema只在模型展示处补缺省，审批、原合同及历史/Coverage保持。

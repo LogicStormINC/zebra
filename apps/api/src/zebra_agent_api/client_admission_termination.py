@@ -19,8 +19,10 @@ def terminate_admission(
             "/task-termination",
             "/task-run-termination",
             "/task-surface-termination",
+            "/message-surface-termination",
         )
     ):
+        message = request.path.endswith("/message-surface-termination")
         surface = request.path.endswith("/task-surface-termination")
         task = request.path.endswith("/task-termination")
         run = request.path.endswith("/task-run-termination")
@@ -31,7 +33,9 @@ def terminate_admission(
             scoped,
             digest,
             write=request.method.upper() == "POST",
-            protocol="atomic-task-run-surface/1"
+            protocol="atomic-message-surface/1"
+            if message
+            else "atomic-task-run-surface/1"
             if surface
             else "atomic-task-run/1"
             if run
@@ -43,7 +47,18 @@ def terminate_admission(
         response = termination_response(operation, digest, meta["kind"], fence)
         return denied or ApiResponse(
             200,
-            {**response.body, "contract_version": 5 if surface else 4 if run else 3 if task else 2},
+            {
+                **response.body,
+                "contract_version": 6
+                if message
+                else 5
+                if surface
+                else 4
+                if run
+                else 3
+                if task
+                else 2,
+            },
         )
     if request.method.upper() == "POST":
         fence = store.admission_fence(scoped, digest, terminate=True)

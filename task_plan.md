@@ -1,3 +1,10 @@
+# CA-P3-03D 当前计划
+
+- [x] 依赖/Owned paths/条件准入与Surface专属STOP边界先固定。
+- [x] 16 API红例/46 API和22真实PG：竞争、条件拒绝、消费/回滚。
+- [x] 完整make test/check/SDK与证据通过，限定Native提交推送另由实际回执核对。
+- [ ] A2固定公开发布源联合/旧消费者兼容；AB-B生产原消息日志另片。
+
 # CA-P3-03C 当前计划
 
 - [x] 依赖/Ready/Owned paths/原源坐标与并发证明设计复核。

@@ -133,7 +133,12 @@ def handle_admission_operation(app: Any, request: Any) -> ApiResponse | None:
         request.path.endswith("/termination")
         or request.path.endswith("/atomic-termination")
         or request.path.endswith(
-            ("/task-termination", "/task-run-termination", "/task-surface-termination")
+            (
+                "/task-termination",
+                "/task-run-termination",
+                "/task-surface-termination",
+                "/message-surface-termination",
+            )
         )
     )
     if observation and request.method.upper() != "GET":
@@ -156,6 +161,7 @@ def handle_admission_operation(app: Any, request: Any) -> ApiResponse | None:
                 .removesuffix("/task-termination")
                 .removesuffix("/task-run-termination")
                 .removesuffix("/task-surface-termination")
+                .removesuffix("/message-surface-termination")
             )
         )
         if observation or termination:
@@ -217,7 +223,7 @@ def _handle(
 ) -> ApiResponse:
     store = app.stores.idempotency
     claim = store.get(action=_CLAIM, idempotency_key=scoped)
-    body = None
+    body: Admission | None = None
     digest = _header(request, "X-Zebra-Admission-Hash")
     credential_hash = hashlib.sha256(
         _header(request, "X-Zebra-Client-Session").encode()
@@ -230,12 +236,18 @@ def _handle(
                 "",
                 "pre-dispatch/1",
                 "atomic-surface/1",
+                "atomic-message-surface/1",
                 "atomic-task/1",
                 "atomic-task-run/1",
                 "atomic-task-run-surface/1",
             }:
                 raise ValueError("unsupported dispatch protocol")
-            body = Admission.model_validate(request.body or {})
+            if protocol == "atomic-message-surface/1":
+                from zebra_agent_api.client_admission_message import validate_message_surface
+
+                body = validate_message_surface(app, request.body or {})
+            else:
+                body = Admission.model_validate(request.body or {})
             if protocol == "atomic-surface/1":
                 from zebra_agent_api.client_admission_atomic import eligible_atomic_surface
 
@@ -270,6 +282,7 @@ def _handle(
                         if protocol
                         in {
                             "atomic-surface/1",
+                            "atomic-message-surface/1",
                             "atomic-task/1",
                             "atomic-task-run/1",
                             "atomic-task-run-surface/1",
@@ -305,7 +318,9 @@ def _handle(
                 digest,
                 "",
                 {"state": "not_observed", "recorded_at": ""},
-                version=5
+                version=6
+                if request.path.endswith("/message-surface-termination")
+                else 5
                 if request.path.endswith("/task-surface-termination")
                 else 4
                 if request.path.endswith("/task-run-termination")
@@ -362,6 +377,7 @@ def _handle(
                     )
             if meta.get("dispatch_protocol") in {
                 "atomic-surface/1",
+                "atomic-message-surface/1",
                 "atomic-task/1",
                 "atomic-task-run/1",
                 "atomic-task-run-surface/1",
