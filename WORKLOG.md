@@ -1,3 +1,5 @@
+CA-P3-03F：先认领/边界后实现公开Surface SDK，172 SDK测试和check通过。Native完整make test/check通过。无Python/Worker/原数据改变；AD公开Go门面和固定源联合另验收。
+
 CA-P3-03E：Luke Ding/Codex独立认领后实现SDK显式BFF消息恢复，固定DTO/先存locator/一次POST、原GET、发现与Unicode/存储边界；SDK check165通过，Native完整make test/check通过。配对AB-B实现业务BFF共享密文日志，固定源联合另记录。无Python/Worker/生产数据改动。
 
 CA-P3-03D：已读依赖并声明Owned paths后实现；16 API红例、46 API绿例；真实PG首次测试的外Task pointer被复合FK正确拒绝，改用合法Handoff成员夹具并补加密409/v6验证后22通过。完整make test/check与SDK check158通过；固定发布源消费者单列，不部署/迁移/main合并。

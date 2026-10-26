@@ -1,3 +1,4 @@
+export {createBFFSurface, type BFFSurfaceState, type BFFSurfaceBinding} from "./bff_surface.ts";
 export {createBFFMessages, type BFFMessageState, type BFFMessageAnchor} from "./bff_messages.ts";
 export {prepareInitialClientSurface} from "./initial_surface.ts";
 import {initialSurfaceMetadata} from "./initial_surface.ts";

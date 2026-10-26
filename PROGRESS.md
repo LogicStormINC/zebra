@@ -1,3 +1,7 @@
+# CA-P3-03F 显式Surface SDK
+
+[合同](docs/CA-P3-03F_surface_sdk.md)。172 SDK测试和check通过；两阶段定位符/先存后单POST，unknown只读恢复。Native完整make test/check通过；固定源消费者AD另记。
+
 # CA-P3-03E 显式BFF消息SDK
 
 [合同](docs/CA-P3-03E_message_sdk.md)。SDK已实现先持久定位符/一次POST、discover和原GET恢复；165 SDK测试和check通过，Native完整make test/check通过。Python/Worker/原生数据合同不变，平台AB-B固定源联合单列。
