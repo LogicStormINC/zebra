@@ -17321,3 +17321,7 @@ OD-P3-02D本地候选16项联合通过，最终以发布SHA重跑记录为准。
 ## 2026-10-26 CA-P3-03B
 
 核对Z后先补follow-up原收据前置。只读设计复核固定Python摘要和409权限语义；7红例先证明缺失GET。19 API与7真实PG通过，SQLite启动适配器初始化与请求只读快照分别验证。一次过早全量启动被主动中断，不计成功证据；正式Native全量make test/check、SDK check158通过；固定发布消费者由AA单列。无生产写入。
+
+## 2026-10-26 CA-P3-03C
+
+确认Task包装丢失物理Segment，先以12红例证明坐标缺口。显式v2在实际源Event处取坐标，默认v1/旧记录不变。31 API定向通过；保留one-open-Turn不变量，测试同Segment实际执行推进而不强行追加并发用户Turn。Native完整make test/check、SDK check158及8真实PG通过；固定发布消费者由AB-A单列。

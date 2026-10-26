@@ -7,6 +7,7 @@ from agent_storage.postgres.task_io import task_io_deadline
 
 from zebra_agent_api.responses import ApiResponse
 from zebra_agent_api.task_api import parse_task_id
+from zebra_agent_api.task_message_contract import receipt_key, receipt_version, stored_coordinates
 
 
 def read_task_message_receipt(
@@ -15,15 +16,8 @@ def read_task_message_receipt(
     parsed = parse_task_id(task_id)
     if isinstance(parsed, ApiResponse):
         return parsed
-    key = next(
-        (
-            value.strip()
-            for name, value in (headers or {}).items()
-            if name.lower() == "idempotency-key"
-        ),
-        "",
-    )
-    if not key or len(key) > 128 or any(not 33 <= ord(c) <= 126 for c in key):
+    version, key = receipt_version(headers), receipt_key(headers)
+    if version is None or key is None:
         return ApiResponse(400, {"status": "invalid_request"})
     try:
         with task_io_deadline(monotonic() + 2.0):
@@ -36,16 +30,21 @@ def read_task_message_receipt(
         return ApiResponse(
             200,
             {
-                "contract_version": 1,
+                "contract_version": version,
                 "status": "not_observed",
                 "task_id": task_id,
                 "noncommit_proved": False,
             },
         )
+    details: dict[str, object] = {}
+    if version == 2:
+        status, coordinates = stored_coordinates(record.response_body)
+        details = {"coordinates_status": status, "message_coordinates": coordinates}
     return ApiResponse(
         200,
         {
-            "contract_version": 1,
+            **details,
+            "contract_version": version,
             "status": "recorded",
             "task_id": task_id,
             "request_hash": record.request_hash,

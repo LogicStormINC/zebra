@@ -1,3 +1,7 @@
+# CA-P3-03C 原消息坐标
+
+[显式v2合同](docs/CA-P3-03C_message_coordinates.md)。31定向API通过，全量make test/check、8真实PG和SDK check158通过；原坐标不随header漂移，不证明提交时锚点CAS。
+
 # CA-P3-03B Task-message receipt prerequisite
 
 [公开只读合同](docs/CA-P3-03B_task_message_receipts.md)。19 API/7真实PG通过，全量make test/check和SDK check158通过；原收据缺失不证明非提交，生产BFF恢复是AB后续。

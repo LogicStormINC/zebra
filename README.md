@@ -812,3 +812,5 @@ Readable values use the existing AG-UI command and [bound native admission](docs
 原业务效果跨 Run 协调见 [CA-P3-03A](docs/CA-P3-03A_original_effect_receipts.md)：历史收据不代表当前 UI 执行，unknown 不重发。
 
 [Task-message 原收据查询](docs/CA-P3-03B_task_message_receipts.md)：原GET不重发，missing不是非提交证明。
+
+[显式v2原消息坐标](docs/CA-P3-03C_message_coordinates.md)：保存源Event归属，不从当前header补猜。

@@ -33,6 +33,7 @@ from zebra_agent_api.responses import ApiResponse
 from zebra_agent_api.session_handoff import SessionHandoffApi
 from zebra_agent_api.session_summary import serialize_session_summary
 from zebra_agent_api.task_header import task_header
+from zebra_agent_api.task_message_contract import valid_receipt_key
 from zebra_agent_api.task_model_usage import summarize_task_model_usage
 from zebra_agent_api.task_read_summaries import task_projection_pending, task_summary_fields
 from zebra_agent_api.task_responses import is_user_task_event as is_user_task_event
@@ -324,7 +325,12 @@ def append_task_message(
     payload: dict[str, object],
     *,
     idempotency_key: str | None,
+    message_receipt_version: int = 1,
 ) -> ApiResponse:
+    if message_receipt_version not in {1, 2} or (
+        message_receipt_version == 2 and not valid_receipt_key(idempotency_key)
+    ):
+        return ApiResponse(400, {"status": "invalid_request"})
     action = f"task-message:{task_id}"
     replayed = (
         replay_idempotent_response(
@@ -350,6 +356,13 @@ def append_task_message(
             response=response,
         )
 
+    def append(segment: SessionId) -> ApiResponse:
+        if message_receipt_version == 2:
+            return app.append_session_message(
+                str(segment), payload, include_message_coordinates=True
+            )
+        return app.append_session_message(str(segment), payload)
+
     reader = TaskReadApi(app.stores)
     active = reader.active_segment(task_id)
     if isinstance(active, ApiResponse):
@@ -363,11 +376,11 @@ def append_task_message(
         SessionStatus.FAILED,
     }:
         return finish(
-            _rewrite_task_identity(app.append_session_message(str(active), payload), task_id)
+            _rewrite_task_identity(append(active), task_id)
         )
     content = payload.get("content")
     if not isinstance(content, str) or not content.strip():
-        return app.append_session_message(str(active), payload)
+        return append(active)
     response = _rollover(
         app.database_path,
         app.stores,
@@ -389,7 +402,7 @@ def append_task_message(
     if isinstance(next_active, ApiResponse):
         return finish(next_active)
     appended = _rewrite_task_identity(
-        app.append_session_message(str(next_active), payload), task_id
+        append(next_active), task_id
     )
     if appended.status_code not in {200, 201}:
         return finish(appended)
