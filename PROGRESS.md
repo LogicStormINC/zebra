@@ -1,3 +1,7 @@
+# CA-P3-03A 原业务效果协调
+
+[合同与边界](docs/CA-P3-03A_original_effect_receipts.md)。全量 make test/check、49 定向/13 真实 PG 与 SDK check/158 测试通过；原收据只证明历史结果，不推断新业务意图。
+
 # CA-P3-02Z verified / Review
 See [CA-P3-02Z](docs/CA-P3-02Z_react_surface_revision.md). Explicit React revision capture/adoption; Review; fresh make test 11075 passed/3052 conditional skips and make check passed after filesystem recovery; SDK check/158 tests and6 focused React cases passed. Candidate Chromium/WebKit actual new React owner capture -> BFF original GET/current mapping -> zero-HTTP adoption -> current heartbeat/unmount passed. Runtime/Worker/core SDK/schema unchanged; final published-source consumer separate. No second Worker/new Run claim.
 

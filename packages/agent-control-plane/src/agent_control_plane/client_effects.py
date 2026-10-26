@@ -8,17 +8,25 @@ before the port's single transaction runs.
 
 from __future__ import annotations
 
+import json
 from datetime import UTC, datetime, timedelta
 
+from agent_core.domain.client_capabilities import (
+    ClientActionContract,
+    canonical_client_capability_digest,
+)
 from agent_core.domain.client_effects import (
+    RECEIPT_TERMINAL_STATUSES,
     ClientEffectContinuation,
     ClientEffectReceipt,
     ClientEffectRequest,
+    ClientEffectStatus,
     client_effect_idempotency_key,
 )
 from agent_core.domain.client_run_bindings import ClientRunBinding
 from agent_core.domain.client_sessions import ClientObserverActionError
 from agent_core.domain.identifiers import SessionId, ToolCallId, new_client_effect_id
+from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
 from agent_core.ports.client_effect_receipts import (
     ClientEffectReceiptPort,
     ClientReceiptAcceptance,
@@ -113,3 +121,71 @@ class ClientEffectReceiptService:
             request_fence_hash=request_fence_hash,
             session_id=session_id,
         )
+
+
+def original_client_effect_result(
+    call: ToolCall,
+    original: ToolResult,
+    *,
+    binding: ClientRunBinding,
+    contract: ClientActionContract,
+    execution_session_id: SessionId,
+    effect: ClientEffectRequest | None,
+    receipt: ClientEffectReceipt | None,
+) -> ToolResult | None:
+    """Resolve the same business intent from its original evidence, never a new UI effect."""
+    if effect is None or (
+        str(effect.task_id) != str(binding.task_id)
+        or effect.action_name != call.name
+        or effect.tool_call_id != original.tool_call_id
+        or call.name not in binding.allowed_actions
+        or effect.arguments != call.arguments
+        or effect.action_contract_digest
+        != canonical_client_capability_digest(contract.model_dump(mode="json"))
+        or str(effect.effect_id) != original.metadata.get("client_effect_id")
+        or effect.request_digest != original.metadata.get("client_effect_request_digest")
+        or effect.run_id != original.metadata.get("client_effect_run_id")
+        or effect.client_binding_digest != original.metadata.get("client_effect_binding_digest")
+    ):
+        return None
+    if receipt is None:
+        # Exact original-operation recovery may still wait on its OWN currently bound Run.
+        if (
+            effect.parent_session_id == execution_session_id
+            and effect.tool_call_id == call.tool_call_id
+            and effect.run_id == binding.run_id
+            and effect.client_binding_digest == binding.binding_digest
+            and effect.status in {ClientEffectStatus.PENDING, ClientEffectStatus.DELIVERED}
+        ):
+            return original
+        return None
+    if (
+        receipt.effect_id != effect.effect_id
+        or receipt.request_digest != effect.request_digest
+        or receipt.status not in RECEIPT_TERMINAL_STATUSES
+    ):
+        return None
+    return ToolResult(
+        tool_call_id=call.tool_call_id,
+        status=ToolCallStatus.EXECUTED
+        if receipt.status is ClientEffectStatus.SUCCEEDED
+        else ToolCallStatus.FAILED,
+        output=json.dumps(
+            {
+                "status": receipt.status.value,
+                "result": receipt.result,
+                "evidence_scope": "historical_business_effect",
+                "current_ui_performed": False,
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+        ),
+        metadata={
+            "historical_client_effect": True,
+            "original_client_effect_id": str(effect.effect_id),
+            "original_client_effect_run_id": effect.run_id,
+            "original_client_effect_receipt_id": str(receipt.receipt_id),
+            "original_client_effect_status": receipt.status.value,
+            "current_ui_performed": False,
+        },
+    )

@@ -1,3 +1,11 @@
+# CA-P3-03A 当前实施计划
+
+- [x] 核对已发布依赖并登记任务、隔离分支与 Owned paths。
+- [x] legacy/fenced 红绿回归、共享协调、真实 PG 只读验证。
+- [x] 同业务效果跨 Run 实际 Worker 候选验收。
+- [x] Native 全量门禁、SDK；Overdoze 固定发布源码验收独立推进。
+- [x] 更新 Native 证据并准备受控提交推送；不部署、不生产迁移、不合并 main。
+
 CA-P3-02Z: claimed Luke Ding; explicit React same-Run revision, reuse V/Y; Review; fresh make test 11075 passed/3052 conditional skips and make check passed after filesystem recovery; SDK check/158 tests and6 focused React cases passed. Candidate Chromium/WebKit actual new React owner capture -> BFF original GET/current mapping -> zero-HTTP adoption -> current heartbeat/unmount passed. Runtime/Worker/core SDK/schema unchanged; final published-source consumer separate. No second Worker/new Run claim. See docs/CA-P3-02Z_react_surface_revision.md.
 
 CA-P3-02Y: claimed Luke Ding; public atomic-surface revision contract acceptance, no production Native change; Review; fresh make test 11075 passed/3052 conditional skips; make check passed; unchanged SDK check/156 tests passed. Candidate Chromium/WebKit React first Worker/UI terminal then explicit same-Run Native revision, lost-reply two-BFF GET-only/current mapping CAS passed. Native production/SDK unchanged; final published-source consumer evidence separate. See docs/CA-P3-02Y_explicit_surface_revision.md.

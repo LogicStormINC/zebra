@@ -190,6 +190,11 @@ class WorkerToolGateway:
             return receipt
         return self.host.reconcile_effect(receipt, self.host_context)
 
+    def reconcile_deferred_result(self, call: ToolCall, original: ToolResult) -> ToolResult | None:
+        if self.client is None:
+            return None
+        return self.client.reconcile_deferred_result(call, original)
+
     def execute(self, toolCall: ToolCall) -> ToolResult:
         return self._execute(toolCall)
 
