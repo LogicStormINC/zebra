@@ -1,3 +1,5 @@
+CA-P3-03E：Luke Ding/Codex独立认领后实现SDK显式BFF消息恢复，固定DTO/先存locator/一次POST、原GET、发现与Unicode/存储边界；SDK check165通过，Native完整make test/check通过。配对AB-B实现业务BFF共享密文日志，固定源联合另记录。无Python/Worker/生产数据改动。
+
 CA-P3-03D：已读依赖并声明Owned paths后实现；16 API红例、46 API绿例；真实PG首次测试的外Task pointer被复合FK正确拒绝，改用合法Handoff成员夹具并补加密409/v6验证后22通过。完整make test/check与SDK check158通过；固定发布源消费者单列，不部署/迁移/main合并。
 
 CA-P3-02Z: claimed Luke Ding; explicit React same-Run revision, reuse V/Y; Review; fresh make test 11075 passed/3052 conditional skips and make check passed after filesystem recovery; SDK check/158 tests and6 focused React cases passed. Candidate Chromium/WebKit actual new React owner capture -> BFF original GET/current mapping -> zero-HTTP adoption -> current heartbeat/unmount passed. Runtime/Worker/core SDK/schema unchanged; final published-source consumer separate. No second Worker/new Run claim. See docs/CA-P3-02Z_react_surface_revision.md.

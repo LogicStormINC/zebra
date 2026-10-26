@@ -1,3 +1,10 @@
+# CA-P3-03E 当前计划
+
+- [x] D/A2依赖、Owned paths及BFF/SDK边界先固定。
+- [x] SDK严格同源/持久定位符/一次POST/发现和原GET/Unicode与故障检查，check165通过。
+- [x] 完整make test/check/SDK及正式证据完成，限定提交推送由实际远端回执核对。
+- [ ] AB-B固定源Go/BFF/SDK/Worker与旧消费者联合独立记录。
+
 # CA-P3-03D 当前计划
 
 - [x] 依赖/Owned paths/条件准入与Surface专属STOP边界先固定。

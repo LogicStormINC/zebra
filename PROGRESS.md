@@ -1,3 +1,7 @@
+# CA-P3-03E 显式BFF消息SDK
+
+[合同](docs/CA-P3-03E_message_sdk.md)。SDK已实现先持久定位符/一次POST、discover和原GET恢复；165 SDK测试和check通过，Native完整make test/check通过。Python/Worker/原生数据合同不变，平台AB-B固定源联合单列。
+
 # CA-P3-03D 原消息条件挂载
 
 [正式合同](docs/CA-P3-03D_message_surface_anchor.md)。原生atomic-message-surface/1在同PG事务内检查原收据、源Event及stream tail，并原子消费/挂载/封存结果。22真实PG与46 API、全量make test/check及SDK check158通过。原消息日志/SDK生产恢复仍为AB-B；不宣称RUN/Worker取消。
