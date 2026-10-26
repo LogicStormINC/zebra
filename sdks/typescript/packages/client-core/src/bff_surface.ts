@@ -6,7 +6,7 @@ export type BFFSurfaceBinding = {mappingRevision: number; taskId: string; runId:
 export type BFFSurfaceState = {version: "1"; status: "clear" | "unknown" | "recorded" | "rejected" | "installed"; operation: string; revision: number; surface: PublicClientSurfaceMetadata | null; binding: BFFSurfaceBinding | null};
 type Pending = {operation: string; stage: "surface" | "recorded"} | {operation: string; stage: "install"; revision: number};
 const uuid = (v: unknown): v is string => typeof v === "string" && /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/.test(v) && v !== "00000000-0000-0000-0000-000000000000";
-const revision = (v: unknown, min = 0): v is number => Number.isSafeInteger(v) && Number(v) >= min && Number(v) < 9007199254740990;
+const revision = (v: unknown, min = 0): v is number => Number.isSafeInteger(v) && Number(v) >= min;
 const fail = (): never => {throw new ClientRuntimeError("surface_recovery_unavailable", "preserve original Surface intent; observe without resending");};
 function object(v: unknown, keys: string[]): Record<string, unknown> {
  if (!v || typeof v !== "object" || Array.isArray(v) || Object.keys(v).length !== keys.length || keys.some(k => !Object.hasOwn(v, k))) return fail();
@@ -37,7 +37,7 @@ export function createBFFSurface(options: {path: string; storage: Storage; fetch
  function pending(): Pending | null {
   try {const raw = options.storage.getItem(key); if (raw === null) return null; if (raw.length > 256) return fail();
    const v = JSON.parse(raw); object(v, v?.stage === "install" ? ["operation", "stage", "revision"] : ["operation", "stage"]);
-   if (!uuid(v.operation) || !["surface", "recorded", "install"].includes(v.stage) || v.stage === "install" && !revision(v.revision)) return fail(); return v;
+   if (!uuid(v.operation) || !["surface", "recorded", "install"].includes(v.stage) || v.stage === "install" && (!revision(v.revision) || v.revision >= 9007199254740990)) return fail(); return v;
   } catch {return fail();}
  }
  function save(value: Pending | null): void {
@@ -80,14 +80,14 @@ export function createBFFSurface(options: {path: string; storage: Storage; fetch
    try {return remember(await read("/receipt", {method: "GET", headers: {"Idempotency-Key": op}}, op));} finally {busy = false;}
   },
   async submit(captured: {mountedActions: string[]; mountedReadables: string[]; input?: unknown}, expected: number): Promise<BFFSurfaceState> {
-   if (busy || pending() || !revision(expected, 1) || !captured || typeof captured !== "object" || Object.keys(captured).some(k => !["mountedActions", "mountedReadables", "input"].includes(k))) return fail();
+   if (busy || pending() || (!revision(expected, 1) || expected >= 9007199254740990) || !captured || typeof captured !== "object" || Object.keys(captured).some(k => !["mountedActions", "mountedReadables", "input"].includes(k))) return fail();
    const body = JSON.stringify({revision: expected, prepared: {mountedActions: names(captured.mountedActions), mountedReadables: names(captured.mountedReadables)}});
    if (new TextEncoder().encode(body).length > 16000) return fail();
    const operation = globalThis.crypto.randomUUID(); save({operation, stage: "surface"}); busy = true;
    try {return remember(await read("", {method: "POST", headers: {"Content-Type": "application/json", "Idempotency-Key": operation}, body}, operation));} finally {busy = false;}
   },
   async install(expected: number): Promise<BFFSurfaceState> {
-   const old = pending(); if (busy || old?.stage !== "recorded" || !revision(expected)) return fail();
+   const old = pending(); if (busy || old?.stage !== "recorded" || (!revision(expected) || expected >= 9007199254740990)) return fail();
    save({operation: old.operation, stage: "install", revision: expected}); busy = true;
    try {return remember(await read("/install", {method: "POST", headers: {"Content-Type": "application/json", "Idempotency-Key": old.operation}, body: JSON.stringify({revision: expected})}, old.operation), true);} finally {busy = false;}
   },

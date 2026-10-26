@@ -1,4 +1,6 @@
-CA-P3-03F：先认领/边界后实现公开Surface SDK，172 SDK测试和check通过。Native完整make test/check通过。无Python/Worker/原数据改变；AD公开Go门面和固定源联合另验收。
+CA-P3-03F后续复核：修正CAS输入上界与结果expected+1混用，新增确定性回归；只改TS SDK及文档，Python完整测试源不变。中断旧pin消费者并由finally清理隔离资源，重跑SDK/root check并正常追加提交，重新固定发布源联合。
+
+CA-P3-03F：先认领/边界后实现公开Surface SDK，173 SDK测试和check通过。Native完整make test/check通过。无Python/Worker/原数据改变；AD公开Go门面和固定源联合另验收。
 
 CA-P3-03E：Luke Ding/Codex独立认领后实现SDK显式BFF消息恢复，固定DTO/先存locator/一次POST、原GET、发现与Unicode/存储边界；SDK check165通过，Native完整make test/check通过。配对AB-B实现业务BFF共享密文日志，固定源联合另记录。无Python/Worker/生产数据改动。
 
@@ -686,7 +688,7 @@ limitations recorded in plan. Local delivery is Review, not production release.
 
 ```text
 bf24fffd311b7642a1a79d206287d34f1e2c9e12db115ab981330d442fb5317c sdks/typescript/packages/react-charts/src/index.tsx
-e8e68c8e172c47bf98b118695b15923d84c1f79d06e33e9977eb6d43cc5548ad sdks/typescript/packages/react-charts/tests/chart-renderer.test.tsx
+e8e68c8e173c47bf98b118695b15923d84c1f79d06e33e9977eb6d43cc5548ad sdks/typescript/packages/react-charts/tests/chart-renderer.test.tsx
 19959c0885fc361bbc26fa9c98d3f61e431f1db47ebb2e4996b4b1137c5ad14d sdks/typescript/packages/react/src/components/agent-activity-group.tsx
 546c3409cfff1adfc72462b1e265bb58d99c7c14009a06f27193b601ee27f926 sdks/typescript/packages/react/src/components/agent-chat.tsx
 0b884d8bec358b2e47cf3a3a1415b6efd720703de1a491f1ce674909b20ce589 sdks/typescript/packages/react/src/components/agent-conversation-timeline.tsx
@@ -1041,7 +1043,7 @@ c1a32d3b39c0c2655250b6608987c1dfd5d2da2fdc314445c3f2f55c29d42905 sdks/typescript
   shared/verified/prepared/clock48 pass60.51s. Unknown digest2metadata SQL/2guards
   versus old3/3; known digest2/2. These are component counts, not full SQL budget.
 - Expanded old-module process interrupted after42 passed529.43s, not final/full
-  evidence. Final critical native85 passed172.48s, local compatibility199 passed
+  evidence. Final critical native85 passed173.48s, local compatibility199 passed
   3.30s. Full serial nine independently certifies17.5762s10485client15619server,
   225GET/four callbacks/five qualified batches. <=1000 SQL gate STILL FAIL.
   1127lease pins/877lineage reads/1419resets remain; new scope query attribution
@@ -1558,7 +1560,7 @@ c1a32d3b39c0c2655250b6608987c1dfd5d2da2fdc314445c3f2f55c29d42905 sdks/typescript
   /tmp/cov-atomic-frozen-load-20261011.xml. Receipt2s versus off2s:50.5764 versus
   66.6344s,63584 versus75984exec,907 versus1997GET,0 versus27fullrecovery;
   both10callbacks. Diagnostic60s onecallback:qualified34.7905s45226exec717GET,
-  off37.7172s45010exec717GET. Not repeated p95 or an isolated timing effect.
+  off37.7173s45010exec717GET. Not repeated p95 or an isolated timing effect.
 - Initial run loaded before final explicit18qualifiedreceipt assertions; hardened
   atomic2s rerun1 passed67.92s, zero skips/7 deselected:
   /tmp/cov-atomic-frozen-load-hardened-20261011.xml.18qualifiedreceipts/zero recovery,
@@ -1987,13 +1989,13 @@ c1a32d3b39c0c2655250b6608987c1dfd5d2da2fdc314445c3f2f55c29d42905 sdks/typescript
   No query result, authority or proof cache; fresh final reads remain independent.
 - Executor-only 1/6 measured 15.82/300.95s. Recovery/check/final-authority scopes
   measured 16.07/145.32s, physical opens 53/343 including handoff/execution.
-  Final rerun 1/6 currently 17.23/172.42s; object GETs unchanged. Variable local
+  Final rerun 1/6 currently 17.23/173.42s; object GETs unchanged. Variable local
   timing is not a production latency SLO. All earlier red XML evidence retained.
 - Original 12-record fixture generated illegal 12,582,912 tokens. Clamped test
   fixture to the real native ceiling; Worker correctly refuses full-C admission
   as budget_exceeded before model HTTP. Largest same-profile eligible size is 9.
   Final1/6/9 +12-refusal/expiry/socket: 14 passed/zero skips (689.86s), zero new
-  schemas; certified17.23/172.42/459.46s, physical opens53/343/517. Larger/real
+  schemas; certified17.23/173.42/459.46s, physical opens53/343/517. Larger/real
   scale is not GO; proof-query fanout remains slow. Extra tamper/crash/no-progress
   safety checks: 8 passed/zero skips (135.39s), zero new scratch schemas.
 - Frozen default: 6,699 passed/1,533 prerequisite skips (129.36s), Mypy 1,082,
@@ -2986,11 +2988,11 @@ c1a32d3b39c0c2655250b6608987c1dfd5d2da2fdc314445c3f2f55c29d42905 sdks/typescript
   PG selection: 63 passed, zero skips. QUALITY re-review is pending.
 - QUALITY re-review GO: original four raw counterexamples rejected, valid replay
   and ordinary caller behavior retained. Main repaired full Python suite: 5,684
-  passed / 1,172 skipped (115.17 seconds); full Ruff/Mypy (1,046 sources) passed.
+  passed / 1,173 skipped (115.17 seconds); full Ruff/Mypy (1,046 sources) passed.
   Released the next owned Worker coverage Effect callback slice only after both
   reviews. No main Worker dispatch or API/UI activation yet.
 - Main final raw-repair file-size gate: 2,437 files, zero violations. The
-  5,684/1,172 full-suite result applies to this frozen prerequisite, not the
+  5,684/1,173 full-suite result applies to this frozen prerequisite, not the
   subsequent callback currently being implemented.
 
 ## 2026-10-08 - MODEL storage and snapshot provenance review
@@ -5561,7 +5563,7 @@ and installed-Skill toggles delivered; uploads/credentials/deletion outstanding.
 - Added isolated PostgreSQL tests and
   `tests/compose/context_materialization/run-postgres-tests.sh`. Local adapter
   tests are `4 skipped` without a DSN; related Storage is `5 passed, 16 skipped`,
-  full Storage is `149 passed, 172 skipped`, Core is `350/350`, and Eval is
+  full Storage is `149 passed, 173 skipped`, Core is `350/350`, and Eval is
   `10/10`.
 - Kept `ControlPlaneStores`, API/Worker startup, Runtime, Provider HTTP,
   Desktop, SQLite, Redis and Mem0 unchanged. The card is in `Review` pending
@@ -5937,7 +5939,7 @@ and installed-Skill toggles delivered; uploads/credentials/deletion outstanding.
 - replaced the first setup-status health probe after review showed that it wrote
   one durable audit row every 10 seconds; the final probe uses Mem0's audit-skipped
   OpenAPI route for liveness plus a direct `SELECT 1` against the application DB
-- verified image `sha256:0892c163df54c7535d78f0a7afcdadb4fa4f69e006d7d2aa4eaf9c851722d58a`:
+- verified image `sha256:0892c163df54c7535d78f0a7afcdadb4fa4f69e006d7d2aa4eaf9c851732d58a`:
   UID/GID `10001`, `mem0ai==2.0.13`, `psycopg==3.3.4` and
   `psycopg-binary==3.3.4`
 - verified the real Compose stack: base PostgreSQL, Redis and MinIO are healthy;
@@ -14018,7 +14020,7 @@ actual byte access.
   The deployed Worker reports `cloud_budget=None` and the new cache diagnostic
   fields.
 - Real DeepSeek acceptance passed three tool-loop scenarios. Repeating one
-  identical 2,172-token request produced `0/2172` cold and `1920/252` warm twice,
+  identical 2,173-token request produced `0/2173` cold and `1920/252` warm twice,
   with the same request hash and exact response each time. This is an 88.4%
   warm hit rate for the sample, not a claim of universal 99% cache hits.
 - No model or reasoning-strength setting changed. No production deployment or
@@ -15294,11 +15296,11 @@ reliability/fullruntime/product acceptance remain OPEN; no commit/integration/pu
 2026-10-14 consumer fixture SPEC NO-GO retained: two canonical prefixes lacked TASK_PREPARED before delta. Before edits, permit same owned tests to append actual PG-only preparation event, shift child/frontier by one, retain SQLite and 257 orphan/late/closure/cold assertions; serial re-SPEC then QUALITY.
 
 - PERF fixture/header follow-up: reviewed consumer v69/canonical setup repair focused24 GO (12PG+12SQLite,331.200s),runtime64df stable; immutable first SPEC NO-GO/headerattempt01 retained.
-- Header172 exact partition12PG+160 verified. Attempt02 first-failure STOP:56pass/1HostGrantScopeError/103unexecuted; wrong-resource fixture fails before forged injection because legitimate setup has duplicate thread. No production security change or automatic rerun. Publication2 independent GO3.825s retained.
+- Header173 exact partition12PG+160 verified. Attempt02 first-failure STOP:56pass/1HostGrantScopeError/103unexecuted; wrong-resource fixture fails before forged injection because legitimate setup has duplicate thread. No production security change or automatic rerun. Publication2 independent GO3.825s retained.
 
 2026-10-14 header attempt02 first failure: valid resource-binding fixture inherited one thread and appended another; strict source guard correctly rejected ambiguous bound Grant before forged-case oracle. BEFORE claim exact resource-binding test file; correct only two valid setup refs, preserve all denial/no-mutation/rollover assertions, serial reviews before native. 68pass/1fail/103unexecuted retained.
 
-- PERF resource fixture reviewed native7 GO9.569s; exact172 partition12+56+7+97 independently checked. Headerattempt03 STOP0pass1UndefinedColumn(privacy_frontier)/96unexecuted; current header75pass1fail96unexecuted, runtime64df unchanged. Readonly identifies QueueFixture.install v68 versus unchanged current bootstrap real-v98 requirement; no production or frozen native-v68 change.
+- PERF resource fixture reviewed native7 GO9.569s; exact173 partition12+56+7+97 independently checked. Headerattempt03 STOP0pass1UndefinedColumn(privacy_frontier)/96unexecuted; current header75pass1fail96unexecuted, runtime64df unchanged. Readonly identifies QueueFixture.install v68 versus unchanged current bootstrap real-v98 requirement; no production or frozen native-v68 change.
 
 2026-10-14 header attempt03 fixture root: current bootstrap requires v98 privacy_frontier/routing while shared QueueFixture installs only v68 atop already-real v97. BEFORE claim precise projection_work_test_support.py; compose existing v98 only, all oracles/frozen standalonefixture/production unchanged. Serial reviews before native.
 
@@ -15350,7 +15352,7 @@ reliability/fullruntime/product acceptance remain OPEN; no commit/integration/pu
 
 2026-10-14 user convergence completed: one frozen69 batch59P10F0E0skip839.064s;
 subsequent literal make check exit0. Exact93files/runtime1270 unchanged.
-All52 original remaining nodes passed; original172 mixed93current/79historical.
+All52 original remaining nodes passed; original173 mixed93current/79historical.
 One consolidated SPEC71lines and QUALITY60lines permit component localaccept;
 retain10 failures (1observer,8unknownoutput,1unknownpreHTTPtimeout), no autofix.
 Primary17 dirty source files privately backed up before owned local integration.
@@ -15433,7 +15435,7 @@ only, preserving primary dirty work; no push/deploy/business changes.
 2026-10-15 INPUT-BOUNDED-QUERIES-01: branch/owner/paths claimed before implementation. One storage file, bounded CASE metadata/body and UNION terminal LIMIT1 seeks; no fresh-identity/lease fence removal. New8checks red then green after correcting only new-test assumptions. Native original15pass/1expired scratchlease119.1s; retained, separate unchanged long-body test with5min scratchlease1pass100.26s. Local104pass44.53s, final makecheck3064/Ruff/mypy1278/eval30 green. Real e619186c/48bc427b completedv2/1model/0tool/0OCI:525cursorcalls vs551,76connects/32fences unchanged, Worker1278–1320ms (no latency gain proof). Normal source-only candidatea51c3a59 restored after trace; API unchanged,18hashes good. Actual pages b0286e47 short6.599s(final-first);1ab820c4 story26.597s, provisional75chars632.8ms beforecommit, ProviderTTFT21.871s/4978reasoning tokens. No400/qualityrevision in4newruns; all originals untouched. Timers/globals removed; screenshot retained. Next: reasoning-budget policy preserving explicit high + isolate normal-page4.1–4.4s admission, then controlled distributions/STOP/fullSQL80/lifecycle gates. No unrelated fixture changes or publication.
 
 
-2026-10-15 PAGE-ADMISSION-TRACE-01: claimed exact private/docs scope then extended three production/two test paths before coding measured cold-key warmup. Two baseline pages+emptyclientcontrol, firsttraceomitted/v1/extensions corrected and retained; actualpageclientHTTP211–311ms,fullbaselineclick→Provider3.609/5.107s. Source54lines adds cacheprefetch/nativebounds and2s/32URI Cloud lifespanwarm, no Host/default/authority/fence change. Sixnewchecksred;46focusedgreen16.18s, final6green3.58s,makecheck3065/Ruff/mypy1278/eval30 green. NativeactualPGmatrix1pass;2optionalbounds initiallyskipped, then oldscratchTCPpassword drift blockedsetup; retained, nofixture/credentialrepair. DisposablePG2unchangedboundchecks pass0.73s, removedonlyowncontainer. Threeadjacentno-modelpairs coldmedian81.32/warm29.92ms, no pagegainclaim. Actualstartup391ms/JWKS363ms, firstrequestkeyhit0.172ms butauth496ms fromnativeDB/DNSvariation. CandidateAPIc0b8e9dc normalrestored/healthy;Worker a51 unchanged,3API+18Workerhashes verified. Newtracedwarmcc44a0f8body6.1645s; finalnormal30e491aebody12.3378s, canonicalv2/1logicalmodelround/0tools/0OCI but1Gatewayretry(2Providerattempts). Modeltotal7028ms,917ms firsttextonlysuccessfulattempt; initialfailuretypenotretained, do not infer6s frontenddelay. Both earlierpages+controlcomplete; no400/qualityrevision; nooriginalRunreplay. Browserglobals/listeners/Network capturecleared, finalpage/screenshotkept. Exactnextslice: bounded safe retry classification/perattemptdurations and cumulativeTTFT semantic audit, then newrequests only; preserve explicit high. No publication or unrelated fixture edits.
+2026-10-15 PAGE-ADMISSION-TRACE-01: claimed exact private/docs scope then extended three production/two test paths before coding measured cold-key warmup. Two baseline pages+emptyclientcontrol, firsttraceomitted/v1/extensions corrected and retained; actualpageclientHTTP211–311ms,fullbaselineclick→Provider3.609/5.107s. Source54lines adds cacheprefetch/nativebounds and2s/32URI Cloud lifespanwarm, no Host/default/authority/fence change. Sixnewchecksred;46focusedgreen16.18s, final6green3.58s,makecheck3065/Ruff/mypy1278/eval30 green. NativeactualPGmatrix1pass;2optionalbounds initiallyskipped, then oldscratchTCPpassword drift blockedsetup; retained, nofixture/credentialrepair. DisposablePG2unchangedboundchecks pass0.73s, removedonlyowncontainer. Threeadjacentno-modelpairs coldmedian81.32/warm29.92ms, no pagegainclaim. Actualstartup391ms/JWKS363ms, firstrequestkeyhit0.173ms butauth496ms fromnativeDB/DNSvariation. CandidateAPIc0b8e9dc normalrestored/healthy;Worker a51 unchanged,3API+18Workerhashes verified. Newtracedwarmcc44a0f8body6.1645s; finalnormal30e491aebody12.3378s, canonicalv2/1logicalmodelround/0tools/0OCI but1Gatewayretry(2Providerattempts). Modeltotal7028ms,917ms firsttextonlysuccessfulattempt; initialfailuretypenotretained, do not infer6s frontenddelay. Both earlierpages+controlcomplete; no400/qualityrevision; nooriginalRunreplay. Browserglobals/listeners/Network capturecleared, finalpage/screenshotkept. Exactnextslice: bounded safe retry classification/perattemptdurations and cumulativeTTFT semantic audit, then newrequests only; preserve explicit high. No publication or unrelated fixture edits.
 
 
 2026-10-15 PROVIDER-ATTEMPT-TRACE-01: exact task/branch/ownership claimed before code. Audited normal+stream Chat/Responses retry loops and normalize callers (prepared coverage/beta paths have distinct nonretry boundaries). One bounded shared logging helper, call-local random correlation, safe exception class/status and cumulative reconstruction; no exception text/header/body/URL/reasoning, no extra SQL/events.20diagnostic checks red then green;1warning-visibility red then green because normalWorker rootdefault suppressesINFO.141focused pass0.73s, makecheck3067/Ruff/mypy1278/eval30 green. Source-only three-file Worker overlay e76adcdc on a51; APIc0b unchanged. New real normalpages5ca5dab0/64d88bb9/8a47451e completedv2/1model/0tool/0OCI/retry0, body5.652/6.085/5.364s; Provider489/754/532ms. First short draft busytrue500.5ms beforecommit. No originalretryreplay; old30e cause unknown, no claimdiagnostic changeimproveslatency.24hashes+healthy normal6fileentrypoints verified, browserinstrumentationremoved/screenshotretained. No unrelated fixture work/push/remote/npm. Exactnext: pre-model3.56–4.82s boundary; compositionpool alreadyexists but boundedTaskIO deliberatelyexcluded, do not blindlyreplace killablefreshI/O.

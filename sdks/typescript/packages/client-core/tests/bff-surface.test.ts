@@ -45,3 +45,11 @@ test("strict names, transport, scope and in-flight guard; preparation sends no R
  const first=sdk.submit(captured,2);await assert.rejects(sdk.discover());assert.ok(!storage.getItem(storage.key(0)!)!.includes("never-store"));release();await first;assert.equal(sdk.pending()!.stage,"recorded");
  for(const path of ["//evil","https://evil","/../x","/surfaces?x=1","/surfaces/"])assert.throws(()=>createBFFSurface({path,storage:memory()}));
 });
+
+test("CAS input upper bound differs from the successful expected-plus-one result",async()=>{
+ const upper=9007199254740990;let calls=0;
+ const sdk=createBFFSurface({path:"/surfaces",storage:memory(),fetch:async(u,init)=>{calls++;const operation=new Headers(init!.headers).get("Idempotency-Key")!;return Response.json({...view(operation,u.toString().endsWith("install")?"installed":"recorded",upper),revision:upper});}});
+ const result=await sdk.submit(captured,upper-1);assert.equal(result.revision,upper);
+ const installed=await sdk.install(upper-1);assert.equal(installed.binding!.mappingRevision,upper);assert.equal(sdk.pending(),null);
+ await assert.rejects(sdk.submit(captured,upper));assert.equal(calls,2);
+});

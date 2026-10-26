@@ -1,7 +1,7 @@
 # CA-P3-03F 当前计划
 
 - [x] E/AC依赖、Owned paths和显式两阶段恢复边界。
-- [x] SDK实现、7新增回归，SDK check/172测试通过。
+- [x] SDK实现、8新增回归，SDK check/173测试通过。
 - [x] 完整make test/check/SDK及正式证据完成，限定提交推送由实际远端回执核对。
 - [ ] AD固定发布源联合与旧消费者，独立记录。
 

@@ -5,8 +5,8 @@
   "makeTest": "11138 passed, 3067 skipped in 1221.05s (0:20:21)",
   "makeCheck": "PASS: boundary/file sizes/ruff/mypy/30eval/progress guards",
   "SDKCheck": "PASS",
-  "SDKTests": 172,
-  "newSDKCases": 7,
+  "SDKTests": 173,
+  "newSDKCases": 8,
   "candidateActualSDKGoFacadeOIDCWorker": "PASS; final published-source consumer separately OD-P3-01AD",
   "SDKExport": "createBFFSurface",
   "locatorStageBeforeSinglePOST": true,
@@ -14,6 +14,8 @@
   "explicitInstallAndGETOnlyCurrentMapping": true,
   "noBrowserCredentialOrBodyStorage": true,
   "PythonNativeStorageWorkerChanged": false,
+  "PythonSourcesUnchangedSinceFullPytest": true,
+  "CASInputAndResultUpperBoundsSeparated": true,
   "originalMessageNoncommitProof": false,
   "wholePageDocumentMigrationProved": false,
   "productionHAProved": false,
@@ -23,8 +25,8 @@
   "npmPublish": false,
   "logsSha256": {
     "test": "db39d25258b5e7613c3c0415a28f9c6de50a9379d92c61ec831e02f9733afc27",
-    "check": "97f6b20ccf0925898f7460bb947407718d315ca5235d6e7662394d6d579acc55",
-    "sdk-check": "bf7915badb94a7d4369a630818cdc240aad92af3fa8ab6dad7725d0bc5dba148",
-    "sdk-test": "52a0f17253b4d027c33c0ed4a9b1ec1b118d1822ae705beea1e7149a952eee9d"
+    "check": "6e98beceb955eb9a959a881d99871389a87acf12a664ecb4d28e2a9f424ccbfd",
+    "sdk-check": "d32473b233da9c1edf74afa309b201d9d97fbe37688e8ab6c6f703467fd941bc",
+    "sdk-test": "da14176ef336165a872f4da0e87336b133b0ada5c47c96f141044ce8a05b2d0b"
   }
 }
