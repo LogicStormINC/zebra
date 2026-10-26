@@ -810,3 +810,5 @@ Readable values use the existing AG-UI command and [bound native admission](docs
 [当前合同与恢复流程](docs/CA-P3-02I_command_recovery.md)：原 Segment 可选前置条件、共享业务日志、SDK 持久标识和只读对账；不关闭完整 P3。
 
 原业务效果跨 Run 协调见 [CA-P3-03A](docs/CA-P3-03A_original_effect_receipts.md)：历史收据不代表当前 UI 执行，unknown 不重发。
+
+[Task-message 原收据查询](docs/CA-P3-03B_task_message_receipts.md)：原GET不重发，missing不是非提交证明。

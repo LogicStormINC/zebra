@@ -17317,3 +17317,7 @@ OD-P3-02D本地候选16项联合通过，最终以发布SHA重跑记录为准。
 ## 2026-10-26 CA-P3-03A
 
 先证明 legacy/fenced 旧 deferred 跨 Run 泄漏，再补共享只读协调和命名空间收据读取。49 项定向测试、13 项真实 PG 检查通过；同 item 第二轮实际 Worker 候选验收通过。Native 全量 make test/check 与 SDK check/158 测试通过；固定发布源码消费者结果由 OD-P3-01Z 单列。无部署或生产迁移。
+
+## 2026-10-26 CA-P3-03B
+
+核对Z后先补follow-up原收据前置。只读设计复核固定Python摘要和409权限语义；7红例先证明缺失GET。19 API与7真实PG通过，SQLite启动适配器初始化与请求只读快照分别验证。一次过早全量启动被主动中断，不计成功证据；正式Native全量make test/check、SDK check158通过；固定发布消费者由AA单列。无生产写入。

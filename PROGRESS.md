@@ -1,3 +1,7 @@
+# CA-P3-03B Task-message receipt prerequisite
+
+[公开只读合同](docs/CA-P3-03B_task_message_receipts.md)。19 API/7真实PG通过，全量make test/check和SDK check158通过；原收据缺失不证明非提交，生产BFF恢复是AB后续。
+
 # CA-P3-03A 原业务效果协调
 
 [合同与边界](docs/CA-P3-03A_original_effect_receipts.md)。全量 make test/check、49 定向/13 真实 PG 与 SDK check/158 测试通过；原收据只证明历史结果，不推断新业务意图。

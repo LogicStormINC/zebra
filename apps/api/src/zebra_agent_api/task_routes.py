@@ -18,6 +18,7 @@ from zebra_agent_api.task_api import (
     rollover_task,
     route_active_task,
 )
+from zebra_agent_api.task_message_receipts import read_task_message_receipt
 from zebra_agent_api.task_read_summaries import read_task_attachments, read_task_usage
 
 
@@ -71,6 +72,8 @@ def handle_task_route(app: ZebraAgentApi, request: TaskRouteRequest) -> ApiRespo
     if not request.path.startswith("/tasks/"):
         return None
     parts = _parts(request.path, "/tasks/")
+    if method == "GET" and len(parts) == 3 and parts[1:] == ("messages", "receipt"):
+        return read_task_message_receipt(app, parts[0], request.headers)
     if method == "POST" and len(parts) == 2 and parts[1] == "messages":
         return append_task_message(
             app,
