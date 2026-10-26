@@ -40,7 +40,11 @@ def can_refresh_repeated_read(
     verified_resources = _resource_epochs(metadata, "verified_resource_epochs")
     keys = _resource_keys(tool_call)
     if keys:
-        if metadata.get("mutation_requires_global") is True:
+        # Qualified Host resource keys cannot be inferred from argument field names.
+        # Reobserve once per epoch; completion still requires matching resource/version proof.
+        if metadata.get("mutation_requires_global") is True or any(
+            key.startswith("resource:") for key in resource_epochs
+        ):
             return mutation_epoch > fingerprint_epoch
         return any(
             resource_epochs.get(key, 0) > verified_resources.get(key, 0)

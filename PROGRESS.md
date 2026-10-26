@@ -1,3 +1,7 @@
+# CA-P3-03G Host 写后读取
+
+[共享新鲜度修复](docs/CA-P3-03G_host_read_freshness.md)：qualified resource 与裸参数键不匹配导致重复读取误拒绝。仅允许按新 mutation epoch 重新观察；资源/版本/后置条件完成门禁保持。31定向、完整make test11143通过/3067条件跳过、make check/30eval及SDK173/check通过；不部署/迁移/改原收据或Coverage。
+
 # CA-P3-03F 显式Surface SDK
 
 [合同](docs/CA-P3-03F_surface_sdk.md)。173 SDK测试和check通过；两阶段定位符/先存后单POST，unknown只读恢复。Native完整make test/check通过；固定源消费者AD另记。

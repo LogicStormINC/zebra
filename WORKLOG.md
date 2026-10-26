@@ -1,3 +1,7 @@
+## CA-P3-03G
+
+用户要求完成P3；先认领分支/Owned paths，再追踪serial与concurrent三处共享调用。31定向、完整make test11143通过/3067条件跳过、make check/30eval及SDK173/check通过，实际业务产品消费者单独固定源复验；不部署/生产迁移/main/npm。
+
 CA-P3-03F后续复核：修正CAS输入上界与结果expected+1混用，新增确定性回归；只改TS SDK及文档，Python完整测试源不变。中断旧pin消费者并由finally清理隔离资源，重跑SDK/root check并正常追加提交，重新固定发布源联合。
 
 CA-P3-03F：先认领/边界后实现公开Surface SDK，173 SDK测试和check通过。Native完整make test/check通过。无Python/Worker/原数据改变；AD公开Go门面和固定源联合另验收。

@@ -1,0 +1,27 @@
+{
+  "task": "CA-P3-03G",
+  "date": "2026-10-27T00:02:24.652243+08:00",
+  "base_commit": "d5f4531152ccf6db99cc0ddd37982ba1ab34a479",
+  "make_test": {
+    "passed": 11143,
+    "conditional_skips": 3067,
+    "exit": 0
+  },
+  "make_check": {
+    "exit": 0,
+    "eval_cases": 30
+  },
+  "focused_quality_and_freshness_tests": 31,
+  "sdk": {
+    "check_exit": 0,
+    "test_passed": 173
+  },
+  "log_sha256": {
+    "ca-p3-03g-test": "41ec703247c418004cb47e0cbe2c54855ff5a10d82ca8df09b9a69c71d567d59",
+    "ca-p3-03g-check": "6e98beceb955eb9a959a881d99871389a87acf12a664ecb4d28e2a9f424ccbfd",
+    "ca-p3-host-focused": "196970050b4d88ebe96ab8167bbd05bc63a191b0d5a789c462d010b031cd8868",
+    "p3-sdk-test": "1818254396a64438223cdd40da4dfb25d5cd665f073a9688f68f41e72de95a6e",
+    "p3-sdk-check": "ef2aa655f15d6e0ea9bd64ae48f27fa698bcfb0b3699d04905ba266307348d96"
+  },
+  "boundary": "One shared read-only freshness guard; matching resource/version/postcondition still required. No write replay, data/receipt/Coverage rewrite, deploy, production migration, main merge or npm publish. Consumer published-source actual Host Tool/UI/Worker proof recorded separately."
+}

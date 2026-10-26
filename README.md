@@ -1,3 +1,5 @@
+2026-10-26：[Host 写后读取](docs/CA-P3-03G_host_read_freshness.md)，修复 qualified resource 下的重复读取误拒绝，保留完成证明门禁。
+
 2026-10-26：[业务BFF Surface SDK](docs/CA-P3-03F_surface_sdk.md)，显式提交/原GET/映射安装与只读恢复；不自动挂载或RUN。
 
 2026-10-26：[业务BFF原消息恢复SDK](docs/CA-P3-03E_message_sdk.md)，显式同源提交、未知保留与原GET；不自动挂载/执行。
