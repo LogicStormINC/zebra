@@ -1,7 +1,7 @@
 {
   "task": "CA-CLOUD-INTEGRATION-20261027",
   "date": "2026-10-27",
-  "status": "merged_tree_verified_publication_conditional_on_expected_refs",
+  "status": "integrated_published_and_verified",
   "target_branch": "cloud-agent",
   "historical_main_unchanged": "749cfa256af64dd97592d833482ce96261a2c48d",
   "origin_before": "703c3c03965d3f03e9622e8a74c07918c3067e57",
@@ -351,5 +351,15 @@
     "test": "cdb6355c387cdca1c7292a74956cda76357da2b26f4eaac22929f2ecfb824c8c",
     "check": "694bf01539b902dfa911d80efd28a2cba1e4dd4642f8f21e3e6eb2a4e3343aa7"
   },
-  "preserved_file_hashes_verified": true
+  "preserved_file_hashes_verified": true,
+  "publication": {
+    "merge_commit": "a042d7e0c639ed14dfdd022e59da3ac4e9913f06",
+    "remote_fast_forward": true,
+    "atomic_remote_branch_deletions": 24,
+    "local_feature_branch_deletions": 24,
+    "dirty_feature_branch_pairs_retained": 22,
+    "protected_files_unchanged": 157,
+    "worktrees_preserved": 23,
+    "documentation_receipt_follows_merge": true
+  }
 }

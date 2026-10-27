@@ -4,8 +4,9 @@ CA-CLOUD-INTEGRATION-20261027 integrates published P3 017e04e6 and local cloud-a
 7ff78d0b without rewriting either history. Only documentation conflicts required
 resolution; retain both operational and P3 records. Worker workspace OSError handling
 and provisioner uncertain-state fixes remain present. Full make test11151 passed/3067
-conditional skips; make check including30eval passed;44 focused and4 I/O checks passed. Dirty
-primary/baseline worktrees remain untouched; no deployment or production migration.
+conditional skips; make check including30eval passed;44 focused and4 I/O checks passed. All157 protected files across23worktrees remain unchanged. Integrated a042d7e0
+published to cloud-agent;24 local/24 remote merged feature branches removed,22 dirty
+occupied feature branches retained. Historical main unchanged; no deployment or production migration.
 
 # 2026-10-22 — Production Turn authority reuse and terminal projection repaired
 

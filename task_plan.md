@@ -5,9 +5,9 @@
 - [x] Merge published P3; retain both documentation histories and operational fixes.
 - [x] Workspace I/O self-check, 44 focused regressions and make check.
 - [x] Full make test;11151 passed/3067 conditional skips; final evidence recorded.
-- [ ] Publish cloud-agent; fast-forward primary checkout without changing dirty files.
-- [ ] Delete only verified merged/unoccupied P1/P2/P3 refs; retain dirty branches/worktrees.
-- [ ] Verify remote/local refs and all 157 protected file hashes.
+- [x] Publish cloud-agent; fast-forward primary checkout without changing dirty files.
+- [x] Delete only verified merged/unoccupied P1/P2/P3 refs; retain dirty branches/worktrees.
+- [x] Verify remote/local refs and all 157 protected file hashes.
 
 No deployment or production migrations. Overdoze Native pins remain unchanged.
 

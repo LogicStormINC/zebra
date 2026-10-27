@@ -17488,3 +17488,9 @@ All157 protected files unchanged. Publication/cleanup uses exact expected remote
 refs; merged feature tips remain reachable through cloud-agent. Original source-pin
 consumer evidence remains017e04e6 and is not claimed as a fresh integrated-source
 joint. No deployment/production migrations or historical data/Coverage rewrites.
+
+Publication completed atomically: cloud-agent fast-forward703c3c03 -> a042d7e0,
+24 remote merged refs deleted under exact old-tip leases. Primary cloud-agent
+fast-forwarded from7ff78d0b;24 local refs deleted after ancestry checks. All157
+protected file hashes across23worktrees unchanged;22 dirty feature branch pairs
+and independent operations lanes retained. Historical main remains749cfa25.

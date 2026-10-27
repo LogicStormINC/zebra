@@ -1,6 +1,6 @@
 # CA-CLOUD-INTEGRATION-20261027 — Integrate published P3 with cloud operations
 
-- Status: Verified; make test11151 passed/3067 conditional skips, make check/30eval,44 focused and4 workspace I/O checks passed. This merge preserves both histories; publish/cleanup only against inventoried tips. Created Ready and claimed before integration, 2026-10-27.
+- Status: Done; integrated and published to cloud-agent as a042d7e0;24 local/24 remote merged branches removed,22 dirty occupied feature branches retained. make test11151 passed/3067 conditional skips, make check/30eval,44 focused and4 workspace I/O checks passed. This merge preserves both histories; publish/cleanup only against inventoried tips. Created Ready and claimed before integration, 2026-10-27.
 - Human owner: Luke Ding; executor: Codex. User requested branch integration and continuation.
 - Branch: codex/ca-cloud-integration-20261027; isolated worktree from cloud-agent 7ff78d0b.
 - Dependencies: published P3 017e04e6; six local cloud operations commits after origin/cloud-agent 703c3c03.
