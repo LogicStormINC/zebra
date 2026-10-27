@@ -1,0 +1,37 @@
+{
+  "version": "1",
+  "reports": [
+    {
+      "browser": "chromium",
+      "verifiedBusinessCallbackFixture": true,
+      "actualPlatformHTTP": true,
+      "separateBusinessPG": true,
+      "lostCallbackAckReadOnlyRecovery": true,
+      "duplicateCallbackIssuePosts": 1,
+      "actualNativeHTTPMounts": 2,
+      "newControllerFence": true,
+      "runtimeStoppedBeforeUnknownRefresh": true,
+      "reloadNoRemountOrRetry": true,
+      "explicitReauthAndRestart": true,
+      "currentBusinessDenialStopsRuntime": true,
+      "noBrowserCredentials": true,
+      "nativeLocalCompatibilityFixture": true
+    },
+    {
+      "browser": "webkit",
+      "verifiedBusinessCallbackFixture": true,
+      "actualPlatformHTTP": true,
+      "separateBusinessPG": true,
+      "lostCallbackAckReadOnlyRecovery": true,
+      "duplicateCallbackIssuePosts": 1,
+      "actualNativeHTTPMounts": 2,
+      "newControllerFence": true,
+      "runtimeStoppedBeforeUnknownRefresh": true,
+      "reloadNoRemountOrRetry": true,
+      "explicitReauthAndRestart": true,
+      "currentBusinessDenialStopsRuntime": true,
+      "noBrowserCredentials": true,
+      "nativeLocalCompatibilityFixture": true
+    }
+  ]
+}

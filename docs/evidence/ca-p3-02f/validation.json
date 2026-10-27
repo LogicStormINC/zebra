@@ -1,0 +1,60 @@
+{
+  "task": "CA-P3-02F",
+  "status": "Review",
+  "base": "61e2cb217b7b3fbc23f0bd0ef45f04863bcf1267",
+  "contractVersion": "client-state-admission/1",
+  "focused": {
+    "passed": 60,
+    "skipped": 1,
+    "skip": "owned PG DSN absent; executed separately with zero skips"
+  },
+  "ownedPostgres": {
+    "postgresVersion": 17,
+    "ownedIsolatedService": true,
+    "legacyNumericDriftReproduced": true,
+    "normalizedStateDigestAndWorkerRecoveryPassed": true,
+    "passed": 4,
+    "skipped": 0,
+    "tablesOrMigrations": false,
+    "scope": "read-only real JSONB transport and current Worker snapshot recovery; not PG registry/command CAS or HA",
+    "textCompatibilityChecked": true
+  },
+  "makeTest": {
+    "passed": 10949,
+    "skipped": 3021,
+    "seconds": 1199.57,
+    "exit": 0
+  },
+  "makeCheck": {
+    "passed": true,
+    "typeFiles": 1389,
+    "evalCases": 30,
+    "sizeCheckedFiles": 3375,
+    "sizeViolations": 0
+  },
+  "preservation": {
+    "base": "61e2cb217b7b3fbc23f0bd0ef45f04863bcf1267",
+    "protectedFiles": 936,
+    "scope": "existing SDK, Worker, agent-storage, contracts/evidence and Coverage-named files; exact base bytes",
+    "changed": [],
+    "manifestSha256": "16170466d504dc4f375fe08bc1cd004ec13f8ac29a24e3ad3bb733fb10ccd9fa"
+  },
+  "boundaries": [
+    "API registry fixture and real SQLite command CAS/reopen/Worker Context; not cloud identity E2E",
+    "owned read-only PG17 JSONB transport and Worker recovery; not PG registry/command CAS or production HA",
+    "new raw JSON limits/numeric/text canonicalization at admission only; historical hash unchanged, no data rewrite",
+    "sensitive-key heuristic is not general value-content DLP",
+    "current observations before command CAS; no cross-store linearizable revocation or latest-UI guarantee",
+    "SDK still mounts names/revision; value submission and real BFF/model harness remain later",
+    "no deployment, production migration, npm publication or main/cloud-agent integration"
+  ],
+  "logSha256": {
+    "focused-red.log": "8b4c08792c8c47cb8295ee6f73f648a016c3d993d6f8f1721147fa473487b21b",
+    "focused-green.log": "6e8a954cfc6b0e2804095e1e83d8b916a48e14963e00f459ecf7df76149b6f58",
+    "jsonb-owned.log": "7bd5ae98f5546bc45183507b20aaf6f0158761100261932237cedc9e5479d65b",
+    "make-test.log": "362f5d78809cb8dc60086c1ad03cc1239da7135bb7b3ee8f1b7402a2b0c6f20f",
+    "make-check.log": "e33ba44438bd07cc58eeabfb31cd86d4e641bc98b709cdce2c0bf488f0c7d895",
+    "make-check-final.log": "e33ba44438bd07cc58eeabfb31cd86d4e641bc98b709cdce2c0bf488f0c7d895"
+  },
+  "discardedRuns": "initial full10944 passed before JSONB fix; numeric-only rerun interrupted for text guards; neither substitutes final full gate"
+}

@@ -1,0 +1,74 @@
+{
+  "task": "CA-P3-02Q",
+  "status": "PASS",
+  "at": "2026-10-24T03:12:17.047155+00:00",
+  "base_commit": "ce46a7e580d96991681000c6ddb7305f225f87b8",
+  "commands": [
+    {
+      "target": "focused",
+      "exit": 0,
+      "seconds": 6.599778916002833,
+      "log": "/Users/lukeding/.codex/tmp/ca-p3-02q-focused.log"
+    },
+    {
+      "target": "check",
+      "exit": 0,
+      "seconds": 7.920826624991605,
+      "log": "/Users/lukeding/.codex/tmp/ca-p3-02q-check.log"
+    },
+    {
+      "target": "test",
+      "exit": 0,
+      "seconds": 1303.424324749998,
+      "log": "/Users/lukeding/.codex/tmp/ca-p3-02q-test.log"
+    }
+  ],
+  "test_summary": {
+    "passed": 11057,
+    "conditional_skips": 3032,
+    "pytest_seconds": 1300.63,
+    "type_files": 1404,
+    "eval_cases": 30,
+    "file_gate_checked": 3421,
+    "file_violations": 0
+  },
+  "focused": {
+    "api_cases": 11,
+    "real_owned_postgres_cases": 3,
+    "passed": 14,
+    "skips": 0
+  },
+  "logs": {
+    "ca-p3-02q-test.log": {
+      "path": "/Users/lukeding/.codex/tmp/ca-p3-02q-test.log",
+      "sha256": "0a7dc27decca7af9f1a714036ee7a049f5cc180e8e857dba986da98477026416"
+    },
+    "ca-p3-02q-check.log": {
+      "path": "/Users/lukeding/.codex/tmp/ca-p3-02q-check.log",
+      "sha256": "5d362cd00bdc9f3ac61962ca966d2154fa4f7618b7253d79bd0985509d7b0a4f"
+    },
+    "ca-p3-02q-focused.log": {
+      "path": "/Users/lukeding/.codex/tmp/ca-p3-02q-focused.log",
+      "sha256": "a00d8de2aa8f27ac07e19db175dee3cf008f519f86bd71957c65bcceb9083592"
+    },
+    "ca-p3-02q-check-delivery.log": {
+      "path": "/Users/lukeding/.codex/tmp/ca-p3-02q-check-delivery.log",
+      "sha256": "5d362cd00bdc9f3ac61962ca966d2154fa4f7618b7253d79bd0985509d7b0a4f"
+    }
+  },
+  "boundaries": {
+    "read_only_original_claim_and_result": true,
+    "host_grant_consume_and_security_audit_preserved": true,
+    "missing_result_is_non_commit_proof": false,
+    "native_execution_or_receipt_repair": false,
+    "retry_or_controller_reclaim": false,
+    "native_schema_tail": 113,
+    "historical_data_rewritten": false,
+    "coverage_changed": false,
+    "consumer_final_published_pin_joint": "recorded separately by OD-P3-01N",
+    "production_deployment": false,
+    "production_migration": false,
+    "main_merge": false,
+    "production_ha_verified": false
+  }
+}

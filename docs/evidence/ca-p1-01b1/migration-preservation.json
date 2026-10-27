@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "baseline_migration": 107,
+  "target_migration": 108,
+  "checks": [
+    "preexisting registry content/timestamps preserved; revision defaults1",
+    "accepted grant replay ledger and audit rows byte-equivalent JSON before/after",
+    "previously consumed grant remains replay-rejected after migration"
+  ],
+  "boundary": "Own disposable synthetic PostgreSQL database only; no production data or Coverage history rewritten",
+  "cleanup": "owned container removed"
+}

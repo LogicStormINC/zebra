@@ -371,3 +371,40 @@ def test_worker_loop_skips_poisoned_ready_sessions_without_crashing(tmp_path, mo
     assert execution.calls == 1
     assert len(result.skipped_session_ids) == 1
     assert result.executed_session_ids == ()
+
+
+@pytest.mark.parametrize("decision", ["approve", "reject"])
+def test_known_approval_task_lookup_does_not_rebuild_or_project_resume(
+    tmp_path, monkeypatch, decision
+):
+    stores, session_id, _ = _seed_session(tmp_path)
+    app = create_app(tmp_path / "worker.sqlite")
+    task = app.stores.tasks.ensure_for_session(session_id)
+    session = app.stores.sessions.get_session(session_id)
+    app.stores.sessions.save_session(
+        session.model_copy(update={"status": SessionStatus.WAITING_APPROVAL})
+    )
+
+    def forbidden_rebuild(*args, **kwargs):
+        raise AssertionError("known Task response must not rebuild/project pending commands")
+
+    monkeypatch.setattr(app.stores.tasks, "ensure_for_session", forbidden_rebuild)
+    result = getattr(app, decision)(
+        str(session_id), {"operator": "tester", "reason": "explicit decision"}
+    )
+    assert result.status_code == 200 and result.body["session_id"] == str(task.task_id)
+    events = app.stores.events.list_for_session(session_id)
+    if decision == "approve":
+        resume = events[-1]
+        assert resume.event_type is EventType.SESSION_COMMAND_ACCEPTED
+        assert resume.actor is EventActor.HARNESS
+        assert resume.idempotency_key.startswith("approval-resume:")
+        assert app.stores.sessions.get_session(session_id).current_sequence < resume.sequence
+        execution = _ExecutionSpy(stores)
+        consumed = SessionCommandConsumer(stores, execution).consume_once(
+            worker_id="worker", lease_ttl_seconds=30
+        )
+        assert consumed.status == "executed" and consumed.command_kind == "resume"
+        assert len(execution.calls) == 1
+    else:
+        assert events[-1].event_type is EventType.APPROVAL_REJECTED

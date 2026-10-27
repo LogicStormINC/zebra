@@ -272,9 +272,19 @@ def test_direct_dispatch_rechecks_task_authority_before_mutations(mismatch):
                     "host_app_id": grant.context.host_app_id,
                     "namespace_id": grant.context.namespace_id,
                     "origin": grant.context.origin,
+                    "user_ref": grant.subject_ref,
                 }
             )
         }
+    )
+    from agent_control_plane.frontend_profiles import FrontendProfileService
+
+    FrontendProfileService(bundle.frontend_capabilities).bind(
+        host_app_id=grant.context.host_app_id,
+        namespace_id=grant.context.namespace_id,
+        frontend_app_id=body["mount"]["frontend_app_id"],
+        revision=body["mount"]["profile_revision"],
+        profile_digest=body["mount"]["profile_digest"],
     )
     app = app_for(binding_for(grant))
     app.settings = SimpleNamespace(deployment="cloud")
@@ -299,7 +309,7 @@ def test_direct_dispatch_rechecks_task_authority_before_mutations(mismatch):
         ),
     )
     assert response.status_code == (
-        201 if mismatch is None else 403 if mismatch == "unverified" else 404
+        201 if mismatch is None else 401 if mismatch == "unverified" else 404
     )
     if mismatch is not None:
         assert bundle.client_sessions.snapshots == bundle.client_sessions.bindings == {}

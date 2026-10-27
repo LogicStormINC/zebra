@@ -52,7 +52,7 @@ def test_api_approve_records_granted_decision(tmp_path: Path) -> None:
     assert events[-2].event_type is EventType.APPROVAL_GRANTED
     assert events[-1].event_type is EventType.SESSION_COMMAND_ACCEPTED
     assert events[-1].idempotency_key == (
-        f"approval:{session.session_id}:{session.current_sequence + 1}:resume"
+        f"approval-resume:{session.session_id}:{session.current_sequence + 1}:resume"
     )
     assert updated is not None
     assert updated.status is SessionStatus.RUNNING

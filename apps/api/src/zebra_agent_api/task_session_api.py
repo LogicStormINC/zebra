@@ -28,7 +28,11 @@ class TaskSessionApi(Protocol):
     ) -> ApiResponse: ...
 
     def append_session_message(
-        self, session_id: str, payload: dict[str, object]
+        self,
+        session_id: str,
+        payload: dict[str, object],
+        *,
+        include_message_coordinates: bool = False,
     ) -> ApiResponse: ...
 
     def cancel_session(

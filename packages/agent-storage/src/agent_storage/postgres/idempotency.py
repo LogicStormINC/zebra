@@ -17,6 +17,11 @@ class PostgresIdempotencyStore(IdempotencyStorePort):
     def __init__(self, dsn: str, *, deployment_namespace: str) -> None:
         self._database = PostgresDatabase(dsn, deployment_namespace=deployment_namespace)
 
+    def admission_fence(self, scoped: str, digest: str, *, terminate: bool) -> dict[str, str]:
+        from agent_storage.postgres.admission_dispatch_fence import admission_fence
+
+        return admission_fence(self, scoped, digest, terminate=terminate)
+
     def get(self, *, action: str, idempotency_key: str) -> IdempotencyRecord | None:
         with self._database.connect() as connection:
             row = connection.execute(

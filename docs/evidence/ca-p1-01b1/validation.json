@@ -1,0 +1,95 @@
+{
+  "task": "CA-P1-01B1",
+  "status": "PASS",
+  "branch": "codex/ca-p1-01b1-host-management",
+  "base_commit": "325333aee7b7819a5ce76ea23b8ed342190182f0",
+  "source_sha256": {
+    "apps/api/src/zebra_agent_api/host_registry_admin.py": "fce2b92d0ac2d8c543a86573fc232e4e61aefd2dfdc31f9eef7c3abca86cb02b",
+    "apps/api/src/zebra_agent_api/host_registry_config.py": "cc413b370f1b5a5b043b01c7a2899fb44760e0236c9d8a84cdada37b748ddb23",
+    "apps/api/src/zebra_agent_api/host_registry_management.py": "31937db360e19bdae0c2b8e0a45f7f6d2d3c8d14f401c4f5d31af81bd783c296",
+    "apps/api/src/zebra_agent_api/http.py": "a57e7f941ec2968dc714e7c17b38a29bdec541ecc1e45669f9f9adf2a04b7a53",
+    "apps/config/src/zebra_agent_config/settings.py": "7ec1580975c2f4b90403a5379e45450845eaa07c326be34bd32b92345e7142d1",
+    "packages/agent-storage/src/agent_storage/postgres/host_auth.py": "b0c7a2c77b3bbb8ee6fc5ae0c6c2fd6735e3328392f5fa78fa2179b8b09b7344",
+    "packages/agent-storage/src/agent_storage/postgres/host_management.py": "a76ea12a3faa1c340057bd8c4554e51a605386a244fa4728a020b987b93da863",
+    "packages/agent-storage/src/agent_storage/postgres/host_management_migration.py": "eab64eba1af9c8a590a5f97793058898a68af76aa8b6d53861eaafa6bec4adbd",
+    "packages/agent-storage/src/agent_storage/postgres/migration_catalog_tail.py": "0e7281b1b9a2b289b9865d5a2ea159446de0bfe7a178628f44cfb9d22b20ebd9",
+    "tests/agent_storage/test_branch_migration_catalog.py": "128723c8046b524a11af62bfd9ce3a36a01046ce8c85d4530a2235b658363812",
+    "tests/agent_storage/test_host_management.py": "86148fee9d716881a9a75a0201e6c426a86ccad6eba23bf9d9664b2fac49bf76",
+    "tests/api/test_host_registry_management.py": "a37ae59cba0728ed51a8734022bc4a969d9266d467d219020a4bd367a8e99e00"
+  },
+  "focused": {
+    "command": "uv run pytest -q tests/api/test_host_registry_management.py tests/api/test_runtime_management.py tests/agent_storage/test_host_management.py tests/agent_storage/test_branch_migration_catalog.py",
+    "passed": 48,
+    "skipped": 0,
+    "log_sha256": "476718d4cf3c77a4d08feb1388eaebf5bf852c34852461526d59014a2632f40f"
+  },
+  "review": {
+    "design_plan": "APPROVED_AFTER_EXPIRY_REFINEMENT",
+    "implementation_spec": "APPROVED_AFTER_DEEP_JSON_AND_UNKNOWN_COMMIT_REGRESSIONS",
+    "quality_security": "APPROVED_STATIC_ONLY",
+    "reviewers_did_not_execute_gates": true
+  },
+  "migration_report": "migration-preservation.json",
+  "not_claimed": [
+    "cloud-agent/main integration or production migration/deployment",
+    "outbound connector management",
+    "Go Host intent/client workflow",
+    "business IdP/Task/Worker/model/browser acceptance",
+    "performance/SLO/storage HA or old privileged writer CAS compatibility"
+  ],
+  "make_check": {
+    "exit_code": 0,
+    "command": "make check",
+    "log_sha256": "1618b595bf48bd697819f05f7592505c3c41baf602fd0d877307a67620541ff4",
+    "mypy_source_files": 1334,
+    "eval_cases": 30,
+    "eval_passed": 30,
+    "file_size_violations": 0
+  },
+  "documentation_checks": {
+    "focused_markdown_links_and_limits": "PASS",
+    "inherited_large_governance_history": "Preserved; no unrelated restructuring",
+    "native_public_contract_operations": 2,
+    "secret_scan_and_fixture_review": "PASS"
+  },
+  "earlier_attempts": [
+    "First check caught near-limit composition/config files; moved optional wiring to the bounded adapter and retained limits without weakening gates",
+    "An earlier full test run was intentionally interrupted after composition changes; only final frozen-source full run will count"
+  ],
+  "migration_preservation_script_sha256": "9d6eb07a5ec1f35a45ab8e4353b536832dab873ef9fe2ad4413809ce22f5b845",
+  "migration_preservation_boundary": "Synthetic v107 registry and consumed grant seeded before explicit v108 in one newly owned container; no production DSN; original row/timestamps/ledger/audit and continued replay rejection verified",
+  "completed_at": "2026-10-21T04:22:14.124535+00:00",
+  "make_test": {
+    "command": "make test",
+    "exit_code": 0,
+    "passed": 10403,
+    "skipped": 3007,
+    "seconds": 970.6,
+    "log_sha256": "9b9aad90afc60f5b6fd983fd380c74398b225fbf3a92475f64606bd885e89e0b",
+    "skip_boundary": "Existing opt-in integration/environment gates remain skipped; new scoped PG/HTTP48 focused checks have zero skips"
+  },
+  "final_source_hash_match": true,
+  "delivery_file_sha256": {
+    "PROGRESS.md": "d920b9ded8c163716580941f9b3aec23456212b8af9ae3db586e6592fa82df34",
+    "WORKLOG.md": "f3c89259015f1505d1a0a46b22eaf9b9cf0ff3628788d383b6ea236d2fb2d374",
+    "apps/api/src/zebra_agent_api/host_registry_admin.py": "fce2b92d0ac2d8c543a86573fc232e4e61aefd2dfdc31f9eef7c3abca86cb02b",
+    "apps/api/src/zebra_agent_api/host_registry_config.py": "cc413b370f1b5a5b043b01c7a2899fb44760e0236c9d8a84cdada37b748ddb23",
+    "apps/api/src/zebra_agent_api/host_registry_management.py": "31937db360e19bdae0c2b8e0a45f7f6d2d3c8d14f401c4f5d31af81bd783c296",
+    "apps/api/src/zebra_agent_api/http.py": "a57e7f941ec2968dc714e7c17b38a29bdec541ecc1e45669f9f9adf2a04b7a53",
+    "apps/config/src/zebra_agent_config/settings.py": "7ec1580975c2f4b90403a5379e45450845eaa07c326be34bd32b92345e7142d1",
+    "docs/AGENT_TASKS.md": "1dc85765795a600bb0ae483605fc42d66d6ddf754ca2825de5ff13029392885f",
+    "docs/HOST_REGISTRY_MANAGEMENT.md": "6ba43e4cb35307413cc5a3323c6638369d8ecfcc1e6115d988be58d667a9c997",
+    "docs/RUNTIME_MANAGEMENT.md": "3add8ee73de1b3c10a7163b28377491b42f56a5c818051b8e91cdf1ffc1c1a90",
+    "docs/contracts/host-registry-management-v1.openapi.json": "b0efc60b1f772c01efd67b85d6b0488d63659a2ee2d1f2f96ce77ee02aada91d",
+    "docs/evidence/ca-p1-01b1/migration-preservation.json": "2855254e0771781df634e9783d059d04c2366da1512b23c31f1b8ca87bad6dd7",
+    "docs/superpowers/plans/2026-10-21-host-management.md": "736688dfd64a45e391de356160ffca9a64f7e5ec8016a0164669b3ffed8735f2",
+    "docs/superpowers/specs/2026-10-21-host-management-design.md": "947ee58d22c0f45e802a84a31e68af3e2f52d384363d775c6d2592185be0df2c",
+    "packages/agent-storage/src/agent_storage/postgres/host_auth.py": "b0c7a2c77b3bbb8ee6fc5ae0c6c2fd6735e3328392f5fa78fa2179b8b09b7344",
+    "packages/agent-storage/src/agent_storage/postgres/host_management.py": "a76ea12a3faa1c340057bd8c4554e51a605386a244fa4728a020b987b93da863",
+    "packages/agent-storage/src/agent_storage/postgres/host_management_migration.py": "eab64eba1af9c8a590a5f97793058898a68af76aa8b6d53861eaafa6bec4adbd",
+    "packages/agent-storage/src/agent_storage/postgres/migration_catalog_tail.py": "0e7281b1b9a2b289b9865d5a2ea159446de0bfe7a178628f44cfb9d22b20ebd9",
+    "tests/agent_storage/test_branch_migration_catalog.py": "128723c8046b524a11af62bfd9ce3a36a01046ce8c85d4530a2235b658363812",
+    "tests/agent_storage/test_host_management.py": "86148fee9d716881a9a75a0201e6c426a86ccad6eba23bf9d9664b2fac49bf76",
+    "tests/api/test_host_registry_management.py": "a37ae59cba0728ed51a8734022bc4a969d9266d467d219020a4bd367a8e99e00"
+  }
+}

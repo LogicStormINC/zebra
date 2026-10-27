@@ -1,0 +1,82 @@
+{
+  "contractVersion": "sdk-command-recovery/1",
+  "producerTask": "CA-P3-02I",
+  "receiptContract": "client-command-receipts/1",
+  "receiptProducer": "be9f7cd2bff7e2ba381399d9fd1852d6eaab3184",
+  "negotiation": {
+    "mode": "bff",
+    "clientStateVersion": 1,
+    "surfaceMetadataVersion": 1,
+    "commandRecoveryVersion": 1
+  },
+  "nativePrecondition": {
+    "capability": "client_command_segment_precondition_contract_version=1",
+    "header": "X-Zebra-Command-Segment",
+    "commandMismatch": 409,
+    "malformed": 400,
+    "optionalForLegacy": true,
+    "resolvedOriginalSegmentPassedToAdmission": true
+  },
+  "browser": {
+    "receiptRoute": "GET /agui/threads/{taskId}/runs/{runId}/commands/receipt",
+    "keyHeader": "Idempotency-Key",
+    "key": "canonical lowercase nonzero UUID",
+    "receiptBody": false,
+    "receiptQuery": false,
+    "responses": [
+      {
+        "status": "unknown"
+      },
+      {
+        "status": "accepted",
+        "commandId": "nonzero UUID"
+      }
+    ],
+    "publicApi": [
+      "runtime.readableCommandRecovery.pending()",
+      "runtime.readableCommandRecovery.reconcile(key)",
+      "useZebraReadableCommandRecovery()"
+    ],
+    "markerBeforeDispatch": true,
+    "markerLimit": 16,
+    "markerMaxCharacters": 2048,
+    "markerContent": "opaque UUID keys only; per-tab/session/Task/Run",
+    "storageFailure": "fail closed before POST; retain unknown on acknowledgement failure",
+    "pendingReload": "stopped before Provider start/mount/effects/heartbeat/release",
+    "acceptedRecovery": "clear exact marker only; remain stopped; fresh trusted bootstrap/new Runtime/current mount required",
+    "autoResend": false,
+    "absentClearsMarker": false,
+    "nativeCredentials": false,
+    "persistMessageOrPageValues": false
+  },
+  "trustedBff": {
+    "originalMapping": "business-owned shared durable uniqueness/CAS; scope/current subject, original Target/key and immutable prepared-request fingerprint",
+    "rawBodiesOrCredentialsPersisted": false,
+    "dispatch": "claim unknown before one attempt; duplicate never POSTs",
+    "reconcile": "current business auth/resource before and after I/O; original Segment/key/Session/Task/Run only; fresh native receipt even when cached accepted",
+    "notObserved": "preserve unknown; never infer noncommit",
+    "crashBeforeDispatch": "may remain unknown; no safe redispatch without future native reservation/proof",
+    "managementServiceMountedProxy": false,
+    "maxPreparedBytes": 131072,
+    "nativeKeyStoredSeparately": true,
+    "nativeKeyInitialDerivation": "bff-request-v1: + SHA256 of scoped immutable prepared request; persist original native key, never recompute during reconciliation",
+    "originalRuntimeRefStored": true,
+    "noLatestRuntimeFallback": true
+  },
+  "compatibility": {
+    "legacyModesUnchanged": true,
+    "oldContractsRewritten": false,
+    "nativeSchemaChanged": false,
+    "coverageChanged": false
+  },
+  "verificationBoundary": {
+    "realPairedBusinessPostgresAndNativeHttp": true,
+    "businessAuth": "reference Cookie/private loopback bridge and local native authority",
+    "productionIdpCloudSignedPositive": false,
+    "fullModelHarness": false,
+    "productionHa": false,
+    "deployment": false,
+    "productionMigration": false,
+    "npmPublication": false
+  }
+}

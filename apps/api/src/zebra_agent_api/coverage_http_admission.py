@@ -59,6 +59,8 @@ class CoverageHttpAdmission:
 def initial_run(
     bootstrap: BootstrappedSession,
     idempotency_key: str | None,
+    *,
+    run_id: str | None = None,
 ) -> tuple[SessionEvent, dict[str, object]]:
     session = bootstrap.session
     command = SessionCommand(
@@ -66,6 +68,7 @@ def initial_run(
         kind=SessionCommandKind.RUN,
         expected_revision=session.current_sequence,
         idempotency_key=_bounded_run_key(idempotency_key, str(session.session_id)),
+        payload={} if run_id is None else {"run_id": run_id},
     )
     event = SessionEvent.create(
         session_id=session.session_id,

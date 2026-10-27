@@ -1,0 +1,75 @@
+{
+  "task": "CA-P3-01A",
+  "status": "PASS",
+  "base_commit": "5ff2ce707928dae4fba2472b4a312df14870ecf0",
+  "make_test": {
+    "exit_code": 0,
+    "seconds": 1100.83,
+    "source_drift": false,
+    "passed": 10756,
+    "skipped": 3008,
+    "pytest_seconds": 1098.6
+  },
+  "make_check": {
+    "exit_code": 0,
+    "seconds": 6.41,
+    "source_drift": false,
+    "typed_sources": 1368,
+    "eval_cases": 30
+  },
+  "focused": {
+    "passed": 141,
+    "skipped": 0
+  },
+  "owned_postgres_preservation": {
+    "passed": 74,
+    "skipped": 0
+  },
+  "frozen_entries": 2853,
+  "frozen_execution_python_files": 2842,
+  "frozen_producer_artifacts": 11,
+  "source_drift": false,
+  "red_green": {
+    "regression": "exited leader with inherited child pipe",
+    "old_result": "DID NOT RAISE TimeoutExpired; 1.61s",
+    "fixed_result": "6 process checks passed in0.33s"
+  },
+  "actual_cli_sandbox": true,
+  "actual_kinds": [
+    "tool",
+    "context",
+    "verifier"
+  ],
+  "frontend_modified": false,
+  "production_migration": false,
+  "deployed": false,
+  "integrated_main": false,
+  "log_digests": {
+    "make-test.log": {
+      "raw_sha256": "865ef20b568a24efa23c19672981fbc612e779099991334bf67ed7837ed32841",
+      "archived_sha256": "865ef20b568a24efa23c19672981fbc612e779099991334bf67ed7837ed32841",
+      "normalization": "trailing whitespace only"
+    },
+    "make-check.log": {
+      "raw_sha256": "f88983d6297221e4e83f15964d90a601b42c8ad191cc33d6cc815480929a9e0e",
+      "archived_sha256": "f88983d6297221e4e83f15964d90a601b42c8ad191cc33d6cc815480929a9e0e",
+      "normalization": "trailing whitespace only"
+    },
+    "focused.log": {
+      "raw_sha256": "0375623959abd9df08286d25c3ae9e37f4effa38df452dfedd11d437c033e568",
+      "archived_sha256": "0375623959abd9df08286d25c3ae9e37f4effa38df452dfedd11d437c033e568",
+      "normalization": "trailing whitespace only"
+    },
+    "postgres-preservation.log": {
+      "raw_sha256": "b1e9ad2db2f36593e5cf88d4a31b4c261c4baf1e8f53f11ecc42149715c73537",
+      "archived_sha256": "b1e9ad2db2f36593e5cf88d4a31b4c261c4baf1e8f53f11ecc42149715c73537",
+      "normalization": "trailing whitespace only"
+    }
+  },
+  "limitations": [
+    "Default full suite retains explicit external infrastructure skips.",
+    "Offline trusted read-only runner only; Bundle and Worker script admission remain unsupported.",
+    "No production gVisor/resource-isolation, SDK/Secret bridge, active cancellation or persistent receipt/recovery proof.",
+    "ScriptObservation is not authority, publication evaluation evidence or Coverage certification."
+  ]
+}

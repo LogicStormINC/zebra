@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from zebra_agent_api.routes import RouteRequest
 
 from zebra_agent_api.app import ZebraAgentApi
+from zebra_agent_api.client_admission_operations import handle_admission_operation
 from zebra_agent_api.client_effect_receipts import (
     get_client_effect,
     list_pending_client_effects,
@@ -38,10 +39,15 @@ def handle_client_runtime_route(
     app: ZebraAgentApi,
     request: RouteRequest,
 ) -> ApiResponse | None:
+    admission = handle_admission_operation(app, request)
+    if admission is not None:
+        return admission
     path = request.path
     method = request.method.upper()
     if path == _SESSION_PREFIX and method == "POST":
-        return open_client_session(app, request.body or {}, request.host_context)
+        return open_client_session(
+            app, request.body or {}, request.host_context, request.verified_host_grant
+        )
     if not (
         path.startswith(_SESSION_PREFIX)
         or path.startswith(_EFFECT_PREFIX)
@@ -57,6 +63,7 @@ def handle_client_runtime_route(
         request.headers,
         host_context=request.host_context,
         require_host_context=app.settings.deployment == "cloud",
+        verified_host_grant=request.verified_host_grant,
     )
     if auth is None:
         return ApiResponse(
@@ -95,7 +102,31 @@ def _session_route(
     if auth.client_session_id != parsed_session_id:
         return ApiResponse(403, {"status": "forbidden", "reason": "session_authority_mismatch"})
     if method == "GET" and tail == "/effects":
-        return list_pending_client_effects(app, auth=auth)
+        return list_pending_client_effects(
+            app,
+            auth=auth,
+            host_context=request.host_context,
+            verified_host_grant=request.verified_host_grant,
+        )
+    if (
+        app.settings.deployment == "cloud"
+        and method == "POST"
+        and (tail == "/release" or tail == "/heartbeat" and request.body)
+    ):
+        from zebra_agent_api.tenant_guard import task_access_response
+
+        body = request.body or {}
+        if not isinstance(body.get("task_id"), str) or not isinstance(body.get("run_id"), str):
+            return bad_request("controller_target_required")
+        denied = task_access_response(
+            app,
+            body["task_id"],
+            request.host_context,
+            verified_host_grant=request.verified_host_grant,
+            run_id=body["run_id"],
+        )
+        if denied is not None:
+            return denied
     if method == "POST" and tail == "/heartbeat":
         return heartbeat_client_session(
             app,
@@ -138,7 +169,13 @@ def _effect_route(
     tail = path.removeprefix(_EFFECT_PREFIX)
     parts = [part for part in tail.split("/") if part]
     if len(parts) == 1 and method == "GET":
-        return get_client_effect(app, parts[0], auth=auth)
+        return get_client_effect(
+            app,
+            parts[0],
+            auth=auth,
+            host_context=request.host_context,
+            verified_host_grant=request.verified_host_grant,
+        )
     if len(parts) == 2 and parts[1] == "receipts" and method == "POST":
         idempotency_key = _header(request.headers, "Idempotency-Key")
         if not idempotency_key.strip():
@@ -151,6 +188,8 @@ def _effect_route(
             fence_token=_header(request.headers, "X-Zebra-Client-Fence"),
             controller=True,
             idempotency_key=idempotency_key.strip(),
+            host_context=request.host_context,
+            verified_host_grant=request.verified_host_grant,
         )
     return bad_request("unsupported client effect operation")
 
@@ -177,4 +216,5 @@ def _binding_route(
         request.body or {},
         auth,
         request.host_context,
+        request.verified_host_grant,
     )

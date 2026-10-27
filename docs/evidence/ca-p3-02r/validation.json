@@ -1,0 +1,85 @@
+{
+  "task": "CA-P3-02R",
+  "status": "PASS",
+  "at": "2026-10-24T03:55:50.928775+00:00",
+  "base_commit": "880cdadc020661c23c4f1a9ad721012222be457c",
+  "test_summary": {
+    "passed": 11059,
+    "conditional_skips": 3036,
+    "pytest_seconds": 1288.49,
+    "type_files": 1406,
+    "eval_cases": 30,
+    "file_gate_checked": 3424,
+    "file_violations": 0
+  },
+  "focused": {
+    "passed": 20,
+    "api_cases": 13,
+    "real_owned_postgres_cases": 7,
+    "skips": 0
+  },
+  "proof_boundary": {
+    "only_new_protocol": "pre-dispatch/1",
+    "terminated_before_start_only": true,
+    "post_start_proof": false,
+    "legacy_proof": false,
+    "absent_claim_proof": false,
+    "unknown_auto_retry": false,
+    "controller_reclaim": false,
+    "clears_pending": false,
+    "hostgrant_audit_claim_fence_writes_excluded_from_business_noncommit": true
+  },
+  "candidate_joint": "Actual owned SDK/OIDC/signed cloud/Worker Chromium and WebKit pre-dispatch proof+lost response recovery passed; diagnostic before producer publication, not final pinned acceptance",
+  "preservation": {
+    "old_tracked_files": 4685,
+    "old_unchanged_files": 4677,
+    "changed_old_paths": [
+      "PROGRESS.md",
+      "WORKLOG.md",
+      "apps/api/src/zebra_agent_api/client_admission_operations.py",
+      "docs/AGENT_TASKS.md",
+      "docs/实施任务拆解与阶段验收.md",
+      "packages/agent-storage/src/agent_storage/postgres/idempotency.py",
+      "task_plan.md",
+      "tests/api/test_client_admission_operations.py"
+    ],
+    "issued_migrations_history_coverage_unchanged": true,
+    "frontend_mock_unchanged": true
+  },
+  "deployment": false,
+  "production_migration": false,
+  "main_merge": false,
+  "production_ha_verified": false,
+  "logs": {
+    "ca-p3-02r-test.log": {
+      "path": "/Users/lukeding/.codex/tmp/ca-p3-02r-test.log",
+      "sha256": "054e55fd01f96b4a62070ae3f3698373cf2a23a8f814d74b2a1cee10ec6c8614"
+    },
+    "ca-p3-02r-focused.log": {
+      "path": "/Users/lukeding/.codex/tmp/ca-p3-02r-focused.log",
+      "sha256": "d602c0859a3ae53501554cfef6438bb481d503dc20653db2fc9fb48a4c64d9a4"
+    },
+    "ca-p3-02r-check-staged.log": {
+      "path": "/Users/lukeding/.codex/tmp/ca-p3-02r-check-staged.log",
+      "sha256": "b260c32164a956cb9ecfb8431da89b41ec99224f804fe071ab382cf73e227e35"
+    },
+    "ca-p3-02r-check-final.log": {
+      "path": "/Users/lukeding/.codex/tmp/ca-p3-02r-check-final.log",
+      "sha256": "b260c32164a956cb9ecfb8431da89b41ec99224f804fe071ab382cf73e227e35"
+    }
+  },
+  "commands": [
+    {
+      "target": "real-PG focused",
+      "exit": 0
+    },
+    {
+      "target": "make test",
+      "exit": 0
+    },
+    {
+      "target": "make check",
+      "exit": 0
+    }
+  ]
+}

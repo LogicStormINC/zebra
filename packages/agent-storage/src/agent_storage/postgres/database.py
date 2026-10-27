@@ -113,7 +113,9 @@ class PostgresDatabase:
         options = psycopg.conninfo.conninfo_to_dict(self._dsn).get("options", "")
         milliseconds = max(1, int(remaining * 1000))
         connection = psycopg.connect(
-            self._dsn, row_factory=dict_row, connect_timeout=int(remaining),
+            self._dsn,
+            row_factory=dict_row,
+            connect_timeout=int(remaining),
             options=f"{options} -c statement_timeout={milliseconds} -c lock_timeout={milliseconds}",
         )
         try:
@@ -131,7 +133,15 @@ class PostgresDatabase:
         timeout_seconds: float = 2,
         deadline: float | None = None,
         client_cursor: bool = False,
+        join_work_unit: bool = False,
     ) -> psycopg.Connection[dict[str, Any]]:
+        from agent_storage.postgres.work_unit import borrow_work_unit
+
+        unit = borrow_work_unit((self._dsn, self.deployment_namespace)) if join_work_unit else None
+        if unit is not None:
+            if client_cursor:
+                raise ValueError("owned transaction cannot change its cursor protocol")
+            return cast(psycopg.Connection[dict[str, Any]], unit)
         if self._task_io is None:
             self._task_io = TaskIoConnections(self._dsn)
         return self._task_io.connect(

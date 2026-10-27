@@ -24,6 +24,7 @@ def opening():
             "host_app_id": grant.context.host_app_id,
             "namespace_id": grant.context.namespace_id,
             "origin": grant.context.origin,
+            "user_ref": grant.subject_ref,
         }
     )
     bundle.frontend_capabilities.bindings["host"] = SimpleNamespace(

@@ -13,6 +13,7 @@ from agent_core.domain.identifiers import (
 
 
 class EventType(StrEnum):
+    NATIVE_SCRIPT_INVOCATION = "native_script_invocation"
     COVERAGE_MANIFEST_COMMITTED = "coverage_manifest_committed"
     COVERAGE_BATCH_ACCEPTED = "coverage_batch_accepted"
     COVERAGE_RUN_CANCELLED = "coverage_run_cancelled"

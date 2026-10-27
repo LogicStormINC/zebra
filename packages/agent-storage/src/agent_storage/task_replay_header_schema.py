@@ -57,7 +57,8 @@ def _metadata(prefix: str = "") -> tuple[str, str, str]:
         f"CASE WHEN {event_type}='session_command_accepted' THEN COALESCE("
         f"{actor}='harness' AND ({kind})='resume' AND ({run}) IS NULL AND "
         f"(json_extract({body},'$.idempotency_key') LIKE 'child-wakeup:%' OR "
-        f"json_extract({body},'$.idempotency_key') LIKE 'client-effect-resume:%'),0) ELSE 0 END"
+        f"json_extract({body},'$.idempotency_key') LIKE 'client-effect-resume:%' OR "
+        f"json_extract({body},'$.idempotency_key') LIKE 'approval-resume:%'),0) ELSE 0 END"
     )
     return kind, run, internal
 
@@ -107,7 +108,17 @@ def initialize_task_replay_headers(connection: sqlite3.Connection) -> None:
         ("replay_header_ready", "INTEGER NOT NULL DEFAULT 0 CHECK (replay_header_ready IN (0,1))"),
     ):
         ensure_column(connection, "session_events", name, definition)
-    connection.executescript(_TRIGGERS + HEADER_SCHEMA)
+    installed = connection.execute(
+        "SELECT sql FROM sqlite_master WHERE type='trigger' AND name='session_events_scalar_insert'"
+    ).fetchone()
+    if installed is not None and "LIKE 'approval-resume:%'" not in installed[0]:
+        # Upgrade future inserts atomically; immutable historical headers/Events are not rewritten.
+        connection.executescript(
+            "BEGIN IMMEDIATE; DROP TRIGGER session_events_scalar_insert; "
+            "DROP TRIGGER session_events_scalar_guard; " + _TRIGGERS + HEADER_SCHEMA + "COMMIT;"
+        )
+    else:
+        connection.executescript(_TRIGGERS + HEADER_SCHEMA)
 
 
 def validate_header_backfill_budget(limit: int, max_bytes: int, timeout_seconds: float) -> None:

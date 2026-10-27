@@ -1,0 +1,36 @@
+{
+  "task": "CA-P2-01B",
+  "base": "e56f827295cd8e704afe2c8ea071e88e7b599ee4",
+  "branch": "codex/ca-p2-01b-bundle-assembly",
+  "focused": {
+    "passed": 65,
+    "skipped": 0,
+    "disposable_postgres_passed": 11
+  },
+  "legacy_entry_fixture_regression": {
+    "passed": 9
+  },
+  "make_test": {
+    "exit_code": 0,
+    "passed": 10685,
+    "skipped": 3007,
+    "failed": 0,
+    "seconds": 1043.9,
+    "stdout_sha256": "1d27e2df17d590587806e6eae583fc68a68634a4e1899db45ab788774a57d6fc"
+  },
+  "make_check": {
+    "exit_code": 0,
+    "eval_passed": 30,
+    "eval_cases": 30,
+    "mypy_source_files": 1353,
+    "stdout_sha256": "570d92ee6e03a045512c182f283258dd7f190d562d62dde89cf3a4b6556c58ee"
+  },
+  "frozen_python_files": 41,
+  "source_freeze_unchanged": true,
+  "boundaries": [
+    "No deployment, production migration or branch integration",
+    "Opt-in external service suites remain skipped; no production acceptance claim",
+    "v2 Chat/auto/text subset; unversioned local Skills/MCP and v2 Coverage refused",
+    "v1 history/digests/Coverage preserved; retain legacy deployment baselines"
+  ]
+}

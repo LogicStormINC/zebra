@@ -1,0 +1,116 @@
+{
+  "contractVersion": "script-validation/1",
+  "requestSchema": {
+    "$defs": {
+      "BundleScope": {
+        "additionalProperties": false,
+        "properties": {
+          "authority_issuer": {
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "Authority Issuer",
+            "type": "string"
+          },
+          "namespace_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Namespace Id",
+            "type": "string"
+          },
+          "product_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Product Id",
+            "type": "string"
+          },
+          "environment": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Environment",
+            "type": "string"
+          },
+          "target_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Target Id",
+            "type": "string"
+          },
+          "deployment_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Deployment Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "authority_issuer",
+          "namespace_id",
+          "product_id",
+          "environment",
+          "target_id",
+          "deployment_id"
+        ],
+        "title": "BundleScope",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "properties": {
+      "schema_version": {
+        "const": "cloud-agent.script-validation-request/1",
+        "title": "Schema Version",
+        "type": "string"
+      },
+      "scope": {
+        "$ref": "#/$defs/BundleScope"
+      },
+      "manifest_base64": {
+        "contentEncoding": "base64",
+        "maxLength": 21848,
+        "minLength": 4,
+        "title": "Manifest Base64",
+        "type": "string"
+      },
+      "source_base64": {
+        "contentEncoding": "base64",
+        "maxLength": 21848,
+        "minLength": 4,
+        "title": "Source Base64",
+        "type": "string"
+      }
+    },
+    "required": [
+      "schema_version",
+      "scope",
+      "manifest_base64",
+      "source_base64"
+    ],
+    "title": "ScriptValidationRequest",
+    "type": "object"
+  },
+  "abi": "cloud-agent.native-script/1",
+  "checks": [
+    "manifest",
+    "sourceDigest",
+    "sourceSyntax"
+  ],
+  "transport": {
+    "maxRequestBytes": 65536,
+    "maxManifestBytes": 16384,
+    "maxSourceBytes": 16384,
+    "byteEncoding": "canonical-base64",
+    "slotsPerInstance": 8,
+    "bodyTimeoutSeconds": "0.2",
+    "responseTimeoutSeconds": 1
+  },
+  "capabilities": {
+    "validation": "supported",
+    "sourceExecution": "not_performed",
+    "assetApproval": "not_performed",
+    "worker": "not_checked",
+    "publication": "not_performed",
+    "persistence": "not_performed",
+    "coverageAuthority": false
+  },
+  "contractDigest": "sha256:196d10c6046096faf3888ff5ade1488f779664daf8bb44f6b0e0cc583f38b6c2"
+}

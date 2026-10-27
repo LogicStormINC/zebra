@@ -1,0 +1,134 @@
+{
+  "$defs": {
+    "ScriptField": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "pattern": "^[a-z][a-z0-9_]{0,63}$",
+          "title": "Name",
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "string",
+            "integer",
+            "boolean"
+          ],
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "type"
+      ],
+      "title": "ScriptField",
+      "type": "object"
+    },
+    "ScriptShape": {
+      "additionalProperties": false,
+      "properties": {
+        "fields": {
+          "items": {
+            "$ref": "#/$defs/ScriptField"
+          },
+          "maxItems": 32,
+          "title": "Fields",
+          "type": "array"
+        }
+      },
+      "required": [
+        "fields"
+      ],
+      "title": "ScriptShape",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "abi": {
+      "const": "cloud-agent.native-script/1",
+      "title": "Abi",
+      "type": "string"
+    },
+    "name": {
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Name",
+      "type": "string"
+    },
+    "version": {
+      "maxLength": 64,
+      "title": "Version",
+      "type": "string"
+    },
+    "kind": {
+      "enum": [
+        "tool",
+        "context",
+        "verifier"
+      ],
+      "title": "Kind",
+      "type": "string"
+    },
+    "source_digest": {
+      "title": "Source Digest",
+      "type": "string"
+    },
+    "python": {
+      "const": "3.12",
+      "title": "Python",
+      "type": "string"
+    },
+    "dependencies": {
+      "const": "stdlib-only",
+      "title": "Dependencies",
+      "type": "string"
+    },
+    "entrypoint": {
+      "const": "execute",
+      "title": "Entrypoint",
+      "type": "string"
+    },
+    "effects": {
+      "const": "none",
+      "title": "Effects",
+      "type": "string"
+    },
+    "input": {
+      "$ref": "#/$defs/ScriptShape"
+    },
+    "output": {
+      "$ref": "#/$defs/ScriptShape"
+    },
+    "timeout_seconds": {
+      "maximum": 30,
+      "minimum": 1,
+      "title": "Timeout Seconds",
+      "type": "integer"
+    },
+    "max_output_bytes": {
+      "maximum": 32768,
+      "minimum": 256,
+      "title": "Max Output Bytes",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "abi",
+    "name",
+    "version",
+    "kind",
+    "source_digest",
+    "python",
+    "dependencies",
+    "entrypoint",
+    "effects",
+    "input",
+    "output",
+    "timeout_seconds",
+    "max_output_bytes"
+  ],
+  "title": "NativeScriptManifest",
+  "type": "object"
+}

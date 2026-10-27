@@ -37,6 +37,7 @@ from agent_tools.effect_guard_support import (
     effect_identity,
     proves_failed_no_effect,
     read_only_tool_names,
+    reuse_result,
     uncertain_evidence,
 )
 from agent_tools.effect_payload_admission import settle_unreadable_payload
@@ -45,7 +46,6 @@ from agent_tools.legacy_effect_guard import EffectGuardedToolGateway as EffectGu
 
 class FencedEffectToolGateway:
     """Runs effectful tools through the durable fenced dispatch queue."""
-
     def __init__(
         self,
         gateway: ToolGatewayLike,
@@ -216,7 +216,7 @@ class FencedEffectToolGateway:
         with self._mutation_guard():
             scheduled = self._schedule(tool_call)
         if scheduled.result is not None:
-            return scheduled.result
+            return reuse_result(self._gateway, tool_call, scheduled.result, self._ownership_check)
         while True:
             self._ownership_check()
             claim = self._dispatch.claim_next(
@@ -340,7 +340,7 @@ class FencedEffectToolGateway:
         if scheduled.status is EffectDispatchStatus.SUCCEEDED:
             if scheduled.result is None or scheduled.result.tool_call_id != tool_call.tool_call_id:
                 raise EffectDispatchConflictError("durable Effect result identity conflicts")
-            return scheduled.result
+            return reuse_result(self._gateway, tool_call, scheduled.result, self._ownership_check)
         if scheduled.status is not EffectDispatchStatus.PENDING:
             raise EffectDispatchStateError("exact Effect is not pending; no reissue permitted")
         claim = self._dispatch.claim_exact(

@@ -1,0 +1,79 @@
+{
+  "task": "CA-P3-02U",
+  "status": "PASS",
+  "at": "2026-10-24T06:09:29.236826+00:00",
+  "base_commit": "3c4009f70ed8622fb4e4e549dfbcc2a83f176f21",
+  "test_summary": {
+    "passed": 11072,
+    "conditional_skips": 3050,
+    "pytest_seconds": 1248.62,
+    "type_files": 1409,
+    "eval_cases": 30
+  },
+  "focused": {
+    "passed": 40,
+    "api_cases": 26,
+    "real_owned_postgres_cases": 14,
+    "skips": 0
+  },
+  "candidate_joint": "Controlled actual SDK/OIDC/signed cloud/same-run Worker Chromium/WebKit; started real Task/RUN SQL201 with exact signed Run, pending false proof then rollback/GET version4; existing Controller unchanged; two BFF/restart. Diagnostic, not final published-source acceptance.",
+  "boundary": {
+    "protocol": "atomic-task-run/1",
+    "kind": "task_create",
+    "execute": true,
+    "first_RUN_and_wakeup_atomic": true,
+    "run_frozen_and_signed": true,
+    "committed_means_worker_stopped": false,
+    "postcommit_noncommit": false,
+    "effects_and_sealed_result_same_transaction": true,
+    "noncommit_requires_durable_stop_and_free_execution_lock": true,
+    "manifest_preparation_audit_claim_stop_excluded": true,
+    "legacy_upgrade": false,
+    "external_effects_in_admission_transaction": false,
+    "worker_may_execute_after_commit": true,
+    "new_U_committed_full_Worker_E2E_verified": false,
+    "existing_same_run_SDK_Worker_joint_verified": true,
+    "auto_resend": false,
+    "controller_reclaim": false,
+    "clears_pending": false
+  },
+  "preservation": {
+    "old_tracked_files": 4699,
+    "old_unchanged_files": 4687,
+    "changed_old_paths": [
+      "PROGRESS.md",
+      "WORKLOG.md",
+      "apps/api/src/zebra_agent_api/client_admission_atomic.py",
+      "apps/api/src/zebra_agent_api/client_admission_operations.py",
+      "apps/api/src/zebra_agent_api/client_admission_task.py",
+      "apps/api/src/zebra_agent_api/client_admission_termination.py",
+      "apps/api/src/zebra_agent_api/coverage_http_admission.py",
+      "apps/api/src/zebra_agent_api/session_queue.py",
+      "docs/AGENT_TASKS.md",
+      "docs/实施任务拆解与阶段验收.md",
+      "task_plan.md",
+      "tests/api/test_client_admission_operations.py"
+    ],
+    "unchanged_migration_history_coverage_paths": 449,
+    "coverage_helper_only_optional_run_id_default_semantics_unchanged": true,
+    "coverage_default_format_regressions_passed": true
+  },
+  "deployment": false,
+  "production_migration": false,
+  "main_merge": false,
+  "production_ha_verified": false,
+  "logs": {
+    "ca-p3-02u-test.log": {
+      "path": "/Users/lukeding/.codex/tmp/ca-p3-02u-test.log",
+      "sha256": "203b82f35fc535dcfaa4df5ad04db5eab442082611510cd9f344f79587963be9"
+    },
+    "ca-p3-02u-check.log": {
+      "path": "/Users/lukeding/.codex/tmp/ca-p3-02u-check.log",
+      "sha256": "5d27dab2ffc1b08fd026e2ba7f8a4830ade15fe1fc9b7ab055ae036f4bceeab7"
+    },
+    "ca-p3-02u-focused.log": {
+      "path": "/Users/lukeding/.codex/tmp/ca-p3-02u-focused.log",
+      "sha256": "90e4c2f1f699c91161703c74145795e40fff227b15d9b494f3f38381ac24d1fe"
+    }
+  }
+}

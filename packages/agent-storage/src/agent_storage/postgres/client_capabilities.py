@@ -7,6 +7,7 @@ accepting new namespace bindings (ADR-CLIENT-01).
 
 from __future__ import annotations
 
+import json
 from datetime import UTC, datetime
 from typing import Any
 
@@ -180,6 +181,7 @@ class PostgresClientCapabilityRegistry(ClientCapabilityRegistryPort):
         self, binding: FrontendCapabilityBinding, *, expected_binding_revision: int
     ) -> FrontendCapabilityBinding:
         with self._database.connect() as connection:
+            lock_frontend_app(connection, self._namespace, binding.frontend_app_id)
             profile = connection.execute(
                 """
                 SELECT lifecycle FROM frontend_capability_profiles
@@ -336,3 +338,9 @@ def _profile_from_row(row: Any) -> FrontendCapabilityProfileVersion:
     return FrontendCapabilityProfileVersion.model_validate(
         {**row["profile_json"], "lifecycle": row["lifecycle"]}
     )
+
+
+def lock_frontend_app(connection: Any, namespace: str, app: str) -> None:
+    """Serialize legacy binding creation with scoped ownership/revocation checks."""
+    key = "frontend-app:" + json.dumps([namespace, app], separators=(",", ":"))
+    connection.execute("SELECT pg_advisory_xact_lock(hashtextextended(%s,0))", (key,))

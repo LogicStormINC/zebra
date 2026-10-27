@@ -21,14 +21,15 @@ class ClientSessionRegistryPort(Protocol):
 
     def close_session(self, session_id: ClientSessionId) -> None: ...
 
-    def save_mounted_snapshot(self, snapshot: MountedCapabilitySnapshot) -> None: ...
+    def save_mounted_snapshot(self, snapshot: MountedCapabilitySnapshot) -> None:
+        """Atomically check current active Session, revision and narrowing before saving."""
 
     def get_mounted_snapshot(
         self, client_session_id: ClientSessionId
     ) -> MountedCapabilitySnapshot | None: ...
 
     def save_run_binding(self, binding: ClientRunBinding) -> None:
-        """Idempotent on the binding key; revisions only increase."""
+        """Idempotent binding key; revisions advance once, matching current mount if present."""
 
     def get_run_binding(
         self, task_id: TaskId, run_id: str, client_session_id: ClientSessionId

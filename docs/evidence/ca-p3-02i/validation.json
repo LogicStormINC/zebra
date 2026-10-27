@@ -1,0 +1,104 @@
+{
+  "task": "CA-P3-02I",
+  "status": "Review",
+  "base": "be9f7cd2bff7e2ba381399d9fd1852d6eaab3184",
+  "contractVersion": "sdk-command-recovery/1",
+  "date": "2026-10-22",
+  "makeTest": {
+    "exit": 0,
+    "passed": 10971,
+    "skipped": 3022,
+    "seconds": 1230.21,
+    "skipBoundary": "existing optional-service gates, not passing production/optional-service E2E"
+  },
+  "makeCheck": {
+    "exit": 0,
+    "typeFiles": 1393,
+    "evalCases": 30,
+    "fileSizeViolations": 0
+  },
+  "focused": {
+    "pythonPassed": 19,
+    "sdkCoreAndReactCases": 5,
+    "finalSdkTests": 136
+  },
+  "sdkVerify": {
+    "exit": 0,
+    "react18And19": true,
+    "chromiumWebkitNextHydration": true,
+    "packageAudit": true
+  },
+  "jointAcceptance": {
+    "contract": "sdk-command-recovery/1",
+    "boundary": "actual Go business journal in separate owned PostgreSQL DB; native HTTP/local authority/SQLite commands and Worker Context; fixture Cookie and private bridge, not production IdP/cloud/HA",
+    "reports": [
+      {
+        "browser": "chromium",
+        "commands": 1,
+        "goProcessRestart": true,
+        "concurrentGoProcesses": true,
+        "bffInitialReplicaCalls": 2,
+        "browserPosts": 1,
+        "browserReload": true,
+        "receiptAccepted": true,
+        "noResend": true,
+        "originalStatePreserved": true,
+        "freshMount": true,
+        "privateStorageSafe": true
+      },
+      {
+        "browser": "webkit",
+        "commands": 1,
+        "goProcessRestart": true,
+        "concurrentGoProcesses": true,
+        "bffInitialReplicaCalls": 2,
+        "browserPosts": 1,
+        "browserReload": true,
+        "receiptAccepted": true,
+        "noResend": true,
+        "originalStatePreserved": true,
+        "freshMount": true,
+        "privateStorageSafe": true
+      }
+    ]
+  },
+  "pairedGoCandidateSource": {
+    "backend/pkg/bffcommands/domain.go": "32b419a0e41323b0842a9a9efb7e890302c56f1559117934829fe1185c945e16",
+    "backend/pkg/bffcommands/http.go": "907c949a634c887ef9d8e76dd104f1bccc8611bd09cc167fa178e9b0d8fea9d2",
+    "backend/pkg/bffcommands/native_http.go": "3db6ad67e30a121ceed8593564145e56199a90fb9693509ed4c339aea154e062",
+    "backend/pkg/bffcommands/postgres.go": "1b8c55fd71f200f8309af64f7e3f4ff3805ca5a522a5ae59e11eff1364e8e535",
+    "backend/pkg/bffcommands/prepared_request.go": "b9421fc3c8571ad2669c85bcfb76d1ae76ef0f9ebecee060d2cc41ad4adf252d",
+    "backend/pkg/bffcommands/service.go": "ad87de4582a80dcc98c4aebf6591e580cc012140ebc5f93759d213ada623d314",
+    "backend/pkg/bffcommands/service_test.go": "dabbc7f86287d8f6a20e438da15f27bea30fe66346a81d032a3bb33ad7e2f68e",
+    "backend/tests/bff_command_acceptance.go": "a89463d33af36a3154ca3ab2b4dd5806b4f1e12e910a9e348ce4905122b320f5"
+  },
+  "pairedGoBoundary": "candidate consumer public library source bytes; exact code preserved/pinned by OD-P3-01E delivery; no native production dependency on Go",
+  "preservation": {
+    "protectedFiles": 3757,
+    "manifestSha256": "8bb93ba62f12e14c2583b453e87f93fbf206b627aabb92b64031105455693232",
+    "historicalContractsAndCoverageUnchanged": true,
+    "nativeChanged": "optional Segment precondition/capability only; no native data migration or Worker change"
+  },
+  "logDigests": {
+    "make-test.log": "f51f673fa13351ff7501fee7208e98f22f6d55fd9b9be542221fecae1761d5d2",
+    "make-check-delivery.log": "a427700d57bf219721e3e0a2d5b175091a4a24741cf9e4485bbe3cc8f40f2f31",
+    "sdk-verify.log": "83b6b7830b5507f924c7b0652524c7e45454ecdc06d14354893bb1b4549b5d71",
+    "joint-browser-final-pair.log": "8f8aae1e4a4f9d091d21c78f386bb48873af2802b24309b02485a0073501f7d5"
+  },
+  "supersededAttempts": [
+    "SDK metadata fixture/type declaration/stale prebuild failures excluded; final complete SDK136 counted",
+    "fixture DB readiness originally saw temporary Unix-socket initialization server; final TCP readiness fixes the harness",
+    "unmasked authorization and final original-runtime/native-key paired checks used for delivery"
+  ],
+  "boundaries": {
+    "productionBusinessIdpCloudSignedPositive": false,
+    "fullModelHarness": false,
+    "productionHaCapacity": false,
+    "crossDeviceDiscovery": false,
+    "noncommitProofOrAutoRedispatch": false,
+    "deployment": false,
+    "productionMigration": false,
+    "npmPublication": false,
+    "mainIntegration": false
+  }
+}

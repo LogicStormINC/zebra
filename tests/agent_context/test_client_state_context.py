@@ -83,3 +83,18 @@ def test_task_runs_without_client_state() -> None:
         runtime_evidence=(),
     )
     assert "client_state" not in prompt or "Mounted client state" not in prompt
+
+
+def test_already_redacted_sensitive_keys_reach_untrusted_context():
+    state, keys = sanitize_client_state({"route": "/items", "authToken": "not-for-context"})
+    snapshot = _snapshot(state=state, redacted_keys=keys)
+    validate_client_state_snapshot(snapshot)
+    assert "not-for-context" not in client_state_context_item(snapshot).content
+    assert "__redacted__" in client_state_context_item(snapshot).content
+
+
+def test_new_request_structural_limit_does_not_rewrite_historical_context():
+    # Previously accepted, byte-bounded historical state remains recoverable.
+    snapshot = _snapshot(state={"old": [0] * 4100})
+    validate_client_state_snapshot(snapshot)
+    assert client_state_evidence(snapshot).metadata["state"] == snapshot.state

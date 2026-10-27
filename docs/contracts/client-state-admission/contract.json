@@ -1,0 +1,60 @@
+{
+  "contractVersion": "client-state-admission/1",
+  "producerTask": "CA-P3-02F",
+  "capability": "client_state_admission_contract_version",
+  "capabilityVersion": 1,
+  "endpoints": [
+    "POST /agui/commands",
+    "POST /agui/threads/{threadId}/runs/{runId}/commands"
+  ],
+  "forwardedProps": [
+    "clientStateVersion",
+    "frontendAppId",
+    "clientSessionId",
+    "uiRevision",
+    "profileDigest",
+    "mountedSnapshotDigest",
+    "clientBindingDigest"
+  ],
+  "authority": {
+    "credentials": "trusted BFF HostGrant and X-Zebra-Client-Session; never browser secrets",
+    "currentTaskScope": "agent.run; exact Task/Run and signed subject authority",
+    "profile": "active Session pinned published Profile; current Host binding when Host context is present",
+    "mount": "exact Session/UI/Profile/mounted snapshot/RunBinding digest; state and tool names cannot exceed mounted and bound sets",
+    "stateIsBusinessAuthority": false,
+    "grantsControllerRights": false,
+    "goExecutionStateMachine": false
+  },
+  "limits": {
+    "rawJsonBytes": 65536,
+    "depth": 32,
+    "nodes": 4096,
+    "finiteNumbersOnly": true,
+    "readableBytesAndSchema": "native published contract",
+    "text": "UTF-8 scalar strings without NUL"
+  },
+  "persistence": {
+    "authority": "existing command CAS/idempotency and durable Session event",
+    "redactedSentinelRecovers": true,
+    "emptyStateClearsContextAndProjection": true,
+    "digestProducer": "native canonical sanitized JSON",
+    "observationGuarantee": "current registry observations before immutable command admission; no cross-store linearizable revocation or latest UI promise",
+    "sensitiveKeyValuesRedacted": true,
+    "redaction": "shared native key heuristic, not general value-content DLP",
+    "numericCanonicalization": "new admissions normalize negative zero and integer-valued floats from their JSON decimal lexeme; schema checked first; byte budgets checked after; historical hash rules unchanged"
+  },
+  "compatibility": {
+    "cloudMountedStateRequiresVersion1": true,
+    "localLegacyAndHeadlessRetained": true,
+    "historyRewritten": false,
+    "newStructuralLimitsAppliedToHistoricalRecovery": false,
+    "migration": false,
+    "oldSdkAndPinsChanged": false
+  },
+  "verificationBoundary": {
+    "sdkHookValueSubmission": false,
+    "businessBffCloudWorkerModelE2E": false,
+    "productionHa": false,
+    "deploymentOrProductionMigration": false
+  }
+}

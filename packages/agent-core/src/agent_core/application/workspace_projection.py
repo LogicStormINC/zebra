@@ -1,4 +1,5 @@
 from agent_core.domain.agent_definition_snapshots import AgentDefinitionSnapshot
+from agent_core.domain.bundle_definition import parse_definition_snapshot
 from agent_core.domain.events import EventType, SessionEvent
 from agent_core.domain.mcp import normalize_mcp_allowlist
 from agent_core.domain.networking import NetworkProfileName
@@ -209,7 +210,7 @@ def _definition_snapshot_from_event(
     if not isinstance(value, dict):
         raise WorkspaceProjectionError("task_prepared contains invalid definition_snapshot")
     try:
-        return AgentDefinitionSnapshot.model_validate(value)
+        return parse_definition_snapshot(value)
     except ValueError as exc:
         raise WorkspaceProjectionError(
             "task_prepared contains invalid definition_snapshot"

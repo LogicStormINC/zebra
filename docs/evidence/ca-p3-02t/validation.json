@@ -1,0 +1,71 @@
+{
+  "task": "CA-P3-02T",
+  "status": "PASS",
+  "at": "2026-10-24T05:18:19.910893+00:00",
+  "base_commit": "8f44e5afd951232b5010307b987f2c25cce5a307",
+  "test_summary": {
+    "passed": 11066,
+    "conditional_skips": 3048,
+    "pytest_seconds": 1270.64,
+    "type_files": 1409,
+    "eval_cases": 30
+  },
+  "focused": {
+    "passed": 32,
+    "api_cases": 20,
+    "real_owned_postgres_cases": 12,
+    "skips": 0
+  },
+  "candidate_joint": "Controlled actual SDK/OIDC/signed cloud/same-run Worker Chromium/WebKit; started real Task SQL201, pending false proof then rollback/GET version3; existing Controller unchanged; two BFF/restart. Diagnostic, not final published-source acceptance.",
+  "boundary": {
+    "protocol": "atomic-task/1",
+    "kind": "task_create",
+    "execute": false,
+    "effects_and_sealed_result_same_transaction": true,
+    "noncommit_requires_durable_stop_and_free_execution_lock": true,
+    "manifest_preparation_audit_claim_stop_excluded": true,
+    "legacy_upgrade": false,
+    "external_effects": false,
+    "auto_resend": false,
+    "controller_reclaim": false,
+    "clears_pending": false
+  },
+  "preservation": {
+    "old_tracked_files": 4695,
+    "old_unchanged_files": 4682,
+    "changed_old_paths": [
+      "PROGRESS.md",
+      "WORKLOG.md",
+      "apps/api/src/zebra_agent_api/client_admission_atomic.py",
+      "apps/api/src/zebra_agent_api/client_admission_operations.py",
+      "apps/api/src/zebra_agent_api/client_admission_task.py",
+      "apps/api/src/zebra_agent_api/client_admission_termination.py",
+      "docs/AGENT_TASKS.md",
+      "docs/CA-P3-02T_atomic_task_termination.md",
+      "docs/实施任务拆解与阶段验收.md",
+      "packages/agent-storage/src/agent_storage/postgres/admission_atomic_surface.py",
+      "task_plan.md",
+      "tests/agent_storage/test_admission_atomic_task.py",
+      "tests/api/test_client_admission_operations.py"
+    ],
+    "unchanged_migration_history_coverage_paths": 450
+  },
+  "deployment": false,
+  "production_migration": false,
+  "main_merge": false,
+  "production_ha_verified": false,
+  "logs": {
+    "ca-p3-02t-test.log": {
+      "path": "/Users/lukeding/.codex/tmp/ca-p3-02t-test.log",
+      "sha256": "c1bde76a4cce67b48421686969b3fa9c7ce1c871ee0ec150a2bfc125d1c4dc54"
+    },
+    "ca-p3-02t-check.log": {
+      "path": "/Users/lukeding/.codex/tmp/ca-p3-02t-check.log",
+      "sha256": "56f44e67e7826df1da9ab2153f0a0cbe9885a695519b0a934435d2c39163211d"
+    },
+    "ca-p3-02t-focused.log": {
+      "path": "/Users/lukeding/.codex/tmp/ca-p3-02t-focused.log",
+      "sha256": "ec0cbf2e6acb2a3ae72f6558c43af39c9e4392594104fbd8e861384a7ac6a670"
+    }
+  }
+}

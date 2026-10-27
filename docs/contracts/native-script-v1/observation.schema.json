@@ -1,0 +1,69 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "abi": {
+      "const": "cloud-agent.native-script/1",
+      "title": "Abi",
+      "type": "string"
+    },
+    "invocation_id": {
+      "title": "Invocation Id",
+      "type": "string"
+    },
+    "manifest_digest": {
+      "title": "Manifest Digest",
+      "type": "string"
+    },
+    "input_digest": {
+      "title": "Input Digest",
+      "type": "string"
+    },
+    "runtime_spec_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Runtime Spec Digest",
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "succeeded",
+        "failed"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "reason": {
+      "enum": [
+        "ok",
+        "timeout",
+        "process_failed",
+        "output_limit",
+        "invalid_response"
+      ],
+      "title": "Reason",
+      "type": "string"
+    },
+    "output_digest": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Output Digest"
+    }
+  },
+  "required": [
+    "abi",
+    "invocation_id",
+    "manifest_digest",
+    "input_digest",
+    "runtime_spec_digest",
+    "status",
+    "reason",
+    "output_digest"
+  ],
+  "title": "ScriptObservation",
+  "type": "object"
+}

@@ -1,0 +1,7 @@
+{
+  "base": "fb72ef6fce72ac171f947d1c18c57334f587be02",
+  "protectedFiles": 2318,
+  "scope": "existing native production apps/packages/configs, old contracts/evidence and Coverage; exact base bytes",
+  "changed": [],
+  "manifestSha256": "9b81033ae4372b737237b4cd19dc7d30f73e24ba545a340f523378aecd8fbd99"
+}

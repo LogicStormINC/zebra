@@ -1,0 +1,355 @@
+{
+  "task": "CA-CLOUD-INTEGRATION-20261027",
+  "date": "2026-10-27",
+  "status": "merged_tree_verified_publication_conditional_on_expected_refs",
+  "target_branch": "cloud-agent",
+  "historical_main_unchanged": "749cfa256af64dd97592d833482ce96261a2c48d",
+  "origin_before": "703c3c03965d3f03e9622e8a74c07918c3067e57",
+  "local_cloud_before": "7ff78d0bbe5e8b9ac33e13e3e6f9e3062596dddb",
+  "published_p3": "017e04e66ec3e383bf166992ca5ba220b2c216bd",
+  "operational_commits": [
+    "7ff78d0bbe5e8b9ac33e13e3e6f9e3062596dddb",
+    "27d4ec09b991d291419aa20c1d509fa60ec572a4",
+    "c3eb85c577e7b9d238d69dcb0931146d3d057c5f",
+    "2bebe13f68736a4a9831bcea45053facb287f228",
+    "aed0f7bfb3b9b7d57f1232d24ff35caf7722dc7a",
+    "8ee49ec14363485fd1291d160af5e22cc72f5dad"
+  ],
+  "conflict_resolution": "Retain both histories in PROGRESS, WORKLOG and task registry. Source merges automatically; workspace errors and uncertainty transitions retained.",
+  "focused_tests": 44,
+  "workspace_io_checks": 4,
+  "make_check_exit": 0,
+  "cleanup_candidates": [
+    {
+      "ref": "refs/heads/codex/ca-p1-01a-target-management",
+      "sha": "325333aee7b7819a5ce76ea23b8ed342190182f0"
+    },
+    {
+      "ref": "refs/heads/codex/ca-p1-01b1-host-management",
+      "sha": "e2da40d0d528da6aae8ab7277be7951f1db0dae3"
+    },
+    {
+      "ref": "refs/heads/codex/ca-p2-01a-bundle-contract",
+      "sha": "e56f827295cd8e704afe2c8ea071e88e7b599ee4"
+    },
+    {
+      "ref": "refs/heads/codex/ca-p2-01b-bundle-assembly",
+      "sha": "92f494cb9a9da596e5c7418e7d7a57b6deaf82e7"
+    },
+    {
+      "ref": "refs/heads/codex/ca-p2-01c-bundle-validation",
+      "sha": "0fd592e1b8d97bdacf67a1472628e67e060e991d"
+    },
+    {
+      "ref": "refs/heads/codex/ca-p3-01f-trusted-script-eval",
+      "sha": "980d45364c96123fae654df14e88ac6cc6e795e7"
+    },
+    {
+      "ref": "refs/heads/codex/ca-p3-02n-client-tool-compatibility",
+      "sha": "047fad7908f247ffb0bfb86c474ef0f5a8814948"
+    },
+    {
+      "ref": "refs/heads/codex/ca-p3-02o-approval-operation-receipts",
+      "sha": "76ba18d782b9c44efb25172fa6928fa74e83b892"
+    },
+    {
+      "ref": "refs/heads/codex/ca-p3-02p-admission-operation-receipts",
+      "sha": "ce46a7e580d96991681000c6ddb7305f225f87b8"
+    },
+    {
+      "ref": "refs/heads/codex/ca-p3-02q-admission-observation",
+      "sha": "880cdadc020661c23c4f1a9ad721012222be457c"
+    },
+    {
+      "ref": "refs/heads/codex/ca-p3-02r-admission-termination",
+      "sha": "543d8c890093df7698e9b700ca07460c626df784"
+    },
+    {
+      "ref": "refs/heads/codex/ca-p3-02s-atomic-surface-termination",
+      "sha": "8f44e5afd951232b5010307b987f2c25cce5a307"
+    },
+    {
+      "ref": "refs/heads/codex/ca-p3-02t-atomic-task-termination",
+      "sha": "3c4009f70ed8622fb4e4e549dfbcc2a83f176f21"
+    },
+    {
+      "ref": "refs/heads/codex/ca-p3-02u-atomic-task-run",
+      "sha": "6e197f0a90380707dc86f9eddcfcc5171e965132"
+    },
+    {
+      "ref": "refs/heads/codex/ca-p3-02v-task-run-worker",
+      "sha": "1dba5fd6d6d90a8a4a3725224338a78840edc770"
+    },
+    {
+      "ref": "refs/heads/codex/ca-p3-02w-initial-ui-run",
+      "sha": "5947d3a17420a1828f0f560c83822088f67ae4a7"
+    },
+    {
+      "ref": "refs/heads/codex/ca-p3-02x-react-initial-ui",
+      "sha": "7b5f84821b32d850337f17f2dca7fd8c4f042c2b"
+    },
+    {
+      "ref": "refs/heads/codex/ca-p3-02y-explicit-surface-revision",
+      "sha": "38c4711be86442806d0c9d03540033abca309248"
+    },
+    {
+      "ref": "refs/heads/codex/ca-p3-03a-original-effect-receipts",
+      "sha": "119fbf4f27177acd368a368386704942c75a6828"
+    },
+    {
+      "ref": "refs/heads/codex/ca-p3-03b-task-message-receipts",
+      "sha": "4be21b8e0465069e806b35eacd7dc736279a7919"
+    },
+    {
+      "ref": "refs/heads/codex/ca-p3-03c-message-coordinates",
+      "sha": "537bb57952c3d7c1d42da73362a72a44b2aa872f"
+    },
+    {
+      "ref": "refs/heads/codex/ca-p3-03d-message-anchor-admission",
+      "sha": "bd348909a937f1a48780808960e67864b900b449"
+    },
+    {
+      "ref": "refs/heads/codex/ca-p3-03e-message-sdk",
+      "sha": "247ac35117a4faae4b250dab39765cdf68035bf7"
+    },
+    {
+      "ref": "refs/heads/codex/ca-p3-03f-surface-sdk",
+      "sha": "d5f4531152ccf6db99cc0ddd37982ba1ab34a479"
+    },
+    {
+      "ref": "refs/remotes/origin/codex/ca-p1-01a-target-management",
+      "sha": "325333aee7b7819a5ce76ea23b8ed342190182f0"
+    },
+    {
+      "ref": "refs/remotes/origin/codex/ca-p1-01b1-host-management",
+      "sha": "e2da40d0d528da6aae8ab7277be7951f1db0dae3"
+    },
+    {
+      "ref": "refs/remotes/origin/codex/ca-p2-01a-bundle-contract",
+      "sha": "e56f827295cd8e704afe2c8ea071e88e7b599ee4"
+    },
+    {
+      "ref": "refs/remotes/origin/codex/ca-p2-01b-bundle-assembly",
+      "sha": "92f494cb9a9da596e5c7418e7d7a57b6deaf82e7"
+    },
+    {
+      "ref": "refs/remotes/origin/codex/ca-p2-01c-bundle-validation",
+      "sha": "0fd592e1b8d97bdacf67a1472628e67e060e991d"
+    },
+    {
+      "ref": "refs/remotes/origin/codex/ca-p3-01f-trusted-script-eval",
+      "sha": "980d45364c96123fae654df14e88ac6cc6e795e7"
+    },
+    {
+      "ref": "refs/remotes/origin/codex/ca-p3-02n-client-tool-compatibility",
+      "sha": "047fad7908f247ffb0bfb86c474ef0f5a8814948"
+    },
+    {
+      "ref": "refs/remotes/origin/codex/ca-p3-02o-approval-operation-receipts",
+      "sha": "76ba18d782b9c44efb25172fa6928fa74e83b892"
+    },
+    {
+      "ref": "refs/remotes/origin/codex/ca-p3-02p-admission-operation-receipts",
+      "sha": "ce46a7e580d96991681000c6ddb7305f225f87b8"
+    },
+    {
+      "ref": "refs/remotes/origin/codex/ca-p3-02q-admission-observation",
+      "sha": "880cdadc020661c23c4f1a9ad721012222be457c"
+    },
+    {
+      "ref": "refs/remotes/origin/codex/ca-p3-02r-admission-termination",
+      "sha": "543d8c890093df7698e9b700ca07460c626df784"
+    },
+    {
+      "ref": "refs/remotes/origin/codex/ca-p3-02s-atomic-surface-termination",
+      "sha": "8f44e5afd951232b5010307b987f2c25cce5a307"
+    },
+    {
+      "ref": "refs/remotes/origin/codex/ca-p3-02t-atomic-task-termination",
+      "sha": "3c4009f70ed8622fb4e4e549dfbcc2a83f176f21"
+    },
+    {
+      "ref": "refs/remotes/origin/codex/ca-p3-02u-atomic-task-run",
+      "sha": "6e197f0a90380707dc86f9eddcfcc5171e965132"
+    },
+    {
+      "ref": "refs/remotes/origin/codex/ca-p3-02v-task-run-worker",
+      "sha": "1dba5fd6d6d90a8a4a3725224338a78840edc770"
+    },
+    {
+      "ref": "refs/remotes/origin/codex/ca-p3-02w-initial-ui-run",
+      "sha": "5947d3a17420a1828f0f560c83822088f67ae4a7"
+    },
+    {
+      "ref": "refs/remotes/origin/codex/ca-p3-02x-react-initial-ui",
+      "sha": "7b5f84821b32d850337f17f2dca7fd8c4f042c2b"
+    },
+    {
+      "ref": "refs/remotes/origin/codex/ca-p3-02y-explicit-surface-revision",
+      "sha": "38c4711be86442806d0c9d03540033abca309248"
+    },
+    {
+      "ref": "refs/remotes/origin/codex/ca-p3-03a-original-effect-receipts",
+      "sha": "119fbf4f27177acd368a368386704942c75a6828"
+    },
+    {
+      "ref": "refs/remotes/origin/codex/ca-p3-03b-task-message-receipts",
+      "sha": "4be21b8e0465069e806b35eacd7dc736279a7919"
+    },
+    {
+      "ref": "refs/remotes/origin/codex/ca-p3-03c-message-coordinates",
+      "sha": "537bb57952c3d7c1d42da73362a72a44b2aa872f"
+    },
+    {
+      "ref": "refs/remotes/origin/codex/ca-p3-03d-message-anchor-admission",
+      "sha": "bd348909a937f1a48780808960e67864b900b449"
+    },
+    {
+      "ref": "refs/remotes/origin/codex/ca-p3-03e-message-sdk",
+      "sha": "247ac35117a4faae4b250dab39765cdf68035bf7"
+    },
+    {
+      "ref": "refs/remotes/origin/codex/ca-p3-03f-surface-sdk",
+      "sha": "d5f4531152ccf6db99cc0ddd37982ba1ab34a479"
+    }
+  ],
+  "retained_dirty_branches": [
+    {
+      "branch": "refs/heads/codex/ca-p1-01b2-connector-management",
+      "head": "6dbb2a8dc145e684d9792cfe9ada0b482c28f343",
+      "dirty_files": 6
+    },
+    {
+      "branch": "refs/heads/codex/ca-p2-01d-publication-http",
+      "head": "5ff2ce707928dae4fba2472b4a312df14870ecf0",
+      "dirty_files": 7
+    },
+    {
+      "branch": "refs/heads/codex/ca-p3-01a-native-script-abi",
+      "head": "d6729de3c0114448e7579c45be5df449d97fbd0e",
+      "dirty_files": 7
+    },
+    {
+      "branch": "refs/heads/codex/ca-p3-01b-worker-script-binding",
+      "head": "60893da8d850687b636d05473fddabc00a7187ae",
+      "dirty_files": 7
+    },
+    {
+      "branch": "refs/heads/codex/ca-p3-01c-script-validation",
+      "head": "f154f5d1eb3c744e26e6d74eb093d776bd0d5f34",
+      "dirty_files": 7
+    },
+    {
+      "branch": "refs/heads/codex/ca-p3-01d-script-publication",
+      "head": "b78a4ee464aa9c3159d67ec3a318cc9d13c9d6b8",
+      "dirty_files": 7
+    },
+    {
+      "branch": "refs/heads/codex/ca-p3-01e-script-bundle-validation",
+      "head": "416f6d8a4e22ced129c783a3eb861f06ba55b096",
+      "dirty_files": 7
+    },
+    {
+      "branch": "refs/heads/codex/ca-p3-02z-react-surface-revision",
+      "head": "d93385bd323ee9ac7b379adfbe7becc744245594",
+      "dirty_files": 7
+    },
+    {
+      "branch": "refs/heads/codex/ca-p3-03g-host-read-freshness",
+      "head": "017e04e66ec3e383bf166992ca5ba220b2c216bd",
+      "dirty_files": 1
+    },
+    {
+      "branch": "refs/heads/codex/ca-p3-02a-frontend-admission",
+      "head": "8715d225651a984b43fd6f98bdb9a755d35fcb51",
+      "dirty_files": 7
+    },
+    {
+      "branch": "refs/heads/codex/ca-p3-02b-effect-authority",
+      "head": "0aa6e5585b15e56b4a93009137952b49bff11ab6",
+      "dirty_files": 7
+    },
+    {
+      "branch": "refs/heads/codex/ca-p3-02c-bff-browser",
+      "head": "a1635a9c0f54a7ab117eb65b9f4a6735a1669ef9",
+      "dirty_files": 7
+    },
+    {
+      "branch": "refs/heads/codex/ca-p3-02d-surface-metadata",
+      "head": "d85a613c844576f0da93cf6fa3a5be0cefb308f7",
+      "dirty_files": 7
+    },
+    {
+      "branch": "refs/heads/codex/ca-p3-02e-sdk-surface-sync",
+      "head": "61e2cb217b7b3fbc23f0bd0ef45f04863bcf1267",
+      "dirty_files": 7
+    },
+    {
+      "branch": "refs/heads/codex/ca-p3-02f-readable-admission",
+      "head": "fb72ef6fce72ac171f947d1c18c57334f587be02",
+      "dirty_files": 7
+    },
+    {
+      "branch": "refs/heads/codex/ca-p3-02g-readable-submit",
+      "head": "1e66659d017aba0e84e2740f16d76444719b1f5b",
+      "dirty_files": 7
+    },
+    {
+      "branch": "refs/heads/codex/ca-p3-02h-command-receipts",
+      "head": "be9f7cd2bff7e2ba381399d9fd1852d6eaab3184",
+      "dirty_files": 7
+    },
+    {
+      "branch": "refs/heads/codex/ca-p3-02i-command-recovery",
+      "head": "be4b442c03d4753012e0543f9c22148eee71657a",
+      "dirty_files": 7
+    },
+    {
+      "branch": "refs/heads/codex/ca-p3-02j-request-discovery",
+      "head": "4e629a5aad0d900ea6b32b1b083e720ba5d8e885",
+      "dirty_files": 7
+    },
+    {
+      "branch": "refs/heads/codex/ca-p3-02k-bff-auth",
+      "head": "c023fa58c6d5d1f0988d37a11a5566793d7667db",
+      "dirty_files": 7
+    },
+    {
+      "branch": "refs/heads/codex/ca-p3-02l-auth-lifecycle",
+      "head": "760fcfb97f48fb6f18e8ba9c3dd3995c8530b02d",
+      "dirty_files": 7
+    },
+    {
+      "branch": "refs/heads/codex/ca-p3-02m-signed-cloud",
+      "head": "934d66b8aacad7690cef05aa672e78baf9827da4",
+      "dirty_files": 7
+    }
+  ],
+  "preserved_dirty_file_count": 157,
+  "boundaries": [
+    "No deployment or production migrations",
+    "No data, original receipts or Coverage rewriting",
+    "No automatic unknown resubmission or Controller acquisition",
+    "Keep historical Overdoze Native source pins and consumer evidence unchanged",
+    "No independent business operations branch cleanup",
+    "Preserve all worktree directories and uncommitted changes",
+    "Full merged-source consumer joint not rerun; prior fixed-source P3 joint remains pinned to 017e04e6"
+  ],
+  "make_test": {
+    "exit": 0,
+    "passed": 11151,
+    "conditional_skips": 3067,
+    "duration_seconds": 1196.2
+  },
+  "make_check": {
+    "exit": 0,
+    "file_size_checked": 3456,
+    "mypy_source_files": 1415,
+    "eval_cases": 30
+  },
+  "log_sha256": {
+    "test": "cdb6355c387cdca1c7292a74956cda76357da2b26f4eaac22929f2ecfb824c8c",
+    "check": "694bf01539b902dfa911d80efd28a2cba1e4dd4642f8f21e3e6eb2a4e3343aa7"
+  },
+  "preserved_file_hashes_verified": true
+}

@@ -1,7 +1,9 @@
 """Latest additive migrations kept separate from the primary catalog."""
 
 from agent_storage.postgres.agent_registry_migration import AGENT_REGISTRY_MIGRATION
+from agent_storage.postgres.approval_resume_migration import APPROVAL_RESUME_MIGRATION
 from agent_storage.postgres.artifact_payload_migration import ARTIFACT_PAYLOAD_MIGRATION
+from agent_storage.postgres.bundle_definition_migration import BUNDLE_DEFINITION_MIGRATION
 from agent_storage.postgres.command_coverage_admission_migration import (
     COMMAND_COVERAGE_ADMISSION_MIGRATION,
 )
@@ -40,10 +42,17 @@ from agent_storage.postgres.execution_input_compaction_migration import (
     EXECUTION_INPUT_COMPACTION_MIGRATION,
 )
 from agent_storage.postgres.execution_inputs_migration import EXECUTION_INPUTS_MIGRATION
+from agent_storage.postgres.frontend_profile_management_migration import (
+    FRONTEND_PROFILE_MANAGEMENT_MIGRATION,
+)
 from agent_storage.postgres.full_gateway_migration import FULL_GATEWAY_MIGRATION
 from agent_storage.postgres.governed_memory_migration import GOVERNED_MEMORY_MIGRATION
 from agent_storage.postgres.handoff_migration import HANDOFF_MIGRATION
 from agent_storage.postgres.host_auth_migration import HOST_AUTH_MIGRATION
+from agent_storage.postgres.host_connector_management_migration import (
+    HOST_CONNECTOR_MANAGEMENT_MIGRATION,
+)
+from agent_storage.postgres.host_management_migration import HOST_MANAGEMENT_MIGRATION
 from agent_storage.postgres.host_manifest_policy_migration import HOST_MANIFEST_POLICY_MIGRATION
 from agent_storage.postgres.host_manifest_revision_migration import HOST_MANIFEST_REVISION_MIGRATION
 from agent_storage.postgres.memory_delivery_migration import MEMORY_DELIVERY_MIGRATION
@@ -67,6 +76,7 @@ from agent_storage.postgres.projection_work_routing_migration import (
     TASK_PROJECTION_WORK_ROUTING_MIGRATION,
 )
 from agent_storage.postgres.provider_continuation_migration import PROVIDER_CONTINUATION_MIGRATION
+from agent_storage.postgres.publication_migration import PUBLICATION_MIGRATION
 from agent_storage.postgres.research_web_profile_migration import RESEARCH_WEB_PROFILE_MIGRATION
 from agent_storage.postgres.session_observation_headers_migration import (
     SESSION_OBSERVATION_HEADERS_MIGRATION,
@@ -169,4 +179,10 @@ LATEST_MIGRATIONS = (
     PLUGIN_INSTALLATIONS_MIGRATION,
     HOST_MANIFEST_POLICY_MIGRATION,
     HOST_MANIFEST_REVISION_MIGRATION,
+    HOST_MANAGEMENT_MIGRATION,
+    HOST_CONNECTOR_MANAGEMENT_MIGRATION,
+    BUNDLE_DEFINITION_MIGRATION,
+    PUBLICATION_MIGRATION,
+    FRONTEND_PROFILE_MANAGEMENT_MIGRATION,
+    APPROVAL_RESUME_MIGRATION,
 )

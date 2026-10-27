@@ -1,0 +1,30 @@
+{
+  "base_commit": "0fd592e1b8d97bdacf67a1472628e67e060e991d",
+  "frozen_python_files": 2833,
+  "source_drift": false,
+  "changed_source": {
+    "apps/api/src/zebra_agent_api/agent_definition_binding.py": "d1426797a7317cdee9f060eea14a40aa7440007b557bf8fef9dba5c6bd7a83f8",
+    "apps/api/src/zebra_agent_api/app.py": "684eb06ed22be24afb0434bb4c3c82189118c59e4ea503d5e7b688552a8b9c28",
+    "apps/api/src/zebra_agent_api/factory.py": "21a5eb494723f2b72cfb09d9379c4fa7b29bc0a704bd4d277f00170f6f642113",
+    "apps/api/src/zebra_agent_api/host_registry_management.py": "5c58d0b76eb0f4c5a079f3da5a028c8bc712ce255d27727ec322d84fca41773e",
+    "apps/api/src/zebra_agent_api/http.py": "7b7ff2a6cade1613ee02fb5f70481b8b21b48cf06b3cb771eedd1f1c3f727e0d",
+    "apps/api/src/zebra_agent_api/task_schedule_template.py": "2631faf3338d55ce3e26fd01a8a2935b9abe694571453f9c02091b291ec9ba08",
+    "apps/config/src/zebra_agent_config/bundle_settings.py": "702a0bb3b00d5d8a7bce5a9368f6157a6096eceb145802815958445cc300fac6",
+    "apps/config/src/zebra_agent_config/settings.py": "bf865b774cfd1597bce6c87c0f4de544108dd7fce9971c6336e5aeae3cd8e9e9",
+    "packages/agent-storage/src/agent_storage/postgres/agent_registry.py": "e5b3c87e9067b758ab63be709eaf0baac1c9f040efb9eed3393b12d9196460b8",
+    "packages/agent-storage/src/agent_storage/postgres/migration_catalog_tail.py": "f0a47979c21f6bf41e1850b4f82bc4e8a10cab42dc19d54080d7e56bcbf5d890",
+    "packages/agent-storage/src/agent_storage/postgres/work_unit.py": "cc4c434bcc120afe98d608718c93a56bca57ddb4ba23761c6870e8cd3a850989",
+    "tests/agent_storage/test_branch_migration_catalog.py": "82dae9f079d41def5b656af16a52d34228651c87514530018f1a36893dd31a3a",
+    "tests/agent_storage/test_postgres_work_unit.py": "b41fa5fe6fdd0abbf3cd735f56727b36a335beb6ab8dccf5effcd2c7e6b45191",
+    "tests/config/test_bundle_management_config.py": "4f375fcc47a48cf90f4ffa9128ab043ab725d21fb65942bbd8a813a7c73d66e3",
+    "apps/api/src/zebra_agent_api/publication_admin.py": "c0b23fd4a7b22d3634fc883fb41084f2b635f03aecad74a7541b5e8c935646d5",
+    "apps/api/src/zebra_agent_api/publication_config.py": "47c16764b6844d739a3fafdc021e5c93feae6ec13427245f10c51c8b11e2c60f",
+    "apps/api/src/zebra_agent_api/publication_consumer.py": "10caf89ac54983d97722100d456653d4d9fe27faaea4efd1787e48666bc0b786",
+    "apps/api/src/zebra_agent_api/publication_management.py": "49381255b3fb6ac6deaa24c1adf92d9d06256bdb6f2c38b232d6668cd5c83da4",
+    "apps/api/src/zebra_agent_api/publication_service.py": "ddd297c4764aae9a3fc745d8ddc208d3178edb94f670b1a652dac67f64359340",
+    "packages/agent-storage/src/agent_storage/postgres/publication.py": "746d9e12eefb9f04b91a3629367a6d7551819635e58ceb33819b4447260701a7",
+    "packages/agent-storage/src/agent_storage/postgres/publication_migration.py": "86e9038aa3f96c805e7685c9ce650d8bd3b421d4ce1fe68ded178194273b3f52",
+    "tests/api/test_publication_management.py": "b0559cabd9162aab3dfc02a2bf2ea39aa4eab66d40e5e25384d4fb1aa1cf16b2"
+  },
+  "full_manifest_sha256": "88225c26da4b539fec1029e9929393d6aaa0f5c2826671635eddf388e5d74030"
+}

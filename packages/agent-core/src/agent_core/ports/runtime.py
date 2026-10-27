@@ -1,8 +1,8 @@
 import hashlib
 import json
 import re
-from collections.abc import Mapping
-from dataclasses import dataclass
+from collections.abc import Callable, Mapping
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Protocol
@@ -130,11 +130,19 @@ class EffectiveRuntimeAuthority:
 @dataclass(frozen=True)
 class RuntimeExecutionRequest:
     command: tuple[str, ...]
+    stdin_input: bytes | None = field(default=None, repr=False, kw_only=True)
+    cancellation_check: Callable[[], None] | None = field(
+        default=None, repr=False, compare=False, kw_only=True
+    )
     cwd: str | None = None
     env: Mapping[str, str] | None = None
     timeout_seconds: float | None = None
 
     def __post_init__(self) -> None:
+        if self.stdin_input is not None and (
+            type(self.stdin_input) is not bytes or len(self.stdin_input) > 262_144
+        ):
+            raise ValueError("runtime stdin must be bounded bytes")
         if not self.command:
             raise ValueError("command must not be empty")
         if not self.command[0].strip():

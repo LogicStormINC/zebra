@@ -91,12 +91,37 @@ def postgres_transaction_work_unit(database: Any, connection: Any) -> Iterator[N
         raise ValueError("transaction work unit has invalid connection options")
     # The direct deadline adapter appends only these two equal bounded timeouts.
     # Never ignore arbitrary libpq options: they may change schema or authority.
-    options_match = actual_options == options or fullmatch(
-        escape(options) + r" -c statement_timeout=([1-9][0-9]*) -c lock_timeout=\1",
+    options_match = (
+        actual_options == options
+        or fullmatch(
+            escape(options) + r" -c statement_timeout=([1-9][0-9]*) -c lock_timeout=\1",
+            actual_options,
+        )
+        is not None
+    )
+    from agent_storage.postgres.task_io import TaskIoConnection
+
+    bounded = fullmatch(
+        escape(options) + r" -c statement_timeout=([1-9][0-9]*) -c lock_timeout=([1-9][0-9]*)",
         actual_options,
-    ) is not None
-    if any(actual.get(name) != value for name, value in configured.items()
-           if name not in {"password", "connect_timeout", "options"}) or not options_match:
+    )
+    from agent_storage.postgres.connection_scope import _Borrow
+
+    owner = connection
+    while type(owner) is _Borrow:
+        if owner.released or owner.owner.closed or owner.owner.thread != get_ident():
+            raise RuntimeError("transaction socket borrow has ended or changed thread")
+        owner = owner.connection
+    if isinstance(owner, TaskIoConnection) and bounded is not None:
+        options_match |= int(bounded[2]) == min(50, int(bounded[1]))
+    if (
+        any(
+            actual.get(name) != value
+            for name, value in configured.items()
+            if name not in {"password", "connect_timeout", "options"}
+        )
+        or not options_match
+    ):
         raise ValueError("transaction work unit belongs to another database or schema")
     key = (database._dsn, database.deployment_namespace)
     current = _unit.get()

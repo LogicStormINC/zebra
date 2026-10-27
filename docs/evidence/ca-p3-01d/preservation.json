@@ -1,0 +1,17 @@
+{
+  "baseline": "934d66b8aacad7690cef05aa672e78baf9827da4",
+  "preservedTrackedFiles": 4628,
+  "preservedManifestSha256": "95b988f0e16676a878fc18e2d91878ec4a9a0f5674e5700454b082154228441e",
+  "changedExistingPaths": [
+    "PROGRESS.md",
+    "WORKLOG.md",
+    "apps/api/src/zebra_agent_api/publication_management.py",
+    "apps/api/src/zebra_agent_api/publication_service.py",
+    "docs/AGENT_TASKS.md",
+    "docs/实施任务拆解与阶段验收.md",
+    "task_plan.md",
+    "tests/worker/test_native_script_control.py"
+  ],
+  "unexpectedChanges": [],
+  "scope": "All other tracked baseline bytes, including mock/history/Coverage/old contracts; new files not counted."
+}

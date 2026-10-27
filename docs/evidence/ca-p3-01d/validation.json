@@ -1,0 +1,75 @@
+{
+  "task": "CA-P3-01D",
+  "status": "local validation passed; authorized scoped source delivery follows; remote receipt is separate",
+  "baseline": "934d66b8aacad7690cef05aa672e78baf9827da4",
+  "commands": {
+    "make test": {
+      "exit": 0,
+      "passed": 10985,
+      "conditionalSkipped": 3022,
+      "seconds": 1117.01
+    },
+    "make check": {
+      "exit": 0,
+      "mypyFiles": 1394,
+      "evalCases": 30
+    },
+    "targeted pytest": {
+      "exit": 0,
+      "passed": 29
+    },
+    "Overdoze make test": {
+      "exit": 0,
+      "racePackages": 26,
+      "receiptCorruptions": 19
+    },
+    "Overdoze make check": {
+      "exit": 0,
+      "inheritedFrontendWarnings": 74
+    }
+  },
+  "contract": "sha256:601b0054766bd64078aad1315d7b7296f74461b08d934e9958b2ebec4d7cd0ab",
+  "sourceSha256": {
+    "apps/api/src/zebra_agent_api/publication_management.py": "b57c2a0e19ca426b2f5f23ab6a629adeef086be4d548a0b9de77f54a91cd6306",
+    "apps/api/src/zebra_agent_api/publication_service.py": "72f0666937eff536bfb14f2de5212cd1a05d468c435022fecb69821419830e66",
+    "apps/api/src/zebra_agent_api/script_publication_contract.py": "da3cd1efd0f69fe8d4169fa745a96f080a5caa981a0ac9035459afb89adaaf2e",
+    "tests/api/test_script_publication.py": "6e7d1e92790b9edb78071090a545f344261081d18e39b2713b31f4a1134d6072",
+    "tests/test_script_publication_contract.py": "788650a36276e34449c9ea12d581c767bc9f0d5d8f503ab9c2acbfd8f3d19230",
+    "tests/worker/test_native_script_control.py": "2d2384d46a552738ae58b2bca3b6c7256c9f5662257831bbf29aaf507e5dc348"
+  },
+  "moduleOrigins": {
+    "zebra_agent_api.publication_management": "apps/api/src/zebra_agent_api/publication_management.py",
+    "zebra_agent_api.publication_service": "apps/api/src/zebra_agent_api/publication_service.py",
+    "zebra_agent_api.script_publication_contract": "apps/api/src/zebra_agent_api/script_publication_contract.py",
+    "zebra_agent_api.bundle_assembly": "apps/api/src/zebra_agent_api/bundle_assembly.py",
+    "agent_core.domain.script_bundle": "packages/agent-core/src/agent_core/domain/script_bundle.py",
+    "agent_core.application.agent_definitions": "packages/agent-core/src/agent_core/application/agent_definitions.py",
+    "agent_storage.postgres.publication": "packages/agent-storage/src/agent_storage/postgres/publication.py",
+    "zebra_agent_config.native_script": "apps/config/src/zebra_agent_config/native_script.py"
+  },
+  "logsSha256": {
+    "native-test-stable.log": "7dfe638d2e75710c1577d1c29fc4a6f339ab3d4e836776208df7a2b1432204d1",
+    "native-check-stable.log": "3a6321cb1697910222c239ed9478fc1db042d614e070d26936e3a9c814b30f50",
+    "focused-stable.log": "676f04e2137c1bd8e504d82ddac0bcd7bd841e7026fe9a37944e59baf0c7bb5b",
+    "uuid-red.log": "f817197dfec97c259b5341a2d273590c8fc20b495e342a09b26fc9220a61213c",
+    "go-test.log": "67a8333cff21b55c150e629c55a84c527dfdf154e2ce7a519efe19884e597862",
+    "go-check.log": "96a2c669eefb02ce3fdd435608f066e5f919435b44c757ff9ec2835c40a8fe90"
+  },
+  "regressions": [
+    "UUID non-string red AttributeError reproduced before shared parser fix; both channels now422",
+    "valid foreign-scope Bundle retains403 before catalog resolution",
+    "cancel atomically changes lease/session; either observed terminal reason rejects late receipts",
+    "mounted API prefix, cross-channel receipts, exact grants/catalog, Eval, PG rollback and independent-process CAS/replay"
+  ],
+  "evidenceBoundary": {
+    "http": "ASGI TestClient with owned PostgreSQL",
+    "concurrency": "two spawned interpreters call the same production perform/PG transaction entry; not two TLS HTTP servers",
+    "eval": "trusted test evidence gate, no new evaluation runner",
+    "newPublicHttpToWorkerCombined": false,
+    "productionHA": false,
+    "platformConsumerImplemented": false,
+    "deployment": false,
+    "productionMigration": false
+  },
+  "interruptedRuns": "Earlier full runs were explicitly stopped for candidate review/regression repairs; only native-test-stable is the final complete run."
+}

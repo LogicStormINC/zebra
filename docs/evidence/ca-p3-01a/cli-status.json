@@ -1,0 +1,10 @@
+{
+  "python": "3.12.9",
+  "platform": "Darwin",
+  "cli_validation_exit": 0,
+  "cli_sandbox_exit": 0,
+  "actual_os_sandbox": true,
+  "production_gvisor_verified": false,
+  "example_only_no_business_data": true,
+  "interpreter_source": "uv run python; resolved managed interpreter"
+}

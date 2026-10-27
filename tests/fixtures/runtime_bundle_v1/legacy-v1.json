@@ -1,0 +1,89 @@
+{
+  "source_commit": "6dbb2a8dc145e684d9792cfe9ada0b482c28f343",
+  "source_sha256": {
+    "packages/agent-core/src/agent_core/domain/agent_definitions.py": "06727474e702e2b74b751dbc9c945eb31a1bd80e0d7ee5a35cb03a569e86a8a3",
+    "packages/agent-core/src/agent_core/domain/agent_definition_snapshots.py": "2f28fbb7b41ac82bc443df70fa084c78cf403d8516f43603efd45a8f1e87ad92"
+  },
+  "version": {
+    "version_id": "22222222-2222-4222-8222-222222222222",
+    "definition_id": "11111111-1111-4111-8111-111111111111",
+    "authority_issuer": "https://business.example",
+    "namespace_id": "namespace-a",
+    "version": 1,
+    "schema_version": "agent-definition/1",
+    "model_policy_ref": "model-policy/research-default@2",
+    "tool_profile_ref": "tool-profile/research-readonly@4",
+    "skill_snapshot_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "memory_policy_ref": "memory-policy/research@1",
+    "security_policy_ref": "security-policy/external-research@3",
+    "evaluation_profile_ref": "eval-profile/research@2",
+    "runtime_profile_ref": "runtime-profile/gvisor@1",
+    "definition_digest": "cddfc8f8d7bc30b1d17f1dc58bf9570f64faa3bf5d479fd1ed71491fcdd33dfc",
+    "created_at": "2026-08-03T00:00:00Z"
+  },
+  "release": {
+    "release_id": "33333333-3333-4333-8333-333333333333",
+    "definition_id": "11111111-1111-4111-8111-111111111111",
+    "version_id": "22222222-2222-4222-8222-222222222222",
+    "authority_issuer": "https://business.example",
+    "namespace_id": "namespace-a",
+    "environment": "dev",
+    "status": "published",
+    "revision": 1,
+    "definition_digest": "cddfc8f8d7bc30b1d17f1dc58bf9570f64faa3bf5d479fd1ed71491fcdd33dfc",
+    "actor_ref": "operator:baseline",
+    "reason_class": null,
+    "enforcement_mode": "safe-boundary",
+    "effective_at": "2026-08-03T00:00:00Z"
+  },
+  "snapshots": [
+    {
+      "snapshot_schema_version": "agent-definition-snapshot/1",
+      "definition_id": "11111111-1111-4111-8111-111111111111",
+      "version_id": "22222222-2222-4222-8222-222222222222",
+      "definition_digest": "cddfc8f8d7bc30b1d17f1dc58bf9570f64faa3bf5d479fd1ed71491fcdd33dfc",
+      "authority_issuer": "https://business.example",
+      "namespace_id": "namespace-a",
+      "binding_purpose": "eval",
+      "release_id": null,
+      "release_revision": null,
+      "release_status": null,
+      "model_policy_ref": "model-policy/research-default@2",
+      "tool_profile_ref": "tool-profile/research-readonly@4",
+      "skill_snapshot_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "memory_policy_ref": "memory-policy/research@1",
+      "security_policy_ref": "security-policy/external-research@3",
+      "evaluation_profile_ref": "eval-profile/research@2",
+      "runtime_profile_ref": "runtime-profile/gvisor@1",
+      "resolved_at": "2026-08-03T00:00:00Z",
+      "snapshot_digest": "7a94ca3165d34ec6ec8411e5fbfd7c4fabad935341dc002271ce5f3c3bb41b02"
+    },
+    {
+      "snapshot_schema_version": "agent-definition-snapshot/1",
+      "definition_id": "11111111-1111-4111-8111-111111111111",
+      "version_id": "22222222-2222-4222-8222-222222222222",
+      "definition_digest": "cddfc8f8d7bc30b1d17f1dc58bf9570f64faa3bf5d479fd1ed71491fcdd33dfc",
+      "authority_issuer": "https://business.example",
+      "namespace_id": "namespace-a",
+      "binding_purpose": "production",
+      "release_id": "33333333-3333-4333-8333-333333333333",
+      "release_revision": 1,
+      "release_status": "published",
+      "model_policy_ref": "model-policy/research-default@2",
+      "tool_profile_ref": "tool-profile/research-readonly@4",
+      "skill_snapshot_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "memory_policy_ref": "memory-policy/research@1",
+      "security_policy_ref": "security-policy/external-research@3",
+      "evaluation_profile_ref": "eval-profile/research@2",
+      "runtime_profile_ref": "runtime-profile/gvisor@1",
+      "resolved_at": "2026-08-03T00:00:00Z",
+      "snapshot_digest": "619a5ea601faf9dd0b5c42b35547f3e03559e12201ba282a8bac731958cf77c0"
+    }
+  ],
+  "definition_digest": "cddfc8f8d7bc30b1d17f1dc58bf9570f64faa3bf5d479fd1ed71491fcdd33dfc",
+  "snapshot_digests": [
+    "7a94ca3165d34ec6ec8411e5fbfd7c4fabad935341dc002271ce5f3c3bb41b02",
+    "619a5ea601faf9dd0b5c42b35547f3e03559e12201ba282a8bac731958cf77c0"
+  ],
+  "boundary": "Deterministic fixtures generated with untouched pinned v1 implementation, not a production data sample or database migration."
+}

@@ -1,0 +1,99 @@
+{
+  "task": "CA-P3-02A",
+  "status": "PASS",
+  "date": "2026-10-22",
+  "branch": "codex/ca-p3-02a-frontend-admission",
+  "baseCommit": "f154f5d1eb3c744e26e6d74eb093d776bd0d5f34",
+  "contract": "frontend-profile-management/1",
+  "checks": {
+    "makeTest": {
+      "exitCode": 0,
+      "passed": 10874,
+      "skipped": 3008,
+      "seconds": 1090.05,
+      "logSha256": "260a82b0f5cb2cf841b8433081ce29912191f931172ca94e7a97131327db0f93"
+    },
+    "makeCheck": {
+      "exitCode": 0,
+      "mypyFiles": 1388,
+      "evalCases": 30,
+      "logSha256": "4e0b56d30199b85f0cbd415288df461806ce5cfc7c9ae922179ca9de6db51476"
+    },
+    "clientRegressions": {
+      "passed": 77,
+      "skipped": 2,
+      "logSha256": "9486789d01a811238ab7ec600b218bff818021b29da501b1a68f4a658027b648"
+    },
+    "ownedPostgres": {
+      "passed": 45,
+      "skipped": 0,
+      "logSha256": "37403815a8aeed8342d2341140d79deb10d676c236fbcc1a7cbcd93f4b6ea9e3",
+      "scope": "fresh Docker PostgreSQL only; legacy Profile/Session/Controller contracts, response-loss/fence and actual committed-revocation reads"
+    },
+    "deprecatedBoundRun": {
+      "status": "PASS",
+      "logSha256": "5b7d96bb3924f6092ebc3b1ae0ade94d96272f9ed404bff2e576e794f313c9db"
+    },
+    "sourceFreeze": {
+      "files": 3074,
+      "changed": [],
+      "manifestSha256": "b4d345a91f55a03c653907b29841d123256cf7cd315fb0747024c85cebd3b425",
+      "excluded": "generated evals/reports output, not source"
+    },
+    "coveragePreservation": {
+      "base": "f154f5d1eb3c744e26e6d74eb093d776bd0d5f34",
+      "files": 280,
+      "changed": []
+    }
+  },
+  "priorAttempts": [
+    {
+      "log": "ca-p3-02a-test.log",
+      "logSha256": "bed16742ee7a47cdd74f3ad5d179c012a8c4ccd9a68379c24213992b5e4853b8",
+      "reason": "interrupted after factory prerequisite discovery; migration-catalog assertion then updated for additive v112",
+      "notCountedAsPassing": true
+    },
+    {
+      "log": "ca-p3-02a-test-final.log",
+      "logSha256": "72ed2854ca036ed582e7487a351e48befad7f5678f79a4877da8ac5d017244c1",
+      "reason": "8 old fixture failures: missing verified subject/Profile/Task authority; fixtures corrected without relaxing production guards",
+      "notCountedAsPassing": true
+    },
+    {
+      "log": "ca-p3-02a-test-release.log",
+      "logSha256": "ed3bf6b24e0b566a85dad5716c4ad4cb641e0f475749a743514957843d53f23f",
+      "reason": "interrupted for legacy shared-App cross-Host mutation protection; final source frozen and rerun",
+      "notCountedAsPassing": true
+    }
+  ],
+  "sourceSha256": {
+    "apps/api/src/zebra_agent_api/client_grant_auth.py": "0b6b2a09088acdea51274977fda460bc60d496270b37753d7ab907ef0d0f8d19",
+    "apps/api/src/zebra_agent_api/client_runtime_routes.py": "bfb551aadb59055bcd8c38d4b467109b5f5d53c553d4371abc005a0d30cf35e0",
+    "apps/api/src/zebra_agent_api/client_sessions.py": "3592d57ecef35ea9f513fb4ad85fff60bd9fb949245d6f9ae483ce11c7b18173",
+    "apps/api/src/zebra_agent_api/client_surface.py": "3fec12b147ad5fe9398a88273745c073f17b5fac2d7a694f201d8112b530c5f1",
+    "apps/api/src/zebra_agent_api/factory.py": "938f6e67f97db2382e92cb602cb662e7663176f2f733ad9deea3a98da6697ea7",
+    "apps/api/src/zebra_agent_api/frontend_profile_management.py": "fb7c3cda598ec0ba8dbdf6a74be36f90a530e5079266aeb076f5d1728ab0f749",
+    "apps/api/src/zebra_agent_api/host_registry_config.py": "0bd0a533ecc148bfef6727a80aa4e3d96599d6c5de98f7bad6c3b96cafed634f",
+    "apps/api/src/zebra_agent_api/host_registry_management.py": "cf82351616a47e41e807b834634392eae03a2595783dba4cb5e5d43f180b8994",
+    "packages/agent-control-plane/src/agent_control_plane/frontend_profiles.py": "c24593e6a28dae2f9931b787e6b78477f6e7b53980e872c366d29e67919cb215",
+    "packages/agent-storage/src/agent_storage/postgres/client_capabilities.py": "7043181b00fbeead0defee558ef881b639a11e4622bb7c4902a2e60957d34360",
+    "packages/agent-storage/src/agent_storage/postgres/frontend_profile_management.py": "e3f9b696a6a79ac1bf1fcf2ad9b3aa498b6e3b8aed9cb2fd6c7c0aaf672b0853",
+    "packages/agent-storage/src/agent_storage/postgres/frontend_profile_management_migration.py": "da25d20806ed4c64c073627548079e62dfc2c9d1cd21ff8a6e93cbe7017f4286",
+    "packages/agent-storage/src/agent_storage/postgres/migration_catalog_tail.py": "24435653e2df7842a94b29b3dc90367e2d2917b66c784c92fbed79b440026d53",
+    "tests/agent_storage/test_branch_migration_catalog.py": "3ae55c0eed5b5a205d37e61d65a45e8386946e0c5099dd6939f452f40d810dbc",
+    "tests/api/test_client_host_subject.py": "8a5ab22f4dac1378078b75d00ba6255552ded52e54f4fc6e8d97ddcadb858911",
+    "tests/api/test_client_run_namespace.py": "3f74029ddd9da13357498ef72809c408d041baf238801b49c10eaf554fb87fd6",
+    "tests/api/test_client_runtime_api.py": "56609f40ee95599d700029d5a6b626652d51f7221c3bbc990090e6b71ec42d15",
+    "tests/api/test_client_surface.py": "be5b96109d2d52841f7739c12aa227a87a719637d9f25c65c6fc3ea775ed33e9",
+    "tests/api/test_client_surface_open.py": "3b931a407824189ec728bb805d7b3404897feefa3517c842fe035d484cdeb595",
+    "tests/api/test_frontend_profile_management.py": "cb175dd003c70e14d7f2a731bd92c371ec716f689a36d032cf04f8dd9179ca04"
+  },
+  "boundary": "scoped exact approved Profile management plus existing native BFF admission; actual product/Broker/HTTP chain is separately verified by OD-P3-01B",
+  "notProven": [
+    "production deployment/migration",
+    "production HA/QPS/failover",
+    "browser SDK Hook/UI Effect execution",
+    "immediate native revocation of all running Tasks",
+    "arbitrary online multi-App Profile authoring"
+  ]
+}

@@ -1,0 +1,52 @@
+{
+  "contractVersion": "business-cloud/1",
+  "producerTask": "CA-P3-02M",
+  "businessAuthentication": {
+    "protocol": "OIDC Authorization Code",
+    "pkce": "S256",
+    "clientAuthentication": "client_secret_basic",
+    "idTokenAlgorithm": "RS256",
+    "endpoints": "explicit-approved-no-discovery",
+    "claims": [
+      "iss",
+      "aud",
+      "sub",
+      "exp",
+      "nonce",
+      "auth_time",
+      "azp-when-applicable"
+    ],
+    "codeExchangeAttempts": 1,
+    "claimBeforeExchange": true,
+    "unknownAutoRetry": false,
+    "tokensInBrowser": false
+  },
+  "nativeAuthority": {
+    "brokerMode": "generic",
+    "signature": "RS256",
+    "issuerIndependentFromBusinessIdP": true,
+    "identitySource": "current-platform-and-business-authority",
+    "profile": "current-approved-product-profile",
+    "runtimeProfile": "cloud",
+    "grantReplayCheck": true,
+    "executionAuthority": "Python Runtime"
+  },
+  "compatibility": {
+    "agentAuthenticationFields": [
+      "identity_key",
+      "access_token",
+      "refresh_token"
+    ],
+    "existingContractsChanged": false,
+    "coverageChanged": false,
+    "frontendMockChanged": false
+  },
+  "proofBoundary": {
+    "ownedProtocolFixture": true,
+    "vendorIdPAcceptance": false,
+    "realProductAcceptance": false,
+    "browserSDKAcceptance": false,
+    "workerModelAcceptance": false,
+    "productionHA": false
+  }
+}

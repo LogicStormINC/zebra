@@ -1,0 +1,81 @@
+{
+  "task": "CA-P3-01B",
+  "state": "review-gates-passed",
+  "base_commit": "d6729de3c0114448e7579c45be5df449d97fbd0e",
+  "branch": "codex/ca-p3-01b-worker-script-binding",
+  "focused": {
+    "passed": 64,
+    "skipped": 0
+  },
+  "regression": {
+    "passed": 124,
+    "skipped": 0
+  },
+  "owned_postgres_preservation": {
+    "passed": 74,
+    "skipped": 0
+  },
+  "make_check": {
+    "exit": 0,
+    "typed_sources": 1381,
+    "eval_cases": 30
+  },
+  "make_test": {
+    "exit": 0,
+    "passed": 10822,
+    "skipped": 3008,
+    "seconds": 1100.23,
+    "log": "make-test.log"
+  },
+  "frozen_sources_and_contracts": 2899,
+  "production_deployment": false,
+  "production_migration": false,
+  "mainline_integration": false,
+  "frontend_mock": "unchanged",
+  "historical_data_and_coverage": "preserved",
+  "limitations": [
+    "real gVisor/cluster HA acceptance not run",
+    "effect-free scripts only; no secret/SDK bridge",
+    "existing pinned scoped P2 HTTP contracts remain Bundle1-only",
+    "journal bounded scan; no persistent invocation index"
+  ],
+  "controlled_review_regressions": {
+    "answer_transaction_uncertainty": {
+      "passed": 2,
+      "prior_red": "answer-unknown-red.txt",
+      "log": "answer-unknown-regression.log"
+    }
+  },
+  "prior_full_gate": {
+    "passed": 10821,
+    "failed": 1,
+    "skipped": 3008,
+    "production_source_drift": false,
+    "failure": "test patched moved composition import; all assertions retained",
+    "log": "make-test-policy-seam-failure.log"
+  },
+  "source_drift": [],
+  "source_count": 2899,
+  "legacy_regression": {
+    "passed": 124,
+    "skipped": 0
+  },
+  "policy_seam_regression": {
+    "passed": 13,
+    "skipped": 0,
+    "assertions": "unchanged; constructor patch target moved to agent_security"
+  },
+  "producer_artifacts": {
+    "prior_native_script_abi": "unchanged",
+    "prior_bundle_and_scoped_http_contracts": "unchanged",
+    "new_contract": "docs/contracts/native-script-worker-v1/"
+  },
+  "delivery": {
+    "branch": "codex/ca-p3-01b-worker-script-binding",
+    "remote": "git@github.com:LogicStormINC/zebra.git",
+    "scope": "authorized commit and push only; exact HEAD/remote equality verified in final delivery receipt"
+  },
+  "final_full_run_delta_from_previous_complete_run": [
+    "tests/worker/execution/test_core_execution.py"
+  ]
+}

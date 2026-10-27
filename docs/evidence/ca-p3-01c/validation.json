@@ -1,0 +1,78 @@
+{
+  "task": "CA-P3-01C",
+  "state": "review-gates-passed",
+  "base_commit": "60893da8d850687b636d05473fddabc00a7187ae",
+  "branch": "codex/ca-p3-01c-script-validation",
+  "focused": {
+    "passed": 50,
+    "skipped": 0
+  },
+  "predecessor_fixture_failures": {
+    "count": 4,
+    "reproduced_on_base": true,
+    "log": "preservation-baseline.log",
+    "production_guards": "unchanged; tests now assert normal mutation denied before local corruption injection"
+  },
+  "interrupted_gate": {
+    "exit": 2,
+    "passed": 7414,
+    "skipped": 2119,
+    "seconds": 603.85,
+    "log": "make-test-r1-interrupted.log",
+    "source_delta": [
+      "tests/agent_storage/test_coverage_certificate_read.py"
+    ],
+    "reason": "stop for correction of proven baseline PG fixtures; not a passing full gate"
+  },
+  "production_deployment": false,
+  "production_migration": false,
+  "mainline_integration": false,
+  "frontend_mock": "unchanged",
+  "historical_data_and_coverage": "production algorithms/triggers/schema/data unchanged",
+  "limits": [
+    "pure ABI/digest/syntax only; source never imported/executed",
+    "no Go asset business implementation",
+    "existing scoped Bundle1 contracts unchanged; script Bundle scoped publication still separate",
+    "loopback HTTP proof only; no production TLS/gVisor/HA acceptance"
+  ],
+  "owned_postgres_preservation": {
+    "passed": 106,
+    "skipped": 0,
+    "exit": 0,
+    "seconds": 122.73,
+    "log": "preservation-postgres.log"
+  },
+  "make_check": {
+    "exit": 0,
+    "typed_sources": 1385,
+    "eval_cases": 30,
+    "log": "make-check.log"
+  },
+  "verified_at": "2026-10-21T16:03:31.196194+00:00",
+  "make_test": {
+    "exit": 0,
+    "passed": 10856,
+    "skipped": 3008,
+    "seconds": 1109.12,
+    "log": "make-test.log"
+  },
+  "frozen_inputs": {
+    "count": 3613,
+    "drift": 0,
+    "file": "source-freeze.json"
+  },
+  "contract_digest": "sha256:196d10c6046096faf3888ff5ade1488f779664daf8bb44f6b0e0cc583f38b6c2",
+  "log_normalization": {
+    "rule": "trailing whitespace only; no diagnostic text removed",
+    "changed": {
+      "preservation-postgres-r1.log": {
+        "raw_sha256": "62b52041a102546d3705eea516e5de43b01ff73b6a293ac670a2662b13a62b69",
+        "committed_sha256": "55355ba459c4853cd28c954535916e8cd8f4ed238e6c52e4206248bdcddc4d78"
+      },
+      "preservation-baseline.log": {
+        "raw_sha256": "bfd3377d30300ec29f93bbb66f2a84ad3bdb7d0b22965671434506acd1fe8f08",
+        "committed_sha256": "5f5afe557619ddcfbfa2ea3b4bc43923511f377928fa7a6c6a6c64eb78b11fd0"
+      }
+    }
+  }
+}

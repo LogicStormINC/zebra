@@ -2,7 +2,7 @@ from typing import Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from agent_core.domain.agent_definition_snapshots import AgentDefinitionSnapshot
+from agent_core.domain.bundle_definition import DefinitionSnapshot
 from agent_core.domain.context_inheritance import DelegatedContextSnapshot
 from agent_core.domain.coverage_task_admission import (
     CoverageTaskAdmission,
@@ -50,7 +50,7 @@ class TaskPreparedPayload(BaseModel):
         default=None,
         exclude_if=lambda value: value is None,
     )
-    definition_snapshot: AgentDefinitionSnapshot | None = Field(
+    definition_snapshot: DefinitionSnapshot | None = Field(
         default=None,
         exclude_if=lambda value: value is None,
     )

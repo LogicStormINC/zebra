@@ -107,6 +107,37 @@ class FrontendProfileService:
             binding, expected_binding_revision=expected_binding_revision
         )
 
+    def apply_approved(
+        self,
+        profile: FrontendCapabilityProfileVersion,
+        *,
+        host_app_id: str,
+        namespace_id: str,
+        active: bool,
+    ) -> None:
+        """Compose existing operations; the scoped adapter owns the transaction/CAS."""
+        if not active:
+            existing = self._registry.get_profile(profile.frontend_app_id, profile.revision)
+            if existing is None or existing.profile_digest != profile.profile_digest:
+                raise FrontendProfileServiceError("approved Profile is not published")
+            self.revoke(profile.frontend_app_id, profile.revision)
+            return
+        self.publish(profile)
+        current = self._registry.get_profile(profile.frontend_app_id, profile.revision)
+        if current is None or current.lifecycle is not ProfileLifecycle.PUBLISHED:
+            raise FrontendProfileServiceError("Profile cannot be reactivated")
+        binding = self._registry.get_binding_for_host(
+            host_app_id, namespace_id, profile.frontend_app_id
+        )
+        self.bind(
+            host_app_id=host_app_id,
+            namespace_id=namespace_id,
+            frontend_app_id=profile.frontend_app_id,
+            revision=profile.revision,
+            profile_digest=profile.profile_digest,
+            expected_binding_revision=0 if binding is None else binding.binding_revision,
+        )
+
     def get_binding_for_host(
         self,
         *,

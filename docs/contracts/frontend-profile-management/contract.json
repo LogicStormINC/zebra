@@ -1,0 +1,75 @@
+{
+  "contractVersion": "frontend-profile-management/1",
+  "path": "/management/v1/host-frontend-profile",
+  "methods": [
+    "GET",
+    "PUT"
+  ],
+  "tokenPattern": "rthm_[A-Za-z0-9_-]{43}",
+  "scopeHeaders": [
+    "X-Runtime-Deployment",
+    "X-Runtime-Audience",
+    "X-Runtime-Product",
+    "X-Runtime-Environment",
+    "X-Runtime-Trust-Revision"
+  ],
+  "actions": {
+    "GET": "frontend-profile.read",
+    "PUT": "frontend-profile.write"
+  },
+  "requestFields": [
+    "expectedRevision",
+    "operationId",
+    "active"
+  ],
+  "responseFields": [
+    "contractVersion",
+    "revision",
+    "replayed",
+    "active",
+    "available",
+    "profile",
+    "approvedProfile",
+    "binding",
+    "observedAt"
+  ],
+  "profileDigestFormat": "64 lowercase hex, native canonical JSON",
+  "maxBodyBytes": 16384,
+  "slotsPerInstance": 8,
+  "timeoutSeconds": 5,
+  "maxReceiptsPerApp": 4096,
+  "nativeStorageMigration": 112,
+  "authority": {
+    "profile": "native",
+    "session": "native",
+    "taskRun": "native",
+    "controllerFence": "native",
+    "browserHostGrant": false
+  },
+  "exampleApprovedProfile": {
+    "frontend_app_id": "fixture-web",
+    "revision": 1,
+    "readables": [
+      {
+        "name": "app.ui.route",
+        "description": "",
+        "state_schema": {},
+        "max_state_bytes": 16384
+      }
+    ],
+    "actions": [
+      {
+        "name": "app.ui.item.open",
+        "description": "",
+        "parameters": {},
+        "result_schema": {},
+        "risk": "presentation",
+        "max_result_bytes": 16384
+      }
+    ],
+    "components": [],
+    "lifecycle": "published",
+    "published_at": null
+  },
+  "exampleProfileDigest": "2f2a6fea9bac786ef521b4409f0a5b478b4d36dc8d419d37e354f3a30c1437d0"
+}

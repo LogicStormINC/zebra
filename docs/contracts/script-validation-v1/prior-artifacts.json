@@ -1,0 +1,10 @@
+{
+  "producerCommit": "60893da8d850687b636d05473fddabc00a7187ae",
+  "directoryDigests": {
+    "native-script-v1": "sha256:0e6531407b5055ae7d87035feac633473243433da726f2a01d51fb7993628dc2",
+    "native-script-worker-v1": "sha256:dc17c44256327348d2474ae514911a670da1bf279e0569fb6e6a0db1b90ae53f",
+    "runtime-bundle-v1": "sha256:26ba3e65e38730252de3ea1a45bc4db62d49cbbef7d47c42b6cbf476a3ebe167",
+    "bundle-validation-v1": "sha256:28690b8649c3da9f5898a09041925f56096583b380c531d57aff2d20e397ce82",
+    "runtime-publication-v1": "sha256:e064deec177f393804d3a4810d3e732b02bc2edcd654e242d95856e48f3434de"
+  }
+}

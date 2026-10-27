@@ -18,10 +18,12 @@ from agent_core.domain.identifiers import (
     AgentReleaseId,
 )
 
+from agent_storage.postgres.agent_registry_bundle import save_version, version_from_row
 from agent_storage.postgres.agent_registry_common import AgentRegistryStorageError, _Jsonb
 from agent_storage.postgres.agent_registry_drafts import AgentDraftAuthorityMixin
 from agent_storage.postgres.agent_registry_evidence import AgentDefinitionEvalEvidence
 from agent_storage.postgres.database import PostgresDatabase
+from agent_storage.postgres.publication import lock_definition
 
 __all__ = [
     "AgentDefinitionEvalEvidence",
@@ -122,46 +124,11 @@ class PostgresAgentRegistry(AgentDraftAuthorityMixin):
                 self._version_query() + " AND version_id = %s",
                 (*scope.scope_key, version_id),
             ).fetchone()
-        return _version_from_row(row) if row is not None else None
+            return version_from_row(row, connection) if row is not None else None
 
     def save_version(self, version: AgentDefinitionVersion) -> AgentDefinitionVersion:
-        scope = version.scope
         with self._database.connect() as connection:
-            existing = connection.execute(
-                "SELECT definition_digest FROM agent_definition_versions"
-                " WHERE authority_issuer = %s AND namespace_id = %s"
-                " AND definition_id = %s AND version_id = %s",
-                (*scope.scope_key, version.version_id),
-            ).fetchone()
-            if existing is not None:
-                if existing["definition_digest"] != version.definition_digest:
-                    raise AgentRegistryStorageError(
-                        "Version content changed under a reused version_id"
-                    )
-                return version
-            by_number = connection.execute(
-                "SELECT version_id, definition_digest FROM agent_definition_versions"
-                " WHERE authority_issuer = %s AND namespace_id = %s"
-                " AND definition_id = %s AND version = %s",
-                (*scope.scope_key, version.version),
-            ).fetchone()
-            if by_number is not None:
-                raise AgentRegistryStorageError(
-                    "Definition version number already exists with different content"
-                )
-            connection.execute(
-                """
-                INSERT INTO agent_definition_versions (
-                    authority_issuer, namespace_id, definition_id, version_id,
-                    version, schema_version, model_policy_ref, tool_profile_ref,
-                    skill_snapshot_digest, memory_policy_ref, security_policy_ref,
-                    evaluation_profile_ref, runtime_profile_ref, definition_digest,
-                    created_at
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                """,
-                _version_row_values(version),
-            )
-        return version
+            return save_version(connection, version)
 
     def resolve_published(
         self,
@@ -257,9 +224,7 @@ class PostgresAgentRegistry(AgentDraftAuthorityMixin):
                     ),
                 ).fetchone()
                 if changed is None:
-                    raise AgentRegistryStorageError(
-                        "Release transition raced concurrently"
-                    )
+                    raise AgentRegistryStorageError("Release transition raced concurrently")
                 return release
             latest = connection.execute(
                 "SELECT coalesce(max(revision), 0) AS max_revision"
@@ -306,6 +271,7 @@ class PostgresAgentRegistry(AgentDraftAuthorityMixin):
             evidence.definition_id,
         )
         with self._database.connect() as connection:
+            lock_definition(connection, scope_key)
             connection.execute(
                 """
                 INSERT INTO agent_definition_eval_evidence (
@@ -415,46 +381,6 @@ def _definition_from_row(row: dict[str, Any]) -> AgentDefinition:
         name=row["name"],
         description=row["description"],
         revision=int(row["revision"]),
-        created_at=row["created_at"],
-    )
-
-
-def _version_row_values(version: AgentDefinitionVersion) -> tuple[Any, ...]:
-    return (
-        version.authority_issuer,
-        version.namespace_id,
-        version.definition_id,
-        version.version_id,
-        version.version,
-        version.schema_version,
-        version.model_policy_ref,
-        version.tool_profile_ref,
-        version.skill_snapshot_digest,
-        version.memory_policy_ref,
-        version.security_policy_ref,
-        version.evaluation_profile_ref,
-        version.runtime_profile_ref,
-        version.definition_digest,
-        version.created_at,
-    )
-
-
-def _version_from_row(row: dict[str, Any]) -> AgentDefinitionVersion:
-    return AgentDefinitionVersion(
-        version_id=AgentDefinitionVersionId(row["version_id"]),
-        definition_id=AgentDefinitionId(row["definition_id"]),
-        authority_issuer=row["authority_issuer"],
-        namespace_id=row["namespace_id"],
-        version=int(row["version"]),
-        schema_version=row["schema_version"],
-        model_policy_ref=row["model_policy_ref"],
-        tool_profile_ref=row["tool_profile_ref"],
-        skill_snapshot_digest=row["skill_snapshot_digest"],
-        memory_policy_ref=row["memory_policy_ref"],
-        security_policy_ref=row["security_policy_ref"],
-        evaluation_profile_ref=row["evaluation_profile_ref"],
-        runtime_profile_ref=row["runtime_profile_ref"],
-        definition_digest=row["definition_digest"],
         created_at=row["created_at"],
     )
 

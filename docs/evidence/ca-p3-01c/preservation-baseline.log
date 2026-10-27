@@ -1,0 +1,213 @@
+FFFF                                                                     [100%]
+=================================== FAILURES ===================================
+_ test_report_bytes_match_original_certificate_and_do_not_read_after_final_gate _
+
+cloud_publication = namespace(dsn="user=postgres password=disposable dbname=postgres host=127.0.0.1 port=33355 options='-c search_path=com...f-9033a59d898b', 'artifact://2c6f7d8a-c58c-46f0-9f97-2c0aac7d4010', 'artifact://7fb3a3fe-54de-48bb-a58c-e7ddfa89abc7'))
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10cba1280>
+
+    def test_report_bytes_match_original_certificate_and_do_not_read_after_final_gate(
+        cloud_publication, monkeypatch,  # noqa: F811
+    ):
+        env = cloud_publication
+        certificate = _certify(env)
+        before = source_counts(env)
+        checks, reads = [], []
+        original = env.artifacts.read_payload_bytes_bounded
+
+        def authority():
+            checks.append(True)
+
+        def bounded(artifact_id, *, max_bytes):
+            assert len(checks) < 3, "report must not be re-read after final authority"
+            reads.append(artifact_id)
+            return original(artifact_id, max_bytes=max_bytes)
+
+        with monkeypatch.context() as patch:
+            patch.setattr(env.artifacts, "read_payload_bytes_bounded", bounded)
+            result = report(env, check_authority=authority)
+        assert result == (certificate, env.report_artifact.uri, env.report.canonical_bytes)
+>       assert len(checks) == 3 and reads
+E       assert (3 == 3 and [])
+E        +  where 3 = len([True, True, True])
+
+tests/agent_storage/test_coverage_certificate_read.py:51: AssertionError
+_________ test_report_refuses_forged_original_certificate_event[actor] _________
+
+cloud_publication = namespace(dsn="user=postgres password=disposable dbname=postgres host=127.0.0.1 port=33355 options='-c search_path=com...b-c00a12ebe187', 'artifact://febe3835-313b-4d2c-af5e-d29bffbba5f7', 'artifact://3968cfdd-ecf2-4725-9f34-bcf9f6458793'))
+forgery = 'actor'
+
+    @pytest.mark.parametrize("forgery", ["actor", "fence", "timestamp"])
+    def test_report_refuses_forged_original_certificate_event(
+        cloud_publication, forgery,  # noqa: F811
+    ):
+        env = cloud_publication
+        _certify(env)
+        with psycopg.connect(env.dsn) as connection:
+            if forgery == "actor":
+>               connection.execute(
+                    "UPDATE session_events SET actor='user' "
+                    "WHERE event_type='coverage_report_certified'"
+
+tests/agent_storage/test_coverage_certificate_read.py:158:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <psycopg.Connection [BAD] at 0x10ccbccb0>
+query = "UPDATE session_events SET actor='user' WHERE event_type='coverage_report_certified'"
+params = None
+
+    def execute(
+        self,
+        query: Query,
+        params: Params | None = None,
+        *,
+        prepare: bool | None = None,
+        binary: bool = False,
+    ) -> Cursor[Row]:
+        """Execute a query and return a cursor to read its results."""
+        try:
+            cur = self.cursor()
+            if binary:
+                cur.format = BINARY
+
+            if isinstance(query, Template):
+                if params is not None:
+                    raise TypeError(
+                        "'execute()' with string template query doesn't support parameters"
+                    )
+                return cur.execute(query, prepare=prepare)
+            else:
+                return cur.execute(query, params, prepare=prepare)
+        except e._NO_TRACEBACK as ex:
+>           raise ex.with_traceback(None)
+E           psycopg.errors.ObjectNotInPrerequisiteState: projection metadata source is immutable
+E           CONTEXT:  PL/pgSQL function compute_projection_source_metadata() line 11 at RAISE
+
+.venv/lib/python3.12/site-packages/psycopg/connection.py:300: ObjectNotInPrerequisiteState
+_________ test_report_refuses_forged_original_certificate_event[fence] _________
+
+cloud_publication = namespace(dsn="user=postgres password=disposable dbname=postgres host=127.0.0.1 port=33355 options='-c search_path=com...a-fed5283c1504', 'artifact://29386d20-3994-4088-ad1e-9c1cbfadfcee', 'artifact://6d06810c-56bd-4ce0-a2b8-56c7dd21b2ad'))
+forgery = 'fence'
+
+    @pytest.mark.parametrize("forgery", ["actor", "fence", "timestamp"])
+    def test_report_refuses_forged_original_certificate_event(
+        cloud_publication, forgery,  # noqa: F811
+    ):
+        env = cloud_publication
+        _certify(env)
+        with psycopg.connect(env.dsn) as connection:
+            if forgery == "actor":
+                connection.execute(
+                    "UPDATE session_events SET actor='user' "
+                    "WHERE event_type='coverage_report_certified'"
+                )
+            elif forgery == "fence":
+>               connection.execute(
+                    "UPDATE session_events SET payload=payload-'fence' "
+                    "WHERE event_type='coverage_report_certified'"
+                )
+
+tests/agent_storage/test_coverage_certificate_read.py:163:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <psycopg.Connection [BAD] at 0x10ccbcec0>
+query = "UPDATE session_events SET payload=payload-'fence' WHERE event_type='coverage_report_certified'"
+params = None
+
+    def execute(
+        self,
+        query: Query,
+        params: Params | None = None,
+        *,
+        prepare: bool | None = None,
+        binary: bool = False,
+    ) -> Cursor[Row]:
+        """Execute a query and return a cursor to read its results."""
+        try:
+            cur = self.cursor()
+            if binary:
+                cur.format = BINARY
+
+            if isinstance(query, Template):
+                if params is not None:
+                    raise TypeError(
+                        "'execute()' with string template query doesn't support parameters"
+                    )
+                return cur.execute(query, prepare=prepare)
+            else:
+                return cur.execute(query, params, prepare=prepare)
+        except e._NO_TRACEBACK as ex:
+>           raise ex.with_traceback(None)
+E           psycopg.errors.ObjectNotInPrerequisiteState: projection metadata source is immutable
+E           CONTEXT:  PL/pgSQL function compute_projection_source_metadata() line 11 at RAISE
+
+.venv/lib/python3.12/site-packages/psycopg/connection.py:300: ObjectNotInPrerequisiteState
+_______ test_report_refuses_forged_original_certificate_event[timestamp] _______
+
+cloud_publication = namespace(dsn="user=postgres password=disposable dbname=postgres host=127.0.0.1 port=33355 options='-c search_path=com...d-fb22b3595ae6', 'artifact://bce530ee-a44d-4b9c-b633-5245e85a5d11', 'artifact://923f4c27-8a0f-45d3-b11f-43c6ac6cb7f8'))
+forgery = 'timestamp'
+
+    @pytest.mark.parametrize("forgery", ["actor", "fence", "timestamp"])
+    def test_report_refuses_forged_original_certificate_event(
+        cloud_publication, forgery,  # noqa: F811
+    ):
+        env = cloud_publication
+        _certify(env)
+        with psycopg.connect(env.dsn) as connection:
+            if forgery == "actor":
+                connection.execute(
+                    "UPDATE session_events SET actor='user' "
+                    "WHERE event_type='coverage_report_certified'"
+                )
+            elif forgery == "fence":
+                connection.execute(
+                    "UPDATE session_events SET payload=payload-'fence' "
+                    "WHERE event_type='coverage_report_certified'"
+                )
+            else:
+>               connection.execute(
+                    "UPDATE session_events SET created_at=created_at-interval '1 hour' "
+                    "WHERE event_type='coverage_report_certified'"
+                )
+
+tests/agent_storage/test_coverage_certificate_read.py:168:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <psycopg.Connection [BAD] at 0x10cd4e510>
+query = "UPDATE session_events SET created_at=created_at-interval '1 hour' WHERE event_type='coverage_report_certified'"
+params = None
+
+    def execute(
+        self,
+        query: Query,
+        params: Params | None = None,
+        *,
+        prepare: bool | None = None,
+        binary: bool = False,
+    ) -> Cursor[Row]:
+        """Execute a query and return a cursor to read its results."""
+        try:
+            cur = self.cursor()
+            if binary:
+                cur.format = BINARY
+
+            if isinstance(query, Template):
+                if params is not None:
+                    raise TypeError(
+                        "'execute()' with string template query doesn't support parameters"
+                    )
+                return cur.execute(query, prepare=prepare)
+            else:
+                return cur.execute(query, params, prepare=prepare)
+        except e._NO_TRACEBACK as ex:
+>           raise ex.with_traceback(None)
+E           psycopg.errors.ObjectNotInPrerequisiteState: canonical Task Event business fields are immutable
+E           CONTEXT:  PL/pgSQL function guard_task_event_business() line 8 at RAISE
+
+.venv/lib/python3.12/site-packages/psycopg/connection.py:300: ObjectNotInPrerequisiteState
+=========================== short test summary info ============================
+FAILED tests/agent_storage/test_coverage_certificate_read.py::test_report_bytes_match_original_certificate_and_do_not_read_after_final_gate
+FAILED tests/agent_storage/test_coverage_certificate_read.py::test_report_refuses_forged_original_certificate_event[actor]
+FAILED tests/agent_storage/test_coverage_certificate_read.py::test_report_refuses_forged_original_certificate_event[fence]
+FAILED tests/agent_storage/test_coverage_certificate_read.py::test_report_refuses_forged_original_certificate_event[timestamp]
+4 failed in 6.00s
+baseline_exit 1

@@ -68,6 +68,7 @@ from agent_core.domain.clarifications import (
     MAX_CLARIFICATION_QUESTION_CHARS,
 )
 from agent_core.domain.events import EventType
+from agent_core.domain.native_script_receipt import NativeScriptEvent
 from agent_core.domain.plans import MAX_PLAN_STEPS, PlanStep, SessionPlan
 
 
@@ -334,6 +335,7 @@ _EVENT_PAYLOAD_MODELS: dict[EventType, type[BaseModel]] = {
     EventType.MODEL_RESPONSE_RECEIVED: ModelResponseReceivedPayload,
     EventType.PUBLIC_OUTPUT: PublicOutputPayload,
     EventType.ANSWER_COMMITTED: AnswerCommittedPayload,
+    EventType.NATIVE_SCRIPT_INVOCATION: NativeScriptEvent,
     EventType.PLAN_UPDATED: PlanUpdatedPayload,
     EventType.SESSION_SUSPENDED: SessionSuspendedPayload,
     EventType.SESSION_RESUMED: SessionResumedPayload,

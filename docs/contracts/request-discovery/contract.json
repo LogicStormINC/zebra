@@ -1,0 +1,126 @@
+{
+  "contractVersion": "request-discovery/1",
+  "producerTask": "CA-P3-02J",
+  "nativeReceiptContract": "client-command-receipts/1",
+  "businessEndpoints": {
+    "list": "GET {resourceRecoveryPath}?after={ownerRequestUUID}&limit=1..50",
+    "receipt": "GET {resourceRecoveryPath}/receipt",
+    "handling": "POST {resourceRecoveryPath}/handling",
+    "requestHeader": "Idempotency-Key",
+    "handlingBody": [
+      "revision",
+      "action",
+      "reason"
+    ],
+    "actions": [
+      "escalate",
+      "acknowledge_unknown"
+    ],
+    "reasons": [
+      "unobservable",
+      "support_review"
+    ]
+  },
+  "discovery": {
+    "subjectResourceFilteredBeforePagination": true,
+    "noCurrentDeviceTaskRequired": true,
+    "maxPage": 50,
+    "maxResponseBytes": 32768,
+    "opaqueOwnerCursor": true,
+    "manualUnknownIncluded": true,
+    "noNativeCoordinatesOrCredentials": true,
+    "noNativeCall": true
+  },
+  "handling": {
+    "separateCurrentPermission": true,
+    "appendOnlyAudit": true,
+    "separateCASRevision": true,
+    "maxRevision": 32,
+    "admissionUnchanged": true,
+    "unknownStillBlocking": true,
+    "resend": false,
+    "clearBrowserMarker": false,
+    "claimNoncommit": false
+  },
+  "sdk": {
+    "export": "createCommandRecoveryInbox",
+    "noAutomaticRuntimeStart": true,
+    "beforeBootstrap": "explicit await inbox.assertClear(); failures and unknown block caller",
+    "serverAdmissionLock": false,
+    "automaticRetry": false,
+    "receiptOriginalMappingOnly": true,
+    "manualCallExplicit": true
+  },
+  "compatibility": {
+    "nativePythonChanged": false,
+    "coverageChanged": false,
+    "frontendMockChanged": false,
+    "businessSchema": "explicit additive InitializeRecovery; no production migration executed"
+  },
+  "verificationBoundary": {
+    "productionIdP": false,
+    "productionHA": false,
+    "authoritativeNoncommitProof": false
+  },
+  "wire": {
+    "list": {
+      "responseKeys": [
+        "items",
+        "next"
+      ],
+      "itemKeys": [
+        "key",
+        "status",
+        "handling"
+      ],
+      "status": "unknown",
+      "key": "canonical lowercase nonzero UUID",
+      "handlingKeys": [
+        "revision",
+        "action",
+        "reason"
+      ],
+      "initialHandling": {
+        "revision": 0,
+        "action": "",
+        "reason": ""
+      },
+      "next": "empty or last returned owner-scoped key when more rows exist",
+      "defaultLimit": 20,
+      "snapshot": false
+    },
+    "receipt": {
+      "unknown": {
+        "status": "unknown"
+      },
+      "accepted": {
+        "status": "accepted",
+        "commandId": "original lowercase nonzero UUID"
+      },
+      "body": false,
+      "query": false
+    },
+    "handling": {
+      "requestRevision": "integer 0..31; expected separate manual CAS",
+      "responseRevision": "integer 1..32",
+      "requestBytesMax": 1024,
+      "responseBytesMax": 4096,
+      "extraOrDuplicateFields": false,
+      "query": false,
+      "automaticWriteRetry": false
+    },
+    "authentication": "current business same-origin Cookie/SSO; scope supplied by trusted server",
+    "headers": {
+      "noStore": true,
+      "privateNativeAuthorityForbidden": true,
+      "exactOriginRequiredForPost": true
+    },
+    "errors": {
+      "invalid": 400,
+      "denied": 403,
+      "conflict": 409,
+      "tooLarge": 413,
+      "dependencyOrOverload": 503
+    }
+  }
+}

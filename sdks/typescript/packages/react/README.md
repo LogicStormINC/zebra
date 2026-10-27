@@ -1,3 +1,15 @@
+## Explicit same-Run revision
+
+Use `useZebraSurfaceRevision({config:previousPublicConfig,publicMetadata:previousMetadata,profile})` on a **new committed owner after the old owner stops**. Register using the existing initial Hooks on `revision.surface`, capture once, then explicitly ask the trusted BFF for one durable revision. On unknown, observe only its original receipt. After current mapping confirmation, `revision.adopt(publicConfig,publicMetadata,profile)` returns the real runtime without HTTP; explicitly start it. It requires the exact prior target/Profile, next UI revision and advancing binding metadata, preserves command pending markers, and reuses fail-closed drift/unmount. No automatic remount, authentication, new Run or old Provider upgrade. See [full flow and boundaries](../../../../docs/CA-P3-02Z_react_surface_revision.md).
+
+# 显式初始React Surface（CA-P3-02X）
+
+新增useZebraInitialSurface/useZebraInitialReadable/useZebraInitialAction；capture一次后通过业务BFF原子准入，adopt不发mount、不重领Controller。旧Provider不自动切换。完整交互、StrictMode/unknown/修订边界见[合同](../../../../docs/CA-P3-02X_react_initial_ui.md)。本地准备不是认证或执行证明，不发布npm。
+
+## Readable value commands (explicit opt-in)
+
+With `mode: "bff", surfaceMetadataVersion: 1, clientStateVersion: 1`, `useZebraReadable(name, value)` copies mounted JSON values and updates/removes them with the Hook lifecycle. `useZebraReadableCommand()` returns a one-attempt `submit({action: "run", expectedRevision, idempotencyKey, input: {messages: []}})` function; `resume` requires `input.resume`. Revision is the native command revision, not UI revision. Accepted means durable intent only. A trusted authenticated business BFF compares the public surface and translates using `nativeReadableCommand`; this helper is not an authentication/authorization server. Native credentials remain server-only. Native schema/redaction/digest/command authority stays unchanged. Do not automatically retry CAS/unknown; reconcile the original native idempotency identity at the BFF. Values are not browser-persisted. Old modes remain names/revision only. See [full contract and boundaries](../../../../docs/CA-P3-02G_readable_submit.md).
+
 # @zebra-agent/react
 
 React bindings and host-neutral UI primitives for Zebra Cloud Agent.
@@ -96,3 +108,52 @@ Use `ZebraAgentProvider` and the exported hooks for Agent runtime integration.
 Use `ZebraHitlProvider` for approval and clarification surfaces. A Host should
 adapt its domain state into these contracts rather than import package source
 files or duplicate runtime ownership.
+
+
+## Same-origin BFF browser mode
+
+Prefer `mode: "bff"` for embedded business UIs. The business BFF keeps native HostGrants,
+Session credentials and Controller fences; the browser gets public metadata only:
+
+```tsx
+const config = {
+  mode: "bff" as const,
+  baseUrl: "/api/agent/surfaces/public-binding-id",
+  clientSessionId: bootstrap.clientSessionId,
+  controller: bootstrap.controller,
+  taskId: bootstrap.taskId,
+  runId: bootstrap.runId,
+  runBindingId: bootstrap.runBindingId,
+  clientBindingDigest: bootstrap.clientBindingDigest,
+  actionContractDigests: bootstrap.actionContractDigests,
+  initialUiRevision: bootstrap.uiRevision,
+};
+// Pass config to ZebraAgentProvider and register actions with useZebraAction.
+```
+
+`bootstrap` above means the product BFF's sanitized native-admission response, not Overdoze's
+identity-only bootstrap. No extra Agent identity token is created. Existing business login/Cookie,
+current Agent identity, Origin/CSRF, durable surface mapping and native authorization stay server-owned.
+Public IDs and `controller` are hints; the BFF independently checks and rejects foreign scope/role.
+Never serialize `sessionCredential` or `controllerFenceToken` into this mode, or fabricate a value
+for the legacy validator. BFF v1 supports bounded polling, not an undocumented SSE proxy.
+
+`useZebraClientStatus()` observes `connecting`, `ready`, `unavailable`, or `stopped`.
+Ready follows mount/poll success; it does not prove native admission or task completion.
+Old callers that exhaustively type the former three-state union must handle `unavailable`.
+The existing native admission response does not directly return an action-digest map; production
+BFF integration still needs public native digest facts and mount/RunBinding/fence synchronization.
+`useZebraReadable` currently registers names and revisions only: no value-upload/Context proof.
+Local storage restrictions limit refresh deduplication; an already running JavaScript handler cannot
+be rolled back. Unknown business writes require their own operation/result reconciliation.
+
+The original config and legacy SSE remain available. This source addition is not an npm release,
+a production BFF, or real business IdP/Runtime/Worker end-to-end acceptance.
+
+## Synchronized native surfaces
+
+BFF integration with client-surface-metadata/1 opts in using `surfaceMetadataVersion: 1` and the actual admitted `initialUiRevision`. Provide the native binding/action digest facts; the trusted BFF retains all native credentials and returns only `publicClientSurfaceMetadata(nativeResponse)` after persisting its new fence. The runtime pauses dispatch, drains old work, validates the public response and updates binding coordinates. Unknown outcomes stop without automatic remount/release. Persisted unresolved work requires trusted reconciliation. See [protocol and evidence boundaries](../../../../docs/CA-P3-02E_sdk_surface_sync.md). Legacy/unnegotiated mode remains compatible and does not consume remount metadata.
+
+## Explicit command recovery1
+
+Enable `commandRecoveryVersion: 1` with BFF Readable1 and synchronized surface1. Use canonical lowercase UUID keys and working per-tab Storage. `useZebraReadableCommandRecovery()` returns a nullable `{pending(), reconcile(key)}` view. Pending reloads stay stopped before Provider lifecycle work. Query only; unknown never permits resubmit. Accepted clears only the original key; fetch a fresh trusted bootstrap and replace the Runtime/Provider before mounting again. Markers store keys only, not messages/values/credentials; cleared storage and another device need business-side discovery. BFF uses its own durable journal and the published native original-Segment receipt/precondition contracts. No npm publication or production IdP/HA guarantee.

@@ -1,0 +1,43 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "abi": {
+      "const": "cloud-agent.native-script/1",
+      "title": "Abi",
+      "type": "string"
+    },
+    "invocation_id": {
+      "title": "Invocation Id",
+      "type": "string"
+    },
+    "manifest_digest": {
+      "title": "Manifest Digest",
+      "type": "string"
+    },
+    "output": {
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "integer"
+          },
+          {
+            "type": "boolean"
+          }
+        ]
+      },
+      "title": "Output",
+      "type": "object"
+    }
+  },
+  "required": [
+    "abi",
+    "invocation_id",
+    "manifest_digest",
+    "output"
+  ],
+  "title": "ScriptResponse",
+  "type": "object"
+}

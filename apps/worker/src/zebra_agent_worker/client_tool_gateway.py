@@ -12,10 +12,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import timedelta
 from typing import Any
+from uuid import UUID
 
 from agent_control_plane.client_effects import (
     build_client_effect_continuation,
     build_client_effect_request,
+    original_client_effect_result,
 )
 from agent_core.domain.client_capabilities import (
     ClientActionContract,
@@ -23,10 +25,11 @@ from agent_core.domain.client_capabilities import (
     canonical_client_capability_digest,
 )
 from agent_core.domain.client_run_bindings import ClientRunBinding
-from agent_core.domain.identifiers import SessionId
+from agent_core.domain.identifiers import ClientEffectId, SessionId
 from agent_core.domain.modeling import ModelToolDefinition, ModelToolOrigin
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
 from agent_core.ports.client_effect_dispatch import ClientEffectDispatchPort
+from agent_core.ports.client_effect_receipts import ClientEffectReceiptReadPort
 
 
 class ClientToolGatewayError(ValueError):
@@ -52,9 +55,11 @@ class ClientToolGateway:
         *,
         context: ClientGatewayContext,
         dispatch: ClientEffectDispatchPort,
+        receipts: ClientEffectReceiptReadPort | None = None,
     ) -> None:
         self._context = context
         self._dispatch = dispatch
+        self._receipts = receipts
 
     @property
     def context(self) -> ClientGatewayContext:
@@ -70,8 +75,8 @@ class ClientToolGateway:
             tools.append(
                 ModelToolDefinition(
                     name=name,
-                    description=contract.description,
-                    parameters=contract.parameters,
+                    description=contract.description if contract.description.strip() else name,
+                    parameters={"type": "object", "properties": {}, **contract.parameters},
                     origin=ModelToolOrigin.CLIENT,
                     source_id=name,
                 )
@@ -150,6 +155,21 @@ class ClientToolGateway:
             },
         )
 
+    def reconcile_deferred_result(self, call: ToolCall, original: ToolResult) -> ToolResult | None:
+        try:
+            effect_id = ClientEffectId(UUID(str(original.metadata.get("client_effect_id", ""))))
+            effect = self._dispatch.get_effect(effect_id)
+            receipt = self._receipts.read_receipt(effect_id) if self._receipts is not None else None
+            if self._receipts is None:
+                return None
+            return original_client_effect_result(
+                call, original, binding=self._context.binding,
+                contract=self._contract(call.name), execution_session_id=self._context.session_id,
+                effect=effect, receipt=receipt,
+            )
+        except Exception:
+            return None  # A missing/malformed original or read outage is never execution authority.
+
     def _contract(self, name: str) -> ClientActionContract:
         contract = self._context.action_contracts.get(name)
         if contract is None:
@@ -180,4 +200,5 @@ def compose_client_tool_gateway(
             action_contracts=dict(action_contracts or {}),
         ),
         dispatch=dispatch,
+        receipts=getattr(platform, "client_effect_receipts", None),
     )

@@ -41,6 +41,12 @@ from agent_core.ports.client_effect_receipts import (
 )
 from psycopg.types.json import Jsonb
 
+from agent_storage.postgres.client_effect_receipt_read import (
+    read_receipt,
+)
+from agent_storage.postgres.client_effect_receipt_read import (
+    receipt_from_row as _receipt_from_row,
+)
 from agent_storage.postgres.database import PostgresDatabase
 from agent_storage.postgres.events import append_event_in_transaction
 
@@ -171,7 +177,8 @@ class PostgresClientEffectDispatch(ClientEffectDispatchPort):
         return ClientEffectScheduleOutcome(effect=request, created=True)
 
     def get_effect(self, effect_id: ClientEffectId) -> ClientEffectRequest | None:
-        with self._database.connect() as connection:
+        with self._database.connect_task_io() as connection:
+            connection.execute("SET TRANSACTION READ ONLY")
             row = self._by_effect_id(connection, effect_id)
         return None if row is None else _request_from_row(row)
 
@@ -249,6 +256,9 @@ class PostgresClientEffectReceipts(ClientEffectReceiptPort):
     def __init__(self, dsn: str, *, deployment_namespace: str) -> None:
         self._database = PostgresDatabase(dsn, deployment_namespace=deployment_namespace)
         self._namespace = self._database.deployment_namespace
+
+    def read_receipt(self, effect_id: ClientEffectId) -> ClientEffectReceipt | None:
+        return read_receipt(self._database, self._namespace, effect_id)
 
     def accept_receipt(
         self,
@@ -480,16 +490,4 @@ def _request_from_row(row: Any) -> ClientEffectRequest:
         requested_at=row["requested_at"],
         expires_at=row["expires_at"],
         status=ClientEffectStatus(row["status"]),
-    )
-
-
-def _receipt_from_row(row: Any) -> ClientEffectReceipt:
-    return ClientEffectReceipt(
-        receipt_id=UUID(str(row["receipt_id"])),
-        effect_id=ClientEffectId(UUID(str(row["effect_id"]))),
-        idempotency_key=row["idempotency_key"],
-        request_digest=row["request_digest"],
-        status=ClientEffectStatus(row["status"]),
-        result=dict(row["result_json"]),
-        received_at=row["received_at"],
     )

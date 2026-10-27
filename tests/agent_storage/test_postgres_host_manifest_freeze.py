@@ -162,8 +162,8 @@ def test_admission_freezes_manifest_digest_into_binding(
 ) -> None:
     """Pre-stored freeze: the binding carries the REAL digest, no fetch."""
     payload = _manifest_payload()
-    digest = _freeze(postgres_dsn, namespace, payload)
     _register_connector(postgres_dsn, namespace, base_uri="https://unreachable.invalid")
+    digest = _freeze(postgres_dsn, namespace, payload)
     app = _app(postgres_dsn, namespace, _cloud(cloud_composition, namespace), tmp_path)
 
     response = app.create_session(
@@ -236,8 +236,8 @@ def test_worker_consumes_frozen_manifest_without_live_discovery(
 
     os.environ.setdefault(MODEL_KEY_ENV, "unused")
     payload = _manifest_payload()
-    digest = _freeze(postgres_dsn, namespace, payload)
     _register_connector(postgres_dsn, namespace, base_uri="https://unreachable.invalid")
+    digest = _freeze(postgres_dsn, namespace, payload)
     from agent_storage.postgres.host_connectors import (
         PostgresHostConnectorRegistry,
     )
@@ -397,6 +397,9 @@ def test_declared_manifest_db_freeze_admission_recovery_and_neutral_tool(
         database_url=postgres_dsn,
     )
     stores = SimpleNamespace(deployment_namespace=namespace)
+    # Register the historical owner before freezing its legacy revision.
+    profile1 = profile.model_copy(update={"profile_revision": 1})
+    registry.publish_profile(profile1)
     # Old cached bytes cannot be admitted as the declared profile's freeze.
     old = HostToolManifest.from_payload(raw)
     store_frozen_manifest(
@@ -457,15 +460,13 @@ def test_declared_manifest_db_freeze_admission_recovery_and_neutral_tool(
     )
     assert result.status is ToolCallStatus.EXECUTED and result.output == "neutral record"
     # Pointing a trusted declared profile at an old unmarked cache fails closed.
-    profile1 = profile.model_copy(update={"profile_revision": 1})
-    registry.publish_profile(profile1)
     registry.bind(
         HostConnectorBinding(
             host_app_id=profile.host_app_id,
             namespace_id=namespace,
             connector_id=profile.connector_id,
             profile_revision=1,
-            binding_revision=2,
+            binding_revision=1,
         )
     )
     with pytest.raises(HostManifestFreezeError, match="binding policy mismatch"):

@@ -11,8 +11,10 @@ from agent_core.domain.session_handoff import HandoffActorKind
 from agent_security.host_grant import VerifiedHostGrant
 
 from zebra_agent_api.ag_ui_command import handle_agui_command
+from zebra_agent_api.ag_ui_command_receipts import handle_client_command_receipt
 from zebra_agent_api.agent_definitions import handle_agent_definition_route
 from zebra_agent_api.app import ZebraAgentApi
+from zebra_agent_api.client_approval_operations import handle_client_approval_operation
 from zebra_agent_api.client_runtime_routes import handle_client_runtime_route
 from zebra_agent_api.extension_task_selection import validate_task_skill_selection
 from zebra_agent_api.extension_turn_admission import CloudExtensionTurnAdmission
@@ -85,6 +87,9 @@ class RouteAdapter:
             )
             if skill_error is not None:
                 return skill_error
+        receipt = handle_client_command_receipt(self.app, request)
+        if receipt is not None:
+            return receipt
         agui_response = handle_agui_command(
             self.app,
             request,
@@ -116,6 +121,9 @@ class RouteAdapter:
         agent_definition_response = handle_agent_definition_route(self.app, request)
         if agent_definition_response is not None:
             return agent_definition_response
+        approval_response = handle_client_approval_operation(self.app, request)
+        if approval_response is not None:
+            return approval_response
         client_response = handle_client_runtime_route(self.app, request)
         if client_response is not None:
             return client_response

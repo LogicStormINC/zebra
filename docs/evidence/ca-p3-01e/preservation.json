@@ -1,0 +1,16 @@
+{
+  "baseline": "b78a4ee464aa9c3159d67ec3a318cc9d13c9d6b8",
+  "changedExistingPaths": [
+    "PROGRESS.md",
+    "WORKLOG.md",
+    "apps/api/src/zebra_agent_api/bundle_management_config.py",
+    "apps/api/src/zebra_agent_api/host_registry_management.py",
+    "apps/api/src/zebra_agent_api/validation_transport.py",
+    "docs/AGENT_TASKS.md",
+    "docs/实施任务拆解与阶段验收.md",
+    "task_plan.md"
+  ],
+  "preservedTrackedFiles": 4635,
+  "preservedManifestSha256": "c9f387d50f413c0233c8180be8329676090a8156dabce3dedf63fc099902a376",
+  "scope": "All other tracked baseline bytes, including old pins/mock/history/Coverage. New task files are not counted."
+}

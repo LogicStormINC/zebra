@@ -52,6 +52,7 @@ export interface MountedActionDeclaration {
 }
 
 export interface RuntimeClientConfig {
+  mode?: "legacy";
   /** Zebra base URL reached through the Host BFF proxy. */
   baseUrl: string;
   clientSessionId: string;
@@ -80,3 +81,24 @@ export const CLIENT_SDK_ERRORS = {
   PROFILE_DIGEST_MISMATCH: "profile_digest_mismatch",
   RECEIPT_CONFLICT: "receipt_conflict",
 } as const;
+
+/** Cookie-authenticated same-origin BFF; these identifiers never grant authority. */
+export interface BffRuntimeClientConfig extends Omit<RuntimeClientConfig,
+  "mode" | "sessionCredential" | "controllerFenceToken" | "streamUrl"> {
+  mode: "bff";
+  /** Relative fixed surface prefix, e.g. /api/agent/surfaces/binding-id. */
+  baseUrl: string;
+  /** Display/dispatch hint only; the BFF independently checks native control. */
+  controller: boolean;
+  /** Explicitly negotiate public native mount facts; no implicit upgrade. */
+  surfaceMetadataVersion?: 1;
+  /** Explicit native Readable command admission/1; requires synchronized surface. */
+  clientStateVersion?: 1;
+  /** Durable opaque command markers and receipt-only reconciliation. */
+  commandRecoveryVersion?: 1;
+  sessionCredential?: never;
+  controllerFenceToken?: never;
+  streamUrl?: never;
+}
+
+export type RuntimeBrowserConfig = RuntimeClientConfig | BffRuntimeClientConfig;

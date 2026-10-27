@@ -1,0 +1,26 @@
+{
+  "contract": "sdk-surface-sync/1",
+  "boundary": "local compatibility HTTP; real PostgreSQL; Worker gateway and durable resume command; fixture business login",
+  "reports": [
+    {
+      "browser": "Chromium",
+      "scheduled": 2,
+      "receipts": 2,
+      "resumes": 2,
+      "receiptReplay": true,
+      "remount": true,
+      "secretRedaction": true,
+      "unauthorizedStopped": true
+    },
+    {
+      "browser": "WebKit",
+      "scheduled": 2,
+      "receipts": 2,
+      "resumes": 2,
+      "receiptReplay": true,
+      "remount": true,
+      "secretRedaction": true,
+      "unauthorizedStopped": true
+    }
+  ]
+}

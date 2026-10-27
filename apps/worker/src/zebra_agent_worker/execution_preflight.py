@@ -72,6 +72,7 @@ def prepare_execution_preflight(
     started_at: datetime,
     events: list[SessionEvent] | None = None,
     event_store: EventStorePort | None = None,
+    compatibility_check: Callable[[], None] | None = None,
 ) -> tuple[DurableHarnessEventRecorder, ExecutedSession | None]:
     """Build a fenced recorder, heal durable closes, then capability checks.
 
@@ -117,6 +118,8 @@ def prepare_execution_preflight(
                 )
             except ExecutionInterrupted:
                 return recorder, _superseded_by_control_event(recorder)
+    if compatibility_check is not None:
+        compatibility_check()
     try:
         return recorder, reject_unsupported_setup_only(
             recorder=recorder,

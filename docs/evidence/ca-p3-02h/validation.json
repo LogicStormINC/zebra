@@ -1,0 +1,75 @@
+{
+  "task": "CA-P3-02H",
+  "status": "Review",
+  "base": "1e66659d017aba0e84e2740f16d76444719b1f5b",
+  "contractVersion": "client-command-receipts/1",
+  "makeTest": {
+    "exit": 0,
+    "passed": 10970,
+    "skipped": 3022,
+    "seconds": 1171.24,
+    "skips": "existing optional-service conditions plus owned PostgreSQL receipt case run separately"
+  },
+  "makeCheck": {
+    "exit": 0,
+    "typeFiles": 1393,
+    "evalCases": 30,
+    "fileSizeViolations": 0
+  },
+  "focused": {
+    "passed": 22,
+    "skipped": 1,
+    "actualApiSqlitePersistReopenAndAsgi": true,
+    "taskAndSessionRevocationAfterRead": true,
+    "sharedPostgresDeadlineContext": true
+  },
+  "ownedPostgres": {
+    "image": "postgres:17-alpine",
+    "passed": 5,
+    "skipped": 0,
+    "twoReopenedReaders": true,
+    "namespaceIsolation": true,
+    "existingIdempotencyIndexWith2000Commands": true,
+    "ownedContainerRemoved": true,
+    "productionDatabaseUsed": false,
+    "actualReceiptHandlerBudgetPositiveLockTimeoutAndRecovery": true,
+    "handlerAuthorityBoundary": "local SQLite Session/Task; real bounded PG receipt storage; not signed cloud"
+  },
+  "deadlineExpiration": {
+    "status": 503,
+    "contextReset": true,
+    "boundary": "delayed local reader fixture; not database cancellation or hard real-time certification"
+  },
+  "supersededAttempts": [
+    "first fixture failures are not passing evidence",
+    "initial PG EXPLAIN expected idempotency index but single-command planner chose command_backfill; populated command noise verifies index eligibility without DDL",
+    "first full root test interrupted after adding shared request deadline; only final complete run counted"
+  ],
+  "preservation": {
+    "protectedFiles": 3838,
+    "manifestSha256": "71e4f307fe520fc0120b1df86052ee708efa9e481896e5c840a3aa29149e730f",
+    "sdkHistoryContractsAndCoverageUnchanged": true
+  },
+  "logDigests": {
+    "make-test-final.log": "23e7e5e987d76c669902341f38d54a6b4daa03f1f603de6e7f1fffefdd4ef7f9",
+    "make-check-final.log": "0f490a4c66545c6f7aa0bf9ba985d1f8cee9665e4dcb33767c5252fa91411071",
+    "focused-final.log": "9b138603dffa68d21694c0084575ea6bb2087cd514c52779514b214127176775",
+    "owned-pg.log": "55ba21d2697bce92a2d88d45da6d93037f9a80a8820e7decc54ad28298ac6451",
+    "deadline-expiration.log": "b0098c2a4b97997979ef9c1bc6e43583c2b4fa1c68f8e09f1b80d17ff277c0e1",
+    "owned-pg-budget.log": "3e709077ba22dbafb1fab66dd830759d6638f67065c30a33bd4f59d19594711d"
+  },
+  "boundaries": {
+    "admissionOnly": true,
+    "absenceNeverProvesNoncommit": true,
+    "crossStoreLinearizableRevocation": false,
+    "productionSignedCloudPositive": false,
+    "businessIdp": false,
+    "bffDurableReconciliation": false,
+    "sdkUnknownReconnect": false,
+    "fullModelHarness": false,
+    "productionHa": false,
+    "deployment": false,
+    "productionMigration": false,
+    "mainIntegration": false
+  }
+}

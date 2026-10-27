@@ -1,0 +1,188 @@
+{
+  "schema_version": "cloud-agent.bundle-negative-vectors/1",
+  "base": "example-envelope.json",
+  "instructions": "Apply each case patches to a fresh base using path segments, then recompute outer bundle_digest from independent ASCII sorted compact manifest JSON before parsing. Paths are conformance fixture operations, not a management API.",
+  "cases": [
+    {
+      "name": "unknown-envelope-version",
+      "patches": [
+        {
+          "path": [
+            "schema_version"
+          ],
+          "value": "cloud-agent.bundle-envelope/2"
+        }
+      ],
+      "expected_error": "INVALID_BUNDLE"
+    },
+    {
+      "name": "unknown-manifest-version",
+      "patches": [
+        {
+          "path": [
+            "manifest",
+            "schema_version"
+          ],
+          "value": "cloud-agent.runtime-bundle/2"
+        }
+      ],
+      "expected_error": "INVALID_BUNDLE"
+    },
+    {
+      "name": "unknown-bundle-abi",
+      "patches": [
+        {
+          "path": [
+            "manifest",
+            "engine",
+            "bundle_abi"
+          ],
+          "value": "cloud-agent.bundle/2"
+        }
+      ],
+      "expected_error": "INVALID_BUNDLE"
+    },
+    {
+      "name": "unsupported-script-abi",
+      "patches": [
+        {
+          "path": [
+            "manifest",
+            "engine",
+            "script_abi"
+          ],
+          "value": "future.script/1"
+        }
+      ],
+      "expected_error": "INVALID_BUNDLE"
+    },
+    {
+      "name": "pinned-policy-override",
+      "patches": [
+        {
+          "path": [
+            "manifest",
+            "domains",
+            "policy",
+            "parameters",
+            "allow_all"
+          ],
+          "value": true
+        }
+      ],
+      "expected_error": "INVALID_BUNDLE"
+    },
+    {
+      "name": "unknown-credential-field",
+      "patches": [
+        {
+          "path": [
+            "manifest",
+            "domains",
+            "model",
+            "parameters",
+            "api_key"
+          ],
+          "value": "synthetic-not-a-credential"
+        }
+      ],
+      "expected_error": "INVALID_BUNDLE"
+    },
+    {
+      "name": "output-exceeds-context",
+      "patches": [
+        {
+          "path": [
+            "manifest",
+            "domains",
+            "model",
+            "parameters",
+            "max_output_tokens"
+          ],
+          "value": 1048577
+        }
+      ],
+      "expected_error": "INVALID_BUNDLE"
+    },
+    {
+      "name": "floating-integer",
+      "patches": [
+        {
+          "path": [
+            "manifest",
+            "domains",
+            "model",
+            "parameters",
+            "max_retries"
+          ],
+          "value": 1.0
+        }
+      ],
+      "expected_error": "INVALID_BUNDLE"
+    },
+    {
+      "name": "wrong-catalog",
+      "patches": [
+        {
+          "path": [
+            "manifest",
+            "catalog_digest"
+          ],
+          "value": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ],
+      "expected_error": "INVALID_BUNDLE"
+    },
+    {
+      "name": "component-substitution-with-matching-lock",
+      "patches": [
+        {
+          "path": [
+            "manifest",
+            "domains",
+            "tools",
+            "component",
+            "digest"
+          ],
+          "value": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+        },
+        {
+          "path": [
+            "manifest",
+            "lock",
+            18,
+            "digest"
+          ],
+          "value": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ],
+      "expected_error": "INVALID_BUNDLE"
+    },
+    {
+      "name": "cross-parameter-output-bound",
+      "patches": [
+        {
+          "path": [
+            "manifest",
+            "domains",
+            "model",
+            "parameters",
+            "context_window_tokens"
+          ],
+          "value": 1
+        },
+        {
+          "path": [
+            "manifest",
+            "domains",
+            "model",
+            "parameters",
+            "max_output_tokens"
+          ],
+          "value": 2
+        }
+      ],
+      "expected_error": "INVALID_BUNDLE"
+    }
+  ]
+}

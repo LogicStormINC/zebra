@@ -42,6 +42,7 @@ def submit_session_command(
     payload: dict[str, object],
     *,
     idempotency_key: str | None,
+    actor: EventActor = EventActor.USER,
     extension_admission: CloudExtensionTurnAdmission | None = None,
     verified_host_grant: VerifiedHostGrant | None = None,
     transient_admission_enabled: bool = False,
@@ -179,7 +180,7 @@ def submit_session_command(
         session_id=session_key,
         sequence=current_revision + 1,
         event_type=decision.event_type,
-        actor=EventActor.USER,
+        actor=actor,
         payload=command.event_payload(
             extension_snapshot_digest=snapshot.digest if snapshot is not None else None,
             extension_turn_id=snapshot.turn_id if snapshot is not None else None,

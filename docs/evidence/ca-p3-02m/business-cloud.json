@@ -1,0 +1,21 @@
+{
+  "status": "PASS",
+  "checks": [
+    "product-scoped-profile-publish-bind-current-two-go",
+    "actual-RS256-OIDC-PKCE-nonce-cookie-code-shared-Postgres-two-BFFs-exactly-once",
+    "wrong-nonce-and-consumed-code-response-loss-unknown-no-reexchange-no-Agent-issue",
+    "BFF-held-Agent-credentials-real-generic-Broker-signed-cloud-Task-Run-Session-Controller-fences",
+    "business-IdP-key-cannot-sign-native-authority-current-business-and-profile-revocation"
+  ],
+  "profile_digest": "26ff6f67f5c9474e9ab246b13a8790de4466cfa8f9a64f0edd510810c5744e4b",
+  "native_storage": "PostgreSQL",
+  "public_transport": "HTTPS",
+  "go_processes": 2,
+  "bff_processes": 2,
+  "idp_code_exchanges": 3,
+  "completed_logins": 1,
+  "product_acceptance": "NOT_RUN_MISSING_REAL_PRODUCT_PARAMETERS",
+  "boundary": "Owned protocol IdP test account; actual OIDC RS256/PKCE, two BFF shared PostgreSQL, Go public identity, generic Broker and signed cloud Runtime. No vendor IdP/product account, browser SDK, Worker/model, production HA or native command restart recovery proof.",
+  "credentials_absent_from_logs": true,
+  "owned_processes_cleaned": true
+}

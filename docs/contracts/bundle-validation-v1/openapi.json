@@ -1,0 +1,1643 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "cloud-agent scoped native Bundle validation",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/management/v1/bundle-contract": {
+      "get": {
+        "operationId": "readNativeBundleContract",
+        "security": [
+          {
+            "BundleValidationBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Runtime-Deployment",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "X-Runtime-Audience",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "X-Runtime-Product",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "X-Runtime-Environment",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "X-Runtime-Trust-Revision",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Scoped native validation fact; no execution/publication",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContractResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Fixed error code only; no private configuration or raw validation details",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Fixed error code only; no private configuration or raw validation details",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-store"
+                }
+              },
+              "WWW-Authenticate": {
+                "schema": {
+                  "const": "Bearer realm=\"runtime-management\""
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Fixed error code only; no private configuration or raw validation details",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Fixed error code only; no private configuration or raw validation details",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-store"
+                }
+              },
+              "Allow": {
+                "schema": {
+                  "const": "GET"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Fixed error code only; no private configuration or raw validation details",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-store"
+                }
+              },
+              "Retry-After": {
+                "schema": {
+                  "const": "1"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Fixed error code only; no private configuration or raw validation details",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "Dedicated explicit action; exact scope/current trust. No query, cookies, compression or duplicate security/framing headers. Approval must remain identical through completion. Snapshot receipt is not publication authority. No GET body. The static document carries a digest over its own content except contractDigest."
+      }
+    },
+    "/management/v1/bundle-validation": {
+      "post": {
+        "operationId": "validateNativeBundle",
+        "security": [
+          {
+            "BundleValidationBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Runtime-Deployment",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "X-Runtime-Audience",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "X-Runtime-Product",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "X-Runtime-Environment",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "X-Runtime-Trust-Revision",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "X-Runtime-Bundle-Contract",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^sha256:[0-9a-f]{64}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Scoped native validation fact; no execution/publication",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationReceipt"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Fixed error code only; no private configuration or raw validation details",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Fixed error code only; no private configuration or raw validation details",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-store"
+                }
+              },
+              "WWW-Authenticate": {
+                "schema": {
+                  "const": "Bearer realm=\"runtime-management\""
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Fixed error code only; no private configuration or raw validation details",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Fixed error code only; no private configuration or raw validation details",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-store"
+                }
+              },
+              "Allow": {
+                "schema": {
+                  "const": "POST"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Fixed error code only; no private configuration or raw validation details",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-store"
+                }
+              },
+              "Retry-After": {
+                "schema": {
+                  "const": "1"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Fixed error code only; no private configuration or raw validation details",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Fixed error code only; no private configuration or raw validation details",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Fixed error code only; no private configuration or raw validation details",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "Dedicated explicit action; exact scope/current trust. No query, cookies, compression or duplicate security/framing headers. Approval must remain identical through completion. Snapshot receipt is not publication authority.",
+        "x-max-body-bytes": 262144,
+        "requestBody": {
+          "required": true,
+          "description": "Raw existing Bundle envelope; no wrapper. Strict canonical digest, closure, approvals and RuntimeAssembly checked natively.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../runtime-bundle-v1/envelope.schema.json"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BundleValidationBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Dedicated rtbv_ credential with explicit bundle.contract.read or bundle.validate action; never an Agent/Host/operator identity."
+      }
+    },
+    "schemas": {
+      "ContractResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "contractVersion",
+          "contractDigest",
+          "scope",
+          "trustRevision",
+          "observedAt",
+          "contract"
+        ],
+        "properties": {
+          "contractVersion": {
+            "const": "bundle-validation/1"
+          },
+          "contractDigest": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          },
+          "scope": {
+            "$ref": "../runtime-bundle-v1/envelope.schema.json#/$defs/BundleScope"
+          },
+          "trustRevision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "observedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "contract": {
+            "const": {
+              "contractVersion": "bundle-validation/1",
+              "envelopeSchema": {
+                "$defs": {
+                  "ArtifactPin": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "enum": [
+                          "image",
+                          "baseline-config",
+                          "component",
+                          "provider-profile",
+                          "output-schema",
+                          "build-evidence"
+                        ],
+                        "title": "Kind",
+                        "type": "string"
+                      },
+                      "id": {
+                        "maxLength": 256,
+                        "minLength": 1,
+                        "title": "Id",
+                        "type": "string"
+                      },
+                      "version": {
+                        "maxLength": 64,
+                        "title": "Version",
+                        "type": "string"
+                      },
+                      "digest": {
+                        "title": "Digest",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "id",
+                      "version",
+                      "digest"
+                    ],
+                    "title": "ArtifactPin",
+                    "type": "object"
+                  },
+                  "BundleScope": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "authority_issuer": {
+                        "maxLength": 2048,
+                        "minLength": 1,
+                        "title": "Authority Issuer",
+                        "type": "string"
+                      },
+                      "namespace_id": {
+                        "maxLength": 256,
+                        "minLength": 1,
+                        "title": "Namespace Id",
+                        "type": "string"
+                      },
+                      "product_id": {
+                        "maxLength": 256,
+                        "minLength": 1,
+                        "title": "Product Id",
+                        "type": "string"
+                      },
+                      "environment": {
+                        "maxLength": 256,
+                        "minLength": 1,
+                        "title": "Environment",
+                        "type": "string"
+                      },
+                      "target_id": {
+                        "maxLength": 256,
+                        "minLength": 1,
+                        "title": "Target Id",
+                        "type": "string"
+                      },
+                      "deployment_id": {
+                        "maxLength": 256,
+                        "minLength": 1,
+                        "title": "Deployment Id",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "authority_issuer",
+                      "namespace_id",
+                      "product_id",
+                      "environment",
+                      "target_id",
+                      "deployment_id"
+                    ],
+                    "title": "BundleScope",
+                    "type": "object"
+                  },
+                  "EmptyParameters": {
+                    "additionalProperties": false,
+                    "description": "Pinned domains cannot smuggle configuration through a mutable mapping.",
+                    "properties": {},
+                    "title": "EmptyParameters",
+                    "type": "object"
+                  },
+                  "EngineBinding": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "const": "cloud-agent",
+                        "title": "Kind",
+                        "type": "string"
+                      },
+                      "image": {
+                        "$ref": "#/$defs/ArtifactPin"
+                      },
+                      "bundle_abi": {
+                        "const": "cloud-agent.bundle/1",
+                        "title": "Bundle Abi",
+                        "type": "string"
+                      },
+                      "script_abi": {
+                        "const": "unsupported",
+                        "title": "Script Abi",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "image",
+                      "bundle_abi",
+                      "script_abi"
+                    ],
+                    "title": "EngineBinding",
+                    "type": "object"
+                  },
+                  "InstructionsDomain": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "component": {
+                        "$ref": "#/$defs/ArtifactPin"
+                      },
+                      "mode": {
+                        "const": "configurable",
+                        "title": "Mode",
+                        "type": "string"
+                      },
+                      "parameters": {
+                        "$ref": "#/$defs/InstructionsParameters"
+                      }
+                    },
+                    "required": [
+                      "component",
+                      "mode",
+                      "parameters"
+                    ],
+                    "title": "InstructionsDomain",
+                    "type": "object"
+                  },
+                  "InstructionsParameters": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "system_text": {
+                        "maxLength": 32768,
+                        "title": "System Text",
+                        "type": "string"
+                      },
+                      "business_text": {
+                        "maxLength": 32768,
+                        "title": "Business Text",
+                        "type": "string"
+                      },
+                      "locale": {
+                        "maxLength": 64,
+                        "title": "Locale",
+                        "type": "string"
+                      },
+                      "output_schema": {
+                        "$ref": "#/$defs/ArtifactPin"
+                      }
+                    },
+                    "required": [
+                      "system_text",
+                      "business_text",
+                      "locale",
+                      "output_schema"
+                    ],
+                    "title": "InstructionsParameters",
+                    "type": "object"
+                  },
+                  "ModelDomain": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "component": {
+                        "$ref": "#/$defs/ArtifactPin"
+                      },
+                      "mode": {
+                        "const": "configurable",
+                        "title": "Mode",
+                        "type": "string"
+                      },
+                      "parameters": {
+                        "$ref": "#/$defs/ModelParameters"
+                      }
+                    },
+                    "required": [
+                      "component",
+                      "mode",
+                      "parameters"
+                    ],
+                    "title": "ModelDomain",
+                    "type": "object"
+                  },
+                  "ModelParameters": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "provider_profile": {
+                        "$ref": "#/$defs/ArtifactPin"
+                      },
+                      "model": {
+                        "maxLength": 256,
+                        "minLength": 1,
+                        "title": "Model",
+                        "type": "string"
+                      },
+                      "context_window_tokens": {
+                        "maximum": 1048576,
+                        "minimum": 1,
+                        "title": "Context Window Tokens",
+                        "type": "integer"
+                      },
+                      "max_output_tokens": {
+                        "maximum": 1048576,
+                        "minimum": 1,
+                        "title": "Max Output Tokens",
+                        "type": "integer"
+                      },
+                      "max_retries": {
+                        "maximum": 3,
+                        "minimum": 0,
+                        "title": "Max Retries",
+                        "type": "integer"
+                      },
+                      "temperature_milli": {
+                        "maximum": 2000,
+                        "minimum": 0,
+                        "title": "Temperature Milli",
+                        "type": "integer"
+                      },
+                      "thinking": {
+                        "enum": [
+                          "auto",
+                          "enabled",
+                          "disabled"
+                        ],
+                        "title": "Thinking",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "provider_profile",
+                      "model",
+                      "context_window_tokens",
+                      "max_output_tokens",
+                      "max_retries",
+                      "temperature_milli",
+                      "thinking"
+                    ],
+                    "title": "ModelParameters",
+                    "type": "object"
+                  },
+                  "PinnedDomain": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "component": {
+                        "$ref": "#/$defs/ArtifactPin"
+                      },
+                      "mode": {
+                        "const": "pinned",
+                        "title": "Mode",
+                        "type": "string"
+                      },
+                      "reason": {
+                        "const": "requires-runtime-assembly",
+                        "title": "Reason",
+                        "type": "string"
+                      },
+                      "parameters": {
+                        "$ref": "#/$defs/EmptyParameters"
+                      }
+                    },
+                    "required": [
+                      "component",
+                      "mode",
+                      "reason",
+                      "parameters"
+                    ],
+                    "title": "PinnedDomain",
+                    "type": "object"
+                  },
+                  "ResolvedRuntimeBundle": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "schema_version": {
+                        "const": "cloud-agent.runtime-bundle/1",
+                        "title": "Schema Version",
+                        "type": "string"
+                      },
+                      "scope": {
+                        "$ref": "#/$defs/BundleScope"
+                      },
+                      "engine": {
+                        "$ref": "#/$defs/EngineBinding"
+                      },
+                      "baseline_config": {
+                        "$ref": "#/$defs/ArtifactPin"
+                      },
+                      "catalog_digest": {
+                        "title": "Catalog Digest",
+                        "type": "string"
+                      },
+                      "domains": {
+                        "$ref": "#/$defs/RuntimeDomains"
+                      },
+                      "lock": {
+                        "items": {
+                          "$ref": "#/$defs/ArtifactPin"
+                        },
+                        "maxLength": 128,
+                        "minLength": 25,
+                        "title": "Lock",
+                        "type": "array"
+                      },
+                      "build_evidence": {
+                        "items": {
+                          "$ref": "#/$defs/ArtifactPin"
+                        },
+                        "maxLength": 32,
+                        "minLength": 1,
+                        "title": "Build Evidence",
+                        "type": "array"
+                      }
+                    },
+                    "required": [
+                      "schema_version",
+                      "scope",
+                      "engine",
+                      "baseline_config",
+                      "catalog_digest",
+                      "domains",
+                      "lock",
+                      "build_evidence"
+                    ],
+                    "title": "ResolvedRuntimeBundle",
+                    "type": "object"
+                  },
+                  "RuntimeDomains": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "engine": {
+                        "$ref": "#/$defs/PinnedDomain"
+                      },
+                      "execution": {
+                        "$ref": "#/$defs/PinnedDomain"
+                      },
+                      "model": {
+                        "$ref": "#/$defs/ModelDomain"
+                      },
+                      "instructions": {
+                        "$ref": "#/$defs/InstructionsDomain"
+                      },
+                      "context": {
+                        "$ref": "#/$defs/PinnedDomain"
+                      },
+                      "memory": {
+                        "$ref": "#/$defs/PinnedDomain"
+                      },
+                      "content": {
+                        "$ref": "#/$defs/PinnedDomain"
+                      },
+                      "native": {
+                        "$ref": "#/$defs/PinnedDomain"
+                      },
+                      "addons": {
+                        "$ref": "#/$defs/PinnedDomain"
+                      },
+                      "tools": {
+                        "$ref": "#/$defs/PinnedDomain"
+                      },
+                      "lifecycle": {
+                        "$ref": "#/$defs/PinnedDomain"
+                      },
+                      "policy": {
+                        "$ref": "#/$defs/PinnedDomain"
+                      },
+                      "sandbox": {
+                        "$ref": "#/$defs/PinnedDomain"
+                      },
+                      "storage": {
+                        "$ref": "#/$defs/PinnedDomain"
+                      },
+                      "transport": {
+                        "$ref": "#/$defs/PinnedDomain"
+                      },
+                      "frontend": {
+                        "$ref": "#/$defs/PinnedDomain"
+                      },
+                      "triggers": {
+                        "$ref": "#/$defs/PinnedDomain"
+                      },
+                      "budget": {
+                        "$ref": "#/$defs/PinnedDomain"
+                      },
+                      "verification": {
+                        "$ref": "#/$defs/PinnedDomain"
+                      },
+                      "operations": {
+                        "$ref": "#/$defs/PinnedDomain"
+                      }
+                    },
+                    "required": [
+                      "engine",
+                      "execution",
+                      "model",
+                      "instructions",
+                      "context",
+                      "memory",
+                      "content",
+                      "native",
+                      "addons",
+                      "tools",
+                      "lifecycle",
+                      "policy",
+                      "sandbox",
+                      "storage",
+                      "transport",
+                      "frontend",
+                      "triggers",
+                      "budget",
+                      "verification",
+                      "operations"
+                    ],
+                    "title": "RuntimeDomains",
+                    "type": "object"
+                  }
+                },
+                "additionalProperties": false,
+                "properties": {
+                  "schema_version": {
+                    "const": "cloud-agent.bundle-envelope/1",
+                    "title": "Schema Version",
+                    "type": "string"
+                  },
+                  "bundle_digest": {
+                    "title": "Bundle Digest",
+                    "type": "string"
+                  },
+                  "manifest": {
+                    "$ref": "#/$defs/ResolvedRuntimeBundle"
+                  }
+                },
+                "required": [
+                  "schema_version",
+                  "bundle_digest",
+                  "manifest"
+                ],
+                "title": "RuntimeBundleEnvelope",
+                "type": "object"
+              },
+              "componentCatalog": {
+                "schema_version": "cloud-agent.component-catalog/1",
+                "components": [
+                  {
+                    "domain": "addons",
+                    "id": "cloud-agent/native/addons",
+                    "version": "1.0.0",
+                    "mode": "pinned",
+                    "reason": "requires-runtime-assembly",
+                    "parameters_schema": {
+                      "additionalProperties": false,
+                      "description": "Pinned domains cannot smuggle configuration through a mutable mapping.",
+                      "properties": {},
+                      "title": "EmptyParameters",
+                      "type": "object"
+                    },
+                    "source_refs": [
+                      "packages/agent-core/src/agent_core/application/plugin_resolution.py"
+                    ],
+                    "digest": "sha256:8dda0ba288309092a56cb7afc82b250e81e7ec3c56255e85d91ba9402ec75ea7"
+                  },
+                  {
+                    "domain": "budget",
+                    "id": "cloud-agent/native/budget",
+                    "version": "1.0.0",
+                    "mode": "pinned",
+                    "reason": "requires-runtime-assembly",
+                    "parameters_schema": {
+                      "additionalProperties": false,
+                      "description": "Pinned domains cannot smuggle configuration through a mutable mapping.",
+                      "properties": {},
+                      "title": "EmptyParameters",
+                      "type": "object"
+                    },
+                    "source_refs": [
+                      "packages/agent-core/src/agent_core/domain/coverage_model_budget.py"
+                    ],
+                    "digest": "sha256:367c08c957e3e7777b26f51a3a0b0beca5e0c170c6ebc51f95ec300d2d1fe40b"
+                  },
+                  {
+                    "domain": "content",
+                    "id": "cloud-agent/native/content",
+                    "version": "1.0.0",
+                    "mode": "pinned",
+                    "reason": "requires-runtime-assembly",
+                    "parameters_schema": {
+                      "additionalProperties": false,
+                      "description": "Pinned domains cannot smuggle configuration through a mutable mapping.",
+                      "properties": {},
+                      "title": "EmptyParameters",
+                      "type": "object"
+                    },
+                    "source_refs": [
+                      "packages/agent-security/src/agent_security/content_guard.py"
+                    ],
+                    "digest": "sha256:8fe3a00b99c0e001897ee266285bfcf22d0099b6778d3936a23e13ca7ea2b744"
+                  },
+                  {
+                    "domain": "context",
+                    "id": "cloud-agent/native/context",
+                    "version": "1.0.0",
+                    "mode": "pinned",
+                    "reason": "requires-runtime-assembly",
+                    "parameters_schema": {
+                      "additionalProperties": false,
+                      "description": "Pinned domains cannot smuggle configuration through a mutable mapping.",
+                      "properties": {},
+                      "title": "EmptyParameters",
+                      "type": "object"
+                    },
+                    "source_refs": [
+                      "packages/agent-core/src/agent_core/ports/context_compiler.py"
+                    ],
+                    "digest": "sha256:78947a2c5e75dac73d94da9f556609a72a9963e619ba8da64934713ea2db55fe"
+                  },
+                  {
+                    "domain": "engine",
+                    "id": "cloud-agent/native/engine",
+                    "version": "1.0.0",
+                    "mode": "pinned",
+                    "reason": "requires-runtime-assembly",
+                    "parameters_schema": {
+                      "additionalProperties": false,
+                      "description": "Pinned domains cannot smuggle configuration through a mutable mapping.",
+                      "properties": {},
+                      "title": "EmptyParameters",
+                      "type": "object"
+                    },
+                    "source_refs": [
+                      "packages/agent-core/src/agent_core/harness/loop.py"
+                    ],
+                    "digest": "sha256:e9f0c031d3fdd533cc1a3eaf152eba620c5d604487ae99782ed52904b4bfb56b"
+                  },
+                  {
+                    "domain": "execution",
+                    "id": "cloud-agent/native/execution",
+                    "version": "1.0.0",
+                    "mode": "pinned",
+                    "reason": "requires-runtime-assembly",
+                    "parameters_schema": {
+                      "additionalProperties": false,
+                      "description": "Pinned domains cannot smuggle configuration through a mutable mapping.",
+                      "properties": {},
+                      "title": "EmptyParameters",
+                      "type": "object"
+                    },
+                    "source_refs": [
+                      "packages/agent-runtime/src/agent_runtime/harness.py"
+                    ],
+                    "digest": "sha256:a0d994cacb1d988e25c889a83b7dea307b948f905a2a836241ced9e87423d9ab"
+                  },
+                  {
+                    "domain": "frontend",
+                    "id": "cloud-agent/native/frontend",
+                    "version": "1.0.0",
+                    "mode": "pinned",
+                    "reason": "requires-runtime-assembly",
+                    "parameters_schema": {
+                      "additionalProperties": false,
+                      "description": "Pinned domains cannot smuggle configuration through a mutable mapping.",
+                      "properties": {},
+                      "title": "EmptyParameters",
+                      "type": "object"
+                    },
+                    "source_refs": [
+                      "packages/agent-core/src/agent_core/domain/client_sessions.py"
+                    ],
+                    "digest": "sha256:dcd04923c138f739acac280db193bf51aace56ec5c79461e2664dc631497ef9e"
+                  },
+                  {
+                    "domain": "instructions",
+                    "id": "cloud-agent/native/instructions",
+                    "version": "1.0.0",
+                    "mode": "configurable",
+                    "reason": "validation-only",
+                    "parameters_schema": {
+                      "$defs": {
+                        "ArtifactPin": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "enum": [
+                                "image",
+                                "baseline-config",
+                                "component",
+                                "provider-profile",
+                                "output-schema",
+                                "build-evidence"
+                              ],
+                              "title": "Kind",
+                              "type": "string"
+                            },
+                            "id": {
+                              "maxLength": 256,
+                              "minLength": 1,
+                              "title": "Id",
+                              "type": "string"
+                            },
+                            "version": {
+                              "maxLength": 64,
+                              "title": "Version",
+                              "type": "string"
+                            },
+                            "digest": {
+                              "title": "Digest",
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "id",
+                            "version",
+                            "digest"
+                          ],
+                          "title": "ArtifactPin",
+                          "type": "object"
+                        }
+                      },
+                      "additionalProperties": false,
+                      "properties": {
+                        "system_text": {
+                          "maxLength": 32768,
+                          "title": "System Text",
+                          "type": "string"
+                        },
+                        "business_text": {
+                          "maxLength": 32768,
+                          "title": "Business Text",
+                          "type": "string"
+                        },
+                        "locale": {
+                          "maxLength": 64,
+                          "title": "Locale",
+                          "type": "string"
+                        },
+                        "output_schema": {
+                          "$ref": "#/$defs/ArtifactPin"
+                        }
+                      },
+                      "required": [
+                        "system_text",
+                        "business_text",
+                        "locale",
+                        "output_schema"
+                      ],
+                      "title": "InstructionsParameters",
+                      "type": "object"
+                    },
+                    "source_refs": [
+                      "packages/agent-context/src/agent_context/prompt_layout.py"
+                    ],
+                    "digest": "sha256:3fd895d437e70c20be011bc12819f74698364bd08d99be563d3eb25e9a2316eb"
+                  },
+                  {
+                    "domain": "lifecycle",
+                    "id": "cloud-agent/native/lifecycle",
+                    "version": "1.0.0",
+                    "mode": "pinned",
+                    "reason": "requires-runtime-assembly",
+                    "parameters_schema": {
+                      "additionalProperties": false,
+                      "description": "Pinned domains cannot smuggle configuration through a mutable mapping.",
+                      "properties": {},
+                      "title": "EmptyParameters",
+                      "type": "object"
+                    },
+                    "source_refs": [
+                      "packages/agent-runtime/src/agent_runtime/runtime_instance_lifecycle.py"
+                    ],
+                    "digest": "sha256:da2555a3632d6e2a3f6e66aa8423a57c9d9b1417280674f4f38245d1f13e6cb2"
+                  },
+                  {
+                    "domain": "memory",
+                    "id": "cloud-agent/native/memory",
+                    "version": "1.0.0",
+                    "mode": "pinned",
+                    "reason": "requires-runtime-assembly",
+                    "parameters_schema": {
+                      "additionalProperties": false,
+                      "description": "Pinned domains cannot smuggle configuration through a mutable mapping.",
+                      "properties": {},
+                      "title": "EmptyParameters",
+                      "type": "object"
+                    },
+                    "source_refs": [
+                      "packages/agent-core/src/agent_core/ports/agent_memory_gateway.py"
+                    ],
+                    "digest": "sha256:e4bcb5ec54ef1845f8a205372c56789c9ae2043a2b24ed2275f6eb26ece07e9e"
+                  },
+                  {
+                    "domain": "model",
+                    "id": "cloud-agent/native/model",
+                    "version": "1.0.0",
+                    "mode": "configurable",
+                    "reason": "validation-only",
+                    "parameters_schema": {
+                      "$defs": {
+                        "ArtifactPin": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "enum": [
+                                "image",
+                                "baseline-config",
+                                "component",
+                                "provider-profile",
+                                "output-schema",
+                                "build-evidence"
+                              ],
+                              "title": "Kind",
+                              "type": "string"
+                            },
+                            "id": {
+                              "maxLength": 256,
+                              "minLength": 1,
+                              "title": "Id",
+                              "type": "string"
+                            },
+                            "version": {
+                              "maxLength": 64,
+                              "title": "Version",
+                              "type": "string"
+                            },
+                            "digest": {
+                              "title": "Digest",
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "id",
+                            "version",
+                            "digest"
+                          ],
+                          "title": "ArtifactPin",
+                          "type": "object"
+                        }
+                      },
+                      "additionalProperties": false,
+                      "properties": {
+                        "provider_profile": {
+                          "$ref": "#/$defs/ArtifactPin"
+                        },
+                        "model": {
+                          "maxLength": 256,
+                          "minLength": 1,
+                          "title": "Model",
+                          "type": "string"
+                        },
+                        "context_window_tokens": {
+                          "maximum": 1048576,
+                          "minimum": 1,
+                          "title": "Context Window Tokens",
+                          "type": "integer"
+                        },
+                        "max_output_tokens": {
+                          "maximum": 1048576,
+                          "minimum": 1,
+                          "title": "Max Output Tokens",
+                          "type": "integer"
+                        },
+                        "max_retries": {
+                          "maximum": 3,
+                          "minimum": 0,
+                          "title": "Max Retries",
+                          "type": "integer"
+                        },
+                        "temperature_milli": {
+                          "maximum": 2000,
+                          "minimum": 0,
+                          "title": "Temperature Milli",
+                          "type": "integer"
+                        },
+                        "thinking": {
+                          "enum": [
+                            "auto",
+                            "enabled",
+                            "disabled"
+                          ],
+                          "title": "Thinking",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "provider_profile",
+                        "model",
+                        "context_window_tokens",
+                        "max_output_tokens",
+                        "max_retries",
+                        "temperature_milli",
+                        "thinking"
+                      ],
+                      "title": "ModelParameters",
+                      "type": "object"
+                    },
+                    "source_refs": [
+                      "packages/agent-core/src/agent_core/domain/modeling.py"
+                    ],
+                    "digest": "sha256:33a0106be7b8481c827a3eec94ca3fb8117e502093a30e53144c4cdbd4f651d1"
+                  },
+                  {
+                    "domain": "native",
+                    "id": "cloud-agent/native/native",
+                    "version": "1.0.0",
+                    "mode": "pinned",
+                    "reason": "requires-runtime-assembly",
+                    "parameters_schema": {
+                      "additionalProperties": false,
+                      "description": "Pinned domains cannot smuggle configuration through a mutable mapping.",
+                      "properties": {},
+                      "title": "EmptyParameters",
+                      "type": "object"
+                    },
+                    "source_refs": [
+                      "packages/agent-core/src/agent_core/domain/agent_capabilities.py"
+                    ],
+                    "digest": "sha256:f91d53de20582a37a7626ab8d01ce2f75a1ba7994958c01d6be5a796e7414039"
+                  },
+                  {
+                    "domain": "operations",
+                    "id": "cloud-agent/native/operations",
+                    "version": "1.0.0",
+                    "mode": "pinned",
+                    "reason": "requires-runtime-assembly",
+                    "parameters_schema": {
+                      "additionalProperties": false,
+                      "description": "Pinned domains cannot smuggle configuration through a mutable mapping.",
+                      "properties": {},
+                      "title": "EmptyParameters",
+                      "type": "object"
+                    },
+                    "source_refs": [
+                      "apps/worker/src/zebra_agent_worker/runtime_instances.py"
+                    ],
+                    "digest": "sha256:61bb0c9a5850fecaafba846057e7dce458ab843a2c3a35e86f44adf5aacfa1f2"
+                  },
+                  {
+                    "domain": "policy",
+                    "id": "cloud-agent/native/policy",
+                    "version": "1.0.0",
+                    "mode": "pinned",
+                    "reason": "requires-runtime-assembly",
+                    "parameters_schema": {
+                      "additionalProperties": false,
+                      "description": "Pinned domains cannot smuggle configuration through a mutable mapping.",
+                      "properties": {},
+                      "title": "EmptyParameters",
+                      "type": "object"
+                    },
+                    "source_refs": [
+                      "packages/agent-security/src/agent_security/policy.py"
+                    ],
+                    "digest": "sha256:5b787796d9d3ecd03675fb2f291fd5151cd12211f60757d51b9feb14c32dea23"
+                  },
+                  {
+                    "domain": "sandbox",
+                    "id": "cloud-agent/native/sandbox",
+                    "version": "1.0.0",
+                    "mode": "pinned",
+                    "reason": "requires-runtime-assembly",
+                    "parameters_schema": {
+                      "additionalProperties": false,
+                      "description": "Pinned domains cannot smuggle configuration through a mutable mapping.",
+                      "properties": {},
+                      "title": "EmptyParameters",
+                      "type": "object"
+                    },
+                    "source_refs": [
+                      "packages/agent-runtime/src/agent_runtime/adapters/os_sandbox.py"
+                    ],
+                    "digest": "sha256:de9912c4a584fa92f5172be7927fe2c3c6a0d9862b313575a81695e0796540c0"
+                  },
+                  {
+                    "domain": "storage",
+                    "id": "cloud-agent/native/storage",
+                    "version": "1.0.0",
+                    "mode": "pinned",
+                    "reason": "requires-runtime-assembly",
+                    "parameters_schema": {
+                      "additionalProperties": false,
+                      "description": "Pinned domains cannot smuggle configuration through a mutable mapping.",
+                      "properties": {},
+                      "title": "EmptyParameters",
+                      "type": "object"
+                    },
+                    "source_refs": [
+                      "packages/agent-storage/src/agent_storage/runtime_composition.py"
+                    ],
+                    "digest": "sha256:427fcdf73ceb5b6177591893c0107043bd1c4d906d6d856340967f5b3c52444f"
+                  },
+                  {
+                    "domain": "tools",
+                    "id": "cloud-agent/native/tools",
+                    "version": "1.0.0",
+                    "mode": "pinned",
+                    "reason": "requires-runtime-assembly",
+                    "parameters_schema": {
+                      "additionalProperties": false,
+                      "description": "Pinned domains cannot smuggle configuration through a mutable mapping.",
+                      "properties": {},
+                      "title": "EmptyParameters",
+                      "type": "object"
+                    },
+                    "source_refs": [
+                      "packages/agent-tools/src/agent_tools/registry.py"
+                    ],
+                    "digest": "sha256:5f578704858b79f4e9c60239355cb3341083f58e92e997fe2ac966584b2c00a0"
+                  },
+                  {
+                    "domain": "transport",
+                    "id": "cloud-agent/native/transport",
+                    "version": "1.0.0",
+                    "mode": "pinned",
+                    "reason": "requires-runtime-assembly",
+                    "parameters_schema": {
+                      "additionalProperties": false,
+                      "description": "Pinned domains cannot smuggle configuration through a mutable mapping.",
+                      "properties": {},
+                      "title": "EmptyParameters",
+                      "type": "object"
+                    },
+                    "source_refs": [
+                      "packages/agent-integrations/src/agent_integrations/ag_ui/task_stream.py"
+                    ],
+                    "digest": "sha256:d1c52c7007be3714bf4a6c35062b4827ddaa46db8ae5a02f809654f68aef54f4"
+                  },
+                  {
+                    "domain": "triggers",
+                    "id": "cloud-agent/native/triggers",
+                    "version": "1.0.0",
+                    "mode": "pinned",
+                    "reason": "requires-runtime-assembly",
+                    "parameters_schema": {
+                      "additionalProperties": false,
+                      "description": "Pinned domains cannot smuggle configuration through a mutable mapping.",
+                      "properties": {},
+                      "title": "EmptyParameters",
+                      "type": "object"
+                    },
+                    "source_refs": [
+                      "packages/agent-core/src/agent_core/domain/task_schedule_authority.py"
+                    ],
+                    "digest": "sha256:4d8b8e2585c073f65d8d0ed00c9e845ad62eeea09fbe708741b0eacae6dbd3d1"
+                  },
+                  {
+                    "domain": "verification",
+                    "id": "cloud-agent/native/verification",
+                    "version": "1.0.0",
+                    "mode": "pinned",
+                    "reason": "requires-runtime-assembly",
+                    "parameters_schema": {
+                      "additionalProperties": false,
+                      "description": "Pinned domains cannot smuggle configuration through a mutable mapping.",
+                      "properties": {},
+                      "title": "EmptyParameters",
+                      "type": "object"
+                    },
+                    "source_refs": [
+                      "packages/agent-core/src/agent_core/domain/verification_evidence.py"
+                    ],
+                    "digest": "sha256:18e4d227c4f3e9d236a3e119b5ed07230343d91d42bc13f514de02c6b2efe04d"
+                  }
+                ]
+              },
+              "catalogDigest": "sha256:d29c5b6fe97cb064b1e45a60e9d9554a8909c1aa9bb7e97fea1d8b4dc4198eb6",
+              "nativeFormats": {
+                "definition": [
+                  "agent-definition/1",
+                  "agent-definition/2"
+                ],
+                "definitionSnapshot": [
+                  "agent-definition-snapshot/1",
+                  "agent-definition-snapshot/2"
+                ]
+              },
+              "execution": {
+                "mode": "chat",
+                "thinking": "auto",
+                "output": "text",
+                "outputSchema": {
+                  "format": "text",
+                  "schema_version": "cloud-agent.text-output/1"
+                },
+                "outputSchemaDigest": "sha256:2198b10c2ca61e3616bd72fbee30834804570f8b84f24873f9b8a61eeef8ebd4",
+                "configurableDomains": [
+                  "model",
+                  "instructions"
+                ],
+                "pinnedDomains": [
+                  "engine",
+                  "execution",
+                  "context",
+                  "memory",
+                  "content",
+                  "native",
+                  "addons",
+                  "tools",
+                  "lifecycle",
+                  "policy",
+                  "sandbox",
+                  "storage",
+                  "transport",
+                  "frontend",
+                  "triggers",
+                  "budget",
+                  "verification",
+                  "operations"
+                ],
+                "nativeScriptAbi": "unsupported"
+              },
+              "transport": {
+                "maxBundleBytes": 262144
+              },
+              "capabilities": {
+                "contractRead": "supported",
+                "validation": "supported",
+                "publication": "unsupported",
+                "persistence": "unsupported",
+                "execution": "unsupported"
+              },
+              "contractDigest": "sha256:4350a319ac359fa841cea0efb870e40ceb3771aba1c25d4846d3e7ff9e4c4275"
+            }
+          }
+        }
+      },
+      "ValidationReceipt": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "contractVersion",
+          "contractDigest",
+          "scope",
+          "trustRevision",
+          "observedAt",
+          "bundleDigest",
+          "assemblyDigest",
+          "approvalDigest",
+          "checks"
+        ],
+        "properties": {
+          "contractVersion": {
+            "const": "bundle-validation/1"
+          },
+          "contractDigest": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          },
+          "scope": {
+            "$ref": "../runtime-bundle-v1/envelope.schema.json#/$defs/BundleScope"
+          },
+          "trustRevision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "observedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "bundleDigest": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          },
+          "assemblyDigest": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          },
+          "approvalDigest": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          },
+          "checks": {
+            "const": {
+              "bundle": "passed",
+              "assetApproval": "passed",
+              "worker": "not_checked",
+              "publication": "not_performed"
+            }
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "code"
+            ],
+            "properties": {
+              "code": {
+                "enum": [
+                  "INVALID_ARGUMENT",
+                  "UNAUTHENTICATED",
+                  "SCOPE_MISMATCH",
+                  "PERMISSION_DENIED",
+                  "METHOD_NOT_ALLOWED",
+                  "CONTRACT_MISMATCH",
+                  "BUNDLE_REJECTED",
+                  "RATE_LIMITED",
+                  "MANAGEMENT_UNAVAILABLE"
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

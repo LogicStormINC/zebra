@@ -1,0 +1,63 @@
+{
+  "task": "CA-P3-01E",
+  "baseline": "b78a4ee464aa9c3159d67ec3a318cc9d13c9d6b8",
+  "status": "final local gates passed; authorized source delivery follows, remote receipt separate",
+  "commands": {
+    "make test": {
+      "exit": 0,
+      "passed": 11002,
+      "conditionalSkipped": 3022,
+      "seconds": 1166.1
+    },
+    "make check": {
+      "exit": 0,
+      "mypyFiles": 1396,
+      "evalCases": 30
+    },
+    "focused pytest": {
+      "exit": 0,
+      "passed": 56
+    },
+    "Overdoze make test": {
+      "exit": 0,
+      "racePackages": 26,
+      "receiptCorruptionCases": 19
+    }
+  },
+  "contractDigest": "sha256:1c148fff4dba646c0555e03d8abd4d15e6bcdeeaced258c7e200b8af35190d2b",
+  "sourceSha256": {
+    "apps/api/src/zebra_agent_api/bundle_management_config.py": "9f547bdaa115b2b7ee8e7cf59cf838ea2d2cda04bcb2726aeba6b1c927aeae39",
+    "apps/api/src/zebra_agent_api/host_registry_management.py": "195d4246fdc67e91c92cc722db3dd96c569fd8ceba9801521f7a9c643569a1c2",
+    "apps/api/src/zebra_agent_api/validation_transport.py": "bd1001958ae14d91dfc4843a5c1accb884373433aac89434f0d584e818195075",
+    "apps/api/src/zebra_agent_api/script_bundle_contract.py": "d6a425528d990b285c90d430a21a34ce941bbb142b6acccbebe7952e23d9b14f",
+    "apps/api/src/zebra_agent_api/script_bundle_validation.py": "3d0221030b409375138b19c5b92e7ea8561b9d643357cd9d22dde8146e8467b7",
+    "tests/api/test_script_bundle_validation.py": "952f74532b280c2dfd533cc382108af2e04e4aa88a022f959195744bc66b5281",
+    "tests/api/test_script_bundle_validation_process.py": "4fed101e28d0a5cfa2f864d96d29b70e02ed89844588705723d264ae94591113",
+    "tests/test_script_bundle_validation_contract.py": "fdb8dd066d37f492825048e562ad43b69eaad1be58878f76d328a70ec0fb72ac"
+  },
+  "moduleOrigins": {
+    "zebra_agent_api.script_bundle_contract": "apps/api/src/zebra_agent_api/script_bundle_contract.py",
+    "zebra_agent_api.script_bundle_validation": "apps/api/src/zebra_agent_api/script_bundle_validation.py",
+    "zebra_agent_api.validation_transport": "apps/api/src/zebra_agent_api/validation_transport.py",
+    "zebra_agent_api.bundle_management_config": "apps/api/src/zebra_agent_api/bundle_management_config.py",
+    "zebra_agent_config.native_script": "apps/config/src/zebra_agent_config/native_script.py",
+    "agent_core.domain.script_bundle": "packages/agent-core/src/agent_core/domain/script_bundle.py"
+  },
+  "logsSha256": {
+    "native-test.log": "9bfcb1eba39159ce09cf14bf9f78403a22ab1feb060d2e665e74fac4b5735852",
+    "native-check.log": "fafe417a7f27741f10fa7148dddbc21ab03b67f10c9dae81ee89c61cb120a7c2",
+    "focused.log": "3e0163bbc2f0a789466b389fee5bf6b568b68e69226c7dce5b18126e6bdefad9",
+    "go-test.log": "f44a7c81cc04bb64df1bc3efb47b859e35944d564d0e397ec1e95de25ca19f87"
+  },
+  "scope": {
+    "http": "ASGI TestClient and independent real loopback HTTP process; not TLS/production",
+    "sourceExecution": "sentinel source compiled but not imported/executed; marker absent",
+    "persistence": "all owned SQLite table row counts unchanged after requests; startup initializes its own test DB",
+    "concurrency": "eight timed-out native threads retain eight slots and reject additional request429 until real completion; not production HA",
+    "goBusinessConsumer": false,
+    "httpToWorkerCombined": false,
+    "deployment": false,
+    "productionMigration": false,
+    "mainIntegrated": false
+  }
+}

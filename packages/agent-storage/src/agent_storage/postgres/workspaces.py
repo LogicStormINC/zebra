@@ -9,7 +9,7 @@ from agent_core.application.workspace_projection import (
 from agent_core.application.workspace_projection import (
     rebuild_workspace,
 )
-from agent_core.domain.agent_definition_snapshots import AgentDefinitionSnapshot
+from agent_core.domain.bundle_definition import parse_definition_snapshot
 from agent_core.domain.events import EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.leases import LeaseLostError
@@ -422,7 +422,7 @@ def _workspace_from_row(row: dict[str, Any]) -> WorkspaceProjection:
     if values["skill_components"] is not None:
         values["skill_components"] = tuple(values["skill_components"])
     if values["definition_snapshot"] is not None:
-        values["definition_snapshot"] = AgentDefinitionSnapshot.model_validate(
+        values["definition_snapshot"] = parse_definition_snapshot(
             values["definition_snapshot"]
         )
     return WorkspaceProjection.model_validate(values)

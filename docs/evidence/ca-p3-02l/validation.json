@@ -1,0 +1,51 @@
+{
+  "task": "CA-P3-02L",
+  "status": "Review",
+  "base": "c023fa58c6d5d1f0988d37a11a5566793d7667db",
+  "gates": {
+    "makeTest": {
+      "exit": 0,
+      "passed": 10971,
+      "skipped": 3022,
+      "seconds": 1201.65
+    },
+    "makeCheck": {
+      "exit": 0,
+      "mypyFiles": 1393,
+      "evalCases": 30
+    },
+    "sdkVerify": {
+      "exit": 0,
+      "passed": 151,
+      "packageAudit": true,
+      "react18And19": true,
+      "nextSSRAndRSC": true,
+      "browserMatrixAndHydration": true
+    },
+    "pairedBrowser": {
+      "exit": 0,
+      "report": "browser.json",
+      "goCandidate": "go-candidate.json",
+      "goFullRacePackages": 24
+    }
+  },
+  "nativeBaselineFilesUnchanged": 4610,
+  "pythonProductionAndSchemasChanged": false,
+  "frontendMockConnected": false,
+  "historyAndCoveragePreserved": true,
+  "productionIdPOrSignedCloudAdmissionProven": false,
+  "businessVerificationFixture": true,
+  "nativeLocalCompatibilityFixture": true,
+  "deployment": false,
+  "productionMigration": false,
+  "npmPublication": false,
+  "mainIntegration": false,
+  "logSha256": {
+    "native-test.log": "455bda1b41ceb264826a041bd9e6fec22d6ee537f4e31afdcf1d50b7b321c887",
+    "native-check.log": "8e1c7ded834ab281a73a3ece05c3f0f51e333f4854f482c0391e57ee45cb89d6",
+    "sdk-verify-final.log": "52b40fbca6694cf303f668e59ff6317f7d9c898eaa2aeb5534bfc47ba5be4bcb",
+    "browser-final.log": "bf164694220e5271a35432cf37372ac2383c3ab73f770e20558759c43d3c9529",
+    "go-test-final.log": "31b3c7f2ca4295a8af353b0f4709cbb429f3ff1d06871ebed940d7ea2d12b7f7",
+    "native-check-final.log": "8e1c7ded834ab281a73a3ece05c3f0f51e333f4854f482c0391e57ee45cb89d6"
+  }
+}

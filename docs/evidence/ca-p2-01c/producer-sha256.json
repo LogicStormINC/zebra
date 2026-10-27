@@ -1,0 +1,7 @@
+{
+  "docs/contracts/bundle-validation-v1/README.md": "cbc1abecf77da0ae1570576676a00dbe190dd0b9ba783b6f63127e9c993dac4e",
+  "docs/contracts/bundle-validation-v1/contract.json": "3fc87d71c9cf280efb008b13368225a34b798d21852160689d2e9ceff324ad1a",
+  "docs/contracts/bundle-validation-v1/negative-vectors.json": "57b65d564ead480ece38fd7064dae8387c18f5ab3f001f2ff9108fd39c2a25ba",
+  "docs/contracts/bundle-validation-v1/openapi.json": "d1f582615920be41308a7d70569b58abb08ce76fd1dfc396f2edb5b826051be4",
+  "docs/contracts/bundle-validation-v1/positive-vectors.json": "8d75af6b59738b01e41e47d34ae50fa86aa316badc3e1bbe2cdddf891369a700"
+}

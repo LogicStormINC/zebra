@@ -1,0 +1,22 @@
+{
+  "environmentFailuresExcluded": true,
+  "failures": [
+    "native full run interrupted by disk exhaustion before summary",
+    "consumer full run failed with Docker unavailable",
+    "consumer retry failed after renewed disk exhaustion"
+  ],
+  "recovery": {
+    "ownedIdleTestScratchRemoved": true,
+    "pnpmStorePrune": {
+      "unusedFiles": 16021,
+      "unusedPackages": 439
+    },
+    "activeUvCachePreserved": true,
+    "forceUvPruneUsed": false,
+    "existingContainersImagesVolumesPruned": false,
+    "dockerBuildCacheOldUnusedPruneReclaimedBytes": 0,
+    "diskAvailableAfterCleanupGiBAtLeast": 36,
+    "dockerDaemonAvailable": true
+  },
+  "dataBoundary": "No application deployment or production migration; no source/history/Coverage deletion; only known idle reproducible dependencies/cache/test scratch; fresh final gates recorded separately"
+}

@@ -1,0 +1,27 @@
+{
+  "profile": "cloud-agent.bundle-json/1; sorted keys,ASCII compact JSON,no trailing newline,integer-only manifest",
+  "vectors": [
+    {
+      "name": "unicode-integer-upper-bound",
+      "model_parameters": {},
+      "instruction_parameters": {},
+      "bundle_digest": "sha256:47496f12c8f87f23652295a2271c02ded89c84c48de5238812cf65cb3928c545",
+      "canonical_byte_length": 10381
+    },
+    {
+      "name": "integer-lower-bound",
+      "model_parameters": {
+        "context_window_tokens": 1,
+        "max_output_tokens": 1,
+        "max_retries": 0,
+        "temperature_milli": 0
+      },
+      "instruction_parameters": {
+        "system_text": "ASCII <>& \\\" \\u2028 is literal; actual separator: \u2028",
+        "business_text": "\u6d4b\u8bd5 \ud83e\udd84\n\t\\end"
+      },
+      "bundle_digest": "sha256:daffbaa6a99d8c06a8a57b5951962d10053326eb46feeb0e6ecf71f8b0e7b211",
+      "canonical_byte_length": 10393
+    }
+  ]
+}

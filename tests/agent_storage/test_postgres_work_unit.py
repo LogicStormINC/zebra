@@ -98,8 +98,9 @@ def test_adopted_transaction_rejects_foreign_schema_and_poisoned_nested_reads(ds
     from psycopg.conninfo import make_conninfo
 
     database = PostgresDatabase(dsn, deployment_namespace="one")
-    foreign = PostgresDatabase(make_conninfo(dsn, options="-c search_path=public"),
-                               deployment_namespace="one")
+    foreign = PostgresDatabase(
+        make_conninfo(dsn, options="-c search_path=public"), deployment_namespace="one"
+    )
     with database.connect() as owner:
         with pytest.raises(ValueError, match="another database or schema"):
             with postgres_transaction_work_unit(foreign, owner):
@@ -124,8 +125,9 @@ def test_adoption_keeps_direct_connection_deadline_and_rejects_other_options(dsn
             )
             with pytest.raises(CoverageRecoveryDeferred), postgres_deadline(monotonic() - 1):
                 database.connect().execute("SELECT 1")
-    foreign = PostgresDatabase(make_conninfo(dsn, options="-c search_path=public"),
-                               deployment_namespace="one")
+    foreign = PostgresDatabase(
+        make_conninfo(dsn, options="-c search_path=public"), deployment_namespace="one"
+    )
     with postgres_deadline(monotonic() + 20), foreign.connect() as owner:
         with pytest.raises(ValueError, match="another database or schema"):
             with postgres_transaction_work_unit(database, owner):
@@ -206,3 +208,16 @@ def test_positive_nested_deadline_cancels_before_the_owner_timeout(dsn):
     with database.connect() as connection:
         assert not connection.execute("SELECT * FROM deadline_rollback").fetchall()
         assert connection.execute("SELECT 1 AS ready").fetchone()["ready"] == 1
+
+
+def test_native_task_io_owner_is_adopted_without_dropping_option_isolation(dsn):
+    from agent_storage.postgres.task_io import TaskIoConnection, TaskIoConnections
+
+    database = PostgresDatabase(dsn, deployment_namespace="native-publication")
+    with TaskIoConnections(dsn).connect(deadline=monotonic() + 5) as owner:
+        assert isinstance(owner, TaskIoConnection)
+        with postgres_transaction_work_unit(database, owner), database.connect() as nested:
+            assert (
+                nested.execute("SELECT pg_backend_pid() AS pid").fetchone()
+                == owner.execute("SELECT pg_backend_pid() AS pid").fetchone()
+            )

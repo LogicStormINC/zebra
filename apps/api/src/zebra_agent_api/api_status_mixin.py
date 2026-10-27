@@ -17,15 +17,38 @@ class ApiStatusMixin:
             getattr(platform, name, None) is not None
             for name in ("client_sessions", "frontend_capabilities", "client_control_leases")
         )
-        return ApiResponse(200, {
-            "contract_version": 1,
-            "schema_version": MIGRATIONS[-1].version,
-            "network_profiles": list(SUPPORTED_NETWORK_PROFILES),
-            "client_surface_contract_version": 1 if available else 0,
-            "client_surface_open_contract_version": (
-                1 if available and self.settings.deployment == "cloud" else 0
-            ),
-        })
+        from agent_core.ports.client_approval_operations import ClientApprovalOperationPort
+        from agent_core.ports.client_command_receipts import ClientCommandReceiptReadPort
+
+        return ApiResponse(
+            200,
+            {
+                "contract_version": 1,
+                "client_approval_operation_contract_version": int(
+                    available
+                    and isinstance(
+                        getattr(getattr(self, "stores", None), "events", None),
+                        ClientApprovalOperationPort,
+                    )
+                ),
+                "client_command_segment_precondition_contract_version": 1,
+                "schema_version": MIGRATIONS[-1].version,
+                "network_profiles": list(SUPPORTED_NETWORK_PROFILES),
+                "client_surface_contract_version": 1 if available else 0,
+                "client_surface_metadata_contract_version": 1 if available else 0,
+                "client_command_receipt_contract_version": int(
+                    available
+                    and isinstance(
+                        getattr(getattr(self, "stores", None), "events", None),
+                        ClientCommandReceiptReadPort,
+                    )
+                ),
+                "client_state_admission_contract_version": 1 if available else 0,
+                "client_surface_open_contract_version": (
+                    1 if available and self.settings.deployment == "cloud" else 0
+                ),
+            },
+        )
 
     def health(self) -> ApiResponse:
         return ApiResponse(

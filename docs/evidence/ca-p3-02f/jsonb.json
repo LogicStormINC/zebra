@@ -1,0 +1,11 @@
+{
+  "postgresVersion": 17,
+  "ownedIsolatedService": true,
+  "legacyNumericDriftReproduced": true,
+  "normalizedStateDigestAndWorkerRecoveryPassed": true,
+  "passed": 4,
+  "skipped": 0,
+  "tablesOrMigrations": false,
+  "scope": "read-only real JSONB transport and current Worker snapshot recovery; not PG registry/command CAS or HA",
+  "textCompatibilityChecked": true
+}

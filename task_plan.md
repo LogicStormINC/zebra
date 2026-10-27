@@ -1,3 +1,319 @@
+# CA-CLOUD-INTEGRATION-20261027
+
+- [x] Inventory both histories, branch ancestry and dirty worktrees.
+- [x] Claim isolated integration branch from local cloud-agent.
+- [x] Merge published P3; retain both documentation histories and operational fixes.
+- [x] Workspace I/O self-check, 44 focused regressions and make check.
+- [x] Full make test;11151 passed/3067 conditional skips; final evidence recorded.
+- [ ] Publish cloud-agent; fast-forward primary checkout without changing dirty files.
+- [ ] Delete only verified merged/unoccupied P1/P2/P3 refs; retain dirty branches/worktrees.
+- [ ] Verify remote/local refs and all 157 protected file hashes.
+
+No deployment or production migrations. Overdoze Native pins remain unchanged.
+
+# CA-P3-03G
+
+- [x] P3实际业务链根因、现有共享调用、Ready认领及分支/路径。
+- [x] 最小原生读取新鲜度修复及匹配/错误证明回归31通过。
+- [x] 完整make test11143通过/3067条件跳过、make check/30eval和SDK173/check，证据已留存。
+- [x] 本片准备限定提交推送。
+- [ ] 消费者固定已发布新提交/源码，完成双浏览器实际Host业务链及脚本Worker正式联合验收（消费者记录）。
+
+不自动重发、重领Controller、变更原数据/收据/Coverage；不部署/生产迁移/main/npm。
+
+# CA-P3-03F 当前计划
+
+- [x] E/AC依赖、Owned paths和显式两阶段恢复边界。
+- [x] SDK实现、8新增回归，SDK check/173测试通过。
+- [x] 完整make test/check/SDK及正式证据完成，限定提交推送由实际远端回执核对。
+- [ ] AD固定发布源联合与旧消费者，独立记录。
+
+# CA-P3-03E 当前计划
+
+- [x] D/A2依赖、Owned paths及BFF/SDK边界先固定。
+- [x] SDK严格同源/持久定位符/一次POST/发现和原GET/Unicode与故障检查，check165通过。
+- [x] 完整make test/check/SDK及正式证据完成，限定提交推送由实际远端回执核对。
+- [ ] AB-B固定源Go/BFF/SDK/Worker与旧消费者联合独立记录。
+
+# CA-P3-03D 当前计划
+
+- [x] 依赖/Owned paths/条件准入与Surface专属STOP边界先固定。
+- [x] 16 API红例/46 API和22真实PG：竞争、条件拒绝、消费/回滚。
+- [x] 完整make test/check/SDK与证据通过，限定Native提交推送另由实际回执核对。
+- [ ] A2固定公开发布源联合/旧消费者兼容；AB-B生产原消息日志另片。
+
+# CA-P3-03C 当前计划
+
+- [x] 依赖/Ready/Owned paths/原源坐标与并发证明设计复核。
+- [x] 12红例，实际Event opt-in坐标、legacy不回填与31定向检查。
+- [x] 8真实PG/全量make test/check/SDK通过，证据完成；限定生产者推送由实际回执核对。
+- [ ] AB-A固定发布源公开联合/旧消费者及平台门禁，独立交付。
+- [ ] 后续先核对原子原消息锚点提交条件，之后生产BFF/SDK恢复。
+
+# CA-P3-03B 当前计划
+
+- [x] Ready/依赖/Owned paths/设计及原摘要与权限边界复核。
+- [x] API红绿、19定向和7真实PG/独立进程只读观察。
+- [x] Native全量make test/check和SDK门禁通过，证据完成；原生提交推送由实际交付核对。
+- [ ] AA固定发布源码、丢follow-up回复只GET联合/兼容及平台全量门禁，单独交付。
+- [ ] 后续AB生产BFF持久恢复；不把AA夹具当作已实现。
+
+# CA-P3-03A 当前实施计划
+
+- [x] 核对已发布依赖并登记任务、隔离分支与 Owned paths。
+- [x] legacy/fenced 红绿回归、共享协调、真实 PG 只读验证。
+- [x] 同业务效果跨 Run 实际 Worker 候选验收。
+- [x] Native 全量门禁、SDK；Overdoze 固定发布源码验收独立推进。
+- [x] 更新 Native 证据并准备受控提交推送；不部署、不生产迁移、不合并 main。
+
+CA-P3-02Z: claimed Luke Ding; explicit React same-Run revision, reuse V/Y; Review; fresh make test 11075 passed/3052 conditional skips and make check passed after filesystem recovery; SDK check/158 tests and6 focused React cases passed. Candidate Chromium/WebKit actual new React owner capture -> BFF original GET/current mapping -> zero-HTTP adoption -> current heartbeat/unmount passed. Runtime/Worker/core SDK/schema unchanged; final published-source consumer separate. No second Worker/new Run claim. See docs/CA-P3-02Z_react_surface_revision.md.
+
+CA-P3-02Y: claimed Luke Ding; public atomic-surface revision contract acceptance, no production Native change; Review; fresh make test 11075 passed/3052 conditional skips; make check passed; unchanged SDK check/156 tests passed. Candidate Chromium/WebKit React first Worker/UI terminal then explicit same-Run Native revision, lost-reply two-BFF GET-only/current mapping CAS passed. Native production/SDK unchanged; final published-source consumer evidence separate. See docs/CA-P3-02Y_explicit_surface_revision.md.
+
+CA-P3-02X: claimed Luke Ding; React explicit capture/adopt, existing W protocol; implementation/full gates and React candidate passed; scoped publication checked separately. See docs/CA-P3-02X_react_initial_ui.md.
+
+CA-P3-02W: claimed Luke Ding; atomic initial UI/Readable/RUN, old protocols retained; implementation/full gates/45 PG-API/153 SDK tests and new/old candidate joints passed; published-source consumer remains separate. See docs/CA-P3-02W_initial_ui_run.md.
+
+CA-P3-02V: claimed Luke Ding; reuse published U, fresh Native full gates/focused PG and candidate positive Worker joint passed; final published-source consumer acceptance remains separate. See docs/CA-P3-02V_task_run_worker.md.
+
+CA-P3-02U: claimed Luke Ding; first RUN admission only, never post-commit Worker noncommit proof. Boundary in docs/CA-P3-02U_atomic_task_run.md; Native full gates and40 focused passed; candidate joint passed; publication and fixed-source consumer joint separately recorded.
+
+# CA-P3-02T current task
+
+Claimed Luke Ding, codex/ca-p3-02t-atomic-task-termination; see docs/CA-P3-02T_atomic_task_termination.md.
+1. Boundary/claim complete.
+2. Implement atomic Task protocol and storage/HTTP checks.
+3. Full Native gates complete; candidate joint passed. Publish Native, then separately pin/revalidate consumer; scoped push authorized.
+
+## CA-P3-02S：已开始的原子Surface准入终止（验证通过，Review）
+
+make test 11060 passed/3045 conditional skips; make check1408 types/30eval; API14 and real owned PG16 focused passed. Started atomic-surface candidate Chromium/WebKit passed; published-source consumer joint is separate. 新atomic-surface/1仅open/mount，同PG业务效果/原收据同事务，提交点STOP门禁；持执行锁时pending无证明，退出且STOP/无原子收据才证明，提交先胜只恢复原结果。旧started/部分提交/Task创建不升级，不重发/重领/清pending。真实PG30项及候选双浏览器联合通过；完整门禁通过，发布后固定源消费者联合另记。见[正式边界](docs/CA-P3-02S_atomic_surface_termination.md)。
+
+## CA-P3-02R：派发前终止证明（验证通过，Review）
+
+make test 11059 passed/3036 conditional skips; make check1406 types/30eval; API13 and real owned PG7 focused passed. Pre-dispatch candidate Chromium/WebKit passed; published-source consumer joint is separate. 已核对N/Q依赖；证明仅限新pre-dispatch/1原请求，持久start/terminate第一写者门闩。已开始、旧claim、无claim、超时无非提交证明；unknown不重发、不领取Controller、不清pending。边界及验收见[正式设计](docs/CA-P3-02R_admission_termination.md)。保留历史/原收据/Coverage，无部署/生产迁移。
+
+# CA-P3-02O 当前切片
+
+- [x] K之后依赖复核/原生前置与Owned paths认领。
+- [x] 当前Controller公开查询、精确原操作与有界原子决定/投影/继续执行。
+- [x] 最终make test/check、正式证据及限定提交推送准备；远端SHA以实际交付回执核对。
+- [ ] 发布后由OD-P3-01L固定来源，完成真实BFF跨副本/SDK/Worker联合。
+
+# CA-P3-02N 当前切片
+
+- [x] 核对任务/依赖/Owned paths，认领独立原生分支。
+- [x] 先复现公开可选 metadata 到严格模型工具的转换失败，再补共享边界默认展示。
+- [x] 最终专项/完整 make test/check、文档和 scoped commit/push 准备；远端SHA由交付回执核对。
+- [ ] 已发布来源固定后 Overdoze 同次 SDK/审批/Effect/Worker 联合，由 OD-P3-01K 独立记录。
+
+# CA-P3-01F 当前切片
+
+- [x] 登记Ready/认领、核对A–E及固定C消费者；建立单任务分支。
+- [x] 原生固定suite/真实沙箱评分、共享PG原unknown/CAS/原子证据、显式初始化与私有运维入口。
+- [x] 14专项、格式/类型/边界检查通过；旧D/E和历史/Coverage源码保持。
+- [x] 完整make test/check和正式证据通过、任务Review；限定提交推送的远端回执另记。
+- [x] Overdoze独立固定源码并完成16项候选公开D到Worker完整联合；最终远端pin重跑由OD-P3-02D单独记录，不声称生产HA。
+
+# CA-P3-01E current slice
+
+1. [x] Audit D and claim E/owned paths before code.
+2. [x] Add explicit pure ScriptBundle validation through existing domain/catalog/transport.
+3. [x] Verify negatives, independent socket and zero mutation/source execution.
+4. [x] Complete native gates/evidence/docs; platform pin/check and authorized scoped source delivery follow, remote receipt separate; no deployment/migration.
+
+# CA-P3-01D current task
+
+1. [x] Audit P3 asset gap and claim exact owned paths on isolated branch.
+2. [x] Add explicit versioned script publication transport reusing native assembly/registry/receipts.
+3. [x] Verify real PG/current authorization/CAS/channel/Eval negatives and old behavior.
+4. [x] Run complete gates and archive evidence; authorized scoped commit/push follows, remote receipt separate; no deployment/migration.
+
+# CA-P3-02M — 业务 OIDC 与签名云准入（Review）
+
+[正式方案与边界](docs/CA-P3-02M_signed_cloud.md)；[证据](docs/evidence/ca-p3-02m/validation.json)。
+复用 L/G-D；新增隔离 IdP/Broker/cloud Runtime 组合根，实际 TLS RS256/PKCE、两个共享 PG BFF、单次 code/Agent family、unknown不重兑，签名 Task/Run/Session/Controller 与当前业务/Profile 拒绝联合通过。
+make test10971通过/3022条件跳过（1169.80s），make check通过（1393类型文件/30eval）。
+生产 Python/schema/SDK/旧合同/历史/Coverage保持；真实产品参数尚缺，未验证供应商 IdP/业务账户/浏览器SDK与此云链路同次验收、模型/生产HA。无部署/生产迁移/npm发布/主线整合。
+
+# CA-P3-02L — 认证回调与 Runtime 生命周期（Review）
+
+[正式方案与交互](docs/CA-P3-02L_auth_lifecycle.md)。复用K，增加本地epoch/取消围栏与显式启停，凭据留在BFF，unknown不自动重试。
+make test10971通过/3022条件跳过（1201.65s）、make check、SDK151及实际平台/独立业务PG/原生HTTP双浏览器通过；Go24个race包通过，4610旧文件保持。 [证据](docs/evidence/ca-p3-02l/validation.json)。生产IdP/签名云准入仍独立。
+无Python/schema/旧合同/历史/Coverage变更，不部署/生产迁移/npm发布。
+
+# CA-P3-02K 同源业务认证 SDK
+
+已核对 J/G-A/G-B；认领独立分支，实现严格状态/不持有凭据/持久原操作定位/只读恢复/显式退出。
+Python、原合同、历史及 Coverage 不变；完整make test/check、SDK145和双浏览器联合验收通过，4601旧文件保持；状态Review，限定提交推送，无主线整合/部署/生产迁移。 [正式合同与交互](docs/CA-P3-02K_bff_auth.md)
+
+# CA-P3-02J — 跨设备待对账与人工处置（Review）
+
+复用H收据/I原映射，新增可选资源收件箱SDK；unknown无自动重发/清除，人工处置独立CAS审计。原生生产Python/schema/历史/Coverage不变。
+[方案与交互](docs/CA-P3-02J_request_discovery.md)；make test 10971通过/3022条件跳过（1220.28s），make check通过（1393类型文件/30eval）；SDK139、React18/19与双浏览器矩阵、新跨设备及旧恢复联合验收通过；3768保护文件未变。 [证据](docs/evidence/ca-p3-02j/validation.json)。无部署/生产迁移/npm发布/主线整合。
+
+# CA-P3-02I
+
+1. [x] 依赖/DDD/Ready认领。
+2. [x] SDK有界持久标识和恢复回归。
+3. [x] SDK/浏览器与全量make test/check、保持性。
+4. [x] 正式合同/文档/任务与限定交付准备；实际推送SHA另核验。
+
+# CA-P3-02H
+
+1. [x] 核对G后任务/依赖/DDD与Ready认领。
+2. [x] 原生索引投影和公开当前授权只读收据、红绿回归。
+3. [x] 独享PG/完整make test/check与保持性。
+4. [x] 正式文档/证据/任务与限定交付准备；提交推送SHA另行回执核验。
+
+# CA-P3-02G
+
+1. [x] 核对发布依赖、复用路径与DDD不变量，Ready认领。
+2. [x] SDK值快照/命令、可信BFF翻译与红绿回归。
+3. [x] 双浏览器真实原生持久恢复联合验收、SDK verify。
+4. [x] make test/check、保护证据和正式文档；限定提交推送。
+
+# CA-P3-02F
+
+1. [x] 依赖、复用和DDD边界；Ready认领路径/独立分支。
+2. [x] 原生绑定准入、严格JSON与脱敏恢复红绿回归。
+3. [x] 持久恢复/Context及完整make test/check。
+4. [x] 正式合同/证据/任务；限定提交推送；平台精确pin另仓复核。
+
+# CA-P3-02E 当前计划
+
+1. [x] 核对依赖和不变量，Ready认领路径/分支。
+2. [x] 红绿回归同步、暂停/排空、秘密/畸形响应和unknown保留。
+3. [x] 真实Python HTTP/PG/Worker通道与Chromium/WebKit挂载/动作/回执联调。
+4. [x] SDK verify、make test/check、冻结/保持性、正式证据。
+5. [x] 文档/任务及限定交付准备；消费方精确pin在发布该原生提交后复核。
+
+## Historical plan
+
+# CA-P3-02D 当前计划
+
+1. [x] 核对现有公开调用及并发不变量，认领独立任务/路径。
+2. [x] 红绿回归摘要缺口、同名重挂载旧binding与并发收窄。
+3. [x] 最小原生metadata/域规则/持久事务修复，无迁移。
+4. [x] 真实独享PG与全量make test/check、旧SDK/合同/Coverage保持。
+5. [x] 正式证据/任务完成，按授权准备限定提交推送；远端SHA交付回执核验，消费pin独立后续任务。
+
+## Historical plan
+
+# CA-P3-02C 当前计划
+
+1. [x] 审计实际SDK/BFF/Readable，Ready认领精确Owned paths和独立工作树。
+2. [x] 红绿回归显式BFF无秘密配置、失败不伪装ready和Provider替换泄漏。
+3. [x] 实现同源有界模式/实际状态、保留旧DI类型、Observer Session heartbeat。
+4. [x] 最终SDK verify含React18/19消费/Chromium/WebKit/Next与根make test/check。
+5. [x] 冻结Python/SDK输入和历史/Coverage、正式证据/任务更新、限定提交推送。
+
+无业务BFF生产实现、Readable值上传、部署/迁移或主线整合。
+
+## Historical plan
+
+# CA-P3-02B 当前计划
+
+1. [x] 审计后续SDK/BFF/Effect依赖，登记Ready并认领专属分支/路径。
+2. [x] 先写可复现越界回归，再统一复用Task/Run授权。
+3. [x] 真实独享PostgreSQL收据/TaskBinding/并发/恢复专项。
+4. [x] 完整make test/check、冻结源码及Coverage保持性验证。
+5. [x] 正式方案/机器制品/证据/任务更新；按授权交付独立分支，远端SHA由回执核验。
+
+前端mock和数据/证明机制保持；无部署、生产迁移或主线整合。
+
+## Historical plan
+
+# CA-P3-02A 本轮实施计划
+
+- [x] 核对OD-P3-01A后续依赖、现有Profile/Host批准/Broker/Session/Controller边界，独立分支认领。
+- [x] 产品范围精确Profile管理合同、同事务CAS/原生发布绑定撤销/收据与当前查询。
+- [x] 原生签名主体、原始Task/Run/Profile/Controller准入及显式stores启动修复。
+- [x] 独享PG/两HTTP实例/并发/CAS/批准/审计回滚及兼容专项40项通过。
+- [x] 最终make test/check、3074输入冻结/280Coverage保持、正式文档和证据完成；按授权提交推送，实际远端SHA由交付回执确认。
+- [ ] 实际产品SDK Hook/UI Effect/Receipt/断线恢复及生产HA仍后续验收。
+
+## Historical plans (preserved)
+
+# CA-P3-01C implementation plan
+
+1. [x] Audit published B and platform P3 readiness; claim scoped native validation prerequisite.
+2. [x] Specify independent scoped authority, byte identity, native validation and limits; reuse old ABI and HTTP transport.
+3. [x] Implement pure public endpoints/config/export; keep all old contract bytes and baseline HMAC.
+4. [x] Validate trust/input/transport failures, retained slots, current approval races and real HTTP process; review.
+5. [x] Freeze sources, run make check/test, preserve history/Coverage and record exact evidence.
+6. [x] Formal docs/tasks synchronized; separate OD-P3-00B consumer pin prepared pending published C SHA. Scoped commit/push authorized; exact remote SHA confirmed in delivery receipt.
+
+## Historical plans (preserved)
+
+# CA-P3-01B implementation plan
+
+1. [x] Audit published A/P2 and existing Worker/lease/event/Registry paths; claim precise scope.
+2. [x] Define versioned script closure/Definition3 and private approval/Worker compatibility without rewriting v1/v2.
+3. [x] Add bounded private stdin IPC and active cancellation through existing RuntimePort/process adapters.
+4. [x] Implement native invocation state/journal and replay/recovery under current lease and authority.
+5. [x] Wire actual Tool/Context/Verifier Worker paths; verifier only narrows existing decisions/Coverage.
+6. [x] Actual sandbox/Worker/owned PG concurrency/restart/unknown and preservation tests; review before full gates.
+7. [x] Final frozen make check/test passed; formal docs/tasks/evidence synchronized. Authorized scoped commit/push; exact remote SHA verified in the delivery receipt. No deploy/migration.
+
+## Historical plans (preserved)
+
+# CA-P3-01A implementation plan
+
+1. [x] Audit P2/publication and P3 producer dependencies; claim exact paths before code.
+2. [x] Define closed immutable ABI and executable positive/negative contract artifacts.
+3. [x] Fix shared inherited-pipe deadline with a red/green regression.
+4. [x] Implement one-shot read-only runner through existing RuntimePort, fail closed on isolation/digest/schema/budget.
+5. [x] Exercise actual sandbox, refusal, timeout, concurrency, and preserved legacy/Bundle/Coverage behavior.
+6. [x] Review diff, run make check then frozen full make test; record exact skips and limits.
+7. [x] Update formal docs/tasks and authorized scoped commit/push prepared; consumer pins actual published producer afterward. Remote SHA verified in delivery receipt.
+
+## Historical plans (preserved)
+
+# CA-P2-01D 实施清单
+
+- [x] 核对A/B/C与P2A/B依赖，独立分支认领及路径边界。
+- [x] 私有发布授权、公开物化/发布、原子原生操作、独立消费授权与范围隔离。
+- [x] HTTP/PG授权、失败/回滚/重放/CAS/消费测试，历史Bundle与Coverage保持专项。
+- [x] 最终冻结源码make test10710pass/3008skip与make check通过，证据归档。
+- 按用户授权显式文件提交/推送本任务分支；远端SHA以交付回执核对，不合并/部署/迁移生产。
+
+# CA-P2-01C current task
+
+- [x] Audit published B, Overdoze P2 task sequencing and missing pure native validation prerequisite.
+- [x] Create Ready/claim task on independent branch; preserve prior pins/dirty checkout.
+- [x] Spec/plan review; implement scoped native validation and preserve B baseline hash.
+- [x] Producer artifacts + real HTTP consumer checks; independent reviews.
+- [x] Full gates, formal docs/task update and prepare scoped commit/push; remote SHA confirmation accompanies delivery. No deploy/migration.
+
+---
+
+# CA-P2-01B current task
+
+- [x] Inspect Definition → Task recovery → Worker and preserve isolated baseline.
+- [x] Claim Ready task; write design and implementation plan.
+- [x] Review spec/plan, implement core binding/storage and approved runtime assembly.
+- [x] Review complete behavior, run focused and full gates.
+- [x] Update evidence and prepare scoped commit/push; no deploy/migration. Delivery remote SHA reported after push.
+
+---
+
+# Current task: CA-P2-01A
+
+- [x] Inspect existing producer and platform P2 prerequisite; isolated worktree, task claimed.
+- [x] Baseline21tests passed; design independently approved.
+- [x] Plan review; strict native Bundle model/catalog/parser/compatibility and tests.
+- [x] Public offline CLI, stable schema/catalog/positive/canonical/legacy vectors.
+- [x] Independent implementation spec and quality/security reviews.
+- [x] Focused compatibility/Coverage checks, make test/check, source-bound evidence/docs.
+- [x] Scoped delivery prepared; actual commit/push/remote SHA confirmed in delivery receipt.
+
+No migration, production service operation or Worker/effective Release/Task Bundle binding this slice.
+
+---
+
+Prior task plans (historical; preserved):
+
 # Current task: CLOUD-DECOUPLE-AUDIT-01
 
 User-directed cloud-agent checkout, owner Luke Ding/executor Codex.
@@ -1212,3 +1528,17 @@ hashes stable. Consolidated review closed original-key GC binding; lost ledger
 does not authorize mutable-record deletion or automatic empty-ledger reset.
 Prepare ownedcommit/localFF preserving primary17dirtyfiles, then claim CONTROL.
 Production cutover OFF; final actual SQL80/browser/fleet remains OPEN. No push/deploy.
+
+## CA-P3-02P
+- [x] 审核L/O依赖、登记任务/owner/Owned paths/分支。
+- [x] 原claim/result、精确scope、加密原响应、GET-only与PG/API回归。
+- [x] make test/check完整复验、证据/正式文档。
+- [ ] 提交推送并核对远端SHA。
+- [ ] 消费者M固定发布来源后的联合验收（由独立消费者记录）。
+
+## CA-P3-02Q
+- [x] 核对M/P，Ready登记/领取/分支/Owned paths。
+- [x] 只读原观察与当前权限、API/真实PG检查。
+- [x] 完整make test/check、正式文档和证据。
+- [ ] 提交推送、远端SHA核对。
+- [ ] 消费者固定发布版本后的联合证据另记。

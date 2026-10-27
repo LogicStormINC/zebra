@@ -1,4 +1,7 @@
 "use client";
+export {useZebraSurfaceRevision,type ZebraSurfaceRevision,type ZebraSurfaceRevisionBase} from "./surface_revision.ts";
+export {useZebraInitialSurface,useZebraInitialAction,useZebraInitialReadable,type ZebraInitialSurface} from "./initial_surface.ts";
+import type { CommandRecoveryView } from "@zebra-agent/client-core";
 
 /**
  * Zebra React bindings: provider + standard hooks (ADR-CLIENT-01).
@@ -17,6 +20,7 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
   type ReactNode,
 } from "react";
 import type { ZodType } from "zod";
@@ -25,8 +29,10 @@ import {
   ClientRuntimeError,
   ZebraClientRuntime,
   type ClientActionHandler,
+  type ClientRuntimeStatus,
+  type ReadableCommandOptions,
 } from "@zebra-agent/client-core";
-import type { RuntimeClientConfig } from "@zebra-agent/contracts";
+import type { RuntimeBrowserConfig } from "@zebra-agent/contracts";
 
 export { ZebraHitlProvider, useZebraApproval, useZebraClarification } from "./hitl/index.ts";
 export type {
@@ -76,7 +82,7 @@ export { createAgentThemeStyle } from "./theme.ts";
 export type { AgentThemeTokens } from "./theme.ts";
 
 export interface ZebraAgentProviderProps {
-  config: RuntimeClientConfig;
+  config: RuntimeBrowserConfig;
   frontendAppId: string;
   profileRevision: number;
   profileDigest: string;
@@ -88,7 +94,7 @@ interface ZebraAgentContextValue {
   frontendAppId: string;
   profileRevision: number;
   profileDigest: string;
-  status: "connecting" | "ready" | "stopped";
+  status: ClientRuntimeStatus;
   mountedActions: string[];
   agentState: Record<string, unknown>;
   setAgentState: (next: Record<string, unknown>) => void;
@@ -101,25 +107,21 @@ export function ZebraAgentProvider(props: ZebraAgentProviderProps) {
     () => ZebraClientRuntime.fromConfig(props.config),
     [props.config],
   );
-  const [status, setStatus] = useState<"connecting" | "ready" | "stopped">(
-    "connecting",
-  );
+  const status = useSyncExternalStore(runtime.subscribeStatus, runtime.getStatus, runtime.getStatus);
   const [mountedActions, setMountedActions] = useState<string[]>([]);
   const [agentState, setAgentState] = useState<Record<string, unknown>>({});
   const lifecycleGeneration = useRef(0);
+  const currentRuntime = useRef(runtime);
+  currentRuntime.current = runtime;
   useEffect(() => {
     lifecycleGeneration.current += 1;
-    let active = true;
-    void runtime.start().then(() => {
-      if (active) setStatus("ready");
-    });
+    void runtime.start();
     return () => {
-      active = false;
       const cleanupGeneration = ++lifecycleGeneration.current;
       // React Strict Mode immediately re-runs effects; only a real unmount
       // survives this microtask and releases the controller lease.
       queueMicrotask(() => {
-        if (lifecycleGeneration.current === cleanupGeneration) runtime.stop();
+        if (currentRuntime.current !== runtime || lifecycleGeneration.current === cleanupGeneration) runtime.stop();
       });
     };
   }, [runtime]);
@@ -180,20 +182,7 @@ export function useZebraReadable(
   const serialized = JSON.stringify(value);
   const reported = useRef(serialized);
   useEffect(() => {
-    if (reported.current === serialized) return;
-    reported.current = serialized;
-    const mount = synchronizeMount(
-      runtime,
-      frontendAppId,
-      profileRevision,
-      profileDigest,
-    );
-    void mount
-      .then(() => setRevision(runtime.uiRevision.current))
-      .catch(() => runtime.stop());
-  }, [serialized, runtime, frontendAppId, profileRevision, profileDigest]);
-  useEffect(() => {
-    runtime.mountReadable(name);
+    runtime.mountReadable(name, value);
     const mount = synchronizeMount(runtime, frontendAppId, profileRevision, profileDigest);
     void mount
       .then(() => setRevision(runtime.uiRevision.current))
@@ -206,6 +195,20 @@ export function useZebraReadable(
       );
     };
   }, [name, runtime, frontendAppId, profileRevision, profileDigest]);
+  useEffect(() => {
+    if (reported.current === serialized) return;
+    reported.current = serialized;
+    runtime.updateReadable(name, value);
+    const mount = synchronizeMount(
+      runtime,
+      frontendAppId,
+      profileRevision,
+      profileDigest,
+    );
+    void mount
+      .then(() => setRevision(runtime.uiRevision.current))
+      .catch(() => runtime.stop());
+  }, [serialized, name, runtime, frontendAppId, profileRevision, profileDigest]);
   return { revision };
 }
 
@@ -267,7 +270,7 @@ export function useZebraAction<
   return { mounted };
 }
 
-export function useZebraClientStatus(): "connecting" | "ready" | "stopped" {
+export function useZebraClientStatus(): ClientRuntimeStatus {
   return useZebra().status;
 }
 
@@ -282,4 +285,16 @@ export function useZebraAgentState(): [
 ] {
   const { agentState, setAgentState } = useZebra();
   return [agentState, setAgentState];
+}
+
+/** Explicit one-attempt command; accepted means durable intent, never execution completion. */
+export function useZebraReadableCommand() {
+  const { runtime } = useZebra();
+  return useMemo(() => (options: ReadableCommandOptions) => runtime.submitReadableCommand(options), [runtime]);
+}
+
+/** Query original admission only; obtain fresh bootstrap/runtime before mounting again. */
+export function useZebraReadableCommandRecovery(): CommandRecoveryView | null {
+  const { runtime } = useZebra();
+  return useMemo(() => runtime.readableCommandRecovery, [runtime]);
 }

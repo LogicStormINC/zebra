@@ -1,3 +1,12 @@
+export {createBFFSurface, type BFFSurfaceState, type BFFSurfaceBinding} from "./bff_surface.ts";
+export {createBFFMessages, type BFFMessageState, type BFFMessageAnchor} from "./bff_messages.ts";
+export {prepareInitialClientSurface} from "./initial_surface.ts";
+import {initialSurfaceMetadata} from "./initial_surface.ts";
+export { createAuthenticatedRuntime, type AuthenticatedRuntimeOptions } from "./auth_lifecycle.ts";
+export { createBFFAuth, type BFFAuthState } from "./bff_auth.ts";
+export { createCommandRecoveryInbox, type PendingRequest, type PendingRequestsPage, type UnknownHandling } from "./request_discovery.ts";
+import { CommandRecovery, submitRecoverableCommand, type CommandRecoveryView } from "./command_recovery.ts";
+import { copyReadableJson, sendReadableCommand, type ReadableCommandOptions, type ReadableSurface } from "./readable_commands.ts";
 import { streamObserverOptions, type StreamObserverOptions } from "./conversation_stream.ts";
 /** React-free browser runtime (ADR-CLIENT-01).
  * Never stores Host Grants; handlers and profiles must be mounted and fenced.
@@ -7,11 +16,14 @@ import {
   CLIENT_SDK_ERRORS,
   type ClientEffectWire,
   type ReceiptSubmission,
-  type RuntimeClientConfig,
+  type RuntimeBrowserConfig,
 } from "@zebra-agent/contracts";
-import { browserSessionStorage, ClientRuntimeStateStore, UiRevisionClock } from "./runtime_state.ts";
+import { ClientRuntimeStateStore, UiRevisionClock } from "./runtime_state.ts";
 import { consumeClientEffectStream } from "./sse_stream.ts";
 import { normalizeReceipt, submitClientReceipt } from "./receipt_transport.ts";
+import { synchronizedMount, drainSurfaceWork, sendRuntimeMount, releaseRuntimeController } from "./runtime_mount.ts";
+import { runtimeDependencies } from "./runtime_configuration.ts";
+import { clientHeaders, readPendingEffects } from "./runtime_transport.ts";
 import { MountedActionRegistry } from "./action_registry.ts";
 import { ClientRuntimeError } from "./errors.ts";
 export { scrubResult } from "./result_security.ts";
@@ -19,30 +31,9 @@ export { canonicalDigest } from "./canonical_digest.ts";
 export { MountedActionRegistry, type ClientActionHandler } from "./action_registry.ts";
 export { ClientRuntimeError } from "./errors.ts";
 export { UiRevisionClock } from "./runtime_state.ts";
-export interface MountOptions {
-  frontendAppId: string;
-  profileRevision: number;
-  profileDigest: string;
-  mountedActions: readonly string[];
-  mountedReadables?: readonly string[];
-}
-
-export interface ClientRuntimeDependencies extends StreamObserverOptions {
-  fetchImpl: typeof fetch;
-  baseUrl: string;
-  clientSessionId: string;
-  sessionCredential: string;
-  controllerFenceToken?: string | undefined;
-  taskId?: string | undefined;
-  runId?: string | undefined;
-  runBindingId?: string | undefined;
-  clientBindingDigest?: string | undefined;
-  actionContractDigests?: Readonly<Record<string, string>> | undefined;
-  initialUiRevision?: number | undefined;
-  streamUrl?: string | undefined;
-  storage?: Storage | undefined;
-}
-
+export type {MountOptions, ClientRuntimeDependencies, BrowserRuntimeDependencies} from "./runtime_dependencies.ts";
+import type {MountOptions, BrowserRuntimeDependencies} from "./runtime_dependencies.ts";
+export type ClientRuntimeStatus = "connecting" | "ready" | "unavailable" | "stopped";
 export class ZebraClientRuntime {
   readonly registry = new MountedActionRegistry();
   readonly readableNames = new Set<string>();
@@ -59,10 +50,40 @@ export class ZebraClientRuntime {
   private pollTimer: ReturnType<typeof setInterval> | null = null;
   private queuedMount: MountOptions | null = null;
   private mountFlush: Promise<void> | null = null;
-  private deps: ClientRuntimeDependencies;
+  private deps: BrowserRuntimeDependencies;
   private stopped = false;
-
-  constructor(deps: ClientRuntimeDependencies) {
+  private readonly jobs = new Set<Promise<unknown>>();
+  private mounting = false;
+  private bindingRevision = 0;
+  private readonly readableValues = new Map<string, Record<string, unknown>>();
+  private readableSurface: ReadableSurface | null = null;
+  private readonly commandRecovery: CommandRecovery | null;
+  private polling = false;
+  private heartbeating = false;
+  private status: ClientRuntimeStatus = "connecting";
+  private readonly statusListeners = new Set<() => void>();
+  readonly getStatus = (): ClientRuntimeStatus => this.status;
+  readonly subscribeStatus = (listener: () => void): (() => void) => {
+    this.statusListeners.add(listener);
+    return () => { this.statusListeners.delete(listener); };
+  };
+  private setStatus(status: ClientRuntimeStatus): void {
+    if (this.status === status) return;
+    this.status = status;
+    for (const listener of this.statusListeners) listener();
+  }
+  private get controls(): boolean {
+    return this.deps.mode === "bff" ? this.deps.controller === true : this.deps.controllerFenceToken !== undefined;
+  }
+  private get surfacePending(): boolean { return this.mounting || synchronizedMount(this.deps) && this.bindingRevision === 0; }
+  constructor(deps: BrowserRuntimeDependencies) {
+    if (deps.mode === "bff" && deps.surfaceMetadataVersion !== undefined && (deps.surfaceMetadataVersion !== 1 || deps.initialUiRevision === undefined)) throw new ClientRuntimeError("invalid_surface_version", "explicit surface version1 and initial revision required");
+    if (deps.mode === "bff" && (deps.sessionCredential !== undefined || deps.controllerFenceToken !== undefined)) {
+      throw new ClientRuntimeError("invalid_bff_config", "BFF runtime cannot hold native secrets");
+    }
+    if (deps.mode === "bff" && deps.clientStateVersion !== undefined && (deps.clientStateVersion !== 1 || deps.surfaceMetadataVersion !== 1)) throw new ClientRuntimeError("invalid_readable_version", "Readable version1 requires synchronized BFF surface");
+    if (deps.mode === "bff" && deps.commandRecoveryVersion !== undefined && (deps.commandRecoveryVersion !== 1 || deps.clientStateVersion !== 1)) throw new ClientRuntimeError("invalid_recovery_version", "recovery1 requires Readable1");
+    this.commandRecovery = deps.mode === "bff" && deps.commandRecoveryVersion === 1 ? new CommandRecovery(deps.storage, deps.clientSessionId, deps.taskId!, deps.runId!, deps.fetchImpl, `${deps.baseUrl}/agui/threads/${deps.taskId}/runs/${encodeURIComponent(deps.runId!)}/commands/receipt`) : null;
     this.deps = deps;
     this.uiRevision = new UiRevisionClock(deps.initialUiRevision);
     this.stateStore = new ClientRuntimeStateStore(deps.storage, deps.clientSessionId);
@@ -72,78 +93,14 @@ export class ZebraClientRuntime {
     this.recoveredInflightEffects = restored.inflightEffects;
     this.pendingReceipts = restored.pendingReceipts;
     this.lastEventId = restored.lastEventId;
+    if (this.commandRecovery?.pending().length) this.disconnect();
   }
-
-  static fromConfig(config: RuntimeClientConfig & StreamObserverOptions): ZebraClientRuntime {
-    const sessionSecret = config.sessionCredential.slice(config.clientSessionId.length + 1);
-    if (
-      !config.sessionCredential.startsWith(`${config.clientSessionId}:`) ||
-      sessionSecret.length < 16 ||
-      /\s/.test(sessionSecret)
-    ) {
-      throw new ClientRuntimeError(
-        "invalid_credential",
-        "session credential must be '<session-id>:<session-secret>'",
-      );
-    }
-    const controllerCoordinates = [
-      config.taskId,
-      config.runId,
-      config.runBindingId,
-      config.clientBindingDigest,
-      config.actionContractDigests,
-    ];
-    if (
-      config.controllerFenceToken !== undefined &&
-      (
-        config.controllerFenceToken.length < 16 ||
-        /\s/.test(config.controllerFenceToken) ||
-        controllerCoordinates.some(
-          (value) =>
-            value === undefined ||
-            (typeof value === "string" && value.trim() === ""),
-        ) ||
-        !/^[0-9a-f]{64}$/.test(config.clientBindingDigest ?? "") ||
-        Object.values(config.actionContractDigests ?? {}).some(
-          (digest) => !/^[0-9a-f]{64}$/.test(digest),
-        )
-      )
-    ) {
-      throw new ClientRuntimeError(
-        "invalid_controller_binding",
-        "controller fence requires binding coordinates and action digests",
-      );
-    }
-    if (
-      config.streamUrl !== undefined &&
-      new URL(config.streamUrl, config.baseUrl).origin !== new URL(config.baseUrl).origin
-    ) {
-      throw new ClientRuntimeError(
-        "cross_origin_stream",
-        "the AG-UI stream must share the Host BFF origin",
-      );
-    }
-    return new ZebraClientRuntime({
-      // Preserve window.fetch's receiver; an object-field call fails in Chromium.
-      fetchImpl: config.fetchImpl ?? ((input, init) => globalThis.fetch(input, init)),
-      baseUrl: config.baseUrl,
-      clientSessionId: config.clientSessionId,
-      sessionCredential: config.sessionCredential,
-      controllerFenceToken: config.controllerFenceToken,
-      taskId: config.taskId,
-      runId: config.runId,
-      runBindingId: config.runBindingId,
-      clientBindingDigest: config.clientBindingDigest,
-      actionContractDigests: config.actionContractDigests,
-      initialUiRevision: config.initialUiRevision,
-      streamUrl: config.streamUrl,
-      ...streamObserverOptions(config),
-      storage: config.storage ?? browserSessionStorage(),
-    });
+  static fromConfig(config: RuntimeBrowserConfig & StreamObserverOptions): ZebraClientRuntime {
+    return new ZebraClientRuntime(runtimeDependencies(config));
   }
-
   /** Mount declares the page's actions; digest drift stops mounting. */
   async mount(options: MountOptions): Promise<void> {
+    this.commandRecovery?.ensureClear();
     if (this.stopped) {
       throw new ClientRuntimeError(
         CLIENT_SDK_ERRORS.FENCE_EXPIRED,
@@ -158,31 +115,34 @@ export class ZebraClientRuntime {
         "profile digest changed without a remount",
       );
     }
-    this.uiRevision.bump();
-    const body = {
-      client_session_id: this.deps.clientSessionId,
-      frontend_app_id: options.frontendAppId,
-      profile_revision: options.profileRevision,
-      profile_digest: options.profileDigest,
-      mounted_readables: options.mountedReadables ?? [],
-      mounted_actions: options.mountedActions,
-      ui_revision: this.uiRevision.current,
-      mounted_at: new Date().toISOString(),
-    };
-    const response = await this.deps.fetchImpl(
-      `${this.deps.baseUrl}/v1/client-sessions/${this.deps.clientSessionId}/mount`,
-      {
-        method: "POST",
-        headers: this.headers(),
-        body: JSON.stringify(body),
-      },
-    );
-    if (!response.ok) {
-      throw new ClientRuntimeError(
-        "mount_rejected",
-        `mount failed with ${response.status}`,
-      );
-    }
+    const sync = synchronizedMount(this.deps);
+    if (sync && this.mounting) throw new ClientRuntimeError("surface_busy", "mount is already in progress");
+    if (sync) { this.mounting = true; this.setStatus("connecting"); }
+    try {
+      if (sync) {
+        await drainSurfaceWork(this.jobs, () => this.stopped);
+        if (this.pendingReceipts.size || this.recoveredInflightEffects.size) throw new ClientRuntimeError("surface_unresolved", "reconcile old receipts before remounting");
+      }
+      if (this.stopped) return;
+      const metadata = await sendRuntimeMount(this.deps, options, this.uiRevision.bump(), this.bindingRevision);
+      if (this.stopped) return;
+      if (metadata) {
+        this.deps = { ...this.deps, clientBindingDigest: metadata.binding_digest, actionContractDigests: metadata.action_contract_digests };
+        this.bindingRevision = metadata.binding_revision;
+        this.readableSurface = { frontendAppId: options.frontendAppId, clientSessionId: this.deps.clientSessionId, taskId: this.deps.taskId!, runId: this.deps.runId!, metadata };
+      }
+    } catch (error) { if (sync) this.disconnect(); throw error; }
+    finally { this.mounting = false; }
+  }
+
+  /** Adopt the original atomic admission. Never sends mount or rotates Controller. */
+  adoptInitialSurface(value: unknown, options: MountOptions): void {
+    if (this.stopped || this.mounting || this.bindingRevision || this.mountedProfileDigest || this.commandRecovery?.pending().length)
+      throw new ClientRuntimeError("initial_surface_invalid", "initial binding already used or unresolved");
+    const metadata = initialSurfaceMetadata(value, options, this.deps, this.uiRevision.current, this.registry.names(), [...this.readableNames]);
+    this.bindingRevision = metadata.binding_revision;
+    this.mountedProfileDigest = options.profileDigest;
+    this.readableSurface = {frontendAppId: options.frontendAppId, clientSessionId: this.deps.clientSessionId, taskId: this.deps.taskId!, runId: this.deps.runId!, metadata};
   }
 
   /** Coalesce one React commit into one initial/narrowing mount snapshot. */
@@ -206,37 +166,50 @@ export class ZebraClientRuntime {
     });
     return this.mountFlush;
   }
-
-  mountReadable(name: string): void {
+  mountReadable(name: string, value?: Record<string, unknown>): void {
+    if (this.deps.mode === "bff" && this.deps.clientStateVersion === 1) {
+      if (this.readableNames.has(name)) throw new ClientRuntimeError("readable_already_mounted", "Readable already mounted");
+      this.readableValues.set(name, copyReadableJson(value));
+    }
     this.readableNames.add(name);
   }
-
-  unmountReadable(name: string): void {
-    this.readableNames.delete(name);
+  updateReadable(name: string, value: Record<string, unknown>): void {
+    if (this.deps.mode !== "bff" || this.deps.clientStateVersion !== 1) return;
+    if (!this.readableNames.has(name)) throw new ClientRuntimeError("readable_not_mounted", "Readable not mounted");
+    this.readableValues.set(name, copyReadableJson(value));
   }
-
+  async submitReadableCommand(options: ReadableCommandOptions) {
+    await this.mountFlush;
+    if (this.stopped || this.surfacePending || this.deps.mode !== "bff" || this.deps.clientStateVersion !== 1 || !this.readableSurface) throw new ClientRuntimeError("readable_not_ready", "Readable surface not ready");
+    return this.track(submitRecoverableCommand(this.commandRecovery, options.idempotencyKey,
+      before => sendReadableCommand(this.deps.fetchImpl, this.deps.baseUrl, this.readableSurface!, options, this.readableValues, before), () => this.disconnect()));
+  }
+  get readableCommandRecovery(): CommandRecoveryView | null { return this.commandRecovery; }
+  unmountReadable(name: string): void {
+    this.readableNames.delete(name); this.readableValues.delete(name);
+  }
   /** Reconnect replay of pending effects; each executes at most once. */
   async listPendingEffects(): Promise<ClientEffectWire[]> {
-    try {
-      const response = await this.deps.fetchImpl(
-        `${this.deps.baseUrl}/v1/client-sessions/${this.deps.clientSessionId}/effects`,
-        { headers: this.headers() },
-      );
-      if (!response.ok) return [];
-      const payload = (await response.json()) as { effects?: ClientEffectWire[] };
-      return payload.effects ?? [];
-    } catch {
-      return [];
+    const response = await this.deps.fetchImpl(
+      `${this.deps.baseUrl}/v1/client-sessions/${this.deps.clientSessionId}/effects`,
+      { headers: this.headers() },
+    );
+    if (!response.ok) {
+      if ([400, 401, 403, 404, 410, 422].includes(response.status)) this.stop();
+      throw new ClientRuntimeError("effects_unavailable", `effect poll rejected (${response.status})`);
     }
+    return readPendingEffects(response, this.deps.mode === "bff");
   }
 
   /** Start durable replay, heartbeat, and optional AG-UI SSE live tail. */
   async start(): Promise<void> {
     if (this.stopped) return;
-    for (const [effectId, receipt] of this.pendingReceipts) {
+    if (this.controls) for (const [effectId, receipt] of this.pendingReceipts) {
       if (await this.submitReceipt(receipt)) this.forgetReceipt(effectId);
       if (this.stopped) return;
     }
+    try { await this.mountFlush; } catch { this.stop(); return; }
+    if (this.stopped) return;
     // V2 reconciles the current pending set at its awaited recovery boundary.
     if (this.deps.streamVersion !== 2 || this.deps.streamUrl === undefined) await this.poll();
     this.heartbeatTimer ??= setInterval(() => void this.heartbeat(), 30_000);
@@ -264,34 +237,47 @@ export class ZebraClientRuntime {
   }
 
   /** Fetch and execute the current durable pending set once. */
-  async poll(): Promise<void> {
-    if (this.stopped) return;
-    for (const effect of await this.listPendingEffects()) await this.runEffect(effect);
+  poll(): Promise<void> { return this.track(this.pollOnce()); }
+
+  private async pollOnce(): Promise<void> {
+    if (this.stopped || this.surfacePending || this.polling) return;
+    this.polling = true;
+    try {
+      const effects = await this.listPendingEffects();
+      for (const effect of effects) await this.runEffect(effect);
+      if (!this.stopped && !this.mounting) this.setStatus("ready");
+    } catch {
+      if (!this.stopped) this.setStatus("unavailable");
+    } finally { this.polling = false; }
   }
 
-  async heartbeat(): Promise<boolean> {
-    if (this.stopped) return false;
-    for (const [effectId, receipt] of this.pendingReceipts) {
-      if (await this.submitReceipt(receipt)) this.forgetReceipt(effectId);
-    }
+  heartbeat(): Promise<boolean> { return this.track(this.heartbeatOnce()); }
+
+  private async heartbeatOnce(): Promise<boolean> {
+    if (this.stopped || this.surfacePending || this.heartbeating) return false;
+    this.heartbeating = true;
     try {
+      if (this.controls) for (const [effectId, receipt] of this.pendingReceipts) {
+        if (await this.submitReceipt(receipt)) this.forgetReceipt(effectId);
+      }
+      if (this.stopped) return false;
       const response = await this.deps.fetchImpl(
         `${this.deps.baseUrl}/v1/client-sessions/${this.deps.clientSessionId}/heartbeat`,
-        {
-          method: "POST",
-          headers: this.controllerHeaders(),
-          body: JSON.stringify(this.controllerCoordinates()),
-        },
+        { method: "POST", headers: this.controllerHeaders(), body: JSON.stringify(this.controllerCoordinates()) },
       );
       if ([400, 401, 403, 409, 410].includes(response.status)) this.stop();
+      if (!response.ok && !this.stopped) this.setStatus("unavailable");
       return response.ok;
     } catch {
+      if (!this.stopped) this.setStatus("unavailable");
       return false;
-    }
+    } finally { this.heartbeating = false; }
   }
 
-  async runEffect(effect: ClientEffectWire): Promise<void> {
-    if (this.stopped || this.deps.controllerFenceToken === undefined) return;
+  runEffect(effect: ClientEffectWire): Promise<void> { return this.track(this.executeEffect(effect)); }
+
+  private async executeEffect(effect: ClientEffectWire): Promise<void> {
+    if (this.stopped || this.surfacePending || !this.controls) return;
     if (
       effect.surface_instance_id !== this.deps.clientSessionId ||
       effect.task_id !== this.deps.taskId ||
@@ -396,7 +382,12 @@ export class ZebraClientRuntime {
   }
 
   /** Receipt submission retries until the server accepts it. */
-  async submitReceipt(submission: ReceiptSubmission): Promise<boolean> {
+  submitReceipt(submission: ReceiptSubmission): Promise<boolean> {
+    if (synchronizedMount(this.deps) && this.mounting && !this.pendingReceipts.has(submission.effect_id)) return Promise.resolve(false);
+    return this.track(this.sendReceipt(submission));
+  }
+
+  private async sendReceipt(submission: ReceiptSubmission): Promise<boolean> {
     const outcome = await submitClientReceipt(
       this.deps,
       submission,
@@ -414,6 +405,7 @@ export class ZebraClientRuntime {
   private shutdown(releaseController: boolean): void {
     if (!this.stopped && releaseController) void this.releaseController();
     this.stopped = true;
+    this.setStatus("stopped");
     this.queuedMount = null;
     this.abortController?.abort();
     this.abortController = null;
@@ -451,21 +443,16 @@ export class ZebraClientRuntime {
   }
 
   private headers(): Record<string, string> {
-    return {
-      "Content-Type": "application/json",
-      "X-Zebra-Client-Session": this.deps.sessionCredential,
-    };
+    return clientHeaders(this.deps);
   }
 
   private controllerHeaders(): Record<string, string> {
-    return {
-      ...this.headers(),
-      "X-Zebra-Client-Fence": this.deps.controllerFenceToken ?? "",
-    };
+    return clientHeaders(this.deps, true);
   }
 
   private controllerCoordinates(): Record<string, string> {
     if (
+      !this.controls ||
       this.deps.taskId === undefined ||
       this.deps.runId === undefined ||
       this.deps.runBindingId === undefined
@@ -476,24 +463,18 @@ export class ZebraClientRuntime {
       run_binding_id: this.deps.runBindingId,
     };
   }
-
-  private async releaseController(): Promise<void> {
-    if (this.deps.controllerFenceToken === undefined) return;
-    try {
-      await this.deps.fetchImpl(
-        `${this.deps.baseUrl}/v1/client-sessions/${this.deps.clientSessionId}/release`,
-        {
-          method: "POST",
-          headers: this.controllerHeaders(),
-          body: JSON.stringify(this.controllerCoordinates()),
-          keepalive: true,
-        },
-      );
-    } catch {
-      // The bounded lease remains the crash-safe fallback.
-    }
+  private releaseController(): Promise<void> {
+    return this.controls ? releaseRuntimeController(this.deps, this.controllerCoordinates()) : Promise.resolve();
+  }
+  private track<T>(work: Promise<T>): Promise<T> {
+    this.jobs.add(work);
+    void work.then(() => this.jobs.delete(work), () => this.jobs.delete(work));
+    return work;
   }
 }
 export { ConversationStreamReducer, STREAM_V2_CAPABILITIES } from "./conversation_stream.ts";
 export type { ConversationMessage, ConversationStreamEvent } from "./conversation_stream.ts";
 export { openClientSurface, type ClientSurfaceOpenOptions, type ClientSurfaceOpened, mountClientSurface, type ClientSurfaceOptions, type ClientSurfaceAdmission, type ClientSurfaceMount } from "./client_surface.ts";
+export { publicClientSurfaceMetadata, validateSurfaceMetadata, type PublicClientSurfaceMetadata } from "./surface_metadata.ts";
+export { nativeReadableCommand, type ReadableCommandOptions, type ReadableCommandResult } from "./readable_commands.ts";
+export type { CommandRecoveryView } from "./command_recovery.ts";

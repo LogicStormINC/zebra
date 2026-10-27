@@ -1,0 +1,89 @@
+{
+  "task": "CA-P3-02B",
+  "status": "PASS",
+  "date": "2026-10-22",
+  "branch": "codex/ca-p3-02b-effect-authority",
+  "baseCommit": "8715d225651a984b43fd6f98bdb9a755d35fcb51",
+  "contract": "client-effect-authority/1",
+  "checks": {
+    "redRegression": {
+      "failed": 23,
+      "passed": 6,
+      "expectedFailure": true,
+      "logSha256": "6f6db441bac82c185eec33189dffbbe78560ff4c9ef2f32c1636b4ad2c39124f",
+      "note": "A frozen-dataclass fixture setup error was corrected before this reproduction; three local-compatibility cases added afterwards."
+    },
+    "focused": {
+      "passed": 32,
+      "skipped": 0,
+      "logSha256": "f00060e96cffb69217035c25445f141cdda2afbda6cfe3460eb2fd535a09fab4"
+    },
+    "earlierClientRegressions": {
+      "passed": 94,
+      "skipped": 1,
+      "logSha256": "e585c9ce2f3567c2b69369762ea374c0a3ba9c447d8b3e36324fe848c2587ca9",
+      "note": "Before the final three local cases; final whole suite includes them."
+    },
+    "ownedPostgres": {
+      "passed": 18,
+      "skipped": 0,
+      "exitCode": 0,
+      "logSha256": "69e5df28277aaa8d3a3b2041827f4ce513d4bc1869e326c922616d459465ad47",
+      "scope": "New disposable Docker PostgreSQL; 6 new current-authority/durable receipt tests plus 12 existing Effect/recovery cases; TaskBinding/Effect/Receipt/Controller real, Tenant Session projection/Profile setup remains a fixture; replacement adapters and independent connections, not a full process/BFF/browser E2E.",
+      "ownedContainerCleaned": true
+    },
+    "makeTest": {
+      "exitCode": 0,
+      "passed": 10906,
+      "skipped": 3014,
+      "seconds": 1133.69,
+      "logSha256": "114be41e2e55965b85f4e6613b0de3bf6c9153929cafe613f429ca00b77a2e76",
+      "skipBoundary": "3008 inherited environment conditions plus 6 new PostgreSQL tests; all 6 separately run in ownedPostgres."
+    },
+    "makeCheck": {
+      "exitCode": 0,
+      "mypyFiles": 1388,
+      "evalCases": 30,
+      "fileSizeInputs": 3361,
+      "logSha256": "a7b2253f0b42ed3b9821eae04fdbb331bd42fbc79aa9dff056c5241f3ccdb60d"
+    },
+    "sourceFreeze": {
+      "files": 3435,
+      "changed": [],
+      "manifestSha256": "f7dce67d05aeaad768726cbcd6aa096542271954a4945fb179fd2ae8e99a4845",
+      "selection": "Tracked/new apps,packages,tests,scripts,sdks,evals,docs/contracts source+JSON/TOML/YAML/lock files; generated evals/reports excluded."
+    },
+    "coveragePreservation": {
+      "base": "8715d225651a984b43fd6f98bdb9a755d35fcb51",
+      "sourceAndTestFiles": 280,
+      "changed": [],
+      "manifestSha256": "fb6944361f049702547657fc9c57a236ba288e4257c7a5f2993567f35fe27964",
+      "selection": "case-insensitive coverage in tracked path under apps/packages/tests"
+    },
+    "existingContractsSdkAndEffectDomainStorage": {
+      "files": 126,
+      "changed": []
+    }
+  },
+  "sourceSha256": {
+    "apps/api/src/zebra_agent_api/client_effect_receipts.py": "ad4d753c7fbddbf94d32f3e1e300346788dd3115574766d9b2d73e72e91a210b",
+    "apps/api/src/zebra_agent_api/client_runtime_routes.py": "5b7ab9712eceac1f516a325e09de778e2b0ef79657195f174aefd495f26f5b3a",
+    "tests/api/test_client_effect_authority.py": "5205d98ba8ed4c662d92f89c00d23e4a34b32d5e8754cd23c64a154e826fba21",
+    "tests/api/test_client_effect_authority_postgres.py": "1d949e7d26a089aa32f5c46e0d448cde3118e2169b40be8404e27a541dccb4c2",
+    "docs/contracts/client-effect-authority/contract.json": "ff8cfe79e4b176c4ac7b45eff3ac4c19fd747e3c8e5d5ee1ea701e69814d45d2"
+  },
+  "boundaries": {
+    "frontendMock": "unchanged in independent Overdoze repo",
+    "dataRewrite": false,
+    "storageMigration": null,
+    "browserUiEffectExecuted": false,
+    "workerResumeExecuted": false,
+    "productionHaVerified": false,
+    "deployment": false,
+    "productionMigration": false,
+    "mainlineIntegration": false,
+    "currentTaskGrantCheck": "request preflight, not a cross-aggregate commit-time revocation linearization guarantee",
+    "legacyWithoutTaskBinding": "fail closed; preserve records and inventory separately before rollout"
+  },
+  "delivery": "Authorized focused feature commit/push after fresh gates; exact remote SHA in delivery receipt, no self-referential commit claim."
+}

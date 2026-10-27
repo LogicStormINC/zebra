@@ -1,0 +1,56 @@
+{
+  "task": "CA-P3-02P",
+  "status": "PASS",
+  "at": "2026-10-24T02:33:03.038343+00:00",
+  "base_commit": "76ba18d782b9c44efb25172fa6928fa74e83b892",
+  "commands": {
+    "make test": {
+      "exit": 0,
+      "passed": 11056,
+      "conditional_skips": 3031,
+      "pytest_seconds": 1224.07
+    },
+    "make check": {
+      "exit": 0,
+      "type_files": 1404,
+      "eval_cases": 30,
+      "file_gate_checked": 3418,
+      "file_violations": 0
+    },
+    "focused API and owned PG": {
+      "exit": 0,
+      "passed": 12,
+      "conditional_skips": 0,
+      "owned_pg_journal_cases": 2
+    }
+  },
+  "logs": {
+    "ca-p3-02p-test-final.log": {
+      "path": "/Users/lukeding/.codex/tmp/ca-p3-02p-test-final.log",
+      "sha256": "c44423544385d4d110ac6134b3fc38b6b95cc62de333359a2319bb84639df1ec"
+    },
+    "ca-p3-02p-check-delivery.log": {
+      "path": "/Users/lukeding/.codex/tmp/ca-p3-02p-check-delivery.log",
+      "sha256": "a4d7b9f35ebd48d74b09570bb482b733a0720fa571c2a2432c8a5858d0104a8d"
+    },
+    "ca-p3-02p-focused-final.log": {
+      "path": "/Users/lukeding/.codex/tmp/ca-p3-02p-focused-final.log",
+      "sha256": "05b8b9074d583b13a09f3b1444a28377d8a9ef426b82936077935ca3b76eeb47"
+    }
+  },
+  "earlier_attempts": {
+    "full_test_interrupted_before_scope_fix": true,
+    "wrong_initial_hash_vector_corrected": true
+  },
+  "boundaries": {
+    "journal_pg_dispatch_stub": true,
+    "real_signed_cloud_joint": "consumer OD-P3-01M pins producer after publication",
+    "partial_commit_without_original_receipt": "remains unknown; never takeover or retry",
+    "native_schema_tail": 113,
+    "production_deployment": false,
+    "production_migration": false,
+    "historical_data_rewritten": false,
+    "coverage_changed": false,
+    "production_ha_verified": false
+  }
+}

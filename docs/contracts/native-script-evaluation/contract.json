@@ -1,0 +1,23 @@
+{
+  "contractVersion": "native-script-evaluation/1",
+  "entrypoint": "python -m zebra_agent_worker.script_evaluation",
+  "modes": [
+    "initialize",
+    "evaluate",
+    "read"
+  ],
+  "authority": "private Native operator configuration and current shared publisher approval; no public passed import",
+  "input": "suite.schema.json",
+  "maxCases": 32,
+  "maxCaseExecutionSeconds": 60,
+  "deadlineSeconds": 65,
+  "requiresAllBindings": true,
+  "unknownAutomaticallyReruns": false,
+  "evidenceId": "original operation UUID",
+  "atomicEvidenceAndReceipt": true,
+  "coverageAuthority": false,
+  "workerExecutionProof": false,
+  "oldPublicationContract": "script-publication/1",
+  "resultSchema": "cloud-agent.native-script-evaluation-result/1",
+  "contractDigest": "sha256:024c071c7ba083cc8e9cc059af2faa04d56adde9158d5cfc7af4dfb4d2cb2bb4"
+}

@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+from collections.abc import Callable
 from typing import Any, Protocol
 
 from agent_core.domain.effect_dispatch import (
@@ -16,7 +17,7 @@ from agent_core.domain.host_effect_receipts import HostEffectReceipt
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.modeling import ModelToolDefinition
 from agent_core.domain.session_handoff import EffectIdentity
-from agent_core.domain.tools import ToolCall, ToolResult
+from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
 from agent_core.ports import WorkerMutationAuthority
 
 
@@ -181,4 +182,47 @@ def proves_failed_no_effect(result: ToolResult) -> bool:
     ) and (
         result.metadata.get("business_outcome") is EffectBusinessOutcome.REJECTED
         or result.metadata.get("business_outcome") == EffectBusinessOutcome.REJECTED.value
+    )
+
+
+def reuse_result(
+    gateway: ToolGatewayLike,
+    call: ToolCall,
+    original: ToolResult,
+    ownership_check: Callable[[], None] | None = None,
+) -> ToolResult:
+    """A scheduling acknowledgement is not the original business operation outcome."""
+    deferred = original.metadata.get("client_effect_deferred")
+    if not deferred:
+        return original
+    resolver = getattr(gateway, "reconcile_deferred_result", None) if deferred is True else None
+    result = None
+    try:
+        if callable(resolver):
+            result = resolver(call, original)
+    except Exception:
+        # A read outage cannot authorize another execution or manufacture a failure receipt.
+        result = None
+    if ownership_check is not None:
+        ownership_check()
+    if (
+        isinstance(result, ToolResult)
+        and result.tool_call_id == call.tool_call_id
+        and (
+            not result.metadata.get("client_effect_deferred")
+            or result is original
+            and call.tool_call_id == original.tool_call_id
+        )
+    ):
+        return result
+    return ToolResult(
+        tool_call_id=call.tool_call_id,
+        status=ToolCallStatus.FAILED,
+        output="Original client effect outcome is unknown; explicit reconciliation is required.",
+        metadata={
+            "code": "client_effect_original_unknown",
+            "execution_state": "unknown",
+            "business_outcome": "unknown",
+            "original_receipt_required": True,
+        },
     )

@@ -1,0 +1,54 @@
+{
+  "task": "CA-P3-02K",
+  "status": "Review",
+  "base": "4e629a5aad0d900ea6b32b1b083e720ba5d8e885",
+  "gates": {
+    "makeTest": {
+      "exit": 0,
+      "passed": 10971,
+      "skipped": 3022,
+      "seconds": 1244.42
+    },
+    "makeCheck": {
+      "exit": 0,
+      "mypyFiles": 1393,
+      "sizeCheckedFiles": 3393,
+      "sizeViolations": 0,
+      "evalCases": 30
+    },
+    "sdkVerify": {
+      "exit": 0,
+      "testsPassed": 145,
+      "packageAudit": true,
+      "react18And19": true,
+      "viteAndNextSSR_RSC": true,
+      "chromiumWebkitAndHydration": true
+    },
+    "pairedBrowser": {
+      "exit": 0,
+      "report": "browser.json",
+      "goCandidate": "go-candidate.json",
+      "goFullRacePackages": 23
+    }
+  },
+  "unchangedBaselineFiles": 4601,
+  "pythonProductionAndSchemaChanged": false,
+  "frontendMockConnected": false,
+  "historyAndCoveragePreserved": true,
+  "automaticUnknownRetry": false,
+  "actualBusinessIdP": false,
+  "productionHA": false,
+  "deployment": false,
+  "productionMigration": false,
+  "npmPublication": false,
+  "scopeNote": "Cookie and fresh business reauthentication are fixtures. Actual platform public identity HTTP and separate business PG exercised. Native task/model admission authority unchanged. Go consumer freezes exact published SDK source separately.",
+  "supersededAttempts": "Initial dev Vite harness failed to resolve temporary entry; reused existing static Vite build pattern; delivery browser run passed both engines. Earlier gates superseded where affected source changed.",
+  "logSha256": {
+    "native-test.log": "49d6e968a85e5652ca44ef92162f595c181600377ad6ce9bd6cc90361791af7e",
+    "native-check.log": "bac02a1ee46945c9226ce106a16149355160e7d91a59519bdb51a2b32776cbd2",
+    "sdk-verify-final.log": "83dcf00624caff93f18d7d73c8901005a532cbb8951220fb95e0dc8dccfcc3c7",
+    "browser-delivery.log": "e57f2d803343d047bde2cba569c7d8f5dbc257868414ac62f81bac1626904c2c",
+    "go-test-delivery.log": "9a0bef71a3de646e2c3f711a15eabe19607467a41e526647854f033eb842817f",
+    "native-check-delivery.log": "bac02a1ee46945c9226ce106a16149355160e7d91a59519bdb51a2b32776cbd2"
+  }
+}

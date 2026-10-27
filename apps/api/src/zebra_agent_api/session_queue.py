@@ -6,6 +6,7 @@ from agent_core.application import SessionBootstrapCommand, SessionBootstrapServ
 from agent_core.application.workspace_projection import rebuild_workspace
 from agent_core.domain.agent_definition_snapshots import AgentDefinitionSnapshot
 from agent_core.domain.host_authority import HostContextEnvelope
+from agent_core.domain.script_definition import ScriptDefinitionSnapshot
 from agent_core.domain.task_bindings import TaskBindingSnapshot
 from agent_core.domain.tool_profiles import ToolProfile
 from agent_core.ports.idempotency_store import IdempotencyRecord
@@ -34,7 +35,15 @@ def create_queued_session(
     verified_host_grant: VerifiedHostGrant | None = None,
     coverage_configuration_digest: str | None = None,
     public_idempotency_key: str | None = None,
+    initial_run_id: str | None = None,
 ) -> ApiResponse:
+    if initial_run_id is not None and (
+        not admission_dsn
+        or not admission_namespace
+        or parsed["execute"] is not True
+        or "coverage_admission" in parsed
+    ):
+        raise ValueError("atomic first RUN requires non-Coverage PG admission")
     if "coverage_admission" in parsed and coverage_configuration_digest is None:
         preflight = parse_create_session_payload(dict(parsed))
         if isinstance(preflight, ApiResponse):
@@ -107,10 +116,10 @@ def create_queued_session(
         },
     )
     response.body["idempotency_key"] = idempotency_key
-    if coverage_configuration_digest is not None:
+    if coverage_configuration_digest is not None or initial_run_id is not None:
         from zebra_agent_api.coverage_http_admission import initial_run
 
-        command_event, command_body = initial_run(bootstrap, idempotency_key)
+        command_event, command_body = initial_run(bootstrap, idempotency_key, run_id=initial_run_id)
         events = (*events, command_event)
         response.body.update(status="queued", executed=False, command=command_body)
         response.body["idempotency_key"] = public_idempotency_key
@@ -219,7 +228,13 @@ def _derive_binding(
         session_id,
         host_context=host_context,
         definition_snapshot_digest=(
-            definition_snapshot.definition_digest if definition_snapshot else None
+            # ponytail: v3 native execution binds the full frozen snapshot; retain v1/v2
+            # admission bytes until a separately versioned migration changes their contract.
+            definition_snapshot.snapshot_digest
+            if isinstance(definition_snapshot, ScriptDefinitionSnapshot)
+            else definition_snapshot.definition_digest
+            if definition_snapshot
+            else None
         ),
         deployment_namespace=deployment_namespace,
         frozen_manifest_digest=frozen_manifest_digest,

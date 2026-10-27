@@ -256,7 +256,16 @@ def _api(
     )
 
 
-def _handle(api, method: str, path: str, *, body=None, headers=None, host_context=None):
+def _handle(
+    api,
+    method: str,
+    path: str,
+    *,
+    body=None,
+    headers=None,
+    host_context=None,
+    verified_host_grant=None,
+):
     from zebra_agent_api.routes import RouteAdapter, RouteRequest
 
     adapter = RouteAdapter(api)
@@ -267,6 +276,7 @@ def _handle(api, method: str, path: str, *, body=None, headers=None, host_contex
             body=body,
             headers=headers,
             host_context=host_context,
+            verified_host_grant=verified_host_grant,
         )
     )
 
@@ -596,6 +606,7 @@ def test_host_authenticated_open_requires_the_namespace_profile_binding() -> Non
     registry.publish_profile(profile)
     context = HostContextEnvelope(
         grant_id="host-grant-1",
+        expires_at=datetime.now(UTC) + timedelta(minutes=1),
         host_app_id="fixture-host",
         namespace_id="tenant-1",
         workspace_ref="workspace://fixture",
@@ -608,6 +619,11 @@ def test_host_authenticated_open_requires_the_namespace_profile_binding() -> Non
         ),
         origin="https://app.fixture.example",
         policy_version="fixture-policy-v1",
+    )
+    from agent_security.host_grant import JwtAlgorithm, VerifiedHostGrant
+
+    verified = VerifiedHostGrant(
+        context, context.grant_id, JwtAlgorithm.RS256, "https://issuer.example", "user-1"
     )
     grant = {
         "grant_id": str(uuid4()),
@@ -627,6 +643,7 @@ def test_host_authenticated_open_requires_the_namespace_profile_binding() -> Non
         "/v1/client-sessions",
         body={"grant": grant},
         host_context=context,
+        verified_host_grant=verified,
     )
     assert denied.status_code == 403
     FrontendProfileService(registry).bind(
@@ -642,6 +659,7 @@ def test_host_authenticated_open_requires_the_namespace_profile_binding() -> Non
         "/v1/client-sessions",
         body={"grant": grant},
         host_context=context,
+        verified_host_grant=verified,
     )
     assert opened.status_code == 201
     session_id = opened.body["client_session_id"]
@@ -663,6 +681,7 @@ def test_host_authenticated_open_requires_the_namespace_profile_binding() -> Non
             f"/v1/client-sessions/{session_id}/heartbeat",
             headers=headers,
             host_context=context,
+            verified_host_grant=verified,
         ).status_code
         == 200
     )

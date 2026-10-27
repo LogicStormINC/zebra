@@ -46,6 +46,7 @@ from agent_integrations.openai_payloads import (
     serialize_tool,
 )
 from agent_integrations.openai_streaming import read_openai_stream
+from agent_integrations.provider_defaults import _read_defaults
 from agent_integrations.provider_settings import ModelProviderSettings
 from agent_integrations.request_metadata import (
     ModelRequestMetadata,
@@ -133,6 +134,7 @@ class OpenAICompatibleModelGateway:
             stream=False,
             resolved=resolved,
             strict_tools=strict_tools,
+            invocation_policy=invocation_policy,
         )
         started = perf_counter()
         call_id = uuid4().hex
@@ -200,6 +202,7 @@ class OpenAICompatibleModelGateway:
             stream=True,
             resolved=resolved,
             strict_tools=strict_tools,
+            invocation_policy=invocation_policy,
         )
         client = self._client or httpx.Client(timeout=self._client_timeout())
         should_close = self._client is None
@@ -293,6 +296,7 @@ class OpenAICompatibleModelGateway:
         stream: bool,
         resolved: ResolvedDeepSeekInvocation | None,
         strict_tools: bool,
+        invocation_policy: ModelInvocationPolicy | None = None,
     ) -> tuple[dict[str, Any], ModelRequestMetadata | None]:
         body: dict[str, Any] = {
             "model": resolved.profile.model if resolved else self._model_name,
@@ -477,19 +481,6 @@ def build_model_gateway(
         deepseek_router=router,
         client=client,
     )
-
-
-def _read_defaults(path: Path) -> dict[str, str]:
-    if not path.exists():
-        return {}
-    defaults: dict[str, str] = {}
-    for line in path.read_text(encoding="utf-8").splitlines():
-        stripped = line.strip()
-        if not stripped or stripped.startswith("#") or "=" not in stripped:
-            continue
-        key, value = stripped.split("=", maxsplit=1)
-        defaults[key.strip()] = value.strip()
-    return defaults
 
 
 def _serialized_tool_name(tool: dict[str, object]) -> str:

@@ -11,11 +11,17 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from decimal import Decimal
 from hashlib import sha256
 
 from agent_core.domain.client_capabilities import (
     FrontendCapabilityProfileVersion,
     MountedCapabilitySnapshot,
+)
+from agent_core.domain.client_context import (
+    ClientStateError,
+    sanitize_client_state,
+    validate_client_state_json,
 )
 from agent_core.domain.identifiers import ClientSessionId
 
@@ -47,6 +53,10 @@ def admit_agui_client_payload(
 ) -> AgUiClientAdmission:
     """Validate the AG-UI tool declarations and state snapshot."""
 
+    try:
+        validate_client_state_json({} if state is None else state)
+    except ClientStateError as exc:
+        raise AgUiClientAdmissionError(str(exc)) from exc
     declared: list[str] = []
     for tool in tools or []:
         if not isinstance(tool, dict):
@@ -79,10 +89,13 @@ def admit_agui_client_payload(
             )
         for name, value in sanitized.items():
             contract = readable_contracts[name]
+            _validate_value(value, contract.state_schema, path=name)
+            # JSONB expands exponent integers and drops negative zero. Normalize
+            # new inputs only; historical snapshot hash rules remain unchanged.
+            sanitized[name] = value = _canonical_state_numbers(value)
             value_bytes = len(_canonical_json(value).encode())
             if value_bytes > contract.max_state_bytes:
                 raise AgUiClientAdmissionError(f"readable {name} exceeds its state byte budget")
-            _validate_value(value, contract.state_schema, path=name)
     encoded = _canonical_json(sanitized).encode()
     if len(encoded) > MAX_COMMAND_STATE_BYTES:
         raise AgUiClientAdmissionError(f"state snapshot exceeds {MAX_COMMAND_STATE_BYTES} bytes")
@@ -100,24 +113,8 @@ def redact_client_state(
 ) -> tuple[dict[str, object], list[str]]:
     """Deep-copy the state with sensitive keys replaced."""
 
-    redacted: list[str] = []
-
-    def _walk(value: object, path: str) -> object:
-        if isinstance(value, dict):
-            walked: dict[str, object] = {}
-            for key, item in value.items():
-                lowered = str(key).lower()
-                if any(token in lowered for token in REDACTED_KEYS):
-                    redacted.append(path + str(key))
-                    walked[str(key)] = REDACTED
-                else:
-                    walked[str(key)] = _walk(item, path + str(key) + ".")
-            return walked
-        if isinstance(value, list):
-            return [_walk(item, path) for item in value]
-        return value
-
-    return _walk(state, ""), redacted  # type: ignore[return-value]
+    sanitized, redacted = sanitize_client_state(state)
+    return sanitized, list(redacted)
 
 
 def mounted_snapshot_from_admission(
@@ -143,6 +140,16 @@ def mounted_snapshot_from_admission(
     )
     snapshot.ensure_subset_of(profile)
     return snapshot
+
+
+def _canonical_state_numbers(value: object) -> object:
+    if isinstance(value, dict):
+        return {key: _canonical_state_numbers(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_canonical_state_numbers(item) for item in value]
+    if type(value) is float and value.is_integer():
+        return int(Decimal(repr(value)))
+    return value
 
 
 def _canonical_json(payload: object) -> str:

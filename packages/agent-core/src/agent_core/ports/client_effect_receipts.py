@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import Protocol
 
 from agent_core.domain.client_effects import ClientEffectReceipt, ClientEffectRequest
-from agent_core.domain.identifiers import SessionId
+from agent_core.domain.identifiers import ClientEffectId, SessionId
 
 
 @dataclass(frozen=True)
@@ -26,3 +26,8 @@ class ClientEffectReceiptPort(Protocol):
         """Validate fence/revision/expiry, then commit receipt + terminal
         status + parent resume command atomically; replays return the
         stored acceptance without a second command."""
+
+
+class ClientEffectReceiptReadPort(Protocol):
+    def read_receipt(self, effect_id: ClientEffectId) -> ClientEffectReceipt | None:
+        """Read an immutable original receipt; never accepts, retries or resumes."""

@@ -11,6 +11,7 @@ from agent_tools.effect_guard_support import (
     ToolGatewayLike,
     effect_identity,
     read_only_tool_names,
+    reuse_result,
 )
 
 
@@ -67,7 +68,7 @@ class EffectGuardedToolGateway:
         if reservation.replay:
             result = cast(ToolResult | None, reservation.result)
             assert result is not None
-            return result
+            return reuse_result(self._gateway, tool_call, result)
         self._ledger.mark_executing(reservation)
         try:
             result = self._gateway.execute(tool_call)

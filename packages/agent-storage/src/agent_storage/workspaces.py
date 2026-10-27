@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from agent_core.domain.agent_definition_snapshots import AgentDefinitionSnapshot
+from agent_core.domain.bundle_definition import parse_definition_snapshot
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.networking import NetworkProfileName
 from agent_core.domain.tool_profiles import ToolProfile
@@ -182,7 +182,7 @@ class SQLiteWorkspaceProjectionStore(WorkspaceProjectionStorePort):
                 "definition_snapshot": (
                     None
                     if row["definition_snapshot"] is None
-                    else AgentDefinitionSnapshot.model_validate(
+                    else parse_definition_snapshot(
                         json.loads(row["definition_snapshot"])
                     )
                 ),

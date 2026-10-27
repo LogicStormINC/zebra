@@ -1,0 +1,33 @@
+{
+  "source_base": "6dbb2a8dc145e684d9792cfe9ada0b482c28f343",
+  "source_sha256": {
+    "apps/api/src/zebra_agent_api/runtime_management.py": "71fb01d29f57d98d3cbbbf5f68d0721f7a16f039b99aaafafbf31ad4176738bb",
+    "apps/worker/src/zebra_agent_worker/cloud_composition.py": "48d29013ebfe2d162e293cc6506142a2164184b1afaecfb5540888e32d992de1",
+    "apps/worker/src/zebra_agent_worker/task_recovery.py": "337d502417edc42a21f5bb4bcd554b917ee5dcb03ff0b6d853b65f646dec8484",
+    "docs/contracts/runtime-bundle-v1/component-catalog.json": "b0b6a2ad00551fd66e059085ea7bb334773d6e688bad29c4e544f69ba1a35dfb",
+    "docs/contracts/runtime-bundle-v1/digest-vectors.json": "d286dd879185f849eb64dea04568d9755f21b2c54ed566321714f1bae213c437",
+    "docs/contracts/runtime-bundle-v1/envelope.schema.json": "cd992b138ac21d5548d428e09a84e3f54a3bc2bfa695f8d177101c2f918cc39a",
+    "docs/contracts/runtime-bundle-v1/example-envelope.json": "821d5c88c807ea543300388352adbfe1620293ca13b4a04a9619254c0297fd0b",
+    "docs/contracts/runtime-bundle-v1/manifest.canonical.json": "47496f12c8f87f23652295a2271c02ded89c84c48de5238812cf65cb3928c545",
+    "docs/contracts/runtime-bundle-v1/negative-vectors.json": "e94417fd7d7bc8c84ac064ee9a1c594ebbfba7f11528d06b48183c82addee034",
+    "packages/agent-core/src/agent_core/domain/agent_definition_snapshots.py": "2f28fbb7b41ac82bc443df70fa084c78cf403d8516f43603efd45a8f1e87ad92",
+    "packages/agent-core/src/agent_core/domain/agent_definitions.py": "06727474e702e2b74b751dbc9c945eb31a1bd80e0d7ee5a35cb03a569e86a8a3",
+    "packages/agent-core/src/agent_core/domain/coverage_contracts.py": "496b0655bbf22c4bc0d9e06a15e147e66f5a7faf00917d1b595dcb6460767af3",
+    "packages/agent-core/src/agent_core/domain/coverage_report.py": "27cc3b5142b891e50153bf792b881e09392c0b94b777aa50f3581ba296e0d8af",
+    "packages/agent-core/src/agent_core/domain/coverage_snapshot.py": "f0952b012bbc79399cd35797d2ceb4767d86431f5d7b69a92451f0ccb48760b1",
+    "packages/agent-core/src/agent_core/domain/runtime_bundle.py": "1ba98b1ceca2fd01e4d55c795147b8ef122108b35af3b557083338ac44b5a94f",
+    "packages/agent-core/src/agent_core/domain/runtime_bundle_catalog.py": "261663e3c24c6989d3760ec13fbeb218c5eba1e1e5be90f4d8bf127ca9e0d44c",
+    "packages/agent-core/src/agent_core/domain/runtime_bundle_json.py": "b5713a814c14123a8e2a5e6c4f7575eaef2c51f3a4861d465266f2d8957cfa62",
+    "packages/agent-core/src/agent_core/domain/runtime_bundle_types.py": "f4c8ff5332120f3eb6f26fe8e18468d56f72625edd987125b39196a083ad2749",
+    "packages/agent-storage/src/agent_storage/postgres/migration_catalog_tail.py": "04c6426d6a1f9f7d5a6c943a3e02a986c3adf727cab7bc6c69c7d4be78a0ddcf",
+    "pyproject.toml": "f8f31c409cdfb773d9584ae08a2de321d2a1a5f8ffeba79a420134425a7422fc",
+    "scripts/validate_runtime_bundle.py": "7236f053303a6d26e182db9a7d2ee63d8a5c166873c2928c71edb5a385e025fc",
+    "tests/agent_core/test_runtime_bundle.py": "87d5fbf1ca25abb426253bba555ee180721e84684baf0b5b57bf6405e040028f",
+    "tests/agent_core/test_runtime_bundle_compatibility.py": "5c72b01c80a1a6924e1ff171f9704a6f20611b085cb72aa3da2d8c6bf40d5243",
+    "tests/agent_core/test_runtime_bundle_validation.py": "3a3920f017810425bfc43369bb574c3e0885ef31259a9017cc688c44a7d68326",
+    "tests/fixtures/runtime_bundle_v1/legacy-v1.json": "7afeb54909c91ec3b8b31f3c82217dfd2831362ce848ecd84d6592da58756e99",
+    "tests/test_validate_runtime_bundle.py": "9eced2dc4e75b33f4f2c0af6ac6fd672d445002d4e1e32d2abf3c3c768b9d24d",
+    "uv.lock": "de42e5eab5a47af93b8b25077dac7439827a4516bb1b6fc658b130074fc3dd4f"
+  },
+  "boundary": "Renewed freeze before final r2 gates. Product/CLI source identical to prior review; negative tests and synthetic product-a/11portable negative fixtures strengthened. Old native execution/coverage/schema/dependencies remain baseline bytes."
+}

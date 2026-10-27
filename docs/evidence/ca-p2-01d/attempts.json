@@ -1,0 +1,20 @@
+{
+  "earlier_runs": [
+    {
+      "attempt": "r1",
+      "accepted": false,
+      "reason": "Interrupted for strict private array/version limit hardening."
+    },
+    {
+      "attempt": "r2",
+      "accepted": false,
+      "reason": "Interrupted to close cross-product legacy Release consumption."
+    },
+    {
+      "attempt": "r3",
+      "accepted": false,
+      "reason": "Static type boundary required explicit v2 snapshot narrowing; interrupted incomplete full run."
+    }
+  ],
+  "final": "Fresh make check then frozen-source full make test, both exit 0; only final logs support delivery."
+}

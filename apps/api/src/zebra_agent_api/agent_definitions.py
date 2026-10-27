@@ -21,13 +21,16 @@ from agent_core.application.agent_definitions import (
     PublisherGrantPort,
 )
 from agent_core.domain.agent_definitions import AgentDefinitionVersion
+from agent_core.domain.bundle_definition import BundleDefinitionVersion
 from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.identifiers import (
     AgentDefinitionId,
     AgentDefinitionVersionId,
 )
 from agent_core.ports.agent_registry import AgentRegistryPort
+from zebra_agent_config import ZebraAgentSettings
 
+from zebra_agent_api.bundle_assembly import resolve_bundle_assembly
 from zebra_agent_api.responses import ApiResponse, bad_request, service_unavailable
 
 if TYPE_CHECKING:
@@ -46,6 +49,7 @@ _DRAFT_FIELDS = ("name", "description", *_DRAFT_REFERENCE_FIELDS)
 
 
 class ApiAgentDefinitionsMixin:
+    settings: ZebraAgentSettings
     """Draft lifecycle surface; fail closed without a composed Registry."""
 
     agent_registry: AgentRegistryPort | None = None
@@ -168,6 +172,13 @@ class ApiAgentDefinitionsMixin:
         if isinstance(service, ApiResponse):
             return service
         try:
+            assembly = (
+                resolve_bundle_assembly(
+                    payload["runtime_bundle"], self.settings.runtime_bundle_config
+                )
+                if "runtime_bundle" in payload
+                else None
+            )
             materialized = service.materialize_version(
                 definition_id=definition,
                 namespace_id=namespace_id,
@@ -175,6 +186,7 @@ class ApiAgentDefinitionsMixin:
                 version_id=AgentDefinitionVersionId(UUID(version_id)),
                 version=version,
                 created_at=_now(),
+                runtime_assembly=assembly,
             )
             return ApiResponse(status_code=201, body=_version_body(materialized))
         except DraftNotValidatedError as error:
@@ -330,7 +342,7 @@ def _draft_response(draft: Any) -> ApiResponse:
 
 
 def _version_body(version: AgentDefinitionVersion) -> dict[str, object]:
-    return {
+    body: dict[str, object] = {
         "definition_id": str(version.definition_id),
         "version_id": str(version.version_id),
         "version": version.version,
@@ -344,6 +356,9 @@ def _version_body(version: AgentDefinitionVersion) -> dict[str, object]:
         "runtime_profile_ref": version.runtime_profile_ref,
         "definition_digest": version.definition_digest,
     }
+    if isinstance(version, BundleDefinitionVersion):
+        body["runtime_assembly"] = version.runtime_assembly.model_dump(mode="json")
+    return body
 
 
 def _now() -> datetime:

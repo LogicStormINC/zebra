@@ -1,0 +1,106 @@
+{
+  "task": "CA-P3-02O",
+  "status": "PASS",
+  "at": "2026-10-23T10:13:02.246475+00:00",
+  "base_commit": "047fad7908f247ffb0bfb86c474ef0f5a8814948",
+  "commands": [
+    {
+      "target": "test",
+      "exit": 0,
+      "seconds": 1278.9457051753998,
+      "log": "/Users/lukeding/.codex/tmp/ca-p3-02o-delivery-test.log"
+    },
+    {
+      "target": "check",
+      "exit": 0,
+      "seconds": 6.552001953125,
+      "log": "/Users/lukeding/.codex/tmp/ca-p3-02o-delivery-check.log"
+    }
+  ],
+  "test_summary": {
+    "passed": 11046,
+    "conditional_skips": 3029,
+    "pytest_seconds": 1276.76,
+    "type_files": 1403,
+    "eval_cases": 30,
+    "file_gate_checked": 3413,
+    "file_violations": 0
+  },
+  "focused": {
+    "api_passed": 13,
+    "owned_real_postgres_passed": 3,
+    "owned_real_postgres_skips": 0,
+    "atomic_approval_projection_and_continuation_rollback": true,
+    "reject_no_wakeup_or_full_history_read": true
+  },
+  "first_full_attempt": {
+    "passed": 11045,
+    "failed": 1,
+    "conditional_skips": 3028,
+    "reason": "capability exact response assertion missing new explicit zero-version field; preserve full equality and assert zero, then full rerun"
+  },
+  "source_sha256": {
+    "apps/api/src/zebra_agent_api/client_approval_operations.py": "f4902f8a42405d6c02866b3a890c1e519c81338ec7ac1c59c52c2f5625827574",
+    "packages/agent-core/src/agent_core/ports/client_approval_operations.py": "141a68b9979b4c107d7dca96ab02f6530196c798c5b5f84960f5febb7f7105ad",
+    "packages/agent-storage/src/agent_storage/postgres/client_approval_operations.py": "de4307c07cb143b9a8081391988291cbf2b171fe3b9c7373dc199a60c50da9d0",
+    "tests/agent_storage/test_client_approval_operations.py": "5cc915eb7404bcf8163b4b00eb4c926948ba536d76f61244a9142e1df4f332d2",
+    "tests/api/test_client_approval_operations.py": "db260f3f5ebd844966682b7a364f2f3bd09873ea83ec727fd5253670f064b5e3",
+    "apps/api/src/zebra_agent_api/api_status_mixin.py": "45fbddfb3982421907c49b664e58e3b00028b553126cd2007e809ba15420fbd5",
+    "apps/api/src/zebra_agent_api/routes.py": "22370b9870831d271350c7cafdbcdd9130097788b4b77f1eecbf45f760c36e86",
+    "packages/agent-storage/src/agent_storage/postgres/events.py": "7df14e5324063f8542a08c2b9ffec8806e0fd32608cf3cfc38fc937518bf5a3a",
+    "tests/api/test_runtime_capabilities.py": "f63527b6830d70459203fbe944f98378d61b0b687b02c1d1c7a8005463b3515f"
+  },
+  "preservation": {
+    "base": "047fad7908f247ffb0bfb86c474ef0f5a8814948",
+    "tracked": 4671,
+    "unchanged": 4661,
+    "changed": [
+      "PROGRESS.md",
+      "README.md",
+      "WORKLOG.md",
+      "apps/api/src/zebra_agent_api/api_status_mixin.py",
+      "apps/api/src/zebra_agent_api/routes.py",
+      "docs/AGENT_TASKS.md",
+      "docs/实施任务拆解与阶段验收.md",
+      "packages/agent-storage/src/agent_storage/postgres/events.py",
+      "task_plan.md",
+      "tests/api/test_runtime_capabilities.py"
+    ],
+    "unchanged_path_sha256": "19ce721ee8a2540d2dd8f62f6143167d1916bdb24a038b534c085b1b5d8f059d"
+  },
+  "logs": {
+    "ca-p3-02o-delivery-test.log": {
+      "local_path": "/Users/lukeding/.codex/tmp/ca-p3-02o-delivery-test.log",
+      "sha256": "468885657aae7313718da9fae02e05d77d2cd55a0860a2b555d22f1f3df5d4e8"
+    },
+    "ca-p3-02o-delivery-check.log": {
+      "local_path": "/Users/lukeding/.codex/tmp/ca-p3-02o-delivery-check.log",
+      "sha256": "b92ccc4352017c0512423ac5fd0688d5c08a1faab9285379b8f9234fdbdb4dc5"
+    },
+    "ca-p3-02o-final-test.log": {
+      "local_path": "/Users/lukeding/.codex/tmp/ca-p3-02o-final-test.log",
+      "sha256": "6cef2831a4f38b2bc6b988ed10e873a7d1de716572e4cc668c14086f76e1715b"
+    },
+    "ca-p3-02o-final-focused.log": {
+      "local_path": "/Users/lukeding/.codex/tmp/ca-p3-02o-final-focused.log",
+      "sha256": "25e2d0a02a884e30d85125afd2cf871fe5cbf66d8a09491802d00d43deb3395e"
+    },
+    "ca-p3-02o-final-pg.log": {
+      "local_path": "/Users/lukeding/.codex/tmp/ca-p3-02o-final-pg.log",
+      "sha256": "f762ccd9c813990d88f720b21cdeae1b2b08ea89f1952cd7ce630f25e8030ebd"
+    }
+  },
+  "boundaries": {
+    "storage_tests_stub_current_authority": true,
+    "actual_signed_cloud_authority": "separate L exact published-pin acceptance",
+    "new_schema_or_migration": false,
+    "legacy_approval_modified": false,
+    "historical_data_or_receipts_rewritten": false,
+    "coverage_changed": false,
+    "original_checkouts_modified": false,
+    "deployment": false,
+    "production_migration": false,
+    "main_merge": false,
+    "production_ha_claim": false
+  }
+}

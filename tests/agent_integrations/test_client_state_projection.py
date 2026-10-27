@@ -80,3 +80,31 @@ def test_digest_drift_is_not_projected() -> None:
     )
 
     assert not any(isinstance(item, StateDeltaEvent) for item in projection.events)
+
+
+def test_valid_empty_snapshot_projects_an_explicit_clear():
+    from agent_integrations.ag_ui.client_state_projection import project_client_state
+
+    session_id = new_session_id()
+    command = SessionCommand(
+        session_id=session_id,
+        kind=SessionCommandKind.RUN,
+        expected_revision=0,
+        idempotency_key="clear-client-state",
+        payload={
+            "client": {
+                "state_snapshot": {},
+                "state_digest": sha256(b"{}").hexdigest(),
+                "ui_revision": 2,
+            }
+        },
+    )
+    event = SessionEvent.create(
+        session_id=session_id,
+        sequence=0,
+        event_type=EventType.SESSION_COMMAND_ACCEPTED,
+        actor=EventActor.USER,
+        payload=command.event_payload(),
+    )
+    result = project_client_state(event, timestamp=0)
+    assert result[0].delta[0]["value"]["readables"] == {}

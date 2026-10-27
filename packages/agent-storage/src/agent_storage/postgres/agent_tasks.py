@@ -112,7 +112,7 @@ class PostgresAgentTaskStore(
             return len(rows)
 
     def get_task(self, task_id: TaskId) -> AgentTask | None:
-        with self._database.connect_task_io() as connection:
+        with self._database.connect_task_io(join_work_unit=True) as connection:
             return get_task_in_transaction(
                 connection,
                 self._database.deployment_namespace,

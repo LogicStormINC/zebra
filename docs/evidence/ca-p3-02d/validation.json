@@ -1,0 +1,123 @@
+{
+  "task": "CA-P3-02D",
+  "status": "PASS",
+  "date": "2026-10-22",
+  "branch": "codex/ca-p3-02d-surface-metadata",
+  "baseCommit": "a1635a9c0f54a7ab117eb65b9f4a6735a1669ef9",
+  "contract": "client-surface-metadata/1",
+  "checks": {
+    "redRegression": {
+      "failed": 4,
+      "expectedFailure": true,
+      "logSha256": "0d8cc94a8c3db1401d3fe55a6d37278cc1d7b117aa00bd687d7c217066234fe1",
+      "scope": "Old native API lacks canonical metadata, stale same-action mount binding and mixed-success guard; four more boundary tests added afterwards."
+    },
+    "apiAndLegacyFocused": {
+      "passed": 56,
+      "skipped": 1,
+      "logSha256": "c1ac45cd8a765041eb91fc0ca27aa8e4c403a9840f3324bbdaa7d37bdce94d57",
+      "scope": "HTTP dispatcher, not independent socket/BFF; legacy split/combined/open, domain and eight new metadata/race checks. Latest code including bounded lock and updated strict runtime-capability expectation."
+    },
+    "ownedPostgres": {
+      "exitCode": 0,
+      "passed": 62,
+      "skipped": 0,
+      "logSha256": "8a26d9f61d194f79314be76fc171ddacc313f27fd62cde640b105f20333841d7",
+      "ownedContainerCleaned": true,
+      "scope": "Real disposable PostgreSQL17, native HTTP dispatcher with existing setup fixtures and independent actual storage adapters; remount/restart/concurrent narrowing/stale binding/rollback/100ms and 1s lock limits plus existing Session/Controller/Effect atomic receipt/current Task authorization. Not independent native server/BFF/Worker/browser E2E."
+    },
+    "makeTest": {
+      "exitCode": 0,
+      "passed": 10914,
+      "skipped": 3020,
+      "seconds": 1135.58,
+      "logSha256": "7982a670df337725d2f7c101d699491b466b0ac86f5b09ee1eb380d1ee15cecd",
+      "skipBoundary": "Inherited environment/dependency conditions plus six new PostgreSQL cases; all six separately exercised with zero skips in ownedPostgres."
+    },
+    "makeCheck": {
+      "exitCode": 0,
+      "mypyFiles": 1388,
+      "evalCases": 30,
+      "fileSizeInputs": 3368,
+      "logSha256": "35c308c17d7b27144430ddafaca1ffd8662ad6318549b3a5536242b64deba96a"
+    },
+    "sourceFreeze": {
+      "files": 3669,
+      "changed": [],
+      "manifestSha256": "5d0e0104207ad9b05244e17b28149c2511f80715a7612cbf23ddbc785c0b41c1",
+      "selection": "Tracked/new Python/TypeScript/JS and JSON/TOML/YAML/lock/Makefile sources before final full suite; generated evals/reports excluded."
+    },
+    "legacyPreservation": {
+      "files": 414,
+      "coverageFiles": 280,
+      "sdkFiles": 83,
+      "oldContractFiles": 51,
+      "changed": [],
+      "manifestSha256": "20e1a5ae82f7d836aab7baf1ea0315ddc4cd0b16e085236cd54dbd8696e0cf36",
+      "scope": "Byte-identical old SDK, old public contracts and280Coverage source/test files against published base; no fresh SDK browser recertification claimed."
+    },
+    "priorAttempts": {
+      "priorWholeSuite": {
+        "failed": 1,
+        "passed": 10913,
+        "skipped": 3020,
+        "seconds": 1123.48,
+        "logSha256": "83eb7f7d8ba73274123c879660d1b2494149c27b5b20102e2fa58ce3ac6e17be",
+        "reason": "Existing strict runtime-capabilities equality expectation omitted new additive metadata field; updated that one expectation, production code unchanged, final whole suite rerun."
+      },
+      "firstOwnedPostgres": {
+        "passed": 48,
+        "failed": 4,
+        "logSha256": "98ef4a2083f5f23e3e1ae5d71b1243b53d48d0fba4799c78d918c4c0294920f0",
+        "reason": "New active Session check initially rejected existing low-level registry-only historical bindings; compatibility restored without allowing public unauthenticated admission."
+      },
+      "earlierOwnedPostgres": {
+        "passed": 60,
+        "skipped": 0,
+        "logSha256": "99fc7b02f441f852d5cf455b3e81c57f0d1d7eb7d7f6fdd34d0855235064c8d0",
+        "scope": "Before adding bounded/shorter-operator lock tests; final62 supersedes it."
+      },
+      "interruptedWholeSuites": [
+        {
+          "logSha256": "3b771d7a83279088adaa5c1169615e55ad521365c9a689f9347d90cb3e89e511",
+          "status": "INTERRUPTED, not a passing gate"
+        },
+        {
+          "logSha256": "d6887b32a2c59df2c873dc98a6cbc093d8871668837fc92b58b2015018f3037b",
+          "status": "INTERRUPTED, not a passing gate"
+        }
+      ],
+      "reason": "Explicitly interrupted owned pytest for added mount-before-bind race, then newly identified split-route lock wait bound; not successful whole-suite proof. Initial Ruff/mypy import/type errors fixed before passing gates."
+    }
+  },
+  "sourceSha256": {
+    "apps/api/src/zebra_agent_api/api_status_mixin.py": "5c1918b18f6ee3aab4a5bad4caaa64af190d8871f8d9f611c6ab898c3cf73725",
+    "apps/api/src/zebra_agent_api/client_sessions.py": "8de4ee41ef2d5442ed1eab1e4c4c20328848205e1694694c98fe6a7e50c82414",
+    "apps/api/src/zebra_agent_api/client_surface.py": "e884cf757e46574373f9ae984bdfdcdb211812e50fb9e1ea9fb454494de86277",
+    "packages/agent-control-plane/src/agent_control_plane/client_admission.py": "b04aec0877f33fd30d92f56f8c37ca10ec0cde52bde0c950a99d240851e0120d",
+    "packages/agent-core/src/agent_core/domain/client_capabilities.py": "88c035b8c9bcad9081e181405634b9ca2bdd35822580400f105d18e868ec2681",
+    "packages/agent-core/src/agent_core/domain/client_run_bindings.py": "65c912d358af617dc46af3940d794cc28e3078d82bc88d194feff70efd36e906",
+    "packages/agent-core/src/agent_core/ports/client_session_registry.py": "f9f6b5f12f7c02f3ad8a4aebdc33343c75996ab46820532253d5d4c44632d366",
+    "packages/agent-storage/src/agent_storage/postgres/client_sessions.py": "760ffa22f9a6f88e7730b80c97acfd2f51c9b5b3ebc39d6703ab0fd265333dec",
+    "tests/agent_storage/test_client_surface_sync_postgres.py": "d5706d78b212e5d62e427c2a373513d1c37bc9cbaa8b360c1fc10131ac91dbfd",
+    "tests/api/test_client_surface_metadata.py": "4f60e67d141516f7c01f257b04bda38ff509d065ec8a8d1025e0e29124490de7",
+    "tests/api/test_runtime_capabilities.py": "52a4031187832886cdb21a9c6cb1483dcdb03bc787158cf127637e3c51ac8f21",
+    "docs/contracts/client-surface-metadata/contract.json": "a1a1976e2557363dc906a4e65152e5c1c204989577f6a8244bcdc6d0ec17fdfa"
+  },
+  "boundaries": {
+    "frontendMock": "unchanged in independent Overdoze repository",
+    "migration": null,
+    "historicalDataRewrite": false,
+    "activeBindingUpdate": "Only explicit rebind updates existing current row; no new all-revision history storage",
+    "nativeAuthority": "Existing current subject/Task/Run/Controller/Effect/atomic receipt retained",
+    "sdkConsumesRemountMetadata": false,
+    "realProductBffRuntimeWorkerBrowserE2E": false,
+    "readableValuesUploaded": false,
+    "npmPublication": false,
+    "productionHaVerified": false,
+    "deployment": false,
+    "productionMigration": false,
+    "mainlineIntegration": false,
+    "responseGuarantee": "Current observed facts. Mount/binding/lease separate commits; unknown response may have committed; no automatic credential replay/cross-request linearizability or immediate revocation claim."
+  }
+}

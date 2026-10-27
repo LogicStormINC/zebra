@@ -72,20 +72,23 @@ class ClientRunBinding(BaseModel):
         *,
         mounted_actions: tuple[str, ...],
         revision_reason: str,
+        mounted_snapshot_digest: str | None = None,
     ) -> ClientRunBinding:
         """Produce the next revision; capabilities may only shrink."""
 
         remaining = tuple(
-            action
-            for action in self.allowed_actions
-            if action in set(mounted_actions)
+            action for action in self.allowed_actions if action in set(mounted_actions)
         )
         if set(remaining) - set(self.allowed_actions):
             raise ClientBindingNarrowingError("narrowing cannot add capabilities")
         return self.model_copy(
             update={
                 "allowed_actions": remaining,
-                "mounted_snapshot_digest": self.mounted_snapshot_digest,
+                "mounted_snapshot_digest": (
+                    self.mounted_snapshot_digest
+                    if mounted_snapshot_digest is None
+                    else mounted_snapshot_digest
+                ),
                 "binding_revision": self.binding_revision + 1,
             }
         )

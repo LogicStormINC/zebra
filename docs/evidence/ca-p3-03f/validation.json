@@ -1,0 +1,32 @@
+{
+  "task": "CA-P3-03F",
+  "status": "PASS_WITH_EXPLICIT_BOUNDARIES",
+  "baseCommit": "247ac35117a4faae4b250dab39765cdf68035bf7",
+  "makeTest": "11138 passed, 3067 skipped in 1221.05s (0:20:21)",
+  "makeCheck": "PASS: boundary/file sizes/ruff/mypy/30eval/progress guards",
+  "SDKCheck": "PASS",
+  "SDKTests": 173,
+  "newSDKCases": 8,
+  "candidateActualSDKGoFacadeOIDCWorker": "PASS; final published-source consumer separately OD-P3-01AD",
+  "SDKExport": "createBFFSurface",
+  "locatorStageBeforeSinglePOST": true,
+  "surfaceOriginalGETAndInstallUnknownReadOnlyGET": true,
+  "explicitInstallAndGETOnlyCurrentMapping": true,
+  "noBrowserCredentialOrBodyStorage": true,
+  "PythonNativeStorageWorkerChanged": false,
+  "PythonSourcesUnchangedSinceFullPytest": true,
+  "CASInputAndResultUpperBoundsSeparated": true,
+  "originalMessageNoncommitProof": false,
+  "wholePageDocumentMigrationProved": false,
+  "productionHAProved": false,
+  "deploy": false,
+  "productionMigration": false,
+  "mainMerge": false,
+  "npmPublish": false,
+  "logsSha256": {
+    "test": "db39d25258b5e7613c3c0415a28f9c6de50a9379d92c61ec831e02f9733afc27",
+    "check": "6e98beceb955eb9a959a881d99871389a87acf12a664ecb4d28e2a9f424ccbfd",
+    "sdk-check": "d32473b233da9c1edf74afa309b201d9d97fbe37688e8ab6c6f703467fd941bc",
+    "sdk-test": "da14176ef336165a872f4da0e87336b133b0ada5c47c96f141044ce8a05b2d0b"
+  }
+}

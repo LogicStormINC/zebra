@@ -1,0 +1,33 @@
+{
+  "task": "CA-P3-03B",
+  "status": "PASS_WITH_EXPLICIT_BOUNDARIES",
+  "baseCommit": "119fbf4f27177acd368a368386704942c75a6828",
+  "makeTest": "11109 passed, 3054 skipped in 1223.62s (0:20:23)",
+  "makeCheck": "PASS: runtime boundary/file limits/ruff/mypy/30eval/progress guards",
+  "focusedAPIWithOldTaskFlow": 19,
+  "realPostgresIncludingExistingRegressions": 7,
+  "newPublicGETRedFailures": 7,
+  "existingAuthChecksAtRed": 4,
+  "SDKCheck": "PASS",
+  "SDKTests": 158,
+  "candidateChromiumWebKitLossOriginalGETOnlyUnicodeDigest": "PASS; fixed published-source consumer acceptance separate OD-P3-01AA",
+  "postKeyActionSchemaCoverageOriginalDataUnchanged": true,
+  "missingIsNoncommitProof": false,
+  "GETWritesOrMaintenance": false,
+  "receiptReadBudgetSeconds": 2,
+  "SQLiteAdapterStartupSeparatedFromRequestReadSnapshot": true,
+  "productionBFFDurabilityImplemented": false,
+  "deployment": false,
+  "productionMigration": false,
+  "mainMerge": false,
+  "logsSha256": {
+    "red": "14b2dfb04746593b3a83e606572081d7d96832b746f4fd82839808896e0b7279",
+    "focused": "92758a7c9a1041a99643977a9dcd789bf2bdf207e87db9b6e2ecaa4edd74b562",
+    "pg": "b41596d802fff447aa4aedb23b50e70329bcb462565818a4f2b290002739d31b",
+    "test": "17b4622936e59e01f9815895081503145c90eca7743601863e58f6e5a567628c",
+    "check": "0a4148f3affc794dd441e2299133ba2b8b66aa4c31b7f32f73a46e0a819e352f",
+    "sdk-check": "895f836a9aa74ee5e99e06f23493979edd3715b7a1a9aad9791aba23bcc56f18",
+    "sdk-test": "f9ab18c77180ae5c6d6dc1db962adde377609ef759f34f44f95fc8009ddb9205"
+  },
+  "interruptedRunIsNotGateEvidence": true
+}

@@ -96,6 +96,7 @@ def _entry(tmp_path, monkeypatch, *, admitted=True):
         policy_profile="read_only",
         network_profile=parse_network_profile("none"),
         model_invocation_policy=None,
+        definition_snapshot=None,
         coverage_admission=None,
         interaction_mode=Mock(),
     )

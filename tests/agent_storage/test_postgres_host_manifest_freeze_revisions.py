@@ -87,14 +87,15 @@ def test_legacy_rows_remain_unchanged_and_require_unambiguous_host(postgres_dsn)
         ).fetchall()
     with pytest.raises(ValueError, match="ownership is ambiguous"):
         load(postgres_dsn, namespace)
-    publish(postgres_dsn, namespace, "catalog")
-    assert load(postgres_dsn, namespace) == value
-    store(postgres_dsn, namespace, value)
+    with pytest.raises(ValueError, match="ownership is ambiguous"):
+        publish(postgres_dsn, namespace, "catalog")
+    with pytest.raises(ValueError, match="ownership is ambiguous"):
+        load(postgres_dsn, namespace)
     assert load_frozen_manifest_by_digest(
         postgres_dsn, deployment_namespace=namespace, manifest_digest=value["manifestDigest"],
     ) == value
-    publish(postgres_dsn, namespace, "archive")
-    assert load(postgres_dsn, namespace, host="catalog") == value
+    with pytest.raises(ValueError, match="ownership is ambiguous"):
+        publish(postgres_dsn, namespace, "archive")
     with pytest.raises(ValueError, match="ownership is ambiguous"):
         load(postgres_dsn, namespace, host="archive")
     with database.connect() as connection:

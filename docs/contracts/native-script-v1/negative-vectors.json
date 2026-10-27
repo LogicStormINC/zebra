@@ -1,0 +1,88 @@
+[
+  {
+    "name": "effects-forbidden",
+    "manifestPatch": {
+      "effects": "write-with-receipt"
+    }
+  },
+  {
+    "name": "dependency-forbidden",
+    "manifestPatch": {
+      "dependencies": "pip"
+    }
+  },
+  {
+    "name": "future-abi",
+    "manifestPatch": {
+      "abi": "cloud-agent.native-script/2"
+    }
+  },
+  {
+    "name": "unknown-permissions",
+    "manifestPatch": {
+      "permissions": [
+        "network"
+      ]
+    }
+  },
+  {
+    "name": "bool-is-not-timeout",
+    "manifestPatch": {
+      "timeout_seconds": true
+    }
+  },
+  {
+    "name": "timeout-limit",
+    "manifestPatch": {
+      "timeout_seconds": 31
+    }
+  },
+  {
+    "name": "float-timeout",
+    "manifestPatch": {
+      "timeout_seconds": 2.0
+    }
+  },
+  {
+    "name": "source-digest",
+    "manifestPatch": {
+      "source_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  },
+  {
+    "name": "duplicate-fields",
+    "manifestPatch": {
+      "input": {
+        "fields": [
+          {
+            "name": "x",
+            "type": "string"
+          },
+          {
+            "name": "x",
+            "type": "string"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "nested-schema",
+    "manifestPatch": {
+      "input": {
+        "fields": [
+          {
+            "name": "x",
+            "type": "object"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "verifier-type",
+    "manifestPatch": {
+      "kind": "verifier"
+    }
+  }
+]

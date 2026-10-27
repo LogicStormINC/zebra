@@ -6,6 +6,7 @@ from typing import Any
 from uuid import uuid4
 
 from agent_core.application import SessionTitleService
+from agent_core.domain.bundle_definition import BundleDefinitionSnapshot
 from agent_core.domain.events import EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.leases import LeaseConflictError
@@ -145,6 +146,9 @@ class CloudMemoryFinalizationRecovery:
         workspace_store: WorkspaceProjectionStorePort,
         title_service_factory: Callable[[], SessionTitleService],
         replay_reader: PostgresWorkerReplayReader | None = None,
+        bound_title_service_factory: Callable[
+            [BundleDefinitionSnapshot], SessionTitleService | None
+        ] | None = None,
     ) -> None:
         self._claim_service = claim_service
         self._recorder_factory = recorder_factory
@@ -156,6 +160,7 @@ class CloudMemoryFinalizationRecovery:
         self._projection_store = projection_store
         self._workspace_store = workspace_store
         self._title_service_factory = title_service_factory
+        self._bound_title_service_factory = bound_title_service_factory
         self._replay_reader = replay_reader
 
     def recover(
@@ -220,6 +225,14 @@ class CloudMemoryFinalizationRecovery:
             )
             if any(event.event_type is EventType.SESSION_TITLE_UPDATED for event in events):
                 return True
+            title_service = None
+            snapshot = recorder.workspace.definition_snapshot
+            if isinstance(snapshot, BundleDefinitionSnapshot):
+                if self._bound_title_service_factory is None:
+                    return True
+                title_service = self._bound_title_service_factory(snapshot)
+                if title_service is None:
+                    return True
             now = recovered_at
             if self._idempotency_store is not None:
                 if not _reserve_title_attempt(self._idempotency_store, session_id, now):
@@ -229,7 +242,7 @@ class CloudMemoryFinalizationRecovery:
             ) is not None and now - last_attempt < TITLE_RETRY_COOLDOWN:
                 return True
             self._title_attempts[session_id] = now
-            title_event = self._title_service_factory().generate(
+            title_event = (title_service or self._title_service_factory()).generate(
                 session=recorder.session,
                 events=events,
                 next_sequence=recorder.next_sequence,

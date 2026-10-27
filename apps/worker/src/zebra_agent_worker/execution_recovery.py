@@ -9,6 +9,7 @@ from datetime import datetime
 from typing import Any, Literal, Never
 
 from agent_context.capsule import execution_evidence_context
+from agent_core.domain.bundle_definition import BundleDefinitionSnapshot
 from agent_core.domain.coverage_contracts import CoverageRefusalReason, CoverageRefusedError
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId
@@ -236,9 +237,17 @@ def recover_execution_inputs(
                         execution_evidence_context(evidence),
                     ),
                 )
-        if task.coverage_admission is not None and not strict_dispatch_configured:
+        if (
+            task.coverage_admission is not None
+            and not strict_dispatch_configured
+            and not isinstance(task.definition_snapshot, BundleDefinitionSnapshot)
+        ):
             raise CoverageRefusedError(CoverageRefusalReason.UNSUPPORTED)
-        if workspace_resolver is not None and task.coverage_admission is None:
+        if (
+            workspace_resolver is not None
+            and task.coverage_admission is None
+            and not isinstance(task.definition_snapshot, BundleDefinitionSnapshot)
+        ):
             task = apply_workspace_resolver(task, workspace_resolver, session_id)
     except CoverageRefusedError as exc:
         raise WorkerExecutionError(

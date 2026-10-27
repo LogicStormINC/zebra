@@ -1,0 +1,790 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Native script validation",
+    "version": "1.0.0",
+    "description": "Pure ABI/digest/syntax checks. Does not execute, persist, approve or publish code."
+  },
+  "security": [
+    {
+      "scriptValidationBearer": []
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "scriptValidationBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "rtsv_<43 base64url characters>"
+      }
+    }
+  },
+  "paths": {
+    "/management/v1/script-contract": {
+      "get": {
+        "parameters": [
+          {
+            "name": "X-Runtime-Deployment",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Runtime-Audience",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Runtime-Product",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Runtime-Environment",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Runtime-Trust-Revision",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Contract identity, complete schema and current scoped observation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "contractVersion",
+                    "contractDigest",
+                    "scope",
+                    "trustRevision",
+                    "observedAt",
+                    "contract"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Fixed sanitized error, Cache-Control: no-store",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "code"
+                      ],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "UNAUTHENTICATED",
+                            "SCOPE_MISMATCH",
+                            "PERMISSION_DENIED",
+                            "INVALID_ARGUMENT",
+                            "METHOD_NOT_ALLOWED",
+                            "RATE_LIMITED",
+                            "CONTRACT_MISMATCH",
+                            "SCRIPT_REJECTED",
+                            "MANAGEMENT_UNAVAILABLE"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Fixed sanitized error, Cache-Control: no-store",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "code"
+                      ],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "UNAUTHENTICATED",
+                            "SCOPE_MISMATCH",
+                            "PERMISSION_DENIED",
+                            "INVALID_ARGUMENT",
+                            "METHOD_NOT_ALLOWED",
+                            "RATE_LIMITED",
+                            "CONTRACT_MISMATCH",
+                            "SCRIPT_REJECTED",
+                            "MANAGEMENT_UNAVAILABLE"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Fixed sanitized error, Cache-Control: no-store",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "code"
+                      ],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "UNAUTHENTICATED",
+                            "SCOPE_MISMATCH",
+                            "PERMISSION_DENIED",
+                            "INVALID_ARGUMENT",
+                            "METHOD_NOT_ALLOWED",
+                            "RATE_LIMITED",
+                            "CONTRACT_MISMATCH",
+                            "SCRIPT_REJECTED",
+                            "MANAGEMENT_UNAVAILABLE"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Fixed sanitized error, Cache-Control: no-store",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "code"
+                      ],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "UNAUTHENTICATED",
+                            "SCOPE_MISMATCH",
+                            "PERMISSION_DENIED",
+                            "INVALID_ARGUMENT",
+                            "METHOD_NOT_ALLOWED",
+                            "RATE_LIMITED",
+                            "CONTRACT_MISMATCH",
+                            "SCRIPT_REJECTED",
+                            "MANAGEMENT_UNAVAILABLE"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Fixed sanitized error, Cache-Control: no-store",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "code"
+                      ],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "UNAUTHENTICATED",
+                            "SCOPE_MISMATCH",
+                            "PERMISSION_DENIED",
+                            "INVALID_ARGUMENT",
+                            "METHOD_NOT_ALLOWED",
+                            "RATE_LIMITED",
+                            "CONTRACT_MISMATCH",
+                            "SCRIPT_REJECTED",
+                            "MANAGEMENT_UNAVAILABLE"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Fixed sanitized error, Cache-Control: no-store",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "code"
+                      ],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "UNAUTHENTICATED",
+                            "SCOPE_MISMATCH",
+                            "PERMISSION_DENIED",
+                            "INVALID_ARGUMENT",
+                            "METHOD_NOT_ALLOWED",
+                            "RATE_LIMITED",
+                            "CONTRACT_MISMATCH",
+                            "SCRIPT_REJECTED",
+                            "MANAGEMENT_UNAVAILABLE"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Fixed sanitized error, Cache-Control: no-store",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "code"
+                      ],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "UNAUTHENTICATED",
+                            "SCOPE_MISMATCH",
+                            "PERMISSION_DENIED",
+                            "INVALID_ARGUMENT",
+                            "METHOD_NOT_ALLOWED",
+                            "RATE_LIMITED",
+                            "CONTRACT_MISMATCH",
+                            "SCRIPT_REJECTED",
+                            "MANAGEMENT_UNAVAILABLE"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Fixed sanitized error, Cache-Control: no-store",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "code"
+                      ],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "UNAUTHENTICATED",
+                            "SCOPE_MISMATCH",
+                            "PERMISSION_DENIED",
+                            "INVALID_ARGUMENT",
+                            "METHOD_NOT_ALLOWED",
+                            "RATE_LIMITED",
+                            "CONTRACT_MISMATCH",
+                            "SCRIPT_REJECTED",
+                            "MANAGEMENT_UNAVAILABLE"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/management/v1/script-validation": {
+      "post": {
+        "parameters": [
+          {
+            "name": "X-Runtime-Deployment",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Runtime-Audience",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Runtime-Product",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Runtime-Environment",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Runtime-Trust-Revision",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Runtime-Script-Contract",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "const": "sha256:196d10c6046096faf3888ff5ade1488f779664daf8bb44f6b0e0cc583f38b6c2"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./request.schema.json"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Native checks under current authority; not durable build/execution evidence",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./response.schema.json"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Fixed sanitized error, Cache-Control: no-store",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "code"
+                      ],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "UNAUTHENTICATED",
+                            "SCOPE_MISMATCH",
+                            "PERMISSION_DENIED",
+                            "INVALID_ARGUMENT",
+                            "METHOD_NOT_ALLOWED",
+                            "RATE_LIMITED",
+                            "CONTRACT_MISMATCH",
+                            "SCRIPT_REJECTED",
+                            "MANAGEMENT_UNAVAILABLE"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Fixed sanitized error, Cache-Control: no-store",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "code"
+                      ],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "UNAUTHENTICATED",
+                            "SCOPE_MISMATCH",
+                            "PERMISSION_DENIED",
+                            "INVALID_ARGUMENT",
+                            "METHOD_NOT_ALLOWED",
+                            "RATE_LIMITED",
+                            "CONTRACT_MISMATCH",
+                            "SCRIPT_REJECTED",
+                            "MANAGEMENT_UNAVAILABLE"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Fixed sanitized error, Cache-Control: no-store",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "code"
+                      ],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "UNAUTHENTICATED",
+                            "SCOPE_MISMATCH",
+                            "PERMISSION_DENIED",
+                            "INVALID_ARGUMENT",
+                            "METHOD_NOT_ALLOWED",
+                            "RATE_LIMITED",
+                            "CONTRACT_MISMATCH",
+                            "SCRIPT_REJECTED",
+                            "MANAGEMENT_UNAVAILABLE"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Fixed sanitized error, Cache-Control: no-store",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "code"
+                      ],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "UNAUTHENTICATED",
+                            "SCOPE_MISMATCH",
+                            "PERMISSION_DENIED",
+                            "INVALID_ARGUMENT",
+                            "METHOD_NOT_ALLOWED",
+                            "RATE_LIMITED",
+                            "CONTRACT_MISMATCH",
+                            "SCRIPT_REJECTED",
+                            "MANAGEMENT_UNAVAILABLE"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Fixed sanitized error, Cache-Control: no-store",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "code"
+                      ],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "UNAUTHENTICATED",
+                            "SCOPE_MISMATCH",
+                            "PERMISSION_DENIED",
+                            "INVALID_ARGUMENT",
+                            "METHOD_NOT_ALLOWED",
+                            "RATE_LIMITED",
+                            "CONTRACT_MISMATCH",
+                            "SCRIPT_REJECTED",
+                            "MANAGEMENT_UNAVAILABLE"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Fixed sanitized error, Cache-Control: no-store",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "code"
+                      ],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "UNAUTHENTICATED",
+                            "SCOPE_MISMATCH",
+                            "PERMISSION_DENIED",
+                            "INVALID_ARGUMENT",
+                            "METHOD_NOT_ALLOWED",
+                            "RATE_LIMITED",
+                            "CONTRACT_MISMATCH",
+                            "SCRIPT_REJECTED",
+                            "MANAGEMENT_UNAVAILABLE"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Fixed sanitized error, Cache-Control: no-store",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "code"
+                      ],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "UNAUTHENTICATED",
+                            "SCOPE_MISMATCH",
+                            "PERMISSION_DENIED",
+                            "INVALID_ARGUMENT",
+                            "METHOD_NOT_ALLOWED",
+                            "RATE_LIMITED",
+                            "CONTRACT_MISMATCH",
+                            "SCRIPT_REJECTED",
+                            "MANAGEMENT_UNAVAILABLE"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Fixed sanitized error, Cache-Control: no-store",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "code"
+                      ],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "UNAUTHENTICATED",
+                            "SCOPE_MISMATCH",
+                            "PERMISSION_DENIED",
+                            "INVALID_ARGUMENT",
+                            "METHOD_NOT_ALLOWED",
+                            "RATE_LIMITED",
+                            "CONTRACT_MISMATCH",
+                            "SCRIPT_REJECTED",
+                            "MANAGEMENT_UNAVAILABLE"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "task": "CA-P3-02M",
+  "base": "760fcfb97f48fb6f18e8ba9c3dd3995c8530b02d",
+  "status": "Review",
+  "nativeMakeTest": {
+    "exit": 0,
+    "passed": 10971,
+    "skipped": 3022,
+    "seconds": 1169.8
+  },
+  "nativeMakeCheck": {
+    "exit": 0,
+    "mypyFiles": 1393,
+    "evalCases": 30
+  },
+  "jointReport": "business-cloud.json",
+  "unchangedBaselineFiles": 4624,
+  "nativeProductionPythonAndSchemaChanged": false,
+  "sdkChanged": false,
+  "historyAndCoveragePreserved": true,
+  "frontendMockConnected": false,
+  "realProductAcceptance": "NOT_RUN_MISSING_REAL_PRODUCT_PARAMETERS",
+  "productionHA": false,
+  "deployment": false,
+  "productionMigration": false,
+  "npmPublication": false,
+  "mainIntegration": false,
+  "logs": {
+    "native-test.log": "51aa6f19efe6c8d596ecc56fe3091f1a05d20a39c7dbea3ccc3481d9b9578799",
+    "native-check.log": "8e1c7ded834ab281a73a3ece05c3f0f51e333f4854f482c0391e57ee45cb89d6"
+  }
+}

@@ -192,6 +192,8 @@ class ZebraAgentApi(
             self.publisher_grants,
             parsed,
             host_context=host_context,
+            settings=self.settings,
+            verified_host_grant=verified_host_grant,
         )
         if isinstance(definition_snapshot, ApiResponse):
             return definition_snapshot
@@ -314,7 +316,13 @@ class ZebraAgentApi(
             },
         )
 
-    def append_session_message(self, session_id: str, payload: dict[str, object]) -> ApiResponse:
+    def append_session_message(
+        self,
+        session_id: str,
+        payload: dict[str, object],
+        *,
+        include_message_coordinates: bool = False,
+    ) -> ApiResponse:
         parsed = parse_append_session_message_payload(payload)
         if isinstance(parsed, ApiResponse):
             return parsed
@@ -381,6 +389,12 @@ class ZebraAgentApi(
             "status": updated_session.status.value,
             "current_sequence": updated_session.current_sequence,
         }
+        if include_message_coordinates:
+            body["message_coordinates"] = {
+                "event_id": str(event.event_id),
+                "segment_id": str(event.session_id),
+                "segment_sequence": event.sequence,
+            }
         if attachment_refs:
             body["attachments"] = [ref.to_mapping() for ref in attachment_refs]
         return ApiResponse(

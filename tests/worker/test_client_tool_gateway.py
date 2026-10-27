@@ -166,3 +166,38 @@ def test_user_interaction_action_requires_policy_approval() -> None:
     worker_gateway = WorkerToolGateway(local=object(), client=gateway)  # type: ignore[arg-type]
     assert worker_gateway.authorized_write_tools == frozenset()
     assert worker_gateway.approval_required_tools == frozenset({interaction.name})
+
+
+@pytest.mark.parametrize("description", ["", "   ", "Explicit published description"])
+@pytest.mark.parametrize(
+    "parameters",
+    [
+        {},
+        {"type": "object"},
+        {"type": "object", "additionalProperties": False},
+        {
+            "type": "object",
+            "properties": {"itemId": {"type": "string"}},
+            "required": ["itemId"],
+            "additionalProperties": False,
+        },
+    ],
+)
+def test_optional_published_metadata_adapts_without_changing_contract(description, parameters):
+    gateway, _ = _gateway()
+    name = "app.ui.item.open"
+    contract = ClientActionContract(
+        name=name,
+        description=description,
+        parameters=parameters,
+        risk=ClientActionRisk.USER_INTERACTION,
+    )
+    gateway.context.action_contracts[name] = contract
+    before = contract.model_dump_json()
+    tool = gateway.model_tools[0]
+    assert tool.description == (description if description.strip() else name)
+    assert tool.parameters == {"type": "object", "properties": {}, **parameters}
+    assert tool.origin is ModelToolOrigin.CLIENT and tool.source_id == name
+    assert contract.model_dump_json() == before
+    assert gateway.approval_required_tools == frozenset({name})
+    assert gateway.authorized_policy_tools == frozenset()
