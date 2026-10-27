@@ -1,3 +1,13 @@
+# CA-CLOUD-INTEGRATION-20261027 — Integrate published P3 with cloud operations
+
+- Status: In Progress; created Ready and claimed before integration, 2026-10-27.
+- Human owner: Luke Ding; executor: Codex. User requested branch integration and continuation.
+- Branch: codex/ca-cloud-integration-20261027; isolated worktree from cloud-agent 7ff78d0b.
+- Dependencies: published P3 017e04e6; six local cloud operations commits after origin/cloud-agent 703c3c03.
+- Owned paths: merge all paths from those two histories; resolve docs/{AGENT_TASKS.md}, PROGRESS.md, WORKLOG.md; docs/evidence/cloud-integration-20261027/; task_plan.md. Any implementation repair must be recorded before editing.
+- Boundary: retain both histories and operational fixes; preserve all dirty/untracked worktrees, data, original receipts, Coverage and unknown behavior. Native delivery target remains cloud-agent; do not update historical main or deploy/migrate production. Remove only proven merged P1/P2/P3 branches after gates; preserve worktree directories and independent operations lanes.
+- Acceptance: inspect merged Worker recovery and workspace error handling; workspace I/O self-check, focused recovery/freshness regressions, full make test/check, source ancestry and retained-file hashes; publish cloud-agent after all gates.
+
 # AGENT_TASKS.md
 
 ### CLOUD-EVAL-BASELINE-01 - Restore deterministic baseline verification trace
