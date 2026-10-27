@@ -33,6 +33,7 @@ def _client(
     values["bindings"][0]["connection"]["scope"] = scope
     record = type(record).model_validate(values)
     service = AsyncMock()
+    service.distribution = None  # Match the real optional unconfigured authority port.
     service.readiness.return_value = "ready"
     service.install.return_value = (record, True)
     service.store.get.return_value = record

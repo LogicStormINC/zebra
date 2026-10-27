@@ -95,6 +95,10 @@ class PluginPackagePublisher(Protocol):
         ...
 
 
+class PluginDistributionReader(Protocol):
+    async def resolve(self, *, scope: ExtensionScope, package_digest: str) -> str | None: ...
+
+
 class PluginComponentInstaller(Protocol):
     async def prepare(
         self,

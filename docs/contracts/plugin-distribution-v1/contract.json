@@ -1,0 +1,33 @@
+{
+  "approval": "cloud-agent.plugin-admission-approval/1",
+  "automaticRetry": false,
+  "bodyBytes": 8192,
+  "contractDigest": "sha256:ae9fc07e71d6b6ed57f6ded4b6403092c5d200bb36204ecbdb9046df13deacc8",
+  "contractVersion": "plugin-distribution/1",
+  "credential": "rtpa_",
+  "fields": [
+    "action",
+    "scope",
+    "recipient",
+    "package_digest",
+    "publication_operation",
+    "operation_id",
+    "expected_revision"
+  ],
+  "generation": "regrant never revives prior installation generation",
+  "get": "original operation header only; originalResult and separate currentDistribution",
+  "header": "x-runtime-plugin-distribution-contract",
+  "legacy": "unmanaged unchanged; registered digest never falls back",
+  "path": "/management/v1/plugin-distribution",
+  "publication": "exact current product publisher original plugin-admission/1 pin",
+  "readAction": "plugin.read",
+  "recipient": [
+    "authority_issuer",
+    "namespace_id",
+    "principal_id",
+    "workspace_id"
+  ],
+  "revocation": "install/enable/Turn/Worker current checks; no undo of committed effects",
+  "slots": 8,
+  "writeAction": "plugin.publish"
+}

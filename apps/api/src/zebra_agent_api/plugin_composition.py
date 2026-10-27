@@ -10,6 +10,7 @@ from agent_integrations.plugins.publication import PluginPackagePublicationServi
 from agent_security.mcp_credential_protection import mounted_mcp_protector
 from agent_storage import CloudCompositionSettings
 from agent_storage.postgres.mcp_catalog import PostgresMcpCatalogStore
+from agent_storage.postgres.plugin_distribution import PluginDistributionStore
 from agent_storage.postgres.plugin_installations import PostgresPluginInstallationStore
 from agent_storage.postgres.skill_publications import PostgresSkillPublicationStore
 from agent_storage.postgres.task_io import TaskIoConnections
@@ -48,9 +49,7 @@ def compose_plugins(
     mcp_available = settings.mcp_credentials.worker_enabled
     if mcp_available:
         config_mcp = settings.mcp_credentials
-        mounted_mcp_protector(
-            config_mcp.secret_root, config_mcp.key_handle, config_mcp.key_version
-        )
+        mounted_mcp_protector(config_mcp.secret_root, config_mcp.key_handle, config_mcp.key_version)
     catalogs = PostgresMcpCatalogStore(
         cloud.dsn,
         deployment_namespace=cloud.deployment_namespace,
@@ -73,6 +72,7 @@ def compose_plugins(
             catalogs,
             packages,
             cloud.deployment_namespace,
+            distribution=PluginDistributionStore(cloud.dsn, cloud.deployment_namespace),
             mcp_available=mcp_available,
             skill_available=settings.cloud_skill_worker_enabled,
             components=ApprovedPluginComponents(

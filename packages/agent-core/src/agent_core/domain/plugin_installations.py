@@ -110,6 +110,7 @@ class PluginInstallation(BaseModel):
     creation_request_digest: ExtensionDigest
     package: PluginPackagePin
     bindings: tuple[PluginBinding, ...] = Field(min_length=1, max_length=32)
+    distribution_digest: PluginDigest | None = Field(default=None, exclude_if=lambda v: v is None)
     enabled: bool = Field(default=False, strict=True)
 
     @model_validator(mode="after")

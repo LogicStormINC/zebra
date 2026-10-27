@@ -200,6 +200,9 @@ def register_plugin_admission(
     namespace: str | None,
     cloud: CloudCompositionSettings | None = None,
 ) -> None:
+    from zebra_agent_api.plugin_distribution import register_plugin_distribution
+
+    register_plugin_distribution(app, settings, namespace)
     register_validation_routes(
         app,
         partial(

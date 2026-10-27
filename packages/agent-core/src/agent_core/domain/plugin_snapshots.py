@@ -48,6 +48,7 @@ class PluginComponentSource(BaseModel):
 
 
 class PluginSnapshot(PluginRevisionSelection):
+    distribution_digest: PluginDigest | None = Field(default=None, exclude_if=lambda v: v is None)
     package_id: PluginComponentId
     package_version: str = Field(pattern=r"^\d+\.\d+\.\d+$")
     manifest_digest: PluginDigest
@@ -65,6 +66,7 @@ class PluginSnapshot(PluginRevisionSelection):
         return cls(
             installation_id=record.installation_id,
             revision=record.revision,
+            distribution_digest=record.distribution_digest,
             package_id=record.package.manifest.id,
             package_version=record.package.manifest.version,
             manifest_digest=record.package.manifest_digest,

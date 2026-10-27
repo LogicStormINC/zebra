@@ -1,3 +1,5 @@
+2026-10-27：[产品分发/当前撤回](docs/CA-P4-02_plugin_distribution.md)，精确原发布/独立业务安装/代际与Worker当前门禁；无部署或生产迁移。
+
 2026-10-27：[产品 Plugin 准入公开合同](docs/CA-P4-01_plugin_admission.md)，原生校验/受信目录发布/当前撤销与原GET；不授予安装或执行。
 
 2026-10-26：[Host 写后读取](docs/CA-P3-03G_host_read_freshness.md)，修复 qualified resource 下的重复读取误拒绝，保留完成证明门禁。

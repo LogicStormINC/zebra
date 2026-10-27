@@ -168,6 +168,16 @@ class PostgresPluginInstallationStore(PostgresDatabase):
         record: PluginInstallation,
         expected_revision: int | None,
     ) -> None:
+        if record.enabled or expected_revision is None:
+            from agent_storage.postgres.plugin_distribution import distribution_in_transaction
+
+            if (
+                distribution_in_transaction(
+                    transaction, self.deployment_namespace, scope, record.package.package_digest
+                )
+                != record.distribution_digest
+            ):
+                raise ExtensionRevisionConflictError("product distribution generation changed")
         if expected_revision is None:
             return
         previous = transaction.execute(
@@ -189,7 +199,11 @@ class PostgresPluginInstallationStore(PostgresDatabase):
             raise ValueError("plugin creation identity is immutable")
         if not record.enabled:
             return
-        if prior.package != record.package or prior.bindings != record.bindings:
+        if (
+            prior.package != record.package
+            or prior.bindings != record.bindings
+            or prior.distribution_digest != record.distribution_digest
+        ):
             raise ExtensionRevisionConflictError("package or binding changes must remain disabled")
         # ponytail: at most 32 rows; deterministic lock order avoids cross-plugin deadlocks.
         for binding in sorted(

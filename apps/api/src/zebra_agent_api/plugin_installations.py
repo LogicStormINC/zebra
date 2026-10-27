@@ -144,7 +144,11 @@ async def plugin_installation_response(
         created = False
         if catalog:
             async with asyncio.timeout(5):
-                packages = await service.publisher.list_packages(page=page)
+                from agent_core.application.plugin_catalog import plugin_catalog
+
+                packages = await plugin_catalog(
+                    service.publisher, service.distribution, scope, page
+                )
             return JSONResponse(
                 content={
                     "items": [
@@ -209,6 +213,5 @@ async def plugin_installation_response(
     if request.method == "POST":
         headers["Location"] = f"{_PREFIX}/{record.installation_id}"
     return JSONResponse(
-        content=_public(record, readiness),
-        status_code=201 if created else 200, headers=headers
+        content=_public(record, readiness), status_code=201 if created else 200, headers=headers
     )

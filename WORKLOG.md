@@ -17516,3 +17516,17 @@ and independent operations lanes retained. Historical main remains749cfa25.
   run was stopped for envelope/one-catalog identity corrections; final run is complete.
   No Runtime Coverage/expiry rule weakened. Public factory and independent process PG
   checks passed. Source publication only on this feature branch; no deployment/migration.
+
+## P4 D / closeout execution checkpoint, 2026-10-28
+User authorizes full P4 engineering completion, scoped commit/push only; no deployment/migration/main merge.
+Native CA-P4-02 and Go OD-P4-01D branches claimed; exact distribution/retirement and actual HTTPS dual-PG Worker guard joint implemented.
+Go test/check passed multiple candidate gates; final source/domain gates: /tmp/p4-d-od-test-domain-final.log and /tmp/p4-d-od-check-domain-final.log.
+Native complete candidate:11175 passed/3067 skips/1 mock default failure; unchanged assertion preserved, optional fake distribution port explicitly None.
+Latest Native make test: /tmp/p4-d-ca-test-delivery.log (exec session65462); check /tmp/p4-d-ca-check-delivery.log (session26852).
+Pending: confirm gates, finalize evidence/docs; commit/push Native; pin exact SHA in Go and source inventory, remove candidate-only fixture allowance, run published joint plus final Go gates, commit/push Go.
+No production data/actions, dirty primary worktrees, controller/BFF/mock/Coverage changed. Owned extra PG container removed; fixture containers clean themselves.
+
+## CA-P4-02 final verification, 2026-10-28
+Full make test passed11176/3067 skips/0 failures in1213.93s; make check1425 source types/30Eval passed.
+API21/catalog12/real PG+Worker19 checks passed. No assertion weakening, user data or production changes.
+Scoped Native feature commit/push follows; consumer pins published SHA and records separate final joint.

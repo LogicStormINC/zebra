@@ -1,3 +1,14 @@
+# 2026-10-28 — CA-P4-02 product distribution / current Worker fences
+
+Status Review; full make test11176 passed/3067 conditional skips and make check1425 typed sources/30Eval passed.
+Reuse product publisher approval, original receipts and existing installer/Turn/Worker guards; additive migration114.
+Public product publish marks managed before receipt COMMIT; exact recipient/CAS/generation, immutable originals,
+current catalog filter and approval checks block missing/revoked grants and old-generation regrant resurrection.
+Legacy unmanaged behavior/history/snapshots/receipts/Coverage retained; no automatic retry/Controller/new authority.
+API21/catalog12/real PG Worker19 checks passed; consumer published-source HTTPS/cross-process joint recorded separately.
+[Contract and proof boundaries](docs/CA-P4-02_plugin_distribution.md) · [evidence](docs/evidence/ca-p4-02/validation.json).
+No deployment, production migration or main integration; no S3/external MCP/HA claim.
+
 # 2026-10-27 — CA-P4-01 product Plugin public admission
 
 Product-scoped plugin-admission/1 reuses Native integrity, approved-directory

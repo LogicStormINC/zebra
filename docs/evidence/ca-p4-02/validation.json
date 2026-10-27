@@ -1,0 +1,62 @@
+{
+  "task": "CA-P4-02",
+  "date": "2026-10-28",
+  "status": "Review",
+  "base": "b88e2b7b3e323b836ff849f9afedc1a2c2c77bee",
+  "branch": "codex/ca-p4-02-plugin-distribution",
+  "gates": {
+    "make test": {
+      "passed": 11176,
+      "skipped": 3067,
+      "failed": 0,
+      "seconds": 1213.93
+    },
+    "make check": {
+      "passed": true,
+      "typed_sources": 1425,
+      "eval_cases": 30
+    },
+    "focused_public_api": 21,
+    "catalog_http_fixture": 12,
+    "real_pg_plugin_worker": 19
+  },
+  "logs": {
+    "make_test": {
+      "path": "/tmp/p4-d-ca-test-delivery.log",
+      "sha256": "869ea8c09b197bf14d662d3d61c1e2f6390d174f72c30c8d206355b61e4f18b9"
+    },
+    "make_check": {
+      "path": "/tmp/p4-d-ca-check-delivery.log",
+      "sha256": "d831d5059daaf212e20857a56c9431a82cd17fedf0bdec2b9564b899e7cb5d0c"
+    },
+    "focused_api": {
+      "path": "/tmp/p4-d-ca-focused-release.log",
+      "sha256": "14578495a0eb67d0eb27c61874d1644279b402103b2812233d52eaabc2bb67f7"
+    },
+    "catalog_fixture": {
+      "path": "/tmp/p4-d-ca-catalog-fixture.log",
+      "sha256": "e941eeca9e078136b34268f7dc80935b2028ebe75725d7fe9f5b2806e549882a"
+    },
+    "real_pg_worker": {
+      "path": "/tmp/p4-d-ca-pg-release.log",
+      "sha256": "a0c4b06e9e3c38f72deaa0c6eda8655de55ce2a94156a3b28bf4c49374efcdd0"
+    }
+  },
+  "corrections": [
+    "Additive migration114 assertion retains old113 identity and adds new ordered unique version",
+    "Mock optional distribution authority explicitly None; existing catalog limit assertion unchanged"
+  ],
+  "boundaries": {
+    "production_migration": false,
+    "deployment": false,
+    "main_merge": false,
+    "real_s3": false,
+    "external_mcp_execution": false,
+    "production_ha": false,
+    "frontend_bff_controller_coverage_changes": false
+  },
+  "contracts": {
+    "admission": "plugin-admission/1 unchanged",
+    "distribution": "sha256:ae9fc07e71d6b6ed57f6ded4b6403092c5d200bb36204ecbdb9046df13deacc8"
+  }
+}

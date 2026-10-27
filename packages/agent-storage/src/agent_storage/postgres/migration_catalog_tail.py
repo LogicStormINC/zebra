@@ -58,6 +58,7 @@ from agent_storage.postgres.host_manifest_revision_migration import HOST_MANIFES
 from agent_storage.postgres.memory_delivery_migration import MEMORY_DELIVERY_MIGRATION
 from agent_storage.postgres.migration_recovery_migration import MIGRATION_RECOVERY_MIGRATION
 from agent_storage.postgres.native_memory_migration import NATIVE_MEMORY_MIGRATION
+from agent_storage.postgres.plugin_distribution_migration import PLUGIN_DISTRIBUTION_MIGRATION
 from agent_storage.postgres.plugin_installations_migration import PLUGIN_INSTALLATIONS_MIGRATION
 from agent_storage.postgres.projection_source_metadata_migration import (
     TASK_PROJECTION_SOURCE_METADATA_MIGRATION,
@@ -128,6 +129,7 @@ STORAGE_AUTHORITY_MIGRATIONS = (
     AGENT_REGISTRY_MIGRATION,
 )
 
+
 LATEST_MIGRATIONS = (
     TOOL_PROFILE_CONSTRAINT_MIGRATION,
     TASK_SCHEDULE_MIGRATION,
@@ -185,4 +187,5 @@ LATEST_MIGRATIONS = (
     PUBLICATION_MIGRATION,
     FRONTEND_PROFILE_MANAGEMENT_MIGRATION,
     APPROVAL_RESUME_MIGRATION,
+    PLUGIN_DISTRIBUTION_MIGRATION,
 )

@@ -1,0 +1,137 @@
+{
+  "$defs": {
+    "BundleScope": {
+      "additionalProperties": false,
+      "properties": {
+        "authority_issuer": {
+          "maxLength": 2048,
+          "minLength": 1,
+          "title": "Authority Issuer",
+          "type": "string"
+        },
+        "deployment_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Deployment Id",
+          "type": "string"
+        },
+        "environment": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Environment",
+          "type": "string"
+        },
+        "namespace_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Namespace Id",
+          "type": "string"
+        },
+        "product_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Product Id",
+          "type": "string"
+        },
+        "target_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Target Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "authority_issuer",
+        "namespace_id",
+        "product_id",
+        "environment",
+        "target_id",
+        "deployment_id"
+      ],
+      "title": "BundleScope",
+      "type": "object"
+    },
+    "ExtensionScope": {
+      "additionalProperties": false,
+      "description": "Exact opaque identity supplied by trusted composition, never inferred from a path.",
+      "properties": {
+        "authority_issuer": {
+          "maxLength": 512,
+          "title": "Authority Issuer",
+          "type": "string"
+        },
+        "namespace_id": {
+          "maxLength": 512,
+          "title": "Namespace Id",
+          "type": "string"
+        },
+        "principal_id": {
+          "maxLength": 512,
+          "title": "Principal Id",
+          "type": "string"
+        },
+        "workspace_id": {
+          "maxLength": 512,
+          "title": "Workspace Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "authority_issuer",
+        "namespace_id",
+        "principal_id",
+        "workspace_id"
+      ],
+      "title": "ExtensionScope",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "action": {
+      "enum": [
+        "distribute",
+        "withdraw"
+      ],
+      "title": "Action",
+      "type": "string"
+    },
+    "expected_revision": {
+      "maximum": 9007199254740990,
+      "minimum": 0,
+      "title": "Expected Revision",
+      "type": "integer"
+    },
+    "operation_id": {
+      "pattern": "^[0-9a-f-]{36}$",
+      "title": "Operation Id",
+      "type": "string"
+    },
+    "package_digest": {
+      "title": "Package Digest",
+      "type": "string"
+    },
+    "publication_operation": {
+      "pattern": "^[0-9a-f-]{36}$",
+      "title": "Publication Operation",
+      "type": "string"
+    },
+    "recipient": {
+      "$ref": "#/$defs/ExtensionScope"
+    },
+    "scope": {
+      "$ref": "#/$defs/BundleScope"
+    }
+  },
+  "required": [
+    "action",
+    "scope",
+    "recipient",
+    "package_digest",
+    "publication_operation",
+    "operation_id",
+    "expected_revision"
+  ],
+  "title": "PluginDistributionCommand",
+  "type": "object"
+}

@@ -28,6 +28,7 @@ from agent_core.ports.extensions import (
 from agent_core.ports.mcp_catalog import McpCatalogStore
 from agent_core.ports.plugin_installations import (
     PluginComponentInstaller,
+    PluginDistributionReader,
     PluginInstallationStore,
     PluginPackagePublisher,
 )
@@ -105,6 +106,7 @@ class PluginInstallationService:
     publisher: PluginPackagePublisher
     deployment_namespace: str
     components: PluginComponentInstaller | None = None
+    distribution: PluginDistributionReader | None = None
     mcp_available: bool = True
     skill_available: bool = True
 
@@ -112,7 +114,12 @@ class PluginInstallationService:
         self,
         scope: ExtensionScope,
         request: PluginInstallationCreate,
-    ) -> tuple[PluginPackagePin, tuple[PluginBinding, ...]]:
+    ) -> tuple[PluginPackagePin, tuple[PluginBinding, ...], str | None]:
+        distribution = (
+            await self.distribution.resolve(scope=scope, package_digest=request.package_digest)
+            if self.distribution is not None
+            else None
+        )
         package = await self.publisher.publish(package_digest=request.package_digest)
         package = PluginPackagePin.model_validate(package.model_dump())
         if (
@@ -202,7 +209,7 @@ class PluginInstallationService:
                         catalog_digest=catalog.digest,
                     )
                 )
-        return package, tuple(bindings)
+        return package, tuple(bindings), distribution
 
     async def readiness(self, record: PluginInstallation) -> str:
         """Fresh component facts; configured availability is not a Worker heartbeat."""
@@ -212,6 +219,17 @@ class PluginInstallationService:
         if any(isinstance(item, PluginMcpBinding) for item in record.bindings):
             if not self.mcp_available:
                 return "mcp_runtime_unavailable"
+        if self.distribution is not None:
+            try:
+                if (
+                    await self.distribution.resolve(
+                        scope=record.scope, package_digest=record.package.package_digest
+                    )
+                    != record.distribution_digest
+                ):
+                    return "distribution_unavailable"
+            except ExtensionRevisionConflictError:
+                return "distribution_unavailable"
         mcp_tools = 0
         seen_connections: set[str] = set()
         for binding in record.bindings:
@@ -221,11 +239,13 @@ class PluginInstallationService:
                         scope=record.scope, installation_id=binding.installation.installation_id
                     )
                     publication = await self.extensions.get_skill_publication(
-                        scope=record.scope, skill_id=current.version.skill_id,
+                        scope=record.scope,
+                        skill_id=current.version.skill_id,
                         version_id=current.version.version_id,
                     )
                     if (
-                        current != binding.installation or not current.enabled
+                        current != binding.installation
+                        or not current.enabled
                         or publication.scope != record.scope
                         or publication.version != current.version
                         or publication.state != "ready"
@@ -238,7 +258,8 @@ class PluginInstallationService:
                         scope=record.scope, connection_id=binding.connection.connection_id
                     )
                     catalog = await self.catalogs.latest(
-                        scope=record.scope, connection_id=current_mcp.connection_id,
+                        scope=record.scope,
+                        connection_id=current_mcp.connection_id,
                         config_revision=current_mcp.revision,
                     )
                     if current_mcp.connection_id not in seen_connections:
@@ -246,11 +267,13 @@ class PluginInstallationService:
                         seen_connections.add(current_mcp.connection_id)
                     if (
                         mcp_tools > 32
-                        or current_mcp != binding.connection or not current_mcp.enabled
+                        or current_mcp != binding.connection
+                        or not current_mcp.enabled
                         or current_mcp.auth_mode.value not in {"none", "bearer"}
                         or current_mcp.auth_state.value not in {"not_required", "ready"}
                         or catalog.connection != current_mcp
-                        or catalog.digest != binding.catalog_digest or not catalog.tools
+                        or catalog.digest != binding.catalog_digest
+                        or not catalog.tools
                     ):
                         return "component_unavailable"
             except (ExtensionNotFoundError, SkillPublicationNotFoundError):
@@ -298,7 +321,7 @@ class PluginInstallationService:
             pass
         else:
             return await replay(original)
-        package, bindings = await self._package_and_bindings(scope, request)
+        package, bindings, distribution = await self._package_and_bindings(scope, request)
         record = PluginInstallation(
             scope=scope,
             installation_id=identifier,
@@ -307,6 +330,7 @@ class PluginInstallationService:
             operated_at=datetime.now(UTC),
             creation_key_digest=key_digest,
             creation_request_digest=request_digest,
+            distribution_digest=distribution,
             package=package,
             bindings=bindings,
         )
@@ -342,8 +366,9 @@ class PluginInstallationService:
         if request.enabled is not None and request.enabled == current.enabled:
             return current
         package, bindings = current.package, current.bindings
+        distribution = current.distribution_digest
         if request.enabled is None:
-            package, bindings = await self._package_and_bindings(
+            package, bindings, distribution = await self._package_and_bindings(
                 scope,
                 PluginInstallationCreate.model_validate(
                     {
@@ -358,6 +383,7 @@ class PluginInstallationService:
                 "revision": expected_revision + 1,
                 "operated_by": operated_by,
                 "operated_at": datetime.now(UTC),
+                "distribution_digest": distribution,
                 "package": package,
                 "bindings": bindings,
                 "enabled": request.enabled if request.enabled is not None else False,

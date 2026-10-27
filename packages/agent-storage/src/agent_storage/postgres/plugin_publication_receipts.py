@@ -45,6 +45,15 @@ class PluginAdmissionStore:
         # Object publication happens BEFORE this short metadata transaction. A rejected
         # commit may leave an unreferenced immutable object, never an installation.
         with self.approvals.authorized(trust) as connection:
+            from agent_storage.postgres.plugin_distribution import distribution_lock
+
+            # Product-published packages are protected BEFORE a recipient is granted.
+            # Otherwise the legacy directory could install a private staged package.
+            distribution_lock(connection, self.namespace, result["packageDigest"], exclusive=True)
+            connection.execute(
+                "INSERT INTO plugin_managed_packages VALUES(%s,%s) ON CONFLICT DO NOTHING",
+                (self.namespace, result["packageDigest"]),
+            )
             key = (self.namespace, trust.host_app_id, UUID(operation))
             row = connection.execute(
                 "SELECT payload_digest,result FROM runtime_publication_receipts "
