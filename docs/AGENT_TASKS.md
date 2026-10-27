@@ -36248,3 +36248,33 @@ old payloads remain byte-compatible by excluding None. No database migration.
   preserved. Existing HTTP compatibility baseline synchronized to source. Zebra
   API/Worker/quota/Search/MCP unchanged;0models/search or original command retries.
   No new live-model successor admission proof. See focused doc; no GitHub push.
+
+
+### CA-P4-01 — Product trusted Plugin admission public contract
+
+- Status: Review (2026-10-27; claimed Ready -> In Progress before coding).
+  Human owner Luke Ding; executor Codex. Final make test11174 passed/3067 conditional
+  skips; make check1420 types/30eval passed;88 focused/157 repair/123 shared checks passed.
+- Branch codex/ca-p4-01-plugin-admission, baseline origin/cloud-agent dd94e248.
+- Dependencies: existing Plugin integrity/publication/installation and v111 durable receipts;
+  published CA-P2 scoped management authority; OD-P4-01A/B sealed intake/policy.
+- Owned paths: apps/api/src/zebra_agent_api/plugin_admission*.py, validation_transport.py,
+  bundle_management.py, host_registry_management.py; apps/config/src/zebra_agent_config/
+  settings.py, bundle_settings.py; packages/agent-storage/src/agent_storage/postgres/
+  plugin_publication_receipts.py; packages/agent-integrations/src/agent_integrations/
+  plugins/package_integrity.py; tests/test_plugin_package_integrity.py; tests/api/test_plugin_admission*.py, tests/agent_storage/
+  test_plugin_admission*.py; docs/CA-P4-01_plugin_admission.md, docs/contracts/
+  plugin-admission-v1/; docs/README.md; README.md, PROGRESS.md, WORKLOG.md, this registry and phase plan.
+- Reuse approved-directory Native publisher and immutable objects, no new execution engine,
+  schema or production migration. Product-scoped current approval and original receipts
+  are separate from user installation/Worker dispatch authority; never infer product
+  from workspace. Published package pin does not grant installation or execution.
+- Owned paths expanded after full-gate failures: tests/agent_integrations/test_coverage_snapshot.py,
+  test_coverage_snapshot_preparation.py, test_coverage_snapshot_v2.py;
+  tests/worker/test_coverage_v2_fixtures.py, test_coverage_bootstrap_clock.py.
+  Reuse each caller clock in test wire descriptors; never weaken Runtime expiry checks.
+- Owned paths expanded for Plugin envelope bounds: packages/agent-core/src/agent_core/domain/
+  runtime_bundle_json.py; explicit parser size override only, Bundle defaults unchanged.
+- Acceptance: bounded public validation/publish/current/GET operation; separate publisher
+  approval, exact scope and digest, current revocation, immutable receipts and no retry;
+  real disposable PostgreSQL concurrent/current-authority checks and both repo gates.

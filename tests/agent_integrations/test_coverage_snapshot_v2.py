@@ -77,8 +77,8 @@ def manifest_v2():
 
 
 class NeutralWire(HostWire):
-    def __init__(self, bodies, *, contract=V2_CONTRACT, authority=V2_AUTHORITY):
-        super().__init__(bodies)
+    def __init__(self, bodies, *, contract=V2_CONTRACT, authority=V2_AUTHORITY, now=None):
+        super().__init__(bodies, now=now)
         self.contract = contract
         self.authority = authority
 

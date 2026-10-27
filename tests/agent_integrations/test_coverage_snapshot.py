@@ -88,7 +88,8 @@ def frozen_manifest():
 
 
 class HostWire:
-    def __init__(self, bodies):
+    def __init__(self, bodies, *, now=None):
+        self.now = NOW if now is None else now
         self.bodies = bodies
         self.records = tuple(
             CoverageRecord.model_validate(
@@ -131,15 +132,15 @@ class HostWire:
             "scope_digest": CONTRACT.scope.digest,
             "manifest_digest": manifest_digest(CONTRACT, self.records),
             "record_count": len(self.records),
-            "as_of": (NOW - timedelta(seconds=1)).isoformat(),
-            "expires_at": (NOW + timedelta(minutes=30)).isoformat(),
+            "as_of": (self.now - timedelta(seconds=1)).isoformat(),
+            "expires_at": (self.now + timedelta(minutes=30)).isoformat(),
         }
         if name in {"get", "create"}:
             value = {
                 "status": "ready",
                 "snapshot": descriptor,
                 "scope": CONTRACT.scope.model_dump(mode="json"),
-                "sealed_at": NOW.isoformat(),
+                "sealed_at": self.now.isoformat(),
                 "content_capabilities": ["canonical_body"],
                 "provenance": {
                     "dataset": "trench.subscribed_events",

@@ -27,6 +27,7 @@ def baseline_digest(settings: ZebraAgentSettings, key: str) -> str:
     del values["bundle_management_config"]
     del values["publication_management_config"]
     del values["script_validation_config"]
+    del values["plugin_admission_config"]
     encoded = json.dumps(
         values, sort_keys=True, ensure_ascii=True, allow_nan=False, separators=(",", ":")
     ).encode()

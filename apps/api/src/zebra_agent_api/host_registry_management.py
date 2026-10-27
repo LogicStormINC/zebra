@@ -90,6 +90,7 @@ def register_management_routes(
         or settings.host_management_config
         or settings.bundle_management_config
         or settings.script_validation_config
+        or settings.plugin_admission_config
     )
     current = namespace() if enabled else None
     register_runtime_management(app, settings, current)
@@ -107,6 +108,9 @@ def register_management_routes(
         if cloud_composition is not None
         else settings
     )
+    from zebra_agent_api.plugin_admission import register_plugin_admission
+
+    register_plugin_admission(app, host_settings, current, cloud_composition)
     register_host_registry_management(app, host_settings, current)
     from zebra_agent_api.host_connector_management import register_host_connector_management
 

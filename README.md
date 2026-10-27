@@ -1,3 +1,5 @@
+2026-10-27：[产品 Plugin 准入公开合同](docs/CA-P4-01_plugin_admission.md)，原生校验/受信目录发布/当前撤销与原GET；不授予安装或执行。
+
 2026-10-26：[Host 写后读取](docs/CA-P3-03G_host_read_freshness.md)，修复 qualified resource 下的重复读取误拒绝，保留完成证明门禁。
 
 2026-10-26：[业务BFF Surface SDK](docs/CA-P3-03F_surface_sdk.md)，显式提交/原GET/映射安装与只读恢复；不自动挂载或RUN。

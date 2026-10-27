@@ -29,6 +29,7 @@ from zebra_agent_api.runtime_management import _HEADERS, _error
 from zebra_agent_api.validation_transport import register_validation_routes
 
 if TYPE_CHECKING:
+    from zebra_agent_api.plugin_admission_config import PluginAdmissionApproval
     from zebra_agent_api.script_validation_config import ScriptValidationApproval
 
 BODY_TIMEOUT = 0.2
@@ -36,7 +37,7 @@ REQUEST_TIMEOUT = 1.0
 
 
 def _authorize(
-    approval: BundleManagementApproval | ScriptValidationApproval,
+    approval: BundleManagementApproval | ScriptValidationApproval | PluginAdmissionApproval,
     token: str,
     headers: dict[str, list[str]],
     action: str,

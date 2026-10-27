@@ -1,5 +1,11 @@
 # Zebra Agent Docs Guide
 
+## Product Plugin admission
+
+[CA-P4-01 public contract and proof boundaries](CA-P4-01_plugin_admission.md) ·
+[Machine artifacts](contracts/plugin-admission-v1/README.md). Trusted product publication
+and current approval queries are separate from installation and Worker execution.
+
 ## Active Execution Set
 
 The current effective documents are:

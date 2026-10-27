@@ -1,0 +1,122 @@
+{
+  "$defs": {
+    "BundleScope": {
+      "additionalProperties": false,
+      "properties": {
+        "authority_issuer": {
+          "maxLength": 2048,
+          "minLength": 1,
+          "title": "Authority Issuer",
+          "type": "string"
+        },
+        "deployment_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Deployment Id",
+          "type": "string"
+        },
+        "environment": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Environment",
+          "type": "string"
+        },
+        "namespace_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Namespace Id",
+          "type": "string"
+        },
+        "product_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Product Id",
+          "type": "string"
+        },
+        "target_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Target Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "authority_issuer",
+        "namespace_id",
+        "product_id",
+        "environment",
+        "target_id",
+        "deployment_id"
+      ],
+      "title": "BundleScope",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "actions": {
+      "items": {
+        "enum": [
+          "plugin.contract.read",
+          "plugin.validate",
+          "plugin.publish",
+          "plugin.read"
+        ],
+        "type": "string"
+      },
+      "maxLength": 4,
+      "minLength": 1,
+      "title": "Actions",
+      "type": "array"
+    },
+    "audience": {
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Audience",
+      "type": "string"
+    },
+    "credential_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Credential Sha256",
+      "type": "string"
+    },
+    "expires_at": {
+      "title": "Expires At",
+      "type": "string"
+    },
+    "package_digests": {
+      "items": {
+        "type": "string"
+      },
+      "maxLength": 128,
+      "title": "Package Digests",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": "cloud-agent.plugin-admission-approval/1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "scope": {
+      "$ref": "#/$defs/BundleScope"
+    },
+    "trust_revision": {
+      "maximum": 9007199254740991,
+      "minimum": 1,
+      "title": "Trust Revision",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "schema_version",
+    "scope",
+    "audience",
+    "trust_revision",
+    "credential_sha256",
+    "expires_at",
+    "actions",
+    "package_digests"
+  ],
+  "title": "PluginAdmissionApproval",
+  "type": "object"
+}

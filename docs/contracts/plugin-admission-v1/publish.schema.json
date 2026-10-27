@@ -1,0 +1,83 @@
+{
+  "$defs": {
+    "BundleScope": {
+      "additionalProperties": false,
+      "properties": {
+        "authority_issuer": {
+          "maxLength": 2048,
+          "minLength": 1,
+          "title": "Authority Issuer",
+          "type": "string"
+        },
+        "deployment_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Deployment Id",
+          "type": "string"
+        },
+        "environment": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Environment",
+          "type": "string"
+        },
+        "namespace_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Namespace Id",
+          "type": "string"
+        },
+        "product_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Product Id",
+          "type": "string"
+        },
+        "target_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Target Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "authority_issuer",
+        "namespace_id",
+        "product_id",
+        "environment",
+        "target_id",
+        "deployment_id"
+      ],
+      "title": "BundleScope",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "action": {
+      "const": "publish",
+      "title": "Action",
+      "type": "string"
+    },
+    "operation_id": {
+      "pattern": "^[0-9a-f-]{36}$",
+      "title": "Operation Id",
+      "type": "string"
+    },
+    "package_digest": {
+      "title": "Package Digest",
+      "type": "string"
+    },
+    "scope": {
+      "$ref": "#/$defs/BundleScope"
+    }
+  },
+  "required": [
+    "action",
+    "scope",
+    "operation_id",
+    "package_digest"
+  ],
+  "title": "PublishPackage",
+  "type": "object"
+}

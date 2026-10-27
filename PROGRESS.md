@@ -1,3 +1,17 @@
+# 2026-10-27 — CA-P4-01 product Plugin public admission
+
+Product-scoped plugin-admission/1 reuses Native integrity, approved-directory
+publication, immutable objects and v111 original receipts. Separate rtpa_ authority,
+shared approval CAS/current revocation and original GET preserve historical facts.
+Root README metadata is accepted/hashes only under 0.2; legacy 0.1 rules unchanged.
+No schema/startup DDL, install/Worker authority, frontend/BFF or Coverage changes.
+88 focused checks and independent-process real PostgreSQL stale-approval rejection
+passed; final make check passed (1420 types,30eval). Final make test11174 passed/3067
+conditional skips. Default-off composition/fixture-clock and large-envelope regressions fixed.
+Published consumer source pin and OD-P4-01C implementation are separate steps;
+D distribution/installation/Worker product revocation remains pending. No deployment
+or production migration. See docs/CA-P4-01_plugin_admission.md.
+
 # 2026-10-27 — Cloud-agent P3 and operations integration verified
 
 CA-CLOUD-INTEGRATION-20261027 integrates published P3 017e04e6 and local cloud-agent

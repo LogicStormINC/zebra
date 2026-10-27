@@ -40,11 +40,18 @@ def register_validation_routes(
     actions: tuple[str, str],
     body_timeout: float,
     request_timeout: float,
+    read_validation_path: bool = False,
+    extra_headers: tuple[str, ...] = (),
 ) -> None:
     slots = asyncio.Semaphore(8)
 
     async def handle(request: Request) -> JSONResponse:
-        method = "GET" if request.url.path.endswith(contract_path) else "POST"
+        method = (
+            "GET"
+            if request.url.path.endswith(contract_path)
+            or (read_validation_path and request.method == "GET")
+            else "POST"
+        )
         if request.method != method:
             response = _error(405, "METHOD_NOT_ALLOWED")
             response.headers["Allow"] = method
@@ -67,6 +74,7 @@ def register_validation_routes(
                     "content-length",
                     "transfer-encoding",
                     contract_header,
+                    *extra_headers,
                 )
             )
         ):
@@ -103,7 +111,9 @@ def register_validation_routes(
         except BaseException:
             slots.release()
             raise
-        headers = {name: request.headers.getlist(name) for name in _HEADERS.values()}
+        headers = {
+            name: request.headers.getlist(name) for name in (*_HEADERS.values(), *extra_headers)
+        }
         action = actions[0] if method == "GET" else actions[1]
         task = asyncio.create_task(
             asyncio.to_thread(

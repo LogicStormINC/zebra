@@ -9,7 +9,7 @@ from tests.agent_integrations.test_coverage_snapshot_v2 import V2_SOURCE, Neutra
 
 
 def setup_neutral_source(bodies=(b"hello",), *, session_id, authority, contract, now):
-    wire = NeutralWire(bodies, contract=contract, authority=authority)
+    wire = NeutralWire(bodies, contract=contract, authority=authority, now=now())
     gateway = HostToolGateway(
         authority.origin,
         HostWorkloadIdentity("worker", authority.namespace_id, authority.host_app_id),

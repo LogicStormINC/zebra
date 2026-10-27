@@ -17494,3 +17494,25 @@ Publication completed atomically: cloud-agent fast-forward703c3c03 -> a042d7e0,
 fast-forwarded from7ff78d0b;24 local refs deleted after ancestry checks. All157
 protected file hashes across23worktrees unchanged;22 dirty feature branch pairs
 and independent operations lanes retained. Historical main remains749cfa25.
+
+
+## 2026-10-27 CA-P4-01 product Plugin public contract
+
+- Claimed Luke Ding/Codex on codex/ca-p4-01-plugin-admission from cloud-agent dd94e248.
+- Reused package integrity/publisher, immutable object pins, scoped shared approvals
+  and v111 receipt table; no new schema, Definition heads or execution framework.
+- Public validation, scoped trusted publish, original GET/current approval; independent
+  process stale-config rejection and 83 focused checks passed. Full gates recorded
+  in formal contract/progress before source publication.
+- Preserve all history/receipts/Coverage and unrelated worktrees; BFF/frontend unchanged.
+  OD C consumer implementation and D installation/Worker product revocation are follow-up.
+  No main/cloud-agent merge, deployment or production migration.
+
+- Final verification: make test11174 passed/3067 conditional skips; make check1420
+  typed sources/30eval passed.88 final focused/157 repair/123 shared checks passed.
+  First full run24 failures traced to optional-off object access and aged fixture
+  snapshots; fixed lazy composition/caller clocks, with genuine-expiry regression.
+  One child-import timeout did not recur; original bound preserved. An intermediate
+  run was stopped for envelope/one-catalog identity corrections; final run is complete.
+  No Runtime Coverage/expiry rule weakened. Public factory and independent process PG
+  checks passed. Source publication only on this feature branch; no deployment/migration.

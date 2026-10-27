@@ -1,0 +1,69 @@
+{
+  "approval": "cloud-agent.plugin-admission-approval/1",
+  "capabilities": {
+    "automaticRetry": false,
+    "coverageAuthority": false,
+    "execute": false,
+    "install": false,
+    "workerRevocation": false
+  },
+  "contractDigest": "sha256:30b0b81d3481f383641cdb7c534d398da0a9452fd854612c2f4f132183237b97",
+  "contractPath": "/management/v1/plugin-admission/contract",
+  "contractVersion": "plugin-admission/1",
+  "credential": "rtpa_",
+  "get": {
+    "currentHeader": "x-runtime-plugin-digest",
+    "exclusiveSelectors": true,
+    "missing": "not proof of non-commit",
+    "operationHeader": "x-runtime-operation",
+    "receipt": "immutable original result plus separate currentApproval",
+    "unknown": "GET only; never automatic POST"
+  },
+  "header": "x-runtime-plugin-contract",
+  "limits": {
+    "bodyBytes": 1500000,
+    "bodyMillis": 500,
+    "expandedBytes": 1048576,
+    "fileBytes": 65536,
+    "files": 64,
+    "manifestBytes": 16384,
+    "responseSeconds": 6,
+    "slots": 8
+  },
+  "path": "/management/v1/plugin-admission",
+  "publish": {
+    "fields": [
+      "action",
+      "scope",
+      "operation_id",
+      "package_digest"
+    ],
+    "gate": "current shared publisher approval AND exact approved mounted package",
+    "result": "immutable PluginPackagePin; no installation or execution grant"
+  },
+  "scope": [
+    "authority_issuer",
+    "namespace_id",
+    "product_id",
+    "environment",
+    "target_id",
+    "deployment_id"
+  ],
+  "validate": {
+    "fields": [
+      "action",
+      "scope",
+      "files"
+    ],
+    "fileFields": [
+      "path",
+      "content_base64"
+    ],
+    "manifest": "plugin.json/0.2",
+    "result": [
+      "packageDigest",
+      "manifestDigest",
+      "manifest"
+    ]
+  }
+}

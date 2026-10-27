@@ -30,7 +30,7 @@ from tests.agent_integrations.test_coverage_snapshot_refusals import rewrite_pag
 
 
 def setup_source(bodies=(b"hello",), **kwargs):
-    host = HostWire(bodies)
+    host = HostWire(bodies, now=kwargs.get("now", lambda: NOW)())
     manifest = frozen_manifest()
     gateway = HostToolGateway(
         "https://trench.example",

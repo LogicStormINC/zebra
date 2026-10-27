@@ -109,7 +109,7 @@ def validate_plugin_package_files(files: tuple[PluginPackageFile, ...]) -> Valid
         )
         canonical = original.canonical_json()
         contents = tuple(file for file in files if file.path != "plugin.json")
-        _validate_skills(manifest, contents)
+        _validate_skills(manifest, contents, allow_readme=document.get("manifest_version") == "0.2")
     except PluginPackageError:
         raise
     except SkillPackageError as error:
@@ -191,8 +191,15 @@ def _snapshot_files(bundle_root: Path) -> tuple[PluginPackageFile, ...]:
     return tuple(sorted(files, key=lambda file: file.path))
 
 
-def _validate_skills(manifest: PluginPackageManifest, files: tuple[PluginPackageFile, ...]) -> None:
-    remaining = {file.path for file in files}
+def _validate_skills(
+    manifest: PluginPackageManifest,
+    files: tuple[PluginPackageFile, ...],
+    *,
+    allow_readme: bool = False,
+) -> None:
+    # A 0.2 package README is descriptive metadata, still included in the exact
+    # package digest. Other files must belong to a declared Skill component.
+    remaining = {file.path for file in files if not (allow_readme and file.path == "README.md")}
     for component in manifest.components:
         if not isinstance(component, PluginSkillComponent):
             continue

@@ -63,8 +63,8 @@ def _no_float(value: str) -> None:
     raise ValueError("integer JSON profile required")
 
 
-def load_bundle_json(raw: bytes) -> Any:
-    if type(raw) is not bytes or len(raw) > MAX_BUNDLE_BYTES or raw.startswith(b"\xef\xbb\xbf"):
+def load_bundle_json(raw: bytes, *, max_bytes: int = MAX_BUNDLE_BYTES) -> Any:
+    if type(raw) is not bytes or len(raw) > max_bytes or raw.startswith(b"\xef\xbb\xbf"):
         raise ValueError("invalid JSON bytes")
     decoded = json.loads(
         raw.decode("utf-8"),

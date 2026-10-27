@@ -352,3 +352,35 @@ def test_directory_inventory_is_bounded_before_materializing_names(
     monkeypatch.setattr(packages, "MAX_ENTRIES", 2)
     with pytest.raises(packages.PluginPackageError, match="too_many_entries"):
         packages.load_plugin_package(bundle)
+
+
+def test_v2_root_readme_is_hashed_metadata_not_executable_content(tmp_path: Path) -> None:
+    from agent_integrations.plugins.package_integrity import PluginPackageError, load_plugin_package
+
+    root = tmp_path / "described"
+    root.mkdir()
+    (root / "plugin.json").write_text(
+        json.dumps(
+            _v2(
+                components=[
+                    {"id": "docs", "kind": "mcp-http", "connection_slot": "reference-docs"},
+                ]
+            )
+        )
+    )
+    (root / "README.md").write_text("Operator documentation")
+    first = load_plugin_package(root)
+    (root / "README.md").write_text("Updated operator documentation")
+    assert load_plugin_package(root).package_digest != first.package_digest
+    (root / "undeclared.py").write_text("raise RuntimeError('MUST_NOT_RUN')")
+    with pytest.raises(PluginPackageError, match="unclaimed_file"):
+        load_plugin_package(root)
+
+
+def test_legacy_readme_rules_remain_unchanged(tmp_path: Path) -> None:
+    from agent_integrations.plugins.package_integrity import PluginPackageError, load_plugin_package
+
+    root = _legacy_bundle(tmp_path)
+    (root / "README.md").write_text("Not declared by the legacy Skill")
+    with pytest.raises(PluginPackageError, match="unclaimed_file"):
+        load_plugin_package(root)

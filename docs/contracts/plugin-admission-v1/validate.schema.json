@@ -1,0 +1,104 @@
+{
+  "$defs": {
+    "BundleScope": {
+      "additionalProperties": false,
+      "properties": {
+        "authority_issuer": {
+          "maxLength": 2048,
+          "minLength": 1,
+          "title": "Authority Issuer",
+          "type": "string"
+        },
+        "deployment_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Deployment Id",
+          "type": "string"
+        },
+        "environment": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Environment",
+          "type": "string"
+        },
+        "namespace_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Namespace Id",
+          "type": "string"
+        },
+        "product_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Product Id",
+          "type": "string"
+        },
+        "target_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Target Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "authority_issuer",
+        "namespace_id",
+        "product_id",
+        "environment",
+        "target_id",
+        "deployment_id"
+      ],
+      "title": "BundleScope",
+      "type": "object"
+    },
+    "FileInput": {
+      "additionalProperties": false,
+      "properties": {
+        "content_base64": {
+          "maxLength": 87384,
+          "title": "Content Base64",
+          "type": "string"
+        },
+        "path": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Path",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "content_base64"
+      ],
+      "title": "FileInput",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "action": {
+      "const": "validate",
+      "title": "Action",
+      "type": "string"
+    },
+    "files": {
+      "items": {
+        "$ref": "#/$defs/FileInput"
+      },
+      "maxItems": 64,
+      "minItems": 2,
+      "title": "Files",
+      "type": "array"
+    },
+    "scope": {
+      "$ref": "#/$defs/BundleScope"
+    }
+  },
+  "required": [
+    "action",
+    "scope",
+    "files"
+  ],
+  "title": "ValidatePackage",
+  "type": "object"
+}
