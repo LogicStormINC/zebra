@@ -26,6 +26,7 @@ from agent_core.ports import (
 from zebra_agent_worker.cloud_memory_finalization import finalize_cloud_memory
 from zebra_agent_worker.execution_errors import (
     CompletionRecoveryPending,
+    WorkerAuthoritySetupUnavailable,
     WorkerPluginSetupUnavailable,
     is_sequence_race,
     sequence_race_guard,
@@ -386,16 +387,22 @@ def finalize_worker_setup_failure(
     """Durably close a deterministic setup failure before model execution."""
 
     plugin_stop = isinstance(error, WorkerPluginSetupUnavailable)
+    suspended_stop = plugin_stop or isinstance(error, WorkerAuthoritySetupUnavailable)
+    stop_reason = (
+        error.reason_code
+        if isinstance(error, WorkerAuthoritySetupUnavailable)
+        else (PLUGIN_UNAVAILABLE if plugin_stop else "worker_setup_failed")
+    )
     result = HarnessAttemptResult(
-        outcome=HarnessAttemptOutcome.SUSPENDED if plugin_stop else HarnessAttemptOutcome.FAILED,
+        outcome=HarnessAttemptOutcome.SUSPENDED if suspended_stop else HarnessAttemptOutcome.FAILED,
         summary=(
             "沙箱执行环境不可用，任务尚未开始。请检查沙箱运行时配置后重试。"
             if isinstance(error, RuntimeStartupError)
             else "Worker execution could not start."
         ),
         metadata={
-            "stop_reason": PLUGIN_UNAVAILABLE if plugin_stop else "worker_setup_failed",
-            **({"retryable": False} if plugin_stop else {}),
+            "stop_reason": stop_reason,
+            **({"retryable": False} if suspended_stop else {}),
             "error_type": type(error).__name__,
             "error_code": "runtime_unavailable"
             if isinstance(error, RuntimeStartupError)
@@ -413,11 +420,11 @@ def finalize_worker_setup_failure(
             EventActor.HARNESS,
             {"attempt_number": attempt_number},
         )
-    if plugin_stop:
+    if suspended_stop:
         recorder.append(
             EventType.SESSION_SUSPENDED,
             EventActor.HARNESS,
-            {"reason": PLUGIN_UNAVAILABLE, "metadata": result.metadata},
+            {"reason": stop_reason, "metadata": result.metadata},
         )
         return ExecutedSession(recorder.session, recorder.events, result)
     append_turn_close(

@@ -381,3 +381,87 @@ def test_http_schedule_routes_select_read_and_manage_scopes() -> None:
         "agent.run",
         "schedule.manage",
     )
+
+
+def test_keyed_schedule_create_recovers_lost_ack_without_duplicate(tmp_path: Path) -> None:
+    adapter, verified = _adapter(tmp_path), _verified()
+    body = {
+        "title": "Bounded",
+        "trigger": {"kind": "daily", "local_time": "09:00"},
+        "task_template": {"title": "Source", "prompt": "Read authorized data", "workspace": "."},
+    }
+    request = _request(
+        "POST",
+        "/schedules",
+        verified=verified,
+        body=body,
+        headers={"Idempotency-Key": "one-create"},
+    )
+    first = adapter.handle(request)
+    assert first.status_code == 201
+    second = adapter.handle(request)  # The client lost first ACK, not the canonical create.
+    assert second.status_code == 200
+    assert second.body["schedule_id"] == first.body["schedule_id"]
+    assert len(adapter.app.task_schedule_store.schedules) == 1
+    changed = adapter.handle(
+        _request(
+            "POST",
+            "/schedules",
+            verified=verified,
+            body={**body, "title": "Different intent"},
+            headers={"Idempotency-Key": "one-create"},
+        )
+    )
+    assert changed.status_code == 409
+    assert len(adapter.app.task_schedule_store.schedules) == 1
+
+
+def test_keyed_schedule_owner_is_part_of_identity(tmp_path: Path) -> None:
+    adapter = _adapter(tmp_path)
+    body = {
+        "title": "Owned",
+        "trigger": {"kind": "daily", "local_time": "09:00"},
+        "task_template": {"prompt": "Do my authorized work", "workspace": "."},
+    }
+    ids = []
+    for principal in ("user-1", "user-2"):
+        response = adapter.handle(
+            _request(
+                "POST",
+                "/schedules",
+                verified=_verified(principal=principal),
+                body=body,
+                headers={"Idempotency-Key": "same-key"},
+            )
+        )
+        assert response.status_code == 201
+        ids.append(response.body["schedule_id"])
+    assert ids[0] != ids[1]
+
+
+def test_keyed_create_recovers_after_commit_confirmation_loss(tmp_path: Path) -> None:
+    adapter, verified = _adapter(tmp_path), _verified()
+    store = adapter.app.task_schedule_store
+    create = store.create
+
+    def commit_then_lose_ack(schedule, authority):
+        create(schedule, authority)
+        raise TaskScheduleConflictError("simulated committed response loss")
+
+    store.create = commit_then_lose_ack
+    body = {
+        "title": "One commit",
+        "trigger": {"kind": "daily", "local_time": "09:00"},
+        "task_template": {"prompt": "Check once", "workspace": "."},
+    }
+    response = adapter.handle(
+        _request(
+            "POST",
+            "/schedules",
+            verified=verified,
+            body=body,
+            headers={"Idempotency-Key": "commit-one"},
+        )
+    )
+    assert response.status_code == 200
+    assert len(store.schedules) == 1

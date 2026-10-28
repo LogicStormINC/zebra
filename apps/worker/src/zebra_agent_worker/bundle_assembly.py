@@ -134,7 +134,7 @@ def resolve_bound_workspace(
     resolver: "WorkspaceRuntimeResolver | None",
     session_id: SessionId,
 ) -> RecoveredTask:
-    if resolver is None or task_assembly(task) is None:
+    if resolver is None:
         return task
     try:
         return apply_workspace_resolver(task, resolver, session_id)

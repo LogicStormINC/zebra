@@ -70,3 +70,31 @@ def test_local_paths_remain_local():
         Mock(), prepare_volume=lambda *_: pytest.fail("unexpected allocation")
     )
     assert resolver.resolve("/local/work", session_id=uuid4()) == Path("/local/work")
+
+
+@pytest.mark.parametrize("reference", ["workspace://", "workspace:/"])
+def test_ordinary_task_uses_control_plane_resolver(tmp_path, reference):
+    from agent_core.domain.tool_profiles import ToolProfile
+    from agent_security import parse_network_profile
+    from zebra_agent_worker.bundle_assembly import resolve_bound_workspace
+    from zebra_agent_worker.task_recovery import RecoveredTask
+
+    task = RecoveredTask(
+        title="Ordinary Host task", user_input="Read the attached file",
+        workspace_root=Path(reference + str(uuid4())), policy_profile="read_only",
+        tool_profile=ToolProfile.RESEARCH, network_profile=parse_network_profile("none"),
+        mcp_allowlist=None, skill_components=None, history_session_ids=None,
+        max_attempts=1, max_model_calls=1, max_tool_calls=1, attachments=(),
+        runtime_evidence=(), host_context=None, definition_snapshot=None,
+    )
+    resolver = Mock()
+    resolver.resolve.return_value = tmp_path
+    session = uuid4()
+    resolved = resolve_bound_workspace(task, resolver, session)
+    assert resolved.workspace_root == tmp_path
+    assert task.workspace_root != tmp_path
+    resolver.resolve.assert_called_once_with(str(task.workspace_root), session_id=session)
+    resolver.resolve.side_effect = ValueError("unverified physical quota")
+    from zebra_agent_worker.execution_finalization import RetryableWorkerSetupError
+    with pytest.raises(RetryableWorkerSetupError):
+        resolve_bound_workspace(task, resolver, session)

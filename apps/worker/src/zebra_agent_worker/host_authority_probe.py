@@ -23,6 +23,10 @@ from zebra_agent_worker.host_gateway_resolution import resolve_pinned_gateway
 _ARGUMENTS = ("task_id", "thread_id", "run_id", "principal", "workspace_ref", "expires_at")
 
 
+class HostAuthorityUnavailable(ExecutionAuthorityResolutionError):
+    """A bounded dependency/protocol failure, never proof of revoked permission."""
+
+
 class HostAuthorityResponse(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
     decision: str = Field(pattern="^allowed$")
@@ -41,6 +45,7 @@ class HostAuthorityProbe:
         task_id: str,
         settings: HostExecutionAuthoritySettings,
         client: httpx.Client | None = None,
+        host_task_id: str | None = None,
     ) -> None:
         self.binding = TaskBindingSnapshot.model_validate(binding.model_dump(mode="json"))
         self.registry, self.credentials, self.client = registry, credentials, client
@@ -69,7 +74,7 @@ class HostAuthorityProbe:
             )
         assert refs["run"] is not None and refs["principal"] is not None
         self.arguments = dict(
-            task_id=str(task_id),
+            task_id=host_task_id or str(task_id),
             thread_id=thread.resource_id,
             run_id=refs["run"],
             principal=refs["principal"],
@@ -84,6 +89,14 @@ class HostAuthorityProbe:
 
     def check(self) -> datetime:
         """No positive cache. Every call rechecks the current connector and Host identity."""
+        try:
+            return self._check()
+        except ExecutionAuthorityResolutionError:
+            raise
+        except Exception:
+            raise HostAuthorityUnavailable("host_authority_unavailable") from None
+
+    def _check(self) -> datetime:
         now = datetime.now(UTC)
         host = self.binding.host_capability
         if now >= self.expires_at or host.grant_expires_at != self.expires_at:
@@ -151,7 +164,10 @@ class HostAuthorityProbe:
             if owned:
                 client.close()
         if result.status is not ToolCallStatus.EXECUTED:
-            raise ExecutionAuthorityResolutionError("Host control refused or unavailable")
+            status = result.metadata.get("http_status")
+            if status in {401, 403}:
+                raise ExecutionAuthorityResolutionError("Host control refused")
+            raise HostAuthorityUnavailable("host_authority_unavailable")
         response = HostAuthorityResponse.model_validate_json(result.output)
         identity = response.identity
         if any(

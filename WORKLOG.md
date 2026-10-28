@@ -1,3 +1,7 @@
+## 2026-10-28 Full capability schedule/startup follow-up
+
+Owner-scoped schedule idempotency, frozen v2/extension admission, typed Host setup suspension and verified researcher parent authority are implemented. Ordinary opaque workspace refs now resolve through trusted volume callbacks. No model/search or production service changes. make check passes; paired full-runtime deployment acceptance remains in progress.
+
 ## 2026-10-28 Full capability foundation in progress
 
 CLOUD-FULL-CAPABILITY-COMPOSITION-20261028 adds opt-in generic fresh Host

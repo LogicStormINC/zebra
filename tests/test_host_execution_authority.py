@@ -231,3 +231,47 @@ def test_default_disabled_and_strict_opt_in():
         )
         is None
     )
+
+
+@pytest.mark.parametrize("drift", [False, True])
+def test_child_uses_verified_parent_host_identity_without_expanding_child(monkeypatch, drift):
+    from uuid import uuid4
+
+    from agent_core.domain.subagent_delegation import ParentChildLink
+
+    probe, _, registry, _, _ = case(monkeypatch)
+    parent = probe.binding
+    child_id = uuid4()
+    child = parent.model_copy(update={"task_id": str(child_id)})
+    link = ParentChildLink(
+        root_task_id=UUID(parent.task_id),
+        parent_task_id=UUID(parent.task_id),
+        child_task_id=child_id,
+        delegation_id="a" * 64,
+        parent_binding_digest=parent.binding_digest,
+        child_binding_digest="0" * 64 if drift else child.binding_digest,
+        created_at=datetime.now(UTC),
+    )
+    store = Mock()
+    store.get_link.side_effect = lambda value: link if str(value) == str(child_id) else None
+    service = SimpleNamespace(
+        _settings=SimpleNamespace(
+            host_execution_authority=HostExecutionAuthoritySettings(enabled=True),
+            host_tool_shared_secret="test-only",
+        ),
+        _task_index_store=Mock(),
+        _task_binding_loader=lambda identity: child if str(identity) == str(child_id) else parent,
+        _egress_registry=registry,
+        _delegation_store=store,
+    )
+    service._task_index_store.task_id_for_session.return_value = child_id
+    if drift:
+        with pytest.raises(ExecutionAuthorityResolutionError, match="lineage"):
+            HostExecutionAuthority.for_execution(service, child_id)
+    else:
+        guard = HostExecutionAuthority.for_execution(service, child_id)
+        assert guard.probe.binding.task_id == str(child_id)
+        assert guard.probe.arguments["task_id"] == parent.task_id
+        assert guard.probe.binding.effective_capabilities <= parent.effective_capabilities
+        guard.probe.check()
+    probe.client.close()

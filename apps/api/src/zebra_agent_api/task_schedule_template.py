@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from agent_core.domain.plugin_snapshots import ExtensionSelection
+from agent_core.domain.stream_admission import StreamCapabilities
 from agent_core.domain.task_schedule_authority import ScheduledTaskTemplate
 from agent_runtime import validate_mcp_capability_selection
 
@@ -36,11 +38,15 @@ def validate_schedule_template(
 ) -> ValidatedScheduleTemplate | ApiResponse:
     if not isinstance(value, dict):
         return bad_request("task_template must be an object")
-    parsed = parse_create_session_payload({**value, "execute": False})
+    try:
+        payload, _, _ = split_schedule_template(value)
+    except ValueError as exc:
+        return bad_request(str(exc))
+    parsed = parse_create_session_payload({**payload, "execute": False})
     if isinstance(parsed, ApiResponse):
         return parsed
     skill_error = validate_task_skill_selection(
-        value, request.verified_host_grant, extension_admission
+        payload, request.verified_host_grant, extension_admission
     )
     if skill_error is not None:
         return skill_error
@@ -65,4 +71,17 @@ def validate_schedule_template(
         definition_digest=(
             definition.definition_digest if definition is not None else NO_CONNECTOR_DIGEST
         ),
+    )
+
+
+def split_schedule_template(
+    value: dict[str, object],
+) -> tuple[dict[str, object], ExtensionSelection | None, StreamCapabilities | None]:
+    payload = dict(value)
+    selection = payload.pop("extension_selection", None)
+    stream = payload.pop("stream_capabilities", None)
+    return (
+        payload,
+        ExtensionSelection.model_validate(selection) if selection is not None else None,
+        StreamCapabilities.model_validate(stream) if stream is not None else None,
     )

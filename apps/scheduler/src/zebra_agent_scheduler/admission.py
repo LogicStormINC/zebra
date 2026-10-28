@@ -14,13 +14,16 @@ from agent_core.domain.task_schedule_authority import (
 )
 from agent_core.domain.task_schedules import TaskScheduleFiring
 from agent_security import JwtAlgorithm, VerifiedHostGrant
+from zebra_agent_api.ag_ui_command import handle_agui_command
 from zebra_agent_api.agent_definition_binding import resolve_definition_binding
 from zebra_agent_api.app import ZebraAgentApi
 from zebra_agent_api.extension_task_selection import validate_task_skill_selection
 from zebra_agent_api.extension_turn_admission import CloudExtensionTurnAdmission
 from zebra_agent_api.responses import ApiResponse
+from zebra_agent_api.routes import RouteRequest
 from zebra_agent_api.session_binding import NO_CONNECTOR_DIGEST
 from zebra_agent_api.session_payloads import parse_create_session_payload
+from zebra_agent_api.task_schedule_template import split_schedule_template
 
 
 class ZebraApiScheduledTaskAdmission:
@@ -42,7 +45,11 @@ class ZebraApiScheduledTaskAdmission:
         execution_authority: ScheduleExecutionAuthority,
         idempotency_key: str,
     ) -> TaskId:
-        payload = {**template.payload, "execute": False}
+        try:
+            prepared, selection, stream = split_schedule_template(template.payload)
+        except ValueError as exc:
+            raise ScheduleAuthorityRejected("scheduled_command_invalid") from exc
+        payload = {**prepared, "execute": False}
         verified = VerifiedHostGrant(
             context=execution_authority.host_context,
             grant_id=execution_authority.grant_id,
@@ -61,21 +68,66 @@ class ZebraApiScheduledTaskAdmission:
         revision = response.body.get("current_sequence")
         if not isinstance(revision, int) or isinstance(revision, bool) or revision < 0:
             raise RuntimeError("scheduled Task admission returned no revision")
-        command = self.api.submit_command(
-            str(task_id),
-            {
-                "kind": "run",
-                "expected_revision": revision,
-                "payload": {"run_id": f"schedule:{firing.fire_id}:run"},
-            },
-            idempotency_key=f"schedule:{firing.fire_id}:run",
-            extension_admission=self.extension_admission,
-            verified_host_grant=verified,
-        )
-        if command.status_code not in {200, 202} or command.body.get("status") not in {
-            "accepted",
-            "duplicate",
-        }:
+        if selection is not None or stream is not None:
+            run_id = str(firing.fire_id)
+            command = handle_agui_command(
+                self.api,
+                RouteRequest(
+                    "POST",
+                    "/agui/commands",
+                    verified_host_grant=verified,
+                    host_context=verified.context,
+                    headers={"Idempotency-Key": f"schedule:{firing.fire_id}:run"},
+                    body={
+                        "action": "run",
+                        "threadId": str(task_id),
+                        "runId": run_id,
+                        "expectedRevision": revision,
+                        **(
+                            {"extensionSelection": selection.model_dump(mode="json")}
+                            if selection
+                            else {}
+                        ),
+                        **(
+                            {"streamCapabilities": stream.model_dump(mode="json")} if stream else {}
+                        ),
+                        "input": {
+                            "threadId": str(task_id),
+                            "runId": run_id,
+                            "messages": [],
+                            "tools": [],
+                            "context": [],
+                            "state": {},
+                            "forwardedProps": {},
+                        },
+                    },
+                ),
+                extension_admission=self.extension_admission,
+            )
+        else:
+            command = self.api.submit_command(
+                str(task_id),
+                {
+                    "kind": "run",
+                    "expected_revision": revision,
+                    "payload": {"run_id": f"schedule:{firing.fire_id}:run"},
+                },
+                idempotency_key=f"schedule:{firing.fire_id}:run",
+                extension_admission=self.extension_admission,
+                verified_host_grant=verified,
+            )
+        if command is None:
+            raise ScheduleAuthorityRejected("agui_admission_unavailable")
+        status = command.body.get("status")
+        if (
+            command.status_code not in {200, 202}
+            or not isinstance(status, str)
+            or status
+            not in {
+                "accepted",
+                "duplicate",
+            }
+        ):
             self._reject_or_retry(command, "task_command")
         return task_id
 

@@ -7,6 +7,7 @@ from datetime import datetime
 import zebra_agent_config
 from agent_core.application import SessionTitleService
 from agent_core.domain.events import EventActor, EventType
+from agent_core.domain.execution_authority import ExecutionAuthorityResolutionError
 from agent_core.domain.plugin_authority import PluginAuthorityUnavailable
 from agent_core.domain.sessions import SessionStatus
 from agent_integrations import build_model_gateway
@@ -46,6 +47,7 @@ from zebra_agent_worker.execution_recovery import (
     recover_execution_progress,
 )
 from zebra_agent_worker.gateway_release import GatewayRelease
+from zebra_agent_worker.host_authority_probe import HostAuthorityUnavailable
 from zebra_agent_worker.host_execution_authority import HostExecutionAuthority
 from zebra_agent_worker.task_recovery import apply_bound_host_context
 
@@ -61,9 +63,26 @@ class SessionExecutionService(SessionExecutionComposition, SessionExecutionEntry
         session_id = claimed.lease.session_id
         if completed := recover_committed_completion(self, claimed, ownership_check, started_at):
             return completed
-        fresh_authority = HostExecutionAuthority.for_execution(self, session_id)
-        if fresh_authority is not None:
-            fresh_authority.before_private_input(ownership_check)
+        fresh_authority = None
+        if self._settings.host_execution_authority.enabled:
+            control_recorder = self._projection_recorder_factory.build(
+                session=claimed.recovery.session,
+                workspace=claimed.recovery.workspace,
+                lease=claimed.lease,
+                ownership_check=ownership_check,
+            )
+            try:
+                fresh_authority = HostExecutionAuthority.for_execution(self, session_id)
+                assert fresh_authority is not None
+                fresh_authority.before_private_input(control_recorder.require_active_execution)
+            except ExecutionInterrupted:
+                return execution_preflight._superseded_by_control_event(control_recorder)
+            except ExecutionAuthorityResolutionError as exc:
+                raise errors.WorkerAuthoritySetupUnavailable(
+                    "host_authority_unavailable"
+                    if isinstance(exc, HostAuthorityUnavailable)
+                    else "host_authority_denied"
+                ) from None
         worker_progress = finish_preparation(
             lambda: recover_execution_progress(self, claimed, ownership_check), ownership_check
         )
@@ -117,8 +136,8 @@ class SessionExecutionService(SessionExecutionComposition, SessionExecutionEntry
             if self._coverage_runtime is None:
                 raise WorkerExecutionError("coverage_unsupported")
             return self._coverage_runtime.execute(self, inputs, authority_recorder, ownership_check)
-        task = bundle.resolve_bound_workspace(task, self._workspace_resolver, session_id)
         model_gateway = execution_gateway.model_gateway(self, build_model_gateway, task=task)
+        task = bundle.resolve_bound_workspace(task, self._workspace_resolver, session_id)
         if fresh_authority is not None:
             model_gateway = fresh_authority.model(model_gateway)
         effect_recorder: list[DurableHarnessEventRecorder] = []
@@ -159,6 +178,12 @@ class SessionExecutionService(SessionExecutionComposition, SessionExecutionEntry
             return execution_preflight._superseded_by_control_event(authority_recorder)
         except PluginAuthorityUnavailable as exc:
             raise errors.WorkerPluginSetupUnavailable("plugin authority is unavailable") from exc
+        except ExecutionAuthorityResolutionError as exc:
+            raise errors.WorkerAuthoritySetupUnavailable(
+                "host_authority_unavailable"
+                if isinstance(exc, HostAuthorityUnavailable)
+                else "host_authority_denied"
+            ) from None
         except (RuntimeError, ValueError) as exc:
             log_worker_failure("worker_setup_failed", "context_prepare", session_id, exc)
             raise WorkerExecutionError(str(exc)) from exc

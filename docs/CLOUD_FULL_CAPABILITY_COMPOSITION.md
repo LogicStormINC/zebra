@@ -49,3 +49,10 @@ endpoint exists or an environment flag is present. Freeze source and images,
 validate native HTTP/storage and fresh Host revocation against isolated data,
 then activate only the verified capability matrix. Memory selection under a
 Definition must retain its original Definition scope; do not broaden queries.
+
+## Schedule and startup boundary follow-up
+
+- Keyed schedule creation derives one owner-scoped identity and checks frozen intent, including after lost HTTP acknowledgement; existing unkeyed clients stay compatible. Scheduled AG-UI admission preserves explicit extension selection and v2 capabilities.
+- Fresh Host startup refusal/unavailability suspends the original session with a finite reason and no model retry. Cancellation is checked before private input. Researcher child probes use only verified durable parent lineage; child permissions remain narrowed.
+- Ordinary opaque workspace references now use the same trusted resolver as Bundle tasks. Plain local paths pass through. Construct the provider before allocating a workspace, so missing credentials cannot allocate storage.
+- Focused workspace/bundle gate21 passed; previous combined gate110 passed; make check passes1436 typed modules. Full deployment/ERP acceptance remains in the paired integration task.

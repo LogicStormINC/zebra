@@ -6,9 +6,12 @@ from collections.abc import Callable
 from datetime import UTC, datetime
 from threading import RLock
 from typing import TYPE_CHECKING
+from uuid import UUID
 
 from agent_core.domain.events import SessionEvent
 from agent_core.domain.identifiers import SessionId
+from agent_core.domain.subagent_delegation import ParentChildLink
+from agent_core.domain.task_bindings import TaskBindingSnapshot
 from agent_core.ports.model_gateway import ModelGatewayPort
 
 from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
@@ -56,8 +59,6 @@ class HostExecutionAuthority:
         if task_id is None:
             raise ExecutionAuthorityResolutionError("fresh Host authority requires indexed Task")
         binding = service._task_binding_loader(session_id)
-        from agent_core.domain.task_bindings import TaskBindingSnapshot
-
         if not isinstance(binding, TaskBindingSnapshot):
             raise ExecutionAuthorityResolutionError("fresh Host authority requires typed binding")
         return cls(
@@ -67,6 +68,7 @@ class HostExecutionAuthority:
                 ConfiguredHmacHostCredentialResolver(service._settings.host_tool_shared_secret),
                 task_id=str(task_id),
                 settings=settings,
+                host_task_id=_host_task_id(service, str(task_id), binding),
             )
         )
 
@@ -144,3 +146,38 @@ class HostExecutionAuthority:
             raise ExecutionAuthorityResolutionError("model transport lacks fresh authority hook")
         gateway.authority_check = lambda request_id: self.check("model", request_id)
         return gateway
+
+
+def _host_task_id(
+    service: SessionExecutionComposition,
+    task_id: str,
+    binding: TaskBindingSnapshot,
+) -> str:
+    """Depth-one children revalidate the same Host Run without gaining parent tools."""
+    get_link = getattr(service._delegation_store, "get_link", None)
+    if not callable(get_link):
+        return task_id
+    from agent_core.domain.identifiers import TaskId
+
+    link = get_link(TaskId(UUID(task_id)))
+    if link is None:
+        return task_id
+    if (
+        not isinstance(link, ParentChildLink)
+        or str(link.child_task_id) != task_id
+        or link.child_binding_digest != binding.binding_digest
+        or link.root_task_id != link.parent_task_id
+        or link.parent_task_id == link.child_task_id
+        or get_link(link.parent_task_id) is not None
+        or service._task_binding_loader is None
+    ):
+        raise ExecutionAuthorityResolutionError("Host delegation lineage is invalid")
+    parent = service._task_binding_loader(SessionId(UUID(str(link.parent_task_id))))
+    if (
+        not isinstance(parent, TaskBindingSnapshot)
+        or parent.binding_digest != link.parent_binding_digest
+        or parent.host_capability.host_context != binding.host_capability.host_context
+        or not binding.effective_capabilities <= parent.effective_capabilities
+    ):
+        raise ExecutionAuthorityResolutionError("Host delegation parent changed")
+    return str(link.parent_task_id)

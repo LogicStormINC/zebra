@@ -150,7 +150,8 @@ def test_scheduled_admission_reuses_api_queue_with_stable_key() -> None:
     assert cast(dict[str, object], api.calls[0]["payload"])["execute"] is False
     assert api.calls[1]["session_id"] == str(task_id)
     assert api.calls[1]["payload"] == {
-        "kind": "run", "expected_revision": 2,
+        "kind": "run",
+        "expected_revision": 2,
         "payload": {"run_id": f"schedule:{firing.fire_id}:run"},
     }
     assert api.calls[1]["idempotency_key"] == f"schedule:{firing.fire_id}:run"
@@ -209,3 +210,51 @@ def test_scheduled_admission_classifies_command_failure() -> None:
             execution_authority=execution(binding),
             idempotency_key=firing.idempotency_key,
         )
+
+
+def test_frozen_stream_and_extension_selection_use_normal_agui_admission(monkeypatch) -> None:
+    from agent_core.domain.plugin_snapshots import ExtensionSelection
+    from agent_core.domain.stream_admission import StreamCapabilities
+    from zebra_agent_api.ag_ui_command import AgUiCommandEnvelope
+
+    firing, binding = schedule_fixture()
+    task_id = uuid4()
+    api = FakeApi(ApiResponse(201, {"session_id": str(task_id), "current_sequence": 2}))
+    caps = StreamCapabilities(
+        wire_version=2,
+        provisional_draft_label=True,
+        replace_message=True,
+        reset_provisional=True,
+        scoped_resume=True,
+    )
+    template = ScheduledTaskTemplate(
+        payload={
+            **firing.schedule_snapshot.task_template.payload,
+            "extension_selection": {"skills": [], "mcp": []},
+            "stream_capabilities": caps.model_dump(mode="json"),
+        }
+    )
+    calls = []
+
+    def admit(app, request, **kwargs):
+        envelope = AgUiCommandEnvelope.model_validate(request.body)
+        assert envelope.run_id == str(firing.fire_id)
+        assert envelope.thread_id == str(task_id)
+        assert envelope.extension_selection == ExtensionSelection()
+        assert envelope.stream_capabilities.supports_v2
+        calls.append(request)
+        return ApiResponse(202, {"status": "accepted"})
+
+    monkeypatch.setattr("zebra_agent_scheduler.admission.handle_agui_command", admit)
+    result = ZebraApiScheduledTaskAdmission(cast(ZebraAgentApi, cast(Any, api))).admit(
+        template,
+        binding=binding,
+        firing=firing,
+        execution_authority=execution(binding),
+        idempotency_key=firing.idempotency_key,
+    )
+    assert result == task_id
+    assert len(calls) == 1
+    assert len(api.calls) == 1  # create only; no second legacy Run command.
+    assert "extension_selection" not in api.calls[0]["payload"]
+    assert "stream_capabilities" not in api.calls[0]["payload"]
