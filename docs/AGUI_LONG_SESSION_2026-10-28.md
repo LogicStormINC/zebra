@@ -142,3 +142,66 @@ Worker、Search、Search TLS、Yahoo 出口保持原进程；没有重启 MCP。
 后续只读校验精确受保护服务和原 Run，没有重复部署或回滚。
 私有发布证据和回滚基线：`/home/ubuntu/releases/20261028-agui-long-session`。
 本地证据：`.artifacts/agui-long-session-20261028/`；未推送 GitHub，待维护者集成。
+
+## 后续只读审计：跨进程观察恢复（2026-10-28）
+
+本节补充上一轮未覆盖的窗口，不撤销已通过测试，也不将测试总数解释为全部路径可靠。
+产品源码与线上服务本轮未修改；无模型、搜索、审批或原 Run 重跑。
+
+### 已复现问题
+
+1. **P1：提交正文后观察器重建，无法正常同步终态。**
+   `trench_ai_zebra_runtime.py:71` 每次创建空 mapper；dispatcher 从持久游标之后
+   读取，未恢复 `final_answer_authoritative` 和 delivery assessment。
+   完成事件被映射成 `committed_answer_missing`，但 dispatcher 仅对 `transient_`
+   问题使用完整恢复，因此反复续读同一后缀。
+   保存的真实编码帧／1020000 字节正文经真实 mapper、dispatcher 和隔离 SQLite：
+   三次观察均仍 running，正文保留。部分完成样本配合真实契约形状的
+   delivery_requirements_unmet 终态，则从 partial assessment 错映射成 blocked。
+   对照调用既有 transient 完整事实恢复路径：一次恢复分别为 completed／partial，
+   正文字节数均未变化。该对照是在隔离数据中选择已有路径，不是线上修复。
+
+2. **P1：同一 Run 跨观察器的工具汇总会丢失前缀。**
+   新 mapper 的 tool_results/content_parts 是空集合；新结果以局部集合输出，
+   Turn store 的 agent_step/done 又直接替换已保存汇总。
+   使用标准 files.publish 回执和 sources.get_status 回执复现：原汇总 `[file]`
+   被 `[status]` 覆盖，最终正文没有旧文件下载链接，原始文件事件仍在数据库中。
+   因此数据本体未丢，但最终交付入口可能丢失。此例 partial 状态保持。
+   同一共享 mapper 路径还承载工具名、媒体识别、模型用量；这些应纳入修复回归，
+   不能只给文件链接单独打补丁。
+
+3. **P2：完整恢复清空分片状态，却保留对应的已见游标。**
+   `trench_ai_zebra_stream_v2.py:64` 在 recovery_start 时清空 replacements/chunks，
+   `seen` 却继续把重新发送的已接收前缀当成重复帧丢弃。
+   同游标前缀重放后，下一片确定触发 stream_replacement_gap。
+   当前缺口处理可再创建新 decoder 并 GET 恢复，因此不直接等同于永久丢失；
+   但会消耗额外恢复预算，叠加链路故障时容易再次耗尽重连次数。
+   普通 provisional reset 与完整 canonical recovery 的状态清理语义也必须区分。
+
+### 通用最小修复范围（未实施）
+
+- 区分同一个观察器的热续读与新观察器的冷恢复。冷恢复优先复用现有按原 Run
+  读取完整权威事实的路径来重建 mapper，而不是只放行缺少答案的终态。
+  热续读继续复用游标/连接；不重新提交执行命令，不追加模型或工具执行。
+- 完整恢复时协调 decoder 与 mapper 的重建，保留 SQL 游标去重、已批准回执、
+  原 Run/Turn 身份、取消/租约/权限检查。不要以放宽 committed-answer 判定补洞。
+- 恢复过程中的局部工具/媒体集合不得覆盖此前完整交付集合：复用稳定 tool_call_id／
+  part id 做合并，或在完整重建结束后再发布完整集合。原始证据不删除。
+- 普通临时流 reset 只清理临时草稿；完整 canonical 恢复重建组装和去重状态。
+  同一恢复轮次内同游标异内容冲突仍需拒绝，不能无条件清空去重来绕过校验。
+- 新回归覆盖：在文件交付、答案提交、审批等待、终态前后分别重建观察器；验证
+  同一 Run、无重复事实/计费/下载入口丢失、partial 不升级也不降为 blocked。
+  加入多次 reset 与原始1 MiB预算边界，再走既有原生HTTP/PG门禁。
+
+### 当前线上观察与证据边界
+
+只读短超时统计：186 Turn、0 活跃、0 committed_answer_missing 观察问题；
+该库 partial Turn 为0，未改写任何原始状态。API/Worker/Search健康且无重启。
+近30分钟每服务最多3000行的指定错误计数为0；不能据此保证无所有历史故障。
+本次是源码与确定性隔离复现，不声称上述问题已在指定生产 Run 上发生。
+
+可复跑脚本与输出在配对 Trench 工作树：
+`.artifacts/agui-recovery-audit-20261028/{probe.py,result.json,artifacts_probe.py,artifacts-result.txt}`。
+`probe.py` 复用上一轮保存的真实 v2 编码帧；第二脚本使用标准工具/恢复记录形状。
+使用现有 Trench venv 与 tests/api、services/api/src、packages/core/src 等既有 PYTHONPATH。
+所有数据库均为 TemporaryDirectory 中一次性 SQLite；没有外部执行请求。

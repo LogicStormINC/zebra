@@ -17201,3 +17201,11 @@ unchanged isolated rerun2passed/30.87s. Broad initial run was interrupted and is
 reported as full-repo pass. Only idle Trench API deployed, exact source/config and
 original90-event canonical hash verified; unrelated pgAdmin restarts excluded from
 protected service check. Local commits/maintainer integration only; no GitHub push.
+
+2026-10-28 AGUI-LONG-SESSION read-only follow-up: reproduced cold mapper terminal
+recovery loop, partial-to-blocked mapping, prefix tool delivery summary loss, and
+reset/seen-state mismatch using saved frames and disposable SQLite. Existing full
+recovery path succeeds in the isolated contrast; production/source unchanged.
+186 production Turns/0 active/0 missing-commit observers in bounded read-only query.
+No model/search/Run retry, approval or service restart. Findings and minimal next
+slice in docs/AGUI_LONG_SESSION_2026-10-28.md; implementation remains outstanding.
