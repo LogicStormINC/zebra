@@ -1,3 +1,13 @@
+## 2026-10-29 G4 source publication / G5A unlock
+
+Reviewed source6e6334ae pushed directly to origin/cloud-agent. SPEC final29 and
+QUALITY final53 independent PASS; finalSDK273/0, check/package and makecheck
+1449/30eval passed. G5A native interactions Ready, followed by G5B existing
+Provider/HITL/runtime action isolation. G4 includes local drafts only, not native
+resume/effects capability. Default profiles remain disabled. Old package/version,
+Trench, archive branch/tag and primary89e4afed/10 dirty entries preserved. No
+registry publication, production Run/model replay or deployment.
+
 ## 2026-10-29 G4 reviewed shared UI candidate
 
 Basea0279254, isolated codex/agui-g4-shared-ui-20261029. Existing official applied

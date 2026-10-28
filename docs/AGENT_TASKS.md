@@ -1,6 +1,56 @@
+## AGUI-G5A-NATIVE-INTERACTION-20261029 — Native complete response and effect roundtrip
+
+- Status: Ready (2026-10-29; G4 reviewed source6e6334ae published).
+- Human owner: Luke Ding; executor: Codex; target: cloud-agent.
+- Planned branch: codex/agui-g5a-native-interaction-20261029; reuse isolated
+  trench-spin-sync-20261028/zebra-agent worktree after G4 publication receipt.
+- Scope: actual native complete interrupt responses and receipted frontend-tool
+  continuation; exact current authority and original operation reconciliation.
+  No generic client-run admission, second execution or browser ToolMessage authority.
+- Version gate BEFORE implementation: freeze the narrow interaction contract in
+  docs/AGUI_NATIVE_INTERACTION_CONTRACT.md. Existing r1 projector/checkpoint/cursor
+  bytes remain readable. Explicit revision2 may compose new native interaction
+  facts and whitelisted public output classification; absence still selects r1.
+  New revision discovery/config/header routing must be explicit and default off.
+  Confirm exact selection and native decision/cancel anchors before source edits.
+- Owned integration paths: ag_ui/profiles.py, standard_profiles.py, standard_binding.py,
+  standard_checkpoint.py, standard_state.py, standard_projection.py,
+  standard_interrupts.py, standard_public_text.py, client_effect_projection.py;
+  focused standard_interaction.py/standard_interaction_state.py/
+  standard_interaction_binding.py if selected by the frozen design.
+- Owned API paths: ag_ui_prepare.py, ag_ui_public_binding.py,
+  ag_ui_observation_binding.py, ag_ui_standard_http.py, ag_ui_client_state.py,
+  ag_ui_command.py, ag_ui_command_receipts.py, client_approval_operations.py,
+  client_effect_receipts.py, api_status_mixin.py, http.py/routes.py;
+  ag_ui_stream.py/ag_ui_checkpoint_tail.py only revision selection/binding.
+- Worker ag_ui_composition.py and its existing HTTP/config composition only exact
+  profile versions; new config field needs its exact filename addendum before edit.
+- Owned SDK paths: client-core agui_http.ts/agui_native.ts/agui_events.ts/
+  agui_reducer.ts, index/server exports and focused native interaction module if
+  responsibility/name added before coding; explicit SDK test collection.
+- Tests: focused API/integrations/SDK native interaction files, existing frozen
+  legacy/r1 golden/profile tests, controlled native HTTP conformance gate and
+  composition tests; exact filenames added before editing existing test files.
+- Core/Port/storage/harness changes are NOT implicitly owned. Trace existing
+  atomic units, indexed reads and actual Worker first; add explicit narrower
+  ownership or split a card before required changes. No new migration by default.
+- Acceptance: complete exact latest interrupt set validated before any write;
+  approved/rejected/cancelled/expired/revoked/unknown and three sequential native
+  approvals; no rejection resurrects terminal native execution. Actual frontend
+  call -> original accepted receipt -> exact same native continuation -> official
+  consumer result/messages, duplicate/lost ACK/history zero execution effects.
+  Unsupported native combinations reject before writes, no fabricated facts or
+  capability. SQLite/PG and signed HTTP/fake-provider gates as supported by actual
+  native composition; no conditionally skipped core acceptance counted as PASS.
+- Next G5B owns existing React Provider/HITL/runtime multi-session action safety,
+  registered handler integration and UI connection; G6 packages, T1 Trench and G7
+  full/performance gates remain required. No version/tgz/release/deploy here.
+- Governance: focused interaction contract, main contract link, plan/registry,
+  PROGRESS/WORKLOG. One source branch/card; spec then quality before publication.
+
 ## AGUI-G4-SHARED-UI-20261029 — Public views and scoped React interaction
 
-- Status: Review (2026-10-29; final SPEC and QUALITY PASS, awaiting publication).
+- Status: Done (2026-10-29; final SPEC/QUALITY PASS; 6e6334ae published on origin/cloud-agent).
 - Human owner: Luke Ding; executor: Codex; target: cloud-agent.
 - Branch: codex/agui-g4-shared-ui-20261029; reuse clean isolated
   trench-spin-sync-20261028/zebra-agent worktree after G3B publication.

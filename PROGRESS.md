@@ -1,4 +1,4 @@
-## 2026-10-29 AG-UI G4 shared interaction views (reviewed candidate)
+## 2026-10-29 AG-UI G4 shared interaction views (published6e6334ae)
 
 Official applied documents now feed scoped display indexes and existing React
 widgets. Token updates notify their own entities; settlement/order changes refresh
@@ -14,7 +14,8 @@ zero skips, check/package and root make check1449 types/30eval passed. Independe
 SPEC29 and QUALITY53 passed. Earlier framework/browser verify predates narrow
 review fixes; final whole-plan browser/package gates remain G6/T1/G7. No production
 activation, registry publish, original Run/model replay or deployment. Source
-publication receipt follows; primary local89e4afed/dirty work remains untouched.
+6e6334ae is published on origin/cloud-agent; primary local89e4afed/dirty work
+remains untouched. G5A native interaction is Ready.
 
 ## 2026-10-29 AG-UI G3B actual HTTP transport (published f9b708ef)
 
