@@ -34,6 +34,7 @@ from agent_integrations.ag_ui.checkpoint_plan import (
     checkpoint_version,
 )
 from agent_integrations.ag_ui.contracts import AgUiRunIdentity
+from agent_integrations.ag_ui.profiles import AgUiProjectionProfile
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +57,7 @@ class AgUiCheckpointConsumer:
         read_summaries: TaskReadSummaryPort | None = None,
         checkpoint_committed: Callable[[ProjectionCheckpointHead], object] | None = None,
         notification_required: bool = False,
+        profile: AgUiProjectionProfile | None = None,
     ) -> None:
         if (
             not isinstance(namespace, str)
@@ -71,17 +73,20 @@ class AgUiCheckpointConsumer:
         self.tasks, self.work, self.namespace = tasks, work, namespace
         self.read_summaries = read_summaries
         self.checkpoint_committed = checkpoint_committed
-        self.materializer = AgUiCheckpointMaterializer(tasks)
+        self.profile = profile
+        self.materializer = AgUiCheckpointMaterializer(tasks, profile=profile)
         self._after_scope: ProjectionScope | None = None
         self._after_repair: TaskId | None = None
         self._repair_turn = True
         self._repair_retry_at = 0.0
 
     def _scope(self, scope: ProjectionScope) -> None:
-        if scope.namespace != self.namespace or scope.projector_version not in {
-            AG_UI_CHECKPOINT_VERSION,
-            AG_UI_COVERAGE_CHECKPOINT_VERSION,
-        }:
+        versions = (
+            {self.profile.checkpoint_version(), self.profile.checkpoint_version(coverage=True)}
+            if self.profile is not None
+            else {AG_UI_CHECKPOINT_VERSION, AG_UI_COVERAGE_CHECKPOINT_VERSION}
+        )
+        if scope.namespace != self.namespace or scope.projector_version not in versions:
             raise CheckpointConflict("projection work belongs to another namespace/version")
 
     def _repair_task(self, task: TaskId) -> bool:
@@ -212,7 +217,7 @@ class AgUiCheckpointConsumer:
             or run.highwater != work.requested_through
         ):
             raise CheckpointConflict("projection work conflicts with its canonical Run")
-        if work.scope.projector_version != checkpoint_version(run):
+        if work.scope.projector_version != checkpoint_version(run, self.profile):
             # No ACK, timer or repeated privacy poll. Source-owned routing repair
             # wakes old closed anchors after a late flip, preserving failure caps.
             self.work.defer_projection_work(work, problem_code="not_ready")
@@ -239,7 +244,13 @@ class AgUiCheckpointConsumer:
         )
         try:
             plan = build_projection_page_plan(
-                self.tasks, page, run, work.scope, identity, closed_through=work.closed_through
+                self.tasks,
+                page,
+                run,
+                work.scope,
+                identity,
+                closed_through=work.closed_through,
+                profile=self.profile,
             )
             transition = self.materializer.prepare_page(page, plan, work.scope, identity)
             if transition is None:

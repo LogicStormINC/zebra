@@ -1,7 +1,7 @@
 ## AGUI-G2V-PROFILE-ISOLATION-20261028 — New projection version isolation
 
-- Status: Ready (not claimed; 2026-10-28).
-- Human owner: Luke Ding; executor: unassigned; target: cloud-agent.
+- Status: Review (implementation/focused gates complete; independent review pending; 2026-10-29).
+- Human owner: Luke Ding; executor: Codex; target: cloud-agent.
 - Dependencies: G0 a1a46a5a and G1 9697d893 reviewed/integrated locally.
 - Proposed branch: codex/agui-g2v-profile-isolation-20261028; use an isolated
   worktree and record the exact base/ownership before implementation.
@@ -10,12 +10,31 @@
   binding_resolution}.py; API ag_ui_stream.py/stream_v2_authority.py and
   stream_v2_cursor.py; corresponding focused profile/cursor/checkpoint tests;
   docs/AGUI_STANDARD_DURABLE_CONTRACT.md; registry/PROGRESS/WORKLOG/plan.
+- Exact base: 80570bc6; branch codex/agui-g2v-profile-isolation-20261028;
+  worktree /Users/lukeding/.codex/worktrees/trench-spin-sync-20261028/zebra-agent.
+- Before-code owned addendum: ag_ui/{profiles,checkpoint_binding,checkpoint_materializer}.py;
+  API stream_v2_http.py/stream_v2_query.py/ag_ui_checkpoint_tail.py/stream_v2_reader.py/app.py/api_status_mixin.py;
+  tests/api/test_runtime_capabilities.py (existing discovery carrier); focused integration/API tests.
+  Initial scope excluded Port/storage; following explicit extension owns derived-only migration.
+  No execution admission changes: immutable headers already bind namespace/Task/Run/anchors.
+- Review-fix ownership extension before edits (2026-10-29):
+  agent-storage/{composition,postgres_composition}.py; exact-version read factory only,
+  no GET registration/schema/repair; tests/api/test_agui_profile_isolation.py lagging tails.
+- Before-code storage ownership extension: agent-core/ports/task_projection_work.py;
+  agent-storage/{projection_work_routing,projection_work_schema,projection_work}.py;
+  postgres/{projection_work,agui_profile_routing_migration,migration_catalog_tail}.py;
+  tests/agent_storage/test_agui_profile_routing.py, test_task_projection_work.py
+  (six-version bounded fanout) and branch migration catalog test.
+  Preserve all old migration checksums; additive v115 installs profile-aware routing.
 - Before code: audit all selectors/callers; freeze public Run mapping from durable
   continuation anchors and actual discovery carrier. Any Port/storage/admission
   expansion must be split or explicitly owned before editing.
 - Scope: explicit profile/version selection and independent new checkpoint/cursor
   identity; absent configuration retains legacy bytes/behavior. New profiles stay
   unavailable until bound; no producer semantic change or production activation.
+- Validation: focused90 passed/1 owned-endpoint skip, then native PG/Redis21 passed/0 skips
+  closes that handoff case; G0 golden7 included; make check1431 types/30eval passed.
+  Disposable local PG/Redis only; full unchanged migration catalog verified by parent.
 - Acceptance: same legacy source/cursor golden unchanged; cross-profile/version/
   scope denial, frame-boundary replay, current authority and exact binding recovery;
   old package compatibility and native PG checkpoint evidence. G2 remains Locked
@@ -1194,7 +1213,8 @@
 - Existing tests/api/test_agui_stream_routes.py one-line foreign-tenant probe
   instrumentation target transfer approved before edit; assertions unchanged.
 - Exact additional CLIENT HTTP/browser checks approved before coding:
-  API stream_v2_http.py; tests/api/test_stream_v2_http.py; SDK
+  API stream_v2_http.py/stream_v2_query.py/ag_ui_checkpoint_tail.py/stream_v2_reader.py/app.py/api_status_mixin.py;
+  tests/api/test_runtime_capabilities.py (existing discovery carrier); tests/api/test_stream_v2_http.py; SDK
   package.json test-script only and scripts/stream-v2-browser.mjs.
 - Wire-only v2 keeps durable checkpoint projection/state/version unchanged;
   previously considered extra materializer paths are unused.

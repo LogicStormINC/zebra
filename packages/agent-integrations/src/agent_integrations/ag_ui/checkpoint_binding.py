@@ -26,6 +26,7 @@ from agent_integrations.ag_ui.checkpoint_plan import (
     checkpoint_version,
 )
 from agent_integrations.ag_ui.contracts import AgUiProjectionError, AgUiRunIdentity
+from agent_integrations.ag_ui.profiles import AgUiProjectionProfile
 
 
 @dataclass(frozen=True, slots=True)
@@ -234,6 +235,7 @@ def build_projection_page_plan(
     identity: AgUiRunIdentity,
     *,
     closed_through: int | None = None,
+    profile: AgUiProjectionProfile | None = None,
 ) -> ProjectionPagePlan:
     """Warm the whole selected block, including its pre-anchor prefix.
 
@@ -245,7 +247,7 @@ def build_projection_page_plan(
     """
     anchor = run.anchor.event_id if run.anchor is not None else None
     if (
-        scope.projector_version != checkpoint_version(run)
+        scope.projector_version != checkpoint_version(run, profile)
         or scope.task_id != run.task_id
         or str(run.task_id) != identity.thread_id
         or run.run_id != identity.run_id
@@ -316,5 +318,5 @@ def build_projection_page_plan(
             ProjectionEventPlan(source, projected, projected and entry.task_sequence >= run.start)
         )
     plan = ProjectionPagePlan(run, tuple(plans), tuple(proofs.values()))
-    plan.validate(page, scope, identity)
+    plan.validate(page, scope, identity, profile)
     return plan

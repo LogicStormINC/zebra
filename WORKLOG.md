@@ -17856,3 +17856,30 @@ and branch base checked before local fast-forward. Integrate both parent histori
 into cloud-agent; no GitHub push, deployment or original Run mutation. Disposable
 gate PG/Redis removed. Legacy productionv108 migration reconciliation is explicitly
 required before any future deployment; no automatic ledger rewriting.
+
+## 2026-10-29 AGUI-G2V profile isolation implementation
+
+- Claimed Ready before code on codex/agui-g2v-profile-isolation-20261028, base80570bc6;
+  exact reused worktree and ownership addenda recorded in AGENT_TASKS before each expansion.
+- Explicit bound projector/state registry, independent ordinary/privacy checkpoint and binding
+  ledger versions, canonical continuation-anchor mapping, scoped durable and signed v2p cursors.
+- All selectors audited: observer fast/scalar path, consumer, plan/binding, materializer,
+  cold frame restore, HTTP preflight/rewind/tail and native queue classifier/repair.
+- Actual discovery carrier GET /capabilities/runtime emits metadata.aguiProfiles only from
+  nonempty bound registry; defaults stay unavailable. No new producer semantic/admission,
+  deployment, business Run, receipt or history mutation. G2/G3 remain subsequent slices.
+- Additive v115 trigger migration; old68/98/100 checksums preserved. Six-version queue cap
+  remains bounded. Real disposable PG17 native queue and every-frame cold replay verified.
+- TDD red confirmed missing profile engine, fanout cap, and discovery metadata; targeted green.
+  Final exact validation commands/results recorded in parent report and PROGRESS.
+- Final stable gates: `/tmp/agui-g2v-focused.log`:90 passed/1 existing endpoint skip;
+  `/tmp/agui-g2v-stream-native.log`:21 passed/0 skips (real owned PG/Redis), closing that
+  handoff case; `/tmp/agui-g2v-make-check.log`:1431 sources/30eval and all gates passed.
+  Parent separately verified all113 preexisting migration checksums unchanged, only115 added.
+- Independent quality review P2: lagging new-profile SSE queried legacy-bound work reader;
+  reproduced two SQLite red cases as wrong projection_conflict. Added inert exact-version
+  constructor factories to SQLite/PG compositions and select from each captured scope.
+  Existing namespace/version guards and deadline wrapper remain intact; no GET writes.
+  Actual SQLite+PG ordinary/coverage-flip/expired-deadline profile tests7 passed0 skipped
+  (/tmp/agui-g2v-tail-queue-fix.log); fresh make check passed
+  (/tmp/agui-g2v-tail-make-check.log). Independent review rerun pending.

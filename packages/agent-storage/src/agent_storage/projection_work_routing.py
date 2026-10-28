@@ -36,13 +36,13 @@ def task_version(task: str, *, postgres: bool = False) -> str:
     )
 
 
-def classified_source(source: str, *, postgres: bool = False) -> str:
+def classified_source(source: str, *, postgres: bool = False, profiles: bool = False) -> str:
     # Other explicitly enabled projector versions retain their existing contract.
     # Only the two AG-UI queues are mutually exclusive, based on source presence.
     key = "s.task_id::uuid" if postgres else "s.task_id"
     namespace = "s.deployment_namespace" if postgres else "t.namespace"
     owner = "t.deployment_namespace" if postgres else "t.namespace"
-    return (
+    routed = (
         "SELECT s.*,p.projector_version AS routed_version,"
         f"{privacy_frontier('t', postgres=postgres)} AS privacy_frontier "
         f"FROM ({source}) s JOIN agent_tasks t ON t.task_id={key} "
@@ -54,10 +54,16 @@ def classified_source(source: str, *, postgres: bool = False) -> str:
         f"AND (p.projector_version NOT IN ('{ORDINARY}','{COVERAGE}') "
         f"OR p.projector_version={task_version('t', postgres=postgres)})"
     )
+    if not profiles:
+        return routed
+    return (
+        f"SELECT * FROM ({routed}) family WHERE NOT {_profile_family('routed_version')} OR "
+        "((privacy_frontier>=0)=(substr(routed_version,length(routed_version)-8)=':coverage'))"
+    )
 
 
-def selected_source(source: str, *, postgres: bool = False) -> str:
-    routed = classified_source(source, postgres=postgres)
+def selected_source(source: str, *, postgres: bool = False, profiles: bool = False) -> str:
+    routed = classified_source(source, postgres=postgres, profiles=profiles)
     # Task insertion sources have no Event fields; use this only for scalar headers.
     return (
         "SELECT deployment_namespace,task_id,event_id,task_sequence,event_type,command_kind,"
@@ -65,8 +71,8 @@ def selected_source(source: str, *, postgres: bool = False) -> str:
     )
 
 
-def classified_pending(source: str, *, postgres: bool = False) -> str:
-    routed = classified_source(source, postgres=postgres)
+def classified_pending(source: str, *, postgres: bool = False, profiles: bool = False) -> str:
+    routed = classified_source(source, postgres=postgres, profiles=profiles)
     maximum = "GREATEST" if postgres else "MAX"
     return (
         "INSERT INTO task_projection_work_routes "
@@ -79,9 +85,21 @@ def classified_pending(source: str, *, postgres: bool = False) -> str:
 
 
 def activate_privacy(
-    source: str, *, postgres: bool = False, preclassified: bool = False,
+    source: str,
+    *,
+    postgres: bool = False,
+    preclassified: bool = False,
+    profiles: bool = False,
 ) -> str:
-    routed = source if preclassified else classified_source(source, postgres=postgres)
+    routed = (
+        source if preclassified else classified_source(source, postgres=postgres, profiles=profiles)
+    )
+    coverage = f"routed_version='{COVERAGE}'"
+    if profiles:
+        coverage = (
+            f"({coverage} OR ({_profile_family('routed_version')} "
+            "AND substr(routed_version,length(routed_version)-8)=':coverage'))"
+        )
     return (
         "UPDATE task_projection_work_routes SET observed_through=-1,active_anchor_key=NULL,"
         "needs_repair=1,privacy_frontier=(SELECT s.privacy_frontier "
@@ -92,20 +110,31 @@ def activate_privacy(
         "WHERE privacy_frontier=-1 "
         "AND (deployment_namespace,task_id,projector_version) IN "
         f"(SELECT deployment_namespace,task_id,routed_version FROM ({routed}) s "
-        f"WHERE routed_version='{COVERAGE}' AND privacy_frontier>=0)"
+        f"WHERE {coverage} AND privacy_frontier>=0)"
     )
 
 
 def routed_statements(
-    source: str, *, postgres: bool = False, legacy_scalar_source: bool = False,
+    source: str,
+    *,
+    postgres: bool = False,
+    legacy_scalar_source: bool = False,
     preclassified: bool = False,
+    profiles: bool = False,
 ) -> tuple[str, ...]:
     # ponytail: legacy mode freezes v98 SQL; upgrades replace its trigger additively.
-    statements = list(routing_statements(
-        source if preclassified else selected_source(source, postgres=postgres),
-        correlate_source=not legacy_scalar_source,
-    ))
-    statements.insert(1, activate_privacy(source, postgres=postgres, preclassified=preclassified))
+    statements = list(
+        routing_statements(
+            source
+            if preclassified
+            else selected_source(source, postgres=postgres, profiles=profiles),
+            correlate_source=not legacy_scalar_source,
+        )
+    )
+    statements.insert(
+        1,
+        activate_privacy(source, postgres=postgres, preclassified=preclassified, profiles=profiles),
+    )
     # Replaying after the one-time privacy flip revisits *each* canonical anchor,
     # including closed/ACKed legacy coverage rows. Never reset a true failure cap,
     # nor rewrite its captured target/closure. Each header remains a point-key step.
@@ -128,3 +157,22 @@ def routed_statements(
             for statement in statements
         ]
     return tuple(statements)
+
+
+def _profile_family(column: str) -> str:
+    return (
+        "("
+        + " OR ".join(
+            f"substr({column},1,{len(prefix)})='{prefix}'"
+            for prefix in ("agui-standard-1.0:r", "zebra-reliable-v2-agui-1.0:r")
+        )
+        + ")"
+    )
+
+
+def matches_task_privacy(version: str, selected_legacy: str) -> bool:
+    if version in (ORDINARY, COVERAGE):
+        return version == selected_legacy
+    if version.startswith(("agui-standard-1.0:r", "zebra-reliable-v2-agui-1.0:r")):
+        return version.endswith(":coverage") == (selected_legacy == COVERAGE)
+    return True

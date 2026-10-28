@@ -1,4 +1,6 @@
+from collections.abc import Callable
 from dataclasses import dataclass
+from functools import partial
 from pathlib import Path
 
 from agent_core.ports import (
@@ -71,6 +73,7 @@ class ControlPlaneStores:
     delivery_audit: DeliveryAuditStorePort
     projection_work: TaskProjectionWorkPort | None = None
     coverage_projection_work: TaskProjectionWorkPort | None = None
+    projection_work_for_version: Callable[[str], TaskProjectionWorkPort] | None = None
 
     @property
     def legacy_artifact_control_enabled(self) -> bool:
@@ -110,6 +113,7 @@ def sqlite_control_plane_stores(database_path: str | Path) -> ControlPlaneStores
         session_history=SQLiteSessionHistory(local_path),
         delivery_audit=SQLiteDeliveryAuditStore(local_path),
         artifact_payload_reader=LocalArtifactPayloadReader(artifact_payloads),
+        projection_work_for_version=partial(SQLiteTaskProjectionWorkStore, local_path, "local"),
         projection_work=SQLiteTaskProjectionWorkStore(local_path, "local", "ag-ui-v1"),
         coverage_projection_work=SQLiteTaskProjectionWorkStore(
             local_path, "local", "ag-ui-v1-coverage"

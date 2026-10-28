@@ -48,6 +48,7 @@ from agent_integrations.ag_ui.coverage_checkpoint import (
     restore_coverage,
 )
 from agent_integrations.ag_ui.payload_validation import required_payload_text
+from agent_integrations.ag_ui.profiles import AgUiProjectionProfile
 from agent_integrations.ag_ui.projection import AgUiProjector
 from agent_integrations.ag_ui.projection_state import ProjectionState
 from agent_integrations.coverage_public_events import coverage_projection_event
@@ -136,6 +137,7 @@ def _state_for(
     identity: AgUiRunIdentity,
     *,
     strict_coverage: bool = False,
+    state_type: type[ProjectionState] = ProjectionState,
 ) -> tuple[ProjectionState, tuple[ProjectionCellKey, ...], SegmentCheckpoint]:
     scalar = reader.scalar(entry.segment_id)
     public = coverage_projection_event(entry.event, strict=strict_coverage)
@@ -151,7 +153,7 @@ def _state_for(
         cells = reader.load(keys)
     if any(cell.task_sequence > scalar.task_sequence for cell in cells):
         raise CheckpointConflict("projector cell is newer than its Segment scalar")
-    state = ProjectionState.from_checkpoint(scalar, cells, identity)
+    state = state_type.from_checkpoint(scalar, cells, identity)
     state.strict_coverage = strict_coverage
     restore_coverage(entry.event, cells, state)
     return state, keys, scalar
@@ -272,9 +274,16 @@ class AgUiCheckpointMaterializer:
         self,
         port: StreamCheckpointReadPort,
         projector: AgUiProjector | None = None,
+        *,
+        profile: AgUiProjectionProfile | None = None,
     ) -> None:
         self.port = port
-        self.projector = projector or AgUiProjector()
+        if profile is not None and projector is not None and projector is not profile.projector:
+            raise AgUiProjectionError("projector conflicts with bound profile")
+        self.profile = profile
+        self.projector = (
+            profile.projector if profile is not None else (projector or AgUiProjector())
+        )
 
     def prepare_page(
         self,
@@ -284,7 +293,9 @@ class AgUiCheckpointMaterializer:
         identity: AgUiRunIdentity,
     ) -> ProjectionTransition | None:
         """No writes: return one validated CAS transition, or None for an empty Page."""
-        plan.validate(page, scope, identity)
+        plan.validate(page, scope, identity, self.profile)
+        if self.profile is not None:
+            self.profile.binding_digest(scope, plan.run)
         head = self.port.read_checkpoint_head(scope)
         if head.scope != scope or head.through_sequence < page.after_sequence:
             raise CheckpointConflict("checkpoint Page does not extend its exact frontier")
@@ -303,7 +314,11 @@ class AgUiCheckpointMaterializer:
             if decision.projected:
                 segment_identity = _segment_identity(identity, entry.segment_id)
                 state, keys, scalar = _state_for(
-                    reader, entry, segment_identity, strict_coverage=plan.run.strict_coverage
+                    reader,
+                    entry,
+                    segment_identity,
+                    strict_coverage=plan.run.strict_coverage,
+                    state_type=self.profile.state_type if self.profile else ProjectionState,
                 )
                 previous = scalar.task_sequence
                 admit_projection(entry.event, segment_identity, started=state.started)
@@ -368,11 +383,11 @@ class AgUiCheckpointMaterializer:
         run: TaskRunHeader,
     ) -> ProjectionFrameHeader:
         """Validate even whole-Event cursors before skipping their public frames."""
-        if scope.projector_version != checkpoint_version(run):
+        if scope.projector_version != checkpoint_version(run, self.profile):
             raise AgUiProjectionError("unsupported checkpoint projector version")
         if entry.task_id != scope.task_id or str(scope.task_id) != identity.thread_id:
             raise AgUiProjectionError("checkpoint belongs to another Task")
-        validate_restore_run(scope, run, identity, entry.task_sequence)
+        validate_restore_run(scope, run, identity, entry.task_sequence, self.profile)
         head = self.port.read_checkpoint_head(scope)
         if head.scope != scope or entry.task_sequence > head.through_sequence:
             raise CheckpointNotReady("anchor checkpoint is not ready")
@@ -408,7 +423,11 @@ class AgUiCheckpointMaterializer:
         reader = _PageReader(self.port, scope, entry.task_sequence)
         segment_identity = _segment_identity(identity, entry.segment_id)
         state, _, scalar = _state_for(
-            reader, entry, segment_identity, strict_coverage=run.strict_coverage
+            reader,
+            entry,
+            segment_identity,
+            strict_coverage=run.strict_coverage,
+            state_type=self.profile.state_type if self.profile else ProjectionState,
         )
         if scalar.task_sequence != header.state_before_sequence:
             raise CheckpointConflict("frame header references another predecessor checkpoint")
@@ -430,7 +449,10 @@ class AgUiCheckpointMaterializer:
         run: TaskRunHeader,
         after: AgUiCursor | None = None,
     ) -> Iterator[tuple[AgUiCursor, Event]]:
-        validate_restore_run(scope, run, identity, entry.task_sequence)
+        validate_restore_run(scope, run, identity, entry.task_sequence, self.profile)
+        digest = self.profile.binding_digest(scope, run) if self.profile is not None else None
+        if after is not None and after.profile_scope != digest:
+            raise AgUiProjectionError("cursor belongs to another profile binding")
         if after is not None and (
             after.thread_id != identity.thread_id
             or after.run_id != identity.run_id
@@ -453,6 +475,8 @@ class AgUiCheckpointMaterializer:
                     sequence=entry.task_sequence,
                     event_id=str(entry.event.event_id),
                     frame_index=index,
+                    version=2 if digest is not None else 1,
+                    profile_scope=digest,
                 ),
                 frames[index],
             )

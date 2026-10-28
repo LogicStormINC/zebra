@@ -27,10 +27,9 @@ from agent_core.ports.task_projection_work import (
 
 from agent_storage.projection_work_routing import (
     BOOTSTRAP_SOURCE,
-    COVERAGE,
-    ORDINARY,
     activate_privacy,
     classified_pending,
+    matches_task_privacy,
     routed_statements,
     task_version,
 )
@@ -192,8 +191,8 @@ class SQLiteTaskProjectionWorkStore(TaskProjectionWorkPort):
                     version=self._version,
                     through=row["next_event_sequence"] - 1,
                 )
-                connection.execute(classified_pending(BOOTSTRAP_SOURCE), params)
-                connection.execute(activate_privacy(BOOTSTRAP_SOURCE), params)
+                connection.execute(classified_pending(BOOTSTRAP_SOURCE, profiles=True), params)
+                connection.execute(activate_privacy(BOOTSTRAP_SOURCE, profiles=True), params)
             done = len(rows) < limit
             connection.execute(
                 "UPDATE task_projection_work_projectors SET bootstrap_after_task_id=?,"
@@ -264,9 +263,9 @@ class SQLiteTaskProjectionWorkStore(TaskProjectionWorkPort):
                 version=self._version,
                 through=task["next_event_sequence"] - 1,
             )
-            connection.execute(classified_pending(BOOTSTRAP_SOURCE), params)
-            connection.execute(activate_privacy(BOOTSTRAP_SOURCE), params)
-            if self._version in (ORDINARY, COVERAGE) and task["selected_version"] != self._version:
+            connection.execute(classified_pending(BOOTSTRAP_SOURCE, profiles=True), params)
+            connection.execute(activate_privacy(BOOTSTRAP_SOURCE, profiles=True), params)
+            if not matches_task_privacy(self._version, task["selected_version"]):
                 connection.execute(
                     "UPDATE task_projection_work_routes SET needs_repair=0 "
                     "WHERE deployment_namespace=? AND task_id=? AND projector_version=?",
@@ -350,7 +349,7 @@ class SQLiteTaskProjectionWorkStore(TaskProjectionWorkPort):
                         run_id=row["replay_run_id"],
                         internal=row["replay_internal_continuation"],
                     )
-                    for statement in routed_statements(SOURCE):
+                    for statement in routed_statements(SOURCE, profiles=True):
                         connection.execute(statement, params)
                     completed = connection.execute(
                         "SELECT * FROM task_projection_work_routes WHERE "

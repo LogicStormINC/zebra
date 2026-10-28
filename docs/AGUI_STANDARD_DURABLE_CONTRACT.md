@@ -57,11 +57,12 @@ cursor 回填这个字符串。`ag-ui-v1` 与 `ag-ui-v1-coverage` 仍是现有 c
 标准版本仍由输入 `protocolVersion` 声明。未知或矛盾选择在准入前明确拒绝，
 不静默降级；没有 header 且未显式配置新 profile 时严格保留旧行为。
 
-发现合同保留为现有业务 bootstrap envelope 的新增可选字段
-`metadata.aguiProfiles`（支持的新 profile ID 数组）。**当前没有这个字段或新
-profile 可用性实现**；这不是一个新端点。G2V/G4 必须在现有 bootstrap/discovery
-组合处实现并验证旧 DTO 兼容后，才可对外宣布可用。声明仅提示兼容能力，
-不授予 namespace、工具、审批或执行权限。
+发现合同使用可选字段 `metadata.aguiProfiles`（支持的新 profile ID 数组）。
+G2V 已在现有 `GET /capabilities/runtime` 实现承载点及绑定 registry 的可用性选择，
+并验证默认旧 DTO 不新增 metadata；隔离实现见第10节。实际 AG-UI 1.0 producer
+尚未实现，生产 registry 默认为空，新生产 profile 仍不可用。实际 Trench 业务
+bootstrap envelope 的字段转发待 T1 实现；这不是新增 Native 端点。声明仅提示
+兼容能力，不授予 namespace、工具、审批或执行权限。
 
 [官方 HTTP SSE 绑定](https://docs.ag-ui.com/spec/1.0/basic/transports/http-sse)
 没有 Last-Event-ID 续读；断线本身不能授权本平台重发业务请求。可靠 v2 是
@@ -214,3 +215,59 @@ G1验收：25项新增、完整SDK199项通过且无跳过；type/package、实�
 ESM/CJS消费通过。规格与代码质量审查通过。框架消费者/双浏览器检查通过后，
 最终容量guard再经过完整SDK199/type/package复验。新增入口尚未接生产profile，
 因此不把这些证据等同于完整1.0生产协议、Trench迁移或吞吐/模型验收。
+
+## 10. G2V profile 隔离与可恢复绑定
+
+显式注册入口是 `ZebraAgentApi.agui_profiles`；每个 `AgUiProjectionProfile`
+同时绑定 profile ID、revision、实际 projector 与可冷恢复的 state_type。
+默认 registry 缺失，不启用任一 1.0 profile；不存在自动将旧 projector 注册为
+标准实现的生产配置。已注册的测试 projector 仅证明隔离，不证明 1.0 生产语义。
+`X-Zebra-AGUI-Profile` 请求缺失时仍选择旧实现；未知、空值或未绑定值返回
+`409 agui_profile_unavailable`，不能静默降级。原始 Task/Session SSE 不接受此 header。
+
+实际发现承载点为已有 `GET /capabilities/runtime`，仅当实际 registry 非空时
+添加 `metadata.aguiProfiles`，内容来自其 `available_profiles`。默认不添加 metadata；
+其余能力合同保留，schema_version 随增量迁移版本正常更新。业务 BFF 后续把该字段
+转发到自己的 bootstrap envelope；不得硬编码另一个“支持列表”。
+
+新 output checkpoint 使用 `<profile>:r<revision>`，严格隐私使用独立
+`<profile>:r<revision>:coverage`。namespace、Task、原 command anchor 仍由现有
+ProjectionScope 组成；binding ledger 也由完整 output version 分离。consumer、
+observer、plan、materializer、snapshot 快路及单事件冷恢复都使用同一显式绑定。
+落后于 source 的 SSE 也按当前 snapshot 完整 version 从同 namespace 的组合工厂
+构造问题读取器，不能把新 scope 交给旧 work store；隐私切换后重新选择。该构造无
+I/O，实际查询仍受原 deadline 和 store scope 校验约束，不 enable/backfill/repair。
+每次冷恢复通过 profile.state_type.from_checkpoint 创建独立状态；默认仍为原
+ProjectionState。共享 projector 不保存当前 Task/Run 或可变恢复上下文。G2 新状态
+字段和对应 cells、usage/continuation 上下文必须在其明确 owned paths 中实现，
+不能通过在共享 projector 上写“当前 Run”来传递。G2V 未实现这些新语义。
+
+精确 cursor binding 是 UTF-8 canonical JSON（ensure_ascii=True、紧凑分隔符）的
+SHA-256，数组按以下次序：`zebra:agui:binding:1`、namespace、Task UUID 字符串、
+内部 executionRun、profile ID、整数 revision、完整 projector_version、原 command
+anchor event UUID。新 durable cursor 使用 version=2 并包含此 profile_scope；旧
+version=1 不增加字段。跨 namespace/Task/Run/profile/revision/privacy 不能恢复。
+可靠传输将该 digest 加入原 stream scope 的身份数组，并用 `agui:` 标识新 scope；
+新签名 cursor 的前缀为 `v2p.`，HMAC domain 为
+`zebra:stream:v2:agui-profile-cursor\0`。旧 `v2.` 的编码、身份数组及 HMAC domain
+逐字保留。新 token 即使带 `recovery=full` 也先核对签名与 scope，不能降回旧路径。
+标准 SSE 的 durable event ID 保持其观察坐标性质，不由其授予任何执行权威。
+
+公共协议 runId 的重建算法为 `agui:` 加 canonical JSON 数组的 SHA-256：
+`["zebra:agui:protocol-run:1", binding_digest, continuation_anchor_event_uuid]`。
+首次使用原 command anchor；后续仅接受原 Run 窗口内、相同内部 run_id、被 scalar
+header 明确标记为 internal_continuation 的 SESSION_COMMAND_ACCEPTED。算法入口
+逐一核对 source.read_event_header 返回的原 anchor 和 continuation header，拒绝
+伪造或错位坐标，不扫描正文、不新增 Worker 执行，也不重写 receipt。后继协议链接
+属于独立 binding metadata，不能占用只表示 spawned subagent 关系的 parentRunId。
+
+该 hash 只能在 durable admission anchor 已存在之后计算。G2V 没有实现标准
+RunAgentInput.runId 的 POST admission 互操作：G3 必须明确选择由已授权 BFF 先准入
+并返回绑定，或在标准准入事务中持久绑定客户端提供的 public runId；不能悄悄回显
+另一个 runId，也不能扫描所有 Runs 来反解 hash。内部执行/审批/收据身份不变。
+
+增量 PostgreSQL v115 安装 profile-aware source routing，保留历史迁移 checksum；
+SQLite 使用同一 classifier。每个 family 根据真实 source privacy 只唤醒 ordinary
+或 coverage queue；晚到隐私事实重新准备对应严格队列，旧 output 行不被改写。
+显式配置最多六个 projector versions（旧两个 + 新两个 family 的各两个），第七个
+仍拒绝；没有无限 fanout。GET 不注册、不迁移、不 repair、不 materialize。

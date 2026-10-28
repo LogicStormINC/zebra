@@ -1,3 +1,18 @@
+## 2026-10-29 AG-UI G2V projection profile isolation (Review)
+
+Explicit profile registry binds projector/state restoration; default stays unavailable.
+New checkpoint/privacy/binding-ledger versions and durable/signed cursor scopes are
+independent; absent header retains the old projection and cursor bytes/HMAC. The existing
+GET /capabilities/runtime carries metadata.aguiProfiles only from available bindings.
+Canonical continuation anchors deterministically map public protocol Run IDs without
+changing execution/approval/receipt authority; standard POST runId admission remains G3.
+Additive v115 installs source-owned privacy routing for all profile families; all prior
+migration checksums remain unchanged. Six explicit projector versions remain bounded.
+Focused90 passed/1 endpoint-dependent skip, followed by actual owned PG/Redis21 passed
+with zero skips; G0 golden7 included; make check1431 typed sources/30eval passed.
+Independent review/integration pending. No new 1.0 producer semantics, activation, source
+publication, business Run replay or deployment. See [contract](docs/AGUI_STANDARD_DURABLE_CONTRACT.md).
+
 ## 2026-10-28 AG-UI G1 standard consumer foundation
 
 AGUI-G1-STANDARD-CONSUMER-20261028 adds an opt-in per-protocol-Run consumer using

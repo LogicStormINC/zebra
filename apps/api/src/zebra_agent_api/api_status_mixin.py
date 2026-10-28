@@ -24,6 +24,12 @@ class ApiStatusMixin:
             200,
             {
                 "contract_version": 1,
+                **(
+                    {"metadata": {"aguiProfiles": list(profiles.available_profiles)}}
+                    if (profiles := getattr(self, "agui_profiles", None)) is not None
+                    and profiles.available_profiles
+                    else {}
+                ),
                 "client_approval_operation_contract_version": int(
                     available
                     and isinstance(

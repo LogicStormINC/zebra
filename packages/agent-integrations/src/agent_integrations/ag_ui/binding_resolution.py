@@ -6,6 +6,7 @@ restarts without a recursion stack or a query-time prefix scan.
 """
 
 import json
+from hashlib import sha256
 from typing import Literal
 
 from agent_core.domain.events import EventType
@@ -29,6 +30,7 @@ from agent_integrations.ag_ui.checkpoint_plan import (
     AG_UI_CHECKPOINT_VERSION,
     AG_UI_COVERAGE_CHECKPOINT_VERSION,
 )
+from agent_integrations.ag_ui.profiles import is_profile_version
 
 BINDING_VERSION = "ag-ui-binding-v1"
 BINDING_PROOF_KEY = "binding:admission"
@@ -52,6 +54,9 @@ class BindingResolutionPending(CheckpointNotReady):
 
 
 def binding_scope(scope: ProjectionScope) -> ProjectionScope:
+    if is_profile_version(scope.projector_version):
+        version = BINDING_VERSION + ":" + sha256(scope.projector_version.encode()).hexdigest()[:32]
+        return ProjectionScope(scope.namespace, scope.task_id, scope.anchor_event_id, version)
     if scope.projector_version not in {AG_UI_CHECKPOINT_VERSION, AG_UI_COVERAGE_CHECKPOINT_VERSION}:
         raise CheckpointConflict("binding requires the supported output scope")
     return ProjectionScope(scope.namespace, scope.task_id, scope.anchor_event_id, BINDING_VERSION)

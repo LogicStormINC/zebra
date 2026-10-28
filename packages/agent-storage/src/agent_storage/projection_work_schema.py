@@ -189,7 +189,7 @@ def initialize_projection_work(connection: sqlite3.Connection) -> None:
      NEW.next_event_sequence-1 AS task_sequence,NULL AS selected_version"""
     connection.execute("DROP TRIGGER IF EXISTS agent_tasks_projection_work_insert")
     connection.execute(f"""CREATE TRIGGER agent_tasks_projection_work_insert
-     AFTER INSERT ON agent_tasks BEGIN {classified_pending(task_source)}; END""")
+     AFTER INSERT ON agent_tasks BEGIN {classified_pending(task_source, profiles=True)}; END""")
     source = """SELECT namespace AS deployment_namespace,NEW.task_id AS task_id,
      NEW.event_id AS event_id,NEW.task_sequence AS task_sequence,NEW.event_type AS event_type,
      NEW.replay_command_kind AS command_kind,NEW.replay_run_id AS run_id,
@@ -200,7 +200,7 @@ def initialize_projection_work(connection: sqlite3.Connection) -> None:
     locate = f"""INSERT OR IGNORE INTO task_replay_coverage_privacy
      SELECT event_id,task_id,task_sequence FROM session_events WHERE event_id=NEW.event_id
      AND task_id IS NOT NULL AND task_sequence IS NOT NULL AND {COVERAGE_PRIVACY};"""
-    body = locate + ";\n".join(routed_statements(source)) + ";"
+    body = locate + ";\n".join(routed_statements(source, profiles=True)) + ";"
     for name, operation in (
         ("insert", "INSERT"),
         ("assign", "UPDATE OF task_id,task_sequence,replay_header_ready"),
@@ -214,11 +214,13 @@ def initialize_projection_work(connection: sqlite3.Connection) -> None:
         connection.execute(f"""CREATE TRIGGER session_events_work_pending_{name}
          AFTER {operation} ON session_events WHEN NEW.task_id IS NOT NULL
          AND NEW.task_sequence IS NOT NULL AND NEW.replay_header_ready=0
-         BEGIN {locate}{classified_pending(source)};{activate_privacy(source)}; END""")
+         BEGIN {locate}{classified_pending(source, profiles=True)};
+         {activate_privacy(source, profiles=True)}; END""")
     connection.execute("DROP TRIGGER IF EXISTS coverage_privacy_projection_work_insert")
     locator_source = """SELECT namespace AS deployment_namespace,task_id,
      next_event_sequence-1 AS task_sequence,NULL AS selected_version
      FROM agent_tasks WHERE task_id=NEW.task_id"""
     connection.execute(f"""CREATE TRIGGER coverage_privacy_projection_work_insert
      AFTER INSERT ON task_replay_coverage_privacy BEGIN
-     {classified_pending(locator_source)};{activate_privacy(locator_source)}; END""")
+     {classified_pending(locator_source, profiles=True)};
+     {activate_privacy(locator_source, profiles=True)}; END""")

@@ -18,6 +18,7 @@ from agent_integrations import (
     GitHubPullRequestTransport,
     build_model_gateway,
 )
+from agent_integrations.ag_ui.profiles import AgUiProfileRegistry
 from agent_integrations.redis_live_fanout_async import AsyncRedisNotifications
 from agent_runtime import (
     read_mcp_resource_attachments,
@@ -116,6 +117,7 @@ class ZebraAgentApi(
     live_event_fanout: LiveEventFanoutPort | None = None
     stream_notifications: AsyncRedisNotifications | None = None
     stream_v2_reader: StreamV2Reader | None = None
+    agui_profiles: AgUiProfileRegistry | None = None
     effect_state: EffectStateReadPort | None = None
     workspace_control_store: WorkspaceControlStorePort | None = None
     administrative_context_namespace: str | None = None
