@@ -1,6 +1,29 @@
+## AGUI-G2V-PROFILE-ISOLATION-20261028 — New projection version isolation
+
+- Status: Ready (not claimed; 2026-10-28).
+- Human owner: Luke Ding; executor: unassigned; target: cloud-agent.
+- Dependencies: G0 a1a46a5a and G1 9697d893 reviewed/integrated locally.
+- Proposed branch: codex/agui-g2v-profile-isolation-20261028; use an isolated
+  worktree and record the exact base/ownership before implementation.
+- Owned paths: integrations ag_ui/{contracts,task_stream,projection_state,
+  checkpoint_plan,checkpoint_keys,checkpoint_observer,checkpoint_consumer,
+  binding_resolution}.py; API ag_ui_stream.py/stream_v2_authority.py and
+  stream_v2_cursor.py; corresponding focused profile/cursor/checkpoint tests;
+  docs/AGUI_STANDARD_DURABLE_CONTRACT.md; registry/PROGRESS/WORKLOG/plan.
+- Before code: audit all selectors/callers; freeze public Run mapping from durable
+  continuation anchors and actual discovery carrier. Any Port/storage/admission
+  expansion must be split or explicitly owned before editing.
+- Scope: explicit profile/version selection and independent new checkpoint/cursor
+  identity; absent configuration retains legacy bytes/behavior. New profiles stay
+  unavailable until bound; no producer semantic change or production activation.
+- Acceptance: same legacy source/cursor golden unchanged; cross-profile/version/
+  scope denial, frame-boundary replay, current authority and exact binding recovery;
+  old package compatibility and native PG checkpoint evidence. G2 remains Locked
+  until G2V is reviewed and integrated; no migration/replay/deployment implied.
+
 ## AGUI-G1-STANDARD-CONSUMER-20261028 — Reuse official standard event consumption
 
-- Status: Review (2026-10-28; Ready claim before code; 25 new/199 full SDK tests zero skips, check/package and independent spec/quality review passed; local integration follows, no push/deployment).
+- Status: Done (2026-10-28; 9697d893 fast-forward integrated into local cloud-agent; 25 new/199 full SDK tests zero skips, check/package and independent spec/quality reviews passed; no push/deployment).
 - Human owner: Luke Ding; executor: Codex; target: cloud-agent.
 - Branch/worktree: codex/agui-g1-standard-consumer-20261028; trench-spin-sync-20261028/zebra-agent.
 - Dependency: reviewed G0 a1a46a5a integrated into local cloud-agent.

@@ -9,7 +9,8 @@ checks passed; type/package/actual CJS+ESM pass; G0 seven and make check pass.
 React18/19 x Vite/Next SSR/RSC and Chromium/WebKit matrix passed before final
 capacity guard; new guard received fresh unit/type/package checks. Browser gate
 reset now awaits empty DOM (exact672 assertion retained), not a UI/CSS change.
-Remaining: G2V must freeze+validate public Run mapping and independent profile /
+9697d893 and G0 a1a46a5a integrated locally without changing protected dirty files.
+Remaining: Ready G2V must freeze+validate public Run mapping and independent profile /
 checkpoint/cursor namespace before G2 producer semantics. G3/G7 must validate
 paced cold recovery, byte/memory budgets and128 pending-event refusal under load.
 No source publication, registry upload, service activation, model/search or old

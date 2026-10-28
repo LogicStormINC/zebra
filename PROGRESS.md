@@ -10,7 +10,8 @@ Final SDK199 passed/zero skips, check/package and actual ESM/CJS entry checks pa
 and Chromium/WebKit matrices passed before the final ingress guard; final guard
 then passed fresh SDK199/type/package tests. No claim of completed production AG-UI1.0.
 Independent spec/quality reviews passed after two P1 and one P2 corrections.
-Next: G2V profile/checkpoint/cursor isolation, before new projection semantics.
+9697d893 fast-forward integrated into local cloud-agent; G0 a1a46a5a is its ancestor.
+Next: Ready G2V profile/checkpoint/cursor isolation, before new projection semantics.
 No registry publication, Trench package replacement, live model or deployment.
 
 ## 2026-10-28 AG-UI G0 contract baseline
