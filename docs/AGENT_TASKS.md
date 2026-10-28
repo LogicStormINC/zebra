@@ -35868,3 +35868,32 @@ old payloads remain byte-compatible by excluding None. No database migration.
 - Boundary: conversation was subsequently soft-deleted; preserve deletion. Browser
   logged out; no authenticated page claim. Exact historical lock SQL/holder cannot
   be reconstructed from retained logs; no speculative Worker fix or model retry.
+
+
+### CLOUD-PROGRESS-BUDGET-20261028 — critical facts versus UI publication deadline
+
+- Status: Review (2026-10-28; committed/deployed,105 focused no-model checks and
+  one authorized high/v2 normal-page Run passed; awaiting maintainer integration).
+- Human owner Luke Ding; executor Codex; branch codex/cloud-progress-budget-20261028,
+  paired cloud-plugin-plan-01 Zebra worktree, no push/main merge.
+- Owned paths: this card, PROGRESS.md, WORKLOG.md, docs/CLOUD_PROGRESS_BUDGET_2026-10-28.md,
+  private .artifacts/cloud-progress-budget-20261028/;
+  packages/agent-core/src/agent_core/harness/public_output_lifecycle.py,
+  packages/agent-core/src/agent_core/harness/model_response_progress.py,
+  apps/worker/src/zebra_agent_worker/progress_recovery.py,
+  tests/worker/test_public_output_deadline.py, tests/worker/test_canonical_event_deadline.py.
+- Scope: inspect original Run06a0abf1 storage timeout; separate bounded canonical
+  fact processing from UI-only2s callback budget. Keep explicit parent deadlines,
+  native per-transaction2s, fresh ownership/lease/cancel, UI timer/close limits,
+  no model/search or original task retry/status rewrite. Actual-image no-model
+  safety check before idle Worker-only production activation. Search/MCP untouched.
+
+- Result: b3793278; UI2s / canonical5s, native transaction2s and existing parent
+  deadlines/fences unchanged. Exact-image saved-response ACK timeout comparison
+  old fails/new accepts, each1write; no provider/search in replay. Only idle
+  Worker updated, all other services/schema105/cooldown preserved. Original
+ 26events/2models unchanged, failed candidate not relabeled as success.
+- Authorized single real page: conv_1793154759026_9a4ea0, Runf0e03834; completed,
+ 1accepted command/1model(high/Flash/v2)/0tools/0retries,6.942s admission→terminal.
+  Refresh preserves answer, model count remains1. Normal suggestions POST1.
+  Evidence and rollback: docs/CLOUD_PROGRESS_BUDGET_2026-10-28.md.

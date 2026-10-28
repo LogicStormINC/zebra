@@ -1,3 +1,17 @@
+# Latest production repair: canonical persistence budget (2026-10-28)
+
+CLOUD-PROGRESS-BUDGET-20261028. Primary model/event facts incorrectly shared the
+UI2s aggregate publication ceiling; original model response committed but ACK
+window expired. Shared classification gives canonical facts5s while UI/deltas2s,
+individual DB operations2s, explicit parent limits, fresh fences and cancellation
+remain. No retries/hiding errors/schema/security downgrade. Sourceb3793278,
+105 focused checks; exact old/new image saved-response ACK-timeout proof.
+Only idle Worker updated. Original failed candidate preserved; other services/
+Search/MCP/cooldown unchanged. One user-authorized normal-page high/Flash/v2 Run
+completed with1model/0tools/0retries in6.942s admission→terminal; refresh retained
+answer without another executor call. No second sample. Source awaits maintainer
+integration; no push/main merge. See docs/CLOUD_PROGRESS_BUDGET_2026-10-28.md.
+
 # Latest production repair: Redis / terminal observation (2026-10-24)
 
 CLOUD-REDIS-OBSERVER-20261024. Redis full-volume backup retained; native offline

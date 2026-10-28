@@ -17094,3 +17094,23 @@ closes original Run. No historical traceback/SQL/blocker and current postgres
 stderr /dev/null, no surviving blocking tx; exact SQL remains open, no speculative
 Worker/config fix. Root/validation/rollback in focused doc. Branch retained for
 maintainer integration; no push/main merge, unrelated dirty work untouched.
+
+
+## 2026-10-28 — CLOUD-PROGRESS-BUDGET-20261028
+
+Diagnosed original conv1793153591356: successful sequence23 candidate persisted,
+progress22, shared2s callback expires during commit ACK; not provider/Redis error.
+Separated canonical aggregate5s from UI/delta2s in shared core+Worker wrapper.
+Native per-DB2s/lock50ms/parent limits/fences unchanged, no retry or success
+fabrication.105 focused no-model checks, real isolated PG and exact production
+image saved-response ACK fault injection oldfail/newpass,1write each. Source
+b3793278. Worker-only production overlay45cb2dd72b0e, config/security/schema105
+preserved; all other stable services/Search/MCP/cooldown retained. Original
+26event hash/model count2 unchanged. No answer_committed, keep original failed.
+User then allowed one new Run: normal logged-in Chrome submit exactlyonce,
+conv1793154759026_9a4ea0 / Runf0e03834, completed with high/Flash/transient_v2,
+1model1136ms/0tools/0search/0retry, admission→syncedterminal6.942s. Answer
+“演示环境已就绪。” visible, refresh preserved, model count still1. Suggestions
+normal POST1, no intercepted responses. Screenshot/artifacts private path and
+full boundaries/rollback in CLOUD_PROGRESS_BUDGET_2026-10-28.md. No push/main
+merge, maintainers integrate focused branch; unrelated primary changes preserved.
