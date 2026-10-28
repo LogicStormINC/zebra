@@ -1,3 +1,10 @@
+# 2026-10-28 — CA-P5-01 Native gates verified / Review
+
+[DDD/API/proof boundaries](docs/CA-P5-01_runtime_gates.md): schema115 additive, explicit scoped machine approval,
+immutable original/CAS, namespace admission fence and actual Worker compatibility/engine observations.
+21 focused checks/cloud API composition passed; make test11197 passed/3067 conditional skips, make check1436 typed sources/30Eval passed. [Evidence](docs/evidence/ca-p5-01/README.md).
+Reserved final open slot prevents retention from stranding drain; no automatic replay, Controller claim, task/history/Coverage mutation or production operations. P5/S1/fleet shutdown/rollback remain open.
+
 # 2026-10-28 — Authorized P4 cloud-agent integration
 
 User authorizes fast-forward of verified b88e2b7b/baf29f78 to cloud-agent, GitHub push and merged clean topic cleanup.

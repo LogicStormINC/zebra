@@ -162,7 +162,6 @@ def build_worker_loop_service(
         )
     else:
         from agent_storage import sqlite_control_plane_stores
-
         active_stores = stores or sqlite_control_plane_stores(database_path)
         cloud_memory_store = None
         active_transaction = worker_projection_transaction
@@ -207,7 +206,6 @@ def build_worker_loop_service(
     delegation_store = None
     if settings.storage_authority == "postgresql":
         from agent_storage.postgres.task_admission import load_session_task_binding as _load_binding
-
         binding_dsn = cloud_bundle.dsn or ""
         if binding_dsn:
 
@@ -425,11 +423,13 @@ def build_worker_loop_service(
     stream_hint_relay, checkpoint_committed = configure_stream_hint_relay(
         execution_stores, settings
     )
+    from zebra_agent_worker.runtime_gates import configure_runtime_gates
     from zebra_agent_worker.transient_capacity_maintenance import (
         configure_transient_capacity_maintenance,
     )
 
     service = WorkerLoopService(
+        runtime_gates=configure_runtime_gates(settings, active_namespace),
         transient_capacity=configure_transient_capacity_maintenance(active_namespace, settings),
         projection_store=execution_stores.sessions,
         execution_service=execution_service,

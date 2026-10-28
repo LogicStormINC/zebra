@@ -1,3 +1,9 @@
+## CA-P5-01 — Runtime gates (verified / Review)
+
+[Contract/proof boundaries](docs/CA-P5-01_runtime_gates.md): scoped machine API, immutable original/CAS,
+DB admission drain/open and real Worker snapshot/engine observations. Development mode is explicit;
+no global stop/activation authority, automatic replay, Controller claim, deployment or production migration.
+
 2026-10-28：[P4授权主线整合与分支边界](docs/evidence/p4-integration/2026-10-28.json)；cloud-agent只快进，保留脏工作树/独有实验与冻结兼容基线。无部署或生产迁移。
 
 2026-10-27：[产品分发/当前撤回](docs/CA-P4-02_plugin_distribution.md)，精确原发布/独立业务安装/代际与Worker当前门禁；无部署或生产迁移。

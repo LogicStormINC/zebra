@@ -91,6 +91,7 @@ class ZebraAgentSettings:
     cloud_skills_publish_enabled: bool = False
     platform_operator_token: str | None = None
     runtime_management_config: str | None = None
+    runtime_gate_config: str | None = field(default=None, kw_only=True)
     runtime_bundle_config: str | None = None
     publication_management_config: str | None = None
     bundle_management_config: str | None = None
@@ -255,6 +256,7 @@ def load_settings(
         ),
         platform_operator_token=_read_optional(values, "ZEBRA_PLATFORM_OPERATOR_TOKEN"),
         runtime_management_config=_read_optional(values, "ZEBRA_RUNTIME_MANAGEMENT_CONFIG"),
+        runtime_gate_config=_read_optional(values, "ZEBRA_RUNTIME_GATE_CONFIG"),
         runtime_bundle_config=_read_optional(values, "ZEBRA_RUNTIME_BUNDLE_CONFIG"),
         publication_management_config=_read_optional(values, "ZEBRA_PUBLICATION_MANAGEMENT_CONFIG"),
         bundle_management_config=_read_optional(values, "ZEBRA_BUNDLE_MANAGEMENT_CONFIG"),

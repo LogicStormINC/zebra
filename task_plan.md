@@ -1,3 +1,11 @@
+# CA-P5-01 execution checkpoint
+
+- [x] Claim dependency/DDD/proof boundary and create Native feature branch from current cloud-agent.
+- [x] Native gate/approval/schema/Worker implementation and focused recovery checks; actual cloud router composition.
+- [x] Confirm final Native make test/check and refresh formal evidence (source frozen).
+- [ ] Commit/push Native; copy exact published source contract/digest into Go docs-only child and run Go make check.
+- [ ] Confirm fresh Go make test/check; commit/push; verify both remote feature tips. No main merge or deployment/migration.
+
 # CA-CLOUD-INTEGRATION-20261027
 
 - [x] Inventory both histories, branch ancestry and dirty worktrees.

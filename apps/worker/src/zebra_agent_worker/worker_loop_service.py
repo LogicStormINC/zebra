@@ -5,6 +5,7 @@ import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from threading import Lock, Thread
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from agent_core.domain.identifiers import SessionId, TaskId
@@ -32,6 +33,9 @@ from zebra_agent_worker.recovery import SessionRecoveryError
 from zebra_agent_worker.resume import SessionResumeError
 from zebra_agent_worker.transient_capacity_maintenance import TransientCapacityMaintenance
 from zebra_agent_worker.worker_polling import has_remaining_cycles, validate_loop_inputs
+
+if TYPE_CHECKING:
+    from zebra_agent_worker.runtime_gates import RuntimeGateWorker
 
 
 @dataclass(frozen=True)
@@ -82,6 +86,7 @@ class WorkerLoopService:
         projection_work: AgUiProjectionWorkService | None = None,
         stream_hint_relay: StreamHintRelay | None = None,
         transient_capacity: TransientCapacityMaintenance | None = None,
+        runtime_gates: RuntimeGateWorker | None = None,
     ) -> None:
         self._projection_store = projection_store
         self._execution_service = execution_service
@@ -99,6 +104,7 @@ class WorkerLoopService:
         self._client_recovery_at = 0.0
         self._projection_work = projection_work
         self._transient_capacity = transient_capacity
+        self._runtime_gates = runtime_gates
         self._stream_hint_relay = stream_hint_relay
         self._relay_at = 0.0
         self._relay_lock = Lock()
@@ -109,7 +115,7 @@ class WorkerLoopService:
         try:
             if time.monotonic() < self._relay_at:
                 return
-            self._relay_at = time.monotonic()+1  # Rate ceiling, not a delivery latency promise.
+            self._relay_at = time.monotonic() + 1  # Rate ceiling, not a delivery latency promise.
             self._stream_hint_relay.tick()
         finally:
             self._relay_lock.release()
@@ -137,6 +143,8 @@ class WorkerLoopService:
         batch_size: int,
         lease_ttl_seconds: int,
     ) -> None:
+        if self._runtime_gates is not None:
+            self._runtime_gates.tick()
         if self._transient_capacity is not None:
             self._transient_capacity.tick()
         self._relay_stream_hints()
@@ -149,6 +157,8 @@ class WorkerLoopService:
         )
 
     def drain(self) -> None:
+        if self._runtime_gates is not None:
+            self._runtime_gates.close()
         if self._transient_capacity is not None:
             self._transient_capacity.close()
         if self._stream_hint_relay is not None:
@@ -167,6 +177,8 @@ class WorkerLoopService:
         batch_size: int = 1,
         lease_ttl_seconds: int = 30,
     ) -> WorkerLoopCycleResult:
+        if self._runtime_gates is not None:
+            self._runtime_gates.tick()
         if self._transient_capacity is not None:
             self._transient_capacity.tick()
         self._relay_stream_hints()

@@ -1,3 +1,9 @@
+# CA-P5-01 / 2026-10-28
+Owner Luke Ding; Codex execution; branch codex/ca-p5-01-runtime-gates from0a50892d, scoped claim/design before code.
+Implemented gate journal/CAS/current approval, admission fence and Worker observations; final recovery hardening reserves open slot and rejects inherited-process observations without affecting work.
+First full candidate deliberately interrupted for these fixes (7810 pass/2181 skips, NOT full success). Final tests /tmp/ca-p5-01-test-delivery.log (session49779), check /tmp/ca-p5-01-check-delivery.log (70224), focused/evidence /tmp/ca-p5-01-evidence-delivery.log (16644); source frozen before these runs.
+Cloud API composition passed; Go published-preparation branch now has docs-only child codex/od-p5-ca01-contract, test log /tmp/od-p5-ca01-test.log. Final Native full exit0:11197 passed/3067 conditional skips; check1436 source files/30Eval passed. Evidence finalized, authorized Native commit/push then immutable Go pin/check and Go commit/push; no main merge/deploy/production migration.
+
 ## CA-P3-03G
 
 用户要求完成P3；先认领分支/Owned paths，再追踪serial与concurrent三处共享调用。31定向、完整make test11143通过/3067条件跳过、make check/30eval及SDK173/check通过，实际业务产品消费者单独固定源复验；不部署/生产迁移/main/npm。
