@@ -1,3 +1,16 @@
+## TRN-MULTI-SESSION-SPIN-SYNC-20261028
+
+- Status: Ready -> In Progress -> Review (2026-10-28; claimed before edits).
+- Human owner: Luke Ding; executor: Codex.
+- Branch: codex/cloud-trench-spin-sync-20261028; isolated worktree.
+- Owned paths: docs/TRN_MULTI_SESSION_ACTIVITY.md; this registry; PROGRESS.md.
+- Scope: paired Trench fix/package receipt on user-requested cloud-agent-trench
+  and cloud-agent; no Zebra runtime/SDK changes or registry publication.
+- Current user instruction authorizes this narrow documentation-only exception
+  to frozen branch policy; the original archive tag remains unchanged.
+- Validation: paired Trench HTTP/SQLite regression, multi-session UI tests,
+  package byte identities, scoped diff and remote commit verification.
+
 # CLOUD-CONTINUATION-EPOCHS-20261028 — Stale recovery isolation
 - Status: Done;2d8edcc7 fast-forward integrated into local cloud-agent;159 focused,325 native/33 SDK and118 native sibling tests passed, zero skips; make check passed. No push/deployment. Created Ready and claimed before code on integrated34a81a31,2026-10-28.
 - Human owner: Luke Ding; executor Codex; branch codex/cloud-continuation-epochs-20261028; worktree cloud-plugin-plan-01/zebra-agent; target cloud-agent.
