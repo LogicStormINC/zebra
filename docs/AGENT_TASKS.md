@@ -1,5 +1,5 @@
 # CLOUD-RELIABILITY-20261028 — Shared runtime failure isolation and recovery
-- Status: Review; native gate168/SDK33 with zero skips, focused recovery109/2 conditional skips and make check passed; created Ready and claimed before implementation, 2026-10-28.
+- Status: Done; integrated into local cloud-agent as193e8dfa; native gate168/SDK33 with zero skips, focused recovery109/2 conditional skips and make check passed; created Ready and claimed before implementation, 2026-10-28.
 - Human owner: Luke Ding; executor: Codex; branch codex/cloud-reliability-20261028; worktree cloud-plugin-plan-01/zebra-agent; integration target cloud-agent explicitly authorized.
 - Owned paths: packages/agent-storage/src/agent_storage/postgres/projection_work.py; apps/worker/src/zebra_agent_worker/execution_errors.py and shared recovery/loop modules if explicitly listed before edit; sdks/typescript/packages/client-core/src/ and tests/ shared Run/Turn observation; corresponding tests/agent_storage, tests/worker, tests/conformance/agui_long_session; docs/CLOUD_RELIABILITY_2026-10-28.md; docs/AGENT_TASKS.md; PROGRESS.md; WORKLOG.md.
 - Owned paths addendum before edits: packages/agent-integrations/src/agent_integrations/ag_ui/interrupts.py and tests/agent_integrations/test_ag_ui_infrastructure_recovery.py for shared suspension projection; no ERP adapter files.

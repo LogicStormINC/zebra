@@ -1,5 +1,8 @@
 ## 2026-10-28 CLOUD-RELIABILITY-20261028
 
+Integration receipt: cloud-agent fast-forwarded34f94577 ->193e8dfa; all10
+pre-existing dirty/untracked files retain exact hashes and modes. No push/deploy.
+
 User authorized shared minimal fixes and local integration into cloud-agent;
 no model/search calls or original Run replay. Reused clean cloud-plugin-plan-01
 worktree from34f94577 and claimed codex/cloud-reliability-20261028. Read ERP task
