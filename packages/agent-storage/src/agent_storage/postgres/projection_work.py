@@ -244,6 +244,24 @@ class PostgresTaskProjectionWorkStore(TaskProjectionWorkPort):
                 raise CheckpointConflict("projection-work Task is outside namespace")
             if not self._enabled(connection):
                 raise CheckpointNotReady("explicit projector enable required")
+            # Healthy routes are maintained by native appends. Discovery UPSERT and
+            # FOR UPDATE here would contend with canonical COMMIT even with no work.
+            current = execute(
+                "SELECT task_id,observed_through,wanted_through,needs_repair "
+                "FROM task_projection_work_routes WHERE deployment_namespace=%s "
+                "AND task_id=%s AND projector_version=%s",
+                key,
+            ).fetchone()
+            if (
+                task["event_position_state"] == "ready"
+                and (self._version not in (ORDINARY, COVERAGE)
+                     or task["selected_version"] == self._version)
+                and current is not None and not current["needs_repair"]
+                and current["observed_through"] >= max(
+                    current["wanted_through"], task["next_event_sequence"] - 1
+                )
+            ):
+                return self._repair(current)
             params = dict(
                 namespace=self._namespace,
                 task_id=str(task_id),
@@ -327,7 +345,7 @@ class PostgresTaskProjectionWorkStore(TaskProjectionWorkPort):
                     code = ClientCursor(connection.connection).mogrify(routing, params)
                     # Quote both levels; one DO statement shares the whole header's SQL deadline.
                     step.execute("DO %s", (code,))
-                    completed = step.execute(
+                    completed = execute(
                         "SELECT * FROM task_projection_work_routes WHERE deployment_namespace=%s "
                         "AND task_id=%s AND projector_version=%s",
                         key,

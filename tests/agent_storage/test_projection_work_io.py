@@ -133,7 +133,10 @@ def test_repair_byte_budget_and_durable_interruption(queue, monkeypatch):
             + (" ON task_projection_work_routes" if queue.backend == "postgres" else "")
         )
     monkeypatch.setattr(module + ".MAX_PROJECTION_WORK_BYTES", 1_048_576)
-    assert not queue.store().repair_projection_work(queue.task).needs_repair
+    for _ in range(20):
+        if not queue.store().repair_projection_work(queue.task).needs_repair:
+            break
+    assert not queue.store().read_projection_work_repairs()
 
 
 def test_unready_positions_remain_durably_discoverable(queue):
@@ -266,7 +269,7 @@ def test_pg_deadline_commits_completed_prefix_rolls_back_partial_closure_and_col
     first = store.repair_projection_work(fixture.task)
     assert 0 == first.after_sequence < first.wanted_through == 2
     elapsed = time.monotonic() - started
-    assert first.needs_repair and 1.5 < elapsed < 2.4
+    assert first.needs_repair and 0.05 < elapsed < 0.8  # 100ms maintenance slice.
     (pending,) = fixture.store().read_projection_work_repairs()
     assert pending == first
     rows = fixture.work_rows()

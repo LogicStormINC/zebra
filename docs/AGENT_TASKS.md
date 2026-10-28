@@ -1,3 +1,13 @@
+# CLOUD-RELIABILITY-20261028 — Shared runtime failure isolation and recovery
+- Status: Review; native gate168/SDK33 with zero skips, focused recovery109/2 conditional skips and make check passed; created Ready and claimed before implementation, 2026-10-28.
+- Human owner: Luke Ding; executor: Codex; branch codex/cloud-reliability-20261028; worktree cloud-plugin-plan-01/zebra-agent; integration target cloud-agent explicitly authorized.
+- Owned paths: packages/agent-storage/src/agent_storage/postgres/projection_work.py; apps/worker/src/zebra_agent_worker/execution_errors.py and shared recovery/loop modules if explicitly listed before edit; sdks/typescript/packages/client-core/src/ and tests/ shared Run/Turn observation; corresponding tests/agent_storage, tests/worker, tests/conformance/agui_long_session; docs/CLOUD_RELIABILITY_2026-10-28.md; docs/AGENT_TASKS.md; PROGRESS.md; WORKLOG.md.
+- Owned paths addendum before edits: packages/agent-integrations/src/agent_integrations/ag_ui/interrupts.py and tests/agent_integrations/test_ag_ui_infrastructure_recovery.py for shared suspension projection; no ERP adapter files.
+- Owned paths addendum: tests/api/test_agui_long_session_wire.py generates actual infrastructure-suspension frames for the existing native HTTP/SDK gate.
+- Scope: avoid redundant healthy-route repair locks; explicit infrastructure/auth/provider failure classification with no automatic execution retry; reuse generic scoped recovery, preserve final facts, bound long-session/fault behavior. Any additional module recorded before edit.
+- Isolation: ERP task owns its custom worker/deployment at ni/outputs/zebra-erpnext; no edits or service operations there. No model/search calls, original Run mutation/replay, production deployment/migration, Search/MCP restart, permission weakening or configuration changes.
+- Acceptance: deterministic red/green and isolated real PostgreSQL contention checks; shared worker classifications and scoped long-session recovery; relevant native gates and static checks; local integration into cloud-agent preserving primary dirty files. Fault tolerance is bounded runtime recovery, not proof of production database failover or zero downtime.
+
 # CA-P4-INTEGRATE — Authorized P4 mainline integration and merged topic cleanup
 - Status: Review, documentation-only authorized integration target; exact source/ancestry checks passed; remote and deletion receipts verified separately. Ready/claim preceded edits; Human owner Luke Ding; executor Codex; branch codex/p4-main-integration.
 - Dependencies: verified feature baf29f780d07f0a2e796290dc79c734908c18ca9; latest origin/cloud-agent equals local cloud-agent; fast-forward only.

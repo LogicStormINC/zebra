@@ -179,7 +179,7 @@ def test_clarification_provider_failure_becomes_durable_terminal_failure(
 
     assert response.status_code == 201
     assert failed.session.status is SessionStatus.FAILED
-    assert failed.attempt_result.metadata["stop_reason"] == "model_execution_failed"
+    assert failed.attempt_result.metadata["stop_reason"] == "execution_failed"
     assert failed.attempt_result.metadata["error_type"] == "ValueError"
     assert SQLiteLeaseStore(database_path).get(session_id) is None
 

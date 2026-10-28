@@ -1,3 +1,33 @@
+## 2026-10-28 CLOUD-RELIABILITY-20261028
+
+User authorized shared minimal fixes and local integration into cloud-agent;
+no model/search calls or original Run replay. Reused clean cloud-plugin-plan-01
+worktree from34f94577 and claimed codex/cloud-reliability-20261028. Read ERP task
+status but neither messaged it nor edited its custom worker/deployment.
+
+- Reproduced2 actual PostgreSQL route-lock failures on the old code; both pass
+  with a scoped healthy-route read-only return, retaining writer50ms lock budget.
+- Reproduced8 incorrect failure classifications and3 infrastructure suspension
+  projection failures (after fixing test Turn UUIDs); repaired shared boundaries.
+- Final-metadata lookup in repair uses reserved parent I/O budget;2 existing
+  tests now assert the existing100ms paged contract, not one-call/2s repair.
+- Actual offline Worker failure persists suspension, releases lease and is not
+  ready for automatic replay.120-turn full/cursor/incremental projection and
+  foreign binding rejection pass. Native large-answer/tool/interrupt wire is
+  decoded by public SDK over real loopback HTTP without historical effects.
+- Validation: `bash tests/conformance/agui_long_session/run.sh` with bundled
+  Node and isolated PG/Redis:168 Python passed/0skips,33SDK passed/0skips.
+  Focused tests for projection I/O/bootstrap, completion/Client Effect/Provider
+  continuation and ordinary/coverage routing:109passed/2conditional skips.
+  `make check` passed (Ruff,1428 typed sources, file/boundary/eval/recovery gates).
+  Additional targeted projection/classification checks52passed; PG queue37passed.
+  Full repository `make test` was not rerun; prior full-suite evidence is not
+  claimed as this change's full-suite validation.
+- Evidence: `.artifacts/cloud-reliability-20261028/{native-gate.log,native/,check.log,regression.log}`.
+- Release boundary: local source integration only. ERP native105 migration/image
+  convergence and production HA/failover remain separate. No blanket retry or
+  success relabeling; no provider, search, production data or service operation.
+
 ## CA-P3-03G
 
 用户要求完成P3；先认领分支/Owned paths，再追踪serial与concurrent三处共享调用。31定向、完整make test11143通过/3067条件跳过、make check/30eval及SDK173/check通过，实际业务产品消费者单独固定源复验；不部署/生产迁移/main/npm。

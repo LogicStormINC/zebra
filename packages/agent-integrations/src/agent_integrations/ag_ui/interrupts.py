@@ -66,14 +66,23 @@ def project_budget_suspension_event(
     timestamp: int,
 ) -> tuple[Event, ...]:
     reason = _optional_text(event.payload, "reason")
-    if reason not in {
+    infrastructure = reason in {
+        "execution_storage_contention", "execution_storage_unavailable",
+        "execution_authority_unavailable",
+    }
+    if not infrastructure and reason not in {
         "model_call_budget_exhausted",
         "tool_call_budget_exhausted",
         "verification_required",
         "delivery_requirements_unmet",
     }:
         return ()
-    if reason == "delivery_requirements_unmet":
+    if infrastructure:
+        message = (
+            "Execution is paused because storage or current authorization could not be "
+            "confirmed. Existing results are retained; no automatic execution retry is scheduled."
+        )
+    elif reason == "delivery_requirements_unmet":
         message = (
             "The result is retained, but some delivery requirements remain unverified. "
             "The task is paused; no additional work is running."
@@ -96,6 +105,7 @@ def project_budget_suspension_event(
             f"The explicit {subject} limit was reached. The task is paused and can "
             "continue with a larger limit."
         )
+    assert reason is not None  # Only the allowlisted suspension reasons reach this path.
     interrupt = Interrupt(
         id=f"session-suspended:{event.event_id}",
         reason=reason,
@@ -105,7 +115,8 @@ def project_budget_suspension_event(
         StateSnapshotEvent(
             timestamp=timestamp,
             snapshot={
-                "session": {"status": "suspended", "reason": reason},
+                "session": {"status": "suspended", "reason": reason,
+                            **({"retryable": False} if infrastructure else {})},
                 "openInterruptIds": [interrupt.id],
             },
         ),

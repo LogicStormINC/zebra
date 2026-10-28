@@ -4,10 +4,14 @@ import hashlib
 import json
 import os
 from dataclasses import replace
+from datetime import UTC, datetime
 from pathlib import Path
 from uuid import uuid4
 
-from agent_integrations.ag_ui.contracts import AgUiCursor
+from agent_core.domain.events import EventActor, EventType, SessionEvent
+from agent_core.domain.identifiers import SessionId
+from agent_integrations.ag_ui.contracts import AgUiCursor, AgUiRunIdentity
+from agent_integrations.ag_ui.interrupts import project_budget_suspension_event
 from zebra_agent_api.stream_v2_cursor import StreamV2Cursor, StreamV2CursorCodec
 from zebra_agent_api.stream_v2_reader import StreamV2Reader
 from zebra_agent_api.stream_v2_wire import canonical_wire
@@ -53,7 +57,22 @@ def test_actual_encoder_long_cursor_large_tool_and_final(tmp_path, record_proper
     partial[-1]["diagnostics"] = "bounded terminal detail " * 900
     partial_frames = encode_events(partial, task, run)
     assert len(frames) > 50 and len({f["token"] for f in frames}) == len(frames)
+    suspension = SessionEvent.create(
+        session_id=SessionId(uuid4()), sequence=0, event_type=EventType.SESSION_SUSPENDED,
+        actor=EventActor.HARNESS,
+        payload={"reason": "execution_storage_contention", "metadata": {"retryable": False}},
+        created_at=datetime.now(UTC),
+    )
+    interruption = project_budget_suspension_event(
+        suspension,
+        AgUiRunIdentity(session_id=suspension.session_id, thread_id=task, run_id=run), 0,
+    )
+    # Keep prior committed evidence, replace only this observed execution's terminal.
+    fault_frames = encode_events(events[:-1] + [
+        frame.model_dump(mode="json", by_alias=True, exclude_none=True) for frame in interruption
+    ], task, run)
     result = {
+        "fault_frames": fault_frames,
         "task_id": task,
         "run_id": run,
         "frames": frames,

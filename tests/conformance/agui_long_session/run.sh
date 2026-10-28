@@ -40,6 +40,9 @@ cd "$ROOT"
   tests/api/test_task_approval.py tests/api/test_task_approval_expiry.py tests/agent_storage/test_task_approval.py \
   tests/agent_storage/test_worker_commit_confirmation.py tests/agent_storage/test_task_projection_work.py \
   tests/api/test_task_message_receipts.py tests/api/test_task_message_coordinates.py \
+  tests/agent_storage/test_projection_repair_contention.py \
+  tests/agent_integrations/test_ag_ui_infrastructure_recovery.py \
+  tests/worker/test_infrastructure_failure_classification.py \
   | tee "$OUT/cloud.txt"
 cd "$ROOT/sdks/typescript"
 "$NODE" node_modules/tsx/dist/cli.mjs --test \

@@ -13,14 +13,16 @@ assert.ok(fixturePath, "run tests/conformance/agui_long_session/run.sh to genera
 const fixture = JSON.parse(readFileSync(fixturePath, "utf8")) as {
   frames: { token: string; wire: string }[];
   partial_frames: { token: string; wire: string }[];
+  fault_frames: { token: string; wire: string }[];
   answer_sha256: string;
   run_id: string;
 };
 const notice = (name: string) => `data: ${JSON.stringify({ type: "CUSTOM", name, value: {} })}\n\n`;
 
-for (const partial of [false, true]) {
-  test(`cold SDK restores native large answer and ${partial ? "partial" : "complete"} terminal`, { timeout: 10000 }, async () => {
-    const frames = partial ? fixture.partial_frames : fixture.frames;
+for (const scenario of ["complete", "partial", "storage"] as const) {
+  const partial = scenario === "partial";
+  test(`cold SDK restores native large answer and ${scenario} terminal`, { timeout: 10000 }, async () => {
+    const frames = scenario === "storage" ? fixture.fault_frames : partial ? fixture.partial_frames : fixture.frames;
     assert.ok(frames.length > 50);
     const requests: { method?: string; url?: string; cursor?: string }[] = [];
     const server = createServer((req, res) => {
@@ -72,7 +74,11 @@ for (const partial of [false, true]) {
       if (observationError) throw observationError;
       assert.deepEqual(requests, [{ method: "GET", url: "/tasks/test/ag-ui/events?recovery=full" }]);
       assert.equal(terminal?.runId, fixture.run_id);
-      assert.equal((terminal?.outcome as { type: string }).type, partial ? "interrupt" : "success");
+      assert.equal((terminal?.outcome as { type: string }).type, scenario === "complete" ? "success" : "interrupt");
+      if (scenario === "storage") {
+        const outcome = terminal?.outcome as { interrupts: { reason: string }[] };
+        assert.equal(outcome.interrupts[0]?.reason, "execution_storage_contention");
+      }
       assert.equal(assessment, partial ? "partial" : "complete");
       assert.equal(toolResults, 1);
       const messages = reducer.snapshot();

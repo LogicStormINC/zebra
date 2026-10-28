@@ -1,3 +1,14 @@
+## 2026-10-28 Cloud reliability: shared fault isolation and recovery
+
+CLOUD-RELIABILITY-20261028 targets cloud-agent: healthy projection repair avoids
+canonical route writes/locks; typed storage/authority failure pauses without
+replay; shared AG-UI maps new reasons to Run interruption while preserving
+completed Turns. No schema or business dependency added. Native PG/Redis168
+and actual HTTP/SDK33 pass with zero skips; focused recovery109 passed/2 existing
+conditional skips; make check passed. [Scope, evidence and HA limits](docs/CLOUD_RELIABILITY_2026-10-28.md).
+ERP custom105 deployment stays under its separate repair task. No production
+restart/migration, model/search request, original Run mutation or failover claim.
+
 # 2026-10-28 — Generic AG-UI recovery integration
 
 AGUI-CLOUD-INTEGRATION-20261028 integrates accepted runtime/approval/commit repairs

@@ -10,8 +10,10 @@ import logging
 from collections.abc import Iterator
 from contextlib import contextmanager
 
+import psycopg
 from agent_core.domain.context_capsule import ContextCapsuleValidationError
 from agent_core.domain.coverage_contracts import CoverageRefusalReason
+from agent_core.domain.execution_authority import ExecutionAuthorityResolutionError
 from agent_core.domain.plugin_authority import PLUGIN_UNAVAILABLE, PluginAuthorityUnavailable
 from agent_core.harness.context_window import ContextWindowExceededError
 from agent_core.harness.models import HarnessAttemptOutcome, HarnessAttemptResult
@@ -135,10 +137,34 @@ def exception_attempt_result(exc: Exception, metadata: dict[str, object]) -> Har
             summary="model provider retry budget exhausted; execution can be resumed safely",
             metadata={**metadata, "stop_reason": "model_provider_retry_exhausted"},
         )
+    if isinstance(exc, ModelProviderError):
+        return HarnessAttemptResult(
+            outcome=HarnessAttemptOutcome.FAILED,
+            summary="model provider request failed",
+            metadata={**metadata, "stop_reason": "model_provider_failed", "retryable": False},
+        )
+    reason = None
+    if isinstance(exc, ExecutionAuthorityResolutionError):
+        reason = "execution_authority_unavailable"
+    elif isinstance(
+        exc, psycopg.errors.LockNotAvailable | psycopg.errors.DeadlockDetected
+        | psycopg.errors.SerializationFailure,
+    ):
+        reason = "execution_storage_contention"
+    elif isinstance(exc, psycopg.OperationalError | psycopg.errors.QueryCanceled):
+        reason = "execution_storage_unavailable"
+    if reason is not None:
+        # No model/tool replay: an unavailable authority or storage commit is not
+        # proof of non-execution. Preserve facts and require explicit reconciliation.
+        return HarnessAttemptResult(
+            outcome=HarnessAttemptOutcome.SUSPENDED,
+            summary="execution suspended: " + reason,
+            metadata={**metadata, "stop_reason": reason, "retryable": False},
+        )
     return HarnessAttemptResult(
         outcome=HarnessAttemptOutcome.FAILED,
-        summary="model execution failed",
-        metadata=metadata,
+        summary="execution failed",
+        metadata={**metadata, "stop_reason": "execution_failed", "retryable": False},
     )
 
 
