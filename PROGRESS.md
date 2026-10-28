@@ -1,3 +1,12 @@
+## 2026-10-28 Trench multi-session activity synchronization
+
+User-authorized documentation-only compatibility maintenance exception: paired
+Trench main fix6a1a8b8 preserves every conversation activeTurn through HTTP.
+3/12-session API regressions,12-spinner UI and independent terminal/reload checks
+passed;53+78 API and532 frontend checks passed. Existing SDK tarballs already
+match GitHub; no npm registry publication, Zebra runtime/SDK change or deployment.
+See docs/TRN_MULTI_SESSION_ACTIVITY.md. Original archive tag remains unchanged.
+
 ## 2026-10-20 - Trench baseline archival and generic Cloud handoff
 
 User authorized freezing cloud-agent-trench and synchronizing GitHub. Accepted

@@ -1,3 +1,16 @@
+## TRN-MULTI-SESSION-SPIN-SYNC-20261028
+
+- Status: Ready -> In Progress -> Review (2026-10-28; claimed before edits).
+- Human owner: Luke Ding; executor: Codex.
+- Branch: codex/trench-spin-sync-20261028; isolated worktree.
+- Owned paths: docs/TRN_MULTI_SESSION_ACTIVITY.md; this registry; PROGRESS.md.
+- Scope: paired Trench fix/package receipt on user-requested cloud-agent-trench
+  and cloud-agent; no Zebra runtime/SDK changes or registry publication.
+- Current user instruction authorizes this narrow documentation-only exception
+  to frozen branch policy; the original archive tag remains unchanged.
+- Validation: paired Trench HTTP/SQLite regression, multi-session UI tests,
+  package byte identities, scoped diff and remote commit verification.
+
 # AGENT_TASKS.md
 
 ### TRN-ASSET-RECOVERY-01 - Restore bounded historical asset listing and reads
