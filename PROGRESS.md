@@ -7,7 +7,7 @@ Isolated PostgreSQL old-path lock timeout reproduced; per-header durability,
 normal append, commit-preparation rollback and late-receipt retention/dedup verified.
 Final native235/SDK33 zero skips and make check passed. Full no-model suite11267
 passed/3092 environment-conditional skips; final SQL boundaries revalidated by the
-native gate. Local cloud-agent integration follows acceptance.
+native gate. 8055ce7d fast-forward integrated into local cloud-agent; no push.
 No deployment, original Run replay, model/search call or Search/MCP restart.
 
 ## 2026-10-28 Cloud reliability: shared fault isolation and recovery

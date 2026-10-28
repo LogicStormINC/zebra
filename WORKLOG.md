@@ -41,7 +41,10 @@ Final acceptance:
 - Earlier gate failures retained in evidence: incomplete test client registry
   corrected once; real cleanup-budget cancellation repaired in shared code.
   No unrelated fixture/test infrastructure work or timeout relaxation.
-Local integration outcome recorded after source commit; no push/deployment.
+Local integration: source8055ce7d fast-forwarded cloud-agent from2d913e52;
+all10 protected dirty file hashes/modes unchanged. Only owned disposable PG
+container/volume removed; gate-owned PG/Redis already cleaned by trap. No push,
+deployment or changes to original Runs, Search/MCP, high/v2 or authority settings.
 
 ## 2026-10-28 CLOUD-RELIABILITY-20261028
 
