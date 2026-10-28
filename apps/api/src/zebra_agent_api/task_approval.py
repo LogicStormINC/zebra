@@ -9,6 +9,7 @@ from agent_storage.postgres.task_approval import task_approval
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from zebra_agent_api.responses import ApiResponse
+from zebra_agent_api.session_binding import renew_host_binding_for_command
 from zebra_agent_api.tenant_guard import task_access_response
 
 
@@ -47,6 +48,12 @@ def handle_task_approval(app: Any, request: Any, task_id: str, run_id: str) -> A
         or request.verified_host_grant is None
     ):
         return ApiResponse(403, {"reason": "approval_authority_required"})
+    if body is not None and body.decision == "approve":
+        # Human waiting may outlive admission authority. Reuse command renewal;
+        # only a fresh verified Host grant can renew the frozen ceilings.
+        denied = renew_host_binding_for_command(app, task_id, request.verified_host_grant)
+        if denied is not None:
+            return denied
     try:
         decision = (
             None

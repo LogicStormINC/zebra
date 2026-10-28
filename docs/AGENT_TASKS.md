@@ -35966,3 +35966,8 @@ old payloads remain byte-compatible by excluding None. No database migration.
 APPROVAL-BRIDGE-20261028 ownership addendum: internal approval continuation requires postgres/approval_continuation_migration.py (v108), postgres/migration_catalog_tail.py, agent-integrations/ag_ui/task_run_binding.py and its focused tests. Reuse existing internal resume semantics; no old migration edits.
 
 APPROVAL-BRIDGE-20261028 acceptance: 23 native/API/consumer + 34 backend + 43 UI checks; production original Run display and refresh verified; no decisions or model/search calls. Added bounded operational certificate renewal after confirming expired CA/leaf; original keys/SANs preserved, TLS hot reload only.
+
+APPROVAL-BRIDGE-20261028 follow-up (2026-10-28): Review fixes authorized by user.
+Owner Luke Ding / Codex; same branch/worktree. Extend owned paths to
+apps/api/src/zebra_agent_api/session_binding.py and packages/agent-storage/src/agent_storage/postgres/task_admission.py only if needed for existing atomic binding renewal; focused renewal regression tests.
+Scope: expiry during human approval must renew from fresh verified Host authority before wakeup; preserve ceilings, exact approval and dedup. Production SSL pool rotation after CA renewal; no original Run replay/model/search or Search/MCP restart.

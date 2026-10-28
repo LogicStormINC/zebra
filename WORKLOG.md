@@ -17181,3 +17181,11 @@ existing internal continuation classification. See docs/APPROVAL_BRIDGE_2026-10-
 Production rollout and original pending Run page verification recorded below.
 
 APPROVAL-BRIDGE final: deployed with v108-only production migration; original pending approval survives real page refresh with full arguments/allow/reject controls. 100 focused no-model checks pass. Original Run and all Turn records unchanged; Search/MCP unchanged. Fixed expired internal CA/leaf using existing keys and TLS hot reload. No approval clicked.
+
+2026-10-28 APPROVAL-BRIDGE follow-up: two production errors traced independently
+(expired admission grant on approval continuation; stale SSLContext after CA renewal).
+Minimum existing-helper renewal added to approval; paired Trench cursor/replay
+repair. Production API overlays preserve previous fixes/config; Worker unchanged.
+Private deployment evidence in 20261028-approval-runtime-fix. Original Run failure
+must remain failure, no invented success or model retry. Full real approval
+execution after this fix remains untested because no new model calls authorized.

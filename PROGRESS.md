@@ -7872,3 +7872,10 @@ full DB outage and historical lock holder. See docs/WORKER_COMMIT_CONFIRMATION_2
   observer continuation implemented; no policy bypass. Deterministic no-model
   checks pass. Production acceptance preserves the original undecided approval.
   See `docs/APPROVAL_BRIDGE_2026-10-28.md` for v108 and deployment boundaries.
+
+- 2026-10-28 APPROVAL-BRIDGE follow-up: production user-clicked approval proved
+  exactly-once/original Run but exposed expired frozen Host binding before Worker
+  context setup. Approve now reuses verified command renewal, preserving ceilings.
+  Paired Trench fixes local cursor pollution, v2 SSE cursor budget and exact settled
+  approval replay; rotates stale CA client pool. No-model checks and original
+  terminal GET synchronization only; no model/search/Run replay or Search/MCP restart.

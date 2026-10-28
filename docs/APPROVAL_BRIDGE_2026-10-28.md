@@ -90,3 +90,51 @@ an automatic rollback. Values were identical; changed verification to key/value
 comparison, then redeployed successfully. No business events or decisions were
 written in either rollout. Private backup, rollback and evidence material stays
 under the release directory; no credentials/keys are committed.
+
+## 2026-10-28 production execution follow-up
+
+User approved the original Run once at 04:58:13 UTC. Exactly one grant and one
+internal continuation were committed. Worker context preparation then correctly
+failed closed because admission's frozen Host grant had expired while waiting.
+The approval HTTP guard verified fresh read/control authority, but that path had
+omitted the normal command binding renewal. The approve adapter now reuses
+`renew_host_binding_for_command` before submitting a decision/wakeup. Denial or
+renewal conflict cannot publish a wakeup. Frozen identity, capabilities and limits
+remain enforced; GET/reject do not renew. Binding renewal remains its existing
+separate transaction; a later decision failure creates no execution command.
+
+The new conversation `conv_1793163748168_c977f5` failed before Cloud admission:
+the Trench runtime's long-lived httpx SSL context had loaded the expired CA before
+its PEM was renewed. New clients using the renewed mounted CA succeeded while
+that existing pool failed. Recreated only the API runtime client/process with
+strict verification retained. Future CA rotation must also rotate persistent
+client pools and test the ordinary business path, not just a fresh health client.
+No certificate verification bypass, model/search probe or original Run retry.
+
+The first original-Run GET recovery exposed two cursor/replay defects: synthetic
+`local:` event identities had overwritten Cloud resume coordinates, and full
+replay stopped at an already-approved historical approval interrupt. Paired Trench
+fixes retain synthetic identities for dedup only, reconstruct the prior genuine
+cursor on legacy claim, preserve the Cloud v2 4096-character cursor budget, and
+skip only the exact old approval wait identified by the durable same-Turn granted
+receipt. Other/new approvals remain blocking. Existing Run failure is preserved;
+only its observer is rearmed to synchronize canonical terminal facts.
+
+No-model follow-up: 43 Zebra checks including real isolated PostgreSQL expired
+approval renewal and Worker authority resolution; 54 Trench checks cover exact
+historical-wait filtering, SSE bounds, durable receipt restore, cursor recovery,
+Turn/dispatcher/approval behavior. Three unrelated environment-dependent
+observation cases remain skipped. Runtime evidence/rollback is private under
+`/home/ubuntu/releases/20261028-approval-runtime-fix`.
+
+Final production verification: original canonical 90 events / 4 model calls /
+1 approval / 2 commands (original + its internal continuation) have identical
+hash before/after repair. Original observer now stores genuine518-character v2
+cursor and publishes canonical failure to the page. New failed conversation stays
+failed with0model calls; it is not retried. Worker/Search/TLS/egress processes are
+unchanged. Final API images: zebra-api:approval-runtime-fix-20261028 and
+trench-api:approval-cursor-storage-20261028. Trench migration d3e4f5a6b7c8 preserves
+186Turns/6589events; both cursor columns4096 with SHA256 dedup key. Full table backup
+9.7MB private. Native isolated migration checks preserve data, accept4096-char
+tokens, deduplicate and reject unsafe shrinking rollback. New live model/approval
+execution remains untested; no provider/search calls were added for acceptance.
