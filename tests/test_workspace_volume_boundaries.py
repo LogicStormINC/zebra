@@ -80,12 +80,22 @@ def test_ordinary_task_uses_control_plane_resolver(tmp_path, reference):
     from zebra_agent_worker.task_recovery import RecoveredTask
 
     task = RecoveredTask(
-        title="Ordinary Host task", user_input="Read the attached file",
-        workspace_root=Path(reference + str(uuid4())), policy_profile="read_only",
-        tool_profile=ToolProfile.RESEARCH, network_profile=parse_network_profile("none"),
-        mcp_allowlist=None, skill_components=None, history_session_ids=None,
-        max_attempts=1, max_model_calls=1, max_tool_calls=1, attachments=(),
-        runtime_evidence=(), host_context=None, definition_snapshot=None,
+        title="Ordinary Host task",
+        user_input="Read the attached file",
+        workspace_root=Path(reference + str(uuid4())),
+        policy_profile="read_only",
+        tool_profile=ToolProfile.RESEARCH,
+        network_profile=parse_network_profile("none"),
+        mcp_allowlist=None,
+        skill_components=None,
+        history_session_ids=None,
+        max_attempts=1,
+        max_model_calls=1,
+        max_tool_calls=1,
+        attachments=(),
+        runtime_evidence=(),
+        host_context=None,
+        definition_snapshot=None,
     )
     resolver = Mock()
     resolver.resolve.return_value = tmp_path
@@ -96,5 +106,21 @@ def test_ordinary_task_uses_control_plane_resolver(tmp_path, reference):
     resolver.resolve.assert_called_once_with(str(task.workspace_root), session_id=session)
     resolver.resolve.side_effect = ValueError("unverified physical quota")
     from zebra_agent_worker.execution_finalization import RetryableWorkerSetupError
+
     with pytest.raises(RetryableWorkerSetupError):
         resolve_bound_workspace(task, resolver, session)
+
+
+def test_resolved_task_does_not_reenter_allocator(tmp_path):
+    from dataclasses import dataclass
+
+    from zebra_agent_worker.workspace_resolution import apply_workspace_resolver
+
+    @dataclass(frozen=True)
+    class Task:
+        workspace_root: Path
+
+    task = Task(tmp_path)
+    resolver = Mock()
+    assert apply_workspace_resolver(task, resolver, uuid4()) is task
+    resolver.resolve.assert_not_called()

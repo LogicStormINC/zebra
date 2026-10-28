@@ -17848,3 +17848,17 @@ and branch base checked before local fast-forward. Integrate both parent histori
 into cloud-agent; no GitHub push, deployment or original Run mutation. Disposable
 gate PG/Redis removed. Legacy productionv108 migration reconciliation is explicitly
 required before any future deployment; no automatic ledger rewriting.
+
+## CLOUD-FULL-CAPABILITY — final compatibility gate, 2026-10-29
+Full make test completed: 11415 passed,3094 skipped,9 failures. Audited all nine
+in one pass. New disabled Host guard settings changed old runtime-bundle digests;
+omit only the disabled guard from the old digest, but pin an enabled guard.
+Shared workspace resolver now passes physical paths through before callbacks,
+avoiding a second resolver/provision entry. Updated one moved test monkeypatch
+and the intentional Host profile/tenant memory denial assertions. All32 focused
+regressions pass; final make check passes (1438 typed modules). No broad repeat
+full-suite loop. Actual cloned PG/S3 input admission, pinned Host Task, root-owned
+256MiB ext4+gVisor CSV/ENOSPC, fresh Worker composition and accepted-Turn Skill
+ZIP read passed. Actual signed scheduler exchange deduplicates a firing and
+refuses tampered signatures/paused schedules; no provider/search requests.
+ERP candidate/browser/cutover acceptance remains a separate repository task.

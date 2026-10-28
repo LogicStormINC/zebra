@@ -8423,3 +8423,10 @@ full DB outage and historical lock holder. See docs/WORKER_COMMIT_CONFIRMATION_2
 近1MiB正文真实编码／HTTP断线／双数据库通过。修复审批误用控制grant和多回执丢失；
 无模型／搜索／业务重跑，无Worker/Search/MCP重启。没有声称无限缓存或模型供应商零故障。
 详见docs/AGUI_LONG_SESSION_2026-10-28.md；一键门禁位于tests/conformance/agui_long_session/run.sh。
+
+### CLOUD-FULL-CAPABILITY compatibility checkpoint (2026-10-29)
+Native source now preserves published disabled-guard Bundle baselines and avoids
+repeat allocation for resolved workspaces. Initial full suite11415 pass/3094 skip/9
+fail was followed by a single32-test affected regression gate, all passed; make
+check passed. Real isolated ERP PG/S3/Host/Skill/quota/schedule boundary receipts
+exist; no actual model/search request or production activation occurred.
