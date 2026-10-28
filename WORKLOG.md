@@ -1,3 +1,12 @@
+## 2026-10-29 G3A source publication / G3B unlock
+
+Reviewed source462b812a pushed directly to origin/cloud-agent after final spec
+and quality PASS. G3B is Ready; primary local89e4afed/dirty entries untouched.
+Archive cloud-agent-trench remains4766112c; only explicitly compatible fixes and
+final package receipt will be synchronized there after joint verification.
+New npm artifacts/version delivery remains G6/T1, not publication of old0.1.0
+candidate builds. No registry or deployment action.
+
 ## 2026-10-29 AGUI-G3A reviewed foundation
 
 Base14359f32, current isolated G3 branch; parent protects primary89e4afed and

@@ -1,6 +1,6 @@
 ## AGUI-G3A-INGRESS-20261029 — Bounded SDK ingress and exact source lookup
 
-- Status: Review (2026-10-29; final spec and quality reviews passed; source publication next).
+- Status: Done (2026-10-29; reviewed 462b812a published on origin/cloud-agent).
 - Human owner: Luke Ding; executor: Codex; target: cloud-agent.
 - Branch: codex/agui-g3-standard-reliable-transport-20261029; isolated existing
   trench-spin-sync-20261028/zebra-agent worktree; exact base 14359f32.
@@ -30,7 +30,7 @@
 
 ## AGUI-G3B-HTTP-20261029 — Actual standard HTTP and reliable bridge
 
-- Status: Locked (G3A reviewed publication required).
+- Status: Ready (2026-10-29; reviewed G3A 462b812a published).
 - Human owner: Luke Ding; executor: Codex; target: cloud-agent.
 - Proposed branch: codex/agui-g3b-native-http-20261029; reuse isolated clean
   trench-spin-sync-20261028/zebra-agent worktree after G3A review/publication.

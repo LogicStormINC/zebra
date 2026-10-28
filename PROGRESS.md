@@ -1,4 +1,4 @@
-## 2026-10-29 AG-UI G3A bounded ingress (reviewed foundation)
+## 2026-10-29 AG-UI G3A bounded ingress (published 462b812a)
 
 Shared SSE framing now handles strict UTF-8, multiline data, split CRLF, exact
 record/assembly byte budgets, incremental line buffers and owned-reader abort.
