@@ -1,6 +1,35 @@
+## AGUI-G3-TRANSPORT-20261029 — Standard HTTP and reliable consumption
+
+- Status: Ready (2026-10-29; dependencies G1/G2 reviewed and published).
+- Human owner: Luke Ding; executor: Codex; target: cloud-agent.
+- Branch: codex/agui-g3-standard-reliable-transport-20261029; isolated existing
+  trench-spin-sync-20261028/zebra-agent worktree; base receipt following 592fc95b.
+- Owned paths: API ag_ui_stream.py/ag_ui_checkpoint_tail.py/ag_ui_command.py,
+  stream_v2_{http,query,reader,wire}.py, http.py/routes.py and focused new
+  standard HTTP/prepare/binding modules; their focused tests.
+- Explicit read-only coordinate extension: core AgentTaskPort and SQLite/PG
+  task replay headers/AgentTasks wrappers for exact native idempotency point reads;
+  no historical migrations or new identity ledger.
+- SDK ownership: client-core agui_events.ts/agui_reducer.ts/sse_stream.ts,
+  bff_transport.ts, focused standard/reliable transport and admission adapter modules,
+  index/server exports; explicit test collection/package manifests and related tests.
+- Composition paths require an explicit before-code ownership addendum naming
+  actual config/factory/worker files after tracing; default profiles remain off.
+- Contract/governance: AGUI_STANDARD_DURABLE_CONTRACT.md, registry, PROGRESS,
+  WORKLOG and approved plan; conformance/agui_contract actual HTTP consumer gate.
+- Frozen choice: native authenticated admission followed by official HttpAgent
+  observing the actual accepted public Run ID. No arbitrary run-ID admission,
+  rewriting of caller IDs, duplicate command, private-state authority or GET repair.
+- Acceptance: actual user input reaches native Worker prompt; official POST/SSE
+  receives actual projector events; requested-slice tail survives retained previous
+  terminal and stops before successor; strict bounded framing and pull-paced SDK;
+  initial messages/state preserve history; legacy bytes/cursors remain unchanged.
+  SQLite/PG coordinate/tail tests; focused SDK/API and conformance gates;
+  independent spec then quality review. G4/G5 remain Locked until dependencies.
+
 ## AGUI-G2-PUBLIC-PROJECTION-20261029 — Standard public event semantics
 
-- Status: Review (2026-10-29; implementation/focused/native/official-consumer candidate gates ready; independent reviews pending).
+- Status: Done (2026-10-29; reviewed source 592fc95b pushed to origin/cloud-agent; no activation).
 - Human owner: Luke Ding; executor: Codex; target: cloud-agent.
 - Dependency: G2V 7c8962b0 reviewed and fast-forward integrated locally.
 - Proposed branch: codex/agui-g2-standard-projection-20261029; reuse the clean
@@ -62,7 +91,7 @@
 - Acceptance: frozen legacy bytes/cursors; official schema positive/negative
   checks; full replay equals checkpoint tail; no fabricated execution/result/Step
   success; strict coverage, continuation identity and usage slicing; targeted
-  checks/make check, independent spec then quality review. G3 remains Locked.
+  checks/make check, independent spec then quality review. Both reviews passed; G3 is Ready.
 
 ## AGUI-G2V-PROFILE-ISOLATION-20261028 — New projection version isolation
 

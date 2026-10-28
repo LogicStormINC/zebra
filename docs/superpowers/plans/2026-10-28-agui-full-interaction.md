@@ -328,7 +328,7 @@ Trench T1 在其自身环境执行 focused API、完整 toc-frontend test/lint/b
 
 - [x] G0：冻结官方schema/31事件目录、真实旧14类wire/cursor golden及ADR边界；7+36+174检查和make check通过；独立审查见任务表。
 - [x] G1：官方1.0.3消费核心；25新检查/完整SDK199、check/package及两阶段审查通过。尚未启用新profile；128 pending guard和观察状态不代表生产执行/吞吐验收。
-- [ ] G2V/G2：版本隔离后公开投影语义。
+- [x] G2V/G2：版本隔离与公开投影语义；592fc95b 已审查并推送 cloud-agent，默认未启用。
 - [ ] G3–G7/T1：传输、交互、包与消费者收口。
 
 G0审查后的顺序澄清：原估算把JS复用、Run映射算法及性能阈值都归到G0。实际需消费试验、版本隔离代码边界及可重复性能样本才能决定，故分别移至G1/G2V/G7的实现前门禁。G0交付为可运行的合同/兼容基线，不解锁依赖这些决定的新生产profile；无新增架构权限。

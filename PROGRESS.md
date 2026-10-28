@@ -1,4 +1,4 @@
-## 2026-10-29 AG-UI G2 public producer (candidate, independent review pending)
+## 2026-10-29 AG-UI G2 public producer (reviewed and published)
 
 The opt-in StandardAgUiProjector uses official Python1.0 models and separate
 root-Segment standard_v1 checkpoints. Default registry remains empty. Complete
@@ -10,8 +10,11 @@ Only real approval/clarification are answerable interrupts; blocked/operational
 pauses retain domain paused state separately from protocol cancelled/error. No snapshot
 history erasure, candidate/private text publication or invented execution facts.
 Additive v116 preserves prior migrations; legacy wire/default path remains frozen.
-Targeted/native/official-consumer and candidate checks are recorded in WORKLOG;
-independent spec/quality review and final integrated gates remain required.
+Source 592fc95b is published on origin/cloud-agent; independent spec and quality
+reviews passed. Focused77, native2, legacy7, integrations/core3674 and make check
+(1442 typed sources/30eval) passed. Conditional skips are recorded separately.
+Final whole-plan/full-suite gates remain G7; G3 transport is Ready. The primary
+local cloud-agent has unrelated in-progress commits and was left untouched.
 No profile activation, original business Run, model invocation or deployment.
 See [standard contract](docs/AGUI_STANDARD_DURABLE_CONTRACT.md#11-g2-标准公开投影候选实现未激活).
 

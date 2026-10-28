@@ -1,3 +1,19 @@
+## 2026-10-29 AGUI-G2 reviewed publication and G3 unlock
+
+Published reviewed source 592fc95b directly to origin/cloud-agent, preserving
+unrelated primary local cloud-agent work (89e4afed) and all protected dirty files.
+Spec and quality reviews passed, including bounded materialization-prefix delta.
+Final focused77/1 conditional skip; native SQLite/PG2/0; legacy7;
+integration/core3674/98 conditional skips; make check1442 types/30eval passed.
+Actual Python producer -> official JS1.0.3 checks include lifecycle, reused-agent
+continuations, state/history and remaining public text. Receipts:
+/tmp/agui-g2-final-validation.json and /tmp/agui-g2-integrations-core-final.log.
+Parent independent legacy/composition14 passed. Earlier stable G2V full suite had
+11372 passed/3114 skipped/one stale composition field assertion, now corrected;
+this is not a final whole-plan full-suite pass. No deployment/profile activation.
+G3 selects native admission plus official HTTP observation of actual public IDs;
+retain native receipts/authority and no duplicate execution or public-ID ledger.
+
 ## 2026-10-28 AGUI-G1-STANDARD-CONSUMER-20261028
 
 Reused official client/core1.0.3, RxJS7.8.1, fast-json-patch3.1.1; no duplicate
