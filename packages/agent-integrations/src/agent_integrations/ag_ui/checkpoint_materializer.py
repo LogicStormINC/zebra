@@ -1,11 +1,7 @@
-"""Prepare bounded checkpoint transitions; caller owns the atomic commit.
-
-Only requested cells and this Page's changes are held in memory. Projection
-frames are checked and discarded per Event, not retained in a page/history
-buffer. This same pure preparation path can run outside SSE during backfill.
-"""
+"""Bounded checkpoint transitions; canonical state is never written here."""
 
 from collections.abc import Iterator
+from dataclasses import replace
 from uuid import UUID
 
 from ag_ui.core import Event, RunErrorEvent, RunFinishedEvent
@@ -15,12 +11,10 @@ from agent_core.ports.agent_tasks import TaskEvent, TaskEventPage
 from agent_core.ports.stream_source_head import StreamCheckpointReadPort
 from agent_core.ports.task_projection_checkpoints import (
     MAX_CHECKPOINT_BYTES,
-    MAX_CHECKPOINT_KEYS,
     MAX_EVENT_FRAMES,
     CheckpointConflict,
     CheckpointNotReady,
     CheckpointStale,
-    ProjectionCell,
     ProjectionCellKey,
     ProjectionFrameHeader,
     ProjectionScope,
@@ -40,6 +34,7 @@ from agent_integrations.ag_ui.checkpoint_plan import (
     checkpoint_version,
     validate_restore_run,
 )
+from agent_integrations.ag_ui.checkpoint_reader import ProjectionPageBudgetExceeded, _PageReader
 from agent_integrations.ag_ui.contracts import AgUiCursor, AgUiProjectionError, AgUiRunIdentity
 from agent_integrations.ag_ui.coverage_checkpoint import (
     coverage_changes,
@@ -51,79 +46,15 @@ from agent_integrations.ag_ui.payload_validation import required_payload_text
 from agent_integrations.ag_ui.profiles import AgUiProjectionProfile
 from agent_integrations.ag_ui.projection import AgUiProjector
 from agent_integrations.ag_ui.projection_state import ProjectionState
+from agent_integrations.ag_ui.standard_binding import bind_standard, standard_header
+from agent_integrations.ag_ui.standard_checkpoint import (
+    load_membership,
+    load_standard,
+    save_membership,
+    save_standard,
+)
+from agent_integrations.ag_ui.standard_state import StandardProjectionState
 from agent_integrations.coverage_public_events import coverage_projection_event
-
-
-class _PageReader:
-    def __init__(
-        self,
-        port: StreamCheckpointReadPort,
-        scope: ProjectionScope,
-        before: int,
-    ) -> None:
-        self.port, self.scope, self.before = port, scope, before
-        self.cells: dict[ProjectionCellKey, ProjectionCell | None] = {}
-        self.scalars: dict[SessionId, SegmentCheckpoint] = {}
-        self.changes: list[ProjectionCell] = []
-
-    def _check_buffer(self) -> None:
-        size = (
-            512
-            + len(self.scalars) * 128
-            + sum(
-                256
-                + 6 * len(key.key.encode())
-                + 6 * len((row.value if row is not None and row.value is not None else "").encode())
-                for key, row in self.cells.items()
-            )
-            + sum(
-                256 + 6 * len(row.key.key.encode()) + 6 * len((row.value or "").encode())
-                for row in self.changes
-            )
-        )
-        if size > MAX_CHECKPOINT_BYTES:
-            raise AgUiProjectionError("checkpoint Page buffer exceeds byte bound")
-
-    def load(self, keys: tuple[ProjectionCellKey, ...]) -> tuple[ProjectionCell, ...]:
-        missing = tuple(dict.fromkeys(key for key in keys if key not in self.cells))
-        if len(self.cells) + len(missing) > MAX_CHECKPOINT_KEYS:
-            raise AgUiProjectionError("checkpoint Page exceeds keyed-state bound")
-        if missing:
-            rows = self.port.read_cells_at(self.scope, self.before, missing)
-            if len(rows) > len(missing):
-                raise CheckpointConflict("checkpoint returned excess keyed rows")
-            found: set[ProjectionCellKey] = set()
-            size = 0
-            for row in rows:
-                if row.key not in missing or row.key in found or row.task_sequence >= self.before:
-                    raise CheckpointConflict("checkpoint returned foreign/future cell")
-                found.add(row.key)
-                size += 128 + len(row.key.key.encode()) + len((row.value or "").encode())
-                self.cells[row.key] = row
-            if size > MAX_CHECKPOINT_BYTES:
-                raise AgUiProjectionError("checkpoint cell read exceeds byte bound")
-            self.cells.update((key, None) for key in missing if key not in found)
-            self._check_buffer()
-        return tuple(cached for key in keys if (cached := self.cells[key]) is not None)
-
-    def scalar(self, segment: SessionId) -> SegmentCheckpoint:
-        if segment not in self.scalars:
-            scalar = self.port.read_segment_checkpoint_before(self.scope, segment, self.before)
-            if scalar.segment_id != segment or scalar.task_sequence >= self.before:
-                raise CheckpointConflict("checkpoint returned foreign/future scalar")
-            self.scalars[segment] = scalar
-        return self.scalars[segment]
-
-    def change(self, key: ProjectionCellKey, position: int, value: str | None) -> None:
-        rows = self.load((key,))
-        if (rows[0].value if rows else None) == value:
-            return
-        if len(self.changes) >= MAX_CHECKPOINT_KEYS:
-            raise AgUiProjectionError("checkpoint Page exceeds cell-transition bound")
-        row = ProjectionCell(key, position, value)
-        self.cells[key] = row
-        self.changes.append(row)
-        self._check_buffer()
 
 
 def _segment_identity(identity: AgUiRunIdentity, segment: SessionId) -> AgUiRunIdentity:
@@ -138,8 +69,22 @@ def _state_for(
     *,
     strict_coverage: bool = False,
     state_type: type[ProjectionState] = ProjectionState,
+    run: TaskRunHeader | None = None,
 ) -> tuple[ProjectionState, tuple[ProjectionCellKey, ...], SegmentCheckpoint]:
     scalar = reader.scalar(entry.segment_id)
+    if issubclass(state_type, StandardProjectionState):
+        if run is None or run.anchor is None:
+            raise AgUiProjectionError("standard state requires canonical binding")
+        standard = load_standard(
+            run.anchor.segment_id, reader.load, required=entry.task_sequence > run.start
+        )
+        public = coverage_projection_event(entry.event, strict=strict_coverage)
+        if public is not None:
+            load_membership(run.anchor.segment_id, public, standard, reader.load)
+        standard.last_sequence = scalar.segment_sequence
+        standard.bind(identity)
+        standard.strict_coverage = strict_coverage
+        return standard, (), scalar
     public = coverage_projection_event(entry.event, strict=strict_coverage)
     keys = projection_keys(public) if public is not None else ()
     cells = reader.load(keys)
@@ -292,6 +237,29 @@ class AgUiCheckpointMaterializer:
         scope: ProjectionScope,
         identity: AgUiRunIdentity,
     ) -> ProjectionTransition | None:
+        """Prepare a bounded prefix; callers advance only from the committed frontier."""
+        standard = self.profile is not None and issubclass(
+            self.profile.state_type, StandardProjectionState
+        )
+        while True:
+            try:
+                return self._prepare_page(page, plan, scope, identity)
+            except ProjectionPageBudgetExceeded:
+                if not standard or len(page.events) <= 1:
+                    raise
+                # ponytail: bounded halving redoes at most a geometric source prefix;
+                # no writes occur here. G7 can size Pages from measured active-state cost.
+                length = max(1, len(page.events) // 2)
+                page = replace(page, events=page.events[:length])
+                plan = replace(plan, events=plan.events[:length])
+
+    def _prepare_page(
+        self,
+        page: TaskEventPage,
+        plan: ProjectionPagePlan,
+        scope: ProjectionScope,
+        identity: AgUiRunIdentity,
+    ) -> ProjectionTransition | None:
         """No writes: return one validated CAS transition, or None for an empty Page."""
         plan.validate(page, scope, identity, self.profile)
         if self.profile is not None:
@@ -303,7 +271,15 @@ class AgUiCheckpointMaterializer:
             raise CheckpointStale("checkpoint frontier advanced before preparation")
         if not page.events:
             return None
-        reader = _PageReader(self.port, scope, page.after_sequence + 1)
+        standard = self.profile is not None and issubclass(
+            self.profile.state_type, StandardProjectionState
+        )
+        reader = _PageReader(
+            self.port,
+            scope,
+            page.after_sequence + 1,
+            budget_error=ProjectionPageBudgetExceeded if standard else AgUiProjectionError,
+        )
         _prepare_membership(reader, page, plan)
         headers: list[ProjectionFrameHeader] = []
         scalars: list[SegmentCheckpoint] = []
@@ -311,7 +287,9 @@ class AgUiCheckpointMaterializer:
         for entry, decision in zip(page.events, plan.events, strict=True):
             previous = -1
             frames: tuple[Event, ...] = ()
-            if decision.projected:
+            if standard:
+                reader.reserve_header()
+            if decision.projected and (decision.eligible or not standard):
                 segment_identity = _segment_identity(identity, entry.segment_id)
                 state, keys, scalar = _state_for(
                     reader,
@@ -319,8 +297,12 @@ class AgUiCheckpointMaterializer:
                     segment_identity,
                     strict_coverage=plan.run.strict_coverage,
                     state_type=self.profile.state_type if self.profile else ProjectionState,
+                    run=plan.run,
                 )
                 previous = scalar.task_sequence
+                if isinstance(state, StandardProjectionState):
+                    assert self.profile is not None
+                    bind_standard(self.profile, scope, plan.run, standard_header(entry), state)
                 admit_projection(entry.event, segment_identity, started=state.started)
                 _, frames = next(
                     self.projector.project_events(
@@ -338,8 +320,23 @@ class AgUiCheckpointMaterializer:
                 for key in keys:
                     if key.kind != "coverage":
                         reader.change(key, entry.task_sequence, state.checkpoint_value(key))
-                for key, value in coverage_changes(entry.event, state):
-                    reader.change(key, entry.task_sequence, value)
+                if isinstance(state, StandardProjectionState):
+                    assert plan.run.anchor is not None
+                    save_standard(
+                        plan.run.anchor.segment_id, state, reader.change, entry.task_sequence
+                    )
+                    public = coverage_projection_event(entry.event, strict=plan.run.strict_coverage)
+                    if public is not None:
+                        save_membership(
+                            plan.run.anchor.segment_id,
+                            public,
+                            state,
+                            reader.change,
+                            entry.task_sequence,
+                        )
+                else:
+                    for key, value in coverage_changes(entry.event, state):
+                        reader.change(key, entry.task_sequence, value)
                 scalar = SegmentCheckpoint(
                     entry.segment_id,
                     entry.task_sequence,
@@ -361,7 +358,7 @@ class AgUiCheckpointMaterializer:
                     entry.segment_sequence,
                     previous,
                     len(frames),
-                    decision.projected,
+                    decision.projected and (decision.eligible or not standard),
                     decision.eligible,
                 )
             )
@@ -428,9 +425,13 @@ class AgUiCheckpointMaterializer:
             segment_identity,
             strict_coverage=run.strict_coverage,
             state_type=self.profile.state_type if self.profile else ProjectionState,
+            run=run,
         )
         if scalar.task_sequence != header.state_before_sequence:
             raise CheckpointConflict("frame header references another predecessor checkpoint")
+        if isinstance(state, StandardProjectionState):
+            assert self.profile is not None
+            bind_standard(self.profile, scope, run, standard_header(entry), state)
         admit_projection(entry.event, segment_identity, started=state.started)
         _, frames = next(
             self.projector.project_events((entry.event,), segment_identity, state=state)

@@ -271,3 +271,104 @@ SQLite 使用同一 classifier。每个 family 根据真实 source privacy 只�
 或 coverage queue；晚到隐私事实重新准备对应严格队列，旧 output 行不被改写。
 显式配置最多六个 projector versions（旧两个 + 新两个 family 的各两个），第七个
 仍拒绝；没有无限 fanout。GET 不注册、不迁移、不 repair、不 materialize。
+
+## 11. G2 标准公开投影（候选实现，未激活）
+
+`StandardAgUiProjector` + `StandardProjectionState` 是独立 producer/state。
+只有显式 `AgUiProjectionProfile(..., projector=StandardAgUiProjector(),
+state_type=StandardProjectionState)` 才使用它；默认 registry 仍为空。
+官方 Python `ag-ui-protocol==1.0.0` 复用全部生成模型；独立 dev validator
+`jsonschema==4.26.0` 校验 G0 冻结 Draft2020-12 Event union 的正反例。
+旧 projector 仅明确 assistant role 和使用官方 JSON Patch 校验入口，以保留
+原 wire bytes；旧 schema/fixture/cursor/HMAC 与旧 migration 文件不重写。
+
+- 每个公开协议 Run 首帧 RUN_STARTED，紧接实际派生 STATE_SNAPSHOT 建立 patch
+  base：首次为空，续接重建已接受的公开文档，不能盲目置空。G2 文档仅拥有
+  `/execution`；后续用 add patch 保留其他状态。既有 Client Effect fallback 未在
+  新 profile 冒充完整消费，G5 先完整组合再激活。审批/澄清不发 MESSAGES_SNAPSHOT，
+  不删除既有消息/Activity。HARNESS_ATTEMPT_STARTED/SESSION_RESUMED 与真实终态才
+  改变 execution phase；protocol success 不能冒充执行/业务完成。
+- 已校验的完整 TOOL_CALL_PROPOSED 对象一次产生 START/ARGS/END；END 只结束
+  参数。pending result 仍保留，执行 Activity 的 running 仅来自真实 STARTED，
+  完成/失败只来自对应 durable terminal；取消不伪造结果。富媒体和工具正文复用
+  已有 `tool_result_content` / `project_content_parts`，不外发原 metadata。
+- PLAN_UPDATED 复用 SessionPlan 校验与稳定 plan Activity ID，提供真实实时进度。
+  标准 Step 仅在已观察 in_progress 后又有显式同 ID/内容 completed/cancelled 时
+  回顾式成对交付 START/FINISHED；保留原观察时间/身份，取消状态用 metadata 区分。
+  未完成 span 跨等待/合法续接保留，删除/替换使其失效；Run 终态不制造成功。
+  观察跨度可含审批暂停，不能宣称实际执行 duration。TESTS_COMPLETED 仅记录结束。
+- MODEL_RESPONSE_DELTA、候选/final model response 与 commentary reservation
+  都不是发布。正文只来自 PUBLIC_OUTPUT 和 ANSWER_COMMITTED；实际 commentary
+  publisher 的 durable chunks 按原 model-call/source digest 在每个协议切片内拼接。
+  实际末块结束；若协议先终止，END 明确 publicationComplete=false，不补正文或
+  冒充最终提交。只保留 chunk offset，真实续接剩余块开新的切片 message ID；原
+  publication ID 不重发，相同正文但不同 publication ID 不按内容 hash 去重。
+  strict Coverage 必须首先经过 coverage_projection_event；任意答案/工具正文、
+  公共候选文本与私有 metadata 不会借新 profile 绕过原隐私边界。
+- 只有真实 APPROVAL_REQUESTED / CLARIFICATION_REQUESTED 才产生可回答 Interrupt；
+  question/responseSchema 使用原公开事实，clarification ID 不能冒充 toolCallId。
+  delivery/verification pause 公开完整已验证 DeliveryAssessmentPayload（包括 unmet/
+  satisfied/evidence/artifact refs），不复制外层 metadata/候选正文，不伪造未知枚举。
+  缺失 assessment 就不发该事件，不把 partial/blocked 变成人工问题。
+- 非人工 SESSION_SUSPENDED 先公开 paused execution patch，仅 allowlist diagnostic，
+  不公开路径/runtime/原 metadata。budget/verification/交付阻塞/用户 snapshot/未知
+  非失败停止关闭为 cancelled，绝不冒充 success；storage/authority/plugin 服务故障
+  关闭为 RUN_ERROR，但 execution 仍 paused，不冒充 durable business failed。
+  workspace drift 为非失败 paused/cancelled。协议 cancelled 不等于 durable
+  SessionCancelled；原执行可在合法续接事实后形成普通新公共 Run，不是 AG-UI resume。
+  依据 [1.0 lifecycle](https://docs.ag-ui.com/spec/1.0/events/lifecycle) 的 cancelled/
+  run closure 规则；此前候选采用 pause-success 的设计已在提交前纠正。
+  冻结 budget 没有原生额度修改动作，不宣传虚构问题。waiting_children 有真实后台
+  工作，继续同一活动协议 Run；Client Effect 完整往返留在 G5。
+- TURN/SESSION_CANCELLED 产生 cancelled outcome，终态最多一次。真实 failure
+  产生通用 RUN_ERROR；error、success、cancel 与 input interrupt 都保留本切片
+  已知 usage。missing count 保持 absent，bool 非法，cache miss 不是 cache write；
+  reasoning/cache 为子集，不重复相加。只使用实际模型 token 事实，子任务调用
+  次数不变成 token。每个实际 call 都参与 unknown 传播，不能跳过全缺字段的 call；
+  已知 provider/model 的缺失字段使该组对应字段 absent，无法归属的全未知 call
+  使 inclusive terminal usage 省略。已代表的 research/delegation 没有 token 事实时，
+  整体 totals 同样省略；在途 child 的未知标记跨协议切片保留，真正结算后下一切片
+  才重置。已有真实数值仍在 scope=model_call 的 CUSTOM 事件逐调用公开，不能冒充
+  inclusive totals。绝不根据 model_calls_used 推断 token。
+- durable SUBAGENT_DELEGATED 的 event ID 定义 invocation，绑定原 child/tool/name，
+  立即公开 delegated Activity（不是实际 child running 证明）。标准 START/terminal
+  仅在匹配终态时回顾式成对交付；parent cancel/interrupt 不伪造子成功/错误。
+  完成只信任当前 epoch 的 HARNESS/resume、原 deterministic wakeup key/revision
+  及精确无重复 child set；原 worker 同事务从真实 terminal links/events 生成该事实。
+  不读取子私有正文，不以 child ID 授予访问。failed/cancelled 产生 SUBAGENT_ERROR。
+  research producer 增补原 tool-call/name；历史稀疏事件不猜父归属。该生产者在工具
+  返回后才持久化 START/terminal，标准事件不填虚构开始/结束时间，并明确
+  `timing=observed_after_execution`；这不是 live spawn 或真实 duration 证明。
+
+公开 Run ID 仍复用第10节 hash：已暂停/等待真实输入的协议切片遇到原 immutable
+internal continuation anchor 才开后继；waiting_children 的 resume 不重复开关 Run。
+原 TURN/SESSION completed/cancelled/failed（含协议早已暂停后到达的事实）阻止迟到
+内部 resume 再开公开 Run；映射可能的 anchor 不等于授予恢复执行权限。
+实际内部 header 为 HARNESS/resume 且 `command_run_id is None`，不是新业务 Run；
+G2 修正 G2V 曾以模拟非空 run_id 测试的条件，并用 SQLite/PG 实际写入 header 验证。
+前序关系只在 versioned `previousProtocolRunId` metadata，不能放入 parentRunId。
+
+新 `standard_v1` cells 固定原 Run anchor 的 root Segment，跨 Segment 共享派生状态。
+原 namespace/Task/source/member/CAS 校验仍生效；SQLite/PG 提交另外核对该 root，
+旧 profile 不能写新 cells。v116 仅增补派生 schema，所有旧 migration bytes 保留。
+恢复严格读取当前 Event 之前的 cells，不窥视之后状态或历史正文。原 anchor 已
+处理后必须存在完整 root count/chunks；缺失、版本/类型/私有字段损坏、错误公共
+Run 绑定都明确失败，不重新开始或丢失已得用量。储存的 v1 schema/phase/usage/
+child/coverage 形状受校验，不能把私有任意 JSON 作为 STATE_SNAPSHOT 输出。
+共享 projector
+没有当前 Task/Run 可变字段。call ID 在协议切片内、publication ID 在原执行绑定内
+使用 hash point cells；只 hash 身份，不 hash 正文。活动状态/已知 usage 聚合使用
+有界小 snapshot，不保存工具参数、
+私有 conversation 或完整结果。10k-call 回归验证 point reads 与小 snapshot 不随
+已结束 call ID 历史增长；32KiB 活动元数据及原 1MiB/1024-key Page 门禁明确失败，
+不会部分发布。G7 仍须验证实际长历史性能、并发与完整传输恢复，不以此替代 G6/G7。
+
+标准 profile 的 source Page 仍最多256条，但并不假设整个 Page 的派生状态日志
+一定能塞进1MiB。物化在没有任何写入的阶段遇到明确 Page-budget 异常时，按有界
+二分前缀重算并返回可提交 prefix；consumer 只按实际 committed.through_sequence
+推进，剩余源事实在后续批次处理。单 Event/校验/缺失状态错误不因重试绕过。
+旧 profile 保留原 Page/异常行为。256次模型事实的回归验证完整前沿、单次 Run
+开始和无遗漏总数；G7 仍须测量真实10k/native/并发的吞吐成本。
+strict 新 profile 先调用原 privacy sanitizer，再只保留 allowlist 生命周期分类：
+waiting_children 不关闭，infra/authority 保持 RUN_ERROR，workspace drift 保持
+paused/cancelled；不复制原 metadata/assessment/body，也不改旧 sanitizer 字节。

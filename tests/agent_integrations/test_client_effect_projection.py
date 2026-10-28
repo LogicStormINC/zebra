@@ -39,7 +39,7 @@ def test_scheduled_effect_projects_client_only_state_without_fence() -> None:
     projection = AgUiProjector().project((event,), identity)
 
     delta = next(item for item in projection.events if isinstance(item, StateDeltaEvent))
-    value = delta.delta[0]["value"]
+    value = delta.model_dump(mode="json")["delta"][0]["value"]
     assert value["execution_location"] == "client"
     assert value["arguments"] == {"itemId": "item-1"}
     assert value["task_id"] == "task-1"
@@ -94,4 +94,6 @@ def test_terminal_receipt_removes_effect_on_exact_cursor_replay() -> None:
     replay = AgUiProjector().project((scheduled, terminal), identity, after=first.next_cursor)
 
     delta = next(item for item in replay.events if isinstance(item, StateDeltaEvent))
-    assert delta.delta == [{"op": "remove", "path": "/zebra/clientEffects/effect-1"}]
+    assert delta.model_dump(mode="json")["delta"] == [
+        {"op": "remove", "path": "/zebra/clientEffects/effect-1"}
+    ]

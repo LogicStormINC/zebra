@@ -83,7 +83,12 @@ def test_public_run_mapping_uses_canonical_continuation_and_never_execution_iden
     from tests.agent_integrations.test_ag_ui_projection_checkpoint import source_header
 
     scope, run, _ = plans(rows)
-    continuation = replace(source_header(rows[1]), internal_continuation=True)
+    continuation = replace(
+        source_header(rows[1]),
+        internal_continuation=True,
+        command_kind="resume",
+        command_run_id=None,
+    )
     run = replace(run, highwater=1)
     source = SimpleNamespace(
         read_event_header=lambda task, position: run.anchor if position == 0 else continuation

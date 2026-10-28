@@ -22,8 +22,10 @@ def optional_payload_text(payload: Mapping[str, object], key: str) -> str | None
     return value.strip() if isinstance(value, str) and value.strip() else None
 
 
-def json_text(value: Mapping[str, object]) -> str:
+def json_text(value: Mapping[str, object], *, allow_nan: bool = True) -> str:
     try:
-        return json.dumps(value, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
+        return json.dumps(
+            value, ensure_ascii=False, separators=(",", ":"), sort_keys=True, allow_nan=allow_nan
+        )
     except (TypeError, ValueError) as exc:
         raise AgUiProjectionError("tool arguments are not JSON serializable") from exc

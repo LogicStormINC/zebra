@@ -22,21 +22,23 @@ def project_client_state(event: SessionEvent, *, timestamp: int) -> tuple[Event,
     if client.get("state_digest") != digest:
         return None
     return (
-        StateDeltaEvent(
-            timestamp=timestamp,
-            delta=[
-                {
-                    "op": "add",
-                    "path": "/client",
-                    "value": {
-                        "owner": "host_frontend",
-                        "frontend_app_id": client.get("frontend_app_id"),
-                        "profile_digest": client.get("profile_digest"),
-                        "ui_revision": client.get("ui_revision"),
-                        "state_digest": digest,
-                        "readables": state,
-                    },
-                }
-            ],
+        StateDeltaEvent.model_validate(
+            dict(
+                timestamp=timestamp,
+                delta=[
+                    {
+                        "op": "add",
+                        "path": "/client",
+                        "value": {
+                            "owner": "host_frontend",
+                            "frontend_app_id": client.get("frontend_app_id"),
+                            "profile_digest": client.get("profile_digest"),
+                            "ui_revision": client.get("ui_revision"),
+                            "state_digest": digest,
+                            "readables": state,
+                        },
+                    }
+                ],
+            )
         ),
     )

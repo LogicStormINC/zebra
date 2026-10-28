@@ -1,7 +1,7 @@
 ## AGUI-G2-PUBLIC-PROJECTION-20261029 — Standard public event semantics
 
-- Status: Ready (2026-10-29; not claimed).
-- Human owner: Luke Ding; executor: unassigned; target: cloud-agent.
+- Status: Review (2026-10-29; implementation/focused/native/official-consumer candidate gates ready; independent reviews pending).
+- Human owner: Luke Ding; executor: Codex; target: cloud-agent.
 - Dependency: G2V 7c8962b0 reviewed and fast-forward integrated locally.
 - Proposed branch: codex/agui-g2-standard-projection-20261029; reuse the clean
   isolated trench-spin-sync-20261028/zebra-agent worktree after this receipt.
@@ -16,6 +16,42 @@
   tests/conformance/agui_contract/ runner/tests and dynamic runtime provenance.
   The immutable legacy fixture/schema bytes are not owned for rewriting.
 - Governance: this registry, PROGRESS.md, WORKLOG.md, standard contract and plan.
+- Exact base/claim: 7c382e57; branch codex/agui-g2-standard-projection-20261029;
+  isolated trench-spin-sync-20261028/zebra-agent worktree.
+- Before-code ownership extension: ag_ui/checkpoint_keys.py for versioned state
+  key discovery; new standard_checkpoint.py and standard_binding.py for bounded
+  restoration and immutable per-binding canonical epoch context.
+- Before-code derived-state ownership extension: agent-storage/
+  task_projection_coverage_cells_schema.py; postgres/standard_projection_cells_migration.py
+  and migration_catalog_tail.py; core/ports/task_projection_checkpoints.py permits
+  explicitly versioned standard_v1 cells at immutable root Segment across handoffs;
+  tests/agent_storage/test_agui_standard_cells.py and migration catalog tests.
+  New native migration only; old migration bytes/checksums remain immutable.
+- Before-code root-validation extension: agent-storage/
+  task_projection_checkpoint_commit.py and postgres/task_projection_checkpoint_rows.py
+  (verify standard cells use the canonical source anchor Segment before commit).
+  Frozen legacy validation remains unchanged. New standard tests own the exact
+  child HARNESS/resume epoch predicate; no cross-child reads or grants.
+- Before-code size-limit extraction: new ag_ui/checkpoint_reader.py receives
+  the unchanged bounded _PageReader so materializer stays below 500 lines.
+- Before-code trusted research producer ownership: core/contracts/subagent_events.py
+  and harness/tool_execution.py; focused core/integration tests. Add optional exact
+  parent tool-call/name fields to existing post-result HARNESS lifecycle facts;
+  sparse historical facts stay unbound and legacy whitelist bytes unchanged.
+  This does not add a live spawn callback or change execution lifecycle.
+- Before-code official typed patch compatibility extension: integrations
+  ag_ui/client_state_projection.py and client_effect_projection.py use the official
+  StateDeltaEvent.model_validate JSON boundary (same serialized legacy patch bytes).
+- Before-code semantic ownership extension: new ag_ui/standard_interrupts.py
+  separates answerable interrupts, delivery assessments and operational pause;
+  no legacy MessagesSnapshot/StateSnapshot resets enter the new profile.
+- Before-code G2V stable-suite follow-up: tests/agent_storage/
+  test_storage_composition.py expects projection_work_for_version and verifies
+  exact-version read-only factory behavior; production composition is unchanged.
+  Parent isolated 7c382e57 full gate exposed this single stale field-set assertion.
+- Before-code strict argument boundary: ag_ui/payload_validation.py adds optional
+  allow_nan keyword preserving legacy default; standard complete-object arguments
+  require strict JSON, including direct pure-projector callers.
 - Before code: audit every producer/caller and record exact base/claim. Reuse
   official Python1.0 models only after explicit compatibility review; preserve
   legacy wire/defaults. Expand any additional ownership before editing.

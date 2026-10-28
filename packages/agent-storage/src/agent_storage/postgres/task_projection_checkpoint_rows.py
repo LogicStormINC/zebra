@@ -279,6 +279,15 @@ def validate_transition(
     connection: Connection, transition: ProjectionTransition, next_sequence: int
 ) -> None:
     scope = transition.scope
+    standard = [c for c in transition.cells if c.key.kind == "standard_v1"]
+    if standard:
+        anchor = connection.execute(
+            "SELECT session_id FROM session_events WHERE deployment_namespace=%s "
+            "AND task_id=%s AND event_id=%s",
+            (scope.namespace, scope.task_id, scope.anchor_event_id),
+        ).fetchone()
+        if anchor is None or any(c.key.segment_id != anchor["session_id"] for c in standard):
+            raise CheckpointConflict("standard state must use the canonical root Segment")
     if transition.through_sequence >= next_sequence:
         raise CheckpointConflict("checkpoint Page exceeds canonical source coverage")
     rows = connection.execute(

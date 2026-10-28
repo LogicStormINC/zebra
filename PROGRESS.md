@@ -1,3 +1,20 @@
+## 2026-10-29 AG-UI G2 public producer (candidate, independent review pending)
+
+The opt-in StandardAgUiProjector uses official Python1.0 models and separate
+root-Segment standard_v1 checkpoints. Default registry remains empty. Complete
+argument END, observed tool/plan/Step/child/publication facts, cancellation,
+protocol-slice usage and state-preserving input/pause mappings are implemented.
+Actual internal resume headers have no command_run_id; the shared mapping now
+matches that producer. waiting_children preserves the active protocol slice.
+Only real approval/clarification are answerable interrupts; blocked/operational
+pauses retain domain paused state separately from protocol cancelled/error. No snapshot
+history erasure, candidate/private text publication or invented execution facts.
+Additive v116 preserves prior migrations; legacy wire/default path remains frozen.
+Targeted/native/official-consumer and candidate checks are recorded in WORKLOG;
+independent spec/quality review and final integrated gates remain required.
+No profile activation, original business Run, model invocation or deployment.
+See [standard contract](docs/AGUI_STANDARD_DURABLE_CONTRACT.md#11-g2-标准公开投影候选实现未激活).
+
 ## 2026-10-29 AG-UI G2V projection profile isolation (locally integrated)
 
 Explicit profile registry binds projector/state restoration; default stays unavailable.

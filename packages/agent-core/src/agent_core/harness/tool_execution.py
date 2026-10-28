@@ -197,6 +197,8 @@ def _subagent_lifecycle_events(
     base: dict[str, object] = {
         "attempt_number": context.attempt.number,
         "subagent_id": subagent_id,
+        "tool_call_id": str(tool_call.tool_call_id),
+        "tool_name": tool_call.name,
         "status": "running",
         **limits,
         "model_calls_used": 0,
