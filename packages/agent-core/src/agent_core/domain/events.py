@@ -28,6 +28,7 @@ class EventType(StrEnum):
     SESSION_COMMAND_ACCEPTED = "session_command_accepted"
     USER_MESSAGE_RECEIVED = "user_message_received"
     TASK_PREPARED = "task_prepared"
+    INPUT_ARTIFACT_STORED = "input_artifact_stored"
     RUNTIME_PROVISIONED = "runtime_provisioned"
     RUNTIME_CLEANUP_FAILED = "runtime_cleanup_failed"
     PLAN_PROPOSED = "plan_proposed"

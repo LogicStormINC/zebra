@@ -1,3 +1,7 @@
+## 2026-10-29 Cloud inputs and exact connector pin
+
+Fixed local-store calls in Cloud input ingress, atomic Task/message input facts and current registry/profile freezing. Real isolated PG/S3 rollback/read/isolation/stale-CAS gate passed;14+51 focused checks and make check pass. Full ERP/volume/browser delivery remains in progress; no model/search, original Run replay or production cutover. Details: docs/CLOUD_FULL_CAPABILITY_COMPOSITION.md.
+
 ## 2026-10-28 Full capability schedule/startup follow-up
 
 Owner-scoped schedule idempotency, frozen v2/extension admission, typed Host setup suspension and verified researcher parent authority are implemented. Ordinary opaque workspace refs now resolve through trusted volume callbacks. No model/search or production service changes. make check passes; paired full-runtime deployment acceptance remains in progress.

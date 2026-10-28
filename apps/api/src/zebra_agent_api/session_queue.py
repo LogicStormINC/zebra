@@ -1,14 +1,18 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 
 from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
+from agent_core.application.session_projection import rebuild_session
 from agent_core.application.workspace_projection import rebuild_workspace
 from agent_core.domain.agent_definition_snapshots import AgentDefinitionSnapshot
+from agent_core.domain.cloud_artifact_payloads import CloudArtifactPayloadRecord
 from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.script_definition import ScriptDefinitionSnapshot
 from agent_core.domain.task_bindings import TaskBindingSnapshot
 from agent_core.domain.tool_profiles import ToolProfile
+from agent_core.ports.artifact_object_store import ArtifactObjectStorePort
 from agent_core.ports.idempotency_store import IdempotencyRecord
 from agent_core.ports.task_admission_transaction import (
     TaskAdmissionIdempotencyConflict,
@@ -36,6 +40,7 @@ def create_queued_session(
     coverage_configuration_digest: str | None = None,
     public_idempotency_key: str | None = None,
     initial_run_id: str | None = None,
+    input_artifact_objects: ArtifactObjectStorePort | None = None,
 ) -> ApiResponse:
     if initial_run_id is not None and (
         not admission_dsn
@@ -76,11 +81,41 @@ def create_queued_session(
             coverage_admission=parsed.get("coverage_admission"),
         )
     )
-    events, attachment_refs = persist_initial_attachments(
-        stores.artifact_payloads,
-        tuple(bootstrap.events),
-        parsed["attachments"],
-    )
+    raw_binding = None
+    if admission_dsn and admission_namespace:
+        from zebra_agent_api.host_manifest_freeze import HostManifestFreezeError
+
+        try:
+            raw_binding = _derive_binding(
+                bootstrap.session.session_id,
+                host_context=host_context,
+                definition_snapshot=definition_snapshot,
+                deployment_namespace=admission_namespace,
+                frozen_manifest_digest=frozen_manifest_digest,
+                verified_host_grant=verified_host_grant,
+                admission_dsn=admission_dsn,
+            )
+        except HostManifestFreezeError:
+            return ApiResponse(503, {"status": "host_connector_unavailable"})
+    input_artifacts: tuple[CloudArtifactPayloadRecord, ...] = ()
+    if admission_dsn and parsed["attachments"]:
+        if input_artifact_objects is None:
+            return ApiResponse(503, {"status": "artifact_ingress_unavailable"})
+        from zebra_agent_api.cloud_attachment_ingress import prepare_cloud_inputs
+
+        events, attachment_refs, input_artifacts = prepare_cloud_inputs(
+            input_artifact_objects,
+            str(admission_namespace),
+            tuple(bootstrap.events),
+            parsed["attachments"],
+        )
+        bootstrap = replace(bootstrap, events=events, session=rebuild_session(list(events)))
+    else:
+        events, attachment_refs = persist_initial_attachments(
+            stores.artifact_payloads,
+            tuple(bootstrap.events),
+            parsed["attachments"],
+        )
     workspace = rebuild_workspace(list(events))
     response = ApiResponse(
         status_code=201,
@@ -139,14 +174,6 @@ def create_queued_session(
             PostgresTaskAdmissionTransaction,
         )
 
-        raw_binding = _derive_binding(
-            bootstrap.session.session_id,
-            host_context=host_context,
-            definition_snapshot=definition_snapshot,
-            deployment_namespace=admission_namespace,
-            frozen_manifest_digest=frozen_manifest_digest,
-            verified_host_grant=verified_host_grant,
-        )
         idempotency_record = None
         if idempotency_key is not None and idempotency_request_hash is not None:
             idempotency_record = IdempotencyRecord(
@@ -164,6 +191,7 @@ def create_queued_session(
                 workspace=workspace,
                 binding=raw_binding if isinstance(raw_binding, TaskBindingSnapshot) else None,
                 idempotency=idempotency_record,
+                input_artifacts=input_artifacts,
             )
             if coverage_configuration_digest is not None:
                 from agent_storage.postgres.command_coverage_admission import admit_coverage_task
@@ -215,6 +243,7 @@ def _derive_binding(
     deployment_namespace: str = "zebra",
     frozen_manifest_digest: str | None = None,
     verified_host_grant: VerifiedHostGrant | None = None,
+    admission_dsn: str | None = None,
 ) -> object:
     """Derive the TaskBindingSnapshot for atomic admission (F3).
 
@@ -224,8 +253,19 @@ def _derive_binding(
 
     from zebra_agent_api.session_binding import _build_binding_snapshot
 
+    profile = None
+    if host_context is not None and admission_dsn is not None:
+        from zebra_agent_api.host_manifest_freeze import resolve_admission_profile
+
+        profile = resolve_admission_profile(
+            admission_dsn,
+            deployment_namespace,
+            host_context,
+            frozen_manifest_digest,
+        )
     return _build_binding_snapshot(
         session_id,
+        connector_profile=profile,
         host_context=host_context,
         definition_snapshot_digest=(
             # ponytail: v3 native execution binds the full frozen snapshot; retain v1/v2

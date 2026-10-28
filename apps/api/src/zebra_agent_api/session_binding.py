@@ -17,6 +17,7 @@ from uuid import UUID
 
 from agent_core.domain.agent_capabilities import capability_set
 from agent_core.domain.host_authority import HostContextEnvelope
+from agent_core.domain.host_connectors import HostConnectorProfileVersion
 from agent_core.domain.identifiers import TaskId
 from agent_core.domain.task_bindings import (
     AgentCapabilityCeilingSnapshot,
@@ -190,6 +191,7 @@ def _build_binding_snapshot(
     deployment_namespace: str = "zebra",
     frozen_manifest_digest: str | None = None,
     verified_host_grant: VerifiedHostGrant | None = None,
+    connector_profile: HostConnectorProfileVersion | None = None,
 ) -> TaskBindingSnapshot:
     """Build the binding model without persisting (used by atomic admission).
 
@@ -240,6 +242,20 @@ def _build_binding_snapshot(
             resource_binding_digest=NO_CONNECTOR_DIGEST,
             bound_at=datetime.now(UTC),
             host_context=host_context,
+        )
+    if connector_profile is not None:
+        if (
+            host_context is None
+            or connector_profile.host_app_id != host_context.host_app_id
+            or frozen_manifest_digest in (None, NO_CONNECTOR_DIGEST)
+        ):
+            raise ValueError("connector profile requires its exact frozen Host manifest")
+        host = host.model_copy(
+            update={
+                "connector_id": connector_profile.connector_id,
+                "connector_profile_revision": connector_profile.profile_revision,
+                "connector_profile_digest": connector_profile.profile_digest,
+            }
         )
     ceiling = AgentCapabilityCeilingSnapshot(
         definition_snapshot_digest=definition_snapshot_digest or NO_CONNECTOR_DIGEST,

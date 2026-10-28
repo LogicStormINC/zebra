@@ -12,6 +12,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Protocol
 
+from agent_core.domain.cloud_artifact_payloads import CloudArtifactPayloadRecord
 from agent_core.domain.events import SessionEvent
 from agent_core.domain.identifiers import SessionId, TaskId
 from agent_core.domain.sessions import Session
@@ -29,6 +30,7 @@ class TaskAdmissionRequest:
     workspace: WorkspaceProjection
     binding: TaskBindingSnapshot | None = None
     idempotency: IdempotencyRecord | None = None
+    input_artifacts: tuple[CloudArtifactPayloadRecord, ...] = ()
 
     def validate(self) -> None:
         if not self.events:

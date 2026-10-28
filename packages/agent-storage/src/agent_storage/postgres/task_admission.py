@@ -112,6 +112,16 @@ class PostgresTaskAdmissionTransaction:
         save_session_in_transaction(connection, namespace, request.session)
         save_workspace_in_transaction(connection, namespace, request.workspace)
         root_session_id = SessionId(UUID(str(persisted_events[0].session_id)))
+        reference = request.workspace.workspace_root
+        if reference.startswith("workspace:/"):
+            workspace_id = UUID(reference.removeprefix("workspace://").removeprefix("workspace:/"))
+            # New source admission binds the allocation identity in the same
+            # transaction. Never steal an existing owner's physical volume.
+            connection.execute(
+                "UPDATE workspace_control_instances SET owner_session_id=%s "
+                "WHERE deployment_namespace=%s AND workspace_id=%s AND owner_session_id IS NULL",
+                (root_session_id, namespace, workspace_id),
+            )
         task = rebuild_task_in_transaction(connection, namespace, root_session_id)
         binding_digest: str | None = None
         if request.binding is not None:
@@ -125,6 +135,9 @@ class PostgresTaskAdmissionTransaction:
         )
         if command_events:
             task = rebuild_task_in_transaction(connection, namespace, root_session_id)
+        from agent_storage.postgres.input_artifact_admission import persist_input_artifacts
+
+        persist_input_artifacts(connection, namespace, request.events, request.input_artifacts)
         return TaskAdmissionReceipt(
             task_id=task.task_id,
             session_id=root_session_id,

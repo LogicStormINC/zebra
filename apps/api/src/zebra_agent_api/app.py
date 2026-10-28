@@ -12,6 +12,7 @@ from agent_core.application.workspace_projection import (
 from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.ports import EffectStateReadPort, LiveEventFanoutPort
 from agent_core.ports.agent_registry import AgentRegistryPort
+from agent_core.ports.artifact_object_store import ArtifactObjectStorePort
 from agent_core.ports.platform_control_plane import AgentPlatformControlPlane
 from agent_core.ports.task_schedules import TaskScheduleFiringStorePort, TaskScheduleStorePort
 from agent_integrations import (
@@ -117,6 +118,7 @@ class ZebraAgentApi(
     stream_notifications: AsyncRedisNotifications | None = None
     stream_v2_reader: StreamV2Reader | None = None
     effect_state: EffectStateReadPort | None = None
+    input_artifact_objects: ArtifactObjectStorePort | None = None
     workspace_control_store: WorkspaceControlStorePort | None = None
     administrative_context_namespace: str | None = None
     credential_broker: CredentialBroker | None = None
@@ -176,14 +178,14 @@ class ZebraAgentApi(
             if self.workspace_control_store is None:
                 return bad_request("workspace_source requires the cloud workspace control plane")
             workspace_id = _WorkspaceId(_uuid4())
-            self.workspace_control_store.create_pending(
+            instance, _ = self.workspace_control_store.create_pending(
                 workspace_source,
                 workspace_id=workspace_id,
                 quota_bytes=256 * 1024 * 1024,
                 owner_session_id=None,
-                idempotency_key=(f"session-workspace:{idempotency_key or workspace_id}"),
+                idempotency_key=(f"session-workspace:{storage_idempotency_key or workspace_id}"),
             )
-            parsed["workspace"] = f"workspace://{workspace_id}"
+            parsed["workspace"] = f"workspace://{instance.workspace_id}"
         if trusted_local_mode_enabled(self.settings):
             parsed["network_profile"] = "full-trusted-local"
             parsed["network_allowlist"] = []
@@ -233,6 +235,7 @@ class ZebraAgentApi(
                 host_context=host_context,
                 definition_snapshot=definition_snapshot,
                 verified_host_grant=verified_host_grant,
+                input_artifact_objects=self.input_artifact_objects,
                 **admission_kwargs,
             )
 
@@ -357,22 +360,51 @@ class ZebraAgentApi(
                     else str(exc)
                 ),
             )
-        attachment_refs = store_text_attachments(
-            self.stores.artifact_payloads,
-            session_id=session_key,
-            message_event=event,
-            attachments=parsed["attachments"],
-            created_at=event.created_at,
-        )
-        event = attach_refs_to_user_event(event, attachment_refs)
-        stored = append_session_message_event(self.stores.events, event)
-        if stored is None:
-            return message_sequence_conflict(session_id)
-        event = stored
-        updated_session = projection_store.save_session(apply_event(session, event))
-        workspace = self.stores.workspaces.get_workspace(session_key)
-        if workspace is not None:
-            self.stores.workspaces.save_workspace(apply_workspace_event(workspace, event))
+        if self.settings.storage_authority == "postgresql" and parsed["attachments"]:
+            if self.input_artifact_objects is None:
+                return ApiResponse(503, {"status": "artifact_ingress_unavailable"})
+            from agent_storage.event_rows import SessionEventSequenceConflictError
+            from agent_storage.postgres.input_artifact_admission import append_input_message
+
+            from zebra_agent_api.cloud_attachment_ingress import prepare_cloud_inputs
+
+            namespace = getattr(self.stores, "deployment_namespace", None)
+            if not isinstance(namespace, str):
+                return ApiResponse(503, {"status": "artifact_ingress_unavailable"})
+            events, attachment_refs, artifacts = prepare_cloud_inputs(
+                self.input_artifact_objects,
+                namespace,
+                (event,),
+                parsed["attachments"],
+            )
+            try:
+                updated_session = append_input_message(
+                    self.settings.database_url,
+                    namespace,
+                    session,
+                    events,
+                    artifacts,
+                )
+            except SessionEventSequenceConflictError:
+                return message_sequence_conflict(session_id)
+            event = events[0]
+        else:
+            attachment_refs = store_text_attachments(
+                self.stores.artifact_payloads,
+                session_id=session_key,
+                message_event=event,
+                attachments=parsed["attachments"],
+                created_at=event.created_at,
+            )
+            event = attach_refs_to_user_event(event, attachment_refs)
+            stored = append_session_message_event(self.stores.events, event)
+            if stored is None:
+                return message_sequence_conflict(session_id)
+            event = stored
+            updated_session = projection_store.save_session(apply_event(session, event))
+            workspace = self.stores.workspaces.get_workspace(session_key)
+            if workspace is not None:
+                self.stores.workspaces.save_workspace(apply_workspace_event(workspace, event))
         body: dict[str, object] = {
             "session_id": session_id,
             "appended": True,

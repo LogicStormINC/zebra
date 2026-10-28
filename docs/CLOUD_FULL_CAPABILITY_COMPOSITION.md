@@ -56,3 +56,28 @@ Definition must retain its original Definition scope; do not broaden queries.
 - Fresh Host startup refusal/unavailability suspends the original session with a finite reason and no model retry. Cancellation is checked before private input. Researcher child probes use only verified durable parent lineage; child permissions remain narrowed.
 - Ordinary opaque workspace references now use the same trusted resolver as Bundle tasks. Plain local paths pass through. Construct the provider before allocating a workspace, so missing credentials cannot allocate storage.
 - Focused workspace/bundle gate21 passed; previous combined gate110 passed; make check passes1436 typed modules. Full deployment/ERP acceptance remains in the paired integration task.
+
+## 2026-10-29 Cloud input and connector admission repair
+
+Actual isolated ERP→Native→S3 requests exposed two latent generic defects: local
+store_payload was called on Cloud metadata, and a frozen Host manifest still
+produced an unbound connector placeholder. Cloud input publication now writes
+immutable object receipts outside SQL and commits exact input events/metadata
+with the Task admission or message stream CAS. No Worker lease is fabricated: API
+input metadata records the real control-plane epoch and admitted event revision
+under an explicit api-input owner. Failed/unknown writes are never blindly
+deleted. Local payload behavior stays unchanged; no schema change. Source
+workspace idempotency uses the scoped key and returned instance, with unowned
+source ownership bound to the root in the admission transaction.
+
+Admission now pins the actual registry profile only when its exact frozen
+manifest still matches; registry drift refuses before private object I/O. Old
+bindings are not rewritten. Fresh Host checks remain strict.
+
+Real isolated PostgreSQL17.5/S3 gate passed: two-input admission rollback, exact
+object reads, foreign Session denial, atomic follow-up input, stale CAS refusal
+without duplicate, and explicit epoch/revision provenance. Three unit checks,
+14 input/pin/renewal checks and51 focused extension/authority checks passed;
+make check passes1438 modules. Full suite and paired ERP/volume/browser gates
+are tracked separately and are not inferred from this result. No model/search
+requests, original Run replay, production cutover or Search/MCP restart.
