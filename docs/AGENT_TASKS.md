@@ -1,3 +1,15 @@
+## AGUI-FULL-INTERACTION-PLAN-20261028
+
+- Status: Review (2026-10-28; documentation-only Ready claim before edits; independent plan review passed).
+- Human owner: Luke Ding; executor: Codex.
+- Branch: codex/agui-full-interaction-plan-20261028; reused clean managed worktree.
+- Owned paths: docs/superpowers/plans/2026-10-28-agui-full-interaction.md;
+  docs/AGENT_TASKS.md; PROGRESS.md.
+- Scope: source-backed complete repair/optimization proposal and executable phased
+  task boundaries; implementation cards remain proposed, not claimed or unlocked.
+- No runtime/SDK code edits, dependency changes, source publication, deployment,
+  live Run mutation or automatic adoption of the proposed architecture.
+
 ## TRN-MULTI-SESSION-SPIN-SYNC-20261028
 
 - Status: Ready -> In Progress -> Review (2026-10-28; claimed before edits).

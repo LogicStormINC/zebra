@@ -1,3 +1,14 @@
+## 2026-10-28 AG-UI full interaction proposal (not implemented)
+
+AGUI-FULL-INTERACTION-PLAN-20261028 records the requested complete repair and
+optimization proposal after source/official-protocol audit and independent review.
+The proposal preserves current durable authority, old profiles/cursors/packages,
+and same-execution receipts. It proposes projection-version isolation before
+standard semantic changes, full SDK/UI/action/recovery closure, paired consumer
+migration and package gates. Implementation tasks remain proposed and unclaimed.
+See [full plan](docs/superpowers/plans/2026-10-28-agui-full-interaction.md).
+No runtime, dependency, deployment, original Run or GitHub changes in this task.
+
 ## 2026-10-28 Trench multi-session activity synchronization
 
 User-authorized documentation-only compatibility maintenance exception: paired
