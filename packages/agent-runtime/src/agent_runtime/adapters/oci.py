@@ -370,6 +370,7 @@ class OciRuntime(RuntimePort):
         command = [
             *self._engine,
             "create",
+            *(("--pull=never",) if self._instances is not None else ()),
             "--name",
             container_name,
             "--label",

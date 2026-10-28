@@ -1,5 +1,26 @@
 # AGENT_TASKS.md
 
+### CLOUD-RUNTIME-READINESS-20261028 - Service tools and sandbox readiness
+
+- Status: Review (2026-10-28;84 focused checks and actual-image no-model
+  comparison passed; idle Worker deployed, original Run/services preserved).
+- Human owner: Luke Ding; executor: Codex.
+- Branch: codex/cloud-runtime-readiness-20261028; existing clean cloud-plugin-plan-01 worktree.
+- Owned paths: packages/agent-runtime/src/agent_runtime/harness.py;
+  packages/agent-runtime/src/agent_runtime/adapters/oci.py;
+  apps/worker/src/zebra_agent_worker/runtime_preflight.py, execution_errors.py;
+  tests/agent_runtime/test_service_deferred_runtime.py;
+  tests/agent_runtime/test_oci_runtime.py; tests/worker/test_runtime_preflight.py;
+  tests/worker/test_runtime_failure_classification.py;
+  docs/CLOUD_RUNTIME_READINESS_2026-10-28.md; this registry; PROGRESS.md; WORKLOG.md;
+  .artifacts/cloud-runtime-readiness-20261028/.
+- Scope: eliminate spurious sandbox dependency for bounded service tools, verify
+  pinned local image in readiness, prevent implicit cloud image pull, classify
+  runtime failure distinctly. Preserve security, original Runs and Search/MCP.
+- Acceptance: no-model regression and isolated production tool/sandbox checks;
+  no new model/search or retry of original Run. Worker-only bounded rollout.
+
+
 ### CLOUD-EVAL-BASELINE-01 - Restore deterministic baseline verification trace
 
 - Status: Review (2026-10-20; eval30/30, make check exit0; make test

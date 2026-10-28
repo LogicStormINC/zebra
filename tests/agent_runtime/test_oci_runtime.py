@@ -220,3 +220,12 @@ def test_runtime_cleans_stale_session_containers_by_label(tmp_path: Path) -> Non
     listed = next(call for call in engine.calls if "ps" in call)
     assert "label=zebra.agent.session=local-session" in listed
     assert sum("rm" in call for call in engine.calls) == 2
+
+
+def test_cloud_container_create_never_pulls_missing_image(tmp_path):
+    runtime = OciRuntime(_spec(tmp_path), runner=FakeEngine(), instance_lifecycle=object())
+    command = runtime._create_command("isolated-check", tmp_path, runtime.spec)
+    assert "--pull=never" in command
+    assert IMAGE in command
+    local = OciRuntime(_spec(tmp_path), runner=FakeEngine())
+    assert "--pull=never" not in local._create_command("local", tmp_path, local.spec)

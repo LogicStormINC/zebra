@@ -15,6 +15,7 @@ from zebra_agent_worker.runtime_factory import build_runtime_spec, pin_cloud_eng
 def check_runtime(settings: ZebraAgentSettings) -> None:
     if settings.runtime.runtime_class not in {RuntimeClass.GVISOR, RuntimeClass.OCI_ROOTLESS}:
         return  # The explicitly selected local development runtime is not an OCI sandbox.
+    engine = pin_cloud_engine(settings)
     runtime = OciRuntime(
         build_runtime_spec(
             settings, workspace_root=Path("/tmp/zebra-runtime-preflight"),
@@ -22,9 +23,14 @@ def check_runtime(settings: ZebraAgentSettings) -> None:
         ),
         engine_command=(settings.runtime.engine,),
         gvisor_runtime=settings.runtime.gvisor_runtime,
-        runner=pin_cloud_engine(settings),
+        runner=engine,
     )
     require_runtime_capabilities(runtime)
+    # Readiness must resolve the exact pin locally; never pull on a live tool call.
+    image = engine((settings.runtime.engine, "image", "inspect", settings.runtime.image),
+                   capture_output=True, text=True, check=False, timeout=2)
+    if image.returncode:
+        raise RuntimeCapabilityError("pinned sandbox image is not available locally")
 
 
 def main() -> int:

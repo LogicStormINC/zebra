@@ -18,6 +18,7 @@ from agent_core.harness.models import HarnessAttemptOutcome, HarnessAttemptResul
 from agent_core.harness.orchestration_events import continuation_metadata
 from agent_core.harness.provider_continuation import ProviderContinuationUncertainError
 from agent_core.ports.model_gateway import ModelResponseRejectedError
+from agent_core.ports.runtime import RuntimeCapabilityError
 from agent_core.ports.worker_progress import WorkerProgressTimeout
 from agent_integrations.model_errors import ModelProviderError
 
@@ -90,6 +91,12 @@ def exception_attempt_result(exc: Exception, metadata: dict[str, object]) -> Har
                 "stop_reason": "execution_progress_unavailable",
                 "progress_stage": exc.stage,
             },
+        )
+    if isinstance(exc, RuntimeCapabilityError):
+        return HarnessAttemptResult(
+            outcome=HarnessAttemptOutcome.FAILED,
+            summary="execution sandbox unavailable",
+            metadata={**metadata, "stop_reason": "runtime_unavailable", "retryable": False},
         )
     if isinstance(exc, ContextCapsuleValidationError):
         return HarnessAttemptResult(

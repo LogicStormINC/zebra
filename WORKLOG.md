@@ -17114,3 +17114,16 @@ conv1793154759026_9a4ea0 / Runf0e03834, completed with high/Flash/transient_v2,
 normal POST1, no intercepted responses. Screenshot/artifacts private path and
 full boundaries/rollback in CLOUD_PROGRESS_BUDGET_2026-10-28.md. No push/main
 merge, maintainers integrate focused branch; unrelated primary changes preserved.
+
+
+## 2026-10-28 CLOUD-RUNTIME-READINESS-20261028
+
+Traced new failure to service-tool OCI dependency and unavailable pinned image,
+not provider or prior storage budget. Docker journal403 and30s canceled image
+resolution match provisioning reservation/terminal timestamps. Shared service
+allowlist, cloud no-pull, local-image readiness and runtime classification fixed.
+84 targeted no-model tests, Ruff, old/new image SQLite route proof, server gVisor
+quota read/write and live Worker preflight/history checks pass. Only idle Worker
+updated; exact original23events/1model, all Turn projections and other services
+preserved. Python/shell image baseline only; no new real-model acceptance claimed.
+Local focused branch; no push/main merge. Full report and rollback in focused doc.
