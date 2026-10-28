@@ -22,6 +22,7 @@ from agent_storage.postgres.runtime_gate_sources import (
     candidate_snapshot,
     foreign_scope,
 )
+from agent_storage.postgres.script_eval_instances import require_no_cloud_eval
 from agent_storage.postgres.worker_capability import _require_schema
 
 
@@ -82,6 +83,8 @@ class RuntimeGateStore:
     ) -> dict[str, Any]:
         with self._transaction() as c:
             gate = self._gate(c, update=True)
+            if command.action != "drain":
+                require_no_cloud_eval(c, self.scope.namespace_id)
             if c.execute(
                 "SELECT 1 FROM runtime_gate_terminations WHERE deployment_namespace=%s "
                 "AND operation_id=%s",
@@ -148,6 +151,7 @@ class RuntimeGateStore:
             raise ValueError("INVALID_OPERATION")
         with self._transaction() as c:
             gate = self._gate(c)
+            require_no_cloud_eval(c, self.scope.namespace_id)
             original = None
             workers = []
             complete = False

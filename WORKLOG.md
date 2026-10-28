@@ -17554,3 +17554,7 @@ excluded from baseline_digest; signing key stays outside settings/snapshots. Foc
 
 ## CA-P5-03 final verification
 11206 passed/3067 conditional skips; make check1445 typed sources/30Eval passed;31 focused repeat and exact emitter golden passed. Retained first failed full run and transient PG SSL boundary in evidence; no skips/cleanup added. Optional signed process metadata preserves historical Bundle digest and BFF/Task/history/Coverage. Parent P5 remains active; no production operations.
+
+2026-10-29 CA-P5-04: reproduce cloud Eval factory rejection without Docker/model I/O. Implement explicit optional cloud Eval resources under original/current publisher authority, admission/hold source fence, and empty script child under declared quota backing.34 targeted PG/Seatbelt/script/containment checks pass. Full gates running. No production operations; continue parent P5 actual S1 after publication.
+
+CA-P5-04 final: make test11209 passed/3067 conditional skips in1198.85s; make check passed;34 targeted PG/Seatbelt/containment checks. Preserve public contracts/history/Coverage; no production operations. Publish focused branch then continue actual owned gVisor S1 in Overdoze07C.

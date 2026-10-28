@@ -17,8 +17,11 @@ class ScopedNativeScriptRunner:
         self,
         profile: ScriptRunnerProfile,
         factory: Callable[[Path], tuple[RuntimePort, SandboxSpec]],
+        *,
+        workspace_parent: Path | None = None,
     ) -> None:
         self._profile, self._factory = profile, factory
+        self._workspace_parent = workspace_parent
 
     def run(
         self,
@@ -27,7 +30,7 @@ class ScopedNativeScriptRunner:
         *,
         cancellation_check: Callable[[], None] | None = None,
     ) -> ScriptRunResult:
-        with TemporaryDirectory(prefix="native-script-") as directory:
+        with TemporaryDirectory(prefix="native-script-", dir=self._workspace_parent) as directory:
             # Seatbelt must read the actual Python installation; no business workspace is mounted.
             workspace = (
                 Path(self._profile.python).resolve(strict=True).parent.parent

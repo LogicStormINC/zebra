@@ -17,12 +17,17 @@ from agent_core.ports.runtime import RuntimePort, SandboxSpec
 from agent_runtime.native_script_eval import ScriptEvalSuite, evaluate_scripts
 from agent_runtime.native_script_runtime import ScopedNativeScriptRunner
 from agent_storage.postgres.agent_registry import AgentDefinitionEvalEvidence
+from agent_storage.postgres.script_eval_instances import PostgresScriptEvalInstances
 from agent_storage.postgres.script_evaluation import ScriptEvaluationStore
 from zebra_agent_config import ZebraAgentSettings, load_settings
 from zebra_agent_config.private_configuration import read_private_configuration
 
 from zebra_agent_worker.native_scripts import approved_scripts
-from zebra_agent_worker.runtime_factory import build_runtime, build_runtime_spec
+from zebra_agent_worker.runtime_factory import (
+    build_runtime,
+    build_runtime_spec,
+    script_workspace_parent,
+)
 
 
 def run_evaluation(
@@ -91,6 +96,10 @@ def run_evaluation(
             raise ValueError("EVAL_OPERATION_CONFLICT")
         recheck()
         return found
+    cloud_instances = settings.deployment == "cloud" and settings.runtime.runtime_class in {
+        "gvisor",
+        "oci-rootless",
+    }
     claimed, receipt = store.claim(
         approval.trust,
         operation,
@@ -98,6 +107,7 @@ def run_evaluation(
         approval.definition_scope.scope_key,
         suite.version_id,
         recheck,
+        cloud_instances=cloud_instances,
     )
     if not claimed:
         recheck()
@@ -130,10 +140,22 @@ def run_evaluation(
             workspace_root=workspace,
             network_profile="none",
             spec_override=spec,
+            session_id=str(operation),
+            instance_factory=(
+                lambda engine: PostgresScriptEvalInstances(
+                    store, approval.trust, operation, suite.digest, engine
+                )
+            )
+            if cloud_instances
+            else None,
         ), spec
 
     def execute(script: NativeScript, raw: bytes) -> ScriptRunResult:
-        return ScopedNativeScriptRunner(assembly.native_scripts.runner, factory).run(
+        return ScopedNativeScriptRunner(
+            assembly.native_scripts.runner,
+            factory,
+            workspace_parent=script_workspace_parent(settings),
+        ).run(
             script,
             raw,
             cancellation_check=authorize,

@@ -1,5 +1,5 @@
-# CA-P5-03 — optional signed Worker process binding / verified / Review
-[Contract/boundary](docs/CA-P5-03_worker_process_binding.md): bind owning container launch identity to actual RuntimeGateWorker UUID; reuse existing fresh qualification, no new API/schema/readiness grant. Default opt-out and historical Bundle baseline preserved; 31 focused passed; make test11206 passed/3067 conditional skips and make check1445 typed sources/30Eval passed. No production deployment/migration, BFF/history/Task/Coverage mutation. [Previous](docs/archive/progress-ca-p5-02a.md).
+# CA-P5-04 — fenced cloud Eval / verified / Review
+[Boundary and implementation](docs/CA-P5-04_cloud_script_eval.md): dedicated original-owned exact OCI resources, current approval, closed-admission claim fence and unavailable lifecycle proof during unresolved cloud Eval. Shared declared quota backing fixes empty script workspace placement; no Task/lease fabrication, baseline fingerprint or history/Coverage change.34 targeted pass; make test11209/3067 conditional skips and make check exit0. Actual gVisor S1 remains Overdoze07C; all-P5 parent active, no production operations. [Prior](docs/archive/progress-ca-p5-03.md).
 
 # 2026-10-28 — CA-P5-01 Native gates verified / Review
 

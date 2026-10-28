@@ -1,3 +1,5 @@
+Current P5 precursor: [fenced cloud Eval/shared quota backing](docs/CA-P5-04_cloud_script_eval.md); actual owned gVisor lifecycle S1 remains separate.
+
 2026-10-28：[可选签名 Worker 进程绑定](docs/CA-P5-03_worker_process_binding.md)，仅启动身份元数据，不代替就绪/兼容或部署授权；默认不启用。
 
 ## Original Runtime gate termination

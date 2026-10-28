@@ -1,0 +1,26 @@
+{
+  "task": "CA-P5-04",
+  "gates": {
+    "makeTest": {
+      "exitCode": 0,
+      "sha256": "a6ddefeb4bc66579505b77b1cfaa577591d45fe04b222e661228f49a11d73856"
+    },
+    "makeCheck": {
+      "exitCode": 0,
+      "sha256": "615624153a8a384294d2ddcbc71223dc7983bafe0d1eb609c81287e46a747d75"
+    },
+    "targeted": {
+      "exitCode": 0,
+      "sha256": "3df8c33b632436497f1f88843370c55f6a67a5e3c2a7beb1f6b2d4d08fc526ae"
+    }
+  },
+  "test": {
+    "passed": 11209,
+    "conditionalSkipped": 3067,
+    "seconds": 1198.85
+  },
+  "targetedPassed": 34,
+  "boundary": "real isolated PG/Seatbelt and pure composition/containment; actual cloud/gVisor Eval still requires OD-P5-07C; no production operations",
+  "historicalContracts": "unchanged runtime-gates/1 and legacy Bundle baseline fingerprints",
+  "data": "no production migration/deployment or Task/history/receipt/Coverage rewrite"
+}

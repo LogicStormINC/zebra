@@ -28,7 +28,11 @@ from zebra_agent_config.native_script import ScriptExecutionCatalog
 
 from zebra_agent_worker.bundle_assembly import task_assembly
 from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
-from zebra_agent_worker.runtime_factory import build_runtime, build_runtime_spec
+from zebra_agent_worker.runtime_factory import (
+    build_runtime,
+    build_runtime_spec,
+    script_workspace_parent,
+)
 from zebra_agent_worker.runtime_instances import BoundInstanceFactory
 from zebra_agent_worker.task_recovery import RecoveredTask
 
@@ -150,7 +154,11 @@ def prepare_native_scripts(
         ),
         journal=PostgresScriptJournal(journal),
         authorize=authorize,
-        runner=lambda: ScopedNativeScriptRunner(assembly.native_scripts.runner, factory),
+        runner=lambda: ScopedNativeScriptRunner(
+            assembly.native_scripts.runner,
+            factory,
+            workspace_parent=script_workspace_parent(settings),
+        ),
     )
 
     def commit_answer(action: Callable[[], None]) -> None:
