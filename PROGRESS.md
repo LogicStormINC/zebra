@@ -7852,3 +7852,18 @@ oldfailed+successful Tasks137events/7models/0search hash unchanged. No newmodel/
 search/Run/replay or measured whole-Run latency improvement claim. No GitHub push.
 Details: paired Trench docs/SOURCE_STATUS_SUMMARY_2026-10-28.md; private server
 evidence/rollback /home/ubuntu/releases/20261028-source-status-summary/.
+
+
+## 2026-10-28 WORKER-COMMIT-CONFIRMATION-20261028
+
+Shared single-event Worker commit/projection now reconcile TimeoutError once by
+exact canonical event, projections, stream frontier, live fence and command receipt.
+Confirmation uses at most1s within parent budget and1MiB payload cap; no write replay
+or normal-success extra query. Uncertain result is suspended/retryable=false; stale
+lease remains fenced.60focused passed/2existing environment skips; Ruff/targetmypy
+pass. Exact candidate and live Worker no-model checks pass. Idle Worker-only image
+5afd77012eed deployed; env/security/mounts/healthcheck/schema105 preserved. All Turn
+requests/answers/status and protected Task facts unchanged; Search/MCP/cooldown/API
+unchanged. No model/search/newRun/replay, GitHub push or whole-repo gate claim.
+Remaining boundaries: other aggregate/outer COMMIT paths, non-TimeoutError faults,
+full DB outage and historical lock holder. See docs/WORKER_COMMIT_CONFIRMATION_2026-10-28.md.

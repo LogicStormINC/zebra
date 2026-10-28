@@ -8,6 +8,10 @@ from agent_core.domain.workspaces import WorkspaceProjection
 from agent_core.ports.aggregate_mutation import WorkerMutationAuthority
 
 
+class WorkerCommitConfirmationPending(RuntimeError):
+    """An atomic write timed out and its exact outcome could not be confirmed; never replay it."""
+
+
 class WorkspaceProjectionStorePort(Protocol):
     def save_workspace(self, workspace: WorkspaceProjection) -> WorkspaceProjection: ...
 

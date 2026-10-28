@@ -20,6 +20,7 @@ from agent_core.harness.provider_continuation import ProviderContinuationUncerta
 from agent_core.ports.model_gateway import ModelResponseRejectedError
 from agent_core.ports.runtime import RuntimeCapabilityError
 from agent_core.ports.worker_progress import WorkerProgressTimeout
+from agent_core.ports.workspace_projection_store import WorkerCommitConfirmationPending
 from agent_integrations.model_errors import ModelProviderError
 
 logger = logging.getLogger(__name__)
@@ -79,6 +80,16 @@ def exception_attempt_result(exc: Exception, metadata: dict[str, object]) -> Har
             metadata={
                 **metadata,
                 "stop_reason": "provider_continuation_uncertain",
+                "retryable": False,
+            },
+        )
+    if isinstance(exc, WorkerCommitConfirmationPending):
+        return HarnessAttemptResult(
+            outcome=HarnessAttemptOutcome.SUSPENDED,
+            summary="execution commit awaits confirmation; automatic replay refused",
+            metadata={
+                **metadata,
+                "stop_reason": "execution_commit_confirmation_pending",
                 "retryable": False,
             },
         )

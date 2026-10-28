@@ -37,6 +37,7 @@ from agent_storage.postgres.projections import (
     save_session_in_transaction,
 )
 from agent_storage.postgres.task_io import TaskIoConnections
+from agent_storage.postgres.worker_commit_confirmation import confirm_on_timeout
 
 
 class PostgresWorkspaceProjectionConflictError(ValueError):
@@ -67,6 +68,7 @@ class PostgresWorkspaceProjectionStore(
                 workspace,
             )
 
+    @confirm_on_timeout
     def commit_worker_event(
         self,
         event: SessionEvent,
@@ -124,6 +126,7 @@ class PostgresWorkspaceProjectionStore(
                 workspace=stored_workspace,
             )
 
+    @confirm_on_timeout
     def project_persisted_worker_event(
         self,
         event: SessionEvent,

@@ -35930,3 +35930,21 @@ old payloads remain byte-compatible by excluding None. No database migration.
 - User authorizes minimal optional status summary and no-model saved-result/DB
   verification followed by production API update. No model/search, original Run
   replay, history changes, Worker/Search/MCP restart or push.
+
+
+### WORKER-COMMIT-CONFIRMATION-20261028 — Confirm timed-out atomic commits
+
+- Status: Review; claimed Ready → In Progress before coding 2026-10-28.
+  60 focused passed/2 skips; idle production Worker updated, no model/search.
+- Human owner Luke Ding; executor Codex; branch codex/worker-commit-confirmation-20261028,
+  existing cloud-plugin-plan-01 Zebra worktree.
+- Owned paths: packages/agent-core/src/agent_core/ports/workspace_projection_store.py;
+  packages/agent-storage/src/agent_storage/postgres/workspaces.py and worker_commit_confirmation.py;
+  apps/worker/src/zebra_agent_worker/execution_errors.py;
+  tests/agent_storage/test_worker_commit_confirmation.py; tests/worker/test_commit_confirmation_errors.py;
+  this card, PROGRESS.md, WORKLOG.md, docs/WORKER_COMMIT_CONFIRMATION_2026-10-28.md; private task artifacts.
+- Scope: one read confirmation after TimeoutError, exact event/projections/stream/fence,
+  existing1MiB/parent deadline, no repeated writes. Unknown confirmation suspends with
+  retryable=false; no new model/search, original replay, broad retry/error changes.
+  No-model isolated PG fault regressions, exact-image check then idle Worker-only
+  production update. Preserve API/Search/MCP, runtime budgets/high/v2, all original Runs.
