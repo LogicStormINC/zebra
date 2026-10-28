@@ -17859,6 +17859,16 @@ required before any future deployment; no automatic ledger rewriting.
 
 ## 2026-10-29 AGUI-G2V profile isolation implementation
 
+- Independent spec and quality reviews passed after repairing the lagging-tail
+  wrong-version queue reader. Commit7c8962b0 fast-forward integrated into local
+  cloud-agent; all10 preexisting dirty/untracked primary entries byte-preserved.
+  Parent checked all113 old migration checksums unchanged; only115 was added.
+  Fresh legacy golden7 and cold-process/file-limit46 passed. The earlier full
+  Python run overlapped source edits (11358pass/3110skip/4mixed-source failures),
+  so it is not a stable candidate full-suite gate; all4 cases passed fresh.
+  Final stable full-suite validation remains required after the remaining slices.
+  G2 is now Ready; subsequent producer/transport/UI/Trench gates are still pending.
+
 - Claimed Ready before code on codex/agui-g2v-profile-isolation-20261028, base80570bc6;
   exact reused worktree and ownership addenda recorded in AGENT_TASKS before each expansion.
 - Explicit bound projector/state registry, independent ordinary/privacy checkpoint and binding

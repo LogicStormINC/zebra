@@ -1,6 +1,36 @@
+## AGUI-G2-PUBLIC-PROJECTION-20261029 — Standard public event semantics
+
+- Status: Ready (2026-10-29; not claimed).
+- Human owner: Luke Ding; executor: unassigned; target: cloud-agent.
+- Dependency: G2V 7c8962b0 reviewed and fast-forward integrated locally.
+- Proposed branch: codex/agui-g2-standard-projection-20261029; reuse the clean
+  isolated trench-spin-sync-20261028/zebra-agent worktree after this receipt.
+- Owned paths: integrations ag_ui/{profiles,projection,checkpoint_materializer}.py;
+  new standard_projection.py, standard_state.py, activity_projection.py,
+  standard_public_text.py, standard_usage.py and standard_subagents.py;
+  core/ports/task_projection_checkpoints.py only for explicitly versioned derived
+  state cells; corresponding focused integration and checkpoint tests.
+- Explicit dependency-review scope: packages/agent-integrations/pyproject.toml,
+  root pyproject.toml/uv.lock if an independent frozen-schema validator is needed;
+  existing client_effect/client_state projection tests for official typed patches;
+  tests/conformance/agui_contract/ runner/tests and dynamic runtime provenance.
+  The immutable legacy fixture/schema bytes are not owned for rewriting.
+- Governance: this registry, PROGRESS.md, WORKLOG.md, standard contract and plan.
+- Before code: audit every producer/caller and record exact base/claim. Reuse
+  official Python1.0 models only after explicit compatibility review; preserve
+  legacy wire/defaults. Expand any additional ownership before editing.
+- Scope: new-profile argument END, actual execution/plan Activity and real Step
+  transitions, trusted child attribution, public publication facts, terminal
+  outcomes and exact protocol-slice usage. Never mint publication from candidate
+  deltas, private reasoning or commentary reservations. No production activation.
+- Acceptance: frozen legacy bytes/cursors; official schema positive/negative
+  checks; full replay equals checkpoint tail; no fabricated execution/result/Step
+  success; strict coverage, continuation identity and usage slicing; targeted
+  checks/make check, independent spec then quality review. G3 remains Locked.
+
 ## AGUI-G2V-PROFILE-ISOLATION-20261028 — New projection version isolation
 
-- Status: Review (implementation/focused gates complete; independent review pending; 2026-10-29).
+- Status: Done (2026-10-29; 7c8962b0 reviewed and fast-forward integrated into local cloud-agent; focused90/native21/tail7 and make check passed; no activation).
 - Human owner: Luke Ding; executor: Codex; target: cloud-agent.
 - Dependencies: G0 a1a46a5a and G1 9697d893 reviewed/integrated locally.
 - Proposed branch: codex/agui-g2v-profile-isolation-20261028; use an isolated

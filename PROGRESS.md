@@ -1,4 +1,4 @@
-## 2026-10-29 AG-UI G2V projection profile isolation (Review)
+## 2026-10-29 AG-UI G2V projection profile isolation (locally integrated)
 
 Explicit profile registry binds projector/state restoration; default stays unavailable.
 New checkpoint/privacy/binding-ledger versions and durable/signed cursor scopes are
@@ -10,8 +10,11 @@ Additive v115 installs source-owned privacy routing for all profile families; al
 migration checksums remain unchanged. Six explicit projector versions remain bounded.
 Focused90 passed/1 endpoint-dependent skip, followed by actual owned PG/Redis21 passed
 with zero skips; G0 golden7 included; make check1431 typed sources/30eval passed.
-Independent review/integration pending. No new 1.0 producer semantics, activation, source
-publication, business Run replay or deployment. See [contract](docs/AGUI_STANDARD_DURABLE_CONTRACT.md).
+Independent spec/quality reviews passed; lagging-tail exact-version queue reader fixed
+and verified with SQLite/PG7 zero skips. Commit7c8962b0 integrated into local cloud-agent,
+all10 primary dirty/untracked entries byte-preserved. G2 public producer semantics is
+Ready. No new 1.0 producer activation, business Run replay or deployment.
+See [contract](docs/AGUI_STANDARD_DURABLE_CONTRACT.md).
 
 ## 2026-10-28 AG-UI G1 standard consumer foundation
 
