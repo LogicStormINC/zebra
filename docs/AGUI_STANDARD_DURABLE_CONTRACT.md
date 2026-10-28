@@ -394,3 +394,58 @@ CUSTOM、未知事件丢弃及一条chunk展开多个事件均不依赖“必有
 精确原生幂等键只读查询返回实际Event坐标，不把command UUID当Event UUID。
 规格/质量审查和独立检查通过；这些证据不代表实际HttpAgent请求已经背压，
 也不替代G3B的真实输入到Worker、HTTP观察及公共Run切片门禁。
+
+## 13. G3B 实际 HTTP 适配（审查候选，未激活）
+
+这里固定第10节的原生准入后观察路线，不声称任意客户端随机runId可直接准入。
+现有会话以受控原生MESSAGE接收实际用户文本；仅CONVERSATION的awaiting_turn
+状态支持该追加路径，不把one_shot终态或初始开放Turn放宽为可追加。新建Task
+使用既有原子Task+Surface+RUN：可选单条纯文本message必须匹配原生校验后的
+prompt，作为RUN.input元数据保留；模型仍读取原生Task目标，不能重复追加。
+旧state-only输入和command收据字段保持原形。附件、workspace、MCP、任意
+初始工具等受限项没有借此放宽；Host既有复杂准入轨道继续按原权限使用。
+
+- `/prepare`提交一次原生意图；`/prepared`只读取原始操作，不重新准入。精确
+  Event-column key解析实际Event坐标；不把command UUID当作Event UUID。
+  只有物化到实际continuation anchor之后的派生状态才返回公共协议Run ID。
+  waiting_children或已忽略的迟到意图不构造假后继。
+- 标准POST只观察已准入操作；输入与原始已接受输入语义一致，公共runId来自
+  实际绑定。对象键顺序无意义；数组有序，bool与number区分，数值1与1.0等价。
+  缺省protocolVersion在捕获前设1.0；显式矛盾版本拒绝，不静默改写。
+- 首条输入准入前尚无Native Task UUID，SDK的fresh-only `attachPrepared`显式
+  安装同源BFF返回的原始prepared收据，再调用真实HttpAgent；它不产生UUID、
+  不发送准入，也不是执行授权。旧的pending/unknown操作不能被此方法覆盖。
+- BFF原始operation locator与native accepted Event key分别来自原始受保护收据。
+  server helper在新实例中可只读恢复，不要求进程内先调用过admit。Native
+  凭据及fence留在server context；浏览器只使用固定同源路径。已校验的Native
+  origin和定位参数被捕获，不因外部配置对象后来变更而转发凭据到其他地址。
+- 私有prepared输入和input-bearing POST绑定原始ClientSession；MESSAGE采用
+  server-auth派生的private preparation marker，初始轨道复用原生client marker。
+  不从浏览器state/forwardedProps授予身份。获准查看公开结果的另一个Session
+  不因此取得原始Readable/context。只读观察不要求controller/fence或最新UI
+  revision；新的输入动作仍要求当前原生权限、Controller和修订。
+
+新profile的可靠GET采用独立的canonical-only读取绑定：同一原生proof验证当前
+Host/Task/Run、不可变anchor及完整profile scope，lane固定原Run anchor Segment。
+不修改原run.stream_admission，也不借观察准入transient_v2。新profile不读取
+未经公开分类的临时候选正文；旧profile的draft/reset及wire字节保持。标准正文
+仍为TEXT_MESSAGE_CONTENT，大canonical事件经共享有界chunk桥接后才进入官方
+enforce/chunk/verify/apply。transport通知不混入业务CUSTOM。
+
+原生检查点可能保留上一切片terminal；新观察以已验证的公共Run及起始序列
+判断结束，忽略旧terminal，在自己的terminal处停止，不跨入同Page后继Run。
+RUN_ERROR没有runId，其归属由该已验证切片确定。标准观察失败转为安全
+RUN_ERROR及EOF，不把观察错误写成业务失败；原生投递结果读取也必须组合。
+
+实际HttpAgent应用沿用官方归并：所有注册/传入subscriber之前处理私有身份
+栅栏，预检patch，等待应用及通知，再确认cursor。clone保留公共订阅和middleware，
+私有失败/中止/栅栏状态重新初始化。官方finalize不自动等待的边界由适配器
+显式等待；terminal应用和final hooks完成后才确认终态cursor，并清理原始reader。
+中止、毒帧、通知失败不确认未应用数据；clean EOF没有terminal不得冒充完成。
+正常可靠断线保留有限分片和签名cursor，在同一官方管线只读接续；reset的null
+cursor同样等待持久化。整段重播与活动Run冲突时明确失败，不静默重复正文。
+从原始收据重建全新只读观察仍不产生准入；G4/G5/G7须继续验证UI恢复及零效果。
+
+`ZEBRA_AGUI_STANDARD_PROFILES_ENABLED`默认false。API和Worker使用同一显式
+projector/state工厂；启用配置组合两旧四新共六个有界版本。该候选不启用生产
+profile，不发布registry或替换Trench包；完整frontend tool/resume仍属G5。

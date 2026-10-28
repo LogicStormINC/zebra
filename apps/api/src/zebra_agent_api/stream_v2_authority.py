@@ -12,6 +12,8 @@ from agent_core.domain.identifiers import TaskId
 from agent_core.domain.stream_admission import StreamMode
 from agent_core.domain.task_bindings import require_task_host_context
 from agent_core.ports.agent_tasks import AgentTaskPort
+from agent_core.ports.task_projection_checkpoints import CheckpointNotReady, ProjectionScope
+from agent_integrations.ag_ui.profiles import AgUiProjectionProfile
 from agent_integrations.redis_transient_discovery import TransientDescriptor, transient_lane
 from agent_integrations.run_stream_admission import load_run_stream_admission
 from agent_storage import ControlPlaneStores
@@ -92,6 +94,62 @@ class V2ReadAuthority:
         )
 
     _snapshot_native_bind_snapshot = bind_snapshot
+
+    def bind_profile(
+        self,
+        task_id: TaskId,
+        run_id: str,
+        host: HostContextEnvelope,
+        profile: AgUiProjectionProfile,
+        *,
+        stores: object | None = None,
+    ) -> V2ReadBinding:
+        native = self.stores if stores is None else stores
+        database = getattr(getattr(native, "tasks", None), "_database", None)
+        if (
+            getattr(database, "_dsn", None) != self.dsn
+            or getattr(database, "deployment_namespace", None) != self.namespace
+            or getattr(native, "deployment_namespace", None) != self.namespace
+        ):
+            raise ValueError("profile read proof crosses its API database scope")
+        with self.proofs.snapshot() as proof:
+            run = proof.read_run_header(task_id, run_id)
+            if run.anchor is None:
+                raise CheckpointNotReady("profile observation requires an admitted Run")
+            header = proof.read_task_header(task_id, require_source_coverage=True)
+            if header is None or type(header.strict_coverage) is not bool:
+                raise ValueError("canonical output privacy is unavailable")
+            binding = proof.binding(header.active_segment_id)
+            if binding is None:
+                raise ValueError("canonical Task Host binding is unavailable")
+            require_task_host_context(
+                binding, host, task_id=str(task_id), run_id=run_id, now=datetime.now(UTC)
+            )
+            profile.binding_digest(
+                ProjectionScope(
+                    self.namespace,
+                    task_id,
+                    run.anchor.event_id,
+                    profile.checkpoint_version(coverage=run.strict_coverage),
+                ),
+                run,
+            )
+            if proof.read_event_header(task_id, run.start) != run.anchor:
+                raise ValueError("profile anchor is not canonical")
+            # Profile output is canonical-only. Its signed lane must survive a
+            # mutable active-Segment handoff while remaining bound to this Run.
+            return V2ReadBinding(
+                self.namespace,
+                task_id,
+                run_id,
+                OpaqueAuthorityScope(
+                    authority_issuer=binding.host_capability.authority_issuer,
+                    namespace_id=binding.host_capability.namespace_id,
+                    allowed_session_ids=(str(run.anchor.segment_id),),
+                ),
+                host,
+                self.key_prefix,
+            )
 
     def qualify(self, bound: V2ReadBinding, descriptor: TransientDescriptor) -> datetime:
         with self.proofs.snapshot() as proof:

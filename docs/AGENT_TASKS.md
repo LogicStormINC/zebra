@@ -1,3 +1,37 @@
+## AGUI-G4-SHARED-UI-20261029 — Public views and scoped React interaction
+
+- Status: Locked (reviewed G3B publication required).
+- Human owner: Luke Ding; executor: Codex; target: cloud-agent.
+- Proposed branch: codex/agui-g4-shared-ui-20261029; reuse clean isolated
+  trench-spin-sync-20261028/zebra-agent worktree after G3B publication.
+- Owned paths: ui-contracts/src/index.ts and focused agui.ts types if necessary;
+  client-core/src/agui_view.ts/agui_view_store.ts; React src/agui_view.ts and
+  index exports; existing agent-conversation-timeline, agent-activity-group,
+  agent-run-status and agent-interrupts components; focused tool/plan/subagent
+  detail component files only after explicit responsibility/filename addendum.
+- Existing styles.css/styles/surfaces.css may add narrow detail/a11y rules,
+  not a new theme. Focused client-core/React tests, explicit SDK test collection,
+  existing browser fixture if a needed behavior cannot be checked in DOM tests.
+- Scope: adapt official applied messages/state and actual public metadata into
+  existing UI contracts; entity/thread/run selectors with stable snapshots;
+  arguments vs execution/result, plan, child attribution/unknown timing,
+  independent execution/connection/submission/delivery facts, bounded safe
+  unsupported rendering, local complete interrupt drafts. No new AG-UI reducer.
+- Compatibility: additive optional contracts and old props/exports behavior;
+  preserve existing media/chart/file/Artifact resolver, identities and reading
+  position; no per-token full-history copying or unrelated media remounts.
+- No human decision/effect HTTP action implementation or fake schema capability;
+  G5 owns native complete resume/frontend tools and current Controller authority.
+  Reasoning/RAW/encrypted values do not become public text automatically.
+- Acceptance: actual G3 producer/official consumer data maps consistently live
+  and restored; multiple thread/run entities update independently; no invented
+  execution/success/duration; unsupported critical input stays visible safely;
+  local response sets/expiry validate before submit; UI accessibility/identity
+  regressions, full SDK check/tests and independent spec then quality review.
+- Governance: standard contract/plan/registry/PROGRESS/WORKLOG. Expand any
+  additional source ownership explicitly before editing; no package version/tgz
+  changes (G6), Trench edits (T1), activation or deployment.
+
 ## AGUI-G3A-INGRESS-20261029 — Bounded SDK ingress and exact source lookup
 
 - Status: Done (2026-10-29; reviewed 462b812a published on origin/cloud-agent).
@@ -30,18 +64,42 @@
 
 ## AGUI-G3B-HTTP-20261029 — Actual standard HTTP and reliable bridge
 
-- Status: Ready (2026-10-29; reviewed G3A 462b812a published).
+- Status: Review (2026-10-29; final spec/fixture and quality PASS; source publication next).
 - Human owner: Luke Ding; executor: Codex; target: cloud-agent.
-- Proposed branch: codex/agui-g3b-native-http-20261029; reuse isolated clean
+- Branch: codex/agui-g3b-native-http-20261029; reuse isolated clean
   trench-spin-sync-20261028/zebra-agent worktree after G3A review/publication.
+- Exact base/claim: aace8c80 (origin/cloud-agent, after reviewed 462b812a).
 - Owned paths: API ag_ui_stream.py/ag_ui_checkpoint_tail.py/ag_ui_command.py,
   stream_v2_{http,query,reader,wire}.py, http.py/routes.py and focused standard
   HTTP/prepare/binding modules; corresponding integration/native API tests.
+- Before-code canonical input comparison extension: client-core/canonical_digest.ts
+  uses Object.fromEntries sorted entries so literal __proto__ remains data; new
+  HTTP admission tests assert semantic object-order equality and prototype keys.
+- Before-code shared reliable bridge extension: client-core/sse_stream.ts exports
+  a one-shot callback bridge around existing bounded assembly and awaited ACK;
+  no copied framing/reducer or legacy reconnect behavior change.
 - SDK ownership: client-core agui_events/reducer.ts only required bridge hooks,
   bff_transport.ts, focused standard/reliable transport/admission adapter modules,
   index/server exports; explicit test collection and related tests.
-- Composition paths require an explicit before-code addendum naming actual
-  config/factory/worker files after tracing; default profiles remain off.
+- Before-code initial-input metadata extension: API client_admission_task_surface.py
+  retains restricted atomic Task+Surface+RUN admission and captures its existing
+  prompt as optional captured single official user-message input (exact match,
+  legacy state-only input unchanged); response returns exact original command
+  Event/key coordinates only to the native BFF rail. No widened attachments,
+  workspace, MCP or coverage input support. Focused initial native tests owned.
+- Before-code reliable canonical authority extension: API stream_v2_authority.py
+  adds explicit registered-profile read binding from indexed Run + current Host
+  proof, independent of legacy transient admission; immutable anchor Segment
+  scopes profile cursors, no provisional drafts or native command mutation.
+- Before-code authenticated HTTP route extension: API http_stream_routing.py
+  and http_host_auth.py for explicit pre-admitted POST observation routing and
+  before-consume target validation; native input uses focused ag_ui_prepare.py.
+- Before-code opt-in composition extension: config stream_settings.py; API
+  factory.py; worker loop.py/ag_ui_projection_work.py/new ag_ui_composition.py;
+  integrations ag_ui/new standard_profiles.py; focused composition/settings tests.
+  Extract the existing 500-line worker composition unchanged before binding
+  four explicit profile queues. Shared production projector/state factory,
+  exactly six total versions, default settings and profile registry remain off.
 - Contract/governance: standard contract, registry/PROGRESS/WORKLOG/plan;
   conformance/agui_contract actual Python-to-HTTP-to-official-client gate.
 - Frozen choice: native authenticated admission followed by official HttpAgent

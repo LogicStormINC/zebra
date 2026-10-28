@@ -91,6 +91,11 @@ def handle_agui_command(
 ) -> ApiResponse | None:
     """Handle the AG-UI command paths without importing Worker execution code."""
 
+    from zebra_agent_api.ag_ui_prepare import handle_agui_prepare
+
+    prepared = handle_agui_prepare(app, request, extension_admission=extension_admission)
+    if prepared is not None:
+        return prepared
     method = getattr(request, "method", "").upper()
     path = getattr(request, "path", "")
     if method != "POST":

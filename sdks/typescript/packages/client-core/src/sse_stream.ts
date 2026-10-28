@@ -87,7 +87,7 @@ async function invalidCursorReplacement(response: Response): Promise<string | nu
 
 async function readSse(
   body: ReadableStream<Uint8Array>,
-  options: Parameters<typeof consumeClientEffectStream>[0],
+  options: Parameters<typeof consumeClientEffectStream>[0] & { onAcceptedCursor?: (cursor: string | null) => Promise<void> },
   initialEventId: string | null,
   recovery: StreamReadState,
 ): Promise<string | null> {
@@ -96,8 +96,12 @@ async function readSse(
   for await (const record of readSseRecords(body, recordLimit, options.signal)) {
     if (options.signal.aborted || options.stopped()) break;
     const nextEventId = await handleRecord(record.data, record.id, options, lastEventId, recovery);
-    if (nextEventId !== null && nextEventId !== lastEventId) options.onCursor?.(nextEventId);
+    if (nextEventId !== null && nextEventId !== lastEventId) {
+      await options.onAcceptedCursor?.(nextEventId);
+      options.onCursor?.(nextEventId);
+    }
     lastEventId = nextEventId;
+    if (options.stopped()) break;
   }
   return lastEventId;
 }
@@ -105,7 +109,7 @@ async function readSse(
 async function handleRecord(
   data: string,
   eventId: string | null,
-  options: Parameters<typeof consumeClientEffectStream>[0],
+  options: Parameters<typeof consumeClientEffectStream>[0] & { onAcceptedCursor?: (cursor: string | null) => Promise<void> },
   lastEventId: string | null,
   recovery: StreamReadState,
 ): Promise<string | null> {
@@ -140,9 +144,13 @@ async function handleRecord(
   if (event.type === "CUSTOM" && event.name === "zebra.stream.recovery_start") delete recovery.chunks;
   if (options.streamVersion === 2 && event.type === "CUSTOM" && event.name === "zebra.stream.reset") {
     // Discarding continuation is safe even if the Host reset callback fails.
+    if (options.onAcceptedCursor) {
+      delete recovery.chunks;
+      delete recovery.chunkBytes;
+      await options.onAcceptedCursor(null);
+    } else if (assembled) delete recovery.chunks;
     options.onCursor?.(null);
     await options.onObservation?.(event);
-    if (assembled) delete recovery.chunks;
     return null; // Current live handling stays active; only a reconnect starts cold recovery.
   }
   if (eventId !== null && event.type === "CUSTOM" &&
@@ -170,7 +178,7 @@ async function handleRecord(
   return eventId ?? lastEventId;
 }
 
-interface StreamReadState {
+export interface StreamReadState {
   active: boolean;
   chunkBytes?: number;
   chunks?: Array<{ content: string; last: boolean }>;
@@ -190,4 +198,32 @@ function parseEvent(data: string): Record<string, unknown> {
     throw new SseProtocolError("STATE_DELTA requires an array of operation objects");
   }
   return fields;
+}
+
+/** One response only. Signed cursor acceptance follows awaited canonical application.
+ * Reconnect/admission remains an explicit caller decision; notices are never business events. */
+export async function readReliableAgUiStream(body: ReadableStream<Uint8Array>, options: {
+  signal: AbortSignal;
+  initialCursor?: string | null;
+  recovery: StreamReadState;
+  onCanonical: (event: ConversationStreamEvent) => Promise<void>;
+  onNotice?: (event: ConversationStreamEvent) => Promise<void>;
+  onCursor?: (cursor: string | null) => void | Promise<void>;
+}): Promise<string | null> {
+  let terminal = false;
+  return readSse(body, {
+    fetchImpl: globalThis.fetch, streamUrl: "", headers: () => ({}),
+    stopped: () => terminal, signal: options.signal, streamVersion: 2,
+    onEffect: async () => {},
+    onObservation: async event => {
+      if (event.type === "CUSTOM" && (event.name?.startsWith("zebra.stream.") ||
+          event.name === "zebra.observation.problem" || event.name === "zebra.message_replace")) {
+        await options.onNotice?.(event);
+      } else {
+        await options.onCanonical(event);
+        if (event.type === "RUN_FINISHED" || event.type === "RUN_ERROR") terminal = true;
+      }
+    },
+    ...(options.onCursor ? { onAcceptedCursor: async (cursor: string | null) => { await options.onCursor!(cursor); } } : {}),
+  }, options.initialCursor ?? null, options.recovery);
 }

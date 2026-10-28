@@ -6,5 +6,7 @@ ZPY=${ZEBRA_PYTHON:-$ROOT/.venv/bin/python}
 for SOURCE in "$ROOT"/packages/*/src "$ROOT"/apps/*/src; do
   export PYTHONPATH="$SOURCE${PYTHONPATH:+:$PYTHONPATH}"
 done
+export PYTHONPATH="$ROOT${PYTHONPATH:+:$PYTHONPATH}"
 "$ZPY" "$ROOT/tests/conformance/agui_contract/selfcheck.py"
 "$ZPY" -m unittest discover -s "$ROOT/tests/conformance/agui_contract" -p 'test_*.py' -v
+"$ZPY" "$ROOT/tests/conformance/agui_contract/http_gate.py"

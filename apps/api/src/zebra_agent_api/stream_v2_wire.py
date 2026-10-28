@@ -90,7 +90,8 @@ def _commit(value: dict[str, object], event_id: object) -> Iterator[str]:
     yield from _chunks(
         "zebra.message_replace",
         {"message_id": identity, "model_call_id": call},
-        "", key="content",
+        "",
+        key="content",
     )
     yield from _chunks(
         "zebra.message_replace",
@@ -113,9 +114,13 @@ def _commit(value: dict[str, object], event_id: object) -> Iterator[str]:
     yield from _canonical_record(notice, parse_record(notice)[1])
 
 
-def canonical_wire(record: str, event: dict[str, object]) -> Iterator[tuple[int | None, str]]:
+def canonical_wire(
+    record: str, event: dict[str, object], *, standard: bool = False
+) -> Iterator[tuple[int | None, str]]:
     def expand() -> Iterator[str]:
-        if event.get("type") == "TEXT_MESSAGE_CONTENT" and isinstance(event.get("delta"), str):
+        if standard:
+            yield from _canonical_record(record, event)
+        elif event.get("type") == "TEXT_MESSAGE_CONTENT" and isinstance(event.get("delta"), str):
             yield from _chunks(
                 "zebra.message_replace",
                 {

@@ -1,3 +1,26 @@
+## 2026-10-29 G3B reviewed source candidate
+
+Base aace8c80; native admit-first transport complete within G3 scope. Source
+frozen after SPEC P2 fix: standard POST now receives existing command outcome,
+fanout and notifications, matching GET; real native pending-command failure/
+exhaustion yields safe RunError+EOF, no Worker/model/terminal fabricated.
+Conformance count race exposed by actual fanout was fixed with completion Event
+AFTER consume_once returns executed. Unauthorized401 and exact before/after
+canonical event equality remain, plus exactly1 execution/admission/model.
+Spec source+fixture review PASS; quality PASS with independent23 HTTP tests.
+Final SDK244/0 skips, HTTP23/0, API64/0, native slices8/0, native initial/outcome4/0;
+real PG/Redis/RS256 nonce/liveHTTP/actual official client gate PASS (~15s): first+
+followup Worker prompts, signed-prefix disconnect/reGET in same pipeline, exact
+body/history, public observerB allowed/private input403, originalA stale-fence
+read allowed. Conformance31 frozen+7 legacy+native-authHTTP SDK PASS. make check
+1449 typed files/30eval PASS; size and diff checks PASS. Full SDK verify242 passed
+package/React18/19 Vite+Next SSR/RSC/Chromium+WebKit hydration before last two
+bounded reset tests; fresh244/check validated those changes. Whole-plan full
+suite and final browser/package delivery remain G6/T1/G7, no false full-suite claim.
+Logs /tmp/agui-g3b-{sdk-final-test,sdk-verify,http,stream,api,native,initial,reliable,
+make-check,conformance}.log. No default activation, deploy, registry publication or
+original business Run replay; primary89e4afed and its dirty work untouched.
+
 ## 2026-10-29 G3A source publication / G3B unlock
 
 Reviewed source462b812a pushed directly to origin/cloud-agent after final spec

@@ -11,12 +11,15 @@ class StreamSettings:
     new_admission_enabled: bool = False
     capacity_policy: TransientCapacityPolicy | None = None
     cursor_signing_key: bytes | None = field(default=None, repr=False)
+    agui_profiles_enabled: bool = False
 
     def __post_init__(self) -> None:
         if self.capacity_policy is not None and not isinstance(
             self.capacity_policy, TransientCapacityPolicy
         ):
             raise ValueError("capacity policy must be a validated immutable policy")
+        if type(self.agui_profiles_enabled) is not bool:
+            raise ValueError("AG-UI profile flag must be boolean")
         if type(self.new_admission_enabled) is not bool:
             raise ValueError("stream admission flag must be boolean")
         if self.cursor_signing_key is not None and (
@@ -29,12 +32,17 @@ def load_stream_settings(values: Mapping[str, str]) -> StreamSettings:
     value = values.get("ZEBRA_STREAM_V2_NEW_ADMISSION_ENABLED", "false").strip().lower()
     if value not in {"true", "false", "1", "0"}:
         raise ValueError("stream admission flag must be true/false or 1/0")
+    agui = values.get("ZEBRA_AGUI_STANDARD_PROFILES_ENABLED", "false").strip().lower()
+    if agui not in {"true", "false", "1", "0"}:
+        raise ValueError("AG-UI profile flag must be true/false or 1/0")
     key = values.get("ZEBRA_STREAM_V2_CURSOR_SIGNING_KEY", "")
     return StreamSettings(
+        agui_profiles_enabled=agui in {"true", "1"},
         new_admission_enabled=value in {"true", "1"},
         capacity_policy=(
             TransientCapacityPolicy.model_validate_json(values["ZEBRA_STREAM_CAPACITY_POLICY"])
-            if values.get("ZEBRA_STREAM_CAPACITY_POLICY") else None
+            if values.get("ZEBRA_STREAM_CAPACITY_POLICY")
+            else None
         ),
         cursor_signing_key=key.encode() if key else None,
     )

@@ -483,3 +483,6 @@ export type { CommandRecoveryView } from "./command_recovery.ts";
 
 export { standardAgUiEvents, type AgUiRunBinding, type AgUiEventSource } from "./agui_events.js";
 export { StandardAgUiConsumer, type StandardAgUiConsumerOptions, type StandardAgUiSnapshot } from "./agui_reducer.js";
+
+export { createAgUiHttpClient, type AgUiHttpOptions, type PreparedAgUiRun, type AgUiAdmissionResult } from "./agui_http.js";
+export { createNativeAgUiTransport } from "./agui_native.js";

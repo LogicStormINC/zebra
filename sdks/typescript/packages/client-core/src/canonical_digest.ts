@@ -2,12 +2,8 @@
 export async function canonicalDigest(payload: unknown): Promise<string> {
   const json = JSON.stringify(payload, (_key, value) =>
     value !== null && typeof value === "object" && !Array.isArray(value)
-      ? Object.keys(value as Record<string, unknown>)
-          .sort()
-          .reduce<Record<string, unknown>>((acc, key) => {
-            acc[key] = (value as Record<string, unknown>)[key];
-            return acc;
-          }, {})
+      ? Object.fromEntries(Object.keys(value as Record<string, unknown>).sort()
+          .map(key => [key, (value as Record<string, unknown>)[key]]))
       : value,
   );
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(json));

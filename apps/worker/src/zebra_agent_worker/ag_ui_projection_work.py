@@ -10,13 +10,19 @@ logger = logging.getLogger(__name__)
 
 class AgUiProjectionWorkService:
     def __init__(
-        self, consumer: AgUiCheckpointConsumer, *, interval_seconds: float = 0.1,
+        self,
+        consumer: AgUiCheckpointConsumer,
+        *,
+        interval_seconds: float = 0.1,
         coverage_consumer: AgUiCheckpointConsumer | None = None,
+        additional_consumers: tuple[AgUiCheckpointConsumer, ...] = (),
     ) -> None:
         if not 0.01 <= interval_seconds <= 2:
             raise ValueError("invalid projection polling interval")
         self.consumer, self.interval = consumer, interval_seconds
-        self.consumers = (consumer,) if coverage_consumer is None else (consumer, coverage_consumer)
+        self.consumers = (
+            (consumer,) if coverage_consumer is None else (consumer, coverage_consumer)
+        ) + additional_consumers
         self._stop, self._lock = Event(), Lock()
         self._thread: Thread | None = None
 

@@ -13,7 +13,6 @@ from agent_core.ports import (
     WorkerProjectionTransactionPort,
 )
 from agent_integrations import build_model_gateway
-from agent_integrations.ag_ui.checkpoint_consumer import AgUiCheckpointConsumer
 from agent_storage import (
     CloudCompositionSettings,
     ControlPlaneStores,
@@ -25,7 +24,7 @@ from agent_storage.postgres.worker_replay_reader import PostgresWorkerReplayRead
 from agent_tools.skill_publications import SkillPublicationService
 from zebra_agent_config import ZebraAgentSettings
 
-from zebra_agent_worker.ag_ui_projection_work import AgUiProjectionWorkService
+from zebra_agent_worker.ag_ui_composition import configure_agui_projection_work
 from zebra_agent_worker.bundle_assembly import build_bundle_title_service
 from zebra_agent_worker.claims import SessionClaimService
 from zebra_agent_worker.client_effect_runtime import compose_client_runtime
@@ -439,39 +438,11 @@ def build_worker_loop_service(
         command_consumer=command_consumer,
         client_effect_recovery=client_effect_recovery,
         stream_hint_relay=stream_hint_relay,
-        projection_work=(
-            AgUiProjectionWorkService(
-                AgUiCheckpointConsumer(
-                    execution_stores.tasks,
-                    execution_stores.projection_work,
-                    namespace=active_namespace or "local",
-                    checkpoint_committed=checkpoint_committed,
-                    notification_required=settings.deployment == "cloud",
-                    read_summaries=(
-                        execution_stores.tasks
-                        if isinstance(execution_stores, PostgresControlPlaneStores)
-                        else None
-                    ),
-                ),
-                coverage_consumer=(
-                    AgUiCheckpointConsumer(
-                        execution_stores.tasks,
-                        execution_stores.coverage_projection_work,
-                        namespace=active_namespace or "local",
-                        checkpoint_committed=checkpoint_committed,
-                        notification_required=settings.deployment == "cloud",
-                        read_summaries=(
-                            execution_stores.tasks
-                            if isinstance(execution_stores, PostgresControlPlaneStores)
-                            else None
-                        ),
-                    )
-                    if execution_stores.coverage_projection_work is not None
-                    else None
-                ),
-            )
-            if execution_stores.projection_work is not None
-            else None
+        projection_work=configure_agui_projection_work(
+            execution_stores,
+            settings,
+            active_namespace,
+            checkpoint_committed,
         ),
         scan_ready_sessions=not migrated and settings.deployment != "cloud",
         cutover_probe=None if migrated else cutover_probe,

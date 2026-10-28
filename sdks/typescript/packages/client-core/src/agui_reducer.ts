@@ -1,8 +1,7 @@
 import { AbstractAgent, buildResumeArray, enforceOutgoingInput, isInterruptExpired, type AgentStateMutation, type AgentSubscriber } from "@ag-ui/client";
-import type { ActivityDeltaEvent, BaseEvent, Interrupt, Message, ResumeEntry, RunAgentInput, State, StateDeltaEvent } from "@ag-ui/core";
+import type { BaseEvent, Interrupt, Message, ResumeEntry, RunAgentInput, State } from "@ag-ui/core";
 import { concatMap, lastValueFrom, of, Subject, takeUntil, throwError, type Observable } from "rxjs";
-import jsonpatch from "fast-json-patch";
-import { assertAgUiBinding, boundAgUiEvents, type AgUiEventSource, type AgUiRunBinding } from "./agui_events.js";
+import { assertAgUiBinding, boundAgUiEvents, validateAgUiPatch, type AgUiEventSource, type AgUiRunBinding } from "./agui_events.js";
 
 export interface StandardAgUiConsumerOptions {
   signal?: AbortSignal;
@@ -149,17 +148,7 @@ export class StandardAgUiConsumer {
             await this.agent!.waitForPreviousApplied();
             if (applicationError || await this.agent!.acknowledgeBarrier(event)) return { stopPropagation: true };
             // Upstream warns and skips failed patches. Preflight without replacing its reducer.
-            if (event.type === "STATE_SNAPSHOT") hasStateSnapshot = true;
-            if (event.type === "STATE_DELTA") {
-              if (!hasStateSnapshot) throw new Error("STATE_DELTA has no accepted snapshot base");
-              jsonpatch.applyPatch(state, (event as StateDeltaEvent).delta, true, false);
-            }
-            if (event.type === "ACTIVITY_DELTA") {
-              const delta = event as ActivityDeltaEvent;
-              const base = messages.find(m => m.id === delta.messageId);
-              if (base?.role !== "activity") throw new Error("ACTIVITY_DELTA has no accepted activity base");
-              jsonpatch.applyPatch(base.content, delta.patch, true, false);
-            }
+            hasStateSnapshot = validateAgUiPatch(event, messages, state, hasStateSnapshot);
             await this.options.onEvent?.(structuredClone(event));
             if (applicationError) return { stopPropagation: true };
             if (event.type === "RUN_FINISHED" || event.type === "RUN_ERROR") acceptedTerminal = structuredClone(event);

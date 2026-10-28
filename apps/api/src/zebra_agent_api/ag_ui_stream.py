@@ -28,6 +28,7 @@ from agent_integrations.redis_live_fanout_async import AsyncRedisNotifications
 from agent_storage import ControlPlaneStores
 
 from zebra_agent_api.ag_ui_checkpoint_tail import tail_checkpoint_frames
+from zebra_agent_api.ag_ui_public_binding import AgUiPublicSlice
 from zebra_agent_api.ag_ui_task_view import deadline_frames
 from zebra_agent_api.ag_ui_task_view import stream_problem as _problem
 from zebra_agent_api.responses import ApiResponse
@@ -68,6 +69,8 @@ class AgUiStreamContext:
     notifications: AsyncRedisNotifications | None = None
     recovery_notice: bool = False
     profile: AgUiProjectionProfile | None = None
+    public_slice: AgUiPublicSlice | None = None
+    public_cursor_exhausted: bool = False
 
 
 def prepare_agui_stream(

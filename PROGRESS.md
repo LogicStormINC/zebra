@@ -1,3 +1,25 @@
+## 2026-10-29 AG-UI G3B actual HTTP transport (reviewed)
+
+Native admit-first official HttpAgent and signed reliable GET are composed,
+with shared producer/state API+Worker bindings and six bounded queue versions.
+ZEBRA_AGUI_STANDARD_PROFILES_ENABLED remains false by default. Initial atomic
+captured-message and existing conversation MESSAGE inputs reach real Worker
+fake-provider prompts. Actual public IDs come from exact accepted Event/state;
+private input receipts belong to their original ClientSession, while authorized
+observers can read public GET without Controller/fresh UI revision. No native
+admission metadata rewrite or unclassified provisional draft in new profiles.
+Requested-slice tail fixes retained old terminal; official application/hooks/
+finalization and cursor persistence are awaited, with bounded partial recovery.
+Original receipt restores across fresh BFF instances; attachPrepared observes
+actual initial generated identity without another native intent.
+Spec and quality passed, including fixture synchronization review. Final SDK244,
+HTTP23, API64, native slices8, initial/outcome4 and signed PG/Redis HTTP gate passed;
+conformance31 tags/7 golden/actual native Worker->authHTTP->official SDK passed
+(1 admission/1 model/0 observation writes). make check1449 types/30eval passed.
+Full verify242 included package/framework/browser before final reset regressions;
+latest244/check cover that delta. Final whole-plan gates remain G7. No profile
+activation, registry publish or deployment. G4 UI unlock follows publication.
+
 ## 2026-10-29 AG-UI G3A bounded ingress (published 462b812a)
 
 Shared SSE framing now handles strict UTF-8, multiline data, split CRLF, exact

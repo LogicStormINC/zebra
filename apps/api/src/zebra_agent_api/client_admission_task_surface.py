@@ -5,6 +5,7 @@ from dataclasses import replace
 from typing import Any, cast
 from uuid import UUID
 
+from ag_ui.core import UserMessage
 from agent_core.contracts import SessionCommand, SessionCommandKind
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId
@@ -27,8 +28,24 @@ def validate_initial_surface(app: Any, body: Any) -> None:
     )
     if not eligible_atomic_surface(app):
         raise ValueError("initial UI requires exact same PG ports")
-    if set(payload["input"]) != {"state"} or not isinstance(payload["input"]["state"], dict):
+    if set(payload["input"]) not in ({"state"}, {"state", "message"}) or not isinstance(
+        payload["input"]["state"], dict
+    ):
         raise ValueError("initial input only accepts client Readable state")
+    if "message" in payload["input"]:
+        message = payload["input"]["message"]
+        prompt = payload["task"].get("prompt")
+        if (
+            not isinstance(message, dict)
+            or set(message) != {"id", "role", "content"}
+            or not isinstance(prompt, str)
+            or message.get("content") != prompt.strip()
+        ):
+            raise ValueError("captured initial user message must match the Task prompt")
+        UserMessage.model_validate(message)
+        from agent_core.domain.client_context import validate_client_state_json
+
+        validate_client_state_json({"message": message})
     # All state validation runs again against the current native mounted Profile.
     from agent_core.domain.client_context import validate_client_state_json
 
@@ -85,7 +102,14 @@ def prepare_initial_surface(
             "thread_id": task,
             "run_id": body.run,
             "input": {
-                "messages": [],
+                **(
+                    {"threadId": task, "runId": body.run, "protocolVersion": "1.0", "context": []}
+                    if "message" in body.payload["input"]
+                    else {}
+                ),
+                "messages": [body.payload["input"]["message"]]
+                if "message" in body.payload["input"]
+                else [],
                 "tools": [],
                 "state": body.payload["input"]["state"],
                 "forwardedProps": {
@@ -129,7 +153,20 @@ def prepare_initial_surface(
             current_sequence=revision + 1,
             status="queued",
             executed=False,
-            command={"command_id": str(command.command_id), "status": "accepted"},
+            command={
+                "command_id": str(command.command_id),
+                "status": "accepted",
+                **(
+                    {
+                        "event_id": str(event.event_id),
+                        "segment_id": str(session),
+                        "event_sequence": event.sequence,
+                        "idempotency_key": command.idempotency_key,
+                    }
+                    if "message" in body.payload["input"]
+                    else {}
+                ),
+            },
             surface=metadata,
         )
         return response

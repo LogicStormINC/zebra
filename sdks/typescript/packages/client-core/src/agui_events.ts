@@ -1,5 +1,6 @@
 import { enforceEvents, transformChunks, verifyEvents } from "@ag-ui/client";
-import type { BaseEvent } from "@ag-ui/core";
+import type { ActivityDeltaEvent, BaseEvent, Message, State, StateDeltaEvent } from "@ag-ui/core";
+import jsonpatch from "fast-json-patch";
 import { defer, from, map, type Observable } from "rxjs";
 
 /** Scope supplied by the caller's authorized stream, never inferred from events. */
@@ -49,4 +50,20 @@ export function boundAgUiEvents(source: AgUiEventSource, binding: AgUiRunBinding
 /** Official canonical pipeline; malformed known events fail, unknown material is stripped/dropped. */
 export function standardAgUiEvents(source: AgUiEventSource, binding: AgUiRunBinding): Observable<BaseEvent> {
   return defer(() => boundAgUiEvents(source, binding).pipe(transformChunks(), verifyEvents()));
+}
+
+/** Preflight only: the official reducer still owns all mutations. */
+export function validateAgUiPatch(event: BaseEvent, messages: readonly Readonly<Message>[], state: State, hasSnapshot: boolean): boolean {
+  if (event.type === "STATE_SNAPSHOT") hasSnapshot = true;
+  if (event.type === "STATE_DELTA") {
+    if (!hasSnapshot) throw new Error("STATE_DELTA has no accepted snapshot base");
+    jsonpatch.applyPatch(state, (event as StateDeltaEvent).delta, true, false);
+  }
+  if (event.type === "ACTIVITY_DELTA") {
+    const delta = event as ActivityDeltaEvent;
+    const base = messages.find(m => m.id === delta.messageId);
+    if (base?.role !== "activity") throw new Error("ACTIVITY_DELTA has no accepted activity base");
+    jsonpatch.applyPatch(base.content, delta.patch, true, false);
+  }
+  return hasSnapshot;
 }
