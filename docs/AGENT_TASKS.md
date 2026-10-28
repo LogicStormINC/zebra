@@ -35971,3 +35971,27 @@ APPROVAL-BRIDGE-20261028 follow-up (2026-10-28): Review fixes authorized by user
 Owner Luke Ding / Codex; same branch/worktree. Extend owned paths to
 apps/api/src/zebra_agent_api/session_binding.py and packages/agent-storage/src/agent_storage/postgres/task_admission.py only if needed for existing atomic binding renewal; focused renewal regression tests.
 Scope: expiry during human approval must renew from fresh verified Host authority before wakeup; preserve ceilings, exact approval and dedup. Production SSL pool rotation after CA renewal; no original Run replay/model/search or Search/MCP restart.
+
+### AGUI-LONG-SESSION-20261028 — Wire/recovery and long-history reliability
+- Status: Review (2026-10-28 core gate/long-session and production API checks complete; maintainer integration pending). Claimed Ready before implementation.
+- Human owner Luke Ding; executor Codex; branch codex/agui-long-session-20261028
+  in paired cloud-plugin-plan-01 worktrees, based on accepted approval repair.
+- Owned paths: new focused tests/api/test_agui_long_session*.py; existing AG-UI/v2/approval
+  regression tests only when a reproduced issue requires them; this registry,
+  PROGRESS.md, WORKLOG.md, docs/AGUI_LONG_SESSION_2026-10-28.md, private artifacts.
+- Scope: trace all AG-UI boundaries and finite safety matrix; native isolated PostgreSQL,
+  wire/reconnect/approval/cancellation/terminal, long-history/page/large-body restore
+  and paired Trench functional checks. No provider/search/original Run replay,
+  production data changes or Search/MCP restart. Claim specific shared production
+  paths before any evidenced fix. Keep authority/budgets/high/v2 unchanged.
+
+AGUI-LONG-SESSION test ownership addendum before corrections: tests/worker/test_transient_output_composition_native.py,
+tests/stream_storage/native_source_head_http.py,tests/api/test_stream_v2_http.py.
+Native baseline identified stale fixtures, not product failures: test seal writes
+were injected into blackholed read clients; handoff fixture omitted required frozen
+capacity policy; harness used old positional StreamSettings signature. Correct
+these three shared fixture mismatches once to run actual safety paths.
+
+AGUI-LONG-SESSION ownership addendum: tests/conformance/agui_long_session/run.sh
+reuses existing native and paired Host/browser checks as one isolated repeatable gate.
+No new test framework, dependency, persistent service or production resource.

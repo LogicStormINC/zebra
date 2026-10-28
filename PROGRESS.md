@@ -7879,3 +7879,12 @@ full DB outage and historical lock holder. See docs/WORKER_COMMIT_CONFIRMATION_2
   Paired Trench fixes local cursor pollution, v2 SSE cursor budget and exact settled
   approval replay; rotates stale CA client pool. No-model checks and original
   terminal GET synchronization only; no model/search/Run replay or Search/MCP restart.
+
+## 2026-10-28 AGUI-LONG-SESSION-20261028
+
+集中协议／恢复审计与长会话验证完成；配套 Trench 审批修复已上线，主线合并待维护者。
+核心可重复门禁75 Cloud原生+116 Host原生／长历史+196前端=387通过、无跳过；
+浏览器长历史单独通过。1000Turn/20000事件分页、反馈／建议、正文分片保持完整；
+近1MiB正文真实编码／HTTP断线／双数据库通过。修复审批误用控制grant和多回执丢失；
+无模型／搜索／业务重跑，无Worker/Search/MCP重启。没有声称无限缓存或模型供应商零故障。
+详见docs/AGUI_LONG_SESSION_2026-10-28.md；一键门禁位于tests/conformance/agui_long_session/run.sh。

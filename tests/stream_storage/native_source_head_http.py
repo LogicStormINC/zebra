@@ -175,7 +175,7 @@ def fixture(owned, monkeypatch, mode):
     api_settings = replace(
         _settings(owned[0]),
         live_events=LiveEventSettings(redis_url=owned[3], key_prefix=owned[2]._key_prefix),
-        stream=StreamSettings(False, b"owned-source-head-http-shared-key-32"),
+        stream=StreamSettings(cursor_signing_key=b"owned-source-head-http-shared-key-32"),
     )
     # Only isolate the Redis key prefix; all production authority predicates run.
     from zebra_agent_api import factory as api_factory

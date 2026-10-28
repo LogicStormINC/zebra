@@ -17189,3 +17189,15 @@ repair. Production API overlays preserve previous fixes/config; Worker unchanged
 Private deployment evidence in 20261028-approval-runtime-fix. Original Run failure
 must remain failure, no invented success or model retry. Full real approval
 execution after this fix remains untested because no new model calls authorized.
+
+2026-10-28 AGUI-LONG-SESSION: Red-first reproduced two Host approval gaps; paired
+fixes preserve original execution resources and all confirmed same-Run approvals.
+Core disposable PG/Redis/wire/Host/frontend gate387 passed without skips; browser
+1000Turn fixture passed; strengthened1020000B wire428frames passed both databases.
+Broader Host276 passed/20legacy fixture skips, not added twice to gate total.
+Three stale native test seams corrected together; no production security relaxation.
+Two heavy SQLite diagnostic deadline failures reproduced as resource contention:
+unchanged isolated rerun2passed/30.87s. Broad initial run was interrupted and is not
+reported as full-repo pass. Only idle Trench API deployed, exact source/config and
+original90-event canonical hash verified; unrelated pgAdmin restarts excluded from
+protected service check. Local commits/maintainer integration only; no GitHub push.
