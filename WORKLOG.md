@@ -17127,3 +17127,12 @@ quota read/write and live Worker preflight/history checks pass. Only idle Worker
 updated; exact original23events/1model, all Turn projections and other services
 preserved. Python/shell image baseline only; no new real-model acceptance claimed.
 Local focused branch; no push/main merge. Full report and rollback in focused doc.
+
+
+## 2026-10-28 CLOUD-RUNTIME-READINESS-20261028 real page follow-up
+
+Exactly one separately authorized normal-page Run completed with high/Flash/v2:
+6model rounds,16successful read tools (history5/list1/status10),0retries,0web.search,
+0sandbox preparation for all history reads. Admission→terminal44.896s;2994char
+answer restored on refresh,114events/6models unchanged. Original failedRun
+preserved and Worker/Search/MCP unchanged. No further sample. See focused doc.

@@ -7,8 +7,9 @@ service tools now skip OCI; cloud create never pulls; readiness checks exact loc
 image; runtime errors classified distinctly without retry. Verified existing
 Python digest replaces missing pin.84 checks, old/new network-none image pair,
 actual gVisor/quota scratch and live Worker no-model checks passed. Worker only
-updated; schema105, all original Turns and Search/MCP unchanged. No new model or
-business Run. Source awaits integration. See docs/CLOUD_RUNTIME_READINESS_2026-10-28.md.
+updated; schema105, all original Turns and Search/MCP unchanged. Subsequent one authorized real-page Run completed:6model rounds/16successful
+read tools/0retries,44.896s; history preparation0, refresh retained answer without
+rerun. Original Run/services unchanged. Source awaits integration. See docs/CLOUD_RUNTIME_READINESS_2026-10-28.md.
 
 # Latest production repair: canonical persistence budget (2026-10-28)
 

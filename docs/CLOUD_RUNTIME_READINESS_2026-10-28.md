@@ -116,9 +116,46 @@ reference, so is emergency rollback only, not a sustainable operating version.
 
 ## Limits
 
-No new model request authorized or made this round. Prior one-line real acceptance
+The initial repair phase made no model requests. Prior one-line real acceptance
 was insufficient for tool/runtime paths; this round verifies those directly with
 no-model execution, but does not assert all research/business flows are proven.
 Readiness is not a guarantee against a later daemon/disk/provider outage. Old
 LockNotAvailable incident exact holder remains unknown; not claimed repaired by
 this slice. Original failed Run is deliberately retained, not replayed or relabeled.
+
+
+## One authorized real page tool acceptance
+
+User subsequently authorized exactly one new Run, no retry, autonomous tools,
+high reasoning/v2. Submitted once through normal logged-in Chrome, no response
+interception. Prompt asks to inspect recent conversations, identify up to three
+supported topics, and list current subscription names/statuses; reads only,
+no external webpages. No tool names or sequence were forced.
+
+Page: http://192.168.110.42:18080/dashboard/strategy/conv_1793156351356_deecca
+Turn20565e16-dab1-48e4-bbb7-9c8afe2b35cd;
+Run98019e4f-911e-4427-a877-6dc0793c4d8d;
+Taskbc224c6d-d464-49ce-b3db-e2c391496365.
+
+- Exactly1accepted Run command, attempt_count1; completed, both errors null.
+- DeepSeek Flash, all6responses high/thinking enabled, transient_v2.
+-6model rounds; retry_count0 for every response.
+-16successful tool results: sessions.search5, sources.list1, sources.get_status10.
+- All5history calls runtime_prepare_ms0;0runtime_instances;0web.search.
+- Model latencies1477/2562/4013/3502/3696/16630ms.
+- Submit1793156351320; admission1793156351661; final sync1793156396557.
+  Submit-to-terminal45.237s, admission-to-terminal44.896s. First visible body
+  timing was not instrumented; no first-body latency claim.
+-2994char answer committed02:59:55.365573UTC, turn_completed02:59:55.412185UTC.
+  Actual page shows result and restored input controls; refresh restores answer.
+- After refresh114events,6models unchanged; hash
+  a88569d4a2e2373645e152713958252d79cff983f5ca16de1f6a3a3b4f73c0a4.
+- Original failed23events/1model hash unchanged. Worker/Search/TLS/egress
+  container IDs/start/restarts unchanged throughout this acceptance.
+
+This proves the ordinary-page history/Host-tool completion route, not every tool
+or answer-quality property. Source-health503 fields are returned business data,
+not failed tool calls; do not conflate them with runtime errors or claim source
+health was repaired. The model's interpretation of enabled/status fields was
+not independently audited in this acceptance. No additional Run was submitted.
+Evidence: remote tool-page-*.safe.json; local tool-page-after-refresh.png.
