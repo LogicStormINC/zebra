@@ -1,3 +1,15 @@
+## 2026-10-28 Cloud reliability boundary follow-up
+
+CLOUD-RELIABILITY-BOUNDARIES-20261028 fixes the post-answer storage suspension
+composition, late client receipt crossing a newer pause, and page-held dirty
+projection locks. Shared guards/native routing reused; no schema or host changes.
+Isolated PostgreSQL old-path lock timeout reproduced; per-header durability,
+normal append, commit-preparation rollback and late-receipt retention/dedup verified.
+Final native235/SDK33 zero skips and make check passed. Full no-model suite11267
+passed/3092 environment-conditional skips; final SQL boundaries revalidated by the
+native gate. Local cloud-agent integration follows acceptance.
+No deployment, original Run replay, model/search call or Search/MCP restart.
+
 ## 2026-10-28 Cloud reliability: shared fault isolation and recovery
 
 CLOUD-RELIABILITY-20261028 targets cloud-agent: healthy projection repair avoids

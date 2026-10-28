@@ -102,3 +102,60 @@ runtime UID, ensure pinned sandbox resources exist, and exercise replica/DB/
 Redis failover against the real topology. This task neither configures database
 HA nor proves zero downtime, seamless in-flight model continuation or an SLO.
 Original production histories remain untouched.
+
+
+## Boundary follow-up: CLOUD-RELIABILITY-BOUNDARIES-20261028
+
+Review reproduced a composition regression: classifying a post-answer storage
+fault as suspended bypassed the completed-answer guard (which accepted only
+failed/completed). It stranded a proven complete answer before Turn close.
+The guard now accepts only the two typed storage suspension reasons after a
+canonical complete AnswerCommitted for the same Attempt, with no later Turn,
+control/wait or terminal boundary. Unknown/partial/blocked answers, authority
+failure and uncertain provider/commit outcomes are not upgraded. The fenced
+Recorder still checks current lease/cancel state; no model or input rebuild is
+needed. Existing already-paused production Runs are not rewritten by this task.
+
+A late client receipt is a durable observation, not permission to clear a newer
+pause. Shared pending-effect selection and continuation reconstruction now check
+pause, Turn, approval/clarification, new-message and accepted control boundaries
+between schedule and receipt. Ordinary own waiting/resumed events still work;
+existing consumed/uncertain-start dedup remains. The PostgreSQL maintenance
+repair also rechecks pause/Turn boundaries after selecting a waiting candidate.
+The receipt itself is retained and its duplicate remains idempotent.
+
+Dirty projection repair no longer locks the route while reading source headers.
+The existing atomic routing SQL acquires the route via its first UPSERT and uses
+the current contiguous frontier; each completed header commits before subsequent
+metadata/source reads. The page retains its 100ms work/byte/item budgets and
+reserved commit budget. A timed-out header rolls back; previously committed
+headers survive and are resumed later. Native triggers, namespace, privacy
+classification, closure bounds and exact ACK/CAS remain unchanged. There is no
+schema change and no source-event/model/tool replay.
+
+Real isolated PostgreSQL regression: pause maintenance at first/second source
+read; a native event append with unchanged 50ms lock timeout must succeed and
+previous progress must already be visible to an independent connection. Old code
+fails with LockNotAvailable in route_task_projection_work. Also race two repair
+connections on the same header and require one contiguous advance, plus verify
+cold completion preserves each anchor's closure. This removes batch-held locks,
+not all possible database contention: one atomic header/COMMIT can still stall,
+and database outage/failover requires separate operational acceptance.
+
+Acceptance: final native PostgreSQL/Redis235 + real HTTP/public SDK33, zero
+skips/failures; make check passed. Broad no-model suite11267 passed/3092 conditional
+skips; final SQL changes are separately exercised by the final native gate.
+Commands and integration boundaries are recorded in WORKLOG.md.
+No runtime service, Search/MCP process, provider setting, high/v2 setting,
+production database, original Run or business adapter was changed.
+
+The combined native gate exposed a cleanup-budget handoff defect: a near-expired
+header statement_timeout could cancel the next set_config call before it restored
+the parent budget. Successful routing now restores the parent SQL timeout inside
+the same bounded DO, before returning; the existing native I/O deadline still
+caps COMMIT. Commit preparation also belongs to the same header failure boundary;
+confirmed cancellation rolls back only that transaction (no page savepoint is
+needed), preserving previous commits. Closed/unknown transport outcomes still
+propagate without write replay. A real PostgreSQL test inspects the timeout at the
+roundtrip boundary and injects a real server cancellation before the second commit, and existing slow-header tests prove the 100ms work limit and
+partial-header rollback are retained. Canonical writer lock_timeout stays 50ms.

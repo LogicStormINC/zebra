@@ -19,6 +19,20 @@ def is_waiting_client_effect_suspension(events: list[SessionEvent]) -> bool:
     return bool(pending_client_effect_ids(events))
 
 
+def blocks_client_effect_recovery(event: SessionEvent) -> bool:
+    """A receipt records an effect result; it cannot override a later control boundary."""
+    return event.event_type in {
+        EventType.SESSION_SUSPENDED, EventType.SESSION_COMPLETED,
+        EventType.SESSION_FAILED, EventType.SESSION_CANCELLED,
+        EventType.TURN_COMPLETED, EventType.TURN_FAILED, EventType.TURN_CANCELLED,
+        EventType.USER_MESSAGE_RECEIVED, EventType.APPROVAL_REQUESTED,
+        EventType.CLARIFICATION_REQUESTED,
+    } or (
+        event.event_type is EventType.SESSION_COMMAND_ACCEPTED
+        and event.payload.get("kind") in {"stop", "cancel", "suspend", "run", "message"}
+    )
+
+
 def pending_client_effect_ids(events: list[SessionEvent]) -> tuple[str, ...]:
     """Return the bounded effect ids belonging to the unresolved live epoch."""
 
@@ -36,12 +50,7 @@ def pending_client_effect_ids(events: list[SessionEvent]) -> tuple[str, ...]:
                     for item in effect_ids
                     if isinstance(item, str) and item.strip()
                 ][:32]
-        elif event.event_type in (
-            EventType.SESSION_RESUMED,
-            EventType.SESSION_COMPLETED,
-            EventType.SESSION_FAILED,
-            EventType.SESSION_CANCELLED,
-        ):
+        elif event.event_type is EventType.SESSION_RESUMED or blocks_client_effect_recovery(event):
             pending = []
     return tuple(pending[:32])
 

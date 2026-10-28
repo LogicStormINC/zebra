@@ -11,6 +11,7 @@ from psycopg.types.json import Jsonb
 
 from tests.agent_storage.test_postgres_client_effects import (
     _continuation,
+    _receipt,
     _request,
     _with_active_lease,
 )
@@ -164,3 +165,51 @@ def test_legacy_receipt_repair_preserves_old_event_and_does_not_revive_cancelled
             session_id=request.parent_session_id,
             idempotency_key=events[-1].idempotency_key,
         )
+
+
+@pytest.mark.parametrize("boundary", [EventType.SESSION_SUSPENDED, EventType.TURN_COMPLETED,
+    EventType.TURN_FAILED, EventType.TURN_CANCELLED])
+def test_stale_wait_candidate_cannot_cross_new_boundary(stores, boundary):
+    request, recovery = _seed(stores, expired=True)
+    # A maintenance candidate was selected before the pause/close committed.
+    marker = SessionEvent.create(session_id=request.parent_session_id, sequence=2,
+        event_type=EventType.SESSION_SUSPENDED, actor=EventActor.HARNESS,
+        payload={"reason": "execution_storage_contention", "metadata": {"retryable": False}})
+    stores[3].append(marker.model_copy(update={"event_type": boundary}))
+    before = stores[3].list_for_session(request.parent_session_id)
+    assert _recover(recovery, request) == 0
+    assert stores[3].list_for_session(request.parent_session_id) == before
+
+
+def test_real_late_receipt_is_retained_but_cannot_resume_paused_worker(stores):
+    from uuid import uuid4
+
+    from agent_core.domain.client_sessions import ClientSession, ClientSessionGrant
+    from zebra_agent_worker.client_effect_continuation import has_trusted_client_effect_resume
+    from zebra_agent_worker.client_effect_resume import recover_client_effect_wakeup
+
+    request, _ = _seed(stores)
+    stores[2].create_session(ClientSession(
+        session_id=request.client_session_id,
+        grant=ClientSessionGrant(grant_id=uuid4(), host_app_id="fixture-host",
+            namespace_id="tenant-1", frontend_app_id="fixture-web",
+            origin="https://app.fixture.example", user_ref="user-1", profile_digest="a" * 64,
+            scopes=("client.action",), expires_at=datetime.now(UTC) + timedelta(hours=1)),
+        credential_hash="d" * 64, created_at=datetime.now(UTC),
+        expires_at=datetime.now(UTC) + timedelta(hours=1), ui_revision=request.expected_ui_revision,
+    ))
+    stores[3].append(SessionEvent.create(session_id=request.parent_session_id, sequence=2,
+        event_type=EventType.SESSION_SUSPENDED, actor=EventActor.HARNESS,
+        payload={"reason": "execution_storage_contention", "metadata": {"retryable": False}}))
+    receipt = _receipt(request)
+    accepted = stores[1].accept_receipt(receipt, request_fence_hash=request.fence_hash,
+        session_id=request.parent_session_id)
+    assert not accepted.replayed
+    before = stores[3].list_for_session(request.parent_session_id)
+    assert not has_trusted_client_effect_resume(before)
+    assert recover_client_effect_wakeup(before) is None
+    duplicate = stores[1].accept_receipt(receipt, request_fence_hash=request.fence_hash,
+        session_id=request.parent_session_id)
+    assert duplicate.replayed
+    assert stores[3].list_for_session(request.parent_session_id) == before
+    assert stores[1].read_receipt(request.effect_id) == receipt

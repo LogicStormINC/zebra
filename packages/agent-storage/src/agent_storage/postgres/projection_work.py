@@ -291,22 +291,23 @@ class PostgresTaskProjectionWorkStore(TaskProjectionWorkPort):
             connection.execute("SET TRANSACTION ISOLATION LEVEL READ COMMITTED")
             route = execute(
                 "SELECT * FROM task_projection_work_routes WHERE deployment_namespace=%s "
-                "AND task_id=%s AND projector_version=%s FOR UPDATE",
+                "AND task_id=%s AND projector_version=%s",
                 key,
             ).fetchone()
             assert route is not None
             used = 0
             problem = None
-            # ponytail: bound header repair to 100ms to reduce canonical COMMIT contention.
-            # Each header is atomic; the committed prefix resumes on the next tick.
+            # ponytail: one bounded header transaction, not a page-long route lock.
+            # Native routing serializes and checks the frontier; source reads need no lock.
             deadline = min(connection.deadline - 0.2, time.monotonic() + 0.1)
             step = _WorkConnection(connection.connection, deadline)
-            routing = "BEGIN " + ";".join(routed_statements(SOURCE, postgres=True)) + ";END"
+            routing = "BEGIN " + ";".join(routed_statements(SOURCE, postgres=True)) + (
+                ";PERFORM set_config('statement_timeout',%(finish_timeout)s,true);END"
+            )
             for index in range(limit):
                 remaining = step.deadline - time.monotonic()
                 if remaining <= 0 or route["observed_through"] >= route["wanted_through"]:
                     break
-                connection.execute("SAVEPOINT projection_work_header")
                 try:
                     size = step.execute(
                         f"SELECT {HEADER_BYTES} AS header_bytes,replay_header_ready "
@@ -331,6 +332,7 @@ class PostgresTaskProjectionWorkStore(TaskProjectionWorkPort):
                     ).fetchone()
                     if row is None or not row["replay_header_ready"]:
                         raise CheckpointNotReady("explicit scalar header repair required")
+                    finish_timeout = max(1, int((connection.deadline-time.monotonic())*1000))
                     params = dict(
                         namespace=self._namespace,
                         task_id=str(task_id),
@@ -341,30 +343,30 @@ class PostgresTaskProjectionWorkStore(TaskProjectionWorkPort):
                         command_kind=row["replay_command_kind"],
                         run_id=row["replay_run_id"],
                         internal=int(row["replay_internal_continuation"]),
+                        finish_timeout=f"{finish_timeout}ms",
                     )
                     code = ClientCursor(connection.connection).mogrify(routing, params)
-                    # Quote both levels; one DO statement shares the whole header's SQL deadline.
+                    # The DO is page-bounded; restore cleanup timeout before its next roundtrip.
                     step.execute("DO %s", (code,))
-                    completed = execute(
-                        "SELECT * FROM task_projection_work_routes WHERE deployment_namespace=%s "
-                        "AND task_id=%s AND projector_version=%s",
-                        key,
-                    ).fetchone()
-                    assert completed is not None
-                    route = completed
+                    connection.commit()
                 except CheckpointNotReady as exc:
                     if connection.connection.closed:
                         raise  # Transport expiry is not a recoverable savepoint cancellation.
                     # Failed recovery must abort the transaction, preserving the original cause.
                     try:
-                        step.connection.execute("ROLLBACK TO SAVEPOINT projection_work_header")
+                        connection.connection.rollback()
                     except Exception as cleanup_error:
                         raise exc from cleanup_error
                     if not index:
                         problem = str(exc)
                     break
                 else:
-                    connection.execute("RELEASE SAVEPOINT projection_work_header")
+                    # Release route/work locks before metadata I/O or the next source read.
+                    route = execute(
+                        "SELECT * FROM task_projection_work_routes WHERE deployment_namespace=%s "
+                        "AND task_id=%s AND projector_version=%s", key,
+                    ).fetchone()
+                    assert route is not None
             if problem is None:
                 route = execute(
                     "UPDATE task_projection_work_routes SET needs_repair="

@@ -1,3 +1,48 @@
+## 2026-10-28 — CLOUD-RELIABILITY-BOUNDARIES-20261028
+
+User authorized three minimal shared repairs and local cloud-agent integration;
+no model/search/business Run replay or service operations. Claimed Ready task
+before edits on codex/cloud-reliability-boundaries-20261028 in the clean paired
+worktree; primary 10 dirty file hashes/modes recorded separately.
+
+Root causes and repairs:
+- Storage suspension classification bypassed complete-answer finalization. Reuse
+  canonical answer/Attempt proof for the two storage reasons only; preserve
+  partial/blocked, later controls/Turns, authorization and uncertain outcomes.
+- Pending client effects outlived newer pauses. Shared receipt selection and
+  continuation reconstruction now gate both receipt-before-pause and pause-before-
+  receipt orderings; PostgreSQL stale maintenance candidates recheck boundaries.
+  Valid receipts remain persisted/idempotent, but do not grant model continuation.
+- Dirty projection repair held route locks across source reads and whole batches.
+  Use existing atomic contiguous routing, commit each header, no outer route lock.
+  Real native append at 50ms lock_timeout fails on old code while maintenance
+  stalls; new code admits it and independently exposes the committed prefix.
+- Native stress exposed near-expired SQL timeout during cleanup preparation.
+  Restore cleanup budget inside successful DO and include commit preparation in
+  per-header failure handling. Remove redundant savepoints; confirmed cancellation
+  rolls back the current header only, unknown transport still propagates.
+
+Evidence: .artifacts/cloud-reliability-boundaries-20261028/ (private disposable
+DB credentials only). Healthy+dirty concurrency, two repairers, exact closures,
+server-side budget and real commit-preparation cancellation; real late receipt
+acceptance/replay and Worker no-continuation gates. No external services called.
+Final acceptance:
+- `make test`:11267 passed/3092 environment-conditional skips in1298.87s.
+  Broad suite ran alongside boundary work; final native SQL/receipt changes are
+  covered by the final gate below, not claimed by skipped database tests.
+- `make check`: passed (ruff,1428 typed sources, file/layer boundaries,30 evals,
+  progress commit/risk checks), final-check.txt.
+- `AGUI_EVIDENCE_DIR=.artifacts/cloud-reliability-boundaries-20261028/final-native
+  bash tests/conformance/agui_long_session/run.sh`:235 actual native PG/Redis
+  checks +33 real HTTP/public SDK checks, zero skips/failures.
+- Focused Worker combined recovery84 passed/2 existing conditional skips.
+  Projection58 passed + later deterministic commit-cancellation check passed;
+  all seven contention/budget cases included in final native235.
+- Earlier gate failures retained in evidence: incomplete test client registry
+  corrected once; real cleanup-budget cancellation repaired in shared code.
+  No unrelated fixture/test infrastructure work or timeout relaxation.
+Local integration outcome recorded after source commit; no push/deployment.
+
 ## 2026-10-28 CLOUD-RELIABILITY-20261028
 
 Integration receipt: cloud-agent fast-forwarded34f94577 ->193e8dfa; all10

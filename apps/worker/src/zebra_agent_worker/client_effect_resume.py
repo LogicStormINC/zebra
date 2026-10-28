@@ -14,6 +14,7 @@ from agent_core.domain.modeling import ModelCompletion
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
 from agent_core.harness.orchestration_events import continuation_metadata
 
+from zebra_agent_worker.client_effect_continuation import blocks_client_effect_recovery
 from zebra_agent_worker.continuation_boundaries import has_later_attempt_result_boundary
 
 
@@ -42,6 +43,7 @@ def recover_client_effect_wakeup(
     """Rebuild the wakeup when a trusted HARNESS resume carries the result."""
 
     scheduled: dict[str, dict[str, object]] = {}
+    scheduled_indexes: dict[str, int] = {}
     continuations: dict[str, dict[str, object]] = {}
     resume_payload: dict[str, object] | None = None
     resume_indexes: dict[str, int] = {}
@@ -50,6 +52,7 @@ def recover_client_effect_wakeup(
             effect_id = str(event.payload.get("client_effect_id", ""))
             if effect_id:
                 scheduled[effect_id] = dict(event.payload)
+                scheduled_indexes[effect_id] = index
         if event.event_type is EventType.SESSION_WAITING_FOR_CLIENT_EFFECT:
             metadata = event.payload.get("metadata")
             raw_continuations = (
@@ -81,6 +84,9 @@ def recover_client_effect_wakeup(
             "resume references a client effect never scheduled on this stream"
         )
     resume_index = resume_indexes.get(effect_id, len(events))
+    if any(blocks_client_effect_recovery(event)
+           for event in events[scheduled_indexes[effect_id] + 1:]):
+        return None
     # Include legacy unmarked starts: uncertainty must not replay a provider call.
     starts = [
         index for index, event in enumerate(events)

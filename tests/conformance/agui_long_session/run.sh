@@ -43,6 +43,7 @@ cd "$ROOT"
   tests/agent_storage/test_projection_repair_contention.py \
   tests/agent_integrations/test_ag_ui_infrastructure_recovery.py \
   tests/worker/test_infrastructure_failure_classification.py \
+  tests/worker/test_reliability_boundaries.py tests/agent_storage/test_client_effect_recovery.py \
   | tee "$OUT/cloud.txt"
 cd "$ROOT/sdks/typescript"
 "$NODE" node_modules/tsx/dist/cli.mjs --test \

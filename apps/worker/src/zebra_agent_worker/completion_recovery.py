@@ -43,6 +43,11 @@ def preserve_committed_result(
             EventType.TURN_CANCELLED,
             EventType.SESSION_CANCELLED,
             EventType.SESSION_FAILED,
+            EventType.SESSION_COMPLETED,
+            EventType.SESSION_SUSPENDED,
+            EventType.SESSION_WAITING_FOR_CLIENT_EFFECT,
+            EventType.APPROVAL_REQUESTED,
+            EventType.CLARIFICATION_REQUESTED,
         }
         for e in events
     ):
@@ -55,14 +60,22 @@ def preserve_committed_result(
         return prior
     # Only failures after this committed answer are normalized; control events
     # still win at the fenced Recorder boundary, never through this result value.
-    if prior.outcome not in {HarnessAttemptOutcome.FAILED, HarnessAttemptOutcome.COMPLETED}:
+    post_delivery_storage_fault = (
+        prior.outcome is HarnessAttemptOutcome.SUSPENDED
+        and prior.metadata.get("stop_reason") in {
+            "execution_storage_contention", "execution_storage_unavailable",
+        }
+    )
+    if prior.outcome not in {
+        HarnessAttemptOutcome.FAILED, HarnessAttemptOutcome.COMPLETED,
+    } and not post_delivery_storage_fault:
         return prior
     return replace(
         prior,
         outcome=HarnessAttemptOutcome.COMPLETED,
         summary=(
             "Existing committed answer confirmed."
-            if prior.outcome is HarnessAttemptOutcome.FAILED
+            if prior.outcome is not HarnessAttemptOutcome.COMPLETED
             else prior.summary
         ),
         metadata={
@@ -72,7 +85,7 @@ def preserve_committed_result(
                     "post_delivery_failure": prior.metadata.get("stop_reason"),
                     "stop_reason": "committed_answer_confirmed",
                 }
-                if prior.outcome is HarnessAttemptOutcome.FAILED
+                if prior.outcome is not HarnessAttemptOutcome.COMPLETED
                 else {}
             ),
             "delivery_assessment": payload.delivery_assessment.model_dump(mode="json"),

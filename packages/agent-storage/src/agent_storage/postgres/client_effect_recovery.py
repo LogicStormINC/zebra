@@ -94,6 +94,13 @@ class ClientEffectRecovery:
             in {
                 EventType.SESSION_WAITING_FOR_CLIENT_EFFECT,
                 EventType.SESSION_RESUMED,
+                EventType.SESSION_SUSPENDED,
+                EventType.TURN_COMPLETED,
+                EventType.TURN_FAILED,
+                EventType.TURN_CANCELLED,
+                EventType.USER_MESSAGE_RECEIVED,
+                EventType.APPROVAL_REQUESTED,
+                EventType.CLARIFICATION_REQUESTED,
                 EventType.SESSION_COMPLETED,
                 EventType.SESSION_FAILED,
                 EventType.SESSION_CANCELLED,

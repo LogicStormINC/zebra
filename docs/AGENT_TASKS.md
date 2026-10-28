@@ -1,3 +1,10 @@
+# CLOUD-RELIABILITY-BOUNDARIES-20261028 — Post-delivery, receipt and repair boundaries
+- Status: Review; final native235/SDK33 zero skips, full suite11267/3092 conditional skips, make check passed; local cloud-agent integration pending. Created Ready on integrated2d913e52 and claimed before code,2026-10-28.
+- Human owner: Luke Ding; executor Codex; branch codex/cloud-reliability-boundaries-20261028; worktree cloud-plugin-plan-01/zebra-agent; target cloud-agent authorized.
+- Owned paths: apps/worker/src/zebra_agent_worker/{completion_recovery,client_effect_continuation,client_effect_resume}.py; packages/agent-storage/src/agent_storage/postgres/{projection_work,projection_work_repair,client_effect_recovery}.py; focused tests/worker/test_reliability_boundaries.py and tests/agent_storage/test_projection_repair_contention.py, test_client_effect_recovery.py; tests/conformance/agui_long_session/run.sh; docs/CLOUD_RELIABILITY_2026-10-28.md; docs/AGENT_TASKS.md; PROGRESS.md; WORKLOG.md.
+- Scope: preserve only proven complete post-answer storage faults; reject late receipt wakeups across pause/Turn/control boundaries; commit bounded scalar repair progress between headers and release route locks before source reads. Reuse existing contracts, no schema/dependency or business adapter changes.
+- Acceptance: combination red/green and real isolated PostgreSQL concurrency, existing recovery/native gates and static checks. No model/search requests, original Run changes, production deployment, Search/MCP restart, authority/lease/cancel bypass or high/v2 changes.
+
 # CLOUD-RELIABILITY-20261028 — Shared runtime failure isolation and recovery
 - Status: Done; integrated into local cloud-agent as193e8dfa; native gate168/SDK33 with zero skips, focused recovery109/2 conditional skips and make check passed; created Ready and claimed before implementation, 2026-10-28.
 - Human owner: Luke Ding; executor: Codex; branch codex/cloud-reliability-20261028; worktree cloud-plugin-plan-01/zebra-agent; integration target cloud-agent explicitly authorized.
