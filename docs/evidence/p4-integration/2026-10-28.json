@@ -1,0 +1,79 @@
+{
+  "task": "CA-P4-INTEGRATE",
+  "status": "authorized integration target; remote outcome verified separately",
+  "date": "2026-10-28",
+  "owner": "Luke Ding",
+  "target": "cloud-agent",
+  "old_target": "dd94e2481eafbce311eec1bc478e872c5ecc93ba",
+  "validated_feature": "baf29f780d07f0a2e796290dc79c734908c18ca9",
+  "feature_ahead_commits": 2,
+  "validation": "P4 full gates and published joint already passed on exact feature tree; this task changes governance only",
+  "local_topics_after_main_verification": [
+    {
+      "ref": "refs/heads/codex/ca-p4-01-plugin-admission",
+      "sha": "b88e2b7b3e323b836ff849f9afedc1a2c2c77bee",
+      "merged": true
+    },
+    {
+      "ref": "refs/heads/codex/ca-p4-02-plugin-distribution",
+      "sha": "baf29f780d07f0a2e796290dc79c734908c18ca9",
+      "merged": true
+    },
+    {
+      "ref": "refs/heads/codex/cloud-plugin-prod-20261021",
+      "sha": "8ee49ec14363485fd1291d160af5e22cc72f5dad",
+      "merged": true
+    },
+    {
+      "ref": "refs/heads/codex/cloud-runtime-repair-20261020",
+      "sha": "ed8718296e4f0ddc2ea6e61c356bd2f679ff7c42",
+      "merged": true
+    },
+    {
+      "ref": "refs/heads/codex/cloud-turn-admission-commentary-20261022",
+      "sha": "7ff78d0bbe5e8b9ac33e13e3e6f9e3062596dddb",
+      "merged": true
+    },
+    {
+      "ref": "refs/heads/codex/cloud-version-sync-20261020",
+      "sha": "8f67261f06ee4c9db0faaaa39dba1049bed9b4d0",
+      "merged": true
+    },
+    {
+      "ref": "refs/heads/codex/cloud-workspace-loading-20261022",
+      "sha": "aed0f7bfb3b9b7d57f1232d24ff35caf7722dc7a",
+      "merged": true
+    },
+    {
+      "ref": "refs/heads/codex/cloud-workspace-quota-20261022",
+      "sha": "27d4ec09b991d291419aa20c1d509fa60ec572a4",
+      "merged": true
+    },
+    {
+      "ref": "refs/heads/codex/cloud-yahoo-egress-20261020",
+      "sha": "6bca505358dfe970182d805077b323a7c3d6b6e0",
+      "merged": true
+    }
+  ],
+  "remote_topics_after_main_verification": [
+    {
+      "ref": "refs/remotes/origin/codex/ca-p4-01-plugin-admission",
+      "sha": "b88e2b7b3e323b836ff849f9afedc1a2c2c77bee",
+      "merged": true
+    },
+    {
+      "ref": "refs/remotes/origin/codex/ca-p4-02-plugin-distribution",
+      "sha": "baf29f780d07f0a2e796290dc79c734908c18ca9",
+      "merged": true
+    }
+  ],
+  "extra_local_cleanup": "codex/p4-main-integration after its documentation commit is included by mainline",
+  "preserved_branch_counts": {
+    "dirty_occupied": 39,
+    "reserved": 3
+  },
+  "preserve_policy": "No worktree directory/removal/stash/reset/clean; all dirty occupied branches and frozen/default branches retained. Exact candidate tips must be ancestors before compare-and-delete.",
+  "deployment": false,
+  "production_migration": false,
+  "force_main_update": false
+}

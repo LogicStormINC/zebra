@@ -1,3 +1,5 @@
+2026-10-28：[P4授权主线整合与分支边界](docs/evidence/p4-integration/2026-10-28.json)；cloud-agent只快进，保留脏工作树/独有实验与冻结兼容基线。无部署或生产迁移。
+
 2026-10-27：[产品分发/当前撤回](docs/CA-P4-02_plugin_distribution.md)，精确原发布/独立业务安装/代际与Worker当前门禁；无部署或生产迁移。
 
 2026-10-27：[产品 Plugin 准入公开合同](docs/CA-P4-01_plugin_admission.md)，原生校验/受信目录发布/当前撤销与原GET；不授予安装或执行。

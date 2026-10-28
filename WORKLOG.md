@@ -17530,3 +17530,10 @@ No production data/actions, dirty primary worktrees, controller/BFF/mock/Coverag
 Full make test passed11176/3067 skips/0 failures in1213.93s; make check1425 source types/30Eval passed.
 API21/catalog12/real PG+Worker19 checks passed. No assertion weakening, user data or production changes.
 Scoped Native feature commit/push follows; consumer pins published SHA and records separate final joint.
+
+## Authorized P4 integration, 2026-10-28
+User explicitly requests both mainline fast-forwards, GitHub push and already-merged topic cleanup.
+Target cloud-agent, old dd94e2481eafbce311eec1bc478e872c5ecc93ba; exact verified feature baf29f780d07f0a2e796290dc79c734908c18ca9.
+Only governance docs change in this commit. Candidate tips and preservation policy: docs/evidence/p4-integration/2026-10-28.json.
+Confirm current remote main and ancestor inclusion before guarded atomic topic deletion; preserve dirty occupied branches and all directories/files.
+No deployment, production migration, automatic job replay, or new code acceptance claim. Final remote SHA/deletion counts belong to actual delivery receipt.

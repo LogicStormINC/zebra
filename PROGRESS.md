@@ -1,3 +1,10 @@
+# 2026-10-28 — Authorized P4 cloud-agent integration
+
+User authorizes fast-forward of verified b88e2b7b/baf29f78 to cloud-agent, GitHub push and merged clean topic cleanup.
+This documentation-only target preserves the exact validated Runtime source tree; prior full test11176/3067 skips/check and consumer joint remain the code evidence, not a new run.
+[Old tips and deletion boundaries](docs/evidence/p4-integration/2026-10-28.json); retain dirty occupied branches, unique experiments, Zebra main and frozen cloud-agent-trench/tag.
+Primary unrelated dirty bytes and all worktree directories remain; no stash/reset/clean, deployment or production migration. Actual remote/cleanup outcome is verified separately.
+
 # 2026-10-28 — CA-P4-02 product distribution / current Worker fences
 
 Status Review; full make test11176 passed/3067 conditional skips and make check1425 typed sources/30Eval passed.

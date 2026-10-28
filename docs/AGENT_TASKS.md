@@ -1,3 +1,9 @@
+# CA-P4-INTEGRATE — Authorized P4 mainline integration and merged topic cleanup
+- Status: Review, documentation-only authorized integration target; exact source/ancestry checks passed; remote and deletion receipts verified separately. Ready/claim preceded edits; Human owner Luke Ding; executor Codex; branch codex/p4-main-integration.
+- Dependencies: verified feature baf29f780d07f0a2e796290dc79c734908c18ca9; latest origin/cloud-agent equals local cloud-agent; fast-forward only.
+- Owned paths: docs/AGENT_TASKS.md, docs/GIT-WORKFLOW.md, docs/evidence/p4-integration/2026-10-28.json, PROGRESS.md, README.md, WORKLOG.md; Git references only. No business code, data, deploy or migration.
+- Acceptance: exact source tree unchanged, complete ancestor reachability, primary dirty file bytes/modes and all dirty worktree associations preserved; verify remote main before guarded atomic deletion. Preserve unmerged/dirty occupied/frozen branches.
+
 # CA-P4-02 — Native product distribution admission
 - Status: Review; full make test11176 passed/3067 conditional skips and make check1425 typed sources/30Eval passed; API21/catalog12/real PG Worker19 passed. Created Ready and claimed before code; Human owner Luke Ding, executor Codex.
 - Branch: codex/ca-p4-02-plugin-distribution; user authorizes stacked continuation from published C/CA-P4-01, no main merge.
