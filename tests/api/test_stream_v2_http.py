@@ -122,6 +122,7 @@ def test_native_handoff_parent_canonical_history_has_no_child_drafts(owned, monk
     from agent_core.application.session_projection import rebuild_session
     from agent_core.domain.events import EventActor, EventType, SessionEvent
     from agent_core.domain.host_authority import HostResourceRef
+    from agent_core.domain.stream_admission import TransientCapacityPolicy
     from agent_core.harness.models import HarnessEventDraft
     from agent_core.harness.orchestration_events import model_response_event
     from agent_storage.postgres.task_admission import load_session_task_binding, save_task_binding
@@ -190,6 +191,7 @@ def test_native_handoff_parent_canonical_history_has_no_child_drafts(owned, monk
         },
         idempotency_key="child-run",
         transient_admission_enabled=True,
+        capacity_policy=TransientCapacityPolicy(),
         verified_host_grant=_verified(fresh),
     )
     assert accepted.status_code == 202

@@ -17537,3 +17537,179 @@ Target cloud-agent, old dd94e2481eafbce311eec1bc478e872c5ecc93ba; exact verified
 Only governance docs change in this commit. Candidate tips and preservation policy: docs/evidence/p4-integration/2026-10-28.json.
 Confirm current remote main and ancestor inclusion before guarded atomic topic deletion; preserve dirty occupied branches and all directories/files.
 No deployment, production migration, automatic job replay, or new code acceptance claim. Final remote SHA/deletion counts belong to actual delivery receipt.
+
+
+## 2026-10-24 — CLOUD-REDIS-OBSERVER-20261024
+
+Authorized Redis AOF backup/check/recovery, draft/terminal decoupling, no-model
+regression and API activation. Full archive retained; valid RDB/base and exact
+AOF prefix verified; native fix removed only1477 invalid tail bytes. Same Redis
+container/config restored;PONG/AOF write ok. Seven failing regressions reproduced;
+53 focused SQLite/PostgreSQL/Redis tests now pass,0skips. Trench source77bcb7f,
+three production modules overlaid on exact source-hashed running base, actual
+image network-none self-check passed; only idle Trench API recreated. New image
+418937186004; old layers retained in Compose plan. Env/mount/security/schema,
+all other stable service IDs/start/restarts, Exa cooldown and original128-event
+hash unchanged. Original Turn naturally synchronized failed and problem null;
+6original model requests/0search unchanged, no retry or original event writes.
+Native snapshot refused because conversation subsequently soft-deleted; deletion
+preserved. Browser logged out; no authenticated page claim.
+Lock: successful sixth response indexed/progress125; following LockNotAvailable
+closes original Run. No historical traceback/SQL/blocker and current postgres
+stderr /dev/null, no surviving blocking tx; exact SQL remains open, no speculative
+Worker/config fix. Root/validation/rollback in focused doc. Branch retained for
+maintainer integration; no push/main merge, unrelated dirty work untouched.
+
+
+## 2026-10-28 — CLOUD-PROGRESS-BUDGET-20261028
+
+Diagnosed original conv1793153591356: successful sequence23 candidate persisted,
+progress22, shared2s callback expires during commit ACK; not provider/Redis error.
+Separated canonical aggregate5s from UI/delta2s in shared core+Worker wrapper.
+Native per-DB2s/lock50ms/parent limits/fences unchanged, no retry or success
+fabrication.105 focused no-model checks, real isolated PG and exact production
+image saved-response ACK fault injection oldfail/newpass,1write each. Source
+b3793278. Worker-only production overlay45cb2dd72b0e, config/security/schema105
+preserved; all other stable services/Search/MCP/cooldown retained. Original
+26event hash/model count2 unchanged. No answer_committed, keep original failed.
+User then allowed one new Run: normal logged-in Chrome submit exactlyonce,
+conv1793154759026_9a4ea0 / Runf0e03834, completed with high/Flash/transient_v2,
+1model1136ms/0tools/0search/0retry, admission→syncedterminal6.942s. Answer
+“演示环境已就绪。” visible, refresh preserved, model count still1. Suggestions
+normal POST1, no intercepted responses. Screenshot/artifacts private path and
+full boundaries/rollback in CLOUD_PROGRESS_BUDGET_2026-10-28.md. No push/main
+merge, maintainers integrate focused branch; unrelated primary changes preserved.
+
+
+## 2026-10-28 CLOUD-RUNTIME-READINESS-20261028
+
+Traced new failure to service-tool OCI dependency and unavailable pinned image,
+not provider or prior storage budget. Docker journal403 and30s canceled image
+resolution match provisioning reservation/terminal timestamps. Shared service
+allowlist, cloud no-pull, local-image readiness and runtime classification fixed.
+84 targeted no-model tests, Ruff, old/new image SQLite route proof, server gVisor
+quota read/write and live Worker preflight/history checks pass. Only idle Worker
+updated; exact original23events/1model, all Turn projections and other services
+preserved. Python/shell image baseline only; no new real-model acceptance claimed.
+Local focused branch; no push/main merge. Full report and rollback in focused doc.
+
+
+## 2026-10-28 CLOUD-RUNTIME-READINESS-20261028 real page follow-up
+
+Exactly one separately authorized normal-page Run completed with high/Flash/v2:
+6model rounds,16successful read tools (history5/list1/status10),0retries,0web.search,
+0sandbox preparation for all history reads. Admission→terminal44.896s;2994char
+answer restored on refresh,114events/6models unchanged. Original failedRun
+preserved and Worker/Search/MCP unchanged. No further sample. See focused doc.
+
+
+## 2026-10-28 SOURCE-STATUS-SUMMARY-20261028
+
+User-authorized optional Host source summary completed in paired Trench branch
+codex/source-status-summary-20261028 (source e55f2f4, acceptance40ab814). No Cloud
+runtime/history/model/search changes. Typed include_status opt-in, max32/page,
+explicit user/operator/effective state, existing batch aggregate with750ms SQL/1s
+observation deadline and unknown fallback isolated from caller transaction.
+49focused no-model regressions/Ruff; exact-image saved11source outputs match;
+real PG one batch80.33ms/8driver statements/1aggregate, timeout756.27ms preserves
+caller and pool. Normal signed API summary200/10sources/100.69ms; invalidscope/
+signature rejected403, invalidargument400. Only idle Trench API replaced with
+image40de040f0619, original env/security/schema preserved. Worker/Search/TLS/egress/
+MCP/cooldown unchanged. All Turn requests/status/answers unchanged; protected
+oldfailed+successful Tasks137events/7models/0search hash unchanged. No newmodel/
+search/Run/replay or measured whole-Run latency improvement claim. No GitHub push.
+Details: paired Trench docs/SOURCE_STATUS_SUMMARY_2026-10-28.md; private server
+evidence/rollback /home/ubuntu/releases/20261028-source-status-summary/.
+
+
+## 2026-10-28 WORKER-COMMIT-CONFIRMATION-20261028
+
+Shared single-event Worker commit/projection now reconcile TimeoutError once by
+exact canonical event, projections, stream frontier, live fence and command receipt.
+Confirmation uses at most1s within parent budget and1MiB payload cap; no write replay
+or normal-success extra query. Uncertain result is suspended/retryable=false; stale
+lease remains fenced.60focused passed/2existing environment skips; Ruff/targetmypy
+pass. Exact candidate and live Worker no-model checks pass. Idle Worker-only image
+5afd77012eed deployed; env/security/mounts/healthcheck/schema105 preserved. All Turn
+requests/answers/status and protected Task facts unchanged; Search/MCP/cooldown/API
+unchanged. No model/search/newRun/replay, GitHub push or whole-repo gate claim.
+Remaining boundaries: other aggregate/outer COMMIT paths, non-TimeoutError faults,
+full DB outage and historical lock holder. See docs/WORKER_COMMIT_CONFIRMATION_2026-10-28.md.
+
+## 2026-10-28 APPROVAL-BRIDGE-20261028
+
+Implemented exact approval identity + atomic deduplicated decision/internal resume,
+Trench ownership-bound bridge and explicit controls. 23 native/API/consumer,
+34 BFF/store/dispatcher, 43 UI/observer checks pass without model/search calls.
+Found and fixed ordinary resume introducing ambiguous Run anchors; v108 extends
+existing internal continuation classification. See docs/APPROVAL_BRIDGE_2026-10-28.md.
+Production rollout and original pending Run page verification recorded below.
+
+APPROVAL-BRIDGE final: deployed with v108-only production migration; original pending approval survives real page refresh with full arguments/allow/reject controls. 100 focused no-model checks pass. Original Run and all Turn records unchanged; Search/MCP unchanged. Fixed expired internal CA/leaf using existing keys and TLS hot reload. No approval clicked.
+
+2026-10-28 APPROVAL-BRIDGE follow-up: two production errors traced independently
+(expired admission grant on approval continuation; stale SSLContext after CA renewal).
+Minimum existing-helper renewal added to approval; paired Trench cursor/replay
+repair. Production API overlays preserve previous fixes/config; Worker unchanged.
+Private deployment evidence in 20261028-approval-runtime-fix. Original Run failure
+must remain failure, no invented success or model retry. Full real approval
+execution after this fix remains untested because no new model calls authorized.
+
+2026-10-28 AGUI-LONG-SESSION: Red-first reproduced two Host approval gaps; paired
+fixes preserve original execution resources and all confirmed same-Run approvals.
+Core disposable PG/Redis/wire/Host/frontend gate387 passed without skips; browser
+1000Turn fixture passed; strengthened1020000B wire428frames passed both databases.
+Broader Host276 passed/20legacy fixture skips, not added twice to gate total.
+Three stale native test seams corrected together; no production security relaxation.
+Two heavy SQLite diagnostic deadline failures reproduced as resource contention:
+unchanged isolated rerun2passed/30.87s. Broad initial run was interrupted and is not
+reported as full-repo pass. Only idle Trench API deployed, exact source/config and
+original90-event canonical hash verified; unrelated pgAdmin restarts excluded from
+protected service check. Local commits/maintainer integration only; no GitHub push.
+
+2026-10-28 AGUI-LONG-SESSION read-only follow-up: reproduced cold mapper terminal
+recovery loop, partial-to-blocked mapping, prefix tool delivery summary loss, and
+reset/seen-state mismatch using saved frames and disposable SQLite. Existing full
+recovery path succeeds in the isolated contrast; production/source unchanged.
+186 production Turns/0 active/0 missing-commit observers in bounded read-only query.
+No model/search/Run retry, approval or service restart. Findings and minimal next
+slice in docs/AGUI_LONG_SESSION_2026-10-28.md; implementation remains outstanding.
+
+2026-10-28 AGUI-COLD-RECOVERY: fixed cold mapper prefix reconstruction, partial
+terminal classification, stable file/media delivery union and recovery epoch
+dedup.6red checks -> green;397 no-skip core checks plus63 overlapping focused
+checks, realHTTP/PG/SQLite near1MiB cold recovery; frontend long-history retained.
+Only idle production Trench API updated to53fc3ba0; exactTurn hash/config/schema
+and other product processes unchanged. No model/search/approval/Run retry.
+Report docs/AGUI_LONG_SESSION_2026-10-28.md; local source integration pending.
+
+## 2026-10-28 AGUI-CLOUD-INTEGRATION-20261028
+
+User authorized merge into cloud-agent and removal of Trench coupling. Started
+from0a50892d and merged repair history throughf8cd5d22 in the clean paired Zebra
+worktree. Preserve dirty primary AGENTS/config/docs and original Trench checkout.
+Resolved shared route conflict by retaining message receipts and exact-Run approval;
+reused equivalent mainlinev113 instead of colliding branchv108. No old migration edit.
+
+Independent gate no longer needs Trench repo/venv/UI/DB naming. Actual native v2 wire
+via real HTTP exposed SDK clear/content chunk0 collision; cursor-based observation
+identity fixes it with exact replay/conflict checks. Native gate exposed checkpoint
+4 ahead of open bootstrap target3; shared SQLite/PG regression failed before fix,
+then passed with stale ACK still rejected. No write replay or false completion.
+
+Native152/SDK stream32 zero skips; SDK full174 zero skips; SDK build/typecheck and
+make check passed. Earlier native74/1failure and SDK wire2failures retained as red
+root-cause evidence. A17-skip attempt was rejected by the gate, then the existing
+isolated header_scratch fixture was explicitly provisioned. Disposable PG readiness
+usesTCP so its temporary initialization-only Unix listener cannot report ready.
+Evidence: .artifacts/agui-cloud-integration-20261028/accepted-gate and sibling logs.
+No model/search/approval decision, original Run mutation, remote deployment or
+Search/MCP restart. Full Python regression and final fast-forward recorded below.
+
+AGUI-CLOUD-INTEGRATION final acceptance: make test11216passed/3082conditional
+skips/0failed (1346.59s), make check passed; native152 and stream32 zero skips,
+SDK full174 zero skips plus build/typecheck. Primary dirty/untracked10file hashes
+and branch base checked before local fast-forward. Integrate both parent histories
+into cloud-agent; no GitHub push, deployment or original Run mutation. Disposable
+gate PG/Redis removed. Legacy productionv108 migration reconciliation is explicitly
+required before any future deployment; no automatic ledger rewriting.

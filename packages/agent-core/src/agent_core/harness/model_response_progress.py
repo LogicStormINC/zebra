@@ -43,6 +43,7 @@ def dispatch_public_event(progress: "ProgressiveEventSink", event: HarnessEventD
             progress._lock,
             progress._emission_scope,
             progress._closing if progress._emission_scope else None,
+            event_type=event.event_type,
         ):
             if progress._timer_error is not None:
                 raise progress._timer_error

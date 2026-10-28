@@ -457,3 +457,23 @@ test("cached stream bytes handle split surrogate pairs, reset and generation rep
   reducer.observe(draft("fresh", 0, "ready"));
   assert.equal(reducer.snapshot()[0]?.content, "ready");
 });
+
+test("transport cursors distinguish replacement clear and content without accepting conflicting replay", () => {
+  const reducer = new ConversationStreamReducer();
+  const clear = { ...custom("zebra.message_replace", {
+    message_id: "message:call", chunk_index: 0, content: "", last: true,
+  }), streamCursor: "clear-cursor" };
+  const content = { ...custom("zebra.message_replace", {
+    message_id: "message:call", chunk_index: 0, content: "answer", last: true,
+  }), streamCursor: "content-cursor" };
+  reducer.observe(clear);
+  reducer.observe(content);
+  reducer.observe(content); // A lost Host ACK can replay only this exact frame.
+  assert.equal(reducer.snapshot()[0]?.content, "answer");
+  assert.throws(() => reducer.observe({ ...content, value: {
+    message_id: "message:call", chunk_index: 0, content: "changed", last: true,
+  } }), /Conflicting unacknowledged chunk/);
+  assert.throws(() => reducer.observe({ ...content, value: {
+    message_id: "message:other", chunk_index: 0, content: "answer", last: true,
+  } }), /Conflicting unacknowledged chunk/);
+});

@@ -7,7 +7,10 @@ from contextvars import ContextVar
 from threading import Event, Thread, Timer, current_thread
 from time import monotonic
 
+from agent_core.domain.events import EventType
+
 PUBLIC_OUTPUT_IO_SECONDS = 2.0
+CANONICAL_EVENT_IO_SECONDS = 5.0
 PUBLIC_OUTPUT_CLOSE_SECONDS = 2.5
 type PublicationScope = Callable[[float], AbstractContextManager[float]]
 _DEADLINE: ContextVar[float | None] = ContextVar("public_output_deadline", default=None)
@@ -32,11 +35,30 @@ def _acquire(lock: RLock, deadline: float, closing: Event | None = None) -> None
             return
 
 
+def event_io_seconds(kind: EventType | None) -> float:
+    # ponytail: a primary fact includes several bounded DB transactions; the
+    # short UI timer budget must not cut off its aggregate commit acknowledgement.
+    return (
+        PUBLIC_OUTPUT_IO_SECONDS
+        if kind is None
+        or kind
+        in {
+            EventType.PUBLIC_OUTPUT,
+            EventType.MODEL_RESPONSE_DELTA,
+        }
+        else CANONICAL_EVENT_IO_SECONDS
+    )
+
+
 @contextmanager
 def public_output_lock(
-    lock: RLock, scope: PublicationScope | None, closing: Event | None = None
+    lock: RLock,
+    scope: PublicationScope | None,
+    closing: Event | None = None,
+    *,
+    event_type: EventType | None = None,
 ) -> Iterator[None]:
-    deadline = monotonic() + PUBLIC_OUTPUT_IO_SECONDS
+    deadline = monotonic() + event_io_seconds(event_type)
     if (current := _DEADLINE.get()) is not None:
         deadline = min(deadline, current)
     with scope(deadline) if scope is not None else nullcontext(deadline) as accepted:

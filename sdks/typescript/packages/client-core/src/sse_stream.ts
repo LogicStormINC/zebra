@@ -168,6 +168,10 @@ async function handleRecord(
     if (assembled) delete recovery.chunks;
     return null; // Current live handling stays active; only a reconnect starts cold recovery.
   }
+  if (eventId !== null && event.type === "CUSTOM" &&
+      (event.name === "zebra.message_replace" || event.name === "zebra.stream.draft")) {
+    event = { ...event, streamCursor: eventId };
+  }
   await options.onObservation?.(event);
   if (event.type === "CUSTOM" && event.name === "zebra.stream.recovery_start") recovery.active = true;
   if (event.type === "CUSTOM" && event.name === "zebra.stream.recovery_complete") {

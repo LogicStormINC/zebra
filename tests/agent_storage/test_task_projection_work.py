@@ -430,3 +430,24 @@ def test_sqlite_explicit_scalar_upgrade_preserves_legacy_problems_and_cursor(tmp
     fixture.append(2, body="{}")
     assert store.read_projection_work_problem(scope) is None
     assert failure_count(store, scope) == 7
+
+
+def test_existing_checkpoint_ahead_of_partial_bootstrap_waits_for_exact_target(queue):
+    queue.append(0)
+    queue.append(1, body='{"evidence":"retained"}')
+    store = active(queue)
+    assert store.repair_projection_work(queue.task, limit=1).needs_repair
+    (prefix,) = store.read_pending_projection_work()
+    assert prefix.requested_through == 0
+    # A checkpoint may predate enabling the queue; bounded repair discovers its prefix first.
+    queue.set_head(prefix, through=1)
+    (observed,) = store.read_pending_projection_work()
+    assert observed.after_sequence == 1 and observed.requested_through == 0
+    assert not store.complete_projection_work(observed, expected_through=0)
+    assert store.read_projection_work_problem(observed.scope) is None
+    assert not store.repair_projection_work(queue.task).needs_repair
+    (caught_up,) = store.read_pending_projection_work()
+    assert caught_up.after_sequence == caught_up.requested_through == 1
+    assert not store.complete_projection_work(observed, expected_through=0)
+    assert store.complete_projection_work(caught_up, expected_through=1)
+    assert store.read_pending_projection_work() == ()

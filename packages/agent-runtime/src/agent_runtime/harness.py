@@ -395,13 +395,15 @@ class LocalToolGateway(ToolGatewayPort):
     def execute(self, tool_call: ToolCall) -> ToolResult:
         if self._network_check is not None:
             self._network_check()
-        # ponytail: Skill/Artifact reads use bounded stores, not an OCI workspace.
+        # ponytail: Catalog/history reads and control markers do not use an OCI workspace.
         # Selected Cloud MCP uses Worker HTTPS, never the local sandbox/stdio path.
         prepare_ms = 0.0
         if (isinstance(self._runtime, DeferredRuntime)
                 and tool_call.name not in self._runtime_free_web_tools
                 and tool_call.name not in self._runtime_free_mcp_tools
-                and tool_call.name not in {"artifacts.read", "skills.list", "skills.read"}):
+                and tool_call.name not in {"artifacts.read", "skills.list", "skills.read",
+                                          "sessions.search", "agent.plan", "agent.clarify",
+                                          "agent.tools.search", "agent.tools.describe"}):
             started = perf_counter()
             self._runtime.ensure_ready()
             prepare_ms = (perf_counter() - started) * 1000

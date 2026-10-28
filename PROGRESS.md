@@ -1,3 +1,15 @@
+# 2026-10-28 — Generic AG-UI recovery integration
+
+AGUI-CLOUD-INTEGRATION-20261028 integrates accepted runtime/approval/commit repairs
+with current P3/P4. Reuses v113 approval continuation (no duplicate v108), removes
+mandatory Trench dependencies from the long-session gate, and fixes SDK replacement
+identity using validated stream cursors. Open queue bootstrap can observe an ahead
+checkpoint while exact ACK/closed bounds remain enforced. Native152/SDK stream32
+(no skips), SDK174, typecheck and make check pass. Original Runs/services and dirty
+primary checkout preserved; no model/search/deployment. Full make test11216passed,
+3082conditional skips,0failed. Local cloud-agent integration authorized/completed; see
+`docs/AGUI_CLOUD_INTEGRATION_2026-10-28.md` for boundaries and local integration.
+
 # 2026-10-28 — Authorized P4 cloud-agent integration
 
 User authorizes fast-forward of verified b88e2b7b/baf29f78 to cloud-agent, GitHub push and merged clean topic cleanup.
@@ -39,6 +51,55 @@ and provisioner uncertain-state fixes remain present. Full make test11151 passed
 conditional skips; make check including30eval passed;44 focused and4 I/O checks passed. All157 protected files across23worktrees remain unchanged. Integrated a042d7e0
 published to cloud-agent;24 local/24 remote merged feature branches removed,22 dirty
 occupied feature branches retained. Historical main unchanged; no deployment or production migration.
+# Latest repair: AG-UI cold observation recovery (2026-10-28)
+
+AGUI-COLD-RECOVERY-20261028: cold same-Run fact replay restores authoritative answer,
+partial assessment and delivery context; reset scopes and stable file/media unions
+corrected.397 core/63 overlapping focused no-model checks pass. Idle Trench API-only
+production rollout53fc3ba0; original Turn data, Worker/Search/MCP preserved. No model
+or search calls. Local review branch pending integration; details in
+`docs/AGUI_LONG_SESSION_2026-10-28.md`.
+
+# Latest production repair: service-tool sandbox dependency (2026-10-28)
+
+CLOUD-RUNTIME-READINESS-20261028. Successful model response was followed by
+sessions.search unnecessarily creating a sandbox. Missing pinned image triggered
+implicit pull403/30s timeout, misclassified as model_execution_failed. Bounded
+service tools now skip OCI; cloud create never pulls; readiness checks exact local
+image; runtime errors classified distinctly without retry. Verified existing
+Python digest replaces missing pin.84 checks, old/new network-none image pair,
+actual gVisor/quota scratch and live Worker no-model checks passed. Worker only
+updated; schema105, all original Turns and Search/MCP unchanged. Subsequent one authorized real-page Run completed:6model rounds/16successful
+read tools/0retries,44.896s; history preparation0, refresh retained answer without
+rerun. Original Run/services unchanged. Source awaits integration. See docs/CLOUD_RUNTIME_READINESS_2026-10-28.md.
+
+# Latest production repair: canonical persistence budget (2026-10-28)
+
+CLOUD-PROGRESS-BUDGET-20261028. Primary model/event facts incorrectly shared the
+UI2s aggregate publication ceiling; original model response committed but ACK
+window expired. Shared classification gives canonical facts5s while UI/deltas2s,
+individual DB operations2s, explicit parent limits, fresh fences and cancellation
+remain. No retries/hiding errors/schema/security downgrade. Sourceb3793278,
+105 focused checks; exact old/new image saved-response ACK-timeout proof.
+Only idle Worker updated. Original failed candidate preserved; other services/
+Search/MCP/cooldown unchanged. One user-authorized normal-page high/Flash/v2 Run
+completed with1model/0tools/0retries in6.942s admission→terminal; refresh retained
+answer without another executor call. No second sample. Source awaits maintainer
+integration; no push/main merge. See docs/CLOUD_PROGRESS_BUDGET_2026-10-28.md.
+
+# Latest production repair: Redis / terminal observation (2026-10-24)
+
+CLOUD-REDIS-OBSERVER-20261024. Redis full-volume backup retained; native offline
+check found1477 invalid AOF suffix bytes. Copy repaired/tested, valid prefix
+compared, same Redis container restored without clearing data. API draft cache
+failures no longer abort authoritative observation or cancellation. Trench77bcb7f
+prepared/deployed with53 no-model tests and actual-image network-none check.
+Original Run now failed/null observation problem;128 events/6 model requests
+unchanged,0search. No Worker/frontend/Search/MCP restart or schema change.
+Source awaits maintainer integration, no push/main merge. Conversation later
+soft-deleted; deletion preserved, no authenticated page acceptance claimed.
+Lock incident narrowed to post-model storage path; exact SQL/holder absent from
+retained logs, not claimed fixed. See docs/CLOUD_REDIS_OBSERVER_2026-10-24.md.
 
 # 2026-10-22 — Production Turn authority reuse and terminal projection repaired
 
@@ -8254,3 +8315,57 @@ unmeasured. See docs/CLOUD_MCP_PREPARE_TIMING.md.
 
 ## CA-P3-02Q 原准入只读观察（2026-10-24）
 P之后追加原claim/result只读观察，不输出凭据，不推断当前Controller或非提交证明。API/真实PG及消费者实际挂载后丢原收据候选通过；完整make test11057通过/3032条件跳过、check1404类型/30eval通过，[合同](docs/CA-P3-02Q_admission_observation.md)。原unknown不重发/不接管，旧数据/收据/Coverage保留，无迁移/部署。
+
+## 2026-10-28 SOURCE-STATUS-SUMMARY-20261028
+
+User-authorized optional Host source summary completed in paired Trench branch
+codex/source-status-summary-20261028 (source e55f2f4, acceptance40ab814). No Cloud
+runtime/history/model/search changes. Typed include_status opt-in, max32/page,
+explicit user/operator/effective state, existing batch aggregate with750ms SQL/1s
+observation deadline and unknown fallback isolated from caller transaction.
+49focused no-model regressions/Ruff; exact-image saved11source outputs match;
+real PG one batch80.33ms/8driver statements/1aggregate, timeout756.27ms preserves
+caller and pool. Normal signed API summary200/10sources/100.69ms; invalidscope/
+signature rejected403, invalidargument400. Only idle Trench API replaced with
+image40de040f0619, original env/security/schema preserved. Worker/Search/TLS/egress/
+MCP/cooldown unchanged. All Turn requests/status/answers unchanged; protected
+oldfailed+successful Tasks137events/7models/0search hash unchanged. No newmodel/
+search/Run/replay or measured whole-Run latency improvement claim. No GitHub push.
+Details: paired Trench docs/SOURCE_STATUS_SUMMARY_2026-10-28.md; private server
+evidence/rollback /home/ubuntu/releases/20261028-source-status-summary/.
+
+
+## 2026-10-28 WORKER-COMMIT-CONFIRMATION-20261028
+
+Shared single-event Worker commit/projection now reconcile TimeoutError once by
+exact canonical event, projections, stream frontier, live fence and command receipt.
+Confirmation uses at most1s within parent budget and1MiB payload cap; no write replay
+or normal-success extra query. Uncertain result is suspended/retryable=false; stale
+lease remains fenced.60focused passed/2existing environment skips; Ruff/targetmypy
+pass. Exact candidate and live Worker no-model checks pass. Idle Worker-only image
+5afd77012eed deployed; env/security/mounts/healthcheck/schema105 preserved. All Turn
+requests/answers/status and protected Task facts unchanged; Search/MCP/cooldown/API
+unchanged. No model/search/newRun/replay, GitHub push or whole-repo gate claim.
+Remaining boundaries: other aggregate/outer COMMIT paths, non-TimeoutError faults,
+full DB outage and historical lock holder. See docs/WORKER_COMMIT_CONFIRMATION_2026-10-28.md.
+
+- 2026-10-28 APPROVAL-BRIDGE-20261028: exact Cloud Task/Run approval and original
+  observer continuation implemented; no policy bypass. Deterministic no-model
+  checks pass. Production acceptance preserves the original undecided approval.
+  See `docs/APPROVAL_BRIDGE_2026-10-28.md` for v108 and deployment boundaries.
+
+- 2026-10-28 APPROVAL-BRIDGE follow-up: production user-clicked approval proved
+  exactly-once/original Run but exposed expired frozen Host binding before Worker
+  context setup. Approve now reuses verified command renewal, preserving ceilings.
+  Paired Trench fixes local cursor pollution, v2 SSE cursor budget and exact settled
+  approval replay; rotates stale CA client pool. No-model checks and original
+  terminal GET synchronization only; no model/search/Run replay or Search/MCP restart.
+
+## 2026-10-28 AGUI-LONG-SESSION-20261028
+
+集中协议／恢复审计与长会话验证完成；配套 Trench 审批修复已上线，主线合并待维护者。
+核心可重复门禁75 Cloud原生+116 Host原生／长历史+196前端=387通过、无跳过；
+浏览器长历史单独通过。1000Turn/20000事件分页、反馈／建议、正文分片保持完整；
+近1MiB正文真实编码／HTTP断线／双数据库通过。修复审批误用控制grant和多回执丢失；
+无模型／搜索／业务重跑，无Worker/Search/MCP重启。没有声称无限缓存或模型供应商零故障。
+详见docs/AGUI_LONG_SESSION_2026-10-28.md；一键门禁位于tests/conformance/agui_long_session/run.sh。

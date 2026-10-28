@@ -16,6 +16,7 @@ from agent_core.harness.model_commentary import commentary_outputs, plan_respons
 from agent_core.harness.models import HarnessEventDraft
 from agent_core.harness.progress_recovery import validate_progress_attempt
 from agent_core.harness.public_output import PublicOutputPolicy
+from agent_core.harness.public_output_lifecycle import event_io_seconds
 from agent_core.ports.agent_tasks import AgentTaskPort, TaskEvent
 from agent_core.ports.task_projection_checkpoints import (
     CheckpointConflict,
@@ -140,7 +141,7 @@ class WorkerProgressRecovery:
             committed, stage = False, "prepare"
             try:
                 with (
-                    task_io_deadline(monotonic() + 2),
+                    task_io_deadline(monotonic() + event_io_seconds(event.event_type)),
                     publication_lock(self._lock),
                     postgres_connection_scope(bounded=True),
                 ):

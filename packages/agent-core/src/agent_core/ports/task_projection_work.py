@@ -38,12 +38,14 @@ class ProjectionWork:
         _position(self.requested_through, self.anchor_sequence)
         _position(self.revision, 1)
         _position(self.after_sequence)
-        if self.after_sequence > self.requested_through:
-            raise ValueError("checkpoint frontier exceeds projection-work target")
+        # An open queue may be rebuilding a prefix behind an existing checkpoint.
+        # Observation is safe; ACK still requires the exact target, revision and head.
         if self.closed_through is not None:
             _position(self.closed_through, self.anchor_sequence)
             if self.closed_through != self.requested_through:
                 raise ValueError("closed projection-work target is immutable")
+            if self.after_sequence > self.closed_through:
+                raise ValueError("checkpoint frontier exceeds closed projection-work target")
 
 
 @dataclass(frozen=True, slots=True)

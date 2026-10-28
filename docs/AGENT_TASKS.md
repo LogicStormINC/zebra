@@ -425,6 +425,27 @@
 
 # AGENT_TASKS.md
 
+### CLOUD-RUNTIME-READINESS-20261028 - Service tools and sandbox readiness
+
+- Status: Review (2026-10-28;84 focused checks and actual-image no-model
+  comparison passed; idle Worker deployed, original Run/services preserved).
+- Human owner: Luke Ding; executor: Codex.
+- Branch: codex/cloud-runtime-readiness-20261028; existing clean cloud-plugin-plan-01 worktree.
+- Owned paths: packages/agent-runtime/src/agent_runtime/harness.py;
+  packages/agent-runtime/src/agent_runtime/adapters/oci.py;
+  apps/worker/src/zebra_agent_worker/runtime_preflight.py, execution_errors.py;
+  tests/agent_runtime/test_service_deferred_runtime.py;
+  tests/agent_runtime/test_oci_runtime.py; tests/worker/test_runtime_preflight.py;
+  tests/worker/test_runtime_failure_classification.py;
+  docs/CLOUD_RUNTIME_READINESS_2026-10-28.md; this registry; PROGRESS.md; WORKLOG.md;
+  .artifacts/cloud-runtime-readiness-20261028/.
+- Scope: eliminate spurious sandbox dependency for bounded service tools, verify
+  pinned local image in readiness, prevent implicit cloud image pull, classify
+  runtime failure distinctly. Preserve security, original Runs and Search/MCP.
+- Acceptance: no-model regression and isolated production tool/sandbox checks;
+  no new model/search or retry of original Run. Worker-only bounded rollout.
+
+
 ### CLOUD-EVAL-BASELINE-01 - Restore deterministic baseline verification trace
 
 - Status: Review (2026-10-20; eval30/30, make check exit0; make test
@@ -36294,3 +36315,186 @@ old payloads remain byte-compatible by excluding None. No database migration.
 - Acceptance: bounded public validation/publish/current/GET operation; separate publisher
   approval, exact scope and digest, current revocation, immutable receipts and no retry;
   real disposable PostgreSQL concurrent/current-authority checks and both repo gates.
+### CLOUD-REDIS-OBSERVER-20261024 — Redis recovery and authoritative terminal delivery
+
+- Status: Review (2026-10-24; source committed, no-model regression and API activation
+  complete; awaiting maintainer source integration; historical lock SQL remains unresolved).
+- Human owner Luke Ding; executor Codex; branch codex/cloud-redis-observer-20261024
+  in paired cloud-plugin-plan-01 worktrees; targets Zebra cloud-agent / Trench main.
+- Owned paths: this card, PROGRESS.md, WORKLOG.md,
+  docs/CLOUD_REDIS_OBSERVER_2026-10-24.md, private .artifacts/cloud-redis-observer-20261024/;
+  Trench services/api/src/trench_api/trench_ai_turn_dispatcher.py,
+  trench_ai_turn_transient.py and trench_ai_strategy_runtime_types.py in same directory;
+  tests/api/test_trench_ai_turn_dispatcher*.py
+  and test_trench_ai_turn_transient*.py. Explicitly expand before other code changes.
+- User authorizes Redis backup/offline AOF check and bounded repair, production API
+  update after no-model regression, original Run terminal synchronization, and
+  continued read-only PostgreSQL lock investigation. No model/search, task retry,
+  database clearing, Search/MCP change or original failure-status rewriting.
+- Preserve all unrelated dirty work, auth/lease/cancel bounds, high/v2, Redis
+  original backup and stable other service identities. No push.
+
+- Result: Trench77bcb7f;53 focused tests,0 skipped with isolated Redis/PostgreSQL;
+  exact image network-none check; same Redis container restored after full backup
+  and bounded1477-byte AOF suffix repair. Only API recreated; all other service
+  identities/security/schema/cooldown preserved. Original128 events unchanged,
+  original6 models/0search; native observation now failed/null, no replay.
+- Boundary: conversation was subsequently soft-deleted; preserve deletion. Browser
+  logged out; no authenticated page claim. Exact historical lock SQL/holder cannot
+  be reconstructed from retained logs; no speculative Worker fix or model retry.
+
+
+### CLOUD-PROGRESS-BUDGET-20261028 — critical facts versus UI publication deadline
+
+- Status: Review (2026-10-28; committed/deployed,105 focused no-model checks and
+  one authorized high/v2 normal-page Run passed; awaiting maintainer integration).
+- Human owner Luke Ding; executor Codex; branch codex/cloud-progress-budget-20261028,
+  paired cloud-plugin-plan-01 Zebra worktree, no push/main merge.
+- Owned paths: this card, PROGRESS.md, WORKLOG.md, docs/CLOUD_PROGRESS_BUDGET_2026-10-28.md,
+  private .artifacts/cloud-progress-budget-20261028/;
+  packages/agent-core/src/agent_core/harness/public_output_lifecycle.py,
+  packages/agent-core/src/agent_core/harness/model_response_progress.py,
+  apps/worker/src/zebra_agent_worker/progress_recovery.py,
+  tests/worker/test_public_output_deadline.py, tests/worker/test_canonical_event_deadline.py.
+- Scope: inspect original Run06a0abf1 storage timeout; separate bounded canonical
+  fact processing from UI-only2s callback budget. Keep explicit parent deadlines,
+  native per-transaction2s, fresh ownership/lease/cancel, UI timer/close limits,
+  no model/search or original task retry/status rewrite. Actual-image no-model
+  safety check before idle Worker-only production activation. Search/MCP untouched.
+
+- Result: b3793278; UI2s / canonical5s, native transaction2s and existing parent
+  deadlines/fences unchanged. Exact-image saved-response ACK timeout comparison
+  old fails/new accepts, each1write; no provider/search in replay. Only idle
+  Worker updated, all other services/schema105/cooldown preserved. Original
+ 26events/2models unchanged, failed candidate not relabeled as success.
+- Authorized single real page: conv_1793154759026_9a4ea0, Runf0e03834; completed,
+ 1accepted command/1model(high/Flash/v2)/0tools/0retries,6.942s admission→terminal.
+  Refresh preserves answer, model count remains1. Normal suggestions POST1.
+  Evidence and rollback: docs/CLOUD_PROGRESS_BUDGET_2026-10-28.md.
+
+
+### SOURCE-STATUS-SUMMARY-20261028 — Optional Host source status batch
+
+- Status: Review (2026-10-28; Trench e55f2f4/40ab814 source and API-only production acceptance complete; maintainer integration pending).
+- Human owner Luke Ding; executor Codex; branch codex/source-status-summary-20261028
+  in paired cloud-plugin-plan-01 worktrees.
+- Owned paths: this card, PROGRESS.md, WORKLOG.md and private artifacts; Trench
+  scope is recorded in its matching task card (three API modules, focused test/doc).
+- User authorizes minimal optional status summary and no-model saved-result/DB
+  verification followed by production API update. No model/search, original Run
+  replay, history changes, Worker/Search/MCP restart or push.
+
+
+### WORKER-COMMIT-CONFIRMATION-20261028 — Confirm timed-out atomic commits
+
+- Status: Review; claimed Ready → In Progress before coding 2026-10-28.
+  60 focused passed/2 skips; idle production Worker updated, no model/search.
+- Human owner Luke Ding; executor Codex; branch codex/worker-commit-confirmation-20261028,
+  existing cloud-plugin-plan-01 Zebra worktree.
+- Owned paths: packages/agent-core/src/agent_core/ports/workspace_projection_store.py;
+  packages/agent-storage/src/agent_storage/postgres/workspaces.py and worker_commit_confirmation.py;
+  apps/worker/src/zebra_agent_worker/execution_errors.py;
+  tests/agent_storage/test_worker_commit_confirmation.py; tests/worker/test_commit_confirmation_errors.py;
+  this card, PROGRESS.md, WORKLOG.md, docs/WORKER_COMMIT_CONFIRMATION_2026-10-28.md; private task artifacts.
+- Scope: one read confirmation after TimeoutError, exact event/projections/stream/fence,
+  existing1MiB/parent deadline, no repeated writes. Unknown confirmation suspends with
+  retryable=false; no new model/search, original replay, broad retry/error changes.
+  No-model isolated PG fault regressions, exact-image check then idle Worker-only
+  production update. Preserve API/Search/MCP, runtime budgets/high/v2, all original Runs.
+
+### APPROVAL-BRIDGE-20261028
+- Status: Review (implemented, locally committed, production deployed; merge pending); claimed before coding. Owner Luke Ding / Codex.
+- Branch: codex/approval-bridge-20261028, paired cloud-plugin-plan-01 worktrees.
+- Owned paths: apps/api/src/zebra_agent_api/task_approval.py (new), task_routes.py;
+  packages/agent-storage/src/agent_storage/postgres/task_approval.py (new);
+  tests/api/test_task_approval.py, tests/agent_storage/test_task_approval.py (new);
+  this registry, PROGRESS.md, WORKLOG.md, docs/APPROVAL_BRIDGE_2026-10-28.md;
+  .artifacts/approval-bridge-20261028/.
+- Scope: exact original Task/Run/approval identity, atomic idempotent decision and
+  resume command; existing policy unchanged. Paired Trench BFF/UI wiring.
+- Acceptance: no-model safety regression, idle affected-services rollout and
+  original Run approval display only; no approval/rejection/model/search execution.
+  Search/MCP preserved. No GitHub push.
+
+APPROVAL-BRIDGE-20261028 ownership addendum: internal approval continuation requires postgres/approval_continuation_migration.py (v108), postgres/migration_catalog_tail.py, agent-integrations/ag_ui/task_run_binding.py and its focused tests. Reuse existing internal resume semantics; no old migration edits.
+
+APPROVAL-BRIDGE-20261028 acceptance: 23 native/API/consumer + 34 backend + 43 UI checks; production original Run display and refresh verified; no decisions or model/search calls. Added bounded operational certificate renewal after confirming expired CA/leaf; original keys/SANs preserved, TLS hot reload only.
+
+APPROVAL-BRIDGE-20261028 follow-up (2026-10-28): Review fixes authorized by user.
+Owner Luke Ding / Codex; same branch/worktree. Extend owned paths to
+apps/api/src/zebra_agent_api/session_binding.py and packages/agent-storage/src/agent_storage/postgres/task_admission.py only if needed for existing atomic binding renewal; focused renewal regression tests.
+Scope: expiry during human approval must renew from fresh verified Host authority before wakeup; preserve ceilings, exact approval and dedup. Production SSL pool rotation after CA renewal; no original Run replay/model/search or Search/MCP restart.
+
+### AGUI-LONG-SESSION-20261028 — Wire/recovery and long-history reliability
+- Status: Review (2026-10-28 core gate/long-session and production API checks complete; maintainer integration pending). Claimed Ready before implementation.
+- Human owner Luke Ding; executor Codex; branch codex/agui-long-session-20261028
+  in paired cloud-plugin-plan-01 worktrees, based on accepted approval repair.
+- Owned paths: new focused tests/api/test_agui_long_session*.py; existing AG-UI/v2/approval
+  regression tests only when a reproduced issue requires them; this registry,
+  PROGRESS.md, WORKLOG.md, docs/AGUI_LONG_SESSION_2026-10-28.md, private artifacts.
+- Scope: trace all AG-UI boundaries and finite safety matrix; native isolated PostgreSQL,
+  wire/reconnect/approval/cancellation/terminal, long-history/page/large-body restore
+  and paired Trench functional checks. No provider/search/original Run replay,
+  production data changes or Search/MCP restart. Claim specific shared production
+  paths before any evidenced fix. Keep authority/budgets/high/v2 unchanged.
+
+AGUI-LONG-SESSION test ownership addendum before corrections: tests/worker/test_transient_output_composition_native.py,
+tests/stream_storage/native_source_head_http.py,tests/api/test_stream_v2_http.py.
+Native baseline identified stale fixtures, not product failures: test seal writes
+were injected into blackholed read clients; handoff fixture omitted required frozen
+capacity policy; harness used old positional StreamSettings signature. Correct
+these three shared fixture mismatches once to run actual safety paths.
+
+AGUI-LONG-SESSION ownership addendum: tests/conformance/agui_long_session/run.sh
+reuses existing native and paired Host/browser checks as one isolated repeatable gate.
+No new test framework, dependency, persistent service or production resource.
+
+## AGUI-COLD-RECOVERY-20261028
+- Status: Review; claimed Ready before implementation;397 core checks and idle API rollout passed, local integration pending. Human owner Luke Ding / Codex.
+- Branch codex/agui-cold-recovery-20261028; paired cloud-plugin-plan-01 worktrees.
+- Dependencies: accepted local AGUI-LONG-SESSION baseline; user authorizes this repair.
+- Owned Trench: trench_ai_turn_dispatcher.py, trench_ai_zebra_runtime.py,
+  trench_ai_zebra_stream_v2.py, trench_ai_zebra_observation.py, trench_ai_turn_content.py,
+  trench_ai_turn_store.py (shared projection call only); tests/api/test_trench_ai_long_session*.py,
+  affected focused observation assertions; task registry, worklog/progress and AGUI report.
+- Owned Zebra: existing tests/conformance/agui_long_session/run.sh and saved-wire test
+  only as required; registry, WORKLOG/PROGRESS, AGUI report, private deployment evidence.
+- Scope: cold observer reconstruction, complete/partial terminal, stable delivery union,
+  recovery epoch vs provisional reset. Native no-model tests then idle Trench API-only
+  rollout. No original Run replay/decision, no model/search or Search/MCP restart.
+
+AGUI-COLD-RECOVERY ownership addendum before extraction: new Trench
+trench_ai_turn_projection.py holds existing projection/terminal/serialization
+functions moved unchanged from the already oversized turn_store; store remains
+the compatibility entry point. Required file-size split, no new abstraction/schema.
+
+## AGUI-CLOUD-INTEGRATION-20261028
+- Status: Done (local cloud-agent integration; no push/deployment); Ready under explicit user integration authorization, claimed before implementation.
+- Human owner Luke Ding; executor Codex; branch codex/agui-cloud-integration-20261028, cloud-plugin-plan-01 Zebra worktree.
+- Integrate accepted repair branch into cloud-agent; no production rollout or original Run mutation.
+- Owned paths: merged repair files; conflict resolution in task_routes.py, migration_catalog_tail.py;
+  tests/conformance/agui_long_session/, tests/api/test_agui_long_session_wire.py;
+  sdks/typescript/packages/client-core/src/sse_stream.ts and focused stream tests;
+  docs/AGUI_CLOUD_INTEGRATION_2026-10-28.md, task registry, PROGRESS.md, WORKLOG.md.
+- Reuse existing generic SDK recovery; remove mandatory Trench checkout, Python, UI and database
+  dependencies from the core gate. Business ORM/history/UI remains in external Host adapters.
+- Native PostgreSQL/Redis plus real Cloud wire into generic SDK acceptance; preserve authorization,
+  budgets, partial outcomes, dedup and cancellation. No model/search requests or Search/MCP restart.
+- Reuse cloud-agent v113 approval migration, discard unintegrated duplicate v108 definition;
+  legacy deployed v108 databases require explicit migration reconciliation before future deployment.
+
+AGUI-CLOUD-INTEGRATION ownership addendum: native integration gate reproduced a
+pre-existing checkpoint ahead of a partially rebuilt queue target. Include
+agent-core/ports/task_projection_work.py and tests/agent_storage/test_task_projection_work.py
+for a bounded observation-only fix. Exact target/revision/head ACK guards remain unchanged.
+
+AGUI-CLOUD-INTEGRATION SDK ownership addendum: actual native answer wire exposes
+a collision between replacement clear chunk 0 and content chunk 0 in the generic
+reducer. Include client-core/src/conversation_stream.ts and its existing tests.
+Reuse the validated opaque SSE cursor as observation identity; do not change wire,
+authority or content budgets. No Trench types/imports required.
+
+AGUI-CLOUD-INTEGRATION accepted: make test11216passed/3082conditional skips;
+make check and SDK typecheck passed; standalone152native+32SDK zero skips,
+SDK full174passed. Prior Zebra repair branches are integrated by ancestry;
+paired Trench UI/ORM history remains external, not imported into Runtime.

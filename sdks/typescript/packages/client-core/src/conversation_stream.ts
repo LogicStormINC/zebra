@@ -17,6 +17,8 @@ export interface ConversationMessage {
 }
 
 export interface ConversationStreamEvent {
+  /** Transport cursor distinguishes separate replacement sequences with the same message ID. */
+  streamCursor?: string;
   type?: string;
   name?: string;
   value?: unknown;
@@ -59,7 +61,9 @@ export class ConversationStreamReducer {
     const value = isObject(event.value) ? event.value : null;
     const chunk = event.type === "CUSTOM" && value && value.chunk_index !== undefined &&
       (event.name === "zebra.stream.draft" || event.name === "zebra.message_replace");
-    const key = chunk ? JSON.stringify([event.name, value.message_id, value.generation_id, value.offset, value.chunk_index]) : null;
+    const key = chunk ? JSON.stringify(event.streamCursor !== undefined
+      ? [event.streamCursor]
+      : [event.name, value.message_id, value.generation_id, value.offset, value.chunk_index]) : null;
     const payload = key ? JSON.stringify(event) : null;
     if (key && this.lastChunk?.key === key) {
       if (this.lastChunk.payload !== payload) throw new Error("Conflicting unacknowledged chunk");

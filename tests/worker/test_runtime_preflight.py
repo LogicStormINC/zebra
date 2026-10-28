@@ -26,8 +26,10 @@ def test_worker_health_probes_required_handler_without_creating_a_container(
     else:
         with pytest.raises(RuntimeCapabilityError, match="does not advertise runtime runsc"):
             runtime_preflight.check_runtime(settings)
-    assert len(calls) == 1
+    assert len(calls) == (2 if available else 1)
     assert calls[0][1] == "info"
+    if available:
+        assert calls[1][1:3] == ("image", "inspect")
 
 
 @pytest.mark.parametrize("error", [RuntimeCapabilityError("missing runsc"),
@@ -41,3 +43,18 @@ def test_preflight_reports_unavailable_without_false_readiness(monkeypatch, caps
     output = capsys.readouterr().out
     assert '"status": "unavailable"' in output
     assert '"code": "runtime_unavailable"' in output
+
+
+def test_missing_pinned_image_fails_readiness_without_pull(monkeypatch):
+    calls = []
+    def runner(command, **kwargs):
+        calls.append(command)
+        if command[1:3] == ("image", "inspect"):
+            return CompletedProcess(command, 1, "", "missing")
+        return CompletedProcess(command, 0, '26.1\n{"runsc":{}}', "")
+    monkeypatch.setattr(runtime_preflight, "pin_cloud_engine", lambda _: runner)
+    settings = replace(load_settings(env={}), runtime=RuntimeSettings(
+        runtime_class="gvisor", image="python@sha256:" + "a" * 64))
+    with pytest.raises(RuntimeCapabilityError, match="not available locally"):
+        runtime_preflight.check_runtime(settings)
+    assert [c[1] for c in calls] == ["info", "image"]

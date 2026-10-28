@@ -75,6 +75,11 @@ def handle_task_route(app: ZebraAgentApi, request: TaskRouteRequest) -> ApiRespo
     parts = _parts(request.path, "/tasks/")
     if method == "GET" and len(parts) == 3 and parts[1:] == ("messages", "receipt"):
         return read_task_message_receipt(app, parts[0], request.headers)
+    if (method in {"GET", "POST"} and len(parts) == 4
+            and parts[1] == "runs" and parts[3] == "approval"):
+        from zebra_agent_api.task_approval import handle_task_approval
+
+        return handle_task_approval(app, request, parts[0], parts[2])
     if method == "POST" and len(parts) == 2 and parts[1] == "messages":
         version = receipt_version(request.headers)
         if version is None:

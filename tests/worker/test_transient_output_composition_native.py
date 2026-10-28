@@ -145,7 +145,7 @@ def setup(
         port = original(address, **{**kw, "key_prefix": f"{fanout._key_prefix}:admission"})
         scope = authorization(generation()).scope.model_copy(
             update={"deployment_namespace": run.namespace})
-        if capacity_policy is not None:
+        if capacity_policy is not None and address == url:
             port.seal_capacity(scope, capacity_policy, old_keys=(),
                                old_writers_quiescent=True, old_ttl_drained=True)
         return port
