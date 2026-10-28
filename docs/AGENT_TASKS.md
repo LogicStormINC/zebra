@@ -35918,3 +35918,15 @@ old payloads remain byte-compatible by excluding None. No database migration.
  1accepted command/1model(high/Flash/v2)/0tools/0retries,6.942s admission→terminal.
   Refresh preserves answer, model count remains1. Normal suggestions POST1.
   Evidence and rollback: docs/CLOUD_PROGRESS_BUDGET_2026-10-28.md.
+
+
+### SOURCE-STATUS-SUMMARY-20261028 — Optional Host source status batch
+
+- Status: Review (2026-10-28; Trench e55f2f4/40ab814 source and API-only production acceptance complete; maintainer integration pending).
+- Human owner Luke Ding; executor Codex; branch codex/source-status-summary-20261028
+  in paired cloud-plugin-plan-01 worktrees.
+- Owned paths: this card, PROGRESS.md, WORKLOG.md and private artifacts; Trench
+  scope is recorded in its matching task card (three API modules, focused test/doc).
+- User authorizes minimal optional status summary and no-model saved-result/DB
+  verification followed by production API update. No model/search, original Run
+  replay, history changes, Worker/Search/MCP restart or push.

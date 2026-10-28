@@ -17136,3 +17136,22 @@ Exactly one separately authorized normal-page Run completed with high/Flash/v2:
 0sandbox preparation for all history reads. Admission→terminal44.896s;2994char
 answer restored on refresh,114events/6models unchanged. Original failedRun
 preserved and Worker/Search/MCP unchanged. No further sample. See focused doc.
+
+
+## 2026-10-28 SOURCE-STATUS-SUMMARY-20261028
+
+User-authorized optional Host source summary completed in paired Trench branch
+codex/source-status-summary-20261028 (source e55f2f4, acceptance40ab814). No Cloud
+runtime/history/model/search changes. Typed include_status opt-in, max32/page,
+explicit user/operator/effective state, existing batch aggregate with750ms SQL/1s
+observation deadline and unknown fallback isolated from caller transaction.
+49focused no-model regressions/Ruff; exact-image saved11source outputs match;
+real PG one batch80.33ms/8driver statements/1aggregate, timeout756.27ms preserves
+caller and pool. Normal signed API summary200/10sources/100.69ms; invalidscope/
+signature rejected403, invalidargument400. Only idle Trench API replaced with
+image40de040f0619, original env/security/schema preserved. Worker/Search/TLS/egress/
+MCP/cooldown unchanged. All Turn requests/status/answers unchanged; protected
+oldfailed+successful Tasks137events/7models/0search hash unchanged. No newmodel/
+search/Run/replay or measured whole-Run latency improvement claim. No GitHub push.
+Details: paired Trench docs/SOURCE_STATUS_SUMMARY_2026-10-28.md; private server
+evidence/rollback /home/ubuntu/releases/20261028-source-status-summary/.
