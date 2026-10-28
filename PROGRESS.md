@@ -1,4 +1,4 @@
-## 2026-10-29 AG-UI G3B actual HTTP transport (reviewed)
+## 2026-10-29 AG-UI G3B actual HTTP transport (published f9b708ef)
 
 Native admit-first official HttpAgent and signed reliable GET are composed,
 with shared producer/state API+Worker bindings and six bounded queue versions.
@@ -18,7 +18,8 @@ conformance31 tags/7 golden/actual native Worker->authHTTP->official SDK passed
 (1 admission/1 model/0 observation writes). make check1449 types/30eval passed.
 Full verify242 included package/framework/browser before final reset regressions;
 latest244/check cover that delta. Final whole-plan gates remain G7. No profile
-activation, registry publish or deployment. G4 UI unlock follows publication.
+activation, registry publish or deployment. Source f9b708ef is on origin/cloud-agent;
+G4 shared UI is Ready. Primary local cloud-agent remains untouched.
 
 ## 2026-10-29 AG-UI G3A bounded ingress (published 462b812a)
 

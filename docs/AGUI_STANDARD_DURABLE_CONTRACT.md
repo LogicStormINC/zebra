@@ -395,7 +395,7 @@ CUSTOM、未知事件丢弃及一条chunk展开多个事件均不依赖“必有
 规格/质量审查和独立检查通过；这些证据不代表实际HttpAgent请求已经背压，
 也不替代G3B的真实输入到Worker、HTTP观察及公共Run切片门禁。
 
-## 13. G3B 实际 HTTP 适配（审查候选，未激活）
+## 13. G3B 实际 HTTP 适配（已审查，未激活）
 
 这里固定第10节的原生准入后观察路线，不声称任意客户端随机runId可直接准入。
 现有会话以受控原生MESSAGE接收实际用户文本；仅CONVERSATION的awaiting_turn

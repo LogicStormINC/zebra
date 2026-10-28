@@ -1,6 +1,6 @@
 ## AGUI-G4-SHARED-UI-20261029 — Public views and scoped React interaction
 
-- Status: Locked (reviewed G3B publication required).
+- Status: Ready (2026-10-29; reviewed G3B f9b708ef published).
 - Human owner: Luke Ding; executor: Codex; target: cloud-agent.
 - Proposed branch: codex/agui-g4-shared-ui-20261029; reuse clean isolated
   trench-spin-sync-20261028/zebra-agent worktree after G3B publication.
@@ -64,7 +64,7 @@
 
 ## AGUI-G3B-HTTP-20261029 — Actual standard HTTP and reliable bridge
 
-- Status: Review (2026-10-29; final spec/fixture and quality PASS; source publication next).
+- Status: Done (2026-10-29; spec/fixture and quality PASS; f9b708ef published to origin/cloud-agent).
 - Human owner: Luke Ding; executor: Codex; target: cloud-agent.
 - Branch: codex/agui-g3b-native-http-20261029; reuse isolated clean
   trench-spin-sync-20261028/zebra-agent worktree after G3A review/publication.
@@ -111,7 +111,7 @@
   precede official application, standard stream needs no private envelopes;
   native SQLite/PG tail/coordinate authority checks; real HTTP gate without skips;
   legacy golden and applicable SDK/API gates; independent spec then quality review.
-  Overall G3 remains incomplete until this card passes. G4/G5 remain dependent.
+  G3 transport acceptance passed; G4 is Ready, G5 awaits G4.
 
 ## AGUI-G2-PUBLIC-PROJECTION-20261029 — Standard public event semantics
 

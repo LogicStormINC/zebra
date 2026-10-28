@@ -1,3 +1,12 @@
+## 2026-10-29 G3B source publication / G4 unlock
+
+Reviewed G3B source f9b708ef pushed directly to origin/cloud-agent. Final source,
+fixture spec and independent quality PASS; G4 is Ready. No npm version/tgz or
+Trench change in G3B; these remain G6/T1. Source profiles remain disabled by
+default and no production run/model/deployment was performed. Primary local
+cloud-agent89e4afed and10 protected dirty entries preserved; archive branch/tag
+unchanged. Continue in a fresh focused G4 branch from this published receipt.
+
 ## 2026-10-29 G3B reviewed source candidate
 
 Base aace8c80; native admit-first transport complete within G3 scope. Source
