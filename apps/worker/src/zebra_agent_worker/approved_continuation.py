@@ -7,7 +7,10 @@ from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import ModelCompletion
 from agent_core.domain.tools import ToolCall
 
-from zebra_agent_worker.continuation_boundaries import has_later_attempt_result_boundary
+from zebra_agent_worker.continuation_boundaries import (
+    current_continuation_events,
+    has_later_attempt_result_boundary,
+)
 
 
 class ApprovedContinuationError(ValueError):
@@ -31,6 +34,7 @@ class ApprovedContinuation:
 def recover_approved_continuation(
     events: list[SessionEvent],
 ) -> ApprovedContinuation | None:
+    events = current_continuation_events(events)
     requested: SessionEvent | None = None
     granted: SessionEvent | None = None
     execution_started = False

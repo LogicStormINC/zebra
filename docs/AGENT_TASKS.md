@@ -1,3 +1,10 @@
+# CLOUD-CONTINUATION-EPOCHS-20261028 — Stale recovery isolation
+- Status: Review;159 focused,325 native/33 SDK and118 native sibling tests passed, zero skips; make check passed. Local integration pending. Created Ready and claimed before code on integrated34a81a31,2026-10-28.
+- Human owner: Luke Ding; executor Codex; branch codex/cloud-continuation-epochs-20261028; worktree cloud-plugin-plan-01/zebra-agent; target cloud-agent.
+- Owned paths: apps/worker/src/zebra_agent_worker/{continuation_boundaries,approved_continuation,clarification_continuation,child_wakeup_continuation}.py; tests/worker/test_continuation_epochs.py; tests/conformance/agui_long_session/run.sh; docs/CLOUD_RELIABILITY_2026-10-28.md; docs/AGENT_TASKS.md; PROGRESS.md; WORKLOG.md.
+- Scope: investigate and minimally isolate stale approval/clarification/child continuations across newer control and Turn boundaries, including receipts arriving before attempt-start markers. Preserve current valid continuation and uncertain execution protections; no new abstraction, schema or retry policy.
+- Acceptance: reproduce old behavior offline, focused combination/long-history and existing continuation tests, native PostgreSQL/Redis/HTTP SDK gate and make check. Local integration only. No model/search, original Run changes, deployment, Search/MCP restart, permission/lease/cancel bypass or high/v2 changes.
+
 # CLOUD-RELIABILITY-BOUNDARIES-20261028 — Post-delivery, receipt and repair boundaries
 - Status: Done;8055ce7d fast-forward integrated into local cloud-agent; final native235/SDK33 zero skips, full suite11267/3092 conditional skips, make check passed; no push/deployment. Created Ready on integrated2d913e52 and claimed before code,2026-10-28.
 - Human owner: Luke Ding; executor Codex; branch codex/cloud-reliability-boundaries-20261028; worktree cloud-plugin-plan-01/zebra-agent; target cloud-agent authorized.

@@ -159,3 +159,40 @@ needed), preserving previous commits. Closed/unknown transport outcomes still
 propagate without write replay. A real PostgreSQL test inspects the timeout at the
 roundtrip boundary and injects a real server cancellation before the second commit, and existing slow-header tests prove the 100ms work limit and
 partial-header rollback are retained. Canonical writer lock_timeout stays 50ms.
+
+
+## Continuation epochs: CLOUD-CONTINUATION-EPOCHS-20261028
+
+The next audit reproduced a second stale-recovery window: approval, clarification
+and child wakeup selection used attempt/tool-start markers to establish consumption.
+If a receipt arrived but execution had not started before a newer pause or closed
+Turn, the old request/receipt remained recoverable. Across 120 historical Turns,
+old and current continuation types could conflict or select the old conversation.
+The production entry is recover_active_continuations in the shared Worker, not a
+Trench/ERP adapter. This is a deterministic risk reproduction, not attribution of
+an uninspected production Run to this cause.
+
+The existing continuation_boundaries module now limits all three selectors to the
+current control/Turn epoch. Completed/failed/cancelled Turns or Sessions, a new user
+message, explicit stop/cancel/suspend, rejected approval and external-effect wait
+retire preceding continuation candidates even without an attempt-start marker.
+An ordinary own SESSION_RESUMED does not cut the epoch; waiting_children is kept
+only for child recovery. Persisted source events and delivered tool results remain
+intact. Existing current approval fingerprint, exact child results, uncertain
+execution, counters, verification metadata, authority/lease/cancel guards remain.
+There is no automatic retry, forced delegation, model or business configuration change.
+
+Offline old-code reproduction: 85 failures/5 passes after correcting the test
+constructor; new shared selector passes all 90 cases, including both receipt/control
+orderings and a 120-Turn cross-kind matrix. Focused continuation/previous boundary
+regressions:159 passed. Native PostgreSQL/Redis plus real HTTP/public SDK gate:
+325 and33 passed respectively, zero skips. make check passed. Additional database
+recovery acceptance and local integration are recorded in WORKLOG.md.
+
+Initial stability means the known shared failure boundaries have deterministic
+regressions and native acceptance: post-answer close, receipt/control isolation,
+bounded projection concurrency, large-history recovery, typed interruptions and
+Run-scoped SDK reconstruction. It does not mean production upgraded, database HA,
+zero Provider failures, unlimited conversation size or zero downtime. The previous
+full baseline was11267 passed/3092 conditional skips; this small follow-up uses
+focused/native coverage rather than repeating unrelated full-suite checks.

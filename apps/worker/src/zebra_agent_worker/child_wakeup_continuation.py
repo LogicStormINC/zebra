@@ -23,7 +23,10 @@ from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.tools import ToolCall
 from agent_core.harness.sequential_support import executed_action_fingerprints
 
-from zebra_agent_worker.continuation_boundaries import has_later_attempt_result_boundary
+from zebra_agent_worker.continuation_boundaries import (
+    current_continuation_events,
+    has_later_attempt_result_boundary,
+)
 
 
 class ChildWakeupContinuationError(ValueError):
@@ -62,6 +65,7 @@ def recover_child_wakeup_continuation(
     *,
     verifier: ChildResultVerifier | None = None,
 ) -> ChildWakeupContinuation | None:
+    events = current_continuation_events(events, waiting_children=True)
     delegated_indexes = [
         index
         for index, event in enumerate(events)

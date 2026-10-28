@@ -6,7 +6,10 @@ from agent_core.domain.identifiers import ToolCallId
 from agent_core.domain.messages import SessionMessage
 from agent_core.domain.tools import ToolCall
 
-from zebra_agent_worker.continuation_boundaries import has_later_attempt_result_boundary
+from zebra_agent_worker.continuation_boundaries import (
+    current_continuation_events,
+    has_later_attempt_result_boundary,
+)
 
 
 class ClarificationContinuationError(ValueError):
@@ -27,6 +30,7 @@ class ClarificationContinuation:
 def recover_clarification_continuation(
     events: list[SessionEvent],
 ) -> ClarificationContinuation | None:
+    events = current_continuation_events(events)
     requested: SessionEvent | None = None
     responded: SessionEvent | None = None
     continuation_started_index: int | None = None

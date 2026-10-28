@@ -1,3 +1,14 @@
+## 2026-10-28 Continuation epoch reliability closeout
+
+CLOUD-CONTINUATION-EPOCHS-20261028 scopes approval, clarification and child
+continuations to the current control/Turn epoch, including receipt-before-start
+crash windows. The old path reproduced85 failures; new90-case matrix passes.
+159 focused,325 native PostgreSQL/Redis and33 real HTTP/SDK checks pass;118
+sibling recovery checks also pass with isolated PostgreSQL, zero skipped.
+make check passed. Known shared runtime boundaries are initially stable under
+these no-model gates; production deployment/failover/SLO remains unverified.
+Local cloud-agent integration pending; no original Run, model/search or service changes.
+
 ## 2026-10-28 Cloud reliability boundary follow-up
 
 CLOUD-RELIABILITY-BOUNDARIES-20261028 fixes the post-answer storage suspension

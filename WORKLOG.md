@@ -1,3 +1,37 @@
+## 2026-10-28 — CLOUD-CONTINUATION-EPOCHS-20261028
+
+Continue investigation until evidence-backed initial stability. Reused clean
+cloud-plugin-plan-01 worktree and claimed one task/branch before implementation;
+primary cloud-agent ten dirty file hashes/modes preserved.
+
+Root cause: approval/clarification/child receipts with no execution-start marker
+remained active after newer pause/terminal/Turn boundaries. New-Turn recovery could
+reuse prior conversation or conflict with another continuation kind. Shared
+continuation_boundaries now scopes all three real callers, retaining current
+own resume/waiting_children, fingerprint/child verification, counters and metadata.
+No original event rewrite, execution retry or new model/search call.
+
+Validation evidence: .artifacts/cloud-continuation-epochs-20261028/.
+- New test constructor was corrected before measuring baseline; old production
+  code then failed85/passed5 (red.txt). Fixed90-case matrix includes both receipt
+  orderings and120 historical Turns across3x3 continuation kinds.
+- .venv/bin/python -m pytest tests/worker/test_continuation_epochs.py plus existing
+  approved/clarification/child/reliability-boundary tests:159 passed (focused.txt).
+- AGUI_EVIDENCE_DIR=.artifacts/cloud-continuation-epochs-20261028/native bash
+  tests/conformance/agui_long_session/run.sh:325 native PostgreSQL/Redis plus33
+  actual HTTP/public SDK, zero failures/skips; owned containers removed by trap.
+- Existing completed-approval, approved-batch, verification, client-effect,
+  rejected-client, close/completion, bounded/session recovery, loop and Provider
+  continuation checks initially100 passed/18 PG skips. Reran the same118 checks
+  with fresh isolated localhost header_scratch PostgreSQL:118 passed/zero skips
+  (siblings-native.txt); owned tmpfs container/volume removed by trap.
+- make check passed (check.txt); git diff --check passed. Prior full baseline
+ 11267passed/3092 conditional skips not rerun for this bounded selector change.
+
+Initial stability is limited to validated shared runtime boundaries. No production
+upgrade, SLO/failover claim, ERP runtime edits, provider configuration, original Run
+or Search/MCP operation. Local cloud-agent integration pending; no push/deploy.
+
 ## 2026-10-28 — CLOUD-RELIABILITY-BOUNDARIES-20261028
 
 User authorized three minimal shared repairs and local cloud-agent integration;
