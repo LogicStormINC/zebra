@@ -35995,3 +35995,22 @@ these three shared fixture mismatches once to run actual safety paths.
 AGUI-LONG-SESSION ownership addendum: tests/conformance/agui_long_session/run.sh
 reuses existing native and paired Host/browser checks as one isolated repeatable gate.
 No new test framework, dependency, persistent service or production resource.
+
+## AGUI-COLD-RECOVERY-20261028
+- Status: Review; claimed Ready before implementation;397 core checks and idle API rollout passed, local integration pending. Human owner Luke Ding / Codex.
+- Branch codex/agui-cold-recovery-20261028; paired cloud-plugin-plan-01 worktrees.
+- Dependencies: accepted local AGUI-LONG-SESSION baseline; user authorizes this repair.
+- Owned Trench: trench_ai_turn_dispatcher.py, trench_ai_zebra_runtime.py,
+  trench_ai_zebra_stream_v2.py, trench_ai_zebra_observation.py, trench_ai_turn_content.py,
+  trench_ai_turn_store.py (shared projection call only); tests/api/test_trench_ai_long_session*.py,
+  affected focused observation assertions; task registry, worklog/progress and AGUI report.
+- Owned Zebra: existing tests/conformance/agui_long_session/run.sh and saved-wire test
+  only as required; registry, WORKLOG/PROGRESS, AGUI report, private deployment evidence.
+- Scope: cold observer reconstruction, complete/partial terminal, stable delivery union,
+  recovery epoch vs provisional reset. Native no-model tests then idle Trench API-only
+  rollout. No original Run replay/decision, no model/search or Search/MCP restart.
+
+AGUI-COLD-RECOVERY ownership addendum before extraction: new Trench
+trench_ai_turn_projection.py holds existing projection/terminal/serialization
+functions moved unchanged from the already oversized turn_store; store remains
+the compatibility entry point. Required file-size split, no new abstraction/schema.

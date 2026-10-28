@@ -1,3 +1,12 @@
+# Latest repair: AG-UI cold observation recovery (2026-10-28)
+
+AGUI-COLD-RECOVERY-20261028: cold same-Run fact replay restores authoritative answer,
+partial assessment and delivery context; reset scopes and stable file/media unions
+corrected.397 core/63 overlapping focused no-model checks pass. Idle Trench API-only
+production rollout53fc3ba0; original Turn data, Worker/Search/MCP preserved. No model
+or search calls. Local review branch pending integration; details in
+`docs/AGUI_LONG_SESSION_2026-10-28.md`.
+
 # Latest production repair: service-tool sandbox dependency (2026-10-28)
 
 CLOUD-RUNTIME-READINESS-20261028. Successful model response was followed by

@@ -205,3 +205,53 @@ Worker、Search、Search TLS、Yahoo 出口保持原进程；没有重启 MCP。
 `probe.py` 复用上一轮保存的真实 v2 编码帧；第二脚本使用标准工具/恢复记录形状。
 使用现有 Trench venv 与 tests/api、services/api/src、packages/core/src 等既有 PYTHONPATH。
 所有数据库均为 TemporaryDirectory 中一次性 SQLite；没有外部执行请求。
+
+## 修复与上线：AGUI-COLD-RECOVERY-20261028
+
+本节取代前一节的“未实施”状态；此前隔离审计证据保留。
+
+- 冷观察恢复进入共享 Runtime 时标记 full_recovery；observer 明确忽略旧后缀游标，
+  对同一 Run GET 完整权威事实。已有观察器内部热重连仍保留游标、连接和组装状态。
+  不重新 POST 执行命令；新鲜授权、绑定续期、取消和租约检查保持。
+- recovery_start 同步重建 decoder 与 mapper，避免旧分片去重吞掉重放前缀，以及
+  模型用量/工具汇总在同一次完整重放中重复累计。
+- 普通 provisional reset 仅清理草稿及其去重记录；保留 canonical 分片、确认正文、
+  已接收 canonical 游标冲突检测。完整恢复才清理整套组装状态。
+- 共享 SQL 投影按 tool_call_id/part id 合并交付集合，重放中的局部集合不会删除
+  先前文件/媒体入口；相同 ID 更新、不重复追加。先保存原始输入事件，再生成合并
+  展示投影，原始证据不改写。旧无 ID 回执保留。
+- 分片包裹的 RUN_ERROR/RUN_FINISHED 按解码后类型结束观察，避免额外 GET。
+- 原 turn_store 已735行：原样迁出投影/终态/序列化至279行的专用模块，store降至
+  500行并保留既有导入入口。8个迁移辅助函数 AST 与原实现相同，无新依赖/表结构。
+
+### 验证
+
+修复前新增6个检查全部失败；修复后核心门禁397项通过，零跳过：
+Cloud75 + Host126 + frontend196。另补充63项授权绑定/运行时/投影专项通过，
+与核心门禁部分重叠，不相加作为独立用例总数；包含分片终态不重连检查。
+最后新增的终态检查由原门禁通配符自动纳入以后运行。
+
+冷恢复检查使用保存的真实 Cloud encoder 帧、真实loopback HTTP/httpx、实际
+Runtime/mapper/dispatcher和原生PostgreSQL/SQLite。仅执行准入/身份依赖由隔离
+fixture替代；原执行不会被触发。1020000字节正文恢复后SHA256一致；完成/partial
+各保持准确状态；只增加原终态一条事实，无重复旧事实。SQL原始工具回执未被合并
+展示内容改写。完整重放用量7保持7，工具结果只出现一次。
+
+既有1000Turn/20000事件原生历史门禁和浏览器长历史检查继续通过；浏览器API仍为
+fixture，不能作为新的线上模型/工具执行验收。正文/分片/历史缓存预算未放宽。
+核心证据：Zebra `.artifacts/agui-cold-recovery-20261028/gate/`；补充与红绿证据：
+配对Trench `.artifacts/agui-cold-recovery-20261028/`。
+
+### 上线
+
+只替换空闲 Trench API，镜像 `trench-api:agui-cold-recovery-20261028`，
+image ID `sha256:53fc3ba0d51629cdd5455b9e84a262c3782a13f0dfdced3b0493dbb71fdc00d6`。
+原配置、挂载、安全设置及schema `d3e4f5a6b7c8`保持。断网候选镜像检查和已运行
+容器中的纯本地检查均通过；启动后有界日志没有Traceback/ERROR/ImportError。
+所有Turn的run/status/answer/request/metadata/cursor/version联合哈希保持一致，
+Worker及Search/TLS/egress等受保护服务进程不变，无MCP重启。
+没有新增模型/搜索请求，没有批准/拒绝或重跑原Run，没有改写旧失败/partial状态。
+发布证据/原镜像回滚基线：`/home/ubuntu/releases/20261028-agui-cold-recovery/`。
+
+边界：冷恢复会额外重读当前Run的权威事实；它不是零SQL成本。热重连成本不变。
+本轮不宣称解决所有外部Provider/网络故障，也没有进行新的真实模型Run验收。

@@ -17209,3 +17209,11 @@ recovery path succeeds in the isolated contrast; production/source unchanged.
 186 production Turns/0 active/0 missing-commit observers in bounded read-only query.
 No model/search/Run retry, approval or service restart. Findings and minimal next
 slice in docs/AGUI_LONG_SESSION_2026-10-28.md; implementation remains outstanding.
+
+2026-10-28 AGUI-COLD-RECOVERY: fixed cold mapper prefix reconstruction, partial
+terminal classification, stable file/media delivery union and recovery epoch
+dedup.6red checks -> green;397 no-skip core checks plus63 overlapping focused
+checks, realHTTP/PG/SQLite near1MiB cold recovery; frontend long-history retained.
+Only idle production Trench API updated to53fc3ba0; exactTurn hash/config/schema
+and other product processes unchanged. No model/search/approval/Run retry.
+Report docs/AGUI_LONG_SESSION_2026-10-28.md; local source integration pending.
