@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useId } from "react";
 import type { ApprovalRequestWire, ClarificationRequestWire } from "../hitl/index.ts";
 
 export interface AgentApprovalProps {
@@ -12,11 +12,12 @@ export interface AgentApprovalProps {
 }
 
 export function AgentApproval(props: AgentApprovalProps) {
+  const id = useId();
   const labels = { approve: "Approve", reject: "Reject", requested: "Approval required", ...props.labels };
   return (
-    <section aria-labelledby={`approval-${props.approval.approval_id}`} className={`zebra-agent-interrupt ${props.className ?? ""}`.trim()}>
+    <section aria-labelledby={`approval-${id}`} className={`zebra-agent-interrupt ${props.className ?? ""}`.trim()}>
       <span className="zebra-agent-interrupt__eyebrow">{labels.requested}</span>
-      <h3 id={`approval-${props.approval.approval_id}`}>{props.approval.tool_name}</h3>
+      <h3 id={`approval-${id}`}>{props.approval.tool_name}</h3>
       <p>{props.approval.reason}</p>
       <div className="zebra-agent-interrupt__actions">
         <button disabled={props.disabled} onClick={() => void props.onDecision("reject")} type="button">{labels.reject}</button>
@@ -35,11 +36,12 @@ export interface AgentClarificationProps {
 }
 
 export function AgentClarification(props: AgentClarificationProps) {
+  const id = useId();
   const labels = { requested: "Input required", ...props.labels };
   return (
-    <section aria-labelledby={`clarification-${props.clarification.clarification_id}`} className={`zebra-agent-interrupt ${props.className ?? ""}`.trim()}>
+    <section aria-labelledby={`clarification-${id}`} className={`zebra-agent-interrupt ${props.className ?? ""}`.trim()}>
       <span className="zebra-agent-interrupt__eyebrow">{labels.requested}</span>
-      <h3 id={`clarification-${props.clarification.clarification_id}`}>{props.clarification.question}</h3>
+      <h3 id={`clarification-${id}`}>{props.clarification.question}</h3>
       <div className="zebra-agent-interrupt__choices">
         {props.clarification.choices.map((choice) => (
           <button disabled={props.disabled} key={choice} onClick={() => void props.onRespond(choice)} type="button">{choice}</button>

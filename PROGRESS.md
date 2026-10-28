@@ -1,3 +1,21 @@
+## 2026-10-29 AG-UI G4 shared interaction views (reviewed candidate)
+
+Official applied documents now feed scoped display indexes and existing React
+widgets. Token updates notify their own entities; settlement/order changes refresh
+structural snapshots. Actual tool/plan/child/delivery facts remain distinct from
+connection and local drafts. Typed trusted display checkpoints preserve public
+custom media/commit hints on cold restore without authority or effects. Complete
+interrupt sets are local-only until G5. Old components, media controls and default
+profile behavior remain compatible; no new external dependency or version/tgz.
+SPEC and QUALITY passed after deterministic fixes for snapshot replacement/order,
+ID collisions, stale tool results, provisional user labeling, false paused terminal,
+and actual HTTP duplicate/recorded delayed completion announcements. Final SDK273
+zero skips, check/package and root make check1449 types/30eval passed. Independent
+SPEC29 and QUALITY53 passed. Earlier framework/browser verify predates narrow
+review fixes; final whole-plan browser/package gates remain G6/T1/G7. No production
+activation, registry publish, original Run/model replay or deployment. Source
+publication receipt follows; primary local89e4afed/dirty work remains untouched.
+
 ## 2026-10-29 AG-UI G3B actual HTTP transport (published f9b708ef)
 
 Native admit-first official HttpAgent and signed reliable GET are composed,

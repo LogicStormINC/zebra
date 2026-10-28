@@ -33,6 +33,8 @@ export interface AgentConversationTimelineProps {
   runStatusLabels?: AgentRunStatusProps["labels"];
   scrollKey?: string;
   turns: readonly AgentConversationTurn[];
+  /** Scoped entity bridge; the supplied structural item retains its stable timeline slot. */
+  renderItem?: ((item: AgentConversationItem) => ReactNode) | undefined;
 }
 
 export function AgentConversationTimeline(props: AgentConversationTimelineProps) {
@@ -64,7 +66,7 @@ export function AgentConversationTimeline(props: AgentConversationTimelineProps)
                 {groupWorkItems(items, props.workMessageIds).flatMap((group) => {
                   const content = group.items.map((item) => (
                   <React.Fragment key={item.kind === "message" ? `message:${item.message.id}` : `${item.kind}:${item.id}`}>
-                    {item.kind === "message" ? (
+                    {props.renderItem ? props.renderItem(item) : item.kind === "message" ? (
                       <ol className="zebra-agent-message-list zebra-agent-turn__messages">
                         <AgentMessageItem
                           contentRenderer={props.contentRenderer}

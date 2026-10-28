@@ -1,3 +1,5 @@
+export type { AgentActivityDetail, AgentAgUiCheckpoint, AgentAgUiFacts, AgentAgUiBinding, AgentAgUiStructure, AgentAgUiEntity, AgentInterruptResponse, AgentInterruptView } from './agui.js';
+import type { AgentActivityDetail } from './agui.js';
 /** Host-neutral Agent UI contracts. Components may depend on these; Host adapters implement them. */
 
 export type AgentCapabilityMode = "research" | "general" | "coding";
@@ -64,6 +66,8 @@ export type AgentRunState =
     });
 
 export interface AgentDeliveryAssessment {
+  /** True when an adapter bounded the display preview; source facts remain at the Host. */
+  previewTruncated?: boolean;
   status: "complete" | "partial" | "blocked";
   taskType?: AgentTaskType;
   goal?: string;
@@ -75,6 +79,7 @@ export interface AgentDeliveryAssessment {
 }
 
 export interface AgentActivity {
+  detail?: AgentActivityDetail;
   activityId: string;
   kind: AgentActivityKind;
   status: AgentActivityStatus;

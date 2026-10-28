@@ -449,3 +449,43 @@ cursor同样等待持久化。整段重播与活动Run冲突时明确失败，�
 `ZEBRA_AGUI_STANDARD_PROFILES_ENABLED`默认false。API和Worker使用同一显式
 projector/state工厂；启用配置组合两旧四新共六个有界版本。该候选不启用生产
 profile，不发布registry或替换Trench包；完整frontend tool/resume仍属G5。
+
+
+## 14. G4 shared display view and local response drafts
+
+`AgUiViewStore` indexes official applied messages/state with verified public
+lifecycle hints. It never applies AG-UI patches or grants execution authority.
+Bind one instance to an exact thread/public Run. `onEvent` takes normalized G3
+facts; HTTP `onApplied` supplies the official applied document. Recorded
+`onSnapshot` also works: END settles the already-applied body immediately even
+when the official reducer emits no mutation. END never implies commitment.
+
+Entity subscriptions retain unrelated rows/media. Structural snapshots change
+on membership/order and settled display revisions; streaming tokens remain
+entity-local. Settlement rebuilds a bounded Host timeline in O(n), not per token.
+Synthetic message/tool/activity/child/media/result keys have separate namespaces.
+Replacement follows official order and removes removed tool execution/results;
+known continuing END and public media/commit hints remain scoped to their source.
+Tool arguments, execution and result are separate; retrospective child/Step facts
+never fabricate elapsed time, live execution or success. Missing facts stay unknown.
+
+Existing Artifact image/video/external-video/chart/file controls are reused.
+Delivery assessment explanations are typed, escaped and visibly bounded; no
+recovery action is invented. RAW, reasoning, encrypted and system content never
+automatically become public text. Unsupported critical inputs/results stay visible.
+The existing central announcement pipeline handles completion once; history
+restore is quiet and token updates do not clone the full timeline for announcements.
+
+A trusted Host may pair the official document with `AgentAgUiCheckpoint` v1.
+It is display-only, exact-binding, at most4096 entities/IDs and2MiB UTF-8; it
+contains public entities/facts and END/commit hints, no credentials or effect
+execution. It is not a permissive raw-JSON hydration API. Without this ledger,
+custom commitment/media facts absent from the official snapshot remain unknown.
+Export it at bounded persistence/paging boundaries, not on every streaming token.
+
+Interrupt choices are local drafts. Full-set preparation rejects missing,
+duplicate, unknown/old-Run, expired resolved and invalid/non-null JSON responses.
+Expired inputs require explicit cancellation. Schema does not grant edit or
+command permission. Native decision/effect submission remains G5; versions,
+installed tarballs and whole-plan browser/performance acceptance remain G6/T1/G7.
+Default profile activation and the legacy producer are unchanged.

@@ -1,3 +1,23 @@
+## 2026-10-29 G4 reviewed shared UI candidate
+
+Basea0279254, isolated codex/agui-g4-shared-ui-20261029. Existing official applied
+messages/state + scoped display hints feed reusable contracts/widgets; no new
+AG-UI reducer or action authority. Entity selectors, canonical snapshot order,
+separate synthetic IDs, factual tool/plan/child states, typed assessment previews,
+complete local interrupt drafts, trusted bounded v1 display checkpoint, five
+Artifact media kinds and one existing completion announcement pipeline.
+SPEC first5 gaps and related namespace/pre-END cases reproduced RED then GREEN;
+QUALITY initial3 and final2 completion gaps also reproduced through actual official
+HTTP/recorded React paths. Final SPEC PASS29 independent; QUALITY PASS53 independent.
+Frozen runtime final focused29, SDK273/0, check/package and root make check
+1449types/30eval passed. Logs /tmp/g4-announcement-{focused,check,test,package,
+make-check}.log; independent /tmp/g4-independent-quality-final.log. Earlier complete
+framework/browser verify covered the pre-review candidate only; G6/G7 repeat final.
+No source commit by delegated implementer. No npm version/tgz, activation, Trench
+mutation, registry publication or deployment. Continue G5 native interactions after
+source publication; preserve primary89e4afed and10 unrelated dirty entries. Original
+business Runs/model/tools were not replayed.
+
 ## 2026-10-29 G3B source publication / G4 unlock
 
 Reviewed G3B source f9b708ef pushed directly to origin/cloud-agent. Final source,

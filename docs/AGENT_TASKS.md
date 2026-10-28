@@ -1,14 +1,20 @@
 ## AGUI-G4-SHARED-UI-20261029 — Public views and scoped React interaction
 
-- Status: Ready (2026-10-29; reviewed G3B f9b708ef published).
+- Status: Review (2026-10-29; final SPEC and QUALITY PASS, awaiting publication).
 - Human owner: Luke Ding; executor: Codex; target: cloud-agent.
-- Proposed branch: codex/agui-g4-shared-ui-20261029; reuse clean isolated
+- Branch: codex/agui-g4-shared-ui-20261029; reuse clean isolated
   trench-spin-sync-20261028/zebra-agent worktree after G3B publication.
+- Exact base/claim: a0279254 (origin/cloud-agent, after reviewed f9b708ef).
 - Owned paths: ui-contracts/src/index.ts and focused agui.ts types if necessary;
   client-core/src/agui_view.ts/agui_view_store.ts; React src/agui_view.ts and
   index exports; existing agent-conversation-timeline, agent-activity-group,
   agent-run-status and agent-interrupts components; focused tool/plan/subagent
   detail component files only after explicit responsibility/filename addendum.
+- Before-code owned-path addendum (2026-10-29): client-core/src/index.ts exports;
+  client-core/package.json and pnpm-lock.yaml only for the existing ui-contracts
+  workspace type dependency; React components/agent-agui-conversation.tsx for
+  the minimal scoped Host bridge into existing widgets; client-core/tests/
+  agui-view-producer.py for a controlled actual Python producer recording.
 - Existing styles.css/styles/surfaces.css may add narrow detail/a11y rules,
   not a new theme. Focused client-core/React tests, explicit SDK test collection,
   existing browser fixture if a needed behavior cannot be checked in DOM tests.
