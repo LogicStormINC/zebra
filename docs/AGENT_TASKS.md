@@ -1,3 +1,11 @@
+# CA-P5-02A — Original gate termination and non-commit proof
+- Status: Review; final make test11203 passed/3067 conditional skips, make check1443 sources/30Eval,25 focused/6 HTTP export and full cloud composition passed; Ready/claim before code2026-10-28. Human owner Luke Ding; executor Codex.
+- Branch: codex/ca-p5-02a-gate-termination from published985a369a; explicit continuation of published P5 dependencies, no main merge.
+- Dependencies: CA-P5-01/OD-P5-01B published43a954c; 404 cannot unblock a Go unknown. This prerequisite precedes executor/fleet delivery.
+- Owned paths: agent-core domain/application/ports runtime_gate_termination.py; agent-storage postgres/runtime_gate_termination*.py and runtime_gates.py, migration_catalog_tail.py; API runtime_gate_termination*.py, runtime_gates_admin.py and host_registry_management.py; config/settings.py and bundle_settings.py; matching tests/{agent_core,agent_storage,api}; docs/CA-P5-02A_gate_termination.md, docs/contracts/runtime-gate-termination-v1, docs/evidence/ca-p5-02a; README, PROGRESS, WORKLOG, task_plan and registry, phase acceptance.
+- DDD/invariants: separate explicit machine terminate/read authority; immutable termination ID + exact original raw request/hash, namespace row lock and atomic original/fence/proof. Never infer absence from404. Durable tombstone rejects delayed original; touch gate tuple to serialize preexisting repeatable-read snapshots without advancing semantic revision. Existing committed receipt preserved; no reverse effects.
+- Acceptance: real PG/HTTP/current revoke/duplicate/CAS/retention, delayed old snapshot race, unchanged baseline/local behavior and v1 contract; full two-repo make test/check. Native producer publish then Go contract/docs-only handoff; consumer disposition independently claimed next. No deploy/prod migration/Controller, mock/BFF/history/receipts/Coverage preserved. Proof is only no original gate commit, never process/Task/fleet/executor termination.
+
 # CA-P5-01 — Native deployment gate observations and admission drain
 - Status: Review; final make test11197 passed/3067 skips and make check passed;21 focused/cloud composition passed. Created Ready/claimed before code,2026-10-28. Human owner Luke Ding; executor Codex.
 - Branch: codex/ca-p5-01-runtime-gates from origin/cloud-agent0a50892d; paired published OD-P5-01A b69c1fe.

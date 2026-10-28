@@ -1,3 +1,7 @@
+# CA-P5-02A / 2026-10-28
+
+Resumed declared feature branch; process audit found no surviving tests/temporary services. Independent termination authority, exact original hash/CAS, atomic fence/proof and late old-snapshot serialization implemented; maximum raw source/envelope/retention/read-only/revoke cases passed.25 focused plus6 HTTP export checks and full termination-only cloud composition passed. Initial gate concurrency503 diagnosed with15 passing rounds and unchanged assertion; final full gates passed (11203/3067 skips,1443 typed sources/30Eval). First full run:11201 passed/3067 skips with expected migration-catalog115 assertion and one old local LeaseLost; catalog now explicitly includes116 and8 migration/Worker checks passed unchanged. Final full rerun11203 passed/3067 conditional skips; full check1443 typed sources/30Eval passed, original lease/assertion unchanged. Go initial old PG bootstrap timed out; isolated exact case passed, only exact owned orphan container/volume removed, no shared service touched. Go docs/contracts-only handoff follows Native publication. No deployment/prod migration/main integration or mock/BFF/history/receipts/Coverage/unknown replay changes.
+
 # CA-P5-01 / 2026-10-28
 Owner Luke Ding; Codex execution; branch codex/ca-p5-01-runtime-gates from0a50892d, scoped claim/design before code.
 Implemented gate journal/CAS/current approval, admission fence and Worker observations; final recovery hardening reserves open slot and rejects inherited-process observations without affecting work.

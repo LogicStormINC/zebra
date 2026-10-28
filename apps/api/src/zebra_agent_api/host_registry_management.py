@@ -88,6 +88,7 @@ def register_management_routes(
     enabled = (
         settings.runtime_management_config
         or settings.runtime_gate_config
+        or settings.runtime_gate_termination_config
         or settings.host_management_config
         or settings.bundle_management_config
         or settings.script_validation_config
@@ -98,6 +99,9 @@ def register_management_routes(
     from zebra_agent_api.runtime_gates import register_runtime_gates
 
     register_runtime_gates(app, settings, current)
+    from zebra_agent_api.runtime_gate_termination import register_runtime_gate_termination
+
+    register_runtime_gate_termination(app, settings, current)
     from zebra_agent_api.bundle_management import register_bundle_management
 
     register_bundle_management(app, settings, current)

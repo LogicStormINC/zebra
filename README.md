@@ -1,3 +1,7 @@
+## Original Runtime gate termination
+
+[CA-P5-02A public contract/proof boundary](docs/CA-P5-02A_gate_termination.md): separate machine authority, durable late-submit fence and original GET; no Task/process/fleet termination or deployment.
+
 ## CA-P5-01 — Runtime gates (verified / Review)
 
 [Contract/proof boundaries](docs/CA-P5-01_runtime_gates.md): scoped machine API, immutable original/CAS,

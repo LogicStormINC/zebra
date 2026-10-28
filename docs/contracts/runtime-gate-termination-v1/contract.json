@@ -1,0 +1,22 @@
+{
+  "contractVersion": "runtime-gate-termination/1",
+  "sourceContract": "runtime-gates/1",
+  "proofScope": "original_gate_command_only",
+  "results": [
+    "no_gate_commit",
+    "already_committed"
+  ],
+  "authority": {
+    "processStopped": false,
+    "taskCancelled": false,
+    "fleetDrained": false,
+    "activationAuthorized": false
+  },
+  "unknown": "POST termination once with durable original ID; recover termination by GET; 404 is not noncommit proof",
+  "fence": "same namespace row serializes original commit and tombstone; old snapshots fail serialization; originals retained",
+  "limits": {
+    "originalRequestBytes": 16384,
+    "bodyBytes": 65536,
+    "retainedTerminations": 128
+  }
+}

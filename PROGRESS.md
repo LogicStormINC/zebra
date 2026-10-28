@@ -1,3 +1,7 @@
+# CA-P5-02A — Original gate exclusion / verified / Review
+
+Schema116, separate scoped machine termination/read approval, immutable exact original/fence/proof, old repeatable-read snapshot exclusion and unchanged historical baseline implemented.25 focused and6 actual HTTP vector checks plus termination-only cloud app composition passed; final make test11203 passed/3067 conditional skips and make check1443 typed sources/30Eval passed. [Contract/boundary](docs/CA-P5-02A_gate_termination.md). Go handoff source pin follows producer publication; consumer disposition/fleet/executor remain independent. No deploy/production migration/main merge, history/receipts/Coverage or Controller mutation.
+
 # 2026-10-28 — CA-P5-01 Native gates verified / Review
 
 [DDD/API/proof boundaries](docs/CA-P5-01_runtime_gates.md): schema115 additive, explicit scoped machine approval,

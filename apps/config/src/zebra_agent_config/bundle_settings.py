@@ -24,6 +24,7 @@ def baseline_digest(settings: ZebraAgentSettings, key: str) -> str:
     values = asdict(settings)
     del values["model"]
     del values["runtime_bundle_config"]
+    del values["runtime_gate_termination_config"]
     del values["runtime_gate_config"]  # Transport opt-in preserves historical baselines.
     del values["bundle_management_config"]
     del values["publication_management_config"]

@@ -68,6 +68,7 @@ def test_additive_gate_setting_preserves_exact_old_baseline_algorithm():
         "script_validation_config",
         "plugin_admission_config",
         "runtime_gate_config",
+        "runtime_gate_termination_config",
     ]:
         del values[key]
     raw = json.dumps(
@@ -77,6 +78,14 @@ def test_additive_gate_setting_preserves_exact_old_baseline_algorithm():
     assert baseline_digest(original, "ab" * 32) == historical
     assert (
         baseline_digest(replace(original, runtime_gate_config="/private/new-gates.json"), "ab" * 32)
+        == historical
+    )
+
+    assert (
+        baseline_digest(
+            replace(original, runtime_gate_termination_config="/private/termination.json"),
+            "ab" * 32,
+        )
         == historical
     )
 

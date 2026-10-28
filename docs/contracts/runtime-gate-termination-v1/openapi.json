@@ -1,0 +1,513 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Original Runtime gate termination proof",
+    "version": "1"
+  },
+  "paths": {
+    "/management/v1/runtime-gate-terminations": {
+      "get": {
+        "operationId": "readOriginalGateTermination",
+        "security": [
+          {
+            "GateTerminationBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Runtime-Deployment",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Runtime-Audience",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Runtime-Product",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Runtime-Environment",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Runtime-Trust-Revision",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Runtime-Gate-Termination-Contract",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "const": "sha256:e4c73f0a55fda8d4d69ee936d6108e00a2d08c5dafe37be27cadb48162858954"
+            }
+          },
+          {
+            "name": "X-Runtime-Operation",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Original command or observation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Response"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Rejected/unavailable; no non-commit inference"
+          },
+          "401": {
+            "description": "Rejected/unavailable; no non-commit inference"
+          },
+          "403": {
+            "description": "Rejected/unavailable; no non-commit inference"
+          },
+          "404": {
+            "description": "Rejected/unavailable; no non-commit inference"
+          },
+          "405": {
+            "description": "Rejected/unavailable; no non-commit inference"
+          },
+          "409": {
+            "description": "Rejected/unavailable; no non-commit inference"
+          },
+          "429": {
+            "description": "Rejected/unavailable; no non-commit inference"
+          },
+          "503": {
+            "description": "Rejected/unavailable; no non-commit inference"
+          }
+        }
+      },
+      "post": {
+        "operationId": "terminateOriginalGate",
+        "security": [
+          {
+            "GateTerminationBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Runtime-Deployment",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Runtime-Audience",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Runtime-Product",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Runtime-Environment",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Runtime-Trust-Revision",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Runtime-Gate-Termination-Contract",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "const": "sha256:e4c73f0a55fda8d4d69ee936d6108e00a2d08c5dafe37be27cadb48162858954"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Original command or observation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Response"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Rejected/unavailable; no non-commit inference"
+          },
+          "401": {
+            "description": "Rejected/unavailable; no non-commit inference"
+          },
+          "403": {
+            "description": "Rejected/unavailable; no non-commit inference"
+          },
+          "404": {
+            "description": "Rejected/unavailable; no non-commit inference"
+          },
+          "405": {
+            "description": "Rejected/unavailable; no non-commit inference"
+          },
+          "409": {
+            "description": "Rejected/unavailable; no non-commit inference"
+          },
+          "429": {
+            "description": "Rejected/unavailable; no non-commit inference"
+          },
+          "503": {
+            "description": "Rejected/unavailable; no non-commit inference"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Command"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "GateTerminationBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "rtgstop_<43 base64url characters>"
+      }
+    },
+    "schemas": {
+      "Command": {
+        "additionalProperties": false,
+        "properties": {
+          "termination_id": {
+            "format": "uuid",
+            "title": "Termination Id",
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+          },
+          "original_request": {
+            "maxLength": 16384,
+            "minLength": 1,
+            "title": "Original Request",
+            "type": "string"
+          },
+          "expected_gate_revision": {
+            "exclusiveMaximum": 9007199254740991,
+            "minimum": 0,
+            "title": "Expected Gate Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "termination_id",
+          "original_request",
+          "expected_gate_revision"
+        ],
+        "title": "GateTerminationCommand",
+        "type": "object"
+      },
+      "GateReceipt": {
+        "additionalProperties": false,
+        "properties": {
+          "operationId": {
+            "format": "uuid",
+            "title": "Operationid",
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+          },
+          "action": {
+            "enum": [
+              "assess",
+              "drain",
+              "open"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "inputDigest": {
+            "title": "Inputdigest",
+            "type": "string"
+          },
+          "gateRevision": {
+            "exclusiveMaximum": 9007199254740992,
+            "minimum": 0,
+            "title": "Gaterevision",
+            "type": "integer"
+          },
+          "admission": {
+            "enum": [
+              "open",
+              "draining"
+            ],
+            "title": "Admission",
+            "type": "string"
+          },
+          "actor": {
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Actor",
+            "type": "string"
+          },
+          "trustRevision": {
+            "exclusiveMaximum": 9007199254740992,
+            "minimum": 1,
+            "title": "Trustrevision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "operationId",
+          "action",
+          "inputDigest",
+          "gateRevision",
+          "admission",
+          "actor",
+          "trustRevision"
+        ],
+        "title": "GateReceipt",
+        "type": "object"
+      },
+      "Receipt": {
+        "additionalProperties": false,
+        "properties": {
+          "terminationId": {
+            "format": "uuid",
+            "title": "Terminationid",
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+          },
+          "operationId": {
+            "format": "uuid",
+            "title": "Operationid",
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+          },
+          "inputDigest": {
+            "title": "Inputdigest",
+            "type": "string"
+          },
+          "originalInputDigest": {
+            "title": "Originalinputdigest",
+            "type": "string"
+          },
+          "outcome": {
+            "enum": [
+              "no_gate_commit",
+              "already_committed"
+            ],
+            "title": "Outcome",
+            "type": "string"
+          },
+          "gateRevision": {
+            "exclusiveMaximum": 9007199254740992,
+            "minimum": 0,
+            "title": "Gaterevision",
+            "type": "integer"
+          },
+          "actor": {
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Actor",
+            "type": "string"
+          },
+          "trustRevision": {
+            "exclusiveMaximum": 9007199254740992,
+            "minimum": 1,
+            "title": "Trustrevision",
+            "type": "integer"
+          },
+          "lateSubmissionFenced": {
+            "const": true,
+            "title": "Latesubmissionfenced",
+            "type": "boolean"
+          },
+          "proofScope": {
+            "const": "original_gate_command_only",
+            "title": "Proofscope",
+            "type": "string"
+          },
+          "original": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GateReceipt"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "terminationId",
+          "operationId",
+          "inputDigest",
+          "originalInputDigest",
+          "outcome",
+          "gateRevision",
+          "actor",
+          "trustRevision",
+          "lateSubmissionFenced",
+          "proofScope",
+          "original"
+        ],
+        "title": "GateTerminationReceipt",
+        "type": "object",
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "outcome": {
+                  "const": "already_committed"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "original": {
+                  "$ref": "#/components/schemas/GateReceipt"
+                }
+              }
+            },
+            "else": {
+              "properties": {
+                "original": {
+                  "type": "null"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "Scope": {
+        "additionalProperties": false,
+        "properties": {
+          "authority_issuer": {
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "Authority Issuer",
+            "type": "string"
+          },
+          "namespace_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Namespace Id",
+            "type": "string"
+          },
+          "product_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Product Id",
+            "type": "string"
+          },
+          "environment": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Environment",
+            "type": "string"
+          },
+          "target_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Target Id",
+            "type": "string"
+          },
+          "deployment_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Deployment Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "authority_issuer",
+          "namespace_id",
+          "product_id",
+          "environment",
+          "target_id",
+          "deployment_id"
+        ],
+        "title": "BundleScope",
+        "type": "object"
+      },
+      "Response": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "contractVersion": {
+            "const": "runtime-gate-termination/1"
+          },
+          "contractDigest": {
+            "const": "sha256:e4c73f0a55fda8d4d69ee936d6108e00a2d08c5dafe37be27cadb48162858954"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/Scope"
+          },
+          "trustRevision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "original": {
+            "$ref": "#/components/schemas/Receipt"
+          }
+        },
+        "required": [
+          "contractVersion",
+          "contractDigest",
+          "scope",
+          "trustRevision",
+          "original"
+        ]
+      }
+    }
+  }
+}

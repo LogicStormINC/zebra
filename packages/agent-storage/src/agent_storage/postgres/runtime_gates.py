@@ -82,6 +82,12 @@ class RuntimeGateStore:
     ) -> dict[str, Any]:
         with self._transaction() as c:
             gate = self._gate(c, update=True)
+            if c.execute(
+                "SELECT 1 FROM runtime_gate_terminations WHERE deployment_namespace=%s "
+                "AND operation_id=%s",
+                (self.scope.namespace_id, command.operation_id),
+            ).fetchone():
+                raise HostManagementConflict("ORIGINAL_GATE_TERMINATED")
             if command.action != "open" and foreign_scope(c, self.scope):
                 raise PermissionError("EXCLUSIVE_NAMESPACE_REQUIRED")
             state = GateState(revision=gate["revision"], admission=gate["mode"]).apply(command)

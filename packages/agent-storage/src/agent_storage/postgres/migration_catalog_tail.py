@@ -80,6 +80,9 @@ from agent_storage.postgres.provider_continuation_migration import PROVIDER_CONT
 from agent_storage.postgres.publication_migration import PUBLICATION_MIGRATION
 from agent_storage.postgres.research_web_profile_migration import RESEARCH_WEB_PROFILE_MIGRATION
 from agent_storage.postgres.runtime_gate_migration import RUNTIME_GATE_MIGRATION
+from agent_storage.postgres.runtime_gate_termination_migration import (
+    RUNTIME_GATE_TERMINATION_MIGRATION,
+)
 from agent_storage.postgres.session_observation_headers_migration import (
     SESSION_OBSERVATION_HEADERS_MIGRATION,
 )
@@ -190,4 +193,5 @@ LATEST_MIGRATIONS = (
     APPROVAL_RESUME_MIGRATION,
     PLUGIN_DISTRIBUTION_MIGRATION,
     RUNTIME_GATE_MIGRATION,
+    RUNTIME_GATE_TERMINATION_MIGRATION,
 )
