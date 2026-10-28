@@ -20,6 +20,144 @@
 - Owned paths addendum before edits: apps/worker/src/zebra_agent_worker/execution_composition.py and execution_tool_gateway.py; packages/agent-integrations/src/agent_integrations/{openai_compatible,deepseek_responses}.py; model transport callback regression tests. Extract existing constructor wiring because execution.py is499 lines; preserve its public signature/behavior.
 
 
+## AGUI-G2-PUBLIC-PROJECTION-20261029 — Standard public event semantics
+
+- Status: Ready (2026-10-29; not claimed).
+- Human owner: Luke Ding; executor: unassigned; target: cloud-agent.
+- Dependency: G2V 7c8962b0 reviewed and fast-forward integrated locally.
+- Proposed branch: codex/agui-g2-standard-projection-20261029; reuse the clean
+  isolated trench-spin-sync-20261028/zebra-agent worktree after this receipt.
+- Owned paths: integrations ag_ui/{profiles,projection,checkpoint_materializer}.py;
+  new standard_projection.py, standard_state.py, activity_projection.py,
+  standard_public_text.py, standard_usage.py and standard_subagents.py;
+  core/ports/task_projection_checkpoints.py only for explicitly versioned derived
+  state cells; corresponding focused integration and checkpoint tests.
+- Explicit dependency-review scope: packages/agent-integrations/pyproject.toml,
+  root pyproject.toml/uv.lock if an independent frozen-schema validator is needed;
+  existing client_effect/client_state projection tests for official typed patches;
+  tests/conformance/agui_contract/ runner/tests and dynamic runtime provenance.
+  The immutable legacy fixture/schema bytes are not owned for rewriting.
+- Governance: this registry, PROGRESS.md, WORKLOG.md, standard contract and plan.
+- Before code: audit every producer/caller and record exact base/claim. Reuse
+  official Python1.0 models only after explicit compatibility review; preserve
+  legacy wire/defaults. Expand any additional ownership before editing.
+- Scope: new-profile argument END, actual execution/plan Activity and real Step
+  transitions, trusted child attribution, public publication facts, terminal
+  outcomes and exact protocol-slice usage. Never mint publication from candidate
+  deltas, private reasoning or commentary reservations. No production activation.
+- Acceptance: frozen legacy bytes/cursors; official schema positive/negative
+  checks; full replay equals checkpoint tail; no fabricated execution/result/Step
+  success; strict coverage, continuation identity and usage slicing; targeted
+  checks/make check, independent spec then quality review. G3 remains Locked.
+
+## AGUI-G2V-PROFILE-ISOLATION-20261028 — New projection version isolation
+
+- Status: Done (2026-10-29; 7c8962b0 reviewed and fast-forward integrated into local cloud-agent; focused90/native21/tail7 and make check passed; no activation).
+- Human owner: Luke Ding; executor: Codex; target: cloud-agent.
+- Dependencies: G0 a1a46a5a and G1 9697d893 reviewed/integrated locally.
+- Proposed branch: codex/agui-g2v-profile-isolation-20261028; use an isolated
+  worktree and record the exact base/ownership before implementation.
+- Owned paths: integrations ag_ui/{contracts,task_stream,projection_state,
+  checkpoint_plan,checkpoint_keys,checkpoint_observer,checkpoint_consumer,
+  binding_resolution}.py; API ag_ui_stream.py/stream_v2_authority.py and
+  stream_v2_cursor.py; corresponding focused profile/cursor/checkpoint tests;
+  docs/AGUI_STANDARD_DURABLE_CONTRACT.md; registry/PROGRESS/WORKLOG/plan.
+- Exact base: 80570bc6; branch codex/agui-g2v-profile-isolation-20261028;
+  worktree /Users/lukeding/.codex/worktrees/trench-spin-sync-20261028/zebra-agent.
+- Before-code owned addendum: ag_ui/{profiles,checkpoint_binding,checkpoint_materializer}.py;
+  API stream_v2_http.py/stream_v2_query.py/ag_ui_checkpoint_tail.py/stream_v2_reader.py/app.py/api_status_mixin.py;
+  tests/api/test_runtime_capabilities.py (existing discovery carrier); focused integration/API tests.
+  Initial scope excluded Port/storage; following explicit extension owns derived-only migration.
+  No execution admission changes: immutable headers already bind namespace/Task/Run/anchors.
+- Review-fix ownership extension before edits (2026-10-29):
+  agent-storage/{composition,postgres_composition}.py; exact-version read factory only,
+  no GET registration/schema/repair; tests/api/test_agui_profile_isolation.py lagging tails.
+- Before-code storage ownership extension: agent-core/ports/task_projection_work.py;
+  agent-storage/{projection_work_routing,projection_work_schema,projection_work}.py;
+  postgres/{projection_work,agui_profile_routing_migration,migration_catalog_tail}.py;
+  tests/agent_storage/test_agui_profile_routing.py, test_task_projection_work.py
+  (six-version bounded fanout) and branch migration catalog test.
+  Preserve all old migration checksums; additive v115 installs profile-aware routing.
+- Before code: audit all selectors/callers; freeze public Run mapping from durable
+  continuation anchors and actual discovery carrier. Any Port/storage/admission
+  expansion must be split or explicitly owned before editing.
+- Scope: explicit profile/version selection and independent new checkpoint/cursor
+  identity; absent configuration retains legacy bytes/behavior. New profiles stay
+  unavailable until bound; no producer semantic change or production activation.
+- Validation: focused90 passed/1 owned-endpoint skip, then native PG/Redis21 passed/0 skips
+  closes that handoff case; G0 golden7 included; make check1431 types/30eval passed.
+  Disposable local PG/Redis only; full unchanged migration catalog verified by parent.
+- Acceptance: same legacy source/cursor golden unchanged; cross-profile/version/
+  scope denial, frame-boundary replay, current authority and exact binding recovery;
+  old package compatibility and native PG checkpoint evidence. G2 remains Locked
+  until G2V is reviewed and integrated; no migration/replay/deployment implied.
+
+## AGUI-G1-STANDARD-CONSUMER-20261028 — Reuse official standard event consumption
+
+- Status: Done (2026-10-28; 9697d893 fast-forward integrated into local cloud-agent; 25 new/199 full SDK tests zero skips, check/package and independent spec/quality reviews passed; no push/deployment).
+- Human owner: Luke Ding; executor: Codex; target: cloud-agent.
+- Branch/worktree: codex/agui-g1-standard-consumer-20261028; trench-spin-sync-20261028/zebra-agent.
+- Dependency: reviewed G0 a1a46a5a integrated into local cloud-agent.
+- Owned paths: sdks/typescript/packages/client-core/src/agui_events.ts;
+  sdks/typescript/packages/client-core/src/agui_reducer.ts;
+  sdks/typescript/packages/client-core/src/index.ts (additive exports only);
+  sdks/typescript/packages/client-core/tests/agui-{events,reducer}.test.ts;
+  sdks/typescript/packages/client-core/package.json; sdks/typescript/package.json;
+  sdks/typescript/pnpm-lock.yaml; docs/AGUI_STANDARD_DURABLE_CONTRACT.md;
+  docs/AGENT_TASKS.md; PROGRESS.md; WORKLOG.md; implementation plan progress.
+- Before-code validation scope extension: sdks/typescript/scripts/react-browser-matrix.mjs;
+  fixture reset must await actual empty React DOM before desktop geometry assertion.
+  Candidate WebKit read 1152px active layout before reset commit, while isolated G0
+  used identical UI source and passed. Preserve exact672px assertion; no UI changes.
+- Scope: verify/pin official JS1.0.3 reuse for standard events, chunk/enforcement/
+  state-patch/lifecycle/complete-resume handling; scoped no-network consumer API.
+  No replacement of legacy reducer/SSE/runtime or new production profile activation.
+- Acceptance: red/green negative+positive tests, explicit test-script collection,
+  full SDK check/tests/package/consumer/browser validation as applicable, G0 legacy
+  gate, make check and independent spec then quality review. No registry publish,
+  live model/tool execution, original Run mutation or deployment.
+
+## AGUI-G0-CONTRACT-20261028 — Frozen protocol and compatibility baseline
+
+- Status: Done (2026-10-28; a1a46a5a fast-forward integrated into local cloud-agent; offline7/legacy36/SDK174 and make check passed; independent spec/quality reviews passed; no push/deployment).
+- Human owner: Luke Ding; executor: Codex; target: cloud-agent.
+- Branch/worktree: codex/agui-g0-contract-20261028; trench-spin-sync-20261028/zebra-agent.
+- Dependency: approved plan d083c558, based on cloud-agent d15fe9f6.
+- Owned paths: docs/ADR-015_Zebra_Embedded与CopilotKit_AGUI边界.md;
+  docs/AGUI_STANDARD_DURABLE_CONTRACT.md; tests/conformance/agui_contract/;
+  docs/AGENT_TASKS.md; PROGRESS.md; WORKLOG.md; approved implementation plan checkboxes.
+- Scope: freeze official schema/catalog, real legacy wire/cursor goldens, versions,
+  profiles and public/internal Run mapping rules; runnable offline contract baseline.
+  No runtime/SDK dependency or execution changes; all later cards remain locked
+  until this slice is committed/reviewed against the declared target.
+- Validation: red/green contract self-check, relevant legacy projection/cursor tests,
+  Ruff/file-size/diff and independent spec/quality review; no production/model calls.
+
+## AGUI-FULL-INTERACTION-PLAN-20261028
+
+- Status: Review (2026-10-28; documentation-only Ready claim before edits; independent plan review passed).
+- Human owner: Luke Ding; executor: Codex.
+- Branch: codex/agui-full-interaction-plan-20261028; reused clean managed worktree.
+- Owned paths: docs/superpowers/plans/2026-10-28-agui-full-interaction.md;
+  docs/AGENT_TASKS.md; PROGRESS.md.
+- Scope: source-backed complete repair/optimization proposal and executable phased
+  task boundaries; implementation cards remain proposed, not claimed or unlocked.
+- No runtime/SDK code edits, dependency changes, source publication, deployment,
+  live Run mutation or automatic adoption of the proposed architecture.
+
+## TRN-MULTI-SESSION-SPIN-SYNC-20261028
+
+- Status: Ready -> In Progress -> Review (2026-10-28; claimed before edits).
+- Human owner: Luke Ding; executor: Codex.
+- Branch: codex/cloud-trench-spin-sync-20261028; isolated worktree.
+- Owned paths: docs/TRN_MULTI_SESSION_ACTIVITY.md; this registry; PROGRESS.md.
+- Scope: paired Trench fix/package receipt on user-requested cloud-agent-trench
+  and cloud-agent; no Zebra runtime/SDK changes or registry publication.
+- Current user instruction authorizes this narrow documentation-only exception
+  to frozen branch policy; the original archive tag remains unchanged.
+- Validation: paired Trench HTTP/SQLite regression, multi-session UI tests,
+  package byte identities, scoped diff and remote commit verification.
+
 # CLOUD-CONTINUATION-EPOCHS-20261028 — Stale recovery isolation
 - Status: Done;2d8edcc7 fast-forward integrated into local cloud-agent;159 focused,325 native/33 SDK and118 native sibling tests passed, zero skips; make check passed. No push/deployment. Created Ready and claimed before code on integrated34a81a31,2026-10-28.
 - Human owner: Luke Ding; executor Codex; branch codex/cloud-continuation-epochs-20261028; worktree cloud-plugin-plan-01/zebra-agent; target cloud-agent.
@@ -1127,7 +1265,8 @@
 - Existing tests/api/test_agui_stream_routes.py one-line foreign-tenant probe
   instrumentation target transfer approved before edit; assertions unchanged.
 - Exact additional CLIENT HTTP/browser checks approved before coding:
-  API stream_v2_http.py; tests/api/test_stream_v2_http.py; SDK
+  API stream_v2_http.py/stream_v2_query.py/ag_ui_checkpoint_tail.py/stream_v2_reader.py/app.py/api_status_mixin.py;
+  tests/api/test_runtime_capabilities.py (existing discovery carrier); tests/api/test_stream_v2_http.py; SDK
   package.json test-script only and scripts/stream-v2-browser.mjs.
 - Wire-only v2 keeps durable checkpoint projection/state/version unchanged;
   previously considered extra materializer paths are unused.

@@ -10,8 +10,9 @@ from agent_core.domain.events import EventType
 from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.identifiers import SessionId, TaskId
 from agent_core.ports.stream_source_head import StreamObservationReadPort
-from agent_core.ports.task_projection_checkpoints import CheckpointNotReady
-from agent_integrations.ag_ui import AgUiCursor
+from agent_core.ports.task_projection_checkpoints import CheckpointNotReady, ProjectionScope
+from agent_integrations.ag_ui.checkpoint_plan import checkpoint_version
+from agent_integrations.ag_ui.profiles import AgUiProfileRegistry, AgUiProjectionProfile
 from agent_storage.live_event_store import PostCommitPublishingEventStore
 from agent_storage.postgres.agent_tasks import PostgresAgentTaskStore
 from agent_storage.postgres.direct_control import PostgresDirectControl
@@ -32,14 +33,20 @@ from zebra_agent_api.app import ZebraAgentApi
 from zebra_agent_api.responses import ApiResponse
 from zebra_agent_api.session_streaming import _deadline, tail_session_events, tail_task_events
 from zebra_agent_api.stream_v2_authority import V2ReadAuthority, V2ReadBinding
+from zebra_agent_api.stream_v2_query import _source_query
 from zebra_agent_api.stream_v2_reader import V2StreamContext
 from zebra_agent_api.tenant_guard import task_access_response
 
 
 def _problem(status: int, code: str) -> ApiResponse:
-    return ApiResponse(status, {"code": code, "status": code, **(
-        {"retryable": True} if status == 409 and code == "projection_not_ready" else {}
-    )})
+    return ApiResponse(
+        status,
+        {
+            "code": code,
+            "status": code,
+            **({"retryable": True} if status == 409 and code == "projection_not_ready" else {}),
+        },
+    )
 
 
 def _native_raw_authority(api: ZebraAgentApi) -> V2ReadAuthority | None:
@@ -115,13 +122,24 @@ def prepare_v2(
     host: object,
     *,
     proof: StreamProofSnapshot | None = None,
+    profile: AgUiProjectionProfile | None = None,
 ) -> V2StreamContext | ApiResponse | None:
     reader = api.stream_v2_reader
+    if profile is not None and profile.profile_id == "agui-standard-1.0":
+        return None
     token = query.get("cursor") or query.get("after") or query.get("last_event_id")
-    if reader is None and (token or "").startswith("v2."):
+    if profile is not None and reader is None:
+        return _problem(409, "agui_profile_unavailable")
+    if reader is None and (token or "").startswith(("v2.", "v2p.")):
         return _problem(503, "stream_v2_unavailable")
     if host is None or getattr(api.stores, "deployment_namespace", None) is None:
-        return _problem(503, "stream_v2_unavailable") if (token or "").startswith("v2.") else None
+        if profile is not None:
+            return _problem(409, "agui_profile_unavailable")
+        return (
+            _problem(503, "stream_v2_unavailable")
+            if (token or "").startswith(("v2.", "v2p."))
+            else None
+        )
     parts = path.strip("/").split("/")
     try:
         authority = _native_raw_authority(api) if parts[0] != "agui" or proof is not None else None
@@ -159,7 +177,7 @@ def prepare_v2(
                     return _problem(503, "stream_v2_unavailable")
                 return (
                     _problem(503, "stream_v2_unavailable")
-                    if (token or "").startswith("v2.")
+                    if (token or "").startswith(("v2.", "v2p."))
                     else None
                 )
             bound = (
@@ -169,17 +187,37 @@ def prepare_v2(
                 if proof is not None
                 else reader.authority.bind(task_id, run_id, cast(HostContextEnvelope, host))
             )
+            profile_arguments: dict[str, Any] = {}
+            if profile is not None and bound is not None:
+                run = tasks.read_run_header(task_id, run_id)
+                profile_scope = ProjectionScope(
+                    bound.namespace,
+                    task_id,
+                    run.anchor.event_id if run.anchor else None,
+                    checkpoint_version(run, profile),
+                )
+                profile_arguments = {
+                    "profile": profile,
+                    "profile_scope": profile.binding_digest(profile_scope, run),
+                }
         if bound is None:
-            return _problem(400, "invalid_cursor") if (token or "").startswith("v2.") else None
+            if profile is not None:
+                return _problem(409, "agui_profile_unavailable")
+            return (
+                _problem(400, "invalid_cursor")
+                if (token or "").startswith(("v2.", "v2p."))
+                else None
+            )
         return reader.context(
             bound,
             kind=kind,
             token=token,
             full_recovery=query.get("recovery") == "full",
             session_id=parts[1] if kind == "session" else None,
+            **profile_arguments,
         )
     except CheckpointNotReady:
-        if (token or "").startswith("v2."):
+        if (token or "").startswith(("v2.", "v2p.")):
             return _problem(400, "invalid_cursor")
         # A bounded source proof distinguishes a new Task from broken executable metadata.
         try:
@@ -197,60 +235,6 @@ def prepare_v2(
         return _problem(400, "invalid_cursor")
     except Exception:
         return _problem(409, "stream_source_unavailable")
-
-
-def _source_query(
-    api: ZebraAgentApi,
-    context: V2StreamContext,
-    query: Mapping[str, str],
-    *,
-    initial_metadata: StreamObservationReadPort | None = None,
-) -> dict[str, str]:
-    result = {
-        key: value
-        for key, value in query.items()
-        if key not in {"cursor", "after", "last_event_id", "after_sequence"}
-    }
-    if context.full_recovery or context.cursor.durable is None:
-        return result
-    original = context.cursor.durable
-    if context.kind != "agui":
-        coordinate = int(original)
-        result["after_sequence"] = str(coordinate - int(context.cursor.chunk_index is not None))
-        return result
-    cursor = AgUiCursor.decode(original)
-    if context.cursor.chunk_index is not None:
-        from agent_integrations.ag_ui import AgUiRunIdentity
-        from agent_integrations.ag_ui.checkpoint_observer import AgUiCheckpointObserver
-
-        assert context.binding.authority.allowed_session_ids is not None
-        identity = AgUiRunIdentity(
-            session_id=SessionId(UUID(context.binding.authority.allowed_session_ids[0])),
-            thread_id=str(context.binding.task_id),
-            run_id=context.binding.run_id,
-        )
-        observer = AgUiCheckpointObserver(
-            api.stores.tasks, namespace=context.binding.namespace, initial_metadata=initial_metadata
-        )
-        observer.validate_cursor(
-            observer.snapshot(context.binding.task_id, identity), identity, cursor
-        )
-        if cursor.frame_index is not None and cursor.frame_index > 0:
-            cursor = cursor.model_copy(update={"frame_index": cursor.frame_index - 1})
-        else:
-            previous = (
-                initial_metadata if initial_metadata is not None else api.stores.tasks
-            ).read_event_header(context.binding.task_id, cursor.sequence - 1)
-            if previous is None:
-                return result
-            cursor = AgUiCursor(
-                thread_id=cursor.thread_id,
-                run_id=cursor.run_id,
-                sequence=previous.task_sequence,
-                event_id=str(previous.event_id),
-            )
-    result["cursor"] = cursor.encode()
-    return result
 
 
 def source_query(
@@ -299,10 +283,19 @@ async def agui_response(
     def prepare_context(
         proof: StreamProofSnapshot | None = None,
     ) -> tuple[V2StreamContext | None, AgUiStreamContext | None] | ApiResponse:
+        selected: dict[str, Any] = {}
+        if "X-Zebra-AGUI-Profile" in request.headers:
+            try:
+                profile = (api.agui_profiles or AgUiProfileRegistry()).select(
+                    request.headers["X-Zebra-AGUI-Profile"]
+                )
+            except ValueError:
+                return _problem(409, "agui_profile_unavailable")
+            selected["profile"] = profile
         context = (
-            prepare_v2(api, request.url.path, query, host, proof=proof)
+            prepare_v2(api, request.url.path, query, host, proof=proof, **selected)
             if proof is not None
-            else prepare_v2(api, request.url.path, query, host)
+            else prepare_v2(api, request.url.path, query, host, **selected)
         )
         if isinstance(context, ApiResponse):
             return context
@@ -318,6 +311,9 @@ async def agui_response(
         if isinstance(rewritten, ApiResponse):
             return rewritten
         metadata: dict[str, Any] = {"initial_metadata": proof} if proof is not None else {}
+        if "X-Zebra-AGUI-Profile" in request.headers:
+            metadata["requested_profile"] = request.headers["X-Zebra-AGUI-Profile"]
+            metadata["profile_registry"] = api.agui_profiles
         if (
             proof is not None
             and isinstance(context, V2StreamContext)
@@ -400,6 +396,8 @@ async def raw_response(
     def prepare_context(
         proof: StreamProofSnapshot | None = None,
     ) -> ApiResponse | tuple[V2StreamContext, dict[str, str], UUID, int] | None:
+        if "X-Zebra-AGUI-Profile" in request.headers:
+            return _problem(409, "agui_profile_unavailable")
         context = (
             prepare_v2(api, request.url.path, query, host, proof=proof)
             if proof is not None

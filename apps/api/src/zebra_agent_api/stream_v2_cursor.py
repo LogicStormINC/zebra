@@ -9,6 +9,7 @@ from dataclasses import dataclass
 
 MAX_STREAM_CURSOR_LENGTH = 4096
 _DOMAIN = b"zebra:stream:v2:cursor\x00"
+_PROFILE_DOMAIN = b"zebra:stream:v2:agui-profile-cursor\x00"
 
 
 @dataclass(frozen=True, slots=True)
@@ -73,22 +74,28 @@ class StreamV2CursorCodec:
             ensure_ascii=True,
             separators=(",", ":"),
         ).encode()
-        signature = hmac.digest(self._key, _DOMAIN + body, hashlib.sha256)
-        token = "v2." + base64.urlsafe_b64encode(body + signature).rstrip(b"=").decode()
+        profiled = cursor.scope.startswith("agui:")
+        domain = _PROFILE_DOMAIN if profiled else _DOMAIN
+        signature = hmac.digest(self._key, domain + body, hashlib.sha256)
+        token = ("v2p." if profiled else "v2.") + base64.urlsafe_b64encode(body + signature).rstrip(
+            b"="
+        ).decode()
         if len(token) > MAX_STREAM_CURSOR_LENGTH:
             raise ValueError("stream cursor exceeds its wire budget")
         return token
 
     def decode(self, token: str, *, scope: str) -> StreamV2Cursor:
-        if not token.startswith("v2.") or len(token) > MAX_STREAM_CURSOR_LENGTH:
+        if not token.startswith(("v2.", "v2p.")) or len(token) > MAX_STREAM_CURSOR_LENGTH:
             raise ValueError("invalid stream cursor")
         try:
-            encoded = token[3:]
+            profiled = token.startswith("v2p.")
+            encoded = token[4:] if profiled else token[3:]
             raw = base64.b64decode(
                 encoded + "=" * (-len(encoded) % 4), altchars=b"-_", validate=True
             )
             body, supplied = raw[:-32], raw[-32:]
-            expected = hmac.digest(self._key, _DOMAIN + body, hashlib.sha256)
+            domain = _PROFILE_DOMAIN if profiled else _DOMAIN
+            expected = hmac.digest(self._key, domain + body, hashlib.sha256)
             if len(supplied) != 32 or not hmac.compare_digest(expected, supplied):
                 raise ValueError("invalid stream cursor signature")
             values = json.loads(body)

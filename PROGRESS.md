@@ -17,6 +17,74 @@ scheduler/browser composition remains in progress, not deployed or certified.
 Original Runs and Search/MCP processes unchanged; zero model/search requests.
 Details: docs/CLOUD_FULL_CAPABILITY_COMPOSITION.md.
 
+## 2026-10-29 AG-UI G2V projection profile isolation (locally integrated)
+
+Explicit profile registry binds projector/state restoration; default stays unavailable.
+New checkpoint/privacy/binding-ledger versions and durable/signed cursor scopes are
+independent; absent header retains the old projection and cursor bytes/HMAC. The existing
+GET /capabilities/runtime carries metadata.aguiProfiles only from available bindings.
+Canonical continuation anchors deterministically map public protocol Run IDs without
+changing execution/approval/receipt authority; standard POST runId admission remains G3.
+Additive v115 installs source-owned privacy routing for all profile families; all prior
+migration checksums remain unchanged. Six explicit projector versions remain bounded.
+Focused90 passed/1 endpoint-dependent skip, followed by actual owned PG/Redis21 passed
+with zero skips; G0 golden7 included; make check1431 typed sources/30eval passed.
+Independent spec/quality reviews passed; lagging-tail exact-version queue reader fixed
+and verified with SQLite/PG7 zero skips. Commit7c8962b0 integrated into local cloud-agent,
+all10 primary dirty/untracked entries byte-preserved. G2 public producer semantics is
+Ready. No new 1.0 producer activation, business Run replay or deployment.
+See [contract](docs/AGUI_STANDARD_DURABLE_CONTRACT.md).
+
+## 2026-10-28 AG-UI G1 standard consumer foundation
+
+AGUI-G1-STANDARD-CONSUMER-20261028 adds an opt-in per-protocol-Run consumer using
+fixed official JS1.0.3 normalization/chunks/verification/application. The legacy
+SSE/draft reducer/runtime, current profiles and execution authority remain intact.
+Patch/production-callback errors propagate; blocked-live cleanup, awaited state
+application, complete resume preflight and finite canonical ingress have regressions.
+Final SDK199 passed/zero skips, check/package and actual ESM/CJS entry checks passed;
+25 are new. G0 offline7 and make check passed (1428 types/30eval). Framework consumer
+and Chromium/WebKit matrices passed before the final ingress guard; final guard
+then passed fresh SDK199/type/package tests. No claim of completed production AG-UI1.0.
+Independent spec/quality reviews passed after two P1 and one P2 corrections.
+9697d893 fast-forward integrated into local cloud-agent; G0 a1a46a5a is its ancestor.
+Next: Ready G2V profile/checkpoint/cursor isolation, before new projection semantics.
+No registry publication, Trench package replacement, live model or deployment.
+
+## 2026-10-28 AG-UI G0 contract baseline
+
+AGUI-G0-CONTRACT-20261028 freezes the approved standard/durable boundary and
+upstream AG-UI 1.0 schema at immutable revision fdbca490dc90fd8fbce2b342df79383bd70559af
+(SHA-256 4b5c93226838a0e72d88e6c5df20633c686c49fcb75d9be2815c6cbf9e48e71a).
+31 normative event tags are catalogued; the real existing projector/encoder/v2
+wire/cursor golden retains all14 currently emitted types. Offline7, legacy36,
+SDK174 zero-skipped checks and complete make check passed (1428 typed files/30eval).
+ADR-015 SDK-mandate supersession is narrow; authority/BFF boundaries remain.
+New profiles and 1.0 production semantics remain unimplemented; G2V isolation must
+precede semantic changes. No runtime/dependency/model/production changes.
+See [contract](docs/AGUI_STANDARD_DURABLE_CONTRACT.md) and
+[plan](docs/superpowers/plans/2026-10-28-agui-full-interaction.md).
+
+## 2026-10-28 AG-UI full interaction proposal (not implemented)
+
+AGUI-FULL-INTERACTION-PLAN-20261028 records the requested complete repair and
+optimization proposal after source/official-protocol audit and independent review.
+The proposal preserves current durable authority, old profiles/cursors/packages,
+and same-execution receipts. It proposes projection-version isolation before
+standard semantic changes, full SDK/UI/action/recovery closure, paired consumer
+migration and package gates. Implementation tasks remain proposed and unclaimed.
+See [full plan](docs/superpowers/plans/2026-10-28-agui-full-interaction.md).
+No runtime, dependency, deployment, original Run or GitHub changes in this task.
+
+## 2026-10-28 Trench multi-session activity synchronization
+
+User-authorized documentation-only compatibility maintenance exception: paired
+Trench main fix6a1a8b8 preserves every conversation activeTurn through HTTP.
+3/12-session API regressions,12-spinner UI and independent terminal/reload checks
+passed;53+78 API and532 frontend checks passed. Existing SDK tarballs already
+match GitHub; no npm registry publication, Zebra runtime/SDK change or deployment.
+See docs/TRN_MULTI_SESSION_ACTIVITY.md. Original archive tag remains unchanged.
+
 ## 2026-10-28 Continuation epoch reliability closeout
 
 CLOUD-CONTINUATION-EPOCHS-20261028 scopes approval, clarification and child

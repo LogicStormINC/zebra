@@ -2,10 +2,24 @@
 
 | 字段 | 值 |
 |---|---|
-| 状态 | Accepted for architecture；implementation Locked |
+| 状态 | 部分 superseded（2026-10-28）；durable authority 与 BFF 安全边界仍 Accepted |
 | 日期 | 2026-07-23 |
 | 决策者 | Maintainer direction + Zebra architecture baseline |
 | 影响范围 | Zebra Embedded、Trench Host、AG-UI、前端协同、持久状态 |
+
+## 2026-10-28 适用范围更新
+
+下文保留 2026-07-23 的历史决策。“不建设 Zebra React/TypeScript SDK”、
+“Trench 固定采用 CopilotKit React v2”及禁止 TS SDK workspace 的狭义选型约束，
+由已批准的 [完整交互方案](superpowers/plans/2026-10-28-agui-full-interaction.md)
+和 [AG-UI 1.0 durable 边界合同](AGUI_STANDARD_DURABLE_CONTRACT.md) 取代。
+现有 TypeScript SDK 继续，CopilotKit 是可选标准互操作消费者；不是替换既有 UI
+的前置条件。此更新不等于新 profile 已上线或 1.0 已验收。
+
+Zebra durable state、Event Store/replay、审批与业务授权、BFF credential 边界
+仍有效。AG-UI 仍是外部投影；新增公共协议 Run ID 不产生执行权威。旧生产
+profile 必须保持原语义，新 schema/END/cancelled 等语义须先完成 profile、
+checkpoint 与 cursor 隔离。历史的 SDK 取消决定不能用于否定现有 SDK 的事实。
 
 ## 背景
 

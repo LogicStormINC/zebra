@@ -21,6 +21,7 @@ from agent_core.ports.stream_source_head import StreamObservationReadPort
 from agent_core.ports.task_projection_checkpoints import CheckpointConflict, CheckpointNotReady
 from agent_integrations.ag_ui import AgUiCursor, AgUiProjectionError, AgUiRunIdentity
 from agent_integrations.ag_ui.checkpoint_observer import AgUiCheckpointObserver
+from agent_integrations.ag_ui.profiles import AgUiProfileRegistry, AgUiProjectionProfile
 from agent_integrations.ag_ui.task_run_binding import bind_task_run
 from agent_integrations.ag_ui.task_stream import AgUiTaskProjector
 from agent_integrations.redis_live_fanout_async import AsyncRedisNotifications
@@ -66,6 +67,7 @@ class AgUiStreamContext:
     host_context: HostContextEnvelope | None = None
     notifications: AsyncRedisNotifications | None = None
     recovery_notice: bool = False
+    profile: AgUiProjectionProfile | None = None
 
 
 def prepare_agui_stream(
@@ -82,11 +84,19 @@ def prepare_agui_stream(
     recovery_notice: bool = False,
     initial_metadata: StreamObservationReadPort | None = None,
     source_qualified_task: TaskId | None = None,
+    requested_profile: str | None = None,
+    profile_registry: AgUiProfileRegistry | None = None,
 ) -> AgUiStreamContext | ApiResponse | None:
     """Indexed, body-free preflight; never adopt/repair/materialize from GET."""
     path_identity = _stream_path_identity(path)
     if path_identity is None:
         return None
+    try:
+        profile = (profile_registry or AgUiProfileRegistry()).select(requested_profile)
+    except AgUiProjectionError:
+        return _problem(
+            409, "agui_profile_unavailable", "requested AG-UI profile is unavailable", path
+        )
     thread_text, run_id = path_identity
     if not run_id or len(run_id) > _MAX_IDENTITY_TEXT:
         return _problem(400, "invalid_request", "runId is outside its bounds", path)
@@ -135,6 +145,7 @@ def prepare_agui_stream(
     observer = AgUiCheckpointObserver(
         stores.tasks,
         namespace=deployment_namespace or "local",
+        profile=profile,
         **({"initial_metadata": initial_metadata} if initial_metadata is not None else {}),
     )
     snapshot = None
@@ -143,6 +154,8 @@ def prepare_agui_stream(
         if command_outcome is not None and cursor is not None and snapshot.run.anchor is None:
             raise AgUiProjectionError("cursor has no canonical command anchor")
         observer.validate_cursor(snapshot, identity, cursor)
+        if profile is not None and query.get("recovery") == "full":
+            cursor = None
     except CheckpointNotReady:
         response = _problem(
             409,
@@ -181,6 +194,7 @@ def prepare_agui_stream(
         host_context,
         notifications,
         recovery_notice,
+        profile,
     )
 
 

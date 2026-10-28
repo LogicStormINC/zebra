@@ -35,3 +35,19 @@ def test_runtime_capabilities_match_task_network_profiles(tmp_path) -> None:
         )
         == ()
     )  # The Host authorizer applies its default agent.run scope.
+
+
+def test_runtime_discovery_advertises_only_bound_agui_profiles(tmp_path) -> None:
+    from agent_integrations.ag_ui.profiles import AgUiProfileRegistry, AgUiProjectionProfile
+    from agent_integrations.ag_ui.projection import AgUiProjector
+
+    api = create_app(tmp_path / "profiles.sqlite")
+    assert "metadata" not in api.get_runtime_capabilities().body
+    from dataclasses import replace
+
+    api = replace(api, agui_profiles=AgUiProfileRegistry())
+    assert "metadata" not in api.get_runtime_capabilities().body
+    profile = AgUiProjectionProfile("agui-standard-1.0", projector=AgUiProjector())
+    api = replace(api, agui_profiles=AgUiProfileRegistry((profile,)))
+    response = RouteAdapter(api).handle(RouteRequest(method="GET", path="/capabilities/runtime"))
+    assert response.body["metadata"] == {"aguiProfiles": ["agui-standard-1.0"]}

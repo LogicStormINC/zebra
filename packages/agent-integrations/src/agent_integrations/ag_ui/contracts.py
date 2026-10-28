@@ -12,7 +12,7 @@ from typing import Self
 
 from ag_ui.core import Event
 from agent_core.domain.identifiers import SessionId
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 
 MAX_PROJECTION_ID_CHARS = 256
 MAX_CURSOR_CHARS = 2_048
@@ -55,7 +55,8 @@ class AgUiCursor(BaseModel):
 
     model_config = ConfigDict(frozen=True, extra="forbid", populate_by_name=True)
 
-    version: int = Field(default=1, ge=1, le=1)
+    version: int = Field(default=1, ge=1, le=2)
+    profile_scope: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
     thread_id: str = Field(max_length=MAX_PROJECTION_ID_CHARS)
     run_id: str = Field(max_length=MAX_PROJECTION_ID_CHARS)
     sequence: int = Field(ge=0)
@@ -66,6 +67,12 @@ class AgUiCursor(BaseModel):
     @classmethod
     def normalize_cursor_text(cls, value: str) -> str:
         return _required_text(value, "cursor value", MAX_PROJECTION_ID_CHARS)
+
+    @model_validator(mode="after")
+    def require_scope(self) -> Self:
+        if (self.version == 2) != (self.profile_scope is not None):
+            raise ValueError("profile cursor version and binding must appear together")
+        return self
 
     def encode(self) -> str:
         payload = self.model_dump(mode="json", exclude_none=True)

@@ -35,11 +35,10 @@ from agent_storage.projection_work import (
     work_from_row,
 )
 from agent_storage.projection_work_routing import (
-    COVERAGE,
-    ORDINARY,
     PG_BOOTSTRAP_SOURCE,
     activate_privacy,
     classified_pending,
+    matches_task_privacy,
     routed_statements,
     task_version,
 )
@@ -171,10 +170,12 @@ class PostgresTaskProjectionWorkStore(TaskProjectionWorkPort):
                     through=row["next_event_sequence"] - 1,
                 )
                 connection.execute(
-                    classified_pending(PG_BOOTSTRAP_SOURCE, postgres=True), enqueue_params
+                    classified_pending(PG_BOOTSTRAP_SOURCE, postgres=True, profiles=True),
+                    enqueue_params,
                 )
                 connection.execute(
-                    activate_privacy(PG_BOOTSTRAP_SOURCE, postgres=True), enqueue_params
+                    activate_privacy(PG_BOOTSTRAP_SOURCE, postgres=True, profiles=True),
+                    enqueue_params,
                 )
             done = len(rows) < limit
             connection.execute(
@@ -254,8 +255,7 @@ class PostgresTaskProjectionWorkStore(TaskProjectionWorkPort):
             ).fetchone()
             if (
                 task["event_position_state"] == "ready"
-                and (self._version not in (ORDINARY, COVERAGE)
-                     or task["selected_version"] == self._version)
+                and matches_task_privacy(self._version, task["selected_version"])
                 and current is not None and not current["needs_repair"]
                 and current["observed_through"] >= max(
                     current["wanted_through"], task["next_event_sequence"] - 1
@@ -268,9 +268,9 @@ class PostgresTaskProjectionWorkStore(TaskProjectionWorkPort):
                 version=self._version,
                 through=task["next_event_sequence"] - 1,
             )
-            execute(classified_pending(PG_BOOTSTRAP_SOURCE, postgres=True), params)
-            execute(activate_privacy(PG_BOOTSTRAP_SOURCE, postgres=True), params)
-            if self._version in (ORDINARY, COVERAGE) and task["selected_version"] != self._version:
+            execute(classified_pending(PG_BOOTSTRAP_SOURCE, postgres=True, profiles=True), params)
+            execute(activate_privacy(PG_BOOTSTRAP_SOURCE, postgres=True, profiles=True), params)
+            if not matches_task_privacy(self._version, task["selected_version"]):
                 execute(
                     "UPDATE task_projection_work_routes SET needs_repair=0 "
                     "WHERE deployment_namespace=%s AND task_id=%s AND projector_version=%s",
@@ -301,8 +301,10 @@ class PostgresTaskProjectionWorkStore(TaskProjectionWorkPort):
             # Native routing serializes and checks the frontier; source reads need no lock.
             deadline = min(connection.deadline - 0.2, time.monotonic() + 0.1)
             step = _WorkConnection(connection.connection, deadline)
-            routing = "BEGIN " + ";".join(routed_statements(SOURCE, postgres=True)) + (
-                ";PERFORM set_config('statement_timeout',%(finish_timeout)s,true);END"
+            routing = (
+                "BEGIN "
+                + ";".join(routed_statements(SOURCE, postgres=True, profiles=True))
+                + (";PERFORM set_config('statement_timeout',%(finish_timeout)s,true);END")
             )
             for index in range(limit):
                 remaining = step.deadline - time.monotonic()
@@ -332,7 +334,7 @@ class PostgresTaskProjectionWorkStore(TaskProjectionWorkPort):
                     ).fetchone()
                     if row is None or not row["replay_header_ready"]:
                         raise CheckpointNotReady("explicit scalar header repair required")
-                    finish_timeout = max(1, int((connection.deadline-time.monotonic())*1000))
+                    finish_timeout = max(1, int((connection.deadline - time.monotonic()) * 1000))
                     params = dict(
                         namespace=self._namespace,
                         task_id=str(task_id),

@@ -11,6 +11,7 @@ from time import monotonic
 import psycopg
 from agent_core.ports.live_event_fanout import LiveEventCursor
 from agent_core.ports.transient_output import TransientResumeCursor, TransientStreamScope
+from agent_integrations.ag_ui.profiles import AgUiProjectionProfile
 from agent_integrations.redis_live_fanout_async import AsyncRedisNotifications
 from agent_integrations.redis_transient_discovery import TransientDescriptor, discover
 from agent_integrations.redis_transient_output import RedisTransientOutput
@@ -34,6 +35,7 @@ class V2StreamContext:
     cursor: StreamV2Cursor
     full_recovery: bool
     session_id: str | None = None
+    profile: AgUiProjectionProfile | None = None
 
 
 class StreamV2Reader:
@@ -63,23 +65,37 @@ class StreamV2Reader:
         token: str | None,
         full_recovery: bool,
         session_id: str | None = None,
+        profile: AgUiProjectionProfile | None = None,
+        profile_scope: str | None = None,
     ) -> V2StreamContext:
         if kind == "session" and session_id is None:
             assert binding.authority.allowed_session_ids is not None
             session_id = binding.authority.allowed_session_ids[0]
         identity = (binding.lane, kind) + ((session_id,) if kind == "session" else ())
+        if (profile is None) != (profile_scope is None):
+            raise ValueError("profile cursor requires an exact binding")
+        if profile_scope is not None:
+            identity += (profile_scope,)
+        elif token is not None and token.startswith("v2p."):
+            raise ValueError("profile cursor cannot downgrade to legacy")
         digest = sha256(
             json.dumps(
                 identity,
                 separators=(",", ":"),
             ).encode()
         ).hexdigest()
+        if profile_scope is not None:
+            digest = "agui:" + digest
+        if profile_scope is not None and token is not None:
+            self.codec.decode(token, scope=digest)
         cursor = (
             self.codec.decode(token, scope=digest)
             if token is not None and not full_recovery
             else StreamV2Cursor(digest)
         )
-        return V2StreamContext(binding, kind, cursor, full_recovery or token is None, session_id)
+        return V2StreamContext(
+            binding, kind, cursor, full_recovery or token is None, session_id, profile
+        )
 
     async def close(self) -> None:
         await self.notifications.close()

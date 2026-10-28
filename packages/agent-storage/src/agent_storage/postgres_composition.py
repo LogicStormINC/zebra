@@ -1,6 +1,8 @@
 """Explicit PostgreSQL cloud storage composition without changing local stores."""
 
+from collections.abc import Callable
 from dataclasses import dataclass
+from functools import partial
 
 from agent_core.domain.cloud_scope import OpaqueAuthorityScope
 from agent_core.domain.memory_delivery import MemoryDeliveryScope
@@ -58,6 +60,7 @@ class PostgresControlPlaneStores(CloudControlPlane):
 
     projection_work: TaskProjectionWorkPort | None = None
     coverage_projection_work: TaskProjectionWorkPort | None = None
+    projection_work_for_version: Callable[[str], TaskProjectionWorkPort] | None = None
     session_recovery: SessionRecoveryPort | None = None
     execution_inputs: ExecutionInputPort | None = None
     task_io_connections: TaskIoConnections | None = None
@@ -165,6 +168,10 @@ def postgres_control_plane_stores(
         ),
         personalization=PostgresUserPersonalizationStore(
             dsn, deployment_namespace=deployment_namespace
+        ),
+        projection_work_for_version=partial(
+            PostgresTaskProjectionWorkStore,
+            PostgresDatabase(dsn, deployment_namespace=deployment_namespace),
         ),
         projection_work=PostgresTaskProjectionWorkStore(
             PostgresDatabase(dsn, deployment_namespace=deployment_namespace), "ag-ui-v1"

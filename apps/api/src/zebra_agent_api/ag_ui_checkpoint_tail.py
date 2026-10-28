@@ -159,6 +159,7 @@ async def tail_checkpoint_frames(
     observer = AgUiCheckpointObserver(
         context.stores.tasks,
         namespace=context.deployment_namespace or "local",
+        profile=getattr(context, "profile", None),
     )
     barrier = await _checkpoint_barrier(context, deadline)  # Before snapshot/replay.
     cursor, after_source = context.cursor, None
@@ -268,6 +269,11 @@ async def tail_checkpoint_frames(
                     if snapshot.run.strict_coverage
                     else context.stores.projection_work
                 )
+                if getattr(context, "profile", None) is not None:
+                    factory = context.stores.projection_work_for_version
+                    if factory is None:
+                        raise ValueError("profile projection work reader is not bound")
+                    work = factory(snapshot.head.scope.projector_version)
                 if (
                     snapshot.run.anchor is not None
                     and work is not None

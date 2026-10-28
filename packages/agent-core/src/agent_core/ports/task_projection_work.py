@@ -8,7 +8,7 @@ from agent_core.ports.task_projection_checkpoints import ProjectionScope
 
 MAX_PENDING_PROJECTION_WORK = 32
 MAX_PROJECTION_WORK_REPAIR = 256
-MAX_ENABLED_PROJECTORS = 4
+MAX_ENABLED_PROJECTORS = 6
 MAX_PROJECTION_WORK_BYTES = 1_048_576
 PROJECTION_WORK_SECONDS = 2.0
 PROJECTION_PROBLEM_CODES = frozenset({"not_ready", "integrity", "budget", "projection_failed"})
@@ -86,7 +86,7 @@ class TaskProjectionWorkPort(Protocol):
 
     Native source-position/scalar-header hooks route only contiguous confirmed
     headers. A gap becomes durable repair-needed, never request-time adoption.
-    At most four enabled versions receive a wake. Old Run targets close at the
+    At most six enabled versions receive a wake. Old Run targets close at the
     next executable's position minus one; control/internal resumes do not open
     Runs. No claim leases: duplicate builders use the existing checkpoint CAS.
 

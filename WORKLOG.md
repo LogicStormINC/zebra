@@ -17,6 +17,33 @@ scheduler/browser composition remains in progress, not deployed or certified.
 Original Runs and Search/MCP processes unchanged; zero model/search requests.
 Details: docs/CLOUD_FULL_CAPABILITY_COMPOSITION.md.
 
+## 2026-10-28 AGUI-G1-STANDARD-CONSUMER-20261028
+
+Reused official client/core1.0.3, RxJS7.8.1, fast-json-patch3.1.1; no duplicate
+reducer framework or old-stream switch. Explicit new test collection; red module
+absence plus real patch/subscriber failure tests. Review reproduced live abort
+no-op, delayed-notification acceptance and unbounded eager ingress; all corrected
+with blocked live/resolve/reject/cleanup/finite queue regressions.25 new and199 SDK
+checks passed; type/package/actual CJS+ESM pass; G0 seven and make check pass.
+React18/19 x Vite/Next SSR/RSC and Chromium/WebKit matrix passed before final
+capacity guard; new guard received fresh unit/type/package checks. Browser gate
+reset now awaits empty DOM (exact672 assertion retained), not a UI/CSS change.
+9697d893 and G0 a1a46a5a integrated locally without changing protected dirty files.
+Remaining: Ready G2V must freeze+validate public Run mapping and independent profile /
+checkpoint/cursor namespace before G2 producer semantics. G3/G7 must validate
+paced cold recovery, byte/memory budgets and128 pending-event refusal under load.
+No source publication, registry upload, service activation, model/search or old
+Run mutation. Keep branch/worktree and installed isolated dependencies for next slice.
+
+## 2026-10-28 AGUI-G0-CONTRACT-20261028
+
+Implemented frozen upstream schema/catalog and deterministic legacy wire/cursor
+baseline with original runtime unchanged. Initial missing-baseline test failed;
+freezing actual output passed; corruption/catalog/cursor negative checks remain.
+Offline7 + existing projection36 + SDK174 passed; make check passed. Independent spec and quality reviews passed after sequencing clarification. No full
+1.0 behavior/HTTP/DB/browser/production claim. Next G1 consumer must reuse verified
+official JS implementation where practical; G2V profile isolation precedes G2.
+
 ## 2026-10-28 — CLOUD-CONTINUATION-EPOCHS-20261028
 
 Continue investigation until evidence-backed initial stability. Reused clean
@@ -17862,3 +17889,40 @@ full-suite loop. Actual cloned PG/S3 input admission, pinned Host Task, root-own
 ZIP read passed. Actual signed scheduler exchange deduplicates a firing and
 refuses tampered signatures/paused schedules; no provider/search requests.
 ERP candidate/browser/cutover acceptance remains a separate repository task.
+
+## 2026-10-29 AGUI-G2V profile isolation implementation
+
+- Independent spec and quality reviews passed after repairing the lagging-tail
+  wrong-version queue reader. Commit7c8962b0 fast-forward integrated into local
+  cloud-agent; all10 preexisting dirty/untracked primary entries byte-preserved.
+  Parent checked all113 old migration checksums unchanged; only115 was added.
+  Fresh legacy golden7 and cold-process/file-limit46 passed. The earlier full
+  Python run overlapped source edits (11358pass/3110skip/4mixed-source failures),
+  so it is not a stable candidate full-suite gate; all4 cases passed fresh.
+  Final stable full-suite validation remains required after the remaining slices.
+  G2 is now Ready; subsequent producer/transport/UI/Trench gates are still pending.
+
+- Claimed Ready before code on codex/agui-g2v-profile-isolation-20261028, base80570bc6;
+  exact reused worktree and ownership addenda recorded in AGENT_TASKS before each expansion.
+- Explicit bound projector/state registry, independent ordinary/privacy checkpoint and binding
+  ledger versions, canonical continuation-anchor mapping, scoped durable and signed v2p cursors.
+- All selectors audited: observer fast/scalar path, consumer, plan/binding, materializer,
+  cold frame restore, HTTP preflight/rewind/tail and native queue classifier/repair.
+- Actual discovery carrier GET /capabilities/runtime emits metadata.aguiProfiles only from
+  nonempty bound registry; defaults stay unavailable. No new producer semantic/admission,
+  deployment, business Run, receipt or history mutation. G2/G3 remain subsequent slices.
+- Additive v115 trigger migration; old68/98/100 checksums preserved. Six-version queue cap
+  remains bounded. Real disposable PG17 native queue and every-frame cold replay verified.
+- TDD red confirmed missing profile engine, fanout cap, and discovery metadata; targeted green.
+  Final exact validation commands/results recorded in parent report and PROGRESS.
+- Final stable gates: `/tmp/agui-g2v-focused.log`:90 passed/1 existing endpoint skip;
+  `/tmp/agui-g2v-stream-native.log`:21 passed/0 skips (real owned PG/Redis), closing that
+  handoff case; `/tmp/agui-g2v-make-check.log`:1431 sources/30eval and all gates passed.
+  Parent separately verified all113 preexisting migration checksums unchanged, only115 added.
+- Independent quality review P2: lagging new-profile SSE queried legacy-bound work reader;
+  reproduced two SQLite red cases as wrong projection_conflict. Added inert exact-version
+  constructor factories to SQLite/PG compositions and select from each captured scope.
+  Existing namespace/version guards and deadline wrapper remain intact; no GET writes.
+  Actual SQLite+PG ordinary/coverage-flip/expired-deadline profile tests7 passed0 skipped
+  (/tmp/agui-g2v-tail-queue-fix.log); fresh make check passed
+  (/tmp/agui-g2v-tail-make-check.log). Independent review rerun pending.

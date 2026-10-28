@@ -24,6 +24,7 @@ from agent_integrations.ag_ui.checkpoint_plan import (
     checkpoint_version,
 )
 from agent_integrations.ag_ui.contracts import AgUiCursor, AgUiProjectionError, AgUiRunIdentity
+from agent_integrations.ag_ui.profiles import AgUiProjectionProfile
 
 
 @dataclass(frozen=True, slots=True)
@@ -52,10 +53,12 @@ class AgUiCheckpointObserver:
         *,
         namespace: str,
         initial_metadata: StreamObservationReadPort | None = None,
+        profile: AgUiProjectionProfile | None = None,
     ) -> None:
         self.tasks, self.namespace = tasks, namespace
         self.initial_metadata = initial_metadata
-        self.materializer = AgUiCheckpointMaterializer(tasks)
+        self.profile = profile
+        self.materializer = AgUiCheckpointMaterializer(tasks, profile=profile)
 
     def snapshot(
         self,
@@ -76,13 +79,21 @@ class AgUiCheckpointObserver:
             captured = read_head(
                 task_id,
                 identity.run_id,
-                ordinary_version=AG_UI_CHECKPOINT_VERSION,
-                coverage_version=AG_UI_COVERAGE_CHECKPOINT_VERSION,
+                ordinary_version=(
+                    self.profile.checkpoint_version() if self.profile else AG_UI_CHECKPOINT_VERSION
+                ),
+                coverage_version=(
+                    self.profile.checkpoint_version(coverage=True)
+                    if self.profile
+                    else AG_UI_COVERAGE_CHECKPOINT_VERSION
+                ),
                 host_context=host_context,
             )
             run, head = captured.run, captured.head
             if run.task_id != task_id or run.run_id != identity.run_id:
                 raise CheckpointConflict("observation Run belongs to another Task/run")
+            if self.profile is not None:
+                self.profile.binding_digest(head.scope, run)
             return AgUiObservationSnapshot(
                 run, head, captured.command_outcome, host_context is not None
             )
@@ -93,7 +104,7 @@ class AgUiCheckpointObserver:
             self.namespace,
             task_id,
             run.anchor.event_id if run.anchor else None,
-            checkpoint_version(run),
+            checkpoint_version(run, self.profile),
         )
         # A newly admitted command may not have reached its source index yet.
         # Do not inspect a legacy projection or another Run while waiting.
@@ -117,6 +128,8 @@ class AgUiCheckpointObserver:
             run = refreshed
         if head.scope != scope or head.through_sequence > run.highwater:
             raise CheckpointConflict("observation head conflicts with captured source coverage")
+        if self.profile is not None:
+            self.profile.binding_digest(head.scope, run)
         return AgUiObservationSnapshot(run, head)
 
     def validate_cursor(
@@ -129,6 +142,9 @@ class AgUiCheckpointObserver:
         if cursor is None:
             return
         run = snapshot.run
+        digest = self.profile.binding_digest(snapshot.head.scope, run) if self.profile else None
+        if cursor.profile_scope != digest:
+            raise AgUiProjectionError("cursor belongs to another profile binding")
         if (
             not snapshot.bound
             or cursor.thread_id != identity.thread_id
@@ -177,6 +193,12 @@ class AgUiCheckpointObserver:
             sequence=header.task_sequence,
             event_id=str(header.event_id),
             frame_index=header.frame_count - 1 if header.frame_count else None,
+            version=2 if self.profile else 1,
+            profile_scope=(
+                self.profile.binding_digest(snapshot.head.scope, snapshot.run)
+                if self.profile
+                else None
+            ),
         )
 
     def read_page(
@@ -250,7 +272,7 @@ class AgUiCheckpointObserver:
                     continue
                 frames = tuple(
                     AgUiCheckpointMaterializer(
-                        reader, self.materializer.projector
+                        reader, self.materializer.projector, profile=self.profile
                     ).iter_event_frames(
                         snapshot.head.scope,
                         entry,

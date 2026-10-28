@@ -15,13 +15,16 @@ from agent_core.ports.task_projection_checkpoints import MAX_CHECKPOINT_EVENTS, 
 from agent_core.ports.task_replay import TaskEventHeader, TaskRunHeader
 
 from agent_integrations.ag_ui.contracts import AgUiProjectionError, AgUiRunIdentity
+from agent_integrations.ag_ui.profiles import AgUiProjectionProfile
 from agent_integrations.coverage_public_events import strict_coverage_events
 
 AG_UI_CHECKPOINT_VERSION = "ag-ui-v1"
 AG_UI_COVERAGE_CHECKPOINT_VERSION = "ag-ui-v1-coverage"
 
 
-def checkpoint_version(run: TaskRunHeader) -> str:
+def checkpoint_version(run: TaskRunHeader, profile: AgUiProjectionProfile | None = None) -> str:
+    if profile is not None:
+        return profile.checkpoint_version(coverage=run.strict_coverage)
     return AG_UI_COVERAGE_CHECKPOINT_VERSION if run.strict_coverage else AG_UI_CHECKPOINT_VERSION
 
 
@@ -80,6 +83,7 @@ class ProjectionPagePlan:
         page: TaskEventPage,
         scope: ProjectionScope,
         identity: AgUiRunIdentity,
+        profile: AgUiProjectionProfile | None = None,
     ) -> None:
         if (
             type(self.events) is not tuple
@@ -89,7 +93,7 @@ class ProjectionPagePlan:
             or len(self.handoffs) > MAX_CHECKPOINT_EVENTS
         ):
             raise AgUiProjectionError("projection plan exceeds/mismatches Page coverage")
-        if scope.projector_version != checkpoint_version(self.run):
+        if scope.projector_version != checkpoint_version(self.run, profile):
             raise AgUiProjectionError("unsupported checkpoint projector version")
         if not self.run.strict_coverage and strict_coverage_events(e.event for e in page.events):
             raise AgUiProjectionError("canonical Run privacy metadata contradicts its Page")
@@ -139,10 +143,11 @@ def validate_restore_run(
     run: TaskRunHeader,
     identity: AgUiRunIdentity,
     position: int,
+    profile: AgUiProjectionProfile | None = None,
 ) -> None:
     anchor_id = run.anchor.event_id if run.anchor is not None else None
     if (
-        scope.projector_version != checkpoint_version(run)
+        scope.projector_version != checkpoint_version(run, profile)
         or run.task_id != scope.task_id
         or str(scope.task_id) != identity.thread_id
         or run.run_id != identity.run_id

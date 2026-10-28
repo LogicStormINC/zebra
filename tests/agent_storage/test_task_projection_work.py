@@ -199,16 +199,16 @@ def test_bounded_roundrobin_and_projector_fanout(queue):
     rest = store.read_pending_projection_work(after_scope=first[-1].scope)
     assert len(rest) == 8
     assert store.read_pending_projection_work(after_scope=rest[-1].scope) == ()
-    for v in range(3):
+    for v in range(5):
         queue.store(version=f"other-{v}").enable_projection_work()
     with pytest.raises(ValueError, match="budget"):
-        queue.store(version="fifth").enable_projection_work()
+        queue.store(version="seventh").enable_projection_work()
     queue.append(40, body='{"receipt":"fanout"}')
     assert len(store.read_projection_work_repairs()) == 0
     assert len(queue.store(version="other-0").read_projection_work_repairs()) == 1
     store.disable_projection_work()
     assert store.read_pending_projection_work() == ()
-    queue.store(version="fifth").enable_projection_work()
+    queue.store(version="seventh").enable_projection_work()
     for invalid in (0, 33, True, -1):
         with pytest.raises(ValueError):
             store.read_pending_projection_work(limit=invalid)
