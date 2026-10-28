@@ -71,6 +71,10 @@ def handle_task_route(app: ZebraAgentApi, request: TaskRouteRequest) -> ApiRespo
     if not request.path.startswith("/tasks/"):
         return None
     parts = _parts(request.path, "/tasks/")
+    if method in {"GET", "POST"} and len(parts) == 4 and parts[1] == "runs" and parts[3] == "approval":
+        from zebra_agent_api.task_approval import handle_task_approval
+
+        return handle_task_approval(app, request, parts[0], parts[2])
     if method == "POST" and len(parts) == 2 and parts[1] == "messages":
         return append_task_message(
             app,

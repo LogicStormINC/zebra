@@ -17170,3 +17170,14 @@ requests/answers/status and protected Task facts unchanged; Search/MCP/cooldown/
 unchanged. No model/search/newRun/replay, GitHub push or whole-repo gate claim.
 Remaining boundaries: other aggregate/outer COMMIT paths, non-TimeoutError faults,
 full DB outage and historical lock holder. See docs/WORKER_COMMIT_CONFIRMATION_2026-10-28.md.
+
+## 2026-10-28 APPROVAL-BRIDGE-20261028
+
+Implemented exact approval identity + atomic deduplicated decision/internal resume,
+Trench ownership-bound bridge and explicit controls. 23 native/API/consumer,
+34 BFF/store/dispatcher, 43 UI/observer checks pass without model/search calls.
+Found and fixed ordinary resume introducing ambiguous Run anchors; v108 extends
+existing internal continuation classification. See docs/APPROVAL_BRIDGE_2026-10-28.md.
+Production rollout and original pending Run page verification recorded below.
+
+APPROVAL-BRIDGE final: deployed with v108-only production migration; original pending approval survives real page refresh with full arguments/allow/reject controls. 100 focused no-model checks pass. Original Run and all Turn records unchanged; Search/MCP unchanged. Fixed expired internal CA/leaf using existing keys and TLS hot reload. No approval clicked.

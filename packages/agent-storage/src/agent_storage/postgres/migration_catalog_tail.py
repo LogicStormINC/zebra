@@ -1,6 +1,8 @@
+
 """Latest additive migrations kept separate from the primary catalog."""
 
 from agent_storage.postgres.agent_registry_migration import AGENT_REGISTRY_MIGRATION
+from agent_storage.postgres.approval_continuation_migration import APPROVAL_CONTINUATION_MIGRATION
 from agent_storage.postgres.artifact_payload_migration import ARTIFACT_PAYLOAD_MIGRATION
 from agent_storage.postgres.command_coverage_admission_migration import (
     COMMAND_COVERAGE_ADMISSION_MIGRATION,
@@ -169,4 +171,5 @@ LATEST_MIGRATIONS = (
     PLUGIN_INSTALLATIONS_MIGRATION,
     HOST_MANIFEST_POLICY_MIGRATION,
     HOST_MANIFEST_REVISION_MIGRATION,
+    APPROVAL_CONTINUATION_MIGRATION,
 )

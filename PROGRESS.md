@@ -7867,3 +7867,8 @@ requests/answers/status and protected Task facts unchanged; Search/MCP/cooldown/
 unchanged. No model/search/newRun/replay, GitHub push or whole-repo gate claim.
 Remaining boundaries: other aggregate/outer COMMIT paths, non-TimeoutError faults,
 full DB outage and historical lock holder. See docs/WORKER_COMMIT_CONFIRMATION_2026-10-28.md.
+
+- 2026-10-28 APPROVAL-BRIDGE-20261028: exact Cloud Task/Run approval and original
+  observer continuation implemented; no policy bypass. Deterministic no-model
+  checks pass. Production acceptance preserves the original undecided approval.
+  See `docs/APPROVAL_BRIDGE_2026-10-28.md` for v108 and deployment boundaries.

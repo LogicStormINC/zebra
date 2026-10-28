@@ -35948,3 +35948,21 @@ old payloads remain byte-compatible by excluding None. No database migration.
   retryable=false; no new model/search, original replay, broad retry/error changes.
   No-model isolated PG fault regressions, exact-image check then idle Worker-only
   production update. Preserve API/Search/MCP, runtime budgets/high/v2, all original Runs.
+
+### APPROVAL-BRIDGE-20261028
+- Status: Review (implemented, locally committed, production deployed; merge pending); claimed before coding. Owner Luke Ding / Codex.
+- Branch: codex/approval-bridge-20261028, paired cloud-plugin-plan-01 worktrees.
+- Owned paths: apps/api/src/zebra_agent_api/task_approval.py (new), task_routes.py;
+  packages/agent-storage/src/agent_storage/postgres/task_approval.py (new);
+  tests/api/test_task_approval.py, tests/agent_storage/test_task_approval.py (new);
+  this registry, PROGRESS.md, WORKLOG.md, docs/APPROVAL_BRIDGE_2026-10-28.md;
+  .artifacts/approval-bridge-20261028/.
+- Scope: exact original Task/Run/approval identity, atomic idempotent decision and
+  resume command; existing policy unchanged. Paired Trench BFF/UI wiring.
+- Acceptance: no-model safety regression, idle affected-services rollout and
+  original Run approval display only; no approval/rejection/model/search execution.
+  Search/MCP preserved. No GitHub push.
+
+APPROVAL-BRIDGE-20261028 ownership addendum: internal approval continuation requires postgres/approval_continuation_migration.py (v108), postgres/migration_catalog_tail.py, agent-integrations/ag_ui/task_run_binding.py and its focused tests. Reuse existing internal resume semantics; no old migration edits.
+
+APPROVAL-BRIDGE-20261028 acceptance: 23 native/API/consumer + 34 backend + 43 UI checks; production original Run display and refresh verified; no decisions or model/search calls. Added bounded operational certificate renewal after confirming expired CA/leaf; original keys/SANs preserved, TLS hot reload only.
