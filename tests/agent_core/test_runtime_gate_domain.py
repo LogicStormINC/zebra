@@ -69,6 +69,7 @@ def test_additive_gate_setting_preserves_exact_old_baseline_algorithm():
         "plugin_admission_config",
         "runtime_gate_config",
         "runtime_gate_termination_config",
+        "runtime_instance_id",
     ]:
         del values[key]
     raw = json.dumps(

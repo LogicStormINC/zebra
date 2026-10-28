@@ -17547,3 +17547,10 @@ Target cloud-agent, old dd94e2481eafbce311eec1bc478e872c5ecc93ba; exact verified
 Only governance docs change in this commit. Candidate tips and preservation policy: docs/evidence/p4-integration/2026-10-28.json.
 Confirm current remote main and ancestor inclusion before guarded atomic topic deletion; preserve dirty occupied branches and all directories/files.
 No deployment, production migration, automatic job replay, or new code acceptance claim. Final remote SHA/deletion counts belong to actual delivery receipt.
+
+CA-P5-03 claimed from published4f53afb5 for user full-P5 completion. Minimal opt-in signed process binding
+reuses actual observer UUID; no compatibility duplication, HTTP or schema. New process-only setting is
+excluded from baseline_digest; signing key stays outside settings/snapshots. Focused5 pass; full gates follow.
+
+## CA-P5-03 final verification
+11206 passed/3067 conditional skips; make check1445 typed sources/30Eval passed;31 focused repeat and exact emitter golden passed. Retained first failed full run and transient PG SSL boundary in evidence; no skips/cleanup added. Optional signed process metadata preserves historical Bundle digest and BFF/Task/history/Coverage. Parent P5 remains active; no production operations.

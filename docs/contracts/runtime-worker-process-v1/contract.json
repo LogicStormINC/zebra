@@ -1,0 +1,29 @@
+{
+  "version": "runtime-worker-process/1",
+  "default": "disabled",
+  "transport": "one JSON line at actual RuntimeGateWorker composition; owning container log, not user output authority",
+  "envelopeFields": [
+    "contractVersion",
+    "payload",
+    "signature"
+  ],
+  "payloadFields": [
+    "contractVersion",
+    "instanceId",
+    "namespaceId",
+    "processId"
+  ],
+  "payloadEncoding": "base64url unpadded exact JSON bytes",
+  "signature": "hmac-sha256: lowercase hex; HMAC(decoded32ByteKey, UTF8(version)+LF+decodedPayloadBytes)",
+  "key": "ZEBRA_RUNTIME_INSTANCE_BINDING_KEY=rtbind_ plus canonical unpadded base64url32 bytes; unique per instance, private workload credential; never business identity or BFF agent token",
+  "instance": "ZEBRA_RUNTIME_INSTANCE_ID canonical UUID; requires Runtime gate configuration",
+  "consumerRequirements": [
+    "exact approved image and container identity",
+    "verify HMAC and all required fields; never trust stdout alone",
+    "match instance/namespace to frozen create intent",
+    "match actual processId to fresh scoped Native Worker qualification",
+    "reject missing/multiple conflicting valid bindings",
+    "never treat this artifact as readiness, compatibility, stop or activation authority"
+  ],
+  "legacy": "default no event; no API/schema/Task/Bundle snapshot change; process id excluded from baseline fingerprint"
+}

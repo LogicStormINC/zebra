@@ -1,0 +1,14 @@
+{
+  "task": "CA-P5-03",
+  "baseCommit": "4f53afb5df3109d826041f2ee131e8404d648b71",
+  "compositionDelta": "Opt-in process artifact; historical gate v1 manifests unchanged",
+  "files": {
+    "apps/config/src/zebra_agent_config/settings.py": "94480d058510ce1000990836ff2de9a3dac69f26f359808b1aa4b2e2be13ce03",
+    "apps/config/src/zebra_agent_config/bundle_settings.py": "87aac0f1da01f4824798698e5f42d77a1365cb072c9389dc8f488c6fb4ca3e74",
+    "apps/config/src/zebra_agent_config/runtime_instance_binding.py": "1b837692faf6e86c347eb7f2ecbd304de01528bfae650aceba190072c52f4497",
+    "apps/worker/src/zebra_agent_worker/runtime_gates.py": "029c0a991adc95b0a9672ea160cf80c50bd96841a5c303ba9326eb9a84d35db0",
+    "apps/worker/src/zebra_agent_worker/runtime_instance_binding.py": "02669080e1ec970e07ffc2d7907673d7d778f5f7dea40c07e5eb2b8c5f8a0d87",
+    "docs/contracts/runtime-worker-process-v1/contract.json": "e050d1f4ee7fc93eecaeca0de65ae24da2c862b99e67b32ac2f7756862f85323",
+    "docs/contracts/runtime-worker-process-v1/golden.json": "f8320fc143695a6fd17eb7c6a427402a1b72f4c3c452e356689566168b7f4f5f"
+  }
+}

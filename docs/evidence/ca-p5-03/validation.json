@@ -1,0 +1,42 @@
+{
+  "task": "CA-P5-03",
+  "recordedAt": "2026-10-28T16:06:07.647330+00:00",
+  "gates": {
+    "makeTest": {
+      "exitCode": 0,
+      "logSHA256": "3662165bcd5cd09d3c76c5c1e3b3fb9de00f74ace3af17de19d8a2855f8770a9"
+    },
+    "makeCheck": {
+      "exitCode": 0,
+      "logSHA256": "7ab376f33d6babf8dde121d1654c99a0a327233c2945f7507c2b02049e46c6b3"
+    },
+    "focused31": {
+      "exitCode": 0,
+      "logSHA256": "b1c10b68b8c0c6e526e89d26a1d16b6b740d4597a5f138271def92598f5549a2"
+    },
+    "golden": {
+      "exitCode": 0,
+      "logSHA256": "8d7319cd7a4c9ac4a921a35d466a3a4b55c2d27a62139023534216433e73a5e2"
+    }
+  },
+  "testsPassed": 11206,
+  "conditionalSkips": 3067,
+  "typedSources": 1445,
+  "evalCases": 30,
+  "compatibility": "No new schema/API; opt-out unchanged; existing Bundle baseline excludes process-only identity",
+  "firstFullRun": {
+    "failed": 1,
+    "passed": 11187,
+    "errors": 18,
+    "conditionalSkips": 3067,
+    "cause": "historical test reconstruction updated; disposable PG SSL response H transient remains unconfirmed",
+    "logSHA256": "4a8b3a78d31b9e490505c5dfa1e361f75b1bf38569e347b9abeb916fa3550553"
+  },
+  "parentP5": "In Progress",
+  "notClaimed": [
+    "Go lifecycle activation",
+    "fleet completeness",
+    "Compose S1",
+    "production deployment/migration/HA"
+  ]
+}

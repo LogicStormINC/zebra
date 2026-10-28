@@ -118,7 +118,18 @@ def configure_runtime_gates(
     settings: ZebraAgentSettings, namespace: str | None
 ) -> RuntimeGateWorker | None:
     if settings.runtime_gate_config is None:
+        if settings.runtime_instance_id is not None:
+            raise ValueError("RUNTIME_INSTANCE_REQUIRES_RUNTIME_GATES")
         return None
     if settings.storage_authority != "postgresql" or namespace is None:
         raise ValueError("Runtime gates require explicit cloud PostgreSQL composition")
-    return RuntimeGateWorker(settings, namespace)
+    from zebra_agent_config.runtime_instance_binding import runtime_instance_key
+
+    from zebra_agent_worker.runtime_instance_binding import emit_runtime_instance_binding
+
+    key = runtime_instance_key(os.environ) if settings.runtime_instance_id is not None else None
+    worker = RuntimeGateWorker(settings, namespace)
+    if settings.runtime_instance_id is not None:
+        assert key is not None
+        emit_runtime_instance_binding(settings.runtime_instance_id, namespace, worker.process, key)
+    return worker

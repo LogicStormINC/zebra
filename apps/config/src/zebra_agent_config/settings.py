@@ -15,6 +15,7 @@ from zebra_agent_config.memory_settings import MemoryGatewaySettings, load_memor
 from zebra_agent_config.model_settings import ModelSettings as ModelSettings
 from zebra_agent_config.plugin_settings import PluginSettings, load_plugins
 from zebra_agent_config.public_output_settings import PublicOutputPolicy, load_public_output_policy
+from zebra_agent_config.runtime_instance_binding import load_runtime_instance_id
 from zebra_agent_config.runtime_settings import RuntimeSettings as RuntimeSettings
 from zebra_agent_config.setup_settings import SetupSettings, load_setup_settings
 from zebra_agent_config.stream_settings import StreamSettings, load_stream_settings
@@ -92,6 +93,7 @@ class ZebraAgentSettings:
     platform_operator_token: str | None = None
     runtime_management_config: str | None = None
     runtime_gate_config: str | None = field(default=None, kw_only=True)
+    runtime_instance_id: str | None = field(default=None, kw_only=True)
     runtime_gate_termination_config: str | None = field(default=None, kw_only=True)
     runtime_bundle_config: str | None = None
     publication_management_config: str | None = None
@@ -258,6 +260,7 @@ def load_settings(
         platform_operator_token=_read_optional(values, "ZEBRA_PLATFORM_OPERATOR_TOKEN"),
         runtime_management_config=_read_optional(values, "ZEBRA_RUNTIME_MANAGEMENT_CONFIG"),
         runtime_gate_config=_read_optional(values, "ZEBRA_RUNTIME_GATE_CONFIG"),
+        runtime_instance_id=load_runtime_instance_id(values),
         runtime_gate_termination_config=_read_optional(
             values, "ZEBRA_RUNTIME_GATE_TERMINATION_CONFIG"
         ),

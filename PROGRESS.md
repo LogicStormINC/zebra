@@ -1,6 +1,5 @@
-# CA-P5-02A — Original gate exclusion / verified / Review
-
-Schema116, separate scoped machine termination/read approval, immutable exact original/fence/proof, old repeatable-read snapshot exclusion and unchanged historical baseline implemented.25 focused and6 actual HTTP vector checks plus termination-only cloud app composition passed; final make test11203 passed/3067 conditional skips and make check1443 typed sources/30Eval passed. [Contract/boundary](docs/CA-P5-02A_gate_termination.md). Go handoff source pin follows producer publication; consumer disposition/fleet/executor remain independent. No deploy/production migration/main merge, history/receipts/Coverage or Controller mutation.
+# CA-P5-03 — optional signed Worker process binding / verified / Review
+[Contract/boundary](docs/CA-P5-03_worker_process_binding.md): bind owning container launch identity to actual RuntimeGateWorker UUID; reuse existing fresh qualification, no new API/schema/readiness grant. Default opt-out and historical Bundle baseline preserved; 31 focused passed; make test11206 passed/3067 conditional skips and make check1445 typed sources/30Eval passed. No production deployment/migration, BFF/history/Task/Coverage mutation. [Previous](docs/archive/progress-ca-p5-02a.md).
 
 # 2026-10-28 — CA-P5-01 Native gates verified / Review
 
