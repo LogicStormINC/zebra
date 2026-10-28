@@ -1,3 +1,19 @@
+## AGUI-G0-CONTRACT-20261028 — Frozen protocol and compatibility baseline
+
+- Status: Review (2026-10-28; claimed Ready before implementation; offline7/legacy36/SDK174 and make check passed; independent spec and quality reviews passed).
+- Human owner: Luke Ding; executor: Codex; target: cloud-agent.
+- Branch/worktree: codex/agui-g0-contract-20261028; trench-spin-sync-20261028/zebra-agent.
+- Dependency: approved plan d083c558, based on cloud-agent d15fe9f6.
+- Owned paths: docs/ADR-015_Zebra_Embedded与CopilotKit_AGUI边界.md;
+  docs/AGUI_STANDARD_DURABLE_CONTRACT.md; tests/conformance/agui_contract/;
+  docs/AGENT_TASKS.md; PROGRESS.md; WORKLOG.md; approved implementation plan checkboxes.
+- Scope: freeze official schema/catalog, real legacy wire/cursor goldens, versions,
+  profiles and public/internal Run mapping rules; runnable offline contract baseline.
+  No runtime/SDK dependency or execution changes; all later cards remain locked
+  until this slice is committed/reviewed against the declared target.
+- Validation: red/green contract self-check, relevant legacy projection/cursor tests,
+  Ruff/file-size/diff and independent spec/quality review; no production/model calls.
+
 ## AGUI-FULL-INTERACTION-PLAN-20261028
 
 - Status: Review (2026-10-28; documentation-only Ready claim before edits; independent plan review passed).

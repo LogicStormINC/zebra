@@ -1,3 +1,17 @@
+## 2026-10-28 AG-UI G0 contract baseline
+
+AGUI-G0-CONTRACT-20261028 freezes the approved standard/durable boundary and
+upstream AG-UI 1.0 schema at immutable revision fdbca490dc90fd8fbce2b342df79383bd70559af
+(SHA-256 4b5c93226838a0e72d88e6c5df20633c686c49fcb75d9be2815c6cbf9e48e71a).
+31 normative event tags are catalogued; the real existing projector/encoder/v2
+wire/cursor golden retains all14 currently emitted types. Offline7, legacy36,
+SDK174 zero-skipped checks and complete make check passed (1428 typed files/30eval).
+ADR-015 SDK-mandate supersession is narrow; authority/BFF boundaries remain.
+New profiles and 1.0 production semantics remain unimplemented; G2V isolation must
+precede semantic changes. No runtime/dependency/model/production changes.
+See [contract](docs/AGUI_STANDARD_DURABLE_CONTRACT.md) and
+[plan](docs/superpowers/plans/2026-10-28-agui-full-interaction.md).
+
 ## 2026-10-28 AG-UI full interaction proposal (not implemented)
 
 AGUI-FULL-INTERACTION-PLAN-20261028 records the requested complete repair and

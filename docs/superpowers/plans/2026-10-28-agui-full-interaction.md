@@ -1,6 +1,6 @@
 # Cloud Agent AG-UI 完整修复与优化方案 / Implementation Plan
 
-> **For agentic workers:** REQUIRED: Use superpowers:executing-plans to implement this plan. Steps use checkbox (`- [ ]`) syntax for tracking. 本文是待评审方案；后续实现必须逐卡认领，不因方案存在而获得部署、重跑或生产数据修改授权。
+> **For agentic workers:** REQUIRED: Use superpowers:executing-plans to implement this plan. Steps use checkbox (`- [ ]`) syntax for tracking. 用户已于2026-10-28批准开始实施；后续实现逐卡认领，部署、重跑或生产数据修改不在本次默认授权内。
 
 **Goal:** 把现有事件投影、可靠流、SDK 与组件连成可独立接入、可恢复、可验证的通用 Agent 交互层，Trench 是兼容消费者之一。
 
@@ -285,7 +285,7 @@ Trench T1 在其自身环境执行 focused API、完整 toc-frontend test/lint/b
 
 | 阶段 | 交付 | 退出条件 | 初步工程量 |
 | --- | --- | --- | --- |
-| A：合同与基线 | G0 | 版本/schema/语义/profile/Run映射与ADR冲突冻结，已有缺陷可复现 | 2–3 工程日 |
+| A：合同与基线 | G0 | 版本/schema/profile及Run映射约束冻结、ADR冲突解决、旧基线可复现；具体映射算法由G2V代码前固定 | 2–3 工程日 |
 | B：基础闭环 | G1/G2/G3 | 标准正文/工具/状态/Activity和可靠恢复由统一管线消费；旧门禁不退化 | 7–11 工程日 |
 | C：完整交互 | G4/G5/G6 | 子Agent、审批/Frontend Tool、多会话、Reasoning安全处理、标准消费者与新包通过 | 6–10 工程日 |
 | D：消费者与收口 | T1/G7 | Trench等价迁移、双浏览器、旧包回归、性能与可回滚交付 | 5–8 工程日 |
@@ -308,7 +308,7 @@ Trench T1 在其自身环境执行 focused API、完整 toc-frontend test/lint/b
 
 - 推荐采用现有SDK为主、标准消费者可选互操作的路线；不整体改为CopilotKit，不重建Event Store。
 - 推荐标准语义与可靠传输双配置；新profile可与旧v2并存，审批与内部Run同一性不被改变。
-- 官方schema精确版本、JS复用方案、公共runId映射、能力发现的已有承载点、具体性能预算由G0验证后冻结。
+- G0冻结官方schema、profile和兼容边界；JS复用在G1最小实际消费试验后选定，公共runId算法/真实discovery承载点在G2V代码前固定，具体性能阈值在G7优化前以匹配基线冻结。各待决项是对应卡的前置门禁，不能当成已完成。
 - 支持目录应区分“可以消费”和“真实可生产”；实时语音、任意代码生成UI、全新协作编辑、Protobuf/WebSocket、新计费平台不属于本次默认范围。
 - 本方案交付时未实施、未推送、未部署；所有实现卡为建议，当前只认领文档卡。
 
@@ -322,3 +322,13 @@ Trench T1 在其自身环境执行 focused API、完整 toc-frontend test/lint/b
 
 
 方案审查：独立 reviewer 首轮指出5项实质问题（旧投影前置隔离、标准Frontend Tool往返、完整resume覆盖、门禁依赖、新测试入口），均已修订；复审通过。该结论仅针对方案，不代表实现、性能或部署验收。
+
+
+实施进度（2026-10-28）：
+
+- [x] G0：冻结官方schema/31事件目录、真实旧14类wire/cursor golden及ADR边界；7+36+174检查和make check通过；独立审查见任务表。
+- [ ] G1：标准消费核心。
+- [ ] G2V/G2：版本隔离后公开投影语义。
+- [ ] G3–G7/T1：传输、交互、包与消费者收口。
+
+G0审查后的顺序澄清：原估算把JS复用、Run映射算法及性能阈值都归到G0。实际需消费试验、版本隔离代码边界及可重复性能样本才能决定，故分别移至G1/G2V/G7的实现前门禁。G0交付为可运行的合同/兼容基线，不解锁依赖这些决定的新生产profile；无新增架构权限。

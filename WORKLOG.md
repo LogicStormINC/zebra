@@ -1,3 +1,12 @@
+## 2026-10-28 AGUI-G0-CONTRACT-20261028
+
+Implemented frozen upstream schema/catalog and deterministic legacy wire/cursor
+baseline with original runtime unchanged. Initial missing-baseline test failed;
+freezing actual output passed; corruption/catalog/cursor negative checks remain.
+Offline7 + existing projection36 + SDK174 passed; make check passed. Independent spec and quality reviews passed after sequencing clarification. No full
+1.0 behavior/HTTP/DB/browser/production claim. Next G1 consumer must reuse verified
+official JS implementation where practical; G2V profile isolation precedes G2.
+
 ## 2026-10-28 — CLOUD-CONTINUATION-EPOCHS-20261028
 
 Continue investigation until evidence-backed initial stability. Reused clean

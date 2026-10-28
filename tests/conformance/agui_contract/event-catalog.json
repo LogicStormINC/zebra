@@ -1,0 +1,157 @@
+[
+  {
+    "type": "TEXT_MESSAGE_START",
+    "schema_ref": "#/$defs/TextMessageStartEvent",
+    "anchor": "TextMessageStartEvent"
+  },
+  {
+    "type": "TEXT_MESSAGE_CONTENT",
+    "schema_ref": "#/$defs/TextMessageContentEvent",
+    "anchor": "TextMessageContentEvent"
+  },
+  {
+    "type": "TEXT_MESSAGE_END",
+    "schema_ref": "#/$defs/TextMessageEndEvent",
+    "anchor": "TextMessageEndEvent"
+  },
+  {
+    "type": "TEXT_MESSAGE_CHUNK",
+    "schema_ref": "#/$defs/TextMessageChunkEvent",
+    "anchor": "TextMessageChunkEvent"
+  },
+  {
+    "type": "TOOL_CALL_START",
+    "schema_ref": "#/$defs/ToolCallStartEvent",
+    "anchor": "ToolCallStartEvent"
+  },
+  {
+    "type": "TOOL_CALL_ARGS",
+    "schema_ref": "#/$defs/ToolCallArgsEvent",
+    "anchor": "ToolCallArgsEvent"
+  },
+  {
+    "type": "TOOL_CALL_END",
+    "schema_ref": "#/$defs/ToolCallEndEvent",
+    "anchor": "ToolCallEndEvent"
+  },
+  {
+    "type": "TOOL_CALL_CHUNK",
+    "schema_ref": "#/$defs/ToolCallChunkEvent",
+    "anchor": "ToolCallChunkEvent"
+  },
+  {
+    "type": "TOOL_CALL_RESULT",
+    "schema_ref": "#/$defs/ToolCallResultEvent",
+    "anchor": "ToolCallResultEvent"
+  },
+  {
+    "type": "STATE_SNAPSHOT",
+    "schema_ref": "#/$defs/StateSnapshotEvent",
+    "anchor": "StateSnapshotEvent"
+  },
+  {
+    "type": "STATE_DELTA",
+    "schema_ref": "#/$defs/StateDeltaEvent",
+    "anchor": "StateDeltaEvent"
+  },
+  {
+    "type": "MESSAGES_SNAPSHOT",
+    "schema_ref": "#/$defs/MessagesSnapshotEvent",
+    "anchor": "MessagesSnapshotEvent"
+  },
+  {
+    "type": "ACTIVITY_SNAPSHOT",
+    "schema_ref": "#/$defs/ActivitySnapshotEvent",
+    "anchor": "ActivitySnapshotEvent"
+  },
+  {
+    "type": "ACTIVITY_DELTA",
+    "schema_ref": "#/$defs/ActivityDeltaEvent",
+    "anchor": "ActivityDeltaEvent"
+  },
+  {
+    "type": "RAW",
+    "schema_ref": "#/$defs/RawEvent",
+    "anchor": "RawEvent"
+  },
+  {
+    "type": "CUSTOM",
+    "schema_ref": "#/$defs/CustomEvent",
+    "anchor": "CustomEvent"
+  },
+  {
+    "type": "RUN_STARTED",
+    "schema_ref": "#/$defs/RunStartedEvent",
+    "anchor": "RunStartedEvent"
+  },
+  {
+    "type": "RUN_FINISHED",
+    "schema_ref": "#/$defs/RunFinishedEvent",
+    "anchor": "RunFinishedEvent"
+  },
+  {
+    "type": "RUN_ERROR",
+    "schema_ref": "#/$defs/RunErrorEvent",
+    "anchor": "RunErrorEvent"
+  },
+  {
+    "type": "STEP_STARTED",
+    "schema_ref": "#/$defs/StepStartedEvent",
+    "anchor": "StepStartedEvent"
+  },
+  {
+    "type": "STEP_FINISHED",
+    "schema_ref": "#/$defs/StepFinishedEvent",
+    "anchor": "StepFinishedEvent"
+  },
+  {
+    "type": "REASONING_START",
+    "schema_ref": "#/$defs/ReasoningStartEvent",
+    "anchor": "ReasoningStartEvent"
+  },
+  {
+    "type": "REASONING_MESSAGE_START",
+    "schema_ref": "#/$defs/ReasoningMessageStartEvent",
+    "anchor": "ReasoningMessageStartEvent"
+  },
+  {
+    "type": "REASONING_MESSAGE_CONTENT",
+    "schema_ref": "#/$defs/ReasoningMessageContentEvent",
+    "anchor": "ReasoningMessageContentEvent"
+  },
+  {
+    "type": "REASONING_MESSAGE_END",
+    "schema_ref": "#/$defs/ReasoningMessageEndEvent",
+    "anchor": "ReasoningMessageEndEvent"
+  },
+  {
+    "type": "REASONING_MESSAGE_CHUNK",
+    "schema_ref": "#/$defs/ReasoningMessageChunkEvent",
+    "anchor": "ReasoningMessageChunkEvent"
+  },
+  {
+    "type": "REASONING_END",
+    "schema_ref": "#/$defs/ReasoningEndEvent",
+    "anchor": "ReasoningEndEvent"
+  },
+  {
+    "type": "REASONING_ENCRYPTED_VALUE",
+    "schema_ref": "#/$defs/ReasoningEncryptedValueEvent",
+    "anchor": "ReasoningEncryptedValueEvent"
+  },
+  {
+    "type": "SUBAGENT_STARTED",
+    "schema_ref": "#/$defs/SubagentStartedEvent",
+    "anchor": "SubagentStartedEvent"
+  },
+  {
+    "type": "SUBAGENT_FINISHED",
+    "schema_ref": "#/$defs/SubagentFinishedEvent",
+    "anchor": "SubagentFinishedEvent"
+  },
+  {
+    "type": "SUBAGENT_ERROR",
+    "schema_ref": "#/$defs/SubagentErrorEvent",
+    "anchor": "SubagentErrorEvent"
+  }
+]

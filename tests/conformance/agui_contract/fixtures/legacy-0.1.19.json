@@ -1,0 +1,1050 @@
+{
+  "python_protocol_package": "0.1.19",
+  "checkpoint_versions": [
+    "ag-ui-v1",
+    "ag-ui-v1-coverage"
+  ],
+  "scenarios": {
+    "text_tool_plan": {
+      "durable": [
+        {
+          "event_id": "00000000-0000-0000-0000-000000000064",
+          "session_id": "00000000-0000-0000-0000-000000000001",
+          "sequence": 0,
+          "event_type": "task_prepared",
+          "payload": {
+            "title": "Inspect",
+            "user_input": "Inspect"
+          },
+          "actor": "harness",
+          "created_at": "2026-10-28T00:00:00Z",
+          "causation_id": null,
+          "correlation_id": null,
+          "idempotency_key": null,
+          "policy_version": null,
+          "model_profile": null
+        },
+        {
+          "event_id": "00000000-0000-0000-0000-000000000065",
+          "session_id": "00000000-0000-0000-0000-000000000001",
+          "sequence": 1,
+          "event_type": "plan_updated",
+          "payload": {
+            "steps": [
+              "Read evidence"
+            ]
+          },
+          "actor": "harness",
+          "created_at": "2026-10-28T00:00:00Z",
+          "causation_id": null,
+          "correlation_id": null,
+          "idempotency_key": null,
+          "policy_version": null,
+          "model_profile": null
+        },
+        {
+          "event_id": "00000000-0000-0000-0000-000000000066",
+          "session_id": "00000000-0000-0000-0000-000000000001",
+          "sequence": 2,
+          "event_type": "model_response_delta",
+          "payload": {
+            "model_call_id": "model-1",
+            "content_delta": "Found evidence."
+          },
+          "actor": "harness",
+          "created_at": "2026-10-28T00:00:00Z",
+          "causation_id": null,
+          "correlation_id": null,
+          "idempotency_key": null,
+          "policy_version": null,
+          "model_profile": null
+        },
+        {
+          "event_id": "00000000-0000-0000-0000-000000000067",
+          "session_id": "00000000-0000-0000-0000-000000000001",
+          "sequence": 3,
+          "event_type": "model_response_received",
+          "payload": {
+            "model_call_id": "model-1",
+            "assistant_message": "Found evidence.",
+            "response_stage": "final"
+          },
+          "actor": "harness",
+          "created_at": "2026-10-28T00:00:00Z",
+          "causation_id": null,
+          "correlation_id": null,
+          "idempotency_key": null,
+          "policy_version": null,
+          "model_profile": null
+        },
+        {
+          "event_id": "00000000-0000-0000-0000-000000000068",
+          "session_id": "00000000-0000-0000-0000-000000000001",
+          "sequence": 4,
+          "event_type": "tool_call_proposed",
+          "payload": {
+            "tool_call_id": "tool-1",
+            "tool_name": "repo.read",
+            "arguments": {
+              "path": "README.md"
+            }
+          },
+          "actor": "harness",
+          "created_at": "2026-10-28T00:00:00Z",
+          "causation_id": null,
+          "correlation_id": null,
+          "idempotency_key": null,
+          "policy_version": null,
+          "model_profile": null
+        },
+        {
+          "event_id": "00000000-0000-0000-0000-000000000069",
+          "session_id": "00000000-0000-0000-0000-000000000001",
+          "sequence": 5,
+          "event_type": "tool_execution_completed",
+          "payload": {
+            "tool_call_id": "tool-1",
+            "tool_name": "repo.read",
+            "output": "README"
+          },
+          "actor": "harness",
+          "created_at": "2026-10-28T00:00:00Z",
+          "causation_id": null,
+          "correlation_id": null,
+          "idempotency_key": null,
+          "policy_version": null,
+          "model_profile": null
+        },
+        {
+          "event_id": "00000000-0000-0000-0000-00000000006a",
+          "session_id": "00000000-0000-0000-0000-000000000001",
+          "sequence": 6,
+          "event_type": "session_completed",
+          "payload": {
+            "summary": "done"
+          },
+          "actor": "harness",
+          "created_at": "2026-10-28T00:00:00Z",
+          "causation_id": null,
+          "correlation_id": null,
+          "idempotency_key": null,
+          "policy_version": null,
+          "model_profile": null
+        }
+      ],
+      "sse": [
+        "id: eyJldmVudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDA2NCIsImZyYW1lX2luZGV4IjowLCJydW5faWQiOiJleGVjdXRpb24tY29udHJhY3QiLCJzZXF1ZW5jZSI6MCwidGhyZWFkX2lkIjoidGFzay1jb250cmFjdCIsInZlcnNpb24iOjF9\ndata: {\"type\":\"RUN_STARTED\",\"threadId\":\"task-contract\",\"runId\":\"execution-contract\"}\n\n",
+        "id: eyJldmVudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDA2NCIsImZyYW1lX2luZGV4IjoxLCJydW5faWQiOiJleGVjdXRpb24tY29udHJhY3QiLCJzZXF1ZW5jZSI6MCwidGhyZWFkX2lkIjoidGFzay1jb250cmFjdCIsInZlcnNpb24iOjF9\ndata: {\"type\":\"STATE_SNAPSHOT\",\"timestamp\":1793145600000,\"snapshot\":{\"task\":{\"title\":\"Inspect\"}}}\n\n",
+        "id: eyJldmVudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDA2NSIsImZyYW1lX2luZGV4IjowLCJydW5faWQiOiJleGVjdXRpb24tY29udHJhY3QiLCJzZXF1ZW5jZSI6MSwidGhyZWFkX2lkIjoidGFzay1jb250cmFjdCIsInZlcnNpb24iOjF9\ndata: {\"type\":\"STATE_DELTA\",\"timestamp\":1793145600000,\"delta\":[{\"op\":\"replace\",\"path\":\"/plan/steps\",\"value\":[\"Read evidence\"]}]}\n\n",
+        "id: eyJldmVudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDA2NiIsImZyYW1lX2luZGV4IjowLCJydW5faWQiOiJleGVjdXRpb24tY29udHJhY3QiLCJzZXF1ZW5jZSI6MiwidGhyZWFkX2lkIjoidGFzay1jb250cmFjdCIsInZlcnNpb24iOjF9\ndata: {\"type\":\"TEXT_MESSAGE_START\",\"timestamp\":1793145600000,\"messageId\":\"message:model-1\",\"role\":\"assistant\"}\n\n",
+        "id: eyJldmVudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDA2NiIsImZyYW1lX2luZGV4IjoxLCJydW5faWQiOiJleGVjdXRpb24tY29udHJhY3QiLCJzZXF1ZW5jZSI6MiwidGhyZWFkX2lkIjoidGFzay1jb250cmFjdCIsInZlcnNpb24iOjF9\ndata: {\"type\":\"TEXT_MESSAGE_CONTENT\",\"timestamp\":1793145600000,\"messageId\":\"message:model-1\",\"delta\":\"Found evidence.\"}\n\n",
+        "id: eyJldmVudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDA2NyIsImZyYW1lX2luZGV4IjowLCJydW5faWQiOiJleGVjdXRpb24tY29udHJhY3QiLCJzZXF1ZW5jZSI6MywidGhyZWFkX2lkIjoidGFzay1jb250cmFjdCIsInZlcnNpb24iOjF9\ndata: {\"type\":\"TEXT_MESSAGE_END\",\"timestamp\":1793145600000,\"messageId\":\"message:model-1\"}\n\n",
+        "id: eyJldmVudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDA2NyIsImZyYW1lX2luZGV4IjoxLCJydW5faWQiOiJleGVjdXRpb24tY29udHJhY3QiLCJzZXF1ZW5jZSI6MywidGhyZWFkX2lkIjoidGFzay1jb250cmFjdCIsInZlcnNpb24iOjF9\ndata: {\"type\":\"CUSTOM\",\"timestamp\":1793145600000,\"name\":\"zebra.model_response\",\"value\":{\"assistant_message\":\"Found evidence.\",\"message_id\":\"message:model-1\",\"model_call_id\":\"model-1\",\"response_stage\":\"final\",\"attempt_number\":null,\"public_commentary\":null}}\n\n",
+        "id: eyJldmVudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDA2OCIsImZyYW1lX2luZGV4IjowLCJydW5faWQiOiJleGVjdXRpb24tY29udHJhY3QiLCJzZXF1ZW5jZSI6NCwidGhyZWFkX2lkIjoidGFzay1jb250cmFjdCIsInZlcnNpb24iOjF9\ndata: {\"type\":\"TOOL_CALL_START\",\"timestamp\":1793145600000,\"toolCallId\":\"tool-1\",\"toolCallName\":\"repo.read\"}\n\n",
+        "id: eyJldmVudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDA2OCIsImZyYW1lX2luZGV4IjoxLCJydW5faWQiOiJleGVjdXRpb24tY29udHJhY3QiLCJzZXF1ZW5jZSI6NCwidGhyZWFkX2lkIjoidGFzay1jb250cmFjdCIsInZlcnNpb24iOjF9\ndata: {\"type\":\"TOOL_CALL_ARGS\",\"timestamp\":1793145600000,\"toolCallId\":\"tool-1\",\"delta\":\"{\\\"path\\\":\\\"README.md\\\"}\"}\n\n",
+        "id: eyJldmVudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDA2OSIsImZyYW1lX2luZGV4IjowLCJydW5faWQiOiJleGVjdXRpb24tY29udHJhY3QiLCJzZXF1ZW5jZSI6NSwidGhyZWFkX2lkIjoidGFzay1jb250cmFjdCIsInZlcnNpb24iOjF9\ndata: {\"type\":\"TOOL_CALL_END\",\"timestamp\":1793145600000,\"toolCallId\":\"tool-1\"}\n\n",
+        "id: eyJldmVudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDA2OSIsImZyYW1lX2luZGV4IjoxLCJydW5faWQiOiJleGVjdXRpb24tY29udHJhY3QiLCJzZXF1ZW5jZSI6NSwidGhyZWFkX2lkIjoidGFzay1jb250cmFjdCIsInZlcnNpb24iOjF9\ndata: {\"type\":\"TOOL_CALL_RESULT\",\"timestamp\":1793145600000,\"messageId\":\"tool-result:tool-1\",\"toolCallId\":\"tool-1\",\"content\":\"{\\\"metadata\\\":{},\\\"output\\\":\\\"README\\\",\\\"status\\\":\\\"unknown\\\",\\\"type\\\":\\\"zebra.tool_result.v1\\\"}\",\"role\":\"tool\"}\n\n",
+        "id: eyJldmVudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDA2YSIsImZyYW1lX2luZGV4IjowLCJydW5faWQiOiJleGVjdXRpb24tY29udHJhY3QiLCJzZXF1ZW5jZSI6NiwidGhyZWFkX2lkIjoidGFzay1jb250cmFjdCIsInZlcnNpb24iOjF9\ndata: {\"type\":\"RUN_FINISHED\",\"timestamp\":1793145600000,\"threadId\":\"task-contract\",\"runId\":\"execution-contract\",\"outcome\":{\"type\":\"success\"}}\n\n"
+      ],
+      "replays": [
+        {
+          "after": "eyJldmVudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDA2NCIsImZyYW1lX2luZGV4IjowLCJydW5faWQiOiJleGVjdXRpb24tY29udHJhY3QiLCJzZXF1ZW5jZSI6MCwidGhyZWFkX2lkIjoidGFzay1jb250cmFjdCIsInZlcnNpb24iOjF9",
+          "events": [
+            {
+              "type": "STATE_SNAPSHOT",
+              "timestamp": 1793145600000,
+              "snapshot": {
+                "task": {
+                  "title": "Inspect"
+                }
+              }
+            },
+            {
+              "type": "STATE_DELTA",
+              "timestamp": 1793145600000,
+              "delta": [
+                {
+                  "op": "replace",
+                  "path": "/plan/steps",
+                  "value": [
+                    "Read evidence"
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "TEXT_MESSAGE_START",
+              "timestamp": 1793145600000,
+              "messageId": "message:model-1",
+              "role": "assistant"
+            },
+            {
+              "type": "TEXT_MESSAGE_CONTENT",
+              "timestamp": 1793145600000,
+              "messageId": "message:model-1",
+              "delta": "Found evidence."
+            },
+            {
+              "type": "TEXT_MESSAGE_END",
+              "timestamp": 1793145600000,
+              "messageId": "message:model-1"
+            },
+            {
+              "type": "CUSTOM",
+              "timestamp": 1793145600000,
+              "name": "zebra.model_response",
+              "value": {
+                "assistant_message": "Found evidence.",
+                "message_id": "message:model-1",
+                "model_call_id": "model-1",
+                "response_stage": "final",
+                "attempt_number": null,
+                "public_commentary": null
+              }
+            },
+            {
+              "type": "TOOL_CALL_START",
+              "timestamp": 1793145600000,
+              "toolCallId": "tool-1",
+              "toolCallName": "repo.read"
+            },
+            {
+              "type": "TOOL_CALL_ARGS",
+              "timestamp": 1793145600000,
+              "toolCallId": "tool-1",
+              "delta": "{\"path\":\"README.md\"}"
+            },
+            {
+              "type": "TOOL_CALL_END",
+              "timestamp": 1793145600000,
+              "toolCallId": "tool-1"
+            },
+            {
+              "type": "TOOL_CALL_RESULT",
+              "timestamp": 1793145600000,
+              "messageId": "tool-result:tool-1",
+              "toolCallId": "tool-1",
+              "content": "{\"metadata\":{},\"output\":\"README\",\"status\":\"unknown\",\"type\":\"zebra.tool_result.v1\"}",
+              "role": "tool"
+            },
+            {
+              "type": "RUN_FINISHED",
+              "timestamp": 1793145600000,
+              "threadId": "task-contract",
+              "runId": "execution-contract",
+              "outcome": {
+                "type": "success"
+              }
+            }
+          ]
+        },
+        {
+          "after": "eyJldmVudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDA2NCIsImZyYW1lX2luZGV4IjoxLCJydW5faWQiOiJleGVjdXRpb24tY29udHJhY3QiLCJzZXF1ZW5jZSI6MCwidGhyZWFkX2lkIjoidGFzay1jb250cmFjdCIsInZlcnNpb24iOjF9",
+          "events": [
+            {
+              "type": "STATE_DELTA",
+              "timestamp": 1793145600000,
+              "delta": [
+                {
+                  "op": "replace",
+                  "path": "/plan/steps",
+                  "value": [
+                    "Read evidence"
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "TEXT_MESSAGE_START",
+              "timestamp": 1793145600000,
+              "messageId": "message:model-1",
+              "role": "assistant"
+            },
+            {
+              "type": "TEXT_MESSAGE_CONTENT",
+              "timestamp": 1793145600000,
+              "messageId": "message:model-1",
+              "delta": "Found evidence."
+            },
+            {
+              "type": "TEXT_MESSAGE_END",
+              "timestamp": 1793145600000,
+              "messageId": "message:model-1"
+            },
+            {
+              "type": "CUSTOM",
+              "timestamp": 1793145600000,
+              "name": "zebra.model_response",
+              "value": {
+                "assistant_message": "Found evidence.",
+                "message_id": "message:model-1",
+                "model_call_id": "model-1",
+                "response_stage": "final",
+                "attempt_number": null,
+                "public_commentary": null
+              }
+            },
+            {
+              "type": "TOOL_CALL_START",
+              "timestamp": 1793145600000,
+              "toolCallId": "tool-1",
+              "toolCallName": "repo.read"
+            },
+            {
+              "type": "TOOL_CALL_ARGS",
+              "timestamp": 1793145600000,
+              "toolCallId": "tool-1",
+              "delta": "{\"path\":\"README.md\"}"
+            },
+            {
+              "type": "TOOL_CALL_END",
+              "timestamp": 1793145600000,
+              "toolCallId": "tool-1"
+            },
+            {
+              "type": "TOOL_CALL_RESULT",
+              "timestamp": 1793145600000,
+              "messageId": "tool-result:tool-1",
+              "toolCallId": "tool-1",
+              "content": "{\"metadata\":{},\"output\":\"README\",\"status\":\"unknown\",\"type\":\"zebra.tool_result.v1\"}",
+              "role": "tool"
+            },
+            {
+              "type": "RUN_FINISHED",
+              "timestamp": 1793145600000,
+              "threadId": "task-contract",
+              "runId": "execution-contract",
+              "outcome": {
+                "type": "success"
+              }
+            }
+          ]
+        },
+        {
+          "after": "eyJldmVudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDA2NSIsImZyYW1lX2luZGV4IjowLCJydW5faWQiOiJleGVjdXRpb24tY29udHJhY3QiLCJzZXF1ZW5jZSI6MSwidGhyZWFkX2lkIjoidGFzay1jb250cmFjdCIsInZlcnNpb24iOjF9",
+          "events": [
+            {
+              "type": "TEXT_MESSAGE_START",
+              "timestamp": 1793145600000,
+              "messageId": "message:model-1",
+              "role": "assistant"
+            },
+            {
+              "type": "TEXT_MESSAGE_CONTENT",
+              "timestamp": 1793145600000,
+              "messageId": "message:model-1",
+              "delta": "Found evidence."
+            },
+            {
+              "type": "TEXT_MESSAGE_END",
+              "timestamp": 1793145600000,
+              "messageId": "message:model-1"
+            },
+            {
+              "type": "CUSTOM",
+              "timestamp": 1793145600000,
+              "name": "zebra.model_response",
+              "value": {
+                "assistant_message": "Found evidence.",
+                "message_id": "message:model-1",
+                "model_call_id": "model-1",
+                "response_stage": "final",
+                "attempt_number": null,
+                "public_commentary": null
+              }
+            },
+            {
+              "type": "TOOL_CALL_START",
+              "timestamp": 1793145600000,
+              "toolCallId": "tool-1",
+              "toolCallName": "repo.read"
+            },
+            {
+              "type": "TOOL_CALL_ARGS",
+              "timestamp": 1793145600000,
+              "toolCallId": "tool-1",
+              "delta": "{\"path\":\"README.md\"}"
+            },
+            {
+              "type": "TOOL_CALL_END",
+              "timestamp": 1793145600000,
+              "toolCallId": "tool-1"
+            },
+            {
+              "type": "TOOL_CALL_RESULT",
+              "timestamp": 1793145600000,
+              "messageId": "tool-result:tool-1",
+              "toolCallId": "tool-1",
+              "content": "{\"metadata\":{},\"output\":\"README\",\"status\":\"unknown\",\"type\":\"zebra.tool_result.v1\"}",
+              "role": "tool"
+            },
+            {
+              "type": "RUN_FINISHED",
+              "timestamp": 1793145600000,
+              "threadId": "task-contract",
+              "runId": "execution-contract",
+              "outcome": {
+                "type": "success"
+              }
+            }
+          ]
+        },
+        {
+          "after": "eyJldmVudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDA2NiIsImZyYW1lX2luZGV4IjowLCJydW5faWQiOiJleGVjdXRpb24tY29udHJhY3QiLCJzZXF1ZW5jZSI6MiwidGhyZWFkX2lkIjoidGFzay1jb250cmFjdCIsInZlcnNpb24iOjF9",
+          "events": [
+            {
+              "type": "TEXT_MESSAGE_CONTENT",
+              "timestamp": 1793145600000,
+              "messageId": "message:model-1",
+              "delta": "Found evidence."
+            },
+            {
+              "type": "TEXT_MESSAGE_END",
+              "timestamp": 1793145600000,
+              "messageId": "message:model-1"
+            },
+            {
+              "type": "CUSTOM",
+              "timestamp": 1793145600000,
+              "name": "zebra.model_response",
+              "value": {
+                "assistant_message": "Found evidence.",
+                "message_id": "message:model-1",
+                "model_call_id": "model-1",
+                "response_stage": "final",
+                "attempt_number": null,
+                "public_commentary": null
+              }
+            },
+            {
+              "type": "TOOL_CALL_START",
+              "timestamp": 1793145600000,
+              "toolCallId": "tool-1",
+              "toolCallName": "repo.read"
+            },
+            {
+              "type": "TOOL_CALL_ARGS",
+              "timestamp": 1793145600000,
+              "toolCallId": "tool-1",
+              "delta": "{\"path\":\"README.md\"}"
+            },
+            {
+              "type": "TOOL_CALL_END",
+              "timestamp": 1793145600000,
+              "toolCallId": "tool-1"
+            },
+            {
+              "type": "TOOL_CALL_RESULT",
+              "timestamp": 1793145600000,
+              "messageId": "tool-result:tool-1",
+              "toolCallId": "tool-1",
+              "content": "{\"metadata\":{},\"output\":\"README\",\"status\":\"unknown\",\"type\":\"zebra.tool_result.v1\"}",
+              "role": "tool"
+            },
+            {
+              "type": "RUN_FINISHED",
+              "timestamp": 1793145600000,
+              "threadId": "task-contract",
+              "runId": "execution-contract",
+              "outcome": {
+                "type": "success"
+              }
+            }
+          ]
+        },
+        {
+          "after": "eyJldmVudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDA2NiIsImZyYW1lX2luZGV4IjoxLCJydW5faWQiOiJleGVjdXRpb24tY29udHJhY3QiLCJzZXF1ZW5jZSI6MiwidGhyZWFkX2lkIjoidGFzay1jb250cmFjdCIsInZlcnNpb24iOjF9",
+          "events": [
+            {
+              "type": "TEXT_MESSAGE_END",
+              "timestamp": 1793145600000,
+              "messageId": "message:model-1"
+            },
+            {
+              "type": "CUSTOM",
+              "timestamp": 1793145600000,
+              "name": "zebra.model_response",
+              "value": {
+                "assistant_message": "Found evidence.",
+                "message_id": "message:model-1",
+                "model_call_id": "model-1",
+                "response_stage": "final",
+                "attempt_number": null,
+                "public_commentary": null
+              }
+            },
+            {
+              "type": "TOOL_CALL_START",
+              "timestamp": 1793145600000,
+              "toolCallId": "tool-1",
+              "toolCallName": "repo.read"
+            },
+            {
+              "type": "TOOL_CALL_ARGS",
+              "timestamp": 1793145600000,
+              "toolCallId": "tool-1",
+              "delta": "{\"path\":\"README.md\"}"
+            },
+            {
+              "type": "TOOL_CALL_END",
+              "timestamp": 1793145600000,
+              "toolCallId": "tool-1"
+            },
+            {
+              "type": "TOOL_CALL_RESULT",
+              "timestamp": 1793145600000,
+              "messageId": "tool-result:tool-1",
+              "toolCallId": "tool-1",
+              "content": "{\"metadata\":{},\"output\":\"README\",\"status\":\"unknown\",\"type\":\"zebra.tool_result.v1\"}",
+              "role": "tool"
+            },
+            {
+              "type": "RUN_FINISHED",
+              "timestamp": 1793145600000,
+              "threadId": "task-contract",
+              "runId": "execution-contract",
+              "outcome": {
+                "type": "success"
+              }
+            }
+          ]
+        },
+        {
+          "after": "eyJldmVudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDA2NyIsImZyYW1lX2luZGV4IjowLCJydW5faWQiOiJleGVjdXRpb24tY29udHJhY3QiLCJzZXF1ZW5jZSI6MywidGhyZWFkX2lkIjoidGFzay1jb250cmFjdCIsInZlcnNpb24iOjF9",
+          "events": [
+            {
+              "type": "CUSTOM",
+              "timestamp": 1793145600000,
+              "name": "zebra.model_response",
+              "value": {
+                "assistant_message": "Found evidence.",
+                "message_id": "message:model-1",
+                "model_call_id": "model-1",
+                "response_stage": "final",
+                "attempt_number": null,
+                "public_commentary": null
+              }
+            },
+            {
+              "type": "TOOL_CALL_START",
+              "timestamp": 1793145600000,
+              "toolCallId": "tool-1",
+              "toolCallName": "repo.read"
+            },
+            {
+              "type": "TOOL_CALL_ARGS",
+              "timestamp": 1793145600000,
+              "toolCallId": "tool-1",
+              "delta": "{\"path\":\"README.md\"}"
+            },
+            {
+              "type": "TOOL_CALL_END",
+              "timestamp": 1793145600000,
+              "toolCallId": "tool-1"
+            },
+            {
+              "type": "TOOL_CALL_RESULT",
+              "timestamp": 1793145600000,
+              "messageId": "tool-result:tool-1",
+              "toolCallId": "tool-1",
+              "content": "{\"metadata\":{},\"output\":\"README\",\"status\":\"unknown\",\"type\":\"zebra.tool_result.v1\"}",
+              "role": "tool"
+            },
+            {
+              "type": "RUN_FINISHED",
+              "timestamp": 1793145600000,
+              "threadId": "task-contract",
+              "runId": "execution-contract",
+              "outcome": {
+                "type": "success"
+              }
+            }
+          ]
+        },
+        {
+          "after": "eyJldmVudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDA2NyIsImZyYW1lX2luZGV4IjoxLCJydW5faWQiOiJleGVjdXRpb24tY29udHJhY3QiLCJzZXF1ZW5jZSI6MywidGhyZWFkX2lkIjoidGFzay1jb250cmFjdCIsInZlcnNpb24iOjF9",
+          "events": [
+            {
+              "type": "TOOL_CALL_START",
+              "timestamp": 1793145600000,
+              "toolCallId": "tool-1",
+              "toolCallName": "repo.read"
+            },
+            {
+              "type": "TOOL_CALL_ARGS",
+              "timestamp": 1793145600000,
+              "toolCallId": "tool-1",
+              "delta": "{\"path\":\"README.md\"}"
+            },
+            {
+              "type": "TOOL_CALL_END",
+              "timestamp": 1793145600000,
+              "toolCallId": "tool-1"
+            },
+            {
+              "type": "TOOL_CALL_RESULT",
+              "timestamp": 1793145600000,
+              "messageId": "tool-result:tool-1",
+              "toolCallId": "tool-1",
+              "content": "{\"metadata\":{},\"output\":\"README\",\"status\":\"unknown\",\"type\":\"zebra.tool_result.v1\"}",
+              "role": "tool"
+            },
+            {
+              "type": "RUN_FINISHED",
+              "timestamp": 1793145600000,
+              "threadId": "task-contract",
+              "runId": "execution-contract",
+              "outcome": {
+                "type": "success"
+              }
+            }
+          ]
+        },
+        {
+          "after": "eyJldmVudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDA2OCIsImZyYW1lX2luZGV4IjowLCJydW5faWQiOiJleGVjdXRpb24tY29udHJhY3QiLCJzZXF1ZW5jZSI6NCwidGhyZWFkX2lkIjoidGFzay1jb250cmFjdCIsInZlcnNpb24iOjF9",
+          "events": [
+            {
+              "type": "TOOL_CALL_ARGS",
+              "timestamp": 1793145600000,
+              "toolCallId": "tool-1",
+              "delta": "{\"path\":\"README.md\"}"
+            },
+            {
+              "type": "TOOL_CALL_END",
+              "timestamp": 1793145600000,
+              "toolCallId": "tool-1"
+            },
+            {
+              "type": "TOOL_CALL_RESULT",
+              "timestamp": 1793145600000,
+              "messageId": "tool-result:tool-1",
+              "toolCallId": "tool-1",
+              "content": "{\"metadata\":{},\"output\":\"README\",\"status\":\"unknown\",\"type\":\"zebra.tool_result.v1\"}",
+              "role": "tool"
+            },
+            {
+              "type": "RUN_FINISHED",
+              "timestamp": 1793145600000,
+              "threadId": "task-contract",
+              "runId": "execution-contract",
+              "outcome": {
+                "type": "success"
+              }
+            }
+          ]
+        },
+        {
+          "after": "eyJldmVudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDA2OCIsImZyYW1lX2luZGV4IjoxLCJydW5faWQiOiJleGVjdXRpb24tY29udHJhY3QiLCJzZXF1ZW5jZSI6NCwidGhyZWFkX2lkIjoidGFzay1jb250cmFjdCIsInZlcnNpb24iOjF9",
+          "events": [
+            {
+              "type": "TOOL_CALL_END",
+              "timestamp": 1793145600000,
+              "toolCallId": "tool-1"
+            },
+            {
+              "type": "TOOL_CALL_RESULT",
+              "timestamp": 1793145600000,
+              "messageId": "tool-result:tool-1",
+              "toolCallId": "tool-1",
+              "content": "{\"metadata\":{},\"output\":\"README\",\"status\":\"unknown\",\"type\":\"zebra.tool_result.v1\"}",
+              "role": "tool"
+            },
+            {
+              "type": "RUN_FINISHED",
+              "timestamp": 1793145600000,
+              "threadId": "task-contract",
+              "runId": "execution-contract",
+              "outcome": {
+                "type": "success"
+              }
+            }
+          ]
+        },
+        {
+          "after": "eyJldmVudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDA2OSIsImZyYW1lX2luZGV4IjowLCJydW5faWQiOiJleGVjdXRpb24tY29udHJhY3QiLCJzZXF1ZW5jZSI6NSwidGhyZWFkX2lkIjoidGFzay1jb250cmFjdCIsInZlcnNpb24iOjF9",
+          "events": [
+            {
+              "type": "TOOL_CALL_RESULT",
+              "timestamp": 1793145600000,
+              "messageId": "tool-result:tool-1",
+              "toolCallId": "tool-1",
+              "content": "{\"metadata\":{},\"output\":\"README\",\"status\":\"unknown\",\"type\":\"zebra.tool_result.v1\"}",
+              "role": "tool"
+            },
+            {
+              "type": "RUN_FINISHED",
+              "timestamp": 1793145600000,
+              "threadId": "task-contract",
+              "runId": "execution-contract",
+              "outcome": {
+                "type": "success"
+              }
+            }
+          ]
+        },
+        {
+          "after": "eyJldmVudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDA2OSIsImZyYW1lX2luZGV4IjoxLCJydW5faWQiOiJleGVjdXRpb24tY29udHJhY3QiLCJzZXF1ZW5jZSI6NSwidGhyZWFkX2lkIjoidGFzay1jb250cmFjdCIsInZlcnNpb24iOjF9",
+          "events": [
+            {
+              "type": "RUN_FINISHED",
+              "timestamp": 1793145600000,
+              "threadId": "task-contract",
+              "runId": "execution-contract",
+              "outcome": {
+                "type": "success"
+              }
+            }
+          ]
+        },
+        {
+          "after": "eyJldmVudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDA2YSIsImZyYW1lX2luZGV4IjowLCJydW5faWQiOiJleGVjdXRpb24tY29udHJhY3QiLCJzZXF1ZW5jZSI6NiwidGhyZWFkX2lkIjoidGFzay1jb250cmFjdCIsInZlcnNpb24iOjF9",
+          "events": []
+        }
+      ],
+      "v2": [
+        {
+          "cursor": "v2.WzIsImcwLXNjb3BlIiwiZXlKbGRtVnVkRjlwWkNJNklqQXdNREF3TURBd0xUQXdNREF0TURBd01DMHdNREF3TFRBd01EQXdNREF3TURBMk5DSXNJbVp5WVcxbFgybHVaR1Y0SWpvd0xDSnlkVzVmYVdRaU9pSmxlR1ZqZFhScGIyNHRZMjl1ZEhKaFkzUWlMQ0p6WlhGMVpXNWpaU0k2TUN3aWRHaHlaV0ZrWDJsa0lqb2lkR0Z6YXkxamIyNTBjbUZqZENJc0luWmxjbk5wYjI0aU9qRjkiLG51bGwsbnVsbCxudWxsLG51bGwsbnVsbF0AetE--vvVoxFoOpJJtpU_lbbnvLPoizjIeblD0UQhcQ",
+          "wire": "id: eyJldmVudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDA2NCIsImZyYW1lX2luZGV4IjowLCJydW5faWQiOiJleGVjdXRpb24tY29udHJhY3QiLCJzZXF1ZW5jZSI6MCwidGhyZWFkX2lkIjoidGFzay1jb250cmFjdCIsInZlcnNpb24iOjF9\ndata: {\"type\":\"RUN_STARTED\",\"threadId\":\"task-contract\",\"runId\":\"execution-contract\"}\n\n",
+          "chunk_index": null
+        },
+        {
+          "cursor": "v2.WzIsImcwLXNjb3BlIiwiZXlKbGRtVnVkRjlwWkNJNklqQXdNREF3TURBd0xUQXdNREF0TURBd01DMHdNREF3TFRBd01EQXdNREF3TURBMk5DSXNJbVp5WVcxbFgybHVaR1Y0SWpveExDSnlkVzVmYVdRaU9pSmxlR1ZqZFhScGIyNHRZMjl1ZEhKaFkzUWlMQ0p6WlhGMVpXNWpaU0k2TUN3aWRHaHlaV0ZrWDJsa0lqb2lkR0Z6YXkxamIyNTBjbUZqZENJc0luWmxjbk5wYjI0aU9qRjkiLG51bGwsbnVsbCxudWxsLG51bGwsbnVsbF3PenMSTVwWk4J34PXaO4JsXoFmlduHiKgvXbDvkbcV5g",
+          "wire": "id: eyJldmVudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDA2NCIsImZyYW1lX2luZGV4IjoxLCJydW5faWQiOiJleGVjdXRpb24tY29udHJhY3QiLCJzZXF1ZW5jZSI6MCwidGhyZWFkX2lkIjoidGFzay1jb250cmFjdCIsInZlcnNpb24iOjF9\ndata: {\"type\":\"STATE_SNAPSHOT\",\"timestamp\":1793145600000,\"snapshot\":{\"task\":{\"title\":\"Inspect\"}}}\n\n",
+          "chunk_index": null
+        },
+        {
+          "cursor": "v2.WzIsImcwLXNjb3BlIiwiZXlKbGRtVnVkRjlwWkNJNklqQXdNREF3TURBd0xUQXdNREF0TURBd01DMHdNREF3TFRBd01EQXdNREF3TURBMk5TSXNJbVp5WVcxbFgybHVaR1Y0SWpvd0xDSnlkVzVmYVdRaU9pSmxlR1ZqZFhScGIyNHRZMjl1ZEhKaFkzUWlMQ0p6WlhGMVpXNWpaU0k2TVN3aWRHaHlaV0ZrWDJsa0lqb2lkR0Z6YXkxamIyNTBjbUZqZENJc0luWmxjbk5wYjI0aU9qRjkiLG51bGwsbnVsbCxudWxsLG51bGwsbnVsbF0sg5P8PsgKPY9QaMHsa_rXtADd7vKhapg65occGbNMSA",
+          "wire": "id: eyJldmVudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDA2NSIsImZyYW1lX2luZGV4IjowLCJydW5faWQiOiJleGVjdXRpb24tY29udHJhY3QiLCJzZXF1ZW5jZSI6MSwidGhyZWFkX2lkIjoidGFzay1jb250cmFjdCIsInZlcnNpb24iOjF9\ndata: {\"type\":\"STATE_DELTA\",\"timestamp\":1793145600000,\"delta\":[{\"op\":\"replace\",\"path\":\"/plan/steps\",\"value\":[\"Read evidence\"]}]}\n\n",
+          "chunk_index": null
+        },
+        {
+          "cursor": "v2.WzIsImcwLXNjb3BlIiwiZXlKbGRtVnVkRjlwWkNJNklqQXdNREF3TURBd0xUQXdNREF0TURBd01DMHdNREF3TFRBd01EQXdNREF3TURBMk5pSXNJbVp5WVcxbFgybHVaR1Y0SWpvd0xDSnlkVzVmYVdRaU9pSmxlR1ZqZFhScGIyNHRZMjl1ZEhKaFkzUWlMQ0p6WlhGMVpXNWpaU0k2TWl3aWRHaHlaV0ZrWDJsa0lqb2lkR0Z6YXkxamIyNTBjbUZqZENJc0luWmxjbk5wYjI0aU9qRjkiLG51bGwsbnVsbCxudWxsLG51bGwsbnVsbF0OSr3oUi1_1hu3RyQ94Nj4_lQxPltoQ9R7As-ub_H6-g",
+          "wire": "id: eyJldmVudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDA2NiIsImZyYW1lX2luZGV4IjowLCJydW5faWQiOiJleGVjdXRpb24tY29udHJhY3QiLCJzZXF1ZW5jZSI6MiwidGhyZWFkX2lkIjoidGFzay1jb250cmFjdCIsInZlcnNpb24iOjF9\ndata: {\"type\":\"TEXT_MESSAGE_START\",\"timestamp\":1793145600000,\"messageId\":\"message:model-1\",\"role\":\"assistant\"}\n\n",
+          "chunk_index": null
+        },
+        {
+          "cursor": "v2.WzIsImcwLXNjb3BlIiwiZXlKbGRtVnVkRjlwWkNJNklqQXdNREF3TURBd0xUQXdNREF0TURBd01DMHdNREF3TFRBd01EQXdNREF3TURBMk5pSXNJbVp5WVcxbFgybHVaR1Y0SWpveExDSnlkVzVmYVdRaU9pSmxlR1ZqZFhScGIyNHRZMjl1ZEhKaFkzUWlMQ0p6WlhGMVpXNWpaU0k2TWl3aWRHaHlaV0ZrWDJsa0lqb2lkR0Z6YXkxamIyNTBjbUZqZENJc0luWmxjbk5wYjI0aU9qRjkiLG51bGwsbnVsbCxudWxsLG51bGwsbnVsbF0nKGol7j_WjkUbysJBB1659SgyAgd9m5OtOs3BaIT6_A",
+          "wire": "data: {\"type\":\"CUSTOM\",\"name\":\"zebra.message_replace\",\"value\":{\"message_id\":\"message:model-1\",\"model_call_id\":\"model-1\",\"content\":\"Found evidence.\",\"chunk_index\":0,\"last\":true}}\n\n",
+          "chunk_index": null
+        },
+        {
+          "cursor": "v2.WzIsImcwLXNjb3BlIiwiZXlKbGRtVnVkRjlwWkNJNklqQXdNREF3TURBd0xUQXdNREF0TURBd01DMHdNREF3TFRBd01EQXdNREF3TURBMk55SXNJbVp5WVcxbFgybHVaR1Y0SWpvd0xDSnlkVzVmYVdRaU9pSmxlR1ZqZFhScGIyNHRZMjl1ZEhKaFkzUWlMQ0p6WlhGMVpXNWpaU0k2TXl3aWRHaHlaV0ZrWDJsa0lqb2lkR0Z6YXkxamIyNTBjbUZqZENJc0luWmxjbk5wYjI0aU9qRjkiLG51bGwsbnVsbCxudWxsLG51bGwsbnVsbF2MEbiJMpAyx7rr83ZgWR4rFiziLahOnWy5GX1ELdvLkA",
+          "wire": "id: eyJldmVudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDA2NyIsImZyYW1lX2luZGV4IjowLCJydW5faWQiOiJleGVjdXRpb24tY29udHJhY3QiLCJzZXF1ZW5jZSI6MywidGhyZWFkX2lkIjoidGFzay1jb250cmFjdCIsInZlcnNpb24iOjF9\ndata: {\"type\":\"TEXT_MESSAGE_END\",\"timestamp\":1793145600000,\"messageId\":\"message:model-1\"}\n\n",
+          "chunk_index": null
+        },
+        {
+          "cursor": "v2.WzIsImcwLXNjb3BlIiwiZXlKbGRtVnVkRjlwWkNJNklqQXdNREF3TURBd0xUQXdNREF0TURBd01DMHdNREF3TFRBd01EQXdNREF3TURBMk55SXNJbVp5WVcxbFgybHVaR1Y0SWpveExDSnlkVzVmYVdRaU9pSmxlR1ZqZFhScGIyNHRZMjl1ZEhKaFkzUWlMQ0p6WlhGMVpXNWpaU0k2TXl3aWRHaHlaV0ZrWDJsa0lqb2lkR0Z6YXkxamIyNTBjbUZqZENJc0luWmxjbk5wYjI0aU9qRjkiLG51bGwsbnVsbCxudWxsLG51bGwsbnVsbF28XnEICCiyFI5qdeN93wXX1Z4D9PiRjFwEsK2PiLzsSg",
+          "wire": "id: eyJldmVudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDA2NyIsImZyYW1lX2luZGV4IjoxLCJydW5faWQiOiJleGVjdXRpb24tY29udHJhY3QiLCJzZXF1ZW5jZSI6MywidGhyZWFkX2lkIjoidGFzay1jb250cmFjdCIsInZlcnNpb24iOjF9\ndata: {\"type\":\"CUSTOM\",\"timestamp\":1793145600000,\"name\":\"zebra.model_response\",\"value\":{\"assistant_message\":\"Found evidence.\",\"message_id\":\"message:model-1\",\"model_call_id\":\"model-1\",\"response_stage\":\"final\",\"attempt_number\":null,\"public_commentary\":null}}\n\n",
+          "chunk_index": null
+        },
+        {
+          "cursor": "v2.WzIsImcwLXNjb3BlIiwiZXlKbGRtVnVkRjlwWkNJNklqQXdNREF3TURBd0xUQXdNREF0TURBd01DMHdNREF3TFRBd01EQXdNREF3TURBMk9DSXNJbVp5WVcxbFgybHVaR1Y0SWpvd0xDSnlkVzVmYVdRaU9pSmxlR1ZqZFhScGIyNHRZMjl1ZEhKaFkzUWlMQ0p6WlhGMVpXNWpaU0k2TkN3aWRHaHlaV0ZrWDJsa0lqb2lkR0Z6YXkxamIyNTBjbUZqZENJc0luWmxjbk5wYjI0aU9qRjkiLG51bGwsbnVsbCxudWxsLG51bGwsbnVsbF31PU-hDigY9gaF17ElPB9HcciivOAEjN6heq1efcL9Cw",
+          "wire": "id: eyJldmVudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDA2OCIsImZyYW1lX2luZGV4IjowLCJydW5faWQiOiJleGVjdXRpb24tY29udHJhY3QiLCJzZXF1ZW5jZSI6NCwidGhyZWFkX2lkIjoidGFzay1jb250cmFjdCIsInZlcnNpb24iOjF9\ndata: {\"type\":\"TOOL_CALL_START\",\"timestamp\":1793145600000,\"toolCallId\":\"tool-1\",\"toolCallName\":\"repo.read\"}\n\n",
+          "chunk_index": null
+        },
+        {
+          "cursor": "v2.WzIsImcwLXNjb3BlIiwiZXlKbGRtVnVkRjlwWkNJNklqQXdNREF3TURBd0xUQXdNREF0TURBd01DMHdNREF3TFRBd01EQXdNREF3TURBMk9DSXNJbVp5WVcxbFgybHVaR1Y0SWpveExDSnlkVzVmYVdRaU9pSmxlR1ZqZFhScGIyNHRZMjl1ZEhKaFkzUWlMQ0p6WlhGMVpXNWpaU0k2TkN3aWRHaHlaV0ZrWDJsa0lqb2lkR0Z6YXkxamIyNTBjbUZqZENJc0luWmxjbk5wYjI0aU9qRjkiLG51bGwsbnVsbCxudWxsLG51bGwsbnVsbF3HttbCAYq6ySddAXKjuDDCVN1vNSHDWu0H-dtkjLJrKA",
+          "wire": "id: eyJldmVudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDA2OCIsImZyYW1lX2luZGV4IjoxLCJydW5faWQiOiJleGVjdXRpb24tY29udHJhY3QiLCJzZXF1ZW5jZSI6NCwidGhyZWFkX2lkIjoidGFzay1jb250cmFjdCIsInZlcnNpb24iOjF9\ndata: {\"type\":\"TOOL_CALL_ARGS\",\"timestamp\":1793145600000,\"toolCallId\":\"tool-1\",\"delta\":\"{\\\"path\\\":\\\"README.md\\\"}\"}\n\n",
+          "chunk_index": null
+        },
+        {
+          "cursor": "v2.WzIsImcwLXNjb3BlIiwiZXlKbGRtVnVkRjlwWkNJNklqQXdNREF3TURBd0xUQXdNREF0TURBd01DMHdNREF3TFRBd01EQXdNREF3TURBMk9TSXNJbVp5WVcxbFgybHVaR1Y0SWpvd0xDSnlkVzVmYVdRaU9pSmxlR1ZqZFhScGIyNHRZMjl1ZEhKaFkzUWlMQ0p6WlhGMVpXNWpaU0k2TlN3aWRHaHlaV0ZrWDJsa0lqb2lkR0Z6YXkxamIyNTBjbUZqZENJc0luWmxjbk5wYjI0aU9qRjkiLG51bGwsbnVsbCxudWxsLG51bGwsbnVsbF0StjHjrhZIFyYWsZhyrPJoUNa3Fl2CK6JG0BPc12E0Fw",
+          "wire": "id: eyJldmVudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDA2OSIsImZyYW1lX2luZGV4IjowLCJydW5faWQiOiJleGVjdXRpb24tY29udHJhY3QiLCJzZXF1ZW5jZSI6NSwidGhyZWFkX2lkIjoidGFzay1jb250cmFjdCIsInZlcnNpb24iOjF9\ndata: {\"type\":\"TOOL_CALL_END\",\"timestamp\":1793145600000,\"toolCallId\":\"tool-1\"}\n\n",
+          "chunk_index": null
+        },
+        {
+          "cursor": "v2.WzIsImcwLXNjb3BlIiwiZXlKbGRtVnVkRjlwWkNJNklqQXdNREF3TURBd0xUQXdNREF0TURBd01DMHdNREF3TFRBd01EQXdNREF3TURBMk9TSXNJbVp5WVcxbFgybHVaR1Y0SWpveExDSnlkVzVmYVdRaU9pSmxlR1ZqZFhScGIyNHRZMjl1ZEhKaFkzUWlMQ0p6WlhGMVpXNWpaU0k2TlN3aWRHaHlaV0ZrWDJsa0lqb2lkR0Z6YXkxamIyNTBjbUZqZENJc0luWmxjbk5wYjI0aU9qRjkiLG51bGwsbnVsbCxudWxsLG51bGwsbnVsbF112Fl3NFr0BEPeCL0wkEQGJ-McrvuzI_lPE8M8fJjeiw",
+          "wire": "id: eyJldmVudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDA2OSIsImZyYW1lX2luZGV4IjoxLCJydW5faWQiOiJleGVjdXRpb24tY29udHJhY3QiLCJzZXF1ZW5jZSI6NSwidGhyZWFkX2lkIjoidGFzay1jb250cmFjdCIsInZlcnNpb24iOjF9\ndata: {\"type\":\"TOOL_CALL_RESULT\",\"timestamp\":1793145600000,\"messageId\":\"tool-result:tool-1\",\"toolCallId\":\"tool-1\",\"content\":\"{\\\"metadata\\\":{},\\\"output\\\":\\\"README\\\",\\\"status\\\":\\\"unknown\\\",\\\"type\\\":\\\"zebra.tool_result.v1\\\"}\",\"role\":\"tool\"}\n\n",
+          "chunk_index": null
+        },
+        {
+          "cursor": "v2.WzIsImcwLXNjb3BlIiwiZXlKbGRtVnVkRjlwWkNJNklqQXdNREF3TURBd0xUQXdNREF0TURBd01DMHdNREF3TFRBd01EQXdNREF3TURBMllTSXNJbVp5WVcxbFgybHVaR1Y0SWpvd0xDSnlkVzVmYVdRaU9pSmxlR1ZqZFhScGIyNHRZMjl1ZEhKaFkzUWlMQ0p6WlhGMVpXNWpaU0k2Tml3aWRHaHlaV0ZrWDJsa0lqb2lkR0Z6YXkxamIyNTBjbUZqZENJc0luWmxjbk5wYjI0aU9qRjkiLG51bGwsbnVsbCxudWxsLG51bGwsbnVsbF0p2UsWYVowpdC6-h_7DGq-NnlnhdJu2Jhu6A345vJtEg",
+          "wire": "id: eyJldmVudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDA2YSIsImZyYW1lX2luZGV4IjowLCJydW5faWQiOiJleGVjdXRpb24tY29udHJhY3QiLCJzZXF1ZW5jZSI6NiwidGhyZWFkX2lkIjoidGFzay1jb250cmFjdCIsInZlcnNpb24iOjF9\ndata: {\"type\":\"RUN_FINISHED\",\"timestamp\":1793145600000,\"threadId\":\"task-contract\",\"runId\":\"execution-contract\",\"outcome\":{\"type\":\"success\"}}\n\n",
+          "chunk_index": null
+        }
+      ],
+      "next_cursor": "eyJldmVudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDA2YSIsInJ1bl9pZCI6ImV4ZWN1dGlvbi1jb250cmFjdCIsInNlcXVlbmNlIjo2LCJ0aHJlYWRfaWQiOiJ0YXNrLWNvbnRyYWN0IiwidmVyc2lvbiI6MX0"
+    },
+    "clarification": {
+      "durable": [
+        {
+          "event_id": "00000000-0000-0000-0000-000000000064",
+          "session_id": "00000000-0000-0000-0000-000000000001",
+          "sequence": 0,
+          "event_type": "clarification_requested",
+          "payload": {
+            "clarification_id": "clarify-1",
+            "tool_call_id": "clarify-1",
+            "question": "Which scope?",
+            "choices": [
+              "event",
+              "topic"
+            ],
+            "assistant_message": "Choose scope.",
+            "conversation": []
+          },
+          "actor": "harness",
+          "created_at": "2026-10-28T00:00:00Z",
+          "causation_id": null,
+          "correlation_id": null,
+          "idempotency_key": null,
+          "policy_version": null,
+          "model_profile": null
+        }
+      ],
+      "sse": [
+        "id: eyJldmVudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDA2NCIsImZyYW1lX2luZGV4IjowLCJydW5faWQiOiJleGVjdXRpb24tY29udHJhY3QiLCJzZXF1ZW5jZSI6MCwidGhyZWFkX2lkIjoidGFzay1jb250cmFjdCIsInZlcnNpb24iOjF9\ndata: {\"type\":\"RUN_STARTED\",\"threadId\":\"task-contract\",\"runId\":\"execution-contract\"}\n\n",
+        "id: eyJldmVudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDA2NCIsImZyYW1lX2luZGV4IjoxLCJydW5faWQiOiJleGVjdXRpb24tY29udHJhY3QiLCJzZXF1ZW5jZSI6MCwidGhyZWFkX2lkIjoidGFzay1jb250cmFjdCIsInZlcnNpb24iOjF9\ndata: {\"type\":\"STATE_SNAPSHOT\",\"timestamp\":1793145600000,\"snapshot\":{\"session\":{\"status\":\"waiting_input\"},\"openInterruptIds\":[\"clarification:clarify-1\"]}}\n\n",
+        "id: eyJldmVudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDA2NCIsImZyYW1lX2luZGV4IjoyLCJydW5faWQiOiJleGVjdXRpb24tY29udHJhY3QiLCJzZXF1ZW5jZSI6MCwidGhyZWFkX2lkIjoidGFzay1jb250cmFjdCIsInZlcnNpb24iOjF9\ndata: {\"type\":\"MESSAGES_SNAPSHOT\",\"timestamp\":1793145600000,\"messages\":[{\"id\":\"interrupt-message:clarification:clarify-1\",\"role\":\"assistant\",\"content\":\"Choose scope.\"}]}\n\n",
+        "id: eyJldmVudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDA2NCIsImZyYW1lX2luZGV4IjozLCJydW5faWQiOiJleGVjdXRpb24tY29udHJhY3QiLCJzZXF1ZW5jZSI6MCwidGhyZWFkX2lkIjoidGFzay1jb250cmFjdCIsInZlcnNpb24iOjF9\ndata: {\"type\":\"RUN_FINISHED\",\"timestamp\":1793145600000,\"threadId\":\"task-contract\",\"runId\":\"execution-contract\",\"outcome\":{\"type\":\"interrupt\",\"interrupts\":[{\"id\":\"clarification:clarify-1\",\"reason\":\"clarification_required\",\"message\":\"Which scope?\",\"toolCallId\":\"clarify-1\"}]}}\n\n"
+      ],
+      "replays": [
+        {
+          "after": "eyJldmVudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDA2NCIsImZyYW1lX2luZGV4IjowLCJydW5faWQiOiJleGVjdXRpb24tY29udHJhY3QiLCJzZXF1ZW5jZSI6MCwidGhyZWFkX2lkIjoidGFzay1jb250cmFjdCIsInZlcnNpb24iOjF9",
+          "events": [
+            {
+              "type": "STATE_SNAPSHOT",
+              "timestamp": 1793145600000,
+              "snapshot": {
+                "session": {
+                  "status": "waiting_input"
+                },
+                "openInterruptIds": [
+                  "clarification:clarify-1"
+                ]
+              }
+            },
+            {
+              "type": "MESSAGES_SNAPSHOT",
+              "timestamp": 1793145600000,
+              "messages": [
+                {
+                  "id": "interrupt-message:clarification:clarify-1",
+                  "role": "assistant",
+                  "content": "Choose scope."
+                }
+              ]
+            },
+            {
+              "type": "RUN_FINISHED",
+              "timestamp": 1793145600000,
+              "threadId": "task-contract",
+              "runId": "execution-contract",
+              "outcome": {
+                "type": "interrupt",
+                "interrupts": [
+                  {
+                    "id": "clarification:clarify-1",
+                    "reason": "clarification_required",
+                    "message": "Which scope?",
+                    "toolCallId": "clarify-1"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "after": "eyJldmVudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDA2NCIsImZyYW1lX2luZGV4IjoxLCJydW5faWQiOiJleGVjdXRpb24tY29udHJhY3QiLCJzZXF1ZW5jZSI6MCwidGhyZWFkX2lkIjoidGFzay1jb250cmFjdCIsInZlcnNpb24iOjF9",
+          "events": [
+            {
+              "type": "MESSAGES_SNAPSHOT",
+              "timestamp": 1793145600000,
+              "messages": [
+                {
+                  "id": "interrupt-message:clarification:clarify-1",
+                  "role": "assistant",
+                  "content": "Choose scope."
+                }
+              ]
+            },
+            {
+              "type": "RUN_FINISHED",
+              "timestamp": 1793145600000,
+              "threadId": "task-contract",
+              "runId": "execution-contract",
+              "outcome": {
+                "type": "interrupt",
+                "interrupts": [
+                  {
+                    "id": "clarification:clarify-1",
+                    "reason": "clarification_required",
+                    "message": "Which scope?",
+                    "toolCallId": "clarify-1"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "after": "eyJldmVudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDA2NCIsImZyYW1lX2luZGV4IjoyLCJydW5faWQiOiJleGVjdXRpb24tY29udHJhY3QiLCJzZXF1ZW5jZSI6MCwidGhyZWFkX2lkIjoidGFzay1jb250cmFjdCIsInZlcnNpb24iOjF9",
+          "events": [
+            {
+              "type": "RUN_FINISHED",
+              "timestamp": 1793145600000,
+              "threadId": "task-contract",
+              "runId": "execution-contract",
+              "outcome": {
+                "type": "interrupt",
+                "interrupts": [
+                  {
+                    "id": "clarification:clarify-1",
+                    "reason": "clarification_required",
+                    "message": "Which scope?",
+                    "toolCallId": "clarify-1"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "after": "eyJldmVudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDA2NCIsImZyYW1lX2luZGV4IjozLCJydW5faWQiOiJleGVjdXRpb24tY29udHJhY3QiLCJzZXF1ZW5jZSI6MCwidGhyZWFkX2lkIjoidGFzay1jb250cmFjdCIsInZlcnNpb24iOjF9",
+          "events": []
+        }
+      ],
+      "v2": [
+        {
+          "cursor": "v2.WzIsImcwLXNjb3BlIiwiZXlKbGRtVnVkRjlwWkNJNklqQXdNREF3TURBd0xUQXdNREF0TURBd01DMHdNREF3TFRBd01EQXdNREF3TURBMk5DSXNJbVp5WVcxbFgybHVaR1Y0SWpvd0xDSnlkVzVmYVdRaU9pSmxlR1ZqZFhScGIyNHRZMjl1ZEhKaFkzUWlMQ0p6WlhGMVpXNWpaU0k2TUN3aWRHaHlaV0ZrWDJsa0lqb2lkR0Z6YXkxamIyNTBjbUZqZENJc0luWmxjbk5wYjI0aU9qRjkiLG51bGwsbnVsbCxudWxsLG51bGwsbnVsbF0AetE--vvVoxFoOpJJtpU_lbbnvLPoizjIeblD0UQhcQ",
+          "wire": "id: eyJldmVudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDA2NCIsImZyYW1lX2luZGV4IjowLCJydW5faWQiOiJleGVjdXRpb24tY29udHJhY3QiLCJzZXF1ZW5jZSI6MCwidGhyZWFkX2lkIjoidGFzay1jb250cmFjdCIsInZlcnNpb24iOjF9\ndata: {\"type\":\"RUN_STARTED\",\"threadId\":\"task-contract\",\"runId\":\"execution-contract\"}\n\n",
+          "chunk_index": null
+        },
+        {
+          "cursor": "v2.WzIsImcwLXNjb3BlIiwiZXlKbGRtVnVkRjlwWkNJNklqQXdNREF3TURBd0xUQXdNREF0TURBd01DMHdNREF3TFRBd01EQXdNREF3TURBMk5DSXNJbVp5WVcxbFgybHVaR1Y0SWpveExDSnlkVzVmYVdRaU9pSmxlR1ZqZFhScGIyNHRZMjl1ZEhKaFkzUWlMQ0p6WlhGMVpXNWpaU0k2TUN3aWRHaHlaV0ZrWDJsa0lqb2lkR0Z6YXkxamIyNTBjbUZqZENJc0luWmxjbk5wYjI0aU9qRjkiLG51bGwsbnVsbCxudWxsLG51bGwsbnVsbF3PenMSTVwWk4J34PXaO4JsXoFmlduHiKgvXbDvkbcV5g",
+          "wire": "id: eyJldmVudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDA2NCIsImZyYW1lX2luZGV4IjoxLCJydW5faWQiOiJleGVjdXRpb24tY29udHJhY3QiLCJzZXF1ZW5jZSI6MCwidGhyZWFkX2lkIjoidGFzay1jb250cmFjdCIsInZlcnNpb24iOjF9\ndata: {\"type\":\"STATE_SNAPSHOT\",\"timestamp\":1793145600000,\"snapshot\":{\"session\":{\"status\":\"waiting_input\"},\"openInterruptIds\":[\"clarification:clarify-1\"]}}\n\n",
+          "chunk_index": null
+        },
+        {
+          "cursor": "v2.WzIsImcwLXNjb3BlIiwiZXlKbGRtVnVkRjlwWkNJNklqQXdNREF3TURBd0xUQXdNREF0TURBd01DMHdNREF3TFRBd01EQXdNREF3TURBMk5DSXNJbVp5WVcxbFgybHVaR1Y0SWpveUxDSnlkVzVmYVdRaU9pSmxlR1ZqZFhScGIyNHRZMjl1ZEhKaFkzUWlMQ0p6WlhGMVpXNWpaU0k2TUN3aWRHaHlaV0ZrWDJsa0lqb2lkR0Z6YXkxamIyNTBjbUZqZENJc0luWmxjbk5wYjI0aU9qRjkiLG51bGwsbnVsbCxudWxsLG51bGwsbnVsbF1Lg2-2TT0mtGq1tpd5-n6bSxi49PTjHGDV4y5CDZ7L0w",
+          "wire": "id: eyJldmVudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDA2NCIsImZyYW1lX2luZGV4IjoyLCJydW5faWQiOiJleGVjdXRpb24tY29udHJhY3QiLCJzZXF1ZW5jZSI6MCwidGhyZWFkX2lkIjoidGFzay1jb250cmFjdCIsInZlcnNpb24iOjF9\ndata: {\"type\":\"MESSAGES_SNAPSHOT\",\"timestamp\":1793145600000,\"messages\":[{\"id\":\"interrupt-message:clarification:clarify-1\",\"role\":\"assistant\",\"content\":\"Choose scope.\"}]}\n\n",
+          "chunk_index": null
+        },
+        {
+          "cursor": "v2.WzIsImcwLXNjb3BlIiwiZXlKbGRtVnVkRjlwWkNJNklqQXdNREF3TURBd0xUQXdNREF0TURBd01DMHdNREF3TFRBd01EQXdNREF3TURBMk5DSXNJbVp5WVcxbFgybHVaR1Y0SWpvekxDSnlkVzVmYVdRaU9pSmxlR1ZqZFhScGIyNHRZMjl1ZEhKaFkzUWlMQ0p6WlhGMVpXNWpaU0k2TUN3aWRHaHlaV0ZrWDJsa0lqb2lkR0Z6YXkxamIyNTBjbUZqZENJc0luWmxjbk5wYjI0aU9qRjkiLG51bGwsbnVsbCxudWxsLG51bGwsbnVsbF0pfEbLo-dLb3tk_EsbjDb5uv49aaJFBGQKnctd3BgHfg",
+          "wire": "id: eyJldmVudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDA2NCIsImZyYW1lX2luZGV4IjozLCJydW5faWQiOiJleGVjdXRpb24tY29udHJhY3QiLCJzZXF1ZW5jZSI6MCwidGhyZWFkX2lkIjoidGFzay1jb250cmFjdCIsInZlcnNpb24iOjF9\ndata: {\"type\":\"RUN_FINISHED\",\"timestamp\":1793145600000,\"threadId\":\"task-contract\",\"runId\":\"execution-contract\",\"outcome\":{\"type\":\"interrupt\",\"interrupts\":[{\"id\":\"clarification:clarify-1\",\"reason\":\"clarification_required\",\"message\":\"Which scope?\",\"toolCallId\":\"clarify-1\"}]}}\n\n",
+          "chunk_index": null
+        }
+      ],
+      "next_cursor": "eyJldmVudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDA2NCIsInJ1bl9pZCI6ImV4ZWN1dGlvbi1jb250cmFjdCIsInNlcXVlbmNlIjowLCJ0aHJlYWRfaWQiOiJ0YXNrLWNvbnRyYWN0IiwidmVyc2lvbiI6MX0"
+    },
+    "failure": {
+      "durable": [
+        {
+          "event_id": "00000000-0000-0000-0000-000000000064",
+          "session_id": "00000000-0000-0000-0000-000000000001",
+          "sequence": 0,
+          "event_type": "session_failed",
+          "payload": {
+            "summary": "policy blocked"
+          },
+          "actor": "harness",
+          "created_at": "2026-10-28T00:00:00Z",
+          "causation_id": null,
+          "correlation_id": null,
+          "idempotency_key": null,
+          "policy_version": null,
+          "model_profile": null
+        }
+      ],
+      "sse": [
+        "id: eyJldmVudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDA2NCIsImZyYW1lX2luZGV4IjowLCJydW5faWQiOiJleGVjdXRpb24tY29udHJhY3QiLCJzZXF1ZW5jZSI6MCwidGhyZWFkX2lkIjoidGFzay1jb250cmFjdCIsInZlcnNpb24iOjF9\ndata: {\"type\":\"RUN_STARTED\",\"threadId\":\"task-contract\",\"runId\":\"execution-contract\"}\n\n",
+        "id: eyJldmVudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDA2NCIsImZyYW1lX2luZGV4IjoxLCJydW5faWQiOiJleGVjdXRpb24tY29udHJhY3QiLCJzZXF1ZW5jZSI6MCwidGhyZWFkX2lkIjoidGFzay1jb250cmFjdCIsInZlcnNpb24iOjF9\ndata: {\"type\":\"RUN_ERROR\",\"timestamp\":1793145600000,\"message\":\"policy blocked\",\"code\":\"zebra_session_failed\"}\n\n"
+      ],
+      "replays": [
+        {
+          "after": "eyJldmVudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDA2NCIsImZyYW1lX2luZGV4IjowLCJydW5faWQiOiJleGVjdXRpb24tY29udHJhY3QiLCJzZXF1ZW5jZSI6MCwidGhyZWFkX2lkIjoidGFzay1jb250cmFjdCIsInZlcnNpb24iOjF9",
+          "events": [
+            {
+              "type": "RUN_ERROR",
+              "timestamp": 1793145600000,
+              "message": "policy blocked",
+              "code": "zebra_session_failed"
+            }
+          ]
+        },
+        {
+          "after": "eyJldmVudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDA2NCIsImZyYW1lX2luZGV4IjoxLCJydW5faWQiOiJleGVjdXRpb24tY29udHJhY3QiLCJzZXF1ZW5jZSI6MCwidGhyZWFkX2lkIjoidGFzay1jb250cmFjdCIsInZlcnNpb24iOjF9",
+          "events": []
+        }
+      ],
+      "v2": [
+        {
+          "cursor": "v2.WzIsImcwLXNjb3BlIiwiZXlKbGRtVnVkRjlwWkNJNklqQXdNREF3TURBd0xUQXdNREF0TURBd01DMHdNREF3TFRBd01EQXdNREF3TURBMk5DSXNJbVp5WVcxbFgybHVaR1Y0SWpvd0xDSnlkVzVmYVdRaU9pSmxlR1ZqZFhScGIyNHRZMjl1ZEhKaFkzUWlMQ0p6WlhGMVpXNWpaU0k2TUN3aWRHaHlaV0ZrWDJsa0lqb2lkR0Z6YXkxamIyNTBjbUZqZENJc0luWmxjbk5wYjI0aU9qRjkiLG51bGwsbnVsbCxudWxsLG51bGwsbnVsbF0AetE--vvVoxFoOpJJtpU_lbbnvLPoizjIeblD0UQhcQ",
+          "wire": "id: eyJldmVudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDA2NCIsImZyYW1lX2luZGV4IjowLCJydW5faWQiOiJleGVjdXRpb24tY29udHJhY3QiLCJzZXF1ZW5jZSI6MCwidGhyZWFkX2lkIjoidGFzay1jb250cmFjdCIsInZlcnNpb24iOjF9\ndata: {\"type\":\"RUN_STARTED\",\"threadId\":\"task-contract\",\"runId\":\"execution-contract\"}\n\n",
+          "chunk_index": null
+        },
+        {
+          "cursor": "v2.WzIsImcwLXNjb3BlIiwiZXlKbGRtVnVkRjlwWkNJNklqQXdNREF3TURBd0xUQXdNREF0TURBd01DMHdNREF3TFRBd01EQXdNREF3TURBMk5DSXNJbVp5WVcxbFgybHVaR1Y0SWpveExDSnlkVzVmYVdRaU9pSmxlR1ZqZFhScGIyNHRZMjl1ZEhKaFkzUWlMQ0p6WlhGMVpXNWpaU0k2TUN3aWRHaHlaV0ZrWDJsa0lqb2lkR0Z6YXkxamIyNTBjbUZqZENJc0luWmxjbk5wYjI0aU9qRjkiLG51bGwsbnVsbCxudWxsLG51bGwsbnVsbF3PenMSTVwWk4J34PXaO4JsXoFmlduHiKgvXbDvkbcV5g",
+          "wire": "id: eyJldmVudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDA2NCIsImZyYW1lX2luZGV4IjoxLCJydW5faWQiOiJleGVjdXRpb24tY29udHJhY3QiLCJzZXF1ZW5jZSI6MCwidGhyZWFkX2lkIjoidGFzay1jb250cmFjdCIsInZlcnNpb24iOjF9\ndata: {\"type\":\"RUN_ERROR\",\"timestamp\":1793145600000,\"message\":\"policy blocked\",\"code\":\"zebra_session_failed\"}\n\n",
+          "chunk_index": null
+        }
+      ],
+      "next_cursor": "eyJldmVudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDA2NCIsInJ1bl9pZCI6ImV4ZWN1dGlvbi1jb250cmFjdCIsInNlcXVlbmNlIjowLCJ0aHJlYWRfaWQiOiJ0YXNrLWNvbnRyYWN0IiwidmVyc2lvbiI6MX0"
+    },
+    "cancellation": {
+      "durable": [
+        {
+          "event_id": "00000000-0000-0000-0000-000000000064",
+          "session_id": "00000000-0000-0000-0000-000000000001",
+          "sequence": 0,
+          "event_type": "turn_cancelled",
+          "payload": {
+            "turn_id": "turn-1",
+            "reason": "cancelled"
+          },
+          "actor": "harness",
+          "created_at": "2026-10-28T00:00:00Z",
+          "causation_id": null,
+          "correlation_id": null,
+          "idempotency_key": null,
+          "policy_version": null,
+          "model_profile": null
+        }
+      ],
+      "sse": [
+        "id: eyJldmVudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDA2NCIsImZyYW1lX2luZGV4IjowLCJydW5faWQiOiJleGVjdXRpb24tY29udHJhY3QiLCJzZXF1ZW5jZSI6MCwidGhyZWFkX2lkIjoidGFzay1jb250cmFjdCIsInZlcnNpb24iOjF9\ndata: {\"type\":\"RUN_STARTED\",\"threadId\":\"task-contract\",\"runId\":\"execution-contract\"}\n\n",
+        "id: eyJldmVudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDA2NCIsImZyYW1lX2luZGV4IjoxLCJydW5faWQiOiJleGVjdXRpb24tY29udHJhY3QiLCJzZXF1ZW5jZSI6MCwidGhyZWFkX2lkIjoidGFzay1jb250cmFjdCIsInZlcnNpb24iOjF9\ndata: {\"type\":\"RUN_FINISHED\",\"timestamp\":1793145600000,\"threadId\":\"task-contract\",\"runId\":\"execution-contract\",\"outcome\":{\"type\":\"interrupt\",\"interrupts\":[{\"id\":\"turn-cancelled:turn-1\",\"reason\":\"cancelled\"}]}}\n\n"
+      ],
+      "replays": [
+        {
+          "after": "eyJldmVudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDA2NCIsImZyYW1lX2luZGV4IjowLCJydW5faWQiOiJleGVjdXRpb24tY29udHJhY3QiLCJzZXF1ZW5jZSI6MCwidGhyZWFkX2lkIjoidGFzay1jb250cmFjdCIsInZlcnNpb24iOjF9",
+          "events": [
+            {
+              "type": "RUN_FINISHED",
+              "timestamp": 1793145600000,
+              "threadId": "task-contract",
+              "runId": "execution-contract",
+              "outcome": {
+                "type": "interrupt",
+                "interrupts": [
+                  {
+                    "id": "turn-cancelled:turn-1",
+                    "reason": "cancelled"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "after": "eyJldmVudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDA2NCIsImZyYW1lX2luZGV4IjoxLCJydW5faWQiOiJleGVjdXRpb24tY29udHJhY3QiLCJzZXF1ZW5jZSI6MCwidGhyZWFkX2lkIjoidGFzay1jb250cmFjdCIsInZlcnNpb24iOjF9",
+          "events": []
+        }
+      ],
+      "v2": [
+        {
+          "cursor": "v2.WzIsImcwLXNjb3BlIiwiZXlKbGRtVnVkRjlwWkNJNklqQXdNREF3TURBd0xUQXdNREF0TURBd01DMHdNREF3TFRBd01EQXdNREF3TURBMk5DSXNJbVp5WVcxbFgybHVaR1Y0SWpvd0xDSnlkVzVmYVdRaU9pSmxlR1ZqZFhScGIyNHRZMjl1ZEhKaFkzUWlMQ0p6WlhGMVpXNWpaU0k2TUN3aWRHaHlaV0ZrWDJsa0lqb2lkR0Z6YXkxamIyNTBjbUZqZENJc0luWmxjbk5wYjI0aU9qRjkiLG51bGwsbnVsbCxudWxsLG51bGwsbnVsbF0AetE--vvVoxFoOpJJtpU_lbbnvLPoizjIeblD0UQhcQ",
+          "wire": "id: eyJldmVudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDA2NCIsImZyYW1lX2luZGV4IjowLCJydW5faWQiOiJleGVjdXRpb24tY29udHJhY3QiLCJzZXF1ZW5jZSI6MCwidGhyZWFkX2lkIjoidGFzay1jb250cmFjdCIsInZlcnNpb24iOjF9\ndata: {\"type\":\"RUN_STARTED\",\"threadId\":\"task-contract\",\"runId\":\"execution-contract\"}\n\n",
+          "chunk_index": null
+        },
+        {
+          "cursor": "v2.WzIsImcwLXNjb3BlIiwiZXlKbGRtVnVkRjlwWkNJNklqQXdNREF3TURBd0xUQXdNREF0TURBd01DMHdNREF3TFRBd01EQXdNREF3TURBMk5DSXNJbVp5WVcxbFgybHVaR1Y0SWpveExDSnlkVzVmYVdRaU9pSmxlR1ZqZFhScGIyNHRZMjl1ZEhKaFkzUWlMQ0p6WlhGMVpXNWpaU0k2TUN3aWRHaHlaV0ZrWDJsa0lqb2lkR0Z6YXkxamIyNTBjbUZqZENJc0luWmxjbk5wYjI0aU9qRjkiLG51bGwsbnVsbCxudWxsLG51bGwsbnVsbF3PenMSTVwWk4J34PXaO4JsXoFmlduHiKgvXbDvkbcV5g",
+          "wire": "id: eyJldmVudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDA2NCIsImZyYW1lX2luZGV4IjoxLCJydW5faWQiOiJleGVjdXRpb24tY29udHJhY3QiLCJzZXF1ZW5jZSI6MCwidGhyZWFkX2lkIjoidGFzay1jb250cmFjdCIsInZlcnNpb24iOjF9\ndata: {\"type\":\"RUN_FINISHED\",\"timestamp\":1793145600000,\"threadId\":\"task-contract\",\"runId\":\"execution-contract\",\"outcome\":{\"type\":\"interrupt\",\"interrupts\":[{\"id\":\"turn-cancelled:turn-1\",\"reason\":\"cancelled\"}]}}\n\n",
+          "chunk_index": null
+        }
+      ],
+      "next_cursor": "eyJldmVudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDA2NCIsInJ1bl9pZCI6ImV4ZWN1dGlvbi1jb250cmFjdCIsInNlcXVlbmNlIjowLCJ0aHJlYWRfaWQiOiJ0YXNrLWNvbnRyYWN0IiwidmVyc2lvbiI6MX0"
+    }
+  }
+}
