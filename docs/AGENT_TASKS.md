@@ -1,31 +1,59 @@
-## AGUI-G3-TRANSPORT-20261029 — Standard HTTP and reliable consumption
+## AGUI-G3A-INGRESS-20261029 — Bounded SDK ingress and exact source lookup
 
-- Status: Ready (2026-10-29; dependencies G1/G2 reviewed and published).
+- Status: Review (2026-10-29; final spec and quality reviews passed; source publication next).
 - Human owner: Luke Ding; executor: Codex; target: cloud-agent.
 - Branch: codex/agui-g3-standard-reliable-transport-20261029; isolated existing
-  trench-spin-sync-20261028/zebra-agent worktree; base receipt following 592fc95b.
-- Owned paths: API ag_ui_stream.py/ag_ui_checkpoint_tail.py/ag_ui_command.py,
-  stream_v2_{http,query,reader,wire}.py, http.py/routes.py and focused new
-  standard HTTP/prepare/binding modules; their focused tests.
+  trench-spin-sync-20261028/zebra-agent worktree; exact base 14359f32.
+- Owned paths: client-core agui_events.ts/agui_reducer.ts/sse_stream.ts, new sse_records.ts;
+  focused framing/pacing/initial-context tests; root SDK explicit test collection.
+- Before-code regression ownership extension: client-core/src/conversation_stream.test.ts
+  retains valid raw event_type envelope compatibility and asserts permanent poison
+  rejection in existing shared-framing/ACK tests; no weakened payload/ACK checks.
 - Explicit read-only coordinate extension: core AgentTaskPort and SQLite/PG
-  task replay headers/AgentTasks wrappers for exact native idempotency point reads;
-  no historical migrations or new identity ledger.
-- SDK ownership: client-core agui_events.ts/agui_reducer.ts/sse_stream.ts,
-  bff_transport.ts, focused standard/reliable transport and admission adapter modules,
-  index/server exports; explicit test collection/package manifests and related tests.
-- Composition paths require an explicit before-code ownership addendum naming
-  actual config/factory/worker files after tracing; default profiles remain off.
-- Contract/governance: AGUI_STANDARD_DURABLE_CONTRACT.md, registry, PROGRESS,
-  WORKLOG and approved plan; conformance/agui_contract actual HTTP consumer gate.
+  task_replay_headers.py/agent_tasks.py wrappers for exact native idempotency
+  point reads; tests/agent_storage/test_task_replay_headers.py.
+- Before-code replay wrapper extraction: agent-storage/task_replay_reads.py
+  moves unchanged SQLite read wrappers out of the 500-line agent_tasks.py;
+  read_event_header_by_key remains a bounded native event-column point lookup.
+- Before-code spec-fix ownership extension: client-core/src/index.ts handles the
+  shared stream permanent failure at its actual runtime caller; focused runtime
+  regression tests and scripts/stream-v2-browser.mjs fixture caller if needed.
+  Do not retry poisoned data or clear the last accepted cursor.
+- Governance: registry/PROGRESS/WORKLOG/contract/approved plan.
+- Acceptance: strict bounded UTF-8/SSE framing; no poisoned-frame retry; actual
+  pull pacing through awaited apply (including no-mutation events); safe cleanup;
+  trusted initial messages/state; read-only exact native coordinate lookup under
+  Task/namespace/member/readiness validation on SQLite and PG; old wire unchanged.
+  Focused SDK/storage/check gates; independent spec then quality review.
+- Scope split is for coherent review/context, not completion of G3. No HTTP
+  interoperability, activation or full AG-UI transport claim from this foundation.
+
+## AGUI-G3B-HTTP-20261029 — Actual standard HTTP and reliable bridge
+
+- Status: Locked (G3A reviewed publication required).
+- Human owner: Luke Ding; executor: Codex; target: cloud-agent.
+- Proposed branch: codex/agui-g3b-native-http-20261029; reuse isolated clean
+  trench-spin-sync-20261028/zebra-agent worktree after G3A review/publication.
+- Owned paths: API ag_ui_stream.py/ag_ui_checkpoint_tail.py/ag_ui_command.py,
+  stream_v2_{http,query,reader,wire}.py, http.py/routes.py and focused standard
+  HTTP/prepare/binding modules; corresponding integration/native API tests.
+- SDK ownership: client-core agui_events/reducer.ts only required bridge hooks,
+  bff_transport.ts, focused standard/reliable transport/admission adapter modules,
+  index/server exports; explicit test collection and related tests.
+- Composition paths require an explicit before-code addendum naming actual
+  config/factory/worker files after tracing; default profiles remain off.
+- Contract/governance: standard contract, registry/PROGRESS/WORKLOG/plan;
+  conformance/agui_contract actual Python-to-HTTP-to-official-client gate.
 - Frozen choice: native authenticated admission followed by official HttpAgent
   observing the actual accepted public Run ID. No arbitrary run-ID admission,
-  rewriting of caller IDs, duplicate command, private-state authority or GET repair.
+  caller-ID rewriting, duplicate command, private-state authority or GET repair.
 - Acceptance: actual user input reaches native Worker prompt; official POST/SSE
-  receives actual projector events; requested-slice tail survives retained previous
-  terminal and stops before successor; strict bounded framing and pull-paced SDK;
-  initial messages/state preserve history; legacy bytes/cursors remain unchanged.
-  SQLite/PG coordinate/tail tests; focused SDK/API and conformance gates;
-  independent spec then quality review. G4/G5 remain Locked until dependencies.
+  receives actual projector events; requested slice survives retained previous
+  terminal and stops before successor; canonical chunks and signed ACK bridge
+  precede official application, standard stream needs no private envelopes;
+  native SQLite/PG tail/coordinate authority checks; real HTTP gate without skips;
+  legacy golden and applicable SDK/API gates; independent spec then quality review.
+  Overall G3 remains incomplete until this card passes. G4/G5 remain dependent.
 
 ## AGUI-G2-PUBLIC-PROJECTION-20261029 — Standard public event semantics
 

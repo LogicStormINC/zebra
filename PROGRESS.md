@@ -1,3 +1,22 @@
+## 2026-10-29 AG-UI G3A bounded ingress (reviewed foundation)
+
+Shared SSE framing now handles strict UTF-8, multiline data, split CRLF, exact
+record/assembly byte budgets, incremental line buffers and owned-reader abort.
+Poisoned records stop permanently; actual runtime catches rejection, stops local
+work and reports unavailable while preserving accepted cursor/controller lease.
+Official consumer pull pacing replaces the 128-event refusal; trusted initial
+messages/state survive deltas. Private barriers follow official verification and
+never reach public hooks/history. Native indexed Event-column key lookup reuses
+source validation on SQLite/PG without body scans or schema changes.
+Spec and quality reviews passed after two P1 fixes. Final SDK221/zero skips,
+check/package, native22/zero skips, Python observer/scalar83/zero skips and make
+check1443 types/30eval passed. Independent quality77/zero skips; spec independently
+22 SDK and22 native. Actual Chromium stream fixture:3 connections/1 receipt/no
+browser errors. React18/19 framework and Chromium/WebKit matrices passed before
+final review fixes; no claim they were rerun after those fixes.
+G3B actual admission/HTTP/reliable bridge remains required; no production profile
+activation, npm registry publication or Trench package replacement from G3A.
+
 ## 2026-10-29 AG-UI G2 public producer (reviewed and published)
 
 The opt-in StandardAgUiProjector uses official Python1.0 models and separate
@@ -16,7 +35,7 @@ reviews passed. Focused77, native2, legacy7, integrations/core3674 and make chec
 Final whole-plan/full-suite gates remain G7; G3 transport is Ready. The primary
 local cloud-agent has unrelated in-progress commits and was left untouched.
 No profile activation, original business Run, model invocation or deployment.
-See [standard contract](docs/AGUI_STANDARD_DURABLE_CONTRACT.md#11-g2-标准公开投影候选实现未激活).
+See [standard contract](docs/AGUI_STANDARD_DURABLE_CONTRACT.md#11-g2-标准公开投影已审查未激活).
 
 ## 2026-10-29 AG-UI G2V projection profile isolation (locally integrated)
 

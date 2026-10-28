@@ -1,6 +1,7 @@
 """Run windows have identical body-free semantics on both storage adapters."""
 
 from pathlib import Path
+from uuid import uuid4
 
 import pytest
 from agent_core.application.session_projection import rebuild_session
@@ -49,7 +50,14 @@ def header_store(request, tmp_path: Path):
 
 
 def _command(
-    events, task, *, kind="run", run="run-one", actor=EventActor.USER, key="public-command"
+    events,
+    task,
+    *,
+    kind="run",
+    run="run-one",
+    actor=EventActor.USER,
+    key="public-command",
+    event_key=None,
 ):
     sequence = events.list_for_session(task.active_segment_id)[-1].sequence + 1
     command = SessionCommand(
@@ -65,6 +73,7 @@ def _command(
         event_type=EventType.SESSION_COMMAND_ACCEPTED,
         actor=actor,
         payload=command.event_payload(),
+        idempotency_key=event_key,
     )
     events.append(event)
     return event
@@ -145,3 +154,43 @@ def test_approval_resume_only_trusted_null_run_continues_original(
     )
     if internal:
         assert store.read_latest_run_header(task.task_id).anchor.event_id == original.event_id
+
+
+def test_exact_native_key_resolves_source_event_not_command_id(header_store):
+    store, events, task = header_store
+    _command(events, task)
+    # Native event-column keys and command payload keys are separate identities.
+    key = "client-effect-resume:native-effect"
+    native = _command(
+        events,
+        task,
+        kind="resume",
+        run=None,
+        actor=EventActor.HARNESS,
+        key="client-effect-resume:",
+        event_key=key,
+    )
+    header = store.read_event_header_by_key(task.task_id, task.active_segment_id, key)
+    assert header == store.read_event_header(task.task_id, native.sequence)
+    assert str(header.event_id) != native.payload["command_id"]
+    assert store.read_event_header_by_key(task.task_id, task.active_segment_id, "absent") is None
+    assert store.read_event_header_by_key(task.task_id, new_session_id(), key) is None
+    assert store.read_event_header_by_key(uuid4(), task.active_segment_id, key) is None
+    if isinstance(store, PostgresAgentTaskStore):
+        foreign = PostgresAgentTaskStore(
+            store._database._dsn, deployment_namespace="other-key-scope"
+        )
+        assert foreign.read_event_header_by_key(task.task_id, task.active_segment_id, key) is None
+    from agent_core.ports.task_projection_checkpoints import CheckpointNotReady
+
+    placeholder = "%s" if isinstance(store, PostgresAgentTaskStore) else "?"
+    with store._database.connect() as connection:
+        connection.execute(
+            f"UPDATE agent_tasks SET event_position_state='legacy' WHERE task_id={placeholder}",
+            (task.task_id if isinstance(store, PostgresAgentTaskStore) else str(task.task_id),),
+        )
+    with pytest.raises(CheckpointNotReady):
+        store.read_event_header_by_key(task.task_id, task.active_segment_id, key)
+
+    with pytest.raises(CheckpointNotReady):
+        store.read_event_header_by_key(task.task_id, task.active_segment_id, "not-yet-indexed")

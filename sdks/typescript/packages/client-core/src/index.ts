@@ -232,6 +232,8 @@ export class ZebraClientRuntime {
         onCursorRecovered: () => this.poll(),
         onTerminalRejection: () => this.stop(),
         onEffect: (effect) => this.runEffect(effect),
+      }).catch(() => {
+        if (!this.stopped) this.shutdown(false, "unavailable");
       });
     }
   }
@@ -402,10 +404,10 @@ export class ZebraClientRuntime {
   /** Stop local work while preserving the controller lease for reconnect. */
   disconnect(): void { this.shutdown(false); }
 
-  private shutdown(releaseController: boolean): void {
+  private shutdown(releaseController: boolean, status: ClientRuntimeStatus = "stopped"): void {
     if (!this.stopped && releaseController) void this.releaseController();
     this.stopped = true;
-    this.setStatus("stopped");
+    this.setStatus(status);
     this.queuedMount = null;
     this.abortController?.abort();
     this.abortController = null;

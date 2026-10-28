@@ -1,3 +1,4 @@
+import { SseProtocolError } from "./sse_records.ts";
 import assert from "node:assert/strict";
 import test from "node:test";
 import { ConversationStreamReducer } from "./conversation_stream.ts";
@@ -143,7 +144,7 @@ test("oversized unfinished record cancels response without accepting a cursor", 
   let requests = 0;
   let cancelled = 0;
   const cursors: string[] = [];
-  await consumeClientEffectStream({
+  await assert.rejects(consumeClientEffectStream({
     fetchImpl: async () => {
       requests++;
       if (requests > 1) return new Response("", { status: 401 });
@@ -153,8 +154,8 @@ test("oversized unfinished record cancels response without accepting a cursor", 
     onCursor: cursor => { if (cursor) cursors.push(cursor); }, onTerminalRejection: () => abort.abort(),
     onObservation: async () => assert.fail("unfinished record reached observer"),
     onEffect: async () => assert.fail("unexpected effect"),
-  });
-  assert.equal(requests, 2);
+  }), SseProtocolError);
+  assert.equal(requests, 1);
   assert.equal(cancelled, 1);
   assert.deepEqual(cursors, []);
 });
@@ -325,7 +326,7 @@ test("canonical unacknowledged final chunk rejects changed retry payload", async
   const target = JSON.stringify({ type: "TOOL_CALL_ARGS", delta: "kept" });
   const split = Math.floor(target.length / 2);
   const cursors: string[] = [];
-  await consumeClientEffectStream({
+  await assert.rejects(consumeClientEffectStream({
     fetchImpl: async () => {
       requests++;
       if (requests === 3) return new Response("", { status: 403 });
@@ -335,8 +336,8 @@ test("canonical unacknowledged final chunk rejects changed retry payload", async
     onObservation: async event => { if (event.type === "TOOL_CALL_ARGS") { observed++; throw new Error("owned initial failure"); } },
     onCursor: cursor => { if (cursor) cursors.push(cursor); }, onTerminalRejection: () => abort.abort(),
     onEffect: async () => assert.fail("unexpected effect"),
-  });
-  assert.equal(requests, 3);
+  }), SseProtocolError);
+  assert.equal(requests, 2);
   assert.equal(observed, 1);
   assert.deepEqual(cursors, ["prefix"]);
 });

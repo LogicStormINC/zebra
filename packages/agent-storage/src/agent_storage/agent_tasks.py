@@ -14,7 +14,7 @@ from agent_core.domain.identifiers import SessionId, TaskId
 from agent_core.domain.sessions import SessionStatus
 from agent_core.ports.agent_tasks import AgentTaskPort, TaskEvent, TaskEventPage
 from agent_core.ports.task_projection_checkpoints import CheckpointNotReady
-from agent_core.ports.task_replay import TaskEventHeader, TaskReadHeader, TaskRunHeader
+from agent_core.ports.task_replay import TaskReadHeader
 
 from agent_storage.database import SQLiteDatabase
 from agent_storage.event_rows import deserialize_event_row
@@ -41,7 +41,7 @@ from agent_storage.task_replay_header_schema import (
     backfill_task_replay_headers,
     initialize_task_replay_headers,
 )
-from agent_storage.task_replay_headers import read_event_header, read_run_header
+from agent_storage.task_replay_reads import SQLiteTaskReplayReadMixin
 from agent_storage.worker_progress import WorkerProgressStoreMixin, progress_schema
 
 TASK_SCHEMA = """
@@ -77,6 +77,7 @@ CREATE TABLE IF NOT EXISTS task_event_index (
 
 class SQLiteAgentTaskStore(
     SQLiteTaskReadSummaryMixin,
+    SQLiteTaskReplayReadMixin,
     WorkerProgressStoreMixin,
     SQLiteProjectionSourceMetadataMixin,
     SQLiteTaskProjectionCheckpointMixin,
@@ -292,22 +293,6 @@ class SQLiteAgentTaskStore(
             if row is None:
                 raise ValueError("projection source Task was not found")
             return backfill_projection_source_metadata(connection, row[0], task_id, limit=limit)
-
-    def read_event_header(self, task_id: TaskId, task_sequence: int) -> TaskEventHeader | None:
-        with self._database.connect() as connection:
-            connection.execute("BEGIN")
-            return read_event_header(connection, task_id, task_sequence)
-
-    def read_run_header(
-        self,
-        task_id: TaskId,
-        run_id: str,
-        *,
-        through_sequence: int | None = None,
-    ) -> TaskRunHeader:
-        with self._database.connect() as connection:
-            connection.execute("BEGIN")
-            return read_run_header(connection, task_id, run_id, through_sequence)
 
 
 def attach_segment_locked(

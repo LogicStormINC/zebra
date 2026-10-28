@@ -1,3 +1,23 @@
+## 2026-10-29 AGUI-G3A reviewed foundation
+
+Base14359f32, current isolated G3 branch; parent protects primary89e4afed and
+10 dirty entries. Split G3 into coherent G3A ingress/coordinate and G3B actual
+HTTP/admission/reliable bridge, without relaxing overall G3 acceptance.
+Red/green checks cover framing, slow10k source pulls, no-op/chunk/private barrier
+identity, trusted initial state/history, blocked IO/callback/final notification
+abort and permanent poison handling. Spec found two P1 gaps: nested STATE_DELTA
+TypeError retried after callback and runtime fire-and-forget unhandled rejection.
+Both corrected at shared boundary/actual caller, independently re-reviewed PASS.
+Quality independently verified upstream pipeline ordering and77 SDK/11 SQLite
+checks; no actionable issues. Spec independent22 SDK/22 native checks passed.
+Final full SDK221/0 skipped, type/build/check/package PASS; nativeSQLite/PG22/0;
+bounded Python observer/scalar83/0; make check1443 types/30eval PASS. Actual
+Chromium stream browser3 connections/exactly1 receipt/no errors PASS. Generic
+React18/19 Vite/Next SSR/RSC and Chromium/WebKit+hydration matrices passed before
+final spec fixes. Logs /tmp/agui-g3-{sdk-tests,sdk-check,sdk-package,make-check}.log,
+/tmp/agui-g3-native.log and /tmp/agui-g3-quality-focused.log. No full make test
+claim; G7 runs on frozen final source. Default new profiles remain unavailable.
+
 ## 2026-10-29 AGUI-G2 reviewed publication and G3 unlock
 
 Published reviewed source 592fc95b directly to origin/cloud-agent, preserving

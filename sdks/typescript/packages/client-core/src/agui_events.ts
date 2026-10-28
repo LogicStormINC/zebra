@@ -26,6 +26,10 @@ export function boundAgUiEvents(source: AgUiEventSource, binding: AgUiRunBinding
         if (!value || typeof value !== "object" || typeof (value as BaseEvent).type !== "string") {
           throw new Error("AG-UI event requires a type discriminator");
         }
+        const json = JSON.stringify(value);
+        if (json.length > 2_097_152 || new TextEncoder().encode(json).byteLength > 2_097_152) {
+          throw new Error("AG-UI canonical event exceeds byte budget");
+        }
         return structuredClone(value) as BaseEvent;
       }),
       enforceEvents(),

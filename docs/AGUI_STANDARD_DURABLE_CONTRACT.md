@@ -1,6 +1,6 @@
 # AG-UI 1.0 标准与 Zebra durable 边界合同
 
-状态：G0 合同冻结；不是 1.0 功能上线或兼容性认证。日期：2026-10-28。
+状态：G0 合同冻结；G1/G2V/G2 已审查交付，G3 实施中。不是生产上线或完整兼容认证。
 任务：AGUI-G0-CONTRACT-20261028。实施顺序见
 [完整方案](superpowers/plans/2026-10-28-agui-full-interaction.md)。
 
@@ -14,8 +14,8 @@
 | 不变来源 | [修订固定的 schema](https://raw.githubusercontent.com/ag-ui-protocol/ag-ui/fdbca490dc90fd8fbce2b342df79383bd70559af/spec/1.0/schema.json) |
 | schema SHA-256 | `4b5c93226838a0e72d88e6c5df20633c686c49fcb75d9be2815c6cbf9e48e71a` |
 | schema 原始长度 | 94359 bytes；保留官方原始字节，不格式化 |
-| 当前 Python | `ag-ui-protocol==0.1.19`，是旧实现依赖，不能因此声称目标 1.0 已实现 |
-| JS 候选 | `@ag-ui/{core,client,encoder,proto}` 各 `1.0.3`，registry 核实候选；G0 不安装、不选型、不修改锁文件 |
+| G0 基线 Python | `ag-ui-protocol==0.1.19`；G2 后实际依赖为 `1.0.0`，旧 wire golden 保留原 provenance |
+| G0 JS 候选 | `@ag-ui/{core,client,encoder,proto}` 各 `1.0.3`；G1 选定 client/core，见第9节 |
 
 冻结资料位于 `tests/conformance/agui_contract/`：`upstream.json` 记录来源；
 `schema-1.0.json` 保留原始字节；`event-catalog.json` 沿根 Event 的 `oneOf`
@@ -59,8 +59,8 @@ cursor 回填这个字符串。`ag-ui-v1` 与 `ag-ui-v1-coverage` 仍是现有 c
 
 发现合同使用可选字段 `metadata.aguiProfiles`（支持的新 profile ID 数组）。
 G2V 已在现有 `GET /capabilities/runtime` 实现承载点及绑定 registry 的可用性选择，
-并验证默认旧 DTO 不新增 metadata；隔离实现见第10节。实际 AG-UI 1.0 producer
-尚未实现，生产 registry 默认为空，新生产 profile 仍不可用。实际 Trench 业务
+并验证默认旧 DTO 不新增 metadata；隔离实现见第10节。G2 已实现并审查
+独立 producer，生产 registry 默认为空，新生产 profile 仍不可用。实际 Trench 业务
 bootstrap envelope 的字段转发待 T1 实现；这不是新增 Native 端点。声明仅提示
 兼容能力，不授予 namespace、工具、审批或执行权限。
 
@@ -204,7 +204,7 @@ vendor，也不能覆盖已交付同名包。G6交付前统一版本、tgz、man
 31类taxonomy/有效例可接受不等于完整1.0行为认证；完整消费者/生产投影/
 Artifact/审批/恢复闭环仍分别由G2V–G7/T1的门禁证明。
 
-本地reader暂采用128个待处理canonical事件（另有1个等待前序通知的active项）
+G1阶段本地reader采用128个待处理canonical事件（另有1个等待前序通知的active项）
 上限，溢出显式拒绝消费并停止订阅，不伪造Run失败或重新执行。该限制也可能
 拒绝突发同步录制源；它是有限容量拒绝策略，不是producer背压或无限历史承诺。
 G3/G7须在启用profile前验证实际冷恢复、节奏控制和字节/内存预算，不能直接
@@ -272,7 +272,7 @@ SQLite 使用同一 classifier。每个 family 根据真实 source privacy 只�
 显式配置最多六个 projector versions（旧两个 + 新两个 family 的各两个），第七个
 仍拒绝；没有无限 fanout。GET 不注册、不迁移、不 repair、不 materialize。
 
-## 11. G2 标准公开投影（候选实现，未激活）
+## 11. G2 标准公开投影（已审查，未激活）
 
 `StandardAgUiProjector` + `StandardProjectionState` 是独立 producer/state。
 只有显式 `AgUiProjectionProfile(..., projector=StandardAgUiProjector(),
@@ -372,3 +372,25 @@ child/coverage 形状受校验，不能把私有任意 JSON 作为 STATE_SNAPSHO
 strict 新 profile 先调用原 privacy sanitizer，再只保留 allowlist 生命周期分类：
 waiting_children 不关闭，infra/authority 保持 RUN_ERROR，workspace drift 保持
 paused/cancelled；不复制原 metadata/assessment/body，也不改旧 sanitizer 字节。
+
+## 12. G3 实施边界
+
+G3A 先修复共享 SSE framing 与有界 pull/apply 栅栏，并添加原生 Event-column
+幂等键的只读精确坐标查询；G3B 再连接原生准入、标准 HTTP 与可靠桥接。
+独立审查及门禁按卡记录；G3A 不代表 HTTP 或 CopilotKit 互操作已验收。
+采用第10节允许的原生准入后观察路线：实际已接受的公共 Run ID 由适配器
+交给官方 HttpAgent。标准 POST 观察该操作，不再提交执行。不能改写任意调用方
+runId、根据 command UUID 猜 Event UUID，或把未处理的续接 anchor 猜成公共后继。
+当前不新增公共 ID ledger，不放宽原 Client Session/Host/Controller 权限。
+
+G3A已审查的入口约束：逐记录pull在官方归并应用及通知完成后才继续；内部栅栏
+使用对象身份，位于enforce/chunk/verify之后，不进入wire/公开回调/历史。RAW、
+CUSTOM、未知事件丢弃及一条chunk展开多个事件均不依赖“必有状态变更”来确认。
+明确初始messages/state只用于可信上下文；不授予业务权限。记录/assembly按UTF-8
+字节计量，行缓冲按需增长。主动abort丢弃不完整记录并取消自有reader；调用方
+自有永不完成IO只能请求清理。legacy消费边界保留有效raw event_type/稀疏值，
+只预检自身消费字段；完整新标准事件仍由官方schema管线校验。损坏记录不重试，
+真实runtime接住错误、保留已确认cursor/controller lease并显示unavailable。
+精确原生幂等键只读查询返回实际Event坐标，不把command UUID当Event UUID。
+规格/质量审查和独立检查通过；这些证据不代表实际HttpAgent请求已经背压，
+也不替代G3B的真实输入到Worker、HTTP观察及公共Run切片门禁。

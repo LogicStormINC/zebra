@@ -1,14 +1,17 @@
 import { AbstractAgent, buildResumeArray, enforceOutgoingInput, isInterruptExpired, type AgentStateMutation, type AgentSubscriber } from "@ag-ui/client";
 import type { ActivityDeltaEvent, BaseEvent, Interrupt, Message, ResumeEntry, RunAgentInput, State, StateDeltaEvent } from "@ag-ui/core";
-import { concatMap, lastValueFrom, of, Subject, takeUntil, tap, throwError, type Observable } from "rxjs";
+import { concatMap, lastValueFrom, of, Subject, takeUntil, throwError, type Observable } from "rxjs";
 import jsonpatch from "fast-json-patch";
 import { assertAgUiBinding, boundAgUiEvents, type AgUiEventSource, type AgUiRunBinding } from "./agui_events.js";
 
 export interface StandardAgUiConsumerOptions {
+  signal?: AbortSignal;
+  initialMessages?: Message[];
+  initialState?: State;
   /** Pre-apply normalized events; snapshot still reflects earlier accepted events. Receives a copy. */
   onEvent?: (event: BaseEvent) => void | Promise<void>;
   /** After application/final status; awaited copies. A stalled callback permits at most
-   * 128 queued canonical events plus one waiter, then consumption fails and unsubscribes. */
+   * one source event batch before pulling the next record. */
   onSnapshot?: (snapshot: StandardAgUiSnapshot) => void | Promise<void>;
 }
 export interface StandardAgUiSnapshot extends AgUiRunBinding {
@@ -25,44 +28,61 @@ class RecordedAgUiAgent extends AbstractAgent {
   private readonly stopped = new Subject<void>();
   private cleanup: (() => void) | undefined;
   private previousApplied: Promise<void> = Promise.resolve();
-  private pendingEvents = 0;
+  private readonly barriers = new WeakSet<BaseEvent>();
+  private outstanding = 0;
+  private releaseBarrier: (() => void) | undefined;
+  public async acknowledgeBarrier(event: BaseEvent): Promise<boolean> {
+    if (!this.barriers.has(event)) return false;
+    await this.previousApplied;
+    if (--this.outstanding === 0) this.releaseBarrier?.();
+    return true;
+  }
   constructor(private readonly source: AgUiEventSource, private readonly binding: AgUiRunBinding,
-    private readonly onApplied: () => void | Promise<void>, private readonly onOverflow: (error: Error) => void) {
-    super({ threadId: binding.threadId, agentId: "zebra-standard-consumer", debug: false });
+    private readonly onApplied: () => void | Promise<void>, initial: StandardAgUiConsumerOptions) {
+    super({ threadId: binding.threadId, agentId: "zebra-standard-consumer", debug: false, initialMessages: structuredClone(initial.initialMessages ?? []), initialState: structuredClone(initial.initialState ?? {}) });
   }
   run(_input: RunAgentInput): Observable<BaseEvent> {
-    const asyncSource = this.source as AsyncIterable<unknown>;
-    const source = typeof asyncSource[Symbol.asyncIterator] !== "function" ? this.source : {
-      [Symbol.asyncIterator]: () => {
-        const iterator = asyncSource[Symbol.asyncIterator]();
-        let returned: Promise<IteratorResult<unknown>> | undefined;
-        const requestReturn = () => returned ??= Promise.resolve(iterator.return?.() ?? { done: true, value: undefined });
-        // Request cleanup immediately even when next() awaits caller-owned IO. Such IO
-        // cannot be forcibly cancelled; eventual RxJS cleanup reuses the same request.
-        this.cleanup = () => { try { void requestReturn().catch(() => {}); } catch { /* preserve the consumer failure */ } };
-        return { next: () => iterator.next(), return: requestReturn };
-      },
-    };
+    const owner = this;
+    const source = { async *[Symbol.asyncIterator]() {
+      const asyncSource = owner.source as AsyncIterable<unknown>;
+      const iterator = typeof asyncSource[Symbol.asyncIterator] === "function"
+        ? asyncSource[Symbol.asyncIterator]() : (owner.source as Iterable<unknown>)[Symbol.iterator]();
+      let returned: Promise<IteratorResult<unknown>> | undefined;
+      const requestReturn = () => returned ??= Promise.resolve().then(() => iterator.return?.() ?? { done: true, value: undefined });
+      owner.cleanup = () => { owner.releaseBarrier?.(); void requestReturn().catch(() => {}); };
+      let failed = false;
+      try {
+        while (true) {
+          const next = await iterator.next();
+          if (next.done) return;
+          const acknowledged = new Promise<void>(resolve => owner.releaseBarrier = resolve);
+          yield next.value;
+          if (owner.outstanding) await acknowledged;
+        }
+      } catch (error) { failed = true; throw error; }
+      finally { try { await requestReturn(); } catch (error) { if (!failed) throw error; } }
+    } };
     return boundAgUiEvents(source, this.binding).pipe(takeUntil(this.stopped));
   }
   public abortRun(): void {
+    this.releaseBarrier?.();
     this.stopped.next();
     this.stopped.complete();
     this.cleanup?.();
   }
   public waitForPreviousApplied(): Promise<void> { return this.previousApplied; }
-  public dequeueEvent(): void { this.pendingEvents--; }
   protected apply(input: RunAgentInput, events: Observable<BaseEvent>, subscribers: AgentSubscriber[]) {
-    // ponytail: reject beyond 128 queued canonical events (+1 notification waiter).
-    // Pull-paced ingress is the upgrade; this reader cap is not a wire-profile limit.
-    return super.apply(input, events.pipe(tap(() => {
-      if (++this.pendingEvents > 128) {
-        const error = new Error("AG-UI pending event limit (128) exceeded");
-        this.onOverflow(error);
-        throw error;
-      }
+    // ponytail: upstream has no completion hook for events without mutations.
+    // Insert identity-only barriers AFTER enforcement/chunking/verification. They
+    // drain prior application, never enter user hooks/history/wire, and pace pulls.
+    return super.apply(input, events.pipe(concatMap(event => {
+      this.outstanding++;
+      const barrier = { type: "CUSTOM", name: "application-barrier", value: null } as BaseEvent;
+      this.barriers.add(barrier);
+      return of(event, barrier);
     })), subscribers);
   }
+
   protected processApplyEvents(input: RunAgentInput, events: Observable<AgentStateMutation>, subscribers: AgentSubscriber[]) {
     return events.pipe(concatMap(mutation => {
       // Install the barrier synchronously before defaultApply can begin the next event.
@@ -79,7 +99,7 @@ class RecordedAgUiAgent extends AbstractAgent {
 
 /** One instance consumes one authorized protocol Run, from a recording or live iterable.
  * Failure unsubscribes and requests iterator cleanup; caller-owned IO/callback promises
- * cannot be forcibly cancelled. Ingress overflow rejects without awaiting those promises. */
+ * cannot be forcibly cancelled. An AbortSignal rejects promptly and requests cleanup. */
 export class StandardAgUiConsumer {
   private readonly binding: AgUiRunBinding;
   private agent: RecordedAgUiAgent | undefined;
@@ -101,7 +121,7 @@ export class StandardAgUiConsumer {
 
   async consume(source: AgUiEventSource): Promise<StandardAgUiSnapshot> {
     if (this.agent) throw new Error("Consume a bound AG-UI Run only once; use a new instance for another Run");
-    let hasStateSnapshot = false;
+    let hasStateSnapshot = this.options.initialState !== undefined;
     let applicationError: { error: unknown } | undefined;
     let acceptedTerminal: BaseEvent | undefined;
     let rejectFatal!: (error: unknown) => void;
@@ -116,15 +136,18 @@ export class StandardAgUiConsumer {
       if (applicationError) return;
       try { await this.options.onSnapshot?.(this.snapshot); }
       catch (error) { failApplication(error); throw error; }
-    }, failApplication);
+    }, this.options);
     this.status = "consuming";
+    const signal = this.options.signal;
+    const abort = () => failApplication(signal?.reason ?? new Error("AG-UI consumption aborted"));
+    signal?.addEventListener("abort", abort, { once: true });
     try {
+      if (signal?.aborted) throw signal.reason ?? new Error("AG-UI consumption aborted");
       await Promise.race([this.agent.runAgent({ runId: this.binding.runId }, {
         onEvent: async ({ event, messages, state }) => {
-          this.agent!.dequeueEvent();
           try {
             await this.agent!.waitForPreviousApplied();
-            if (applicationError) return { stopPropagation: true };
+            if (applicationError || await this.agent!.acknowledgeBarrier(event)) return { stopPropagation: true };
             // Upstream warns and skips failed patches. Preflight without replacing its reducer.
             if (event.type === "STATE_SNAPSHOT") hasStateSnapshot = true;
             if (event.type === "STATE_DELTA") {
@@ -138,6 +161,7 @@ export class StandardAgUiConsumer {
               jsonpatch.applyPatch(base.content, delta.patch, true, false);
             }
             await this.options.onEvent?.(structuredClone(event));
+            if (applicationError) return { stopPropagation: true };
             if (event.type === "RUN_FINISHED" || event.type === "RUN_ERROR") acceptedTerminal = structuredClone(event);
           } catch (error) {
             // Upstream swallows subscriber exceptions outside test mode. Stop explicitly,
@@ -150,12 +174,13 @@ export class StandardAgUiConsumer {
       if (applicationError) throw applicationError.error;
       this.terminal = acceptedTerminal;
       this.status = this.terminal?.type === "RUN_FINISHED" ? "finished" : this.terminal ? "error" : "incomplete";
-      await this.options.onSnapshot?.(this.snapshot);
+      await Promise.race([this.options.onSnapshot?.(this.snapshot), fatal]);
+      if (signal?.aborted) throw signal.reason ?? new Error("AG-UI consumption aborted");
       return this.snapshot;
     } catch (error) {
       this.status = "failed";
       throw error;
-    }
+    } finally { signal?.removeEventListener("abort", abort); }
   }
 
   /** Prepare only; the application remains responsible for authority and sending the next Run. */

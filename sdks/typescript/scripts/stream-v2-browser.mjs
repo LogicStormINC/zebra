@@ -26,7 +26,7 @@ stopped:()=>false,signal:window.abort.signal,streamVersion:2,initialEventId:sess
 onCursor:cursor=>{if(cursor)sessionStorage.setItem("cursor",cursor)},
 onObservation:async event=>{reducer.observe(event);root.render(React.createElement(AgentMessageList,{messages:reducer.snapshot(),labels:{draft:"临时草稿"}}))},
 onCursorRecovered:async()=>{window.recovered=true},
-onEffect:async effect=>{window.effects.push(effect.effect_id);await fetch("/receipt",{method:"POST",body:effect.effect_id})}});`;
+onEffect:async effect=>{window.effects.push(effect.effect_id);await fetch("/receipt",{method:"POST",body:effect.effect_id})}}).catch(error=>{window.streamFailure=String(error);window.abort.abort()});`;
 await build({stdin:{contents:entry,resolveDir:sdk,loader:"tsx"},bundle:true,platform:"browser",format:"iife",outfile:join(scratch,"fixture.js"),nodePaths:[join(sdk,"packages/react/node_modules")]});
 const javascript=await readFile(join(scratch,"fixture.js"));
 const wire=(id,name,value)=>`id: ${id}\ndata: ${JSON.stringify({type:"CUSTOM",name,value})}\n\n`;
@@ -72,6 +72,6 @@ try{
  await page.reload();await page.getByText("最终确认正文",{exact:true}).waitFor();assert.equal(await page.evaluate(()=>window.effects.length),0);
  await page.evaluate(()=>fetch("/advance/partial"));await page.getByText("新草稿完整",{exact:true}).waitFor();assert.equal(requests.at(-1).cursor,"partial-wire");
  await page.evaluate(()=>fetch("/advance/tool"));await page.waitForFunction(()=>window.effects.length===1);assert.deepEqual(await page.evaluate(()=>window.effects),["current"]);
- assert.deepEqual(receipts,["current"]);assert.deepEqual(errors,[]);assert.ok(connections>=3);await page.screenshot({path:join(artifacts,"recovered.png")});
+ assert.deepEqual(receipts,["current"]);assert.deepEqual(errors,[]);assert.equal(await page.evaluate(()=>window.streamFailure),undefined);assert.ok(connections>=3);await page.screenshot({path:join(artifacts,"recovered.png")});
  console.log(JSON.stringify({browser:"Chromium",draft_replace_commit_refresh_partial_resume_tool:"passed",connections,receipts:receipts.length,errors:errors.length}));
 }finally{await browser?.close();server.closeAllConnections();await new Promise(resolveClose=>server.close(resolveClose));await rm(scratch,{recursive:true,force:true})}
