@@ -1,3 +1,20 @@
+## 2026-10-28 AGUI-G1-STANDARD-CONSUMER-20261028
+
+Reused official client/core1.0.3, RxJS7.8.1, fast-json-patch3.1.1; no duplicate
+reducer framework or old-stream switch. Explicit new test collection; red module
+absence plus real patch/subscriber failure tests. Review reproduced live abort
+no-op, delayed-notification acceptance and unbounded eager ingress; all corrected
+with blocked live/resolve/reject/cleanup/finite queue regressions.25 new and199 SDK
+checks passed; type/package/actual CJS+ESM pass; G0 seven and make check pass.
+React18/19 x Vite/Next SSR/RSC and Chromium/WebKit matrix passed before final
+capacity guard; new guard received fresh unit/type/package checks. Browser gate
+reset now awaits empty DOM (exact672 assertion retained), not a UI/CSS change.
+Remaining: G2V must freeze+validate public Run mapping and independent profile /
+checkpoint/cursor namespace before G2 producer semantics. G3/G7 must validate
+paced cold recovery, byte/memory budgets and128 pending-event refusal under load.
+No source publication, registry upload, service activation, model/search or old
+Run mutation. Keep branch/worktree and installed isolated dependencies for next slice.
+
 ## 2026-10-28 AGUI-G0-CONTRACT-20261028
 
 Implemented frozen upstream schema/catalog and deterministic legacy wire/cursor

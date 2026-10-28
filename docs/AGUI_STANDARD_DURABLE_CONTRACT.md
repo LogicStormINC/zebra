@@ -178,3 +178,39 @@ G0冻结schema/目录/profile/旧行为及映射的安全约束，不宣称已�
 JS消费试验后固定复用方案；G2V在任何新profile生产语义前固定并测试映射算法、
 checkpoint版本及真实discovery承载；G7优化前采集匹配样本并冻结性能门槛。
 这些未完成项阻塞各自下游，不得用G0通过替代其验收。
+
+
+## 9. G1 标准消费入口（尚非生产profile）
+
+G1以实际消费试验选择固定的 `@ag-ui/client/core@1.0.3`，复用官方
+enforcement、chunk展开、verify、defaultApplyEvents与source-error drain，
+另直接登记已复用的 `rxjs@7.8.1`、`fast-json-patch@3.1.1`。旧14类投影、
+SSE/v2、ConversationStreamReducer、业务工具与权限入口不切换。
+
+新增 `standardAgUiEvents` 和 `StandardAgUiConsumer`：每实例明确绑定一个
+thread/run，接受录制或live iterable，提供隔离snapshot、pre-apply事件和
+post-apply状态通知。消费状态不是任务执行事实，更不是durable commit证明。
+`prepareResume`仅准备完整恢复数据，不发送请求、不执行效果、不作审批决定。
+
+官方默认实现会跳过无法应用的patch、在非test模式吞掉subscriber异常，
+自定义内存agent还必须自行实现stop；这些边界不能直接冒充可靠ACK。G1以
+patch副本预检、显式失败、私有stop/iterator清理请求及前序应用通知栅栏保护
+已接收状态。受阻live源和延迟通知的resolve/reject均有回归；terminal在
+官方管线成功结束后才公开，不提前接受后续事件。
+
+旧代码的包版本仍是内部0.1.0构建候选，本分片不发布registry、不替换Trench
+vendor，也不能覆盖已交付同名包。G6交付前统一版本、tgz、manifest与lock验证。
+31类taxonomy/有效例可接受不等于完整1.0行为认证；完整消费者/生产投影/
+Artifact/审批/恢复闭环仍分别由G2V–G7/T1的门禁证明。
+
+本地reader暂采用128个待处理canonical事件（另有1个等待前序通知的active项）
+上限，溢出显式拒绝消费并停止订阅，不伪造Run失败或重新执行。该限制也可能
+拒绝突发同步录制源；它是有限容量拒绝策略，不是producer背压或无限历史承诺。
+G3/G7须在启用profile前验证实际冷恢复、节奏控制和字节/内存预算，不能直接
+把未节流的大数组当作无限流。不能强制取消调用者自有IO或永不完成的回调
+promise；reader会及时失败并请求cleanup，底层资源中止仍由source owner负责。
+
+G1验收：25项新增、完整SDK199项通过且无跳过；type/package、实际dist的
+ESM/CJS消费通过。规格与代码质量审查通过。框架消费者/双浏览器检查通过后，
+最终容量guard再经过完整SDK199/type/package复验。新增入口尚未接生产profile，
+因此不把这些证据等同于完整1.0生产协议、Trench迁移或吞吐/模型验收。

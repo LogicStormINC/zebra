@@ -1,6 +1,31 @@
+## AGUI-G1-STANDARD-CONSUMER-20261028 — Reuse official standard event consumption
+
+- Status: Review (2026-10-28; Ready claim before code; 25 new/199 full SDK tests zero skips, check/package and independent spec/quality review passed; local integration follows, no push/deployment).
+- Human owner: Luke Ding; executor: Codex; target: cloud-agent.
+- Branch/worktree: codex/agui-g1-standard-consumer-20261028; trench-spin-sync-20261028/zebra-agent.
+- Dependency: reviewed G0 a1a46a5a integrated into local cloud-agent.
+- Owned paths: sdks/typescript/packages/client-core/src/agui_events.ts;
+  sdks/typescript/packages/client-core/src/agui_reducer.ts;
+  sdks/typescript/packages/client-core/src/index.ts (additive exports only);
+  sdks/typescript/packages/client-core/tests/agui-{events,reducer}.test.ts;
+  sdks/typescript/packages/client-core/package.json; sdks/typescript/package.json;
+  sdks/typescript/pnpm-lock.yaml; docs/AGUI_STANDARD_DURABLE_CONTRACT.md;
+  docs/AGENT_TASKS.md; PROGRESS.md; WORKLOG.md; implementation plan progress.
+- Before-code validation scope extension: sdks/typescript/scripts/react-browser-matrix.mjs;
+  fixture reset must await actual empty React DOM before desktop geometry assertion.
+  Candidate WebKit read 1152px active layout before reset commit, while isolated G0
+  used identical UI source and passed. Preserve exact672px assertion; no UI changes.
+- Scope: verify/pin official JS1.0.3 reuse for standard events, chunk/enforcement/
+  state-patch/lifecycle/complete-resume handling; scoped no-network consumer API.
+  No replacement of legacy reducer/SSE/runtime or new production profile activation.
+- Acceptance: red/green negative+positive tests, explicit test-script collection,
+  full SDK check/tests/package/consumer/browser validation as applicable, G0 legacy
+  gate, make check and independent spec then quality review. No registry publish,
+  live model/tool execution, original Run mutation or deployment.
+
 ## AGUI-G0-CONTRACT-20261028 — Frozen protocol and compatibility baseline
 
-- Status: Review (2026-10-28; claimed Ready before implementation; offline7/legacy36/SDK174 and make check passed; independent spec and quality reviews passed).
+- Status: Done (2026-10-28; a1a46a5a fast-forward integrated into local cloud-agent; offline7/legacy36/SDK174 and make check passed; independent spec/quality reviews passed; no push/deployment).
 - Human owner: Luke Ding; executor: Codex; target: cloud-agent.
 - Branch/worktree: codex/agui-g0-contract-20261028; trench-spin-sync-20261028/zebra-agent.
 - Dependency: approved plan d083c558, based on cloud-agent d15fe9f6.

@@ -478,3 +478,6 @@ export { openClientSurface, type ClientSurfaceOpenOptions, type ClientSurfaceOpe
 export { publicClientSurfaceMetadata, validateSurfaceMetadata, type PublicClientSurfaceMetadata } from "./surface_metadata.ts";
 export { nativeReadableCommand, type ReadableCommandOptions, type ReadableCommandResult } from "./readable_commands.ts";
 export type { CommandRecoveryView } from "./command_recovery.ts";
+
+export { standardAgUiEvents, type AgUiRunBinding, type AgUiEventSource } from "./agui_events.js";
+export { StandardAgUiConsumer, type StandardAgUiConsumerOptions, type StandardAgUiSnapshot } from "./agui_reducer.js";

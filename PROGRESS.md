@@ -1,3 +1,18 @@
+## 2026-10-28 AG-UI G1 standard consumer foundation
+
+AGUI-G1-STANDARD-CONSUMER-20261028 adds an opt-in per-protocol-Run consumer using
+fixed official JS1.0.3 normalization/chunks/verification/application. The legacy
+SSE/draft reducer/runtime, current profiles and execution authority remain intact.
+Patch/production-callback errors propagate; blocked-live cleanup, awaited state
+application, complete resume preflight and finite canonical ingress have regressions.
+Final SDK199 passed/zero skips, check/package and actual ESM/CJS entry checks passed;
+25 are new. G0 offline7 and make check passed (1428 types/30eval). Framework consumer
+and Chromium/WebKit matrices passed before the final ingress guard; final guard
+then passed fresh SDK199/type/package tests. No claim of completed production AG-UI1.0.
+Independent spec/quality reviews passed after two P1 and one P2 corrections.
+Next: G2V profile/checkpoint/cursor isolation, before new projection semantics.
+No registry publication, Trench package replacement, live model or deployment.
+
 ## 2026-10-28 AG-UI G0 contract baseline
 
 AGUI-G0-CONTRACT-20261028 freezes the approved standard/durable boundary and

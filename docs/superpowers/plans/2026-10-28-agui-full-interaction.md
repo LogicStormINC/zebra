@@ -327,7 +327,7 @@ Trench T1 在其自身环境执行 focused API、完整 toc-frontend test/lint/b
 实施进度（2026-10-28）：
 
 - [x] G0：冻结官方schema/31事件目录、真实旧14类wire/cursor golden及ADR边界；7+36+174检查和make check通过；独立审查见任务表。
-- [ ] G1：标准消费核心。
+- [x] G1：官方1.0.3消费核心；25新检查/完整SDK199、check/package及两阶段审查通过。尚未启用新profile；128 pending guard和观察状态不代表生产执行/吞吐验收。
 - [ ] G2V/G2：版本隔离后公开投影语义。
 - [ ] G3–G7/T1：传输、交互、包与消费者收口。
 

@@ -211,6 +211,7 @@ async function verifyProgressiveIdentity(page, browserName) {
     await page.getByText("Only the first page is covered", { exact: true }).waitFor();
   }
   await page.evaluate(() => window.progressiveCase.reset());
+  await page.locator(".zebra-agent-chat--empty").waitFor();
 }
 
 async function readConversationGeometry(page) {
