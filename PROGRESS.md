@@ -1,3 +1,14 @@
+## 2026-10-28 Full capability foundation in progress
+
+CLOUD-FULL-CAPABILITY-COMPOSITION-20261028 adds opt-in generic fresh Host
+boundaries, trusted volume callbacks, bounded historical Artifact membership and
+workspace-scoped Host Memory management. Local defaults remain compatible.
+make check passes;90 focused Worker execution regressions passed, with additional
+no-model authority/model transport/Artifact/Memory checks. Full ERP/S3/quota/
+scheduler/browser composition remains in progress, not deployed or certified.
+Original Runs and Search/MCP processes unchanged; zero model/search requests.
+Details: docs/CLOUD_FULL_CAPABILITY_COMPOSITION.md.
+
 ## 2026-10-28 Continuation epoch reliability closeout
 
 CLOUD-CONTINUATION-EPOCHS-20261028 scopes approval, clarification and child

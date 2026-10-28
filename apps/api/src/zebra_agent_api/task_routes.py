@@ -18,6 +18,7 @@ from zebra_agent_api.task_api import (
     rollover_task,
     route_active_task,
 )
+from zebra_agent_api.task_artifact_history import artifact_segments, route_task_artifact
 from zebra_agent_api.task_message_contract import receipt_version
 from zebra_agent_api.task_message_receipts import read_task_message_receipt
 from zebra_agent_api.task_read_summaries import read_task_attachments, read_task_usage
@@ -75,8 +76,12 @@ def handle_task_route(app: ZebraAgentApi, request: TaskRouteRequest) -> ApiRespo
     parts = _parts(request.path, "/tasks/")
     if method == "GET" and len(parts) == 3 and parts[1:] == ("messages", "receipt"):
         return read_task_message_receipt(app, parts[0], request.headers)
-    if (method in {"GET", "POST"} and len(parts) == 4
-            and parts[1] == "runs" and parts[3] == "approval"):
+    if (
+        method in {"GET", "POST"}
+        and len(parts) == 4
+        and parts[1] == "runs"
+        and parts[3] == "approval"
+    ):
         from zebra_agent_api.task_approval import handle_task_approval
 
         return handle_task_approval(app, request, parts[0], parts[2])
@@ -139,18 +144,24 @@ def handle_task_route(app: ZebraAgentApi, request: TaskRouteRequest) -> ApiRespo
         return route_active_task(app.stores, parts[0], app.get_session_diff)
     if method == "GET" and len(parts) == 2 and parts[1] == "context":
         return route_active_task(app.stores, parts[0], app.get_session_context)
+    if method == "GET" and len(parts) == 2 and parts[1] == "artifact-segments":
+        return artifact_segments(app.stores, parts[0], request.query or {})
     if method == "GET" and len(parts) == 2 and parts[1] == "artifacts":
-        return route_active_task(app.stores, parts[0], app.get_session_artifacts)
+        return route_task_artifact(
+            app.stores, parts[0], request.query or {}, app.get_session_artifacts
+        )
     if method == "GET" and len(parts) == 3 and parts[1] == "artifacts":
-        return route_active_task(
+        return route_task_artifact(
             app.stores,
             parts[0],
+            request.query or {},
             lambda active: app.get_session_artifact_detail(active, parts[2]),
         )
     if method == "GET" and len(parts) == 4 and parts[1] == "artifacts" and parts[3] == "content":
-        return route_active_task(
+        return route_task_artifact(
             app.stores,
             parts[0],
+            request.query or {},
             lambda active: app.get_session_artifact_content(
                 active,
                 parts[2],

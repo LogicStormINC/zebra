@@ -82,6 +82,7 @@ class OpenAICompatibleModelGateway:
             )
         self._client = client
         self._prepared_requests = PreparedChatRequests()
+        self.authority_check: Callable[[str], None] | None = None
 
     def prepare_text_request(
         self,
@@ -104,6 +105,8 @@ class OpenAICompatibleModelGateway:
 
     def complete_prepared(self, request: PreparedModelRequest) -> ModelCompletion:
         """Consume an owned preparation with one HTTP attempt and no redirects."""
+        if self.authority_check is not None:
+            self.authority_check(uuid4().hex)
         return self._prepared_requests.send(self, request)
 
     @property
@@ -145,6 +148,8 @@ class OpenAICompatibleModelGateway:
         retry_count = 0
         while True:
             attempt_started = perf_counter()
+            if self.authority_check is not None:
+                self.authority_check(call_id)
             try:
                 response_data = self._post_chat_completion(request_body, deadline_s=deadline_s)
                 completion = parse_completion(
@@ -218,6 +223,8 @@ class OpenAICompatibleModelGateway:
         try:
             while True:
                 attempt_started = perf_counter()
+                if self.authority_check is not None:
+                    self.authority_check(call_id)
                 try:
                     response_data = read_openai_stream(
                         client,

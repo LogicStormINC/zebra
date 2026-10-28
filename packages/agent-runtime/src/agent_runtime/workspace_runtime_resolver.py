@@ -8,6 +8,7 @@ fencing for continuations.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
 from uuid import UUID
 
@@ -23,8 +24,15 @@ class WorkspaceRuntimeResolutionError(ValueError):
 
 
 class WorkspaceRuntimeResolver:
-    def __init__(self, provisioner: PostgresWorkspaceProvisioner) -> None:
+    def __init__(
+        self,
+        provisioner: PostgresWorkspaceProvisioner,
+        *,
+        prepare_volume: Callable[[WorkspaceId, UUID], None] | None = None,
+        verify_volume: Callable[[WorkspaceId, UUID, Path], None] | None = None,
+    ) -> None:
         self._provisioner = provisioner
+        self._prepare_volume, self._verify_volume = prepare_volume, verify_volume
 
     def resolve(self, workspace_ref: str, *, session_id: UUID) -> Path:
         if not _is_workspace_reference(workspace_ref):
@@ -34,8 +42,13 @@ class WorkspaceRuntimeResolver:
             raise WorkspaceRuntimeResolutionError(
                 f"workspace {workspace_ref} is unknown to the control plane"
             )
+        if self._prepare_volume is not None:
+            self._prepare_volume(workspace_id, session_id)
         instance = self._provisioner.provision_existing(workspace_id)
-        return self._require_materialized(workspace_ref, instance)
+        root = self._require_materialized(workspace_ref, instance)
+        if self._verify_volume is not None:
+            self._verify_volume(workspace_id, session_id, root)
+        return root
 
     def resolve_ready(self, workspace_ref: str, *, session_id: UUID) -> Path:
         """Continuation path: never provisions, only verifies fenced facts."""
@@ -47,7 +60,10 @@ class WorkspaceRuntimeResolver:
             raise WorkspaceRuntimeResolutionError(
                 f"workspace {workspace_ref} is unknown to the control plane"
             )
-        return self._require_materialized(workspace_ref, instance)
+        root = self._require_materialized(workspace_ref, instance)
+        if self._verify_volume is not None:
+            self._verify_volume(instance.workspace_id, session_id, root)
+        return root
 
     def verify_revision(self, workspace_ref: str, *, materialized_revision: str) -> None:
         if not _is_workspace_reference(workspace_ref):

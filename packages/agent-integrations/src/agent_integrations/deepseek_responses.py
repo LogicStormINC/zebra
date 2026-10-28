@@ -66,6 +66,7 @@ class DeepSeekResponsesModelGateway:
         self._max_retries = max_retries
         self._router = deepseek_router or DeepSeekProfileRouter(legacy_executor_model=model_name)
         self._client = client
+        self.authority_check: Callable[[str], None] | None = None
 
     @property
     def context_window(self) -> ModelContextWindow:
@@ -98,6 +99,8 @@ class DeepSeekResponsesModelGateway:
         retries = 0
         while True:
             attempt_started = perf_counter()
+            if self.authority_check is not None:
+                self.authority_check(call_id)
             try:
                 payload = self._post(body, deadline_s=deadline_s)
                 completion = parse_responses_completion(
@@ -161,6 +164,8 @@ class DeepSeekResponsesModelGateway:
         try:
             while True:
                 attempt_started = perf_counter()
+                if self.authority_check is not None:
+                    self.authority_check(call_id)
                 try:
                     payload = read_deepseek_responses_stream(
                         client,

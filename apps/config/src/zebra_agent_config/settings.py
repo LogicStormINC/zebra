@@ -10,6 +10,10 @@ from zebra_agent_config import mcp_settings
 from zebra_agent_config.command_delivery import CommandDeliverySettings, load_command_delivery
 from zebra_agent_config.coverage_settings import CoverageWorkSettings, load_coverage_work
 from zebra_agent_config.egress_settings import load_egress_endpoint
+from zebra_agent_config.host_authority_settings import (
+    HostExecutionAuthoritySettings,
+    load_host_execution_authority,
+)
 from zebra_agent_config.mcp_credentials import McpCredentialSettings, load_mcp_credentials
 from zebra_agent_config.memory_settings import MemoryGatewaySettings, load_memory_gateway_settings
 from zebra_agent_config.model_settings import ModelSettings as ModelSettings
@@ -85,6 +89,9 @@ class ZebraAgentSettings:
     cloud_extensions_manage_enabled: bool = False
     mcp_credentials: McpCredentialSettings = field(default_factory=McpCredentialSettings)
     plugins: PluginSettings = field(default_factory=PluginSettings)
+    host_execution_authority: HostExecutionAuthoritySettings = field(
+        default_factory=HostExecutionAuthoritySettings
+    )
     cloud_extension_turn_admission_enabled: bool = False
     cloud_extension_worker_enabled: bool = False
     cloud_skill_worker_enabled: bool = False
@@ -275,6 +282,7 @@ def load_settings(
         host_tool_endpoint=_read_optional(values, "ZEBRA_HOST_TOOL_ENDPOINT"),
         host_tool_workload_identity=_read_optional(values, "ZEBRA_HOST_TOOL_WORKLOAD_IDENTITY"),
         host_tool_shared_secret=_read_optional(values, "ZEBRA_HOST_TOOL_SHARED_SECRET"),
+        host_execution_authority=load_host_execution_authority(values),
         host_manifest_binding_policy=_read(
             values, "ZEBRA_HOST_MANIFEST_BINDING_POLICY", default="declared"
         ),

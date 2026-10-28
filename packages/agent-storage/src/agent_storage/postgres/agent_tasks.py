@@ -212,6 +212,27 @@ class PostgresAgentTaskStore(
             ).fetchall()
         return tuple(segment_from_row(row) for row in rows)
 
+    def segment_page(
+        self, task_id: TaskId, *, after_index: int = -1, limit: int = 50
+    ) -> tuple[ExecutionSegment, ...]:
+        if (
+            type(after_index) is not int
+            or after_index < -1
+            or type(limit) is not int
+            or not 1 <= limit <= 101
+        ):
+            raise ValueError("invalid segment page bounds")
+        with self._database.connect_task_io() as connection:
+            rows = connection.execute(
+                """SELECT session_id, task_id, predecessor_id, segment_index,
+                          visibility, rollover_reason
+                   FROM execution_segments
+                   WHERE deployment_namespace = %s AND task_id = %s AND segment_index > %s
+                   ORDER BY segment_index LIMIT %s""",
+                (self._database.deployment_namespace, task_id, after_index, limit),
+            ).fetchall()
+        return tuple(segment_from_row(row) for row in rows)
+
     def active_segment(self, task_id: TaskId) -> SessionId | None:
         task = self.get_task(task_id)
         return None if task is None else task.active_segment_id

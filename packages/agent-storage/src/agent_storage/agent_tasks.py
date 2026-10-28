@@ -8,7 +8,6 @@ from agent_core.domain.agent_tasks import (
     AgentTask,
     ExecutionSegment,
     RolloverReason,
-    SegmentVisibility,
 )
 from agent_core.domain.identifiers import SessionId, TaskId
 from agent_core.domain.sessions import SessionStatus
@@ -16,6 +15,8 @@ from agent_core.ports.agent_tasks import AgentTaskPort, TaskEvent, TaskEventPage
 from agent_core.ports.task_projection_checkpoints import CheckpointNotReady
 from agent_core.ports.task_replay import TaskEventHeader, TaskReadHeader, TaskRunHeader
 
+from agent_storage.agent_task_segments import read_segment_page
+from agent_storage.agent_task_segments import segment_from_row as _segment_from_row
 from agent_storage.database import SQLiteDatabase
 from agent_storage.event_rows import deserialize_event_row
 from agent_storage.projection_source_metadata import (
@@ -172,6 +173,11 @@ class SQLiteAgentTaskStore(
                 (str(task_id),),
             ).fetchall()
         return tuple(_segment_from_row(row) for row in rows)
+
+    def segment_page(
+        self, task_id: TaskId, *, after_index: int = -1, limit: int = 50
+    ) -> tuple[ExecutionSegment, ...]:
+        return read_segment_page(self._database, task_id, after_index=after_index, limit=limit)
 
     def active_segment(self, task_id: TaskId) -> SessionId | None:
         task = self.get_task(task_id)
@@ -475,19 +481,6 @@ def _task_from_connection(connection: sqlite3.Connection, task_id: TaskId) -> Ag
         active_segment_id=SessionId(UUID(row["active_segment_id"])),
         current_sequence=max(current, row["segment_sequence"]),
         namespace=row["namespace"],
-    )
-
-
-def _segment_from_row(row: sqlite3.Row) -> ExecutionSegment:
-    return ExecutionSegment(
-        session_id=SessionId(UUID(row["session_id"])),
-        task_id=TaskId(UUID(row["task_id"])),
-        predecessor_id=(SessionId(UUID(row["predecessor_id"])) if row["predecessor_id"] else None),
-        segment_index=row["segment_index"],
-        visibility=SegmentVisibility(row["visibility"]),
-        rollover_reason=(
-            RolloverReason(row["rollover_reason"]) if row["rollover_reason"] else None
-        ),
     )
 
 

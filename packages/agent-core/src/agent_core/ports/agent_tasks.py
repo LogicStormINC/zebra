@@ -91,6 +91,10 @@ class AgentTaskPort(
 
     def segments(self, task_id: TaskId) -> tuple[ExecutionSegment, ...]: ...
 
+    def segment_page(
+        self, task_id: TaskId, *, after_index: int = -1, limit: int = 50
+    ) -> tuple[ExecutionSegment, ...]: ...
+
     def active_segment(self, task_id: TaskId) -> SessionId | None: ...
 
     def attach_segment(

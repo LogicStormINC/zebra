@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from zebra_agent_api.host_memory_scope import host_memory_response
 from zebra_agent_api.responses import ApiResponse
 from zebra_agent_api.tenant_guard import (
     memory_scope_denied,
@@ -30,6 +31,15 @@ def handle_memory_route(app: ZebraAgentApi, request: RouteRequest) -> ApiRespons
     scope = "user" if request.path.startswith("/users/") else "tenant"
     if memory_scope_denied(request.host_context, scope=scope, resource_id=parts[0]):
         return tenant_forbidden_response(parts[0])
+    if method == "POST" and scope == "user" and len(parts) == 2 and parts[1] == "memory":
+        source_task_id = (request.body or {}).get("source_task_id")
+        if isinstance(source_task_id, str) and request.host_context is not None:
+            denied = task_access_response(app, source_task_id, request.host_context)
+            if denied is not None:
+                return denied
+    scoped = host_memory_response(app, request, scope, parts)
+    if scoped is not None:
+        return scoped
     if method == "GET":
         return _handle_get(app, scope, parts)
     if method == "POST":
@@ -95,11 +105,6 @@ def _handle_post(
     body: dict[str, object],
 ) -> ApiResponse | None:
     if scope == "user" and len(parts) == 2 and parts[1] == "memory":
-        source_task_id = body.get("source_task_id")
-        if isinstance(source_task_id, str) and request.host_context is not None:
-            denied = task_access_response(app, source_task_id, request.host_context)
-            if denied is not None:
-                return denied
         return app.create_user_memory(parts[0], body)
     if len(parts) == 3 and parts[1] == "memory" and parts[2] == "review-queue-preview":
         return (

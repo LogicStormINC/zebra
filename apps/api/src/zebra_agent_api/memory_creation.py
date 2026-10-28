@@ -5,6 +5,7 @@ from typing import cast
 from uuid import UUID, uuid4
 
 from agent_core.application.memory_directives import safe_memory_text
+from agent_core.application.memory_scopes import GovernedMemoryScope
 from agent_core.domain.governed_memories import (
     GovernedMemoryConflictError,
     GovernedMemoryCreate,
@@ -24,7 +25,11 @@ from zebra_agent_api.responses import ApiResponse, bad_request, conflict
 
 
 def create_user_memory(
-    *, stores: ControlPlaneStores, user_id: str, payload: dict[str, object]
+    *,
+    stores: ControlPlaneStores,
+    user_id: str,
+    payload: dict[str, object],
+    scope: GovernedMemoryScope | None = None,
 ) -> ApiResponse:
     text = payload.get("text")
     task_id = payload.get("source_task_id")
@@ -66,6 +71,11 @@ def create_user_memory(
         status=MemoryStatus.CANDIDATE,
         visibility=MemoryVisibility.USER,
         user_id=user_id,
+        repo_id=scope.repo_id if scope else None,
+        tenant_id=scope.tenant_id if scope else None,
+        authority_issuer=scope.authority_issuer if scope else None,
+        namespace_id=scope.namespace_id if scope else None,
+        definition_id=scope.definition_id if scope else None,
         source_session_id=session.session_id,
         source_event_start=source_sequence,
         source_event_end=source_sequence,
