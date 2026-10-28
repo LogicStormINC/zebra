@@ -1,5 +1,5 @@
 # CLOUD-CONTINUATION-EPOCHS-20261028 — Stale recovery isolation
-- Status: Review;159 focused,325 native/33 SDK and118 native sibling tests passed, zero skips; make check passed. Local integration pending. Created Ready and claimed before code on integrated34a81a31,2026-10-28.
+- Status: Done;2d8edcc7 fast-forward integrated into local cloud-agent;159 focused,325 native/33 SDK and118 native sibling tests passed, zero skips; make check passed. No push/deployment. Created Ready and claimed before code on integrated34a81a31,2026-10-28.
 - Human owner: Luke Ding; executor Codex; branch codex/cloud-continuation-epochs-20261028; worktree cloud-plugin-plan-01/zebra-agent; target cloud-agent.
 - Owned paths: apps/worker/src/zebra_agent_worker/{continuation_boundaries,approved_continuation,clarification_continuation,child_wakeup_continuation}.py; tests/worker/test_continuation_epochs.py; tests/conformance/agui_long_session/run.sh; docs/CLOUD_RELIABILITY_2026-10-28.md; docs/AGENT_TASKS.md; PROGRESS.md; WORKLOG.md.
 - Scope: investigate and minimally isolate stale approval/clarification/child continuations across newer control and Turn boundaries, including receipts arriving before attempt-start markers. Preserve current valid continuation and uncertain execution protections; no new abstraction, schema or retry policy.

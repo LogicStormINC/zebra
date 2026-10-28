@@ -7,7 +7,8 @@ crash windows. The old path reproduced85 failures; new90-case matrix passes.
 sibling recovery checks also pass with isolated PostgreSQL, zero skipped.
 make check passed. Known shared runtime boundaries are initially stable under
 these no-model gates; production deployment/failover/SLO remains unverified.
-Local cloud-agent integration pending; no original Run, model/search or service changes.
+2d8edcc7 fast-forward integrated into local cloud-agent; no push/deployment, original
+Run, model/search or service changes.
 
 ## 2026-10-28 Cloud reliability boundary follow-up
 

@@ -30,7 +30,8 @@ Validation evidence: .artifacts/cloud-continuation-epochs-20261028/.
 
 Initial stability is limited to validated shared runtime boundaries. No production
 upgrade, SLO/failover claim, ERP runtime edits, provider configuration, original Run
-or Search/MCP operation. Local cloud-agent integration pending; no push/deploy.
+or Search/MCP operation.2d8edcc7 fast-forward integrated into local cloud-agent;
+primary ten dirty files unchanged. No push/deploy.
 
 ## 2026-10-28 — CLOUD-RELIABILITY-BOUNDARIES-20261028
 
