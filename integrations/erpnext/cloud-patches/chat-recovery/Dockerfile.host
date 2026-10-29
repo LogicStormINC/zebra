@@ -1,0 +1,3 @@
+ARG HOST_BASE
+FROM ${HOST_BASE}
+COPY --chown=frappe:frappe host/ /home/frappe/frappe-bench/apps/zebra_erpnext/zebra_erpnext/

@@ -1,0 +1,496 @@
+from __future__ import annotations
+
+import json
+from collections.abc import Callable, Sequence
+from pathlib import Path
+from time import perf_counter
+
+from agent_context import LocalContextCompiler
+from agent_core.domain.attachments import AttachmentContextInput
+from agent_core.domain.context_materialization import ContextMaterialization
+from agent_core.domain.image_attachments import ImageAttachmentContextInput
+from agent_core.domain.modeling import ModelToolDefinition
+from agent_core.domain.subagents import DelegationMode
+from agent_core.domain.tool_profiles import ToolProfile, tool_names_for_profile
+from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
+from agent_core.harness import HarnessLoop, HarnessModelStep, HarnessTask, SingleAttemptOrchestrator
+from agent_core.harness.models import HarnessLoopResult, SkillReadRequirement
+from agent_core.ports import ArtifactPayloadReadPort, ArtifactPayloadStorePort
+from agent_core.ports.context_compiler import ConfirmedMemoryInput
+from agent_core.ports.model_gateway import ModelGatewayPort
+from agent_core.ports.runtime import RuntimeHandle, RuntimePort
+from agent_core.ports.session_history import SessionHistoryPort
+from agent_core.ports.tool_gateway import ToolGatewayPort
+from agent_security import DEFAULT_NETWORK_PROFILE, LocalPolicyEngine, NetworkProfile, PolicyProfile
+from agent_tools import (
+    AuthorizedMcpToolCatalog,
+    ClarifyTool,
+    CommandRunTool,
+    FileReadTool,
+    GitStatusTool,
+    McpProxyToolGateway,
+    McpToolDescribeTool,
+    McpToolSearchTool,
+    PatchApplyTool,
+    PlanTool,
+    SessionSearchTool,
+    SkillsListTool,
+    SkillsReadTool,
+    TestsRunTool,
+    ToolExecutor,
+    ToolOutputProjector,
+    ToolRegistry,
+    WebGatewayTransport,
+    WebSearchTransport,
+    WorkspaceListTool,
+    WorkspaceSearchTool,
+)
+from agent_tools.builtin.publish import FilePublishTool
+from agent_tools.cloud_skills import CloudSkillCatalog
+from agent_tools.errors import ToolRegistryError
+from agent_tools.skills_catalog import (
+    LocalSkillCatalog,
+    ScopedSkillRoot,
+    SkillCatalog,
+    SkillEnablementState,
+)
+
+from agent_runtime.adapters.local import LocalRuntime
+from agent_runtime.artifact_tools import build_artifact_read_tools
+from agent_runtime.cloud_mcp_transport import CloudMcpTransport
+from agent_runtime.deferred import DeferredRuntime
+from agent_runtime.harness_defaults import DEFAULT_TEST_PRESETS
+from agent_runtime.mcp_protocol import McpAnyServerSpec
+from agent_runtime.mcp_routing import build_mcp_transport
+from agent_runtime.research import LocalResearchSubagentRunner, ResearchSubagentTool
+from agent_runtime.skill_requirements import build_skill_read_requirements
+from agent_runtime.subagents import LocalResearchSubagentCoordinator
+from agent_runtime.tool_output_projection import build_output_projector, project_tool_output
+from agent_runtime.web_gateway import LocalWebGatewayTransport, sticky_network_cancellation_check
+from agent_runtime.web_search import LocalWebSearchTransport
+from agent_runtime.web_tools import register_web_tools
+from agent_runtime.workspace import LocalWorkspace
+
+DEFAULT_RESEARCH_CHILD_LIMIT = 3
+
+
+def run_local_harness(
+    *,
+    prompt: str,
+    title: str,
+    workspace_root: Path,
+    model_gateway: ModelGatewayPort,
+    policy_profile: PolicyProfile = PolicyProfile.WORKSPACE_WRITE,
+    tool_profile: ToolProfile = ToolProfile.GENERAL,
+    network_profile: NetworkProfile = DEFAULT_NETWORK_PROFILE,
+    web_search_endpoint: str | None = None,
+    skill_roots: tuple[str | Path | ScopedSkillRoot, ...] = (),
+    skills_state: SkillEnablementState | None = None,
+    session_history: SessionHistoryPort | None = None,
+    confirmed_memories: tuple[ConfirmedMemoryInput, ...] = (),
+    attachments: tuple[AttachmentContextInput, ...] = (),
+    image_attachments: tuple[ImageAttachmentContextInput, ...] = (),
+    mcp_servers: Sequence[McpAnyServerSpec] = (),
+    mcp_allowlist: Sequence[str] | None = None,
+    trusted_local: bool = False,
+    max_model_calls: int | None = None,
+    max_tool_calls: int | None = None,
+    web_pipeline_v2: bool = False,
+    delegation_mode: DelegationMode = DelegationMode.AUTO,
+) -> HarnessLoopResult:
+    tool_gateway = LocalToolGateway(
+        workspace_root,
+        model_gateway=model_gateway,
+        tool_profile=tool_profile,
+        web_search_endpoint=web_search_endpoint,
+        skill_roots=skill_roots,
+        skills_state=skills_state,
+        session_history=session_history,
+        mcp_servers=mcp_servers,
+        mcp_allowlist=mcp_allowlist,
+        trusted_local=trusted_local,
+        web_pipeline_v2=web_pipeline_v2,
+        delegation_mode=delegation_mode,
+    )
+    resolved_mcp_allowlist = (
+        tuple(tool.name for tool in tool_gateway.effective_mcp_tools)
+        if mcp_allowlist is None
+        else tuple(mcp_allowlist)
+    )
+    context_compiler = LocalContextCompiler()
+    try:
+        return HarnessLoop().run(
+            HarnessTask(
+                title=title,
+                user_input=prompt,
+                max_attempts=1,
+                max_model_calls=max_model_calls,
+                max_tool_calls=max_tool_calls,
+                workspace_root=workspace_root,
+                policy_profile=policy_profile.value,
+                tool_profile=tool_profile,
+                network_profile=network_profile.name.value,
+                network_allowlist=network_profile.domain_allowlist,
+                mcp_allowlist=resolved_mcp_allowlist,
+                skill_components=tool_gateway.effective_skill_components,
+                skill_requirements=tool_gateway.effective_skill_requirements,
+                confirmed_memories=confirmed_memories,
+                attachments=attachments,
+                image_attachments=image_attachments,
+            ),
+            SingleAttemptOrchestrator(
+                model_gateway,
+                LocalPolicyEngine(
+                    profile=policy_profile,
+                    network_profile=network_profile,
+                    web_search_endpoint=web_search_endpoint,
+                    trusted_local=trusted_local,
+                    web_pipeline_v2=web_pipeline_v2,
+                    workspace_root=workspace_root.resolve(strict=False),
+                ),
+                tool_gateway,
+                model_step=HarnessModelStep(
+                    context_compiler=context_compiler,
+                    available_tools=tool_gateway.model_tools,
+                    conversation_compactor=context_compiler,
+                    delegation_mode=delegation_mode.value,
+                ),
+                synthesize_tool_results=True,
+                parallel_safe_tools=tool_gateway.parallel_safe_tools,
+                parallel_batch_limits=tool_gateway.parallel_batch_limits,
+                max_parallel_tool_calls=3,
+                tool_call_resolver=tool_gateway.resolve_model_tool_calls,
+            ).run,
+        )
+    finally:
+        tool_gateway.close()
+
+
+class LocalToolGateway(ToolGatewayPort):
+    def __init__(
+        self,
+        workspace_root: Path,
+        *,
+        model_gateway: ModelGatewayPort | None = None,
+        research_child_limit: int = DEFAULT_RESEARCH_CHILD_LIMIT,
+        delegation_mode: DelegationMode = DelegationMode.AUTO,
+        durable_delegation: bool = False,
+        delegation_store: object | None = None,
+        parent_task_id: object | None = None,
+        parent_attempt_number: int = 1,
+        parent_binding_digest: str | None = None,
+        parent_binding: object | None = None,
+        parent_context: ContextMaterialization | None = None,
+        parent_network_profile: NetworkProfile = DEFAULT_NETWORK_PROFILE,
+        tool_profile: ToolProfile = ToolProfile.GENERAL,
+        web_gateway_transport: WebGatewayTransport | None = None,
+        web_search_endpoint: str | None = None,
+        web_search_transport: WebSearchTransport | None = None,
+        web_search_private_backend: bool = False,
+        skill_roots: tuple[str | Path | ScopedSkillRoot, ...] = (),
+        skill_catalog: SkillCatalog | None = None,
+        skill_component_names: tuple[str, ...] = (),
+        skills_state: SkillEnablementState | None = None,
+        session_history: SessionHistoryPort | None = None,
+        current_session_id: str | None = None,
+        mcp_servers: Sequence[McpAnyServerSpec] = (),
+        mcp_allowlist: Sequence[str] | None = None,
+        cloud_mcp_transport: CloudMcpTransport | None = None,
+        runtime: RuntimePort | None = None,
+        runtime_handle: RuntimeHandle | None = None,
+        artifact_payload_store: ArtifactPayloadStorePort | None = None,
+        artifact_payload_reader: ArtifactPayloadReadPort | None = None,
+        output_projector: ToolOutputProjector | None = None,
+        file_publisher: Callable[[bytes, str, str], str] | None = None,
+        max_publish_bytes: int = 0,
+        trusted_local: bool = False,
+        web_pipeline_v2: bool = False,
+        network_cancellation_check: Callable[[], None] | None = None,
+        reuse_doh_transport: bool = False,
+        egress_endpoint: tuple[str, int] | None = None,
+    ) -> None:
+        if research_child_limit <= 0:
+            raise ValueError("research_child_limit must be positive")
+        if not isinstance(tool_profile, ToolProfile):
+            raise ValueError("tool_profile is not supported")
+        if mcp_allowlist and not mcp_servers:
+            raise ValueError(
+                f"selected MCP tools are unavailable: {', '.join(sorted(mcp_allowlist))}"
+            )
+        if skill_catalog is not None and skill_roots:
+            raise ValueError("configure skill_roots or skill_catalog, not both")
+        if skill_component_names and skill_catalog is None:
+            raise ValueError("skill_component_names require an injected skill_catalog")
+        self._workspace = LocalWorkspace(workspace_root)
+        self._workspace.ensure()
+        self._runtime = runtime or LocalRuntime()
+        self._runtime_handle = runtime_handle
+        if artifact_payload_store is not None and output_projector is not None:
+            raise ValueError("configure one Tool output persistence strategy")
+        output_projector = output_projector or build_output_projector(
+            artifact_payload_store, current_session_id=current_session_id
+        )
+        self._output_projector = output_projector
+        self._network_check = sticky_network_cancellation_check(
+            network_cancellation_check, reuse_doh=reuse_doh_transport,
+            egress_endpoint=egress_endpoint,
+        )
+        registry = ToolRegistry()
+        tools = (
+            ClarifyTool(),
+            PlanTool(),
+            *build_artifact_read_tools(artifact_payload_reader, current_session_id),
+            WorkspaceListTool(
+                self._workspace,
+                max_output_bytes=None if output_projector is not None else 32_768,
+            ),
+            FileReadTool(
+                self._workspace,
+                max_bytes=None if output_projector is not None else 16_384,
+            ),
+            *(
+                (FilePublishTool(self._workspace, file_publisher, max_bytes=max_publish_bytes),)
+                if file_publisher is not None
+                else ()
+            ),
+            WorkspaceSearchTool(
+                self._workspace,
+                max_output_bytes=None if output_projector is not None else 32_768,
+            ),
+            GitStatusTool(self._runtime, self._workspace),
+            PatchApplyTool(self._runtime, self._workspace),
+            TestsRunTool(
+                self._runtime,
+                self._workspace,
+                DEFAULT_TEST_PRESETS,
+            ),
+            CommandRunTool(self._runtime, self._workspace),
+        )
+        enabled_names = tool_names_for_profile(tool_profile)
+        for tool in tools:
+            if tool.contract.name in enabled_names:
+                registry.register(tool.contract, tool.handle)
+        self._runtime_free_web_tools = register_web_tools(
+            registry,
+            enabled_names=enabled_names,
+            workspace_root=workspace_root,
+            web_gateway_transport=web_gateway_transport,
+            web_search_endpoint=web_search_endpoint,
+            web_search_transport=web_search_transport,
+            web_search_private_backend=web_search_private_backend,
+            trusted_local=trusted_local,
+            max_output_bytes=262_144 if output_projector is not None else 65_536,
+            web_pipeline_v2=web_pipeline_v2,
+            network_cancellation_check=self._network_check,
+            fetch_factory=LocalWebGatewayTransport,
+            search_factory=LocalWebSearchTransport,
+        )
+        self._skill_component_names: tuple[str, ...] = ()
+        self._skill_requirements: tuple[SkillReadRequirement, ...] = ()
+        if skill_roots or skill_catalog is not None:
+            catalog = skill_catalog or LocalSkillCatalog(skill_roots, skills_state=skills_state)
+            cloud = isinstance(catalog, CloudSkillCatalog)
+            available_skills = () if skill_component_names else catalog.list(limit=200)[0]
+            self._skill_component_names = skill_component_names or tuple(
+                metadata.name for metadata in available_skills
+            )
+            self._skill_requirements = build_skill_read_requirements(
+                self._skill_component_names, catalog, available_skills
+            )
+            for skill_tool in (SkillsListTool(catalog), SkillsReadTool(catalog)):
+                if cloud or skill_tool.contract.name in enabled_names:
+                    registry.register(skill_tool.contract, skill_tool.handle)
+        if session_history is not None and "sessions.search" in enabled_names:
+            history_tool = SessionSearchTool(session_history, current_session_id)
+            registry.register(history_tool.contract, history_tool.handle)
+        mcp_transport = build_mcp_transport(
+            mcp_servers,
+            mcp_allowlist,
+            max_output_bytes=None if output_projector is not None else 32_768,
+            cloud=cloud_mcp_transport,
+        )
+        self._runtime_free_mcp_tools = frozenset(
+            tool.name for tool in cloud_mcp_transport.model_tools
+        ) if cloud_mcp_transport is not None else frozenset()
+        self._mcp_catalog = AuthorizedMcpToolCatalog(
+            mcp_transport.model_tools if mcp_transport is not None else ()
+        )
+        if self._mcp_catalog.activated:
+            for catalog_tool in (
+                McpToolSearchTool(self._mcp_catalog),
+                McpToolDescribeTool(self._mcp_catalog),
+            ):
+                registry.register(catalog_tool.contract, catalog_tool.handle)
+        self._subagents: LocalResearchSubagentCoordinator | None = None
+        self._delegation_mode = delegation_mode
+        if (
+            model_gateway is not None
+            and "agent.research" in enabled_names
+            and delegation_mode is not DelegationMode.DISABLED
+        ):
+            self._subagents = LocalResearchSubagentCoordinator(
+                LocalResearchSubagentRunner(model_gateway, runtime=runtime),
+                max_children=research_child_limit,
+                max_concurrency=research_child_limit,
+            )
+            research = ResearchSubagentTool(
+                self._subagents,
+                workspace_root,
+                wait_for_result=not durable_delegation,
+                delegation_store=delegation_store,
+                parent_task_id=parent_task_id,
+                parent_attempt_number=parent_attempt_number,
+                parent_binding=parent_binding,
+                parent_context=parent_context,
+                parent_tool_profile=tool_profile,
+                parent_network_profile=parent_network_profile,
+                web_search_endpoint=web_search_endpoint,
+                skill_components=self.effective_skill_components,
+            )
+            registry.register(research.contract, research.handle)
+        self._model_tools = registry.model_tools() + self._mcp_catalog.model_tools
+        self._parallel_safe_tools = registry.parallel_safe_names()
+        self._parallel_batch_limits = (
+            {"agent.research": research_child_limit} if model_gateway is not None else {}
+        )
+        self._executor = ToolExecutor(
+            registry,
+            mcp_proxy_gateway=(
+                McpProxyToolGateway(mcp_transport) if mcp_transport is not None else None
+            ),
+        )
+
+    @classmethod
+    def erp_chat_readonly(cls, runtime, check):
+        # ponytail: this explicit zero-workspace surface only reuses native plan/clarify.
+        # Files/commands require the separate private runtime release, never this mode.
+        self = cls.__new__(cls)
+        self._runtime, self._runtime_handle, self._network_check = runtime, None, check
+        self._output_projector, self._subagents = None, None
+        self._delegation_mode = DelegationMode.DISABLED
+        self._skill_component_names, self._skill_requirements = (), ()
+        self._mcp_catalog = AuthorizedMcpToolCatalog(())
+        self._runtime_free_mcp_tools = frozenset()
+        registry = ToolRegistry()
+        for tool in (ClarifyTool(), PlanTool()):
+            registry.register(tool.contract, tool.handle)
+        self._model_tools = registry.model_tools()
+        self._parallel_safe_tools = registry.parallel_safe_names()
+        self._parallel_batch_limits = {}
+        self._runtime_free_web_tools = frozenset(tool.name for tool in self._model_tools)
+        self._executor = ToolExecutor(registry)
+        return self
+
+    @property
+    def delegation_mode(self) -> DelegationMode:
+        return self._delegation_mode
+
+    @property
+    def delegation_attempted(self) -> bool:
+        return self._subagents is not None and self._subagents.delegation_attempted
+
+    @property
+    def model_tools(self) -> tuple[ModelToolDefinition, ...]:
+        return self._model_tools
+
+    @property
+    def effective_mcp_tools(self) -> tuple[ModelToolDefinition, ...]:
+        return self._mcp_catalog.definitions
+
+    @property
+    def effective_skill_components(self) -> tuple[str, ...]:
+        return self._skill_component_names
+
+    @property
+    def effective_skill_requirements(self) -> tuple[SkillReadRequirement, ...]:
+        return self._skill_requirements
+
+    @property
+    def parallel_safe_tools(self) -> frozenset[str]:
+        return self._parallel_safe_tools
+
+    @property
+    def parallel_batch_limits(self) -> dict[str, int]:
+        return dict(self._parallel_batch_limits)
+
+    def execute(self, tool_call: ToolCall) -> ToolResult:
+        if self._network_check is not None:
+            self._network_check()
+        # ponytail: Skill/Artifact reads use bounded stores, not an OCI workspace.
+        # Selected Cloud MCP uses Worker HTTPS, never the local sandbox/stdio path.
+        prepare_ms = 0.0
+        if (isinstance(self._runtime, DeferredRuntime)
+                and tool_call.name not in self._runtime_free_web_tools
+                and tool_call.name not in self._runtime_free_mcp_tools
+                and tool_call.name not in {"artifacts.read", "skills.list", "skills.read"}):
+            started = perf_counter()
+            self._runtime.ensure_ready()
+            prepare_ms = (perf_counter() - started) * 1000
+        try:
+            result = self._executor.execute(tool_call)
+            if isinstance(self._runtime, DeferredRuntime):
+                result = result.model_copy(update={
+                    "metadata": {**result.metadata, "runtime_prepare_ms": prepare_ms},
+                })
+            if self._network_check is not None:
+                self._network_check()
+            result = self._project_tool_output(tool_call, result)
+            if self._network_check is not None:
+                self._network_check()
+            return result
+        except ToolRegistryError as exc:
+            detail = str(exc)[:1000]
+            failed = ToolResult(
+                tool_call_id=tool_call.tool_call_id,
+                status=ToolCallStatus.FAILED,
+                output=json.dumps(
+                    {
+                        "detail": detail,
+                        "reason": "tool_validation_error",
+                        "status": "failed",
+                    },
+                    separators=(",", ":"),
+                    sort_keys=True,
+                ),
+                metadata={
+                    "reason": "tool_validation_error",
+                    "detail": detail,
+                },
+            )
+            return self._project_tool_output(tool_call, failed)
+
+    def _project_tool_output(self, tool_call: ToolCall, result: ToolResult) -> ToolResult:
+        return project_tool_output(self._output_projector, tool_call, result)
+
+    def resolve_model_tool_calls(
+        self,
+        tool_calls: tuple[ToolCall, ...],
+    ) -> tuple[ToolCall, ...]:
+        resolved: list[ToolCall] = []
+        for tool_call in tool_calls:
+            current = self._mcp_catalog.resolve(tool_call)
+            limit = current.arguments.get("limit")
+            # ponytail: only the five exact native search wire spellings; Policy
+            # still validates canonical arguments, and provider replay stays raw.
+            if (current.name == "web.search" and current.provider_arguments is None
+                    and isinstance(limit, str) and limit in ("1", "2", "3", "4", "5")):
+                current = current.model_copy(update={
+                    "arguments": {**current.arguments, "limit": int(limit)},
+                    "provider_tool_name": current.name,
+                    "provider_arguments": dict(current.arguments),
+                })
+            resolved.append(current)
+        return tuple(resolved)
+
+    def close(self) -> None:
+        from agent_runtime.native_network_scope import DohNetworkScope
+
+        if isinstance(self._network_check, DohNetworkScope):
+            self._network_check.close()
+        try:
+            if self._subagents is not None:
+                self._subagents.close()
+        finally:
+            if self._runtime_handle is not None:
+                self._runtime.destroy(self._runtime_handle)
+                self._runtime_handle = None

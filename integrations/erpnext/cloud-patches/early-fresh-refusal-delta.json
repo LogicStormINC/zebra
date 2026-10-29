@@ -1,0 +1,162 @@
+{
+  "Dockerfile.api": {
+    "after_sha256": "e03dca8b75a991507a5e80b27cfc933535c30ce9fcf69687eaa69da454969ec9",
+    "before_sha256": "6be80cb704c05acb8160f8dd4ac62c26fd243853c95e4d6790858866a073cb0e",
+    "comparison": "approved-df8/Dockerfile.api"
+  },
+  "Dockerfile.fresh-host": {
+    "after_sha256": "4d8991f043ac304a221ad139d6bdee4442fb9783eb09dad08e602bcf22f1dc38",
+    "before_sha256": "c339b06e84033801afa606002f2df22089b8fe1d9e002263d46a5d551ba5b02d",
+    "comparison": "approved-df8/Dockerfile.fresh-host"
+  },
+  "Dockerfile.worker": {
+    "after_sha256": "a85ffba1fd1cc409405d4b39dabc6b88d26b5334ba96152ef710dbd25793b331",
+    "before_sha256": "fa3b209354bf23defc07bdb4e189946dbf05b835bea97741321f84f9352333bb",
+    "comparison": "approved-df8/Dockerfile.worker"
+  },
+  "FRESH_AUTHORITY_IMPLEMENTATION_NOTES.md": {
+    "after_sha256": "3cd77bf1488d268b1a80549b785d569e1928de29778125a06ae980eb284eea12",
+    "before_sha256": "754fa943a28e58fab290f454839ded85ccf73c10b847e22a3346a2be8dc78df0",
+    "comparison": "approved-df8/FRESH_AUTHORITY_IMPLEMENTATION_NOTES.md"
+  },
+  "host-baseline/zebra_erpnext/cloud.py": {
+    "after_sha256": "d9651de6128cbc87a811d77fba136c68182aa292550efed22bb9abbfedc260fe",
+    "before_sha256": "fedd425a0bf05fe82cd8855a67348182a0b3713f54c8687aacfa1de4f1890cb7",
+    "comparison": "approved-df8/host-baseline/zebra_erpnext/cloud.py"
+  },
+  "host-overrides/frontend/index.tsx": {
+    "after_sha256": "8a85094f20cfee7f0499c13d115c8ad2211a64f6c8356e9d3ddefe43358da893",
+    "before_sha256": "a925ef65fe7332f86d7471a3da421dca7a3b393a5c58bee59a009a2ad4c4c4dc",
+    "comparison": "host-baseline/frontend/index.tsx"
+  },
+  "host-overrides/frontend/protocol.mjs": {
+    "after_sha256": "e1f4c18915123ded1636b2375e5b4eafd859e1a97625162a259ad186af475c3d",
+    "before_sha256": "0b55dd2ffef6660ac0bb89c6aa7f1ba4e5a0f72822072bbcdb5da75aebd3f52c",
+    "comparison": "host-baseline/frontend/protocol.mjs"
+  },
+  "host-overrides/zebra_erpnext/api.py": {
+    "after_sha256": "b286f2eb2f71a6052474239bed09507a66e9f88cee36a20922e72942e0cd4048",
+    "before_sha256": "74970322594fb0bb4066b0c203e3628fd5541f7f8ec242d6ed0a3c52d06c4c04",
+    "comparison": "host-baseline/zebra_erpnext/api.py"
+  },
+  "host-overrides/zebra_erpnext/chat.py": {
+    "after_sha256": "a3bc866f88891d00b1095e1eb99928a26b4cdc93c61239d8fb5ec9ad3e7cc5b5",
+    "before_sha256": "470440caa69dd6d967b140b944bae3dae8119da5b177e75f56f3429644bc9406",
+    "comparison": "host-baseline/zebra_erpnext/chat.py"
+  },
+  "host-overrides/zebra_erpnext/client.py": {
+    "after_sha256": "6da02780dedad40b972459902bf82fc492ff4f306d2201930999929402ab2520",
+    "before_sha256": "6631bbb511eaf7c2c5cec4b2ae01bbb2dd903ce909ae609878c91cf422bd2d89",
+    "comparison": "host-baseline/zebra_erpnext/client.py"
+  },
+  "host-overrides/zebra_erpnext/cloud.py": {
+    "after_sha256": "26058c8f3284dd70cb1acbe4bea89bb6fac0f3a6efb5be4dbce858378571ab62",
+    "before_sha256": "d9651de6128cbc87a811d77fba136c68182aa292550efed22bb9abbfedc260fe",
+    "comparison": "host-baseline/zebra_erpnext/cloud.py"
+  },
+  "host-overrides/zebra_erpnext/history.py": {
+    "after_sha256": "37e326d170be193a5a58c5929f4e0af453676f83349ffb4defb672a14ba23ae3",
+    "before_sha256": "cd86535e7e7ba331b2b307a318feae2e1ed76323eb8a7d65482b9a49d7b27063",
+    "comparison": "host-baseline/zebra_erpnext/history.py"
+  },
+  "host-overrides/zebra_erpnext/presentation.py": {
+    "after_sha256": "f84ba28cca7c02c07bf095f2dec2c050a1aaf1a00852640e65b320f281ac67f3",
+    "before_sha256": "37c805fec4379bf3f67dd683982ceb1d279edde0cb3900ebcb6a04ae1e417b65",
+    "comparison": "host-baseline/zebra_erpnext/presentation.py"
+  },
+  "host-overrides/zebra_erpnext/public/zebra.css": {
+    "after_sha256": "862949f04d337998a388d46e693b4474e7f0f837c3684f20b8bddfe0a4a44691",
+    "before_sha256": "862949f04d337998a388d46e693b4474e7f0f837c3684f20b8bddfe0a4a44691",
+    "comparison": "host-baseline/zebra_erpnext/public/zebra.css"
+  },
+  "host-overrides/zebra_erpnext/public/zebra.js": {
+    "after_sha256": "50f4145a41cb05bcaefd90586fb7d6a6b2fd9c9901adbf08fe636eb02da671ae",
+    "before_sha256": "52546e1c44864361bbd136751dae963e5bfde37e28fed92ffd723897a5a3f936",
+    "comparison": "host-baseline/zebra_erpnext/public/zebra.js"
+  },
+  "host-overrides/zebra_erpnext/resources.py": {
+    "after_sha256": "db10c148d1e79d4f888979806c97063842ec45af64b851fc8be60d2a75053410",
+    "before_sha256": "db10c148d1e79d4f888979806c97063842ec45af64b851fc8be60d2a75053410",
+    "comparison": "host-baseline/zebra_erpnext/resources.py"
+  },
+  "overrides/apps/api/src/zebra_agent_api/ag_ui_checkpoint_tail.py": {
+    "after_sha256": "8a29a80ae802e75ec10af26ca660dfd1e1341d24a6fcceb31f850fe3e60f1c63",
+    "before_sha256": "da328cac2dc70ef28aa98bab8d3e6c219a95ac7e2d14d22733431e8d38246abd",
+    "comparison": "baseline/apps/api/src/zebra_agent_api/ag_ui_checkpoint_tail.py"
+  },
+  "overrides/apps/api/src/zebra_agent_api/task_api.py": {
+    "after_sha256": "6b08bce9edea4c4417ec25db4233667c5118fc2eeb382a24e21a5a1eb9424f55",
+    "before_sha256": "03950614a93b2465c94ddd80550a390322e328a8c536cfc14b7bf31501313ee2",
+    "comparison": "approved-df8/overrides/apps/api/src/zebra_agent_api/task_api.py"
+  },
+  "overrides/apps/api/src/zebra_agent_api/task_header.py": {
+    "after_sha256": "03a870d18783f43e9da7d0ac0b2cf5ccd96c2bcd31a73c7d79258b7d9a921abe",
+    "before_sha256": "148bbbe44d1ba9b71b2d219765d2ebb13545ddd6a03224493cd4776ed14cfbad",
+    "comparison": "baseline/apps/api/src/zebra_agent_api/task_header.py"
+  },
+  "overrides/apps/api/src/zebra_agent_api/task_routes.py": {
+    "after_sha256": "04a3e14aec3dde7f91e046410787cdd52714100d5db2e61d5b263309bf41cf76",
+    "before_sha256": "5e213c8c09cd300ba6d4544ed36ee1b2cb6f1794be2631bb70303f87a4a96ba5",
+    "comparison": "approved-df8/overrides/apps/api/src/zebra_agent_api/task_routes.py"
+  },
+  "overrides/apps/worker/src/zebra_agent_worker/command_consumer.py": {
+    "after_sha256": "32d35656b8c6c72e0c9cf29b8e56e610b5252c0918347d1dd18de94c03a59b8a",
+    "before_sha256": "f572da1cce18e1b36783f7fd11bca7512014c2070a44b477aacded60d8b06d86",
+    "comparison": "approved-df8/overrides/apps/worker/src/zebra_agent_worker/command_consumer.py"
+  },
+  "overrides/apps/worker/src/zebra_agent_worker/command_process.py": {
+    "after_sha256": "01dad3606e096f9045706eee89ce7abf08f4f36792549fa4fe8402eea96dd17c",
+    "before_sha256": "dcabb0e982e8ce27e90a83f9649f59b16182f35d05fcf513bd92ff2e844f8bf7",
+    "comparison": "baseline/apps/worker/src/zebra_agent_worker/command_process.py"
+  },
+  "overrides/apps/worker/src/zebra_agent_worker/erp_fresh_authority.py": {
+    "after_sha256": "f1f3fc133d110f8aa327368e7a575af990952bf93e5e04f6550e3aff2f6d5cd5",
+    "before_sha256": "9e35bd4102838be4b47476c9b81759015de5373eb1df78cb9a814b4e7dddea39",
+    "comparison": "approved-df8/overrides/apps/worker/src/zebra_agent_worker/erp_fresh_authority.py"
+  },
+  "overrides/apps/worker/src/zebra_agent_worker/execution.py": {
+    "after_sha256": "c4e8ccec237f1d141ad5e36c455fcfd42b61073082e8a520bbe69abf4d84bf7b",
+    "before_sha256": "585d885d7ef94e10b4acc505e51e1c9c45ab0de6e0666a4f393918d0488dcad8",
+    "comparison": "approved-df8/overrides/apps/worker/src/zebra_agent_worker/execution.py"
+  },
+  "overrides/apps/worker/src/zebra_agent_worker/execution_entrypoints.py": {
+    "after_sha256": "85c3bfef1c1f40c4499c65a3793bf1ec6881e386967998dbb93816d87a2bec98",
+    "before_sha256": "b838d2dccc11536e82b7e74f60a03fb44109e4acb8717acb5f356ad3ba3a6c70",
+    "comparison": "baseline/apps/worker/src/zebra_agent_worker/execution_entrypoints.py"
+  },
+  "overrides/apps/worker/src/zebra_agent_worker/execution_recovery.py": {
+    "after_sha256": "5e275de7dd2f8298b1f2b630cac87e5d218ab60ace05f8c34ec525f286daf10b",
+    "before_sha256": "fb68f0c7425cc0afbebeafd6c887391548595479f64156c87f2861ae9b2ba6d7",
+    "comparison": "baseline/apps/worker/src/zebra_agent_worker/execution_recovery.py"
+  },
+  "overrides/packages/agent-storage/src/agent_storage/postgres/command_coverage_admission.py": {
+    "after_sha256": "53adf0f051c81643e5079095cb06ca313c405477518f115fc0ec77306d223185",
+    "before_sha256": "b1434b53b03f7fad51a32a1022bce1ca496e9c63eab84f387f11875be6c5bcf5",
+    "comparison": "baseline/packages/agent-storage/src/agent_storage/postgres/command_coverage_admission.py"
+  },
+  "overrides/packages/agent-storage/src/agent_storage/postgres/command_wakeup_handoff.py": {
+    "after_sha256": "c0c5b5a281fdb7bbd2cd7f91316ea1e638fdd54b58ef7b2fec178a731f66f4c1",
+    "before_sha256": "25fa01951f8197e368600c1f56e2c874465d7ce284fc24990bd04cb701b3cdd2",
+    "comparison": "approved-df8/overrides/packages/agent-storage/src/agent_storage/postgres/command_wakeup_handoff.py"
+  },
+  "overrides/packages/agent-storage/src/agent_storage/postgres/command_wakeup_outcome.py": {
+    "after_sha256": "03a7f2ee90833eef5f2c188bd4ef6522291724edbf5b6e04ab8c49e0e6454566",
+    "before_sha256": "d56b86df7b297576facc26835419dfc58780c79912681f4dc99c289b7eac3563",
+    "comparison": "approved-df8/overrides/packages/agent-storage/src/agent_storage/postgres/command_wakeup_outcome.py"
+  },
+  "overrides/packages/agent-storage/src/agent_storage/postgres/command_wakeup_recovery.py": {
+    "after_sha256": "cb7cb175df244c0f119e5249cdda0ce8feb9b93977b2a57a11969fd53a873560",
+    "before_sha256": "e2d41c77e3be972541cefc1419de15daf84892dd7826c8fabfa097146599c15d",
+    "comparison": "baseline/packages/agent-storage/src/agent_storage/postgres/command_wakeup_recovery.py"
+  },
+  "overrides/packages/agent-storage/src/agent_storage/postgres/erp_fresh_disposition.py": {
+    "after_sha256": "5d9749d67538595f7f53a34830a7a268c0a31f8ed10dc633abd5b689c3c03dfb",
+    "before_sha256": null,
+    "comparison": "baseline/packages/agent-storage/src/agent_storage/postgres/erp_fresh_disposition.py"
+  },
+  "overrides/packages/agent-storage/src/agent_storage/postgres/idempotency.py": {
+    "after_sha256": "40ba78491fe6637ecfcad52ed3caa0ee8539eac388f961c32ff0a3c1b8089f7e",
+    "before_sha256": "87c5219af9d4ae345bfd92c05818d11d321078e7f496d8014278f30210047cec",
+    "comparison": "baseline/packages/agent-storage/src/agent_storage/postgres/idempotency.py"
+  }
+}

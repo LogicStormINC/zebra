@@ -1,0 +1,4 @@
+ARG API_BASE
+FROM ${API_BASE}
+COPY api/ /app/apps/api/src/zebra_agent_api/
+COPY check_api105_native.py /opt/check_api105_native.py

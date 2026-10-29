@@ -1,0 +1,12 @@
+{
+  "ROOT_REVIEW.md": "e7db597c3707c7e44926d4281de3d46c927a1fd25f836405345de5f0bf1ad612",
+  "SOURCE_SHA256.json": "d54d4d6867c3012f309620f7442eb1c96048dd00e0793224e6032c83d270666e",
+  "cloud-patches/operator/private_workspace_operator.py": "9571f02e7eaff026a1f6022d6ce4865fb78ba110e0b107405d400751b7bdca2b",
+  "cloud-patches/tests/check_private_workspace_hardening.py": "69cad7132d257f2d9d4d6bc3b09a48f70a26f702d5c9048e73d15dc8be02fc29",
+  "qa/check_confined_helper.py": "3bf39183d29c632c89c5cc0d74087c00358869819af0f252fbc29b1b358d28eb",
+  "qa/check_diagnostics.py": "4aed53f2d8ec54f63c12dbd01a21fa89a2416f681b2b9383ec4ccfb894c543af",
+  "qa/execute_joint_qa.py": "121b40f774bb6878d96949fc34d1a6e86af02721c311869a186adb4053e7005a",
+  "qa/execute_native_qa.py": "bb27d9d7729539e6a43fac560baefe4819f587902379ff1be6ca68f2c2458d54",
+  "qa/run_joint_allocator.py": "7875e7e2241e00475b50a2356c318614015595d338b5ce63da3e4b4c2c2592e2",
+  "run_checks.py": "f7f0b0640046c284d417ea269688388e5794dcfd40983181fbee47c0a63454ef"
+}

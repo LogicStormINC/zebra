@@ -1,0 +1,8 @@
+.git
+node_modules
+vendor
+work
+cloud-patches
+__pycache__
+**/__pycache__
+*.egg-info

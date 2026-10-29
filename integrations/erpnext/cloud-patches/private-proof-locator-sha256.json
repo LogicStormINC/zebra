@@ -1,0 +1,16 @@
+{
+  "original_inputs": {
+    "outputs/zebra-erpnext/cloud-patches/overrides/packages/agent-storage/src/agent_storage/postgres/erp_private_workspace.py": "0a716198f7ef6099f2d050a5555d3f1adebfce08476bc87c3c17c84592eac411",
+    "outputs/zebra-erpnext/cloud-patches/tests/check_private_workspace_native.py": "b8ca78fc4b7253ce9603c1ed7fdd174b61d21076680fa414592c7e691e55a994",
+    "outputs/zebra-erpnext/cloud-patches/overrides/packages/agent-storage/src/agent_storage/postgres/erp_workspace_policy.py": "9832b9fe1abe1392bbb975301f4a7c1f3c78a750f0ae7501875cda7e39e1677c",
+    "outputs/zebra-erpnext/cloud-patches/overrides/apps/worker/src/zebra_agent_worker/erp_private_preparation.py": "8a055dda22fd286562a91c88158a65394c0dab69f7810fbf4f6c60f443964054"
+  },
+  "candidate_files": {
+    "check_packet.py": "761b883943ae9bfce04fcfe3246ea7fcd876510baa0c49664aac7a7fde081f7c",
+    "cloud-patches/overrides/packages/agent-storage/src/agent_storage/postgres/erp_private_workspace.py": "71a798ba5e649be51793ecd99bc6f9643d548d1de93036d3e601db7f34a5c216",
+    "cloud-patches/tests/check_private_workspace_native.py": "8a8839f835f1c08b74834b7f7f1d1ddd3700d65e457c8600d2c906f6b5092d99",
+    "create_packet.py": "189b7ee38f0ea008f170d19aaeeddf81d593a6e802f06647e77048cc5d01648e",
+    "source.diff": "c765f9da861b1da9427e84c66caaaf92c1e7be3ae9aca11ca3b0650a8dd3a77d",
+    "REVIEW.md": "32da07fb213ecfbf4a160561ac16bb8ee8580e93f16a1874b09e10320d41443c"
+  }
+}

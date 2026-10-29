@@ -1,0 +1,127 @@
+{
+  "files": {
+    "host/gateway.py": {
+      "stage": "production-plan-proposals",
+      "sha256": "2464c1bbb376fa4785a59cc7e9ae783dabf77b7e14149a4b5b452bbb3ea5fde9"
+    },
+    "host/cloud.py": {
+      "stage": "api105-binding-fix",
+      "sha256": "ece21c3004f59c743f0c8da9fbb21f7ffacb23afa52e3785921bd2ae7992c46d"
+    },
+    "host/chat.py": {
+      "stage": "approval-contract-fix-v2",
+      "sha256": "3bcb2b4c0258dc4982a25e71ad844bca9b0281d7c246dbbfed5b09e35532c382"
+    },
+    "host/authority.py": {
+      "stage": "candidate",
+      "sha256": "7caeb8c73d7c93dbe2c0b4b74320559cb42858388d84b341283567d177774eaa"
+    },
+    "runtime/harness.py": {
+      "stage": "candidate",
+      "sha256": "5d5f5426c96ae389dcdc79a9f37ead94fdcd1040aded45efd61ff2beb218f8fa"
+    },
+    "storage/erp_chat_readonly.py": {
+      "stage": "production-plan-proposals",
+      "sha256": "4fdd6998b14c4d5af633aafaca54f1325e3460c290ba775e27db39657fb2bdd0"
+    },
+    "storage/erp_workspace_policy.py": {
+      "stage": "candidate",
+      "sha256": "f6484ff95542ab4c40ed803b85023c5a9388ffb50896da29e86005922bcb44db"
+    },
+    "storage/legacy_command_candidates.py": {
+      "stage": "candidate",
+      "sha256": "ec7cdadaa1d11f3fb017d8b206203996ee06ba99f8a03a0d447c99fdd6260062"
+    },
+    "worker/worker_tool_gateway.py": {
+      "stage": "production-plan-proposals",
+      "sha256": "7186a532465ae8eeb51bb3f4d2b3438f8191da1ee72c3893ba479eda9250d14b"
+    },
+    "worker/tool_gateway_runtime.py": {
+      "stage": "candidate",
+      "sha256": "7397b9ea479461f09d39a8977917f3c7bc1a6c3dc0d3fe233f3464a441111aa2"
+    },
+    "worker/execution_recovery.py": {
+      "stage": "candidate",
+      "sha256": "5077e2f645035ca41ab8cefa1340185af4a1780c5ca28ff036aa0376a14ebee5"
+    },
+    "worker/erp_fresh_authority.py": {
+      "stage": "candidate",
+      "sha256": "c14b165af9e452f00f0e0a20b8875cf3bbe6ddba8ff302f5e5a59084f64787cc"
+    },
+    "worker/execution_runtime.py": {
+      "stage": "candidate",
+      "sha256": "abf01d88df8633adc21cd1368458ef2dff1cd23a0507f2eb7c847e343218728f"
+    },
+    "worker/erp_chat_readonly_main.py": {
+      "stage": "projection-routing-fix",
+      "sha256": "e5cbe3ee92470c17fd0ed27b688e995680101795fb9fee47f8eea64a015437c0"
+    },
+    "worker/cloud_composition.py": {
+      "stage": "extension-authority-fix",
+      "sha256": "48287e6ff30b78ea9cfa11dd8a5f47c0afca83407065c8fdc1f90eeb7e0268a6"
+    },
+    "api/session_binding.py": {
+      "stage": "api105-binding-fix",
+      "sha256": "1c4fd3e5e0f9395036a9edb83ee8b76056f7451b1a8f8109147820f3e8e16e65"
+    },
+    "api/session_queue.py": {
+      "stage": "api105-binding-fix",
+      "sha256": "ff04c97c64d06af6e51efd68be72048f5567c2cebce4c38614fc65371b5f1eaf"
+    },
+    "worker/loop.py": {
+      "stage": "extension-authority-fix",
+      "sha256": "92e221ef162acd6fb28c9025acf5f9803c2378ee4e76cf1fca787104fb42ad4b"
+    },
+    "tools/effect_guard.py": {
+      "stage": "readonly-effect-fix",
+      "sha256": "5da48edee0e10fccc6bfc575f74ee352505b806c8342e0faf325b34c41251d41"
+    },
+    "worker/session_handoff.py": {
+      "stage": "readonly-effect-fix",
+      "sha256": "d324975e7046134dcbbc995dec1833643a41ba18b0b2fcf7c9a12c32aa0ea2d0"
+    },
+    "worker/effect_runtime.py": {
+      "stage": "production-plan-proposals",
+      "sha256": "f600788574f436eafa1e0b6d80da719ff0f2b81e248249f1c4edbc9c4fc90410"
+    },
+    "context/models.py": {
+      "stage": "workspace-free-context-fix",
+      "sha256": "154144d78ce8e976bc2e90020ed39c429182b57e1bbd73e6f65f9a45b84cc848"
+    },
+    "context/adapter.py": {
+      "stage": "workspace-free-context-fix",
+      "sha256": "f2fa1aa06b343a2fcc49b87d39be5d045ae4ab3e6eae0f7d1ad40ae6db63cc77"
+    },
+    "worker/execution_context.py": {
+      "stage": "workspace-free-context-fix",
+      "sha256": "e93990383dc0bd7aa68e14d4e6218f3788eb5863e79d12751d3b6a6a505ab47a"
+    },
+    "core/harness/model_step.py": {
+      "stage": "workspace-free-context-fix",
+      "sha256": "ceb5014b4b523d88f22c323b925c257506c6cc463b232217273619b2b30734f3"
+    },
+    "core/ports/context_compiler.py": {
+      "stage": "workspace-free-context-fix",
+      "sha256": "85fcd8500e24c81b32b26acfb139a7a41dd7de85619f2b9fb26ce89e9dc07944"
+    },
+    "host/business.py": {
+      "stage": "production-plan-proposals",
+      "sha256": "a7c4c7d656d02fb1d301590e319a54f2239d9c270c941541bc11bc14ae638475"
+    }
+  },
+  "reviewed_stages": {
+    "candidate": "31caa35df16ef448ef4da56a86bbaab6b03615da019b30de8919180799d99b72",
+    "api105-binding-fix": "c93b48a6343605a8679e4a144a8d2397e2193c8f97032bb98ebe85b05c46a9c0",
+    "extension-authority-fix": "3bfc5ec41d9922083328652e82a053adbd1b00986d1a288be59d0c0770044e6a",
+    "readonly-effect-fix": "aa2c2768657b6f24e2c23ec33810d9d8549a8d50ecf05ee08bcce9f5e8ddbe06",
+    "workspace-free-context-fix": "5af1456bb116851ae86e7d35785960bd806e99cb9d258a73ba1023769bc8078a",
+    "projection-routing-fix": "4b9182411b8b808b68636b150363aff07584f84d6eab4839056cba9d69e57af0",
+    "production-plan-proposals": "ff82e6fef2e40100cc4b12f9d5223aa7458ad8effdf93df419da3c5f6521d7e8",
+    "approval-contract-fix-v2": "c3d986f2bf0db70e57079d3025c9490a11fe4dedc8b328db19a52096a1b6363e"
+  },
+  "deployed_images": {
+    "api": "sha256:6e4b2cdfa32b216800d5b8ff100565eb4b7664347af781a17d3a961bb3edcba2",
+    "worker": "sha256:da5dce924bd38499767fd7ceb2860aa33c3b5bf9f5d5e4066ef56e0ebb045d76",
+    "host": "sha256:334476c787296a08fa4018ec18017062063490cdab0639809a2a2b6faabbad1d"
+  }
+}

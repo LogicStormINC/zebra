@@ -1,0 +1,19 @@
+{
+  "apps/api/src/zebra_agent_api/host_auth.py": "8869ae31197013cbe450c666d0e91890dd7d6d0ea6e0fc528e1e7a10cb01d274",
+  "apps/api/src/zebra_agent_api/http_input_attachments.py": "e154acc2db8744e66b290accfb77e2d0a5eb477b1b7efeec9262f9341883773b",
+  "apps/api/src/zebra_agent_api/session_queue.py": "18d2d17897513ced495c64131ce8f34722e1430f6bd628a6de1916bb35554fc8",
+  "packages/agent-core/src/agent_core/domain/cloud_artifact_payloads.py": "7add9cf41372c71aa8e0d658e680a04450895dae21ad2851e1589c2a776fe8e0",
+  "packages/agent-core/src/agent_core/domain/http_input_attachments.py": "c76d0e0dcea65398ec86b4547bd3089d11e64b521ef21cfbb173e92cc36ef2b8",
+  "packages/agent-core/src/agent_core/ports/task_admission_transaction.py": "423bb5a0be9d52329580f7b61b480b84fa1ce167db08be0088b48ac3047ef34a",
+  "packages/agent-security/src/agent_security/host_grant.py": "0a62f2bed89180675f30f5a95fc5098039be9203d241e402957dca14dd0513a5",
+  "packages/agent-storage/src/agent_storage/postgres/artifact_payload_pruning.py": "fd78925d77b6db6a41a69acf4bce95271151c26114600b325cb76b9b65c3060a",
+  "packages/agent-storage/src/agent_storage/postgres/artifact_payload_rows.py": "760b83a2801fe2bcb5db8a71083bae1f3adf5c8b4746366f92335bdcd8fd2ef6",
+  "packages/agent-storage/src/agent_storage/postgres/artifact_payload_transaction_support.py": "afba655a0d2b49229de1353cf2476ce8721d205c8a0edecf352cf29eb940eb9e",
+  "packages/agent-storage/src/agent_storage/postgres/artifact_payload_worker_transitions.py": "3f272d02fbb1a34909c93b36796e37f049e0b7ee79ff20ae185b77ba48d97927",
+  "packages/agent-storage/src/agent_storage/postgres/artifact_payloads.py": "fa26f4574057be296be0dac19872f24a787aeed5acfe8729e7a6f37c388d20fc",
+  "packages/agent-storage/src/agent_storage/postgres/http_input_attachment_migration.py": "47efa1af732d39975c4e3b1d2e53bcfe278806b034aa4fde88545b29e40d0a5c",
+  "packages/agent-storage/src/agent_storage/postgres/http_input_attachments.py": "12d4cee3c2004a756a60a255677862626bf5b33f4e5932e8117ffbe1f2b284e8",
+  "packages/agent-storage/src/agent_storage/postgres/migration_catalog_tail.py": "660737cd430b9c81a9bfc52f578299a6408202355810f3e2a8b85b81cdf46547",
+  "packages/agent-storage/src/agent_storage/postgres/task_admission.py": "926335030c94459601b840aaf5038c2738a89ff5765a9a094f27501bf05efbb9",
+  "packages/agent-storage/src/agent_storage/postgres_composition.py": "a0c0259226c624a8e5fb3f96311f64f0872d06ea87b59fa27eb231fbb4eca48a"
+}

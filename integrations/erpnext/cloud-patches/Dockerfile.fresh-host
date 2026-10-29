@@ -1,0 +1,8 @@
+# Supply a LOCAL TAG inspected to equal CURRENT HRMS config ID:
+# sha256:1a56e963dae6f9cb86399dfa8c3a05fd281bc0cc755b0016b1c10886e542c07d
+# The older guard base is unsupported; current Host cloud.py provides native FOR UPDATE loading.
+# A bare sha256:<config-ID> is NOT a Docker FROM reference; no remote fallback is authorized.
+ARG ERP_HOST_BASE
+FROM ${ERP_HOST_BASE}
+LABEL zebra.erp.patch_stage="early-fresh-refusal-host-review-only"
+COPY --chown=frappe:frappe host-overrides/zebra_erpnext/ /home/frappe/frappe-bench/apps/zebra_erpnext/zebra_erpnext/

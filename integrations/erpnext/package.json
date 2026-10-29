@@ -1,0 +1,23 @@
+{
+  "name": "zebra-erpnext-panel",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "build": "esbuild frontend/index.tsx --bundle --format=iife --target=es2022 --minify --define:process.env.NODE_ENV=\"\\\"production\\\"\" --outfile=zebra_erpnext/public/zebra.js",
+    "test": "node frontend/check.mjs && node frontend/workbench-check.mjs && node frontend/ui-actions-check.mjs"
+  },
+  "dependencies": {
+    "@zebra-agent/client-core": "file:vendor/zebra-agent-client-core-0.1.0.tgz",
+    "@zebra-agent/contracts": "file:vendor/zebra-agent-contracts-0.1.0.tgz",
+    "@zebra-agent/react": "file:vendor/zebra-agent-react-0.1.0.tgz",
+    "@zebra-agent/react-charts": "file:vendor/zebra-agent-react-charts-0.1.0.tgz",
+    "@zebra-agent/ui-contracts": "file:vendor/zebra-agent-ui-contracts-0.1.0.tgz",
+    "gsap": "3.15.0",
+    "html-to-image": "file:vendor/html-to-image-1.11.13.tgz",
+    "react": "19.1.0",
+    "react-dom": "19.1.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.12"
+  }
+}

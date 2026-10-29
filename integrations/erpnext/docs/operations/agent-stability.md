@@ -1,0 +1,9 @@
+# Agent stability checks
+
+Read the versioned evidence in [projection-stability/REVIEW.md](../../cloud-patches/projection-stability/REVIEW.md).
+
+`model execution failed` is a generic final summary. Diagnose the immutable session_failed/turn_failed metadata.error_type and the corresponding timestamp first; do not assume a provider fault. Correlate PostgreSQL ERROR/CONTEXT, worker image/start/restarts and execution_authority_revalidated reason_code. Keep full SQL, secrets, provider bodies and private arguments out of public diagnostics.
+
+Before any deployment, inventory active canonical Tasks and current leases. `deploy/check_idle.py` conservatively refuses ready and unknown states; never cancel, expire, renew or edit retained work to turn it green. Any exception requires native metadata proving no executing lease and exact retained expired identity, not a broad status override. The current admission_paused flag also refuses Fresh probes, so it is not a graceful drain switch: do not toggle it on an executing workload. Wait for quiescence first, block new admissions for the bounded change window, and verify idle again; a full no-interruption production release procedure still needs a dedicated admission-only drain mechanism. Static-only assets can be atomically replaced without restarting runtime.
+
+For Worker changes, build from the pinned live image; copy only reviewed source. Test module import/read as the image's actual non-root UID, never only as root. Keep original API/general Worker and schema intact. After replacement require a real accepted model+ERP round trip, multiple sequential Turns in the same conversation and checks of canonical failures/locks, not merely container health. Restore the original admission/config bytes. Never silently replay a failed/unknown business or model request.

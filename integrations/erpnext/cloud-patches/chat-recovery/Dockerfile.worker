@@ -1,0 +1,10 @@
+ARG WORKER_BASE
+FROM ${WORKER_BASE}
+COPY storage/ /app/packages/agent-storage/src/agent_storage/postgres/
+COPY worker/ /app/apps/worker/src/zebra_agent_worker/
+COPY runtime/ /app/packages/agent-runtime/src/agent_runtime/
+COPY tools/ /app/packages/agent-tools/src/agent_tools/
+COPY context/ /app/packages/agent-context/src/agent_context/
+COPY core/ /app/packages/agent-core/src/agent_core/
+ENTRYPOINT ["/app/.venv/bin/python", "-I", "-B", "-m", "zebra_agent_worker.erp_chat_readonly_main"]
+CMD []
