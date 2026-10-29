@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { DotsIcon, PlusIcon, SearchIcon, SidebarIcon } from './icons';
 import { ZEBRA_LOGO } from './logo';
 
@@ -26,6 +26,14 @@ export type SessionSidebarProps = {
 /** Fullscreen session rail: brand, quick create/search, grouped history, tenant footer. */
 export function SessionSidebar(props: SessionSidebarProps) {
   const disabled = props.controlDisabled;
+  const [copiedId, setCopiedId] = useState('');
+  const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (copiedTimer.current) clearTimeout(copiedTimer.current); }, []);
+  function showCopied(name: string) {
+    setCopiedId(name);
+    if (copiedTimer.current) clearTimeout(copiedTimer.current);
+    copiedTimer.current = setTimeout(() => setCopiedId(''), 1400);
+  }
   const matched = (item: SessionRow) => String(item.title || '').toLocaleLowerCase().includes(props.search.toLocaleLowerCase());
   return <nav className="ze-sidebar" aria-label="会话列表">
     <header>
@@ -59,6 +67,7 @@ export function SessionSidebar(props: SessionSidebarProps) {
               <summary aria-label={`管理会话：${item.title || '新会话'}`}><DotsIcon size={14} /></summary>
               <div>
                 <button disabled={disabled} onClick={event => { event.currentTarget.closest('details')?.removeAttribute('open'); props.onRename(item); }}>重命名</button>
+                <button onClick={() => { void copySessionId(item.name).then(() => showCopied(item.name)); }}>{copiedId === item.name ? '已复制' : '复制会话 ID'}</button>
                 <button disabled={disabled} onClick={event => { event.currentTarget.closest('details')?.removeAttribute('open'); props.onDelete(item); }}>删除</button>
               </div>
             </details>
@@ -85,4 +94,21 @@ export function formatAge(hours: number) {
   if (hours < 24) return `${Math.floor(hours)} 小时前`;
   if (hours < 168) return `${Math.floor(hours / 24)} 天前`;
   return `${Math.floor(hours / 168)} 周前`;
+}
+
+async function copySessionId(name: string) {
+  // Clipboard API first (HTTPS desk), execCommand fallback for older embeds.
+  // Never throws: a failed copy simply leaves the label unchanged.
+  try {
+    if (navigator.clipboard?.writeText) { await navigator.clipboard.writeText(name); return; }
+  } catch { /* fall through to the legacy path */ }
+  try {
+    const focused = document.activeElement;
+    const node = document.createElement('textarea');
+    node.value = name; node.style.position = 'fixed'; node.style.opacity = '0';
+    document.body.appendChild(node); node.select();
+    document.execCommand('copy');
+    node.remove();
+    if (focused instanceof HTMLElement) focused.focus({ preventScroll: true });
+  } catch { /* keep silent; the label stays as-is */ }
 }
