@@ -39,12 +39,28 @@ def test_sqlite_control_plane_stores_compose_every_authoritative_boundary(
         "artifact_payload_reader",
         "projection_work",
         "coverage_projection_work",
+        "projection_work_for_version",
     }
     assert stores.projection_work is not None
     assert stores.projection_work.read_pending_projection_work(limit=1) == ()
     assert stores.coverage_projection_work is not None
     assert stores.coverage_projection_work is not stores.projection_work
     assert stores.coverage_projection_work.read_pending_projection_work(limit=1) == ()
+    assert stores.projection_work_for_version is not None
+    selected = stores.projection_work_for_version("agui-standard-1.0:r1")
+    assert selected is not stores.projection_work
+    assert selected.read_pending_projection_work(limit=1) == ()
+    # Discovery/read factory never enables a writer or registers a profile version.
+    import sqlite3
+
+    with sqlite3.connect(tmp_path / "authority.sqlite") as connection:
+        assert (
+            connection.execute(
+                "SELECT projector_version FROM task_projection_work_projectors "
+                "ORDER BY projector_version"
+            ).fetchall()
+            == []
+        )
     session_id = SessionId(UUID("00000000-0000-0000-0000-000000000001"))
     assert stores.artifacts.list_for_session(session_id) == []
     assert stores.artifact_payload_reader is not None

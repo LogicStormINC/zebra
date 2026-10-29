@@ -9,6 +9,7 @@ from agent_core.ports import EffectStateReadPort, LiveEventFanoutPort
 from agent_core.ports.agent_registry import AgentRegistryPort
 from agent_core.ports.task_schedules import TaskScheduleFiringStorePort, TaskScheduleStorePort
 from agent_integrations import GitHubPullRequestTransport, RedisCommittedEventPublisher
+from agent_integrations.ag_ui.profiles import AgUiProfileRegistry
 from agent_integrations.redis_live_fanout_async import AsyncRedisNotifications
 from agent_security import CredentialBroker
 from agent_storage import (
@@ -235,6 +236,7 @@ def create_app(
         live_event_fanout=live_event_fanout,
         stream_notifications=notifications,
         stream_v2_reader=stream_v2_reader,
+        agui_profiles=_agui_profiles(active_settings),
         administrative_context_namespace=resolve_context_namespace(
             administrative_context_namespace, context_administrative_namespace
         ),
@@ -252,4 +254,12 @@ def create_app(
         task_schedule_firing_store=task_schedule_firing_store,
         usage_evidence=usage_evidence,
         coverage_http_admission=coverage_http_admission,
+    )
+
+
+def _agui_profiles(settings: ZebraAgentSettings) -> AgUiProfileRegistry | None:
+    from agent_integrations.ag_ui.standard_profiles import standard_profiles
+
+    return (
+        AgUiProfileRegistry(standard_profiles()) if settings.stream.agui_profiles_enabled else None
     )

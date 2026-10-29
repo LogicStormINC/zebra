@@ -19,11 +19,181 @@
 - Gates: no-model revoke/timeout/identity/expiry/parallel-fence/cancel/lease and recovery regressions, real isolated PG and native HTTP tests, make check; preserve legacy-disabled behavior. No model/search requests or production service changes during implementation. Do not consume original ready work.
 - Owned paths addendum before edits: apps/worker/src/zebra_agent_worker/execution_composition.py and execution_tool_gateway.py; packages/agent-integrations/src/agent_integrations/{openai_compatible,deepseek_responses}.py; model transport callback regression tests. Extract existing constructor wiring because execution.py is499 lines; preserve its public signature/behavior.
 
+## AGUI-G5A-NATIVE-INTERACTION-20261029 — Native complete response and effect roundtrip
+
+- Status: Ready (2026-10-29; G4 reviewed source6e6334ae published).
+- Human owner: Luke Ding; executor: Codex; target: cloud-agent.
+- Planned branch: codex/agui-g5a-native-interaction-20261029; reuse isolated
+  trench-spin-sync-20261028/zebra-agent worktree after G4 publication receipt.
+- Scope: actual native complete interrupt responses and receipted frontend-tool
+  continuation; exact current authority and original operation reconciliation.
+  No generic client-run admission, second execution or browser ToolMessage authority.
+- Version gate BEFORE implementation: freeze the narrow interaction contract in
+  docs/AGUI_NATIVE_INTERACTION_CONTRACT.md. Existing r1 projector/checkpoint/cursor
+  bytes remain readable. Explicit revision2 may compose new native interaction
+  facts and whitelisted public output classification; absence still selects r1.
+  New revision discovery/config/header routing must be explicit and default off.
+  Confirm exact selection and native decision/cancel anchors before source edits.
+- Owned integration paths: ag_ui/profiles.py, standard_profiles.py, standard_binding.py,
+  standard_checkpoint.py, standard_state.py, standard_projection.py,
+  standard_interrupts.py, standard_public_text.py, client_effect_projection.py;
+  focused standard_interaction.py/standard_interaction_state.py/
+  standard_interaction_binding.py if selected by the frozen design.
+- Owned API paths: ag_ui_prepare.py, ag_ui_public_binding.py,
+  ag_ui_observation_binding.py, ag_ui_standard_http.py, ag_ui_client_state.py,
+  ag_ui_command.py, ag_ui_command_receipts.py, client_approval_operations.py,
+  client_effect_receipts.py, api_status_mixin.py, http.py/routes.py;
+  ag_ui_stream.py/ag_ui_checkpoint_tail.py only revision selection/binding.
+- Worker ag_ui_composition.py and its existing HTTP/config composition only exact
+  profile versions; new config field needs its exact filename addendum before edit.
+- Owned SDK paths: client-core agui_http.ts/agui_native.ts/agui_events.ts/
+  agui_reducer.ts, index/server exports and focused native interaction module if
+  responsibility/name added before coding; explicit SDK test collection.
+- Tests: focused API/integrations/SDK native interaction files, existing frozen
+  legacy/r1 golden/profile tests, controlled native HTTP conformance gate and
+  composition tests; exact filenames added before editing existing test files.
+- Core/Port/storage/harness changes are NOT implicitly owned. Trace existing
+  atomic units, indexed reads and actual Worker first; add explicit narrower
+  ownership or split a card before required changes. No new migration by default.
+- Acceptance: complete exact latest interrupt set validated before any write;
+  approved/rejected/cancelled/expired/revoked/unknown and three sequential native
+  approvals; no rejection resurrects terminal native execution. Actual frontend
+  call -> original accepted receipt -> exact same native continuation -> official
+  consumer result/messages, duplicate/lost ACK/history zero execution effects.
+  Unsupported native combinations reject before writes, no fabricated facts or
+  capability. SQLite/PG and signed HTTP/fake-provider gates as supported by actual
+  native composition; no conditionally skipped core acceptance counted as PASS.
+- Next G5B owns existing React Provider/HITL/runtime multi-session action safety,
+  registered handler integration and UI connection; G6 packages, T1 Trench and G7
+  full/performance gates remain required. No version/tgz/release/deploy here.
+- Governance: focused interaction contract, main contract link, plan/registry,
+  PROGRESS/WORKLOG. One source branch/card; spec then quality before publication.
+
+## AGUI-G4-SHARED-UI-20261029 — Public views and scoped React interaction
+
+- Status: Done (2026-10-29; final SPEC/QUALITY PASS; 6e6334ae published on origin/cloud-agent).
+- Human owner: Luke Ding; executor: Codex; target: cloud-agent.
+- Branch: codex/agui-g4-shared-ui-20261029; reuse clean isolated
+  trench-spin-sync-20261028/zebra-agent worktree after G3B publication.
+- Exact base/claim: a0279254 (origin/cloud-agent, after reviewed f9b708ef).
+- Owned paths: ui-contracts/src/index.ts and focused agui.ts types if necessary;
+  client-core/src/agui_view.ts/agui_view_store.ts; React src/agui_view.ts and
+  index exports; existing agent-conversation-timeline, agent-activity-group,
+  agent-run-status and agent-interrupts components; focused tool/plan/subagent
+  detail component files only after explicit responsibility/filename addendum.
+- Before-code owned-path addendum (2026-10-29): client-core/src/index.ts exports;
+  client-core/package.json and pnpm-lock.yaml only for the existing ui-contracts
+  workspace type dependency; React components/agent-agui-conversation.tsx for
+  the minimal scoped Host bridge into existing widgets; client-core/tests/
+  agui-view-producer.py for a controlled actual Python producer recording.
+- Existing styles.css/styles/surfaces.css may add narrow detail/a11y rules,
+  not a new theme. Focused client-core/React tests, explicit SDK test collection,
+  existing browser fixture if a needed behavior cannot be checked in DOM tests.
+- Scope: adapt official applied messages/state and actual public metadata into
+  existing UI contracts; entity/thread/run selectors with stable snapshots;
+  arguments vs execution/result, plan, child attribution/unknown timing,
+  independent execution/connection/submission/delivery facts, bounded safe
+  unsupported rendering, local complete interrupt drafts. No new AG-UI reducer.
+- Compatibility: additive optional contracts and old props/exports behavior;
+  preserve existing media/chart/file/Artifact resolver, identities and reading
+  position; no per-token full-history copying or unrelated media remounts.
+- No human decision/effect HTTP action implementation or fake schema capability;
+  G5 owns native complete resume/frontend tools and current Controller authority.
+  Reasoning/RAW/encrypted values do not become public text automatically.
+- Acceptance: actual G3 producer/official consumer data maps consistently live
+  and restored; multiple thread/run entities update independently; no invented
+  execution/success/duration; unsupported critical input stays visible safely;
+  local response sets/expiry validate before submit; UI accessibility/identity
+  regressions, full SDK check/tests and independent spec then quality review.
+- Governance: standard contract/plan/registry/PROGRESS/WORKLOG. Expand any
+  additional source ownership explicitly before editing; no package version/tgz
+  changes (G6), Trench edits (T1), activation or deployment.
+
+## AGUI-G3A-INGRESS-20261029 — Bounded SDK ingress and exact source lookup
+
+- Status: Done (2026-10-29; reviewed 462b812a published on origin/cloud-agent).
+- Human owner: Luke Ding; executor: Codex; target: cloud-agent.
+- Branch: codex/agui-g3-standard-reliable-transport-20261029; isolated existing
+  trench-spin-sync-20261028/zebra-agent worktree; exact base 14359f32.
+- Owned paths: client-core agui_events.ts/agui_reducer.ts/sse_stream.ts, new sse_records.ts;
+  focused framing/pacing/initial-context tests; root SDK explicit test collection.
+- Before-code regression ownership extension: client-core/src/conversation_stream.test.ts
+  retains valid raw event_type envelope compatibility and asserts permanent poison
+  rejection in existing shared-framing/ACK tests; no weakened payload/ACK checks.
+- Explicit read-only coordinate extension: core AgentTaskPort and SQLite/PG
+  task_replay_headers.py/agent_tasks.py wrappers for exact native idempotency
+  point reads; tests/agent_storage/test_task_replay_headers.py.
+- Before-code replay wrapper extraction: agent-storage/task_replay_reads.py
+  moves unchanged SQLite read wrappers out of the 500-line agent_tasks.py;
+  read_event_header_by_key remains a bounded native event-column point lookup.
+- Before-code spec-fix ownership extension: client-core/src/index.ts handles the
+  shared stream permanent failure at its actual runtime caller; focused runtime
+  regression tests and scripts/stream-v2-browser.mjs fixture caller if needed.
+  Do not retry poisoned data or clear the last accepted cursor.
+- Governance: registry/PROGRESS/WORKLOG/contract/approved plan.
+- Acceptance: strict bounded UTF-8/SSE framing; no poisoned-frame retry; actual
+  pull pacing through awaited apply (including no-mutation events); safe cleanup;
+  trusted initial messages/state; read-only exact native coordinate lookup under
+  Task/namespace/member/readiness validation on SQLite and PG; old wire unchanged.
+  Focused SDK/storage/check gates; independent spec then quality review.
+- Scope split is for coherent review/context, not completion of G3. No HTTP
+  interoperability, activation or full AG-UI transport claim from this foundation.
+
+## AGUI-G3B-HTTP-20261029 — Actual standard HTTP and reliable bridge
+
+- Status: Done (2026-10-29; spec/fixture and quality PASS; f9b708ef published to origin/cloud-agent).
+- Human owner: Luke Ding; executor: Codex; target: cloud-agent.
+- Branch: codex/agui-g3b-native-http-20261029; reuse isolated clean
+  trench-spin-sync-20261028/zebra-agent worktree after G3A review/publication.
+- Exact base/claim: aace8c80 (origin/cloud-agent, after reviewed 462b812a).
+- Owned paths: API ag_ui_stream.py/ag_ui_checkpoint_tail.py/ag_ui_command.py,
+  stream_v2_{http,query,reader,wire}.py, http.py/routes.py and focused standard
+  HTTP/prepare/binding modules; corresponding integration/native API tests.
+- Before-code canonical input comparison extension: client-core/canonical_digest.ts
+  uses Object.fromEntries sorted entries so literal __proto__ remains data; new
+  HTTP admission tests assert semantic object-order equality and prototype keys.
+- Before-code shared reliable bridge extension: client-core/sse_stream.ts exports
+  a one-shot callback bridge around existing bounded assembly and awaited ACK;
+  no copied framing/reducer or legacy reconnect behavior change.
+- SDK ownership: client-core agui_events/reducer.ts only required bridge hooks,
+  bff_transport.ts, focused standard/reliable transport/admission adapter modules,
+  index/server exports; explicit test collection and related tests.
+- Before-code initial-input metadata extension: API client_admission_task_surface.py
+  retains restricted atomic Task+Surface+RUN admission and captures its existing
+  prompt as optional captured single official user-message input (exact match,
+  legacy state-only input unchanged); response returns exact original command
+  Event/key coordinates only to the native BFF rail. No widened attachments,
+  workspace, MCP or coverage input support. Focused initial native tests owned.
+- Before-code reliable canonical authority extension: API stream_v2_authority.py
+  adds explicit registered-profile read binding from indexed Run + current Host
+  proof, independent of legacy transient admission; immutable anchor Segment
+  scopes profile cursors, no provisional drafts or native command mutation.
+- Before-code authenticated HTTP route extension: API http_stream_routing.py
+  and http_host_auth.py for explicit pre-admitted POST observation routing and
+  before-consume target validation; native input uses focused ag_ui_prepare.py.
+- Before-code opt-in composition extension: config stream_settings.py; API
+  factory.py; worker loop.py/ag_ui_projection_work.py/new ag_ui_composition.py;
+  integrations ag_ui/new standard_profiles.py; focused composition/settings tests.
+  Extract the existing 500-line worker composition unchanged before binding
+  four explicit profile queues. Shared production projector/state factory,
+  exactly six total versions, default settings and profile registry remain off.
+- Contract/governance: standard contract, registry/PROGRESS/WORKLOG/plan;
+  conformance/agui_contract actual Python-to-HTTP-to-official-client gate.
+- Frozen choice: native authenticated admission followed by official HttpAgent
+  observing the actual accepted public Run ID. No arbitrary run-ID admission,
+  caller-ID rewriting, duplicate command, private-state authority or GET repair.
+- Acceptance: actual user input reaches native Worker prompt; official POST/SSE
+  receives actual projector events; requested slice survives retained previous
+  terminal and stops before successor; canonical chunks and signed ACK bridge
+  precede official application, standard stream needs no private envelopes;
+  native SQLite/PG tail/coordinate authority checks; real HTTP gate without skips;
+  legacy golden and applicable SDK/API gates; independent spec then quality review.
+  G3 transport acceptance passed; G4 is Ready, G5 awaits G4.
 
 ## AGUI-G2-PUBLIC-PROJECTION-20261029 — Standard public event semantics
 
-- Status: Ready (2026-10-29; not claimed).
-- Human owner: Luke Ding; executor: unassigned; target: cloud-agent.
+- Status: Done (2026-10-29; reviewed source 592fc95b pushed to origin/cloud-agent; no activation).
+- Human owner: Luke Ding; executor: Codex; target: cloud-agent.
 - Dependency: G2V 7c8962b0 reviewed and fast-forward integrated locally.
 - Proposed branch: codex/agui-g2-standard-projection-20261029; reuse the clean
   isolated trench-spin-sync-20261028/zebra-agent worktree after this receipt.
@@ -38,6 +208,42 @@
   tests/conformance/agui_contract/ runner/tests and dynamic runtime provenance.
   The immutable legacy fixture/schema bytes are not owned for rewriting.
 - Governance: this registry, PROGRESS.md, WORKLOG.md, standard contract and plan.
+- Exact base/claim: 7c382e57; branch codex/agui-g2-standard-projection-20261029;
+  isolated trench-spin-sync-20261028/zebra-agent worktree.
+- Before-code ownership extension: ag_ui/checkpoint_keys.py for versioned state
+  key discovery; new standard_checkpoint.py and standard_binding.py for bounded
+  restoration and immutable per-binding canonical epoch context.
+- Before-code derived-state ownership extension: agent-storage/
+  task_projection_coverage_cells_schema.py; postgres/standard_projection_cells_migration.py
+  and migration_catalog_tail.py; core/ports/task_projection_checkpoints.py permits
+  explicitly versioned standard_v1 cells at immutable root Segment across handoffs;
+  tests/agent_storage/test_agui_standard_cells.py and migration catalog tests.
+  New native migration only; old migration bytes/checksums remain immutable.
+- Before-code root-validation extension: agent-storage/
+  task_projection_checkpoint_commit.py and postgres/task_projection_checkpoint_rows.py
+  (verify standard cells use the canonical source anchor Segment before commit).
+  Frozen legacy validation remains unchanged. New standard tests own the exact
+  child HARNESS/resume epoch predicate; no cross-child reads or grants.
+- Before-code size-limit extraction: new ag_ui/checkpoint_reader.py receives
+  the unchanged bounded _PageReader so materializer stays below 500 lines.
+- Before-code trusted research producer ownership: core/contracts/subagent_events.py
+  and harness/tool_execution.py; focused core/integration tests. Add optional exact
+  parent tool-call/name fields to existing post-result HARNESS lifecycle facts;
+  sparse historical facts stay unbound and legacy whitelist bytes unchanged.
+  This does not add a live spawn callback or change execution lifecycle.
+- Before-code official typed patch compatibility extension: integrations
+  ag_ui/client_state_projection.py and client_effect_projection.py use the official
+  StateDeltaEvent.model_validate JSON boundary (same serialized legacy patch bytes).
+- Before-code semantic ownership extension: new ag_ui/standard_interrupts.py
+  separates answerable interrupts, delivery assessments and operational pause;
+  no legacy MessagesSnapshot/StateSnapshot resets enter the new profile.
+- Before-code G2V stable-suite follow-up: tests/agent_storage/
+  test_storage_composition.py expects projection_work_for_version and verifies
+  exact-version read-only factory behavior; production composition is unchanged.
+  Parent isolated 7c382e57 full gate exposed this single stale field-set assertion.
+- Before-code strict argument boundary: ag_ui/payload_validation.py adds optional
+  allow_nan keyword preserving legacy default; standard complete-object arguments
+  require strict JSON, including direct pure-projector callers.
 - Before code: audit every producer/caller and record exact base/claim. Reuse
   official Python1.0 models only after explicit compatibility review; preserve
   legacy wire/defaults. Expand any additional ownership before editing.
@@ -48,7 +254,7 @@
 - Acceptance: frozen legacy bytes/cursors; official schema positive/negative
   checks; full replay equals checkpoint tail; no fabricated execution/result/Step
   success; strict coverage, continuation identity and usage slicing; targeted
-  checks/make check, independent spec then quality review. G3 remains Locked.
+  checks/make check, independent spec then quality review. Both reviews passed; G3 is Ready.
 
 ## AGUI-G2V-PROFILE-ISOLATION-20261028 — New projection version isolation
 

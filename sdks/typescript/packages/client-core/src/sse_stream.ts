@@ -1,3 +1,4 @@
+import { readSseRecords, SseProtocolError } from "./sse_records.js";
 import type { ConversationStreamEvent } from "./conversation_stream.ts";
 import { isStreamCursor } from "./runtime_state.ts";
 import type { ClientEffectWire } from "@zebra-agent/contracts";
@@ -61,7 +62,8 @@ export async function consumeClientEffectStream(options: {
         lastEventId = cursor;
         options.onCursor?.(cursor);
       } }, lastEventId, recovery);
-    } catch {
+    } catch (error) {
+      if (error instanceof SseProtocolError) throw error;
       if (options.signal.aborted || options.stopped()) return;
       await new Promise((resolve) => setTimeout(resolve, 500));
     }
@@ -85,57 +87,35 @@ async function invalidCursorReplacement(response: Response): Promise<string | nu
 
 async function readSse(
   body: ReadableStream<Uint8Array>,
-  options: Parameters<typeof consumeClientEffectStream>[0],
+  options: Parameters<typeof consumeClientEffectStream>[0] & { onAcceptedCursor?: (cursor: string | null) => Promise<void> },
   initialEventId: string | null,
   recovery: StreamReadState,
 ): Promise<string | null> {
-  const reader = body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = "";
   let lastEventId = initialEventId;
   const recordLimit = options.streamVersion === 2 ? 16384 : 8_388_608;
-  try {
-    while (!options.signal.aborted) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffer = (buffer + decoder.decode(value, { stream: true })).replaceAll("\r\n", "\n");
-      let boundary = buffer.indexOf("\n\n");
-      while (boundary >= 0) {
-        if (boundary > recordLimit) throw new Error("SSE record exceeds bounded compatibility budget");
-        const record = buffer.slice(0, boundary);
-        if (new TextEncoder().encode(record).length > recordLimit) throw new Error("SSE record exceeds byte budget");
-        buffer = buffer.slice(boundary + 2);
-        const nextEventId = await handleRecord(record, options, lastEventId, recovery);
-        if (nextEventId !== null && nextEventId !== lastEventId) {
-          options.onCursor?.(nextEventId);
-        }
-        lastEventId = nextEventId;
-        boundary = buffer.indexOf("\n\n");
-      }
-      if (buffer.length > recordLimit || new TextEncoder().encode(buffer).length > recordLimit) throw new Error("SSE record exceeds bounded compatibility budget");
+  for await (const record of readSseRecords(body, recordLimit, options.signal)) {
+    if (options.signal.aborted || options.stopped()) break;
+    const nextEventId = await handleRecord(record.data, record.id, options, lastEventId, recovery);
+    if (nextEventId !== null && nextEventId !== lastEventId) {
+      await options.onAcceptedCursor?.(nextEventId);
+      options.onCursor?.(nextEventId);
     }
-  } finally {
-    await reader.cancel().catch(() => undefined);
-    reader.releaseLock();
+    lastEventId = nextEventId;
+    if (options.stopped()) break;
   }
   return lastEventId;
 }
 
 async function handleRecord(
-  record: string,
-  options: Parameters<typeof consumeClientEffectStream>[0],
+  data: string,
+  eventId: string | null,
+  options: Parameters<typeof consumeClientEffectStream>[0] & { onAcceptedCursor?: (cursor: string | null) => Promise<void> },
   lastEventId: string | null,
   recovery: StreamReadState,
 ): Promise<string | null> {
-  let data = "";
-  let eventId: string | null = null;
-  for (const line of record.split("\n")) {
-    if (line.startsWith("id:")) eventId = line.slice(3).trim();
-    if (line.startsWith("data:")) data += line.slice(5).trim();
-  }
   if (data === "") return lastEventId;
-  if (eventId !== null && !isStreamCursor(eventId)) throw new Error("SSE cursor exceeds bounds");
-  let event = JSON.parse(data) as ConversationStreamEvent & {
+  if (eventId !== null && !isStreamCursor(eventId)) throw new SseProtocolError("SSE cursor exceeds bounds");
+  let event = parseEvent(data) as ConversationStreamEvent & {
     type?: string;
     delta?: Array<{
       op?: string;
@@ -145,27 +125,32 @@ async function handleRecord(
   let assembled = false;
   if (event.type === "CUSTOM" && event.name === "zebra.canonical_chunk") {
     const value = event.value as { chunk_index?: unknown; content?: unknown; last?: unknown };
-    if (!Number.isSafeInteger(value.chunk_index) || typeof value.content !== "string" || typeof value.last !== "boolean") throw new Error("Invalid canonical chunk");
+    if (!value || typeof value !== "object" || !Number.isSafeInteger(value.chunk_index) || typeof value.content !== "string" || typeof value.last !== "boolean") throw new SseProtocolError("Invalid canonical chunk");
     const index = value.chunk_index as number;
-    if (index === 0 && !recovery.chunks) recovery.chunks = [];
+    if (index === 0 && !recovery.chunks) { recovery.chunks = []; recovery.chunkBytes = 0; }
     const chunks = recovery.chunks;
-    if (!chunks || index > chunks.length || index < 0 || index >= 4096) throw new Error("Canonical chunk gap");
-    if (index < chunks.length && (chunks[index]?.content !== value.content || chunks[index]?.last !== value.last)) throw new Error("Conflicting canonical chunk");
+    if (!chunks || index > chunks.length || index < 0 || index >= 4096) throw new SseProtocolError("Canonical chunk gap");
+    if (index < chunks.length && (chunks[index]?.content !== value.content || chunks[index]?.last !== value.last)) throw new SseProtocolError("Conflicting canonical chunk");
     if (index === chunks.length) {
-      if (chunks.at(-1)?.last) throw new Error("Canonical chunk after final");
+      if (chunks.at(-1)?.last) throw new SseProtocolError("Canonical chunk after final");
       chunks.push({ content: value.content, last: value.last });
+      recovery.chunkBytes = (recovery.chunkBytes ?? 0) + new TextEncoder().encode(value.content).byteLength;
     }
-    if (chunks.reduce((length, part) => length + part.content.length, 0) > 2_097_152) throw new Error("Canonical assembly exceeds bounds");
+    if ((recovery.chunkBytes ?? 0) > 2_097_152) throw new SseProtocolError("Canonical assembly exceeds bounds");
     if (!value.last) return eventId ?? lastEventId;
-    event = JSON.parse(chunks.map(part => part.content).join("")) as typeof event;
+    event = parseEvent(chunks.map(part => part.content).join("")) as typeof event;
     assembled = true;
   }
   if (event.type === "CUSTOM" && event.name === "zebra.stream.recovery_start") delete recovery.chunks;
   if (options.streamVersion === 2 && event.type === "CUSTOM" && event.name === "zebra.stream.reset") {
     // Discarding continuation is safe even if the Host reset callback fails.
+    if (options.onAcceptedCursor) {
+      delete recovery.chunks;
+      delete recovery.chunkBytes;
+      await options.onAcceptedCursor(null);
+    } else if (assembled) delete recovery.chunks;
     options.onCursor?.(null);
     await options.onObservation?.(event);
-    if (assembled) delete recovery.chunks;
     return null; // Current live handling stays active; only a reconnect starts cold recovery.
   }
   if (eventId !== null && event.type === "CUSTOM" &&
@@ -193,7 +178,52 @@ async function handleRecord(
   return eventId ?? lastEventId;
 }
 
-interface StreamReadState {
+export interface StreamReadState {
   active: boolean;
+  chunkBytes?: number;
   chunks?: Array<{ content: string; last: boolean }>;
+}
+
+function parseEvent(data: string): Record<string, unknown> {
+  let event: unknown;
+  try { event = JSON.parse(data); } catch { throw new SseProtocolError("Invalid SSE JSON"); }
+  if (!event || typeof event !== "object" || Array.isArray(event) ||
+      (typeof (event as { type?: unknown }).type !== "string" &&
+       typeof (event as { event_type?: unknown }).event_type !== "string")) {
+    throw new SseProtocolError("SSE event requires an object and type discriminator");
+  }
+  const fields = event as Record<string, unknown>;
+  if (fields.type === "STATE_DELTA" && (!Array.isArray(fields.delta) ||
+      fields.delta.some(operation => !operation || typeof operation !== "object" || Array.isArray(operation)))) {
+    throw new SseProtocolError("STATE_DELTA requires an array of operation objects");
+  }
+  return fields;
+}
+
+/** One response only. Signed cursor acceptance follows awaited canonical application.
+ * Reconnect/admission remains an explicit caller decision; notices are never business events. */
+export async function readReliableAgUiStream(body: ReadableStream<Uint8Array>, options: {
+  signal: AbortSignal;
+  initialCursor?: string | null;
+  recovery: StreamReadState;
+  onCanonical: (event: ConversationStreamEvent) => Promise<void>;
+  onNotice?: (event: ConversationStreamEvent) => Promise<void>;
+  onCursor?: (cursor: string | null) => void | Promise<void>;
+}): Promise<string | null> {
+  let terminal = false;
+  return readSse(body, {
+    fetchImpl: globalThis.fetch, streamUrl: "", headers: () => ({}),
+    stopped: () => terminal, signal: options.signal, streamVersion: 2,
+    onEffect: async () => {},
+    onObservation: async event => {
+      if (event.type === "CUSTOM" && (event.name?.startsWith("zebra.stream.") ||
+          event.name === "zebra.observation.problem" || event.name === "zebra.message_replace")) {
+        await options.onNotice?.(event);
+      } else {
+        await options.onCanonical(event);
+        if (event.type === "RUN_FINISHED" || event.type === "RUN_ERROR") terminal = true;
+      }
+    },
+    ...(options.onCursor ? { onAcceptedCursor: async (cursor: string | null) => { await options.onCursor!(cursor); } } : {}),
+  }, options.initialCursor ?? null, options.recovery);
 }

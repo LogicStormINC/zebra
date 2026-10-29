@@ -62,7 +62,7 @@ export function AgentActivityGroup(props: AgentActivityGroupProps) {
       className={`zebra-agent-activity ${active ? "zebra-agent-activity--active" : ""} ${terminal ? "zebra-agent-activity--terminal" : ""} ${props.className ?? ""}`.trim()}
       data-activity-kind={activityKind}
       onToggle={(event) => {
-        if (event.currentTarget.open !== props.expanded) props.onExpandedChange(event.currentTarget.open);
+        if (event.target === event.currentTarget && event.currentTarget.open !== props.expanded) props.onExpandedChange(event.currentTarget.open);
       }}
       open={open}
     >
@@ -84,10 +84,11 @@ export function AgentActivityGroup(props: AgentActivityGroupProps) {
             key={item.activityId}
           >
             <span aria-hidden="true" className="zebra-agent-activity__marker" />
-            <span className="zebra-agent-activity__body">
+            <div className="zebra-agent-activity__body">
               <strong>{item.title}</strong>
               {item.description ? <span>{item.description}</span> : null}
-            </span>
+              {item.detail ? <ActivityDetail detail={item.detail} /> : null}
+            </div>
             <span className="zebra-agent-activity__status">
               {durationLabel(item.durationMs)}{item.durationMs ? " · " : ""}{labels[waiting && item.status === "running" ? "waiting" : item.status]}
             </span>
@@ -107,4 +108,20 @@ function durationLabel(durationMs?: number) {
 function latestStatus(activities: readonly AgentActivity[], labels: AgentActivityGroupLabels) {
   const status: AgentActivityStatus = activities.at(-1)?.status ?? "ready";
   return labels[status];
+}
+
+function ActivityDetail({ detail }: { detail: NonNullable<AgentActivity['detail']> }) {
+  if (detail.type === 'tool') return <details className="zebra-agent-activity__detail"><summary>Tool · {detail.phase}</summary>
+    <div>Arguments <pre>{detail.arguments || 'Preparing arguments'}</pre></div>
+    {detail.result !== undefined ? <div>Observed result <pre>{detail.result}</pre></div> : null}
+  </details>;
+  if (detail.type === 'plan') return <details className="zebra-agent-activity__detail"><summary>Plan steps · {detail.steps.length}</summary>
+    <ol>{detail.steps.map(step => <li key={step.id}>{step.content} · {step.status}</li>)}</ol>
+    {detail.markers.map((marker, index) => <span key={`${marker.name}:${index}`}>Step marker · {marker.name} · {marker.status}</span>)}
+  </details>;
+  if (detail.type === 'subagent') return <details className="zebra-agent-activity__detail"><summary>Child · {detail.phase}</summary>
+    <span>Invocation: {detail.invocationId}</span><span>Parent tool: {detail.parentToolCallId ?? 'Unbound'}</span>
+    <span>Timing: {detail.timing} · duration unknown</span>
+  </details>;
+  return <span>{detail.reason}</span>;
 }

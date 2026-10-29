@@ -1,3 +1,4 @@
+export { AgUiViewStore } from './agui_view_store.js';
 export {createBFFSurface, type BFFSurfaceState, type BFFSurfaceBinding} from "./bff_surface.ts";
 export {createBFFMessages, type BFFMessageState, type BFFMessageAnchor} from "./bff_messages.ts";
 export {prepareInitialClientSurface} from "./initial_surface.ts";
@@ -232,6 +233,8 @@ export class ZebraClientRuntime {
         onCursorRecovered: () => this.poll(),
         onTerminalRejection: () => this.stop(),
         onEffect: (effect) => this.runEffect(effect),
+      }).catch(() => {
+        if (!this.stopped) this.shutdown(false, "unavailable");
       });
     }
   }
@@ -402,10 +405,10 @@ export class ZebraClientRuntime {
   /** Stop local work while preserving the controller lease for reconnect. */
   disconnect(): void { this.shutdown(false); }
 
-  private shutdown(releaseController: boolean): void {
+  private shutdown(releaseController: boolean, status: ClientRuntimeStatus = "stopped"): void {
     if (!this.stopped && releaseController) void this.releaseController();
     this.stopped = true;
-    this.setStatus("stopped");
+    this.setStatus(status);
     this.queuedMount = null;
     this.abortController?.abort();
     this.abortController = null;
@@ -481,3 +484,6 @@ export type { CommandRecoveryView } from "./command_recovery.ts";
 
 export { standardAgUiEvents, type AgUiRunBinding, type AgUiEventSource } from "./agui_events.js";
 export { StandardAgUiConsumer, type StandardAgUiConsumerOptions, type StandardAgUiSnapshot } from "./agui_reducer.js";
+
+export { createAgUiHttpClient, type AgUiHttpOptions, type PreparedAgUiRun, type AgUiAdmissionResult } from "./agui_http.js";
+export { createNativeAgUiTransport } from "./agui_native.js";

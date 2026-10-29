@@ -1,6 +1,6 @@
 # AG-UI 1.0 标准与 Zebra durable 边界合同
 
-状态：G0 合同冻结；不是 1.0 功能上线或兼容性认证。日期：2026-10-28。
+状态：G0 合同冻结；G1/G2V/G2 已审查交付，G3 实施中。不是生产上线或完整兼容认证。
 任务：AGUI-G0-CONTRACT-20261028。实施顺序见
 [完整方案](superpowers/plans/2026-10-28-agui-full-interaction.md)。
 
@@ -14,8 +14,8 @@
 | 不变来源 | [修订固定的 schema](https://raw.githubusercontent.com/ag-ui-protocol/ag-ui/fdbca490dc90fd8fbce2b342df79383bd70559af/spec/1.0/schema.json) |
 | schema SHA-256 | `4b5c93226838a0e72d88e6c5df20633c686c49fcb75d9be2815c6cbf9e48e71a` |
 | schema 原始长度 | 94359 bytes；保留官方原始字节，不格式化 |
-| 当前 Python | `ag-ui-protocol==0.1.19`，是旧实现依赖，不能因此声称目标 1.0 已实现 |
-| JS 候选 | `@ag-ui/{core,client,encoder,proto}` 各 `1.0.3`，registry 核实候选；G0 不安装、不选型、不修改锁文件 |
+| G0 基线 Python | `ag-ui-protocol==0.1.19`；G2 后实际依赖为 `1.0.0`，旧 wire golden 保留原 provenance |
+| G0 JS 候选 | `@ag-ui/{core,client,encoder,proto}` 各 `1.0.3`；G1 选定 client/core，见第9节 |
 
 冻结资料位于 `tests/conformance/agui_contract/`：`upstream.json` 记录来源；
 `schema-1.0.json` 保留原始字节；`event-catalog.json` 沿根 Event 的 `oneOf`
@@ -59,8 +59,8 @@ cursor 回填这个字符串。`ag-ui-v1` 与 `ag-ui-v1-coverage` 仍是现有 c
 
 发现合同使用可选字段 `metadata.aguiProfiles`（支持的新 profile ID 数组）。
 G2V 已在现有 `GET /capabilities/runtime` 实现承载点及绑定 registry 的可用性选择，
-并验证默认旧 DTO 不新增 metadata；隔离实现见第10节。实际 AG-UI 1.0 producer
-尚未实现，生产 registry 默认为空，新生产 profile 仍不可用。实际 Trench 业务
+并验证默认旧 DTO 不新增 metadata；隔离实现见第10节。G2 已实现并审查
+独立 producer，生产 registry 默认为空，新生产 profile 仍不可用。实际 Trench 业务
 bootstrap envelope 的字段转发待 T1 实现；这不是新增 Native 端点。声明仅提示
 兼容能力，不授予 namespace、工具、审批或执行权限。
 
@@ -204,7 +204,7 @@ vendor，也不能覆盖已交付同名包。G6交付前统一版本、tgz、man
 31类taxonomy/有效例可接受不等于完整1.0行为认证；完整消费者/生产投影/
 Artifact/审批/恢复闭环仍分别由G2V–G7/T1的门禁证明。
 
-本地reader暂采用128个待处理canonical事件（另有1个等待前序通知的active项）
+G1阶段本地reader采用128个待处理canonical事件（另有1个等待前序通知的active项）
 上限，溢出显式拒绝消费并停止订阅，不伪造Run失败或重新执行。该限制也可能
 拒绝突发同步录制源；它是有限容量拒绝策略，不是producer背压或无限历史承诺。
 G3/G7须在启用profile前验证实际冷恢复、节奏控制和字节/内存预算，不能直接
@@ -271,3 +271,221 @@ SQLite 使用同一 classifier。每个 family 根据真实 source privacy 只�
 或 coverage queue；晚到隐私事实重新准备对应严格队列，旧 output 行不被改写。
 显式配置最多六个 projector versions（旧两个 + 新两个 family 的各两个），第七个
 仍拒绝；没有无限 fanout。GET 不注册、不迁移、不 repair、不 materialize。
+
+## 11. G2 标准公开投影（已审查，未激活）
+
+`StandardAgUiProjector` + `StandardProjectionState` 是独立 producer/state。
+只有显式 `AgUiProjectionProfile(..., projector=StandardAgUiProjector(),
+state_type=StandardProjectionState)` 才使用它；默认 registry 仍为空。
+官方 Python `ag-ui-protocol==1.0.0` 复用全部生成模型；独立 dev validator
+`jsonschema==4.26.0` 校验 G0 冻结 Draft2020-12 Event union 的正反例。
+旧 projector 仅明确 assistant role 和使用官方 JSON Patch 校验入口，以保留
+原 wire bytes；旧 schema/fixture/cursor/HMAC 与旧 migration 文件不重写。
+
+- 每个公开协议 Run 首帧 RUN_STARTED，紧接实际派生 STATE_SNAPSHOT 建立 patch
+  base：首次为空，续接重建已接受的公开文档，不能盲目置空。G2 文档仅拥有
+  `/execution`；后续用 add patch 保留其他状态。既有 Client Effect fallback 未在
+  新 profile 冒充完整消费，G5 先完整组合再激活。审批/澄清不发 MESSAGES_SNAPSHOT，
+  不删除既有消息/Activity。HARNESS_ATTEMPT_STARTED/SESSION_RESUMED 与真实终态才
+  改变 execution phase；protocol success 不能冒充执行/业务完成。
+- 已校验的完整 TOOL_CALL_PROPOSED 对象一次产生 START/ARGS/END；END 只结束
+  参数。pending result 仍保留，执行 Activity 的 running 仅来自真实 STARTED，
+  完成/失败只来自对应 durable terminal；取消不伪造结果。富媒体和工具正文复用
+  已有 `tool_result_content` / `project_content_parts`，不外发原 metadata。
+- PLAN_UPDATED 复用 SessionPlan 校验与稳定 plan Activity ID，提供真实实时进度。
+  标准 Step 仅在已观察 in_progress 后又有显式同 ID/内容 completed/cancelled 时
+  回顾式成对交付 START/FINISHED；保留原观察时间/身份，取消状态用 metadata 区分。
+  未完成 span 跨等待/合法续接保留，删除/替换使其失效；Run 终态不制造成功。
+  观察跨度可含审批暂停，不能宣称实际执行 duration。TESTS_COMPLETED 仅记录结束。
+- MODEL_RESPONSE_DELTA、候选/final model response 与 commentary reservation
+  都不是发布。正文只来自 PUBLIC_OUTPUT 和 ANSWER_COMMITTED；实际 commentary
+  publisher 的 durable chunks 按原 model-call/source digest 在每个协议切片内拼接。
+  实际末块结束；若协议先终止，END 明确 publicationComplete=false，不补正文或
+  冒充最终提交。只保留 chunk offset，真实续接剩余块开新的切片 message ID；原
+  publication ID 不重发，相同正文但不同 publication ID 不按内容 hash 去重。
+  strict Coverage 必须首先经过 coverage_projection_event；任意答案/工具正文、
+  公共候选文本与私有 metadata 不会借新 profile 绕过原隐私边界。
+- 只有真实 APPROVAL_REQUESTED / CLARIFICATION_REQUESTED 才产生可回答 Interrupt；
+  question/responseSchema 使用原公开事实，clarification ID 不能冒充 toolCallId。
+  delivery/verification pause 公开完整已验证 DeliveryAssessmentPayload（包括 unmet/
+  satisfied/evidence/artifact refs），不复制外层 metadata/候选正文，不伪造未知枚举。
+  缺失 assessment 就不发该事件，不把 partial/blocked 变成人工问题。
+- 非人工 SESSION_SUSPENDED 先公开 paused execution patch，仅 allowlist diagnostic，
+  不公开路径/runtime/原 metadata。budget/verification/交付阻塞/用户 snapshot/未知
+  非失败停止关闭为 cancelled，绝不冒充 success；storage/authority/plugin 服务故障
+  关闭为 RUN_ERROR，但 execution 仍 paused，不冒充 durable business failed。
+  workspace drift 为非失败 paused/cancelled。协议 cancelled 不等于 durable
+  SessionCancelled；原执行可在合法续接事实后形成普通新公共 Run，不是 AG-UI resume。
+  依据 [1.0 lifecycle](https://docs.ag-ui.com/spec/1.0/events/lifecycle) 的 cancelled/
+  run closure 规则；此前候选采用 pause-success 的设计已在提交前纠正。
+  冻结 budget 没有原生额度修改动作，不宣传虚构问题。waiting_children 有真实后台
+  工作，继续同一活动协议 Run；Client Effect 完整往返留在 G5。
+- TURN/SESSION_CANCELLED 产生 cancelled outcome，终态最多一次。真实 failure
+  产生通用 RUN_ERROR；error、success、cancel 与 input interrupt 都保留本切片
+  已知 usage。missing count 保持 absent，bool 非法，cache miss 不是 cache write；
+  reasoning/cache 为子集，不重复相加。只使用实际模型 token 事实，子任务调用
+  次数不变成 token。每个实际 call 都参与 unknown 传播，不能跳过全缺字段的 call；
+  已知 provider/model 的缺失字段使该组对应字段 absent，无法归属的全未知 call
+  使 inclusive terminal usage 省略。已代表的 research/delegation 没有 token 事实时，
+  整体 totals 同样省略；在途 child 的未知标记跨协议切片保留，真正结算后下一切片
+  才重置。已有真实数值仍在 scope=model_call 的 CUSTOM 事件逐调用公开，不能冒充
+  inclusive totals。绝不根据 model_calls_used 推断 token。
+- durable SUBAGENT_DELEGATED 的 event ID 定义 invocation，绑定原 child/tool/name，
+  立即公开 delegated Activity（不是实际 child running 证明）。标准 START/terminal
+  仅在匹配终态时回顾式成对交付；parent cancel/interrupt 不伪造子成功/错误。
+  完成只信任当前 epoch 的 HARNESS/resume、原 deterministic wakeup key/revision
+  及精确无重复 child set；原 worker 同事务从真实 terminal links/events 生成该事实。
+  不读取子私有正文，不以 child ID 授予访问。failed/cancelled 产生 SUBAGENT_ERROR。
+  research producer 增补原 tool-call/name；历史稀疏事件不猜父归属。该生产者在工具
+  返回后才持久化 START/terminal，标准事件不填虚构开始/结束时间，并明确
+  `timing=observed_after_execution`；这不是 live spawn 或真实 duration 证明。
+
+公开 Run ID 仍复用第10节 hash：已暂停/等待真实输入的协议切片遇到原 immutable
+internal continuation anchor 才开后继；waiting_children 的 resume 不重复开关 Run。
+原 TURN/SESSION completed/cancelled/failed（含协议早已暂停后到达的事实）阻止迟到
+内部 resume 再开公开 Run；映射可能的 anchor 不等于授予恢复执行权限。
+实际内部 header 为 HARNESS/resume 且 `command_run_id is None`，不是新业务 Run；
+G2 修正 G2V 曾以模拟非空 run_id 测试的条件，并用 SQLite/PG 实际写入 header 验证。
+前序关系只在 versioned `previousProtocolRunId` metadata，不能放入 parentRunId。
+
+新 `standard_v1` cells 固定原 Run anchor 的 root Segment，跨 Segment 共享派生状态。
+原 namespace/Task/source/member/CAS 校验仍生效；SQLite/PG 提交另外核对该 root，
+旧 profile 不能写新 cells。v116 仅增补派生 schema，所有旧 migration bytes 保留。
+恢复严格读取当前 Event 之前的 cells，不窥视之后状态或历史正文。原 anchor 已
+处理后必须存在完整 root count/chunks；缺失、版本/类型/私有字段损坏、错误公共
+Run 绑定都明确失败，不重新开始或丢失已得用量。储存的 v1 schema/phase/usage/
+child/coverage 形状受校验，不能把私有任意 JSON 作为 STATE_SNAPSHOT 输出。
+共享 projector
+没有当前 Task/Run 可变字段。call ID 在协议切片内、publication ID 在原执行绑定内
+使用 hash point cells；只 hash 身份，不 hash 正文。活动状态/已知 usage 聚合使用
+有界小 snapshot，不保存工具参数、
+私有 conversation 或完整结果。10k-call 回归验证 point reads 与小 snapshot 不随
+已结束 call ID 历史增长；32KiB 活动元数据及原 1MiB/1024-key Page 门禁明确失败，
+不会部分发布。G7 仍须验证实际长历史性能、并发与完整传输恢复，不以此替代 G6/G7。
+
+标准 profile 的 source Page 仍最多256条，但并不假设整个 Page 的派生状态日志
+一定能塞进1MiB。物化在没有任何写入的阶段遇到明确 Page-budget 异常时，按有界
+二分前缀重算并返回可提交 prefix；consumer 只按实际 committed.through_sequence
+推进，剩余源事实在后续批次处理。单 Event/校验/缺失状态错误不因重试绕过。
+旧 profile 保留原 Page/异常行为。256次模型事实的回归验证完整前沿、单次 Run
+开始和无遗漏总数；G7 仍须测量真实10k/native/并发的吞吐成本。
+strict 新 profile 先调用原 privacy sanitizer，再只保留 allowlist 生命周期分类：
+waiting_children 不关闭，infra/authority 保持 RUN_ERROR，workspace drift 保持
+paused/cancelled；不复制原 metadata/assessment/body，也不改旧 sanitizer 字节。
+
+## 12. G3 实施边界
+
+G3A 先修复共享 SSE framing 与有界 pull/apply 栅栏，并添加原生 Event-column
+幂等键的只读精确坐标查询；G3B 再连接原生准入、标准 HTTP 与可靠桥接。
+独立审查及门禁按卡记录；G3A 不代表 HTTP 或 CopilotKit 互操作已验收。
+采用第10节允许的原生准入后观察路线：实际已接受的公共 Run ID 由适配器
+交给官方 HttpAgent。标准 POST 观察该操作，不再提交执行。不能改写任意调用方
+runId、根据 command UUID 猜 Event UUID，或把未处理的续接 anchor 猜成公共后继。
+当前不新增公共 ID ledger，不放宽原 Client Session/Host/Controller 权限。
+
+G3A已审查的入口约束：逐记录pull在官方归并应用及通知完成后才继续；内部栅栏
+使用对象身份，位于enforce/chunk/verify之后，不进入wire/公开回调/历史。RAW、
+CUSTOM、未知事件丢弃及一条chunk展开多个事件均不依赖“必有状态变更”来确认。
+明确初始messages/state只用于可信上下文；不授予业务权限。记录/assembly按UTF-8
+字节计量，行缓冲按需增长。主动abort丢弃不完整记录并取消自有reader；调用方
+自有永不完成IO只能请求清理。legacy消费边界保留有效raw event_type/稀疏值，
+只预检自身消费字段；完整新标准事件仍由官方schema管线校验。损坏记录不重试，
+真实runtime接住错误、保留已确认cursor/controller lease并显示unavailable。
+精确原生幂等键只读查询返回实际Event坐标，不把command UUID当Event UUID。
+规格/质量审查和独立检查通过；这些证据不代表实际HttpAgent请求已经背压，
+也不替代G3B的真实输入到Worker、HTTP观察及公共Run切片门禁。
+
+## 13. G3B 实际 HTTP 适配（已审查，未激活）
+
+这里固定第10节的原生准入后观察路线，不声称任意客户端随机runId可直接准入。
+现有会话以受控原生MESSAGE接收实际用户文本；仅CONVERSATION的awaiting_turn
+状态支持该追加路径，不把one_shot终态或初始开放Turn放宽为可追加。新建Task
+使用既有原子Task+Surface+RUN：可选单条纯文本message必须匹配原生校验后的
+prompt，作为RUN.input元数据保留；模型仍读取原生Task目标，不能重复追加。
+旧state-only输入和command收据字段保持原形。附件、workspace、MCP、任意
+初始工具等受限项没有借此放宽；Host既有复杂准入轨道继续按原权限使用。
+
+- `/prepare`提交一次原生意图；`/prepared`只读取原始操作，不重新准入。精确
+  Event-column key解析实际Event坐标；不把command UUID当作Event UUID。
+  只有物化到实际continuation anchor之后的派生状态才返回公共协议Run ID。
+  waiting_children或已忽略的迟到意图不构造假后继。
+- 标准POST只观察已准入操作；输入与原始已接受输入语义一致，公共runId来自
+  实际绑定。对象键顺序无意义；数组有序，bool与number区分，数值1与1.0等价。
+  缺省protocolVersion在捕获前设1.0；显式矛盾版本拒绝，不静默改写。
+- 首条输入准入前尚无Native Task UUID，SDK的fresh-only `attachPrepared`显式
+  安装同源BFF返回的原始prepared收据，再调用真实HttpAgent；它不产生UUID、
+  不发送准入，也不是执行授权。旧的pending/unknown操作不能被此方法覆盖。
+- BFF原始operation locator与native accepted Event key分别来自原始受保护收据。
+  server helper在新实例中可只读恢复，不要求进程内先调用过admit。Native
+  凭据及fence留在server context；浏览器只使用固定同源路径。已校验的Native
+  origin和定位参数被捕获，不因外部配置对象后来变更而转发凭据到其他地址。
+- 私有prepared输入和input-bearing POST绑定原始ClientSession；MESSAGE采用
+  server-auth派生的private preparation marker，初始轨道复用原生client marker。
+  不从浏览器state/forwardedProps授予身份。获准查看公开结果的另一个Session
+  不因此取得原始Readable/context。只读观察不要求controller/fence或最新UI
+  revision；新的输入动作仍要求当前原生权限、Controller和修订。
+
+新profile的可靠GET采用独立的canonical-only读取绑定：同一原生proof验证当前
+Host/Task/Run、不可变anchor及完整profile scope，lane固定原Run anchor Segment。
+不修改原run.stream_admission，也不借观察准入transient_v2。新profile不读取
+未经公开分类的临时候选正文；旧profile的draft/reset及wire字节保持。标准正文
+仍为TEXT_MESSAGE_CONTENT，大canonical事件经共享有界chunk桥接后才进入官方
+enforce/chunk/verify/apply。transport通知不混入业务CUSTOM。
+
+原生检查点可能保留上一切片terminal；新观察以已验证的公共Run及起始序列
+判断结束，忽略旧terminal，在自己的terminal处停止，不跨入同Page后继Run。
+RUN_ERROR没有runId，其归属由该已验证切片确定。标准观察失败转为安全
+RUN_ERROR及EOF，不把观察错误写成业务失败；原生投递结果读取也必须组合。
+
+实际HttpAgent应用沿用官方归并：所有注册/传入subscriber之前处理私有身份
+栅栏，预检patch，等待应用及通知，再确认cursor。clone保留公共订阅和middleware，
+私有失败/中止/栅栏状态重新初始化。官方finalize不自动等待的边界由适配器
+显式等待；terminal应用和final hooks完成后才确认终态cursor，并清理原始reader。
+中止、毒帧、通知失败不确认未应用数据；clean EOF没有terminal不得冒充完成。
+正常可靠断线保留有限分片和签名cursor，在同一官方管线只读接续；reset的null
+cursor同样等待持久化。整段重播与活动Run冲突时明确失败，不静默重复正文。
+从原始收据重建全新只读观察仍不产生准入；G4/G5/G7须继续验证UI恢复及零效果。
+
+`ZEBRA_AGUI_STANDARD_PROFILES_ENABLED`默认false。API和Worker使用同一显式
+projector/state工厂；启用配置组合两旧四新共六个有界版本。该候选不启用生产
+profile，不发布registry或替换Trench包；完整frontend tool/resume仍属G5。
+
+
+## 14. G4 shared display view and local response drafts
+
+`AgUiViewStore` indexes official applied messages/state with verified public
+lifecycle hints. It never applies AG-UI patches or grants execution authority.
+Bind one instance to an exact thread/public Run. `onEvent` takes normalized G3
+facts; HTTP `onApplied` supplies the official applied document. Recorded
+`onSnapshot` also works: END settles the already-applied body immediately even
+when the official reducer emits no mutation. END never implies commitment.
+
+Entity subscriptions retain unrelated rows/media. Structural snapshots change
+on membership/order and settled display revisions; streaming tokens remain
+entity-local. Settlement rebuilds a bounded Host timeline in O(n), not per token.
+Synthetic message/tool/activity/child/media/result keys have separate namespaces.
+Replacement follows official order and removes removed tool execution/results;
+known continuing END and public media/commit hints remain scoped to their source.
+Tool arguments, execution and result are separate; retrospective child/Step facts
+never fabricate elapsed time, live execution or success. Missing facts stay unknown.
+
+Existing Artifact image/video/external-video/chart/file controls are reused.
+Delivery assessment explanations are typed, escaped and visibly bounded; no
+recovery action is invented. RAW, reasoning, encrypted and system content never
+automatically become public text. Unsupported critical inputs/results stay visible.
+The existing central announcement pipeline handles completion once; history
+restore is quiet and token updates do not clone the full timeline for announcements.
+
+A trusted Host may pair the official document with `AgentAgUiCheckpoint` v1.
+It is display-only, exact-binding, at most4096 entities/IDs and2MiB UTF-8; it
+contains public entities/facts and END/commit hints, no credentials or effect
+execution. It is not a permissive raw-JSON hydration API. Without this ledger,
+custom commitment/media facts absent from the official snapshot remain unknown.
+Export it at bounded persistence/paging boundaries, not on every streaming token.
+
+Interrupt choices are local drafts. Full-set preparation rejects missing,
+duplicate, unknown/old-Run, expired resolved and invalid/non-null JSON responses.
+Expired inputs require explicit cancellation. Schema does not grant edit or
+command permission. Native decision/effect submission remains G5; versions,
+installed tarballs and whole-plan browser/performance acceptance remain G6/T1/G7.
+Default profile activation and the legacy producer are unchanged.

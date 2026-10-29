@@ -28,7 +28,7 @@ def _is_stream_request(request: Request) -> bool:
 def _is_agui_stream_request(request: Request) -> bool:
     parts = tuple(part for part in request.url.path.split("/") if part)
     return (
-        request.method.upper() == "GET"
+        request.method.upper() in {"GET", "POST"}
         and len(parts) == 6
         and parts[:2] == ("agui", "threads")
         and parts[3] == "runs"

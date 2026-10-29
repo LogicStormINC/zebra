@@ -84,6 +84,9 @@ from agent_storage.postgres.session_observation_headers_migration import (
     SESSION_OBSERVATION_HEADERS_MIGRATION,
 )
 from agent_storage.postgres.session_recovery_migration import SESSION_RECOVERY_MIGRATION
+from agent_storage.postgres.standard_projection_cells_migration import (
+    STANDARD_PROJECTION_CELLS_MIGRATION,
+)
 from agent_storage.postgres.stream_hint_relay_migration import STREAM_HINT_RELAY_MIGRATION
 from agent_storage.postgres.task_event_bytes_migration import TASK_EVENT_BYTES_MIGRATION
 from agent_storage.postgres.task_event_positions_migration import TASK_EVENT_POSITIONS_MIGRATION
@@ -190,4 +193,5 @@ LATEST_MIGRATIONS = (
     APPROVAL_RESUME_MIGRATION,
     PLUGIN_DISTRIBUTION_MIGRATION,
     AGUI_PROFILE_ROUTING_MIGRATION,
+    STANDARD_PROJECTION_CELLS_MIGRATION,
 )

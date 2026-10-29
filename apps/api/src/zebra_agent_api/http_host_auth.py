@@ -106,7 +106,29 @@ def validate_host_target(
     run_id: str | None = None
     parts = path.strip("/").split("/")
     if parts[0] == "agui":
-        if method == "POST" and (identity := _path_identity(path)) is not None:
+        if method == "POST" and len(parts) == 6 and parts[5] == "stream":
+            from zebra_agent_api.ag_ui_standard_http import observation_target
+
+            try:
+                task_id, run_id, _ = observation_target(path, body)
+            except (ValueError, TypeError):
+                _reject(bad_request("invalid standard observation target"))
+        elif method == "POST" and len(parts) == 6 and parts[5] == "prepare":
+            from zebra_agent_api.ag_ui_prepare import AgUiMessagePreparation, prepare_target
+
+            try:
+                prepared_target = prepare_target(path)
+                prepared = AgUiMessagePreparation.model_validate(body)
+                if (
+                    prepared_target is None
+                    or prepared.input.thread_id != str(prepared_target[0])
+                    or prepared.input.run_id != prepared_target[1]
+                ):
+                    raise ValueError("native input target conflicts")
+                task_id, run_id = prepared_target[:2]
+            except (ValueError, TypeError):
+                _reject(bad_request("invalid native AG-UI preparation target"))
+        elif method == "POST" and (identity := _path_identity(path)) is not None:
             try:
                 payload = body or {}
                 if isinstance(identity, tuple):

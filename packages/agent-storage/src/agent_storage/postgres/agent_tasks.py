@@ -44,6 +44,7 @@ from agent_storage.postgres.task_read_summaries import PostgresTaskReadSummaryMi
 from agent_storage.postgres.task_replay_headers import (
     backfill_task_replay_headers,
     read_event_header,
+    read_event_header_by_key,
     read_run_header,
 )
 from agent_storage.postgres.worker_progress import PostgresWorkerProgressMixin
@@ -361,6 +362,19 @@ class PostgresAgentTaskStore(
                 self._database.deployment_namespace,
                 task_id,
                 task_sequence,
+            )
+
+    def read_event_header_by_key(
+        self, task_id: TaskId, segment_id: SessionId, idempotency_key: str
+    ) -> TaskEventHeader | None:
+        with self._database.connect_task_io() as connection:
+            connection.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY")
+            return read_event_header_by_key(
+                connection,
+                self._database.deployment_namespace,
+                task_id,
+                segment_id,
+                idempotency_key,
             )
 
     def backfill_projection_sources(self, task_id: TaskId, *, limit: int = 256) -> bool:

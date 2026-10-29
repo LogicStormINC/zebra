@@ -42,7 +42,12 @@ class FrozenContractTests(unittest.TestCase):
 
     def test_current_python_projector_encoder_v2_and_cursor_golden(self) -> None:
         frozen = json.loads((ROOT / "fixtures" / "legacy-0.1.19.json").read_text())
-        self.assertEqual(baseline(), frozen)
+        current = baseline()
+        self.assertEqual(current.pop("python_protocol_package"), "1.0.0")
+        self.assertEqual(frozen["python_protocol_package"], "0.1.19")
+        self.assertEqual(
+            current, {k: v for k, v in frozen.items() if k != "python_protocol_package"}
+        )
         tags = {
             parse_record(record)[1]["type"]
             for case in frozen["scenarios"].values()

@@ -33,6 +33,14 @@ def commit_page(
     if transition.through_sequence >= next_sequence:
         raise CheckpointConflict("checkpoint Page exceeds canonical source coverage")
     require_segments(connection, scope, tuple(h.segment_id for h in transition.headers))
+    standard = [c for c in transition.cells if c.key.kind == "standard_v1"]
+    if standard:
+        anchor = connection.execute(
+            "SELECT session_id FROM session_events WHERE task_id=? AND event_id=?",
+            (str(scope.task_id), str(scope.anchor_event_id)),
+        ).fetchone()
+        if anchor is None or any(str(c.key.segment_id) != anchor["session_id"] for c in standard):
+            raise CheckpointConflict("standard state must use the canonical root Segment")
     values = scope_values(scope)
     previous = head_at(connection, scope)
     if previous.through_sequence > transition.expected_through:

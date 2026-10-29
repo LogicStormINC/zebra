@@ -328,39 +328,23 @@ test("awaited snapshot backpressure prevents later text/state/terminal acceptanc
   }
 });
 
-test("blocked snapshot has bounded canonical ingress and overflow fails without awaiting callback", { timeout: 2000 }, async () => {
+test("blocked snapshot pauses canonical source until the callback releases", { timeout: 2000 }, async () => {
   const entered = deferred();
   const release = deferred();
-  const blocked = deferred<IteratorResult<unknown>>();
   let pulls = 0;
-  let returned = 0;
-  const source: AsyncIterable<unknown> = { [Symbol.asyncIterator]() {
-    return { next: async () => {
-      pulls++;
-      if (pulls >= 10000) return blocked.promise;
-      if (pulls === 1) return { done: false, value: start };
-      if (pulls === 2) return { done: false, value: { type: "STATE_SNAPSHOT", snapshot: { n: 1 } } };
-      return { done: false, value: { type: "CUSTOM", name: "pending", value: pulls } };
-    }, return: async () => { returned++; return { done: true, value: undefined }; } };
-  } };
+  async function* source() {
+    pulls++; yield start;
+    pulls++; yield { type: "STATE_SNAPSHOT", snapshot: { n: 1 } };
+    pulls++; yield end;
+  }
   const c = new StandardAgUiConsumer(binding, { onSnapshot: async () => { entered.resolve(); await release.promise; } });
-  const consume = c.consume(source);
-  const settled = consume.then(value => ({ value }), error => ({ error }));
+  const result = c.consume(source());
   await entered.promise;
-  // A turn suffices for an unbounded async iterator to monopolize the microtask queue.
-  // Bound the fixture itself so the RED run can report its failed pull-count assertion.
-  await Promise.race([settled, new Promise(resolve => setTimeout(resolve, 30))]);
-  try {
-    assert.ok(pulls <= 132, `expected <=132 pulls while snapshot blocked, got ${pulls}`);
-    assert.match(String((await settled as { error: unknown }).error), /pending event limit/);
-    assert.equal(c.snapshot.status, "failed");
-    assert.deepEqual(c.snapshot.state, { n: 1 });
-    assert.equal(c.snapshot.terminal, undefined);
-    assert.equal(returned, 1);
-  } finally { release.resolve(); blocked.resolve({ done: true, value: undefined }); }
-  await new Promise(resolve => setImmediate(resolve));
-  assert.deepEqual(c.snapshot.state, { n: 1 });
-  assert.equal(c.snapshot.terminal, undefined);
+  await new Promise(resolve => setTimeout(resolve, 20));
+  try { assert.ok(pulls <= 2); }
+  finally { release.resolve(); }
+  assert.equal((await result).status, "finished");
+  assert.equal(pulls, 3);
 });
 
 

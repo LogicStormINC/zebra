@@ -47,9 +47,9 @@ def test_client_state_projects_under_client_namespace() -> None:
     )
 
     delta = next(item for item in projection.events if isinstance(item, StateDeltaEvent))
-    assert delta.delta[0]["path"] == "/client"
-    assert delta.delta[0]["value"]["owner"] == "host_frontend"
-    assert delta.delta[0]["value"]["readables"] == state
+    assert delta.model_dump(mode="json")["delta"][0]["path"] == "/client"
+    assert delta.model_dump(mode="json")["delta"][0]["value"]["owner"] == "host_frontend"
+    assert delta.model_dump(mode="json")["delta"][0]["value"]["readables"] == state
 
 
 def test_digest_drift_is_not_projected() -> None:
@@ -107,4 +107,4 @@ def test_valid_empty_snapshot_projects_an_explicit_clear():
         payload=command.event_payload(),
     )
     result = project_client_state(event, timestamp=0)
-    assert result[0].delta[0]["value"]["readables"] == {}
+    assert result[0].model_dump(mode="json")["delta"][0]["value"]["readables"] == {}

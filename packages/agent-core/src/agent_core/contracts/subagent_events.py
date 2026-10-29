@@ -53,6 +53,10 @@ class SubagentDelegatedPayload(BaseModel):
 class SubagentLifecyclePayload(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
+    # Optional for immutable sparse research history; future facts bind exact invocation.
+    tool_call_id: str | None = None
+    tool_name: str | None = None
+
     attempt_number: int
     subagent_id: str
     status: str

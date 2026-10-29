@@ -128,7 +128,9 @@ class StreamV2Reader:
         )
         assert bound.authority.allowed_session_ids is not None
         segment = context.session_id or bound.authority.allowed_session_ids[0]
-        provisional = context.kind != "session" or segment == bound.authority.allowed_session_ids[0]
+        provisional = context.profile is None and (
+            context.kind != "session" or segment == bound.authority.allowed_session_ids[0]
+        )
         canonical_key = self.notifications.key(bound.namespace, segment, frontier=True)
         checkpoint_key = self.notifications.key(bound.namespace, bound.task_id, checkpoint=True)
         control_key = bound.lane + ":authority:control"
@@ -222,7 +224,9 @@ class StreamV2Reader:
                     call = canonical_call(event)
                     if descriptor is not None and call == descriptor.scope.generation.model_call_id:
                         closed = True
-                    for ordinal, wire in canonical_wire(record, event):
+                    for ordinal, wire in canonical_wire(
+                        record, event, standard=context.profile is not None
+                    ):
                         if (
                             resume_chunk is not None
                             and source_id == context.cursor.durable

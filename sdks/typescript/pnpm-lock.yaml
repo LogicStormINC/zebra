@@ -38,6 +38,9 @@ importers:
       '@zebra-agent/contracts':
         specifier: workspace:*
         version: link:../contracts
+      '@zebra-agent/ui-contracts':
+        specifier: workspace:*
+        version: link:../ui-contracts
       fast-json-patch:
         specifier: 3.1.1
         version: 3.1.1

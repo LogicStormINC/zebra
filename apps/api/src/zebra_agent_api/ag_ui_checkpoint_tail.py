@@ -163,6 +163,7 @@ async def tail_checkpoint_frames(
     )
     barrier = await _checkpoint_barrier(context, deadline)  # Before snapshot/replay.
     cursor, after_source = context.cursor, None
+    public_slice = getattr(context, "public_slice", None)
     backoff, retry_at = 1.0, None
     recovered = not getattr(context, "recovery_notice", False)
     reported_problem: ProjectionWorkProblem | None = None
@@ -189,6 +190,13 @@ async def tail_checkpoint_frames(
             )
             if monotonic() >= deadline or await request.is_disconnected():
                 return
+            if public_slice is not None and (
+                snapshot.head.scope != public_slice.scope
+                or snapshot.run.run_id != public_slice.internal_run_id
+            ):
+                raise CheckpointConflict("requested public slice binding changed")
+            if getattr(context, "public_cursor_exhausted", False):
+                return
             if snapshot.run.control_only:
                 yield observation_problem("not_executable_run", retryable=False)
                 return
@@ -199,7 +207,8 @@ async def tail_checkpoint_frames(
                         deadline, observer.validate_cursor, snapshot, context.identity, cursor
                     )
                     after_source = (
-                        snapshot.run.start - 1
+                        (public_slice.source.task_sequence if public_slice else snapshot.run.start)
+                        - 1
                         if cursor is None
                         else cursor.sequence - (1 if cursor.frame_index is not None else 0)
                     )
@@ -241,8 +250,24 @@ async def tail_checkpoint_frames(
                         next_cursor, event = frame
                         if monotonic() >= deadline or await request.is_disconnected():
                             return
+                        if public_slice is not None:
+                            if (
+                                event.type.value == "RUN_STARTED"
+                                and getattr(event, "run_id", None) != public_slice.run_id
+                            ):
+                                return  # The successor belongs to another HTTP request.
+                            if (
+                                event.type.value == "RUN_FINISHED"
+                                and getattr(event, "run_id", None) != public_slice.run_id
+                            ):
+                                raise CheckpointConflict("public terminal belongs to another slice")
                         cursor, emitted, last_delivery = next_cursor, True, monotonic()
                         yield f"id: {cursor.encode()}\n{encoder.encode(event)}"
+                        if public_slice is not None and event.type.value in {
+                            "RUN_FINISHED",
+                            "RUN_ERROR",
+                        }:
+                            return  # RunError has no runId; use the verified slice.
                     after_source = page.next_sequence  # Include zero-frame source rows.
                 target = (
                     snapshot.run.highwater if snapshot.run.stop is None else snapshot.run.stop - 1
@@ -254,7 +279,8 @@ async def tail_checkpoint_frames(
                     )
                 terminal = snapshot.head.terminal
                 if (
-                    terminal is not None
+                    public_slice is None
+                    and terminal is not None
                     and terminal.task_sequence <= snapshot.through
                     and (after_source >= terminal.task_sequence)
                 ):

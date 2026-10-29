@@ -84,6 +84,28 @@ def read_event_header(
     return None if row is None else _checked_header(connection, row, task)
 
 
+def read_event_header_by_key(
+    connection: sqlite3.Connection, task_id: TaskId, segment_id: SessionId, key: str
+) -> TaskEventHeader | None:
+    if not isinstance(key, str) or not key or len(key) > 1024:
+        raise ValueError("invalid native Event idempotency key")
+    task = connection.execute(
+        "SELECT namespace,next_event_sequence,event_position_state "
+        "FROM agent_tasks WHERE task_id=?",
+        (str(task_id),),
+    ).fetchone()
+    if task is None:
+        return None
+    if task["event_position_state"] != "ready":
+        raise CheckpointNotReady("Task Event positions require explicit backfill")
+    row = connection.execute(
+        f"SELECT {COLUMNS} FROM session_events WHERE session_id=? AND idempotency_key=? "
+        "AND task_id=?",
+        (str(segment_id), key, str(task_id)),
+    ).fetchone()
+    return None if row is None else _checked_header(connection, row, task)
+
+
 def read_run_header(
     connection: sqlite3.Connection,
     task_id: TaskId,

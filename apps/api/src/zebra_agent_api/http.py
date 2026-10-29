@@ -275,7 +275,7 @@ def create_http_app(
         if _is_agui_stream_request(request):
             from zebra_agent_api.stream_v2_http import agui_response
 
-            if stream_response := await agui_response(api, request):
+            if stream_response := await agui_response(api, request, body=body):
                 return stream_response
         route_request = RouteRequest(
             method=request.method,

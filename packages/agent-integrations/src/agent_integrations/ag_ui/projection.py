@@ -109,10 +109,7 @@ class AgUiProjector:
         self._validate_stream(ordered, identity)
         state = state or ProjectionState()
         state.bind(identity)
-        strict = (
-            strict_coverage or strict_coverage_events(ordered)
-            or state.strict_coverage
-        )
+        strict = strict_coverage or strict_coverage_events(ordered) or state.strict_coverage
         if strict:
             state.strict_coverage = True
         if ordered and ordered[0].sequence <= state.last_sequence:
@@ -124,11 +121,14 @@ class AgUiProjector:
                 frames = ()
             else:
                 coverage = project_coverage(
-                    public, state.coverage_runs,
+                    public,
+                    state.coverage_runs,
                     timestamp=int(public.created_at.timestamp() * 1000),
                 )
-                frames = (coverage,) if coverage is not None else self._project_event(
-                    public, identity, state
+                frames = (
+                    (coverage,)
+                    if coverage is not None
+                    else self._project_event(public, identity, state)
                 )
             if not state.started:
                 frames = (
@@ -229,7 +229,11 @@ class AgUiProjector:
             if message_id is None:
                 message_id = f"message:{model_call_id}"
                 state.text_messages[model_call_id] = message_id
-                start = (TextMessageStartEvent(timestamp=timestamp, message_id=message_id),)
+                start = (
+                    TextMessageStartEvent(
+                        timestamp=timestamp, message_id=message_id, role="assistant"
+                    ),
+                )
             if message_id in state.text_ended:
                 raise AgUiProjectionError("text delta follows a terminal message")
             return start + (
@@ -250,7 +254,11 @@ class AgUiProjector:
             if message_id is None:
                 message_id = f"message:{model_call_id}"
                 state.text_messages[model_call_id] = message_id
-                output.append(TextMessageStartEvent(timestamp=timestamp, message_id=message_id))
+                output.append(
+                    TextMessageStartEvent(
+                        timestamp=timestamp, message_id=message_id, role="assistant"
+                    )
+                )
             if (
                 assistant_message is not None
                 and not had_message
@@ -341,9 +349,11 @@ class AgUiProjector:
             if not isinstance(steps, list):
                 raise AgUiProjectionError("plan update steps must be an array")
             return (
-                StateDeltaEvent(
-                    timestamp=timestamp,
-                    delta=[{"op": "replace", "path": "/plan/steps", "value": steps}],
+                StateDeltaEvent.model_validate(
+                    dict(
+                        timestamp=timestamp,
+                        delta=[{"op": "replace", "path": "/plan/steps", "value": steps}],
+                    )
                 ),
             )
         if event.event_type in {EventType.APPROVAL_REQUESTED, EventType.CLARIFICATION_REQUESTED}:

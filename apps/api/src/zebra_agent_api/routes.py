@@ -320,11 +320,10 @@ class RouteAdapter:
                 and parts[1]
                 == "memory-overdue-retention-breach-follow-through-verification-outcomes"
             ):
-                return (
-                    self.app.get_memory_overdue_retention_breach_follow_through_verification_outcomes(
-                        parts[0], request.body or {}
-                    )
+                operation = (
+                    self.app.get_memory_overdue_retention_breach_follow_through_verification_outcomes
                 )
+                return operation(parts[0], request.body or {})
             if len(parts) == 3 and parts[1] == "memory" and parts[2] == "review-queue-preview":
                 return self.app.preview_session_memory_queue(parts[0], request.body or {})
             if len(parts) == 3 and parts[1] == "memory" and parts[2] == "review-queue":

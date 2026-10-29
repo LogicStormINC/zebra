@@ -1,4 +1,6 @@
 "use client";
+export { useAgUiView, useAgUiFacts, useAgUiEntity, useAgUiInterrupts } from './agui_view.ts';
+export { AgentAgUiConversation, type AgentAgUiConversationProps } from './components/agent-agui-conversation.tsx';
 export {useZebraSurfaceRevision,type ZebraSurfaceRevision,type ZebraSurfaceRevisionBase} from "./surface_revision.ts";
 export {useZebraInitialSurface,useZebraInitialAction,useZebraInitialReadable,type ZebraInitialSurface} from "./initial_surface.ts";
 import type { CommandRecoveryView } from "@zebra-agent/client-core";

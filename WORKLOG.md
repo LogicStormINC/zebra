@@ -16,6 +16,112 @@ no-model authority/model transport/Artifact/Memory checks. Full ERP/S3/quota/
 scheduler/browser composition remains in progress, not deployed or certified.
 Original Runs and Search/MCP processes unchanged; zero model/search requests.
 Details: docs/CLOUD_FULL_CAPABILITY_COMPOSITION.md.
+## 2026-10-29 G4 source publication / G5A unlock
+
+Reviewed source6e6334ae pushed directly to origin/cloud-agent. SPEC final29 and
+QUALITY final53 independent PASS; finalSDK273/0, check/package and makecheck
+1449/30eval passed. G5A native interactions Ready, followed by G5B existing
+Provider/HITL/runtime action isolation. G4 includes local drafts only, not native
+resume/effects capability. Default profiles remain disabled. Old package/version,
+Trench, archive branch/tag and primary89e4afed/10 dirty entries preserved. No
+registry publication, production Run/model replay or deployment.
+
+## 2026-10-29 G4 reviewed shared UI candidate
+
+Basea0279254, isolated codex/agui-g4-shared-ui-20261029. Existing official applied
+messages/state + scoped display hints feed reusable contracts/widgets; no new
+AG-UI reducer or action authority. Entity selectors, canonical snapshot order,
+separate synthetic IDs, factual tool/plan/child states, typed assessment previews,
+complete local interrupt drafts, trusted bounded v1 display checkpoint, five
+Artifact media kinds and one existing completion announcement pipeline.
+SPEC first5 gaps and related namespace/pre-END cases reproduced RED then GREEN;
+QUALITY initial3 and final2 completion gaps also reproduced through actual official
+HTTP/recorded React paths. Final SPEC PASS29 independent; QUALITY PASS53 independent.
+Frozen runtime final focused29, SDK273/0, check/package and root make check
+1449types/30eval passed. Logs /tmp/g4-announcement-{focused,check,test,package,
+make-check}.log; independent /tmp/g4-independent-quality-final.log. Earlier complete
+framework/browser verify covered the pre-review candidate only; G6/G7 repeat final.
+No source commit by delegated implementer. No npm version/tgz, activation, Trench
+mutation, registry publication or deployment. Continue G5 native interactions after
+source publication; preserve primary89e4afed and10 unrelated dirty entries. Original
+business Runs/model/tools were not replayed.
+
+## 2026-10-29 G3B source publication / G4 unlock
+
+Reviewed G3B source f9b708ef pushed directly to origin/cloud-agent. Final source,
+fixture spec and independent quality PASS; G4 is Ready. No npm version/tgz or
+Trench change in G3B; these remain G6/T1. Source profiles remain disabled by
+default and no production run/model/deployment was performed. Primary local
+cloud-agent89e4afed and10 protected dirty entries preserved; archive branch/tag
+unchanged. Continue in a fresh focused G4 branch from this published receipt.
+
+## 2026-10-29 G3B reviewed source candidate
+
+Base aace8c80; native admit-first transport complete within G3 scope. Source
+frozen after SPEC P2 fix: standard POST now receives existing command outcome,
+fanout and notifications, matching GET; real native pending-command failure/
+exhaustion yields safe RunError+EOF, no Worker/model/terminal fabricated.
+Conformance count race exposed by actual fanout was fixed with completion Event
+AFTER consume_once returns executed. Unauthorized401 and exact before/after
+canonical event equality remain, plus exactly1 execution/admission/model.
+Spec source+fixture review PASS; quality PASS with independent23 HTTP tests.
+Final SDK244/0 skips, HTTP23/0, API64/0, native slices8/0, native initial/outcome4/0;
+real PG/Redis/RS256 nonce/liveHTTP/actual official client gate PASS (~15s): first+
+followup Worker prompts, signed-prefix disconnect/reGET in same pipeline, exact
+body/history, public observerB allowed/private input403, originalA stale-fence
+read allowed. Conformance31 frozen+7 legacy+native-authHTTP SDK PASS. make check
+1449 typed files/30eval PASS; size and diff checks PASS. Full SDK verify242 passed
+package/React18/19 Vite+Next SSR/RSC/Chromium+WebKit hydration before last two
+bounded reset tests; fresh244/check validated those changes. Whole-plan full
+suite and final browser/package delivery remain G6/T1/G7, no false full-suite claim.
+Logs /tmp/agui-g3b-{sdk-final-test,sdk-verify,http,stream,api,native,initial,reliable,
+make-check,conformance}.log. No default activation, deploy, registry publication or
+original business Run replay; primary89e4afed and its dirty work untouched.
+
+## 2026-10-29 G3A source publication / G3B unlock
+
+Reviewed source462b812a pushed directly to origin/cloud-agent after final spec
+and quality PASS. G3B is Ready; primary local89e4afed/dirty entries untouched.
+Archive cloud-agent-trench remains4766112c; only explicitly compatible fixes and
+final package receipt will be synchronized there after joint verification.
+New npm artifacts/version delivery remains G6/T1, not publication of old0.1.0
+candidate builds. No registry or deployment action.
+
+## 2026-10-29 AGUI-G3A reviewed foundation
+
+Base14359f32, current isolated G3 branch; parent protects primary89e4afed and
+10 dirty entries. Split G3 into coherent G3A ingress/coordinate and G3B actual
+HTTP/admission/reliable bridge, without relaxing overall G3 acceptance.
+Red/green checks cover framing, slow10k source pulls, no-op/chunk/private barrier
+identity, trusted initial state/history, blocked IO/callback/final notification
+abort and permanent poison handling. Spec found two P1 gaps: nested STATE_DELTA
+TypeError retried after callback and runtime fire-and-forget unhandled rejection.
+Both corrected at shared boundary/actual caller, independently re-reviewed PASS.
+Quality independently verified upstream pipeline ordering and77 SDK/11 SQLite
+checks; no actionable issues. Spec independent22 SDK/22 native checks passed.
+Final full SDK221/0 skipped, type/build/check/package PASS; nativeSQLite/PG22/0;
+bounded Python observer/scalar83/0; make check1443 types/30eval PASS. Actual
+Chromium stream browser3 connections/exactly1 receipt/no errors PASS. Generic
+React18/19 Vite/Next SSR/RSC and Chromium/WebKit+hydration matrices passed before
+final spec fixes. Logs /tmp/agui-g3-{sdk-tests,sdk-check,sdk-package,make-check}.log,
+/tmp/agui-g3-native.log and /tmp/agui-g3-quality-focused.log. No full make test
+claim; G7 runs on frozen final source. Default new profiles remain unavailable.
+
+## 2026-10-29 AGUI-G2 reviewed publication and G3 unlock
+
+Published reviewed source 592fc95b directly to origin/cloud-agent, preserving
+unrelated primary local cloud-agent work (89e4afed) and all protected dirty files.
+Spec and quality reviews passed, including bounded materialization-prefix delta.
+Final focused77/1 conditional skip; native SQLite/PG2/0; legacy7;
+integration/core3674/98 conditional skips; make check1442 types/30eval passed.
+Actual Python producer -> official JS1.0.3 checks include lifecycle, reused-agent
+continuations, state/history and remaining public text. Receipts:
+/tmp/agui-g2-final-validation.json and /tmp/agui-g2-integrations-core-final.log.
+Parent independent legacy/composition14 passed. Earlier stable G2V full suite had
+11372 passed/3114 skipped/one stale composition field assertion, now corrected;
+this is not a final whole-plan full-suite pass. No deployment/profile activation.
+G3 selects native admission plus official HTTP observation of actual public IDs;
+retain native receipts/authority and no duplicate execution or public-ID ledger.
 
 ## 2026-10-28 AGUI-G1-STANDARD-CONSUMER-20261028
 
@@ -17926,3 +18032,103 @@ ERP candidate/browser/cutover acceptance remains a separate repository task.
   Actual SQLite+PG ordinary/coverage-flip/expired-deadline profile tests7 passed0 skipped
   (/tmp/agui-g2v-tail-queue-fix.log); fresh make check passed
   (/tmp/agui-g2v-tail-make-check.log). Independent review rerun pending.
+
+## 2026-10-29 AGUI-G2-PUBLIC-PROJECTION-20261029 — candidate handoff
+
+- Claimed Ready before code, owner Luke Ding/executor Codex; exact base7c382e57,
+  branch codex/agui-g2-standard-projection-20261029. Every source/dependency/storage/
+  core producer/test ownership addendum was recorded in AGENT_TASKS before editing.
+  No commits/branch switches, registry activation, actual business Run/model/replay,
+  deployment or original receipt mutations by this implementation lane.
+- New producer/state are opt-in; official Python1.0 models replace hand-copy risk;
+  independent pinned Draft2020-12 validator uses frozen schema. Legacy assistant role
+  is now explicit; official StateDeltaEvent.model_validate preserves exact patch
+  bytes despite newly typed operation classes. G0 fixture remains0.1.19 provenance;
+  runtime version1.0 assertion is separate, all wire/cursor suffix assertions retained.
+- Source audit: complete proposals close arguments immediately; actual execution
+  controls tool Activity/results; public text uses only durable publication/final
+  commit. Commentary reservation/candidate deltas never publish. Strict Coverage
+  sanitizes first. Child wakeup validates actual current HARNESS epoch/key/revision,
+  not raw child_results. Research enriches original lifecycle with exact parent fields.
+- Actual official consumer exposed orphan Step/subagent spans on pause/cancel.
+  Live progress is Activity; standard lifecycle pairs are retrospective only at
+  explicit matching terminals. Partial commentary closes its stream with explicit
+  publicationComplete=false/committed=false, retains only counters, and real remaining
+  chunks continue in a new per-protocol message linked by source identity.
+- Official lifecycle https://docs.ag-ui.com/spec/1.0/events/lifecycle verified29Oct:
+  nonfailure producer stops MUST be cancelled, not success. Initial candidate
+  pause-success design was corrected before commit. Real service faults use RUN_ERROR
+  while public execution remains paused; delivery/verification/budget/user pauses
+  cancelled, full typed assessment retained, no invented human input. Workspace
+  drift is paused, not durable failure. Only real approval/clarification interrupt;
+  clarification ID never masquerades as toolCallId. waiting_children stays active.
+- Each slice snapshots actual derived execution document, never blind empty state
+  on continuation; no MESSAGES_SNAPSHOT eraser. Uncomposed new-profile Client Effect
+  fallback removed pending G5. Canonical actual internal resume header has NULL
+  command_run_id; corrected shared G2V synthetic-only condition and native tests.
+  Durable completed/cancelled/failed facts block late resume resurrection, including
+  facts after a previously closed pause. Tool presentation parent IDs deterministic.
+- standard_v1 cells use exact bound root Segment and strictly-before reads; native
+  commits verify root/Task/namespace. Point membership hashes IDs, never bodies;
+  call scope is protocol slice, publication scope original execution binding.
+  10k-call test keeps snapshot<1KiB, point reads<=1key; bounded active metadata and
+  Page guards fail without partial commits. Additive116 only; parent independently
+  confirmed all114 existing migration checksums unchanged (catalog receipt in /tmp).
+- Baseline parent stable G2V full gate11372passed/3114conditional skips/1failure:
+  stale exact ControlPlaneStores field assertion. G2 owned follow-up fixes expectation
+  and verifies exact-version read factory does not enable/register a writer; focused2pass.
+- Logs: /tmp/agui-g2-{red,suspension-red,research-red,focused,native,check,legacy,
+  integrations,core,growth,composition,consumer}.log. Research red initially had a
+  missing fixture timestamp; do not count that as a meaningful old-source red proof.
+  Main new producer import red and7 actual suspension/erasure regressions reproduced.
+  Runnable durable regressions live in test_ag_ui_standard_{projection,checkpoint,
+  state_growth,native}.py and test_agui_standard_cells.py. Temporary producer/consumer
+  proofs: uv run python /tmp/agui-g2-produce.py; supported Node22
+  /tmp/agui-g2-consume.mjs (official1.0.3, no network/business execution).
+- Independent spec then quality review, final stable complete-suite/integration
+  gate and G3–G7/T1 remain parent-owned; this is not G6 interoperability or production
+  activation/HA/performance proof. G1 fresh-wrapper continuation seed is G3, while
+  actual reused official AbstractAgent preserves accepted state/message/Activity history.
+
+### G2 independent-spec follow-ups before commit
+
+- Official protocolVersion declaration added only to standard RUN_STARTED; real
+  KeyError red then green in version regression. Late domain-terminal guard includes
+  terminal facts after already-closed pauses, so stale internal commands never resurrect.
+- Five usage regressions reproduced: wholly unknown calls must poison incomplete
+  aggregates; represented child tokens unknown means omit inclusive terminal usage,
+  retaining explicitly call-scoped actual facts. In-flight unknown carries across
+  slices; next clean slice after actual settlement can report its own known counts.
+- Ten cache/privacy regressions reproduced: absent required count, bad stored
+  version/private execution/root identity/started fields and strict waiting/infra/drift.
+  Root state now validates exact v1 shape/current scoped identity and fails closed;
+  strict new profile preserves semantic enum only after original privacy filter.
+- Large source Page probe (256 body-free one-token facts) found legitimate default
+  batch exceeded derived log budget. Standard-only pure bounded-prefix halving fixes
+  it without relaxing1MiB/1024-key/32KiB state ceilings. Sole production consumer
+  already advances committed.through_sequence. Regression consumes entire source
+  frontier and proves256 call facts/counts, one RUN_STARTED, no skipped tail.
+- Final current focused77 passed/1 conditional native skip; owned native SQLite/PG2
+  passed and make check passed. Final receipts refreshed below/parent handoff. Earlier
+  broad integrations+core3657 passed/98 conditional skips predates final review fixes;
+  do not call that a final candidate complete-suite pass. G2V stable baseline sole
+  stale composition assertion is fixed and covered by focused2 tests.
+
+### Final frozen G2 candidate receipt
+
+- /tmp/agui-g2-final-validation.json: base7c382e57, same isolated branch/worktree,
+  no implementation commit by delegated lane. Final focused77 passed/1 PG-conditional
+  skip; separate actual owned SQLite/PostgreSQL2 passed/zero skips closes that case.
+  G0 legacy7 passed, immutable fixture unchanged. make check passed:1442 typed sources,
+  30 deterministic evals. Final frozen integrations+core+composition3674 passed/
+  98 environment-conditional skips in165.30s; this is not full make test.
+- Actual produced frames consumed by official JS1.0.3:2 protocol slices, stable cold
+  tool/message IDs;8 complete/pause/input/pending-child/partial-text cases; reused
+  official AbstractAgent retains public document/history and actual remaining chunks.
+  Commands/log/script paths are in the receipt and earlier handoff section.
+- Parent reports independent spec and quality reviews passed (including final budget
+  prefix delta), and all114 prior migration checksums unchanged. cloud-agent advanced
+  independently to89e4afed; this lane did not switch/merge. Parent's final decision is
+  scoped remote integration from reviewed7c382 to origin/cloud-agent, leaving that
+  unrelated primary branch/dirty work untouched. G3 uses the reviewed remote base.
+  Default profile registry remains empty.

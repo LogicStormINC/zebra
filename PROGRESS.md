@@ -16,6 +16,86 @@ no-model authority/model transport/Artifact/Memory checks. Full ERP/S3/quota/
 scheduler/browser composition remains in progress, not deployed or certified.
 Original Runs and Search/MCP processes unchanged; zero model/search requests.
 Details: docs/CLOUD_FULL_CAPABILITY_COMPOSITION.md.
+## 2026-10-29 AG-UI G4 shared interaction views (published6e6334ae)
+
+Official applied documents now feed scoped display indexes and existing React
+widgets. Token updates notify their own entities; settlement/order changes refresh
+structural snapshots. Actual tool/plan/child/delivery facts remain distinct from
+connection and local drafts. Typed trusted display checkpoints preserve public
+custom media/commit hints on cold restore without authority or effects. Complete
+interrupt sets are local-only until G5. Old components, media controls and default
+profile behavior remain compatible; no new external dependency or version/tgz.
+SPEC and QUALITY passed after deterministic fixes for snapshot replacement/order,
+ID collisions, stale tool results, provisional user labeling, false paused terminal,
+and actual HTTP duplicate/recorded delayed completion announcements. Final SDK273
+zero skips, check/package and root make check1449 types/30eval passed. Independent
+SPEC29 and QUALITY53 passed. Earlier framework/browser verify predates narrow
+review fixes; final whole-plan browser/package gates remain G6/T1/G7. No production
+activation, registry publish, original Run/model replay or deployment. Source
+6e6334ae is published on origin/cloud-agent; primary local89e4afed/dirty work
+remains untouched. G5A native interaction is Ready.
+
+## 2026-10-29 AG-UI G3B actual HTTP transport (published f9b708ef)
+
+Native admit-first official HttpAgent and signed reliable GET are composed,
+with shared producer/state API+Worker bindings and six bounded queue versions.
+ZEBRA_AGUI_STANDARD_PROFILES_ENABLED remains false by default. Initial atomic
+captured-message and existing conversation MESSAGE inputs reach real Worker
+fake-provider prompts. Actual public IDs come from exact accepted Event/state;
+private input receipts belong to their original ClientSession, while authorized
+observers can read public GET without Controller/fresh UI revision. No native
+admission metadata rewrite or unclassified provisional draft in new profiles.
+Requested-slice tail fixes retained old terminal; official application/hooks/
+finalization and cursor persistence are awaited, with bounded partial recovery.
+Original receipt restores across fresh BFF instances; attachPrepared observes
+actual initial generated identity without another native intent.
+Spec and quality passed, including fixture synchronization review. Final SDK244,
+HTTP23, API64, native slices8, initial/outcome4 and signed PG/Redis HTTP gate passed;
+conformance31 tags/7 golden/actual native Worker->authHTTP->official SDK passed
+(1 admission/1 model/0 observation writes). make check1449 types/30eval passed.
+Full verify242 included package/framework/browser before final reset regressions;
+latest244/check cover that delta. Final whole-plan gates remain G7. No profile
+activation, registry publish or deployment. Source f9b708ef is on origin/cloud-agent;
+G4 shared UI is Ready. Primary local cloud-agent remains untouched.
+
+## 2026-10-29 AG-UI G3A bounded ingress (published 462b812a)
+
+Shared SSE framing now handles strict UTF-8, multiline data, split CRLF, exact
+record/assembly byte budgets, incremental line buffers and owned-reader abort.
+Poisoned records stop permanently; actual runtime catches rejection, stops local
+work and reports unavailable while preserving accepted cursor/controller lease.
+Official consumer pull pacing replaces the 128-event refusal; trusted initial
+messages/state survive deltas. Private barriers follow official verification and
+never reach public hooks/history. Native indexed Event-column key lookup reuses
+source validation on SQLite/PG without body scans or schema changes.
+Spec and quality reviews passed after two P1 fixes. Final SDK221/zero skips,
+check/package, native22/zero skips, Python observer/scalar83/zero skips and make
+check1443 types/30eval passed. Independent quality77/zero skips; spec independently
+22 SDK and22 native. Actual Chromium stream fixture:3 connections/1 receipt/no
+browser errors. React18/19 framework and Chromium/WebKit matrices passed before
+final review fixes; no claim they were rerun after those fixes.
+G3B actual admission/HTTP/reliable bridge remains required; no production profile
+activation, npm registry publication or Trench package replacement from G3A.
+
+## 2026-10-29 AG-UI G2 public producer (reviewed and published)
+
+The opt-in StandardAgUiProjector uses official Python1.0 models and separate
+root-Segment standard_v1 checkpoints. Default registry remains empty. Complete
+argument END, observed tool/plan/Step/child/publication facts, cancellation,
+protocol-slice usage and state-preserving input/pause mappings are implemented.
+Actual internal resume headers have no command_run_id; the shared mapping now
+matches that producer. waiting_children preserves the active protocol slice.
+Only real approval/clarification are answerable interrupts; blocked/operational
+pauses retain domain paused state separately from protocol cancelled/error. No snapshot
+history erasure, candidate/private text publication or invented execution facts.
+Additive v116 preserves prior migrations; legacy wire/default path remains frozen.
+Source 592fc95b is published on origin/cloud-agent; independent spec and quality
+reviews passed. Focused77, native2, legacy7, integrations/core3674 and make check
+(1442 typed sources/30eval) passed. Conditional skips are recorded separately.
+Final whole-plan/full-suite gates remain G7; G3 transport is Ready. The primary
+local cloud-agent has unrelated in-progress commits and was left untouched.
+No profile activation, original business Run, model invocation or deployment.
+See [standard contract](docs/AGUI_STANDARD_DURABLE_CONTRACT.md#11-g2-标准公开投影已审查未激活).
 
 ## 2026-10-29 AG-UI G2V projection profile isolation (locally integrated)
 

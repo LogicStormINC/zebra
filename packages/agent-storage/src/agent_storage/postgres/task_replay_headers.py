@@ -123,6 +123,32 @@ def read_event_header(
     )
 
 
+def read_event_header_by_key(
+    connection: Any, namespace: str, task_id: TaskId, segment_id: SessionId, key: str
+) -> TaskEventHeader | None:
+    if not isinstance(key, str) or not key or len(key) > 1024:
+        raise ValueError("invalid native Event idempotency key")
+    task = connection.execute(
+        "SELECT next_event_sequence,event_position_state FROM agent_tasks "
+        "WHERE deployment_namespace=%s AND task_id=%s",
+        (namespace, task_id),
+    ).fetchone()
+    if task is None:
+        return None
+    if task["event_position_state"] != "ready":
+        raise CheckpointNotReady("Task Event positions require explicit backfill")
+    row = connection.execute(
+        f"SELECT {_QUERY_COLUMNS} FROM session_events WHERE deployment_namespace=%s "
+        "AND session_id=%s AND idempotency_key=%s AND task_id=%s",
+        (namespace, segment_id, key, task_id),
+    ).fetchone()
+    return (
+        None
+        if row is None
+        else _checked_header(connection, namespace, row, task["next_event_sequence"])
+    )
+
+
 RUN_HEADER_BODY = f"""task AS (SELECT t.next_event_sequence,t.event_position_state,
           LEAST(t.next_event_sequence-1,COALESCE(a.through,t.next_event_sequence-1)) AS highwater
           FROM agent_tasks t,args a WHERE t.deployment_namespace=a.ns AND t.task_id=a.tid),

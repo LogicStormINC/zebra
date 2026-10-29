@@ -9,10 +9,11 @@ _CELL_SCHEMA = """CREATE TABLE task_projection_cells_coverage (
     anchor_key TEXT NOT NULL, projector_version TEXT NOT NULL,
     segment_id TEXT NOT NULL,
     cell_kind TEXT NOT NULL CHECK(cell_kind IN (
-        'text_message','text_ended','tool_call','interrupt','run_member','handoff','coverage')),
+        'text_message','text_ended','tool_call','interrupt','run_member','handoff','coverage','standard_v1')),
     cell_key TEXT NOT NULL, task_sequence INTEGER NOT NULL CHECK(task_sequence >= 0),
     value TEXT CHECK(
-        cell_kind IN ('text_message','handoff','coverage') OR value IS NULL OR value='1'),
+        cell_kind IN ('text_message','handoff','coverage','standard_v1')
+        OR value IS NULL OR value='1'),
     byte_count INTEGER NOT NULL CHECK(byte_count>0),
     PRIMARY KEY(deployment_namespace,task_id,anchor_key,projector_version,
                 segment_id,cell_kind,cell_key,task_sequence)
@@ -97,7 +98,7 @@ def initialize_task_projection_checkpoints(connection: sqlite3.Connection) -> No
             "SELECT sql FROM sqlite_schema WHERE type='table' AND name='task_projection_cells'"
         ).fetchone()[0]
         initialize_task_replay_privacy(connection)
-        if "'coverage'" not in schema:
+        if "'standard_v1'" not in schema:
             dependent = connection.execute(
                 "SELECT sql FROM sqlite_schema WHERE tbl_name='task_projection_cells' "
                 "AND type IN ('index','trigger') AND sql IS NOT NULL ORDER BY type,name"

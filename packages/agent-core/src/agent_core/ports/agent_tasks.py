@@ -134,6 +134,12 @@ class AgentTaskPort(
 
     def read_event_header(self, task_id: TaskId, task_sequence: int) -> TaskEventHeader | None: ...
 
+    def read_event_header_by_key(
+        self, task_id: TaskId, segment_id: SessionId, idempotency_key: str
+    ) -> TaskEventHeader | None:
+        """Resolve the exact native Event-column key, without reading its body."""
+        ...
+
     def read_run_header(
         self,
         task_id: TaskId,

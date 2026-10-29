@@ -8,6 +8,7 @@ import json
 import re
 from dataclasses import dataclass
 from hashlib import sha256
+from uuid import UUID
 
 from agent_core.domain.events import EventType
 from agent_core.ports.agent_tasks import AgentTaskPort
@@ -75,22 +76,39 @@ class AgUiProjectionProfile:
         run: TaskRunHeader,
         continuation: TaskEventHeader,
     ) -> str:
-        binding = self.binding_digest(scope, run)
         if (
             source.read_event_header(run.task_id, run.start) != run.anchor
             or source.read_event_header(run.task_id, continuation.task_sequence) != continuation
         ):
             raise AgUiProjectionError("protocol Run anchor is not canonical")
+        return self.protocol_anchor_id(scope, run, continuation)
+
+    def protocol_anchor_id(
+        self,
+        scope: ProjectionScope,
+        run: TaskRunHeader,
+        continuation: TaskEventHeader,
+    ) -> str:
+        """Hash an already verified source header; no mutable execution context."""
+        self.binding_digest(scope, run)
         if continuation != run.anchor and (
             continuation.task_id != run.task_id
             or continuation.event_type is not EventType.SESSION_COMMAND_ACCEPTED
             or not continuation.internal_continuation
-            or continuation.command_run_id != run.run_id
+            or continuation.command_kind != "resume"
+            or continuation.command_run_id is not None
             or not run.start < continuation.task_sequence <= run.highwater
             or (run.stop is not None and continuation.task_sequence >= run.stop)
         ):
             raise AgUiProjectionError("protocol Run requires an immutable continuation anchor")
-        return "agui:" + _digest(["zebra:agui:protocol-run:1", binding, str(continuation.event_id)])
+        return self.protocol_id_for_anchor(scope, run, continuation.event_id)
+
+    def protocol_id_for_anchor(
+        self, scope: ProjectionScope, run: TaskRunHeader, anchor: UUID
+    ) -> str:
+        """Recompute scoped identity from a cached anchor; never grant execution."""
+        binding = self.binding_digest(scope, run)
+        return "agui:" + _digest(["zebra:agui:protocol-run:1", binding, str(anchor)])
 
 
 class AgUiProfileRegistry:

@@ -6,6 +6,7 @@ with the frontier CAS. Missing/not-ready state is an error, never hydration.
 """
 
 from dataclasses import dataclass
+from re import fullmatch
 from typing import Literal, Protocol
 from uuid import UUID
 
@@ -16,10 +17,26 @@ MAX_CHECKPOINT_KEYS = 1_024
 MAX_CHECKPOINT_BYTES = 1_048_576
 MAX_EVENT_FRAMES = 4_096
 CellKind = Literal[
-    "text_message", "text_ended", "tool_call", "interrupt", "run_member", "handoff", "coverage"
+    "text_message",
+    "text_ended",
+    "tool_call",
+    "interrupt",
+    "run_member",
+    "handoff",
+    "coverage",
+    "standard_v1",
 ]
 CELL_KINDS = frozenset(
-    {"text_message", "text_ended", "tool_call", "interrupt", "run_member", "handoff", "coverage"}
+    {
+        "text_message",
+        "text_ended",
+        "tool_call",
+        "interrupt",
+        "run_member",
+        "handoff",
+        "coverage",
+        "standard_v1",
+    }
 )
 
 
@@ -71,9 +88,12 @@ class ProjectionCell:
         _position(self.task_sequence, minimum=0)
         if self.value is not None:
             _text(self.value, "cell value", 2_048)
-        if self.key.kind not in {"text_message", "handoff", "coverage"} and self.value not in {
-            None, "1"
-        }:
+        if self.key.kind not in {
+            "text_message",
+            "handoff",
+            "coverage",
+            "standard_v1",
+        } and self.value not in {None, "1"}:
             raise ValueError("membership cell must be 1 or a tombstone")
 
 
@@ -189,11 +209,20 @@ class ProjectionTransition:
         if len(self.cells) > MAX_CHECKPOINT_KEYS:
             raise ValueError("checkpoint transition exceeds cell bound")
         cell_positions = set()
+        standard = (
+            fullmatch(
+                r"(?:agui-standard-1\.0|zebra-reliable-v2-agui-1\.0):r[1-9][0-9]{0,2}(?::coverage)?",
+                self.scope.projector_version,
+            )
+            is not None
+        )
         for cell in self.cells:
+            if cell.key.kind == "standard_v1" and not standard:
+                raise ValueError("standard cells require an explicit standard profile")
             header = by_position.get(cell.task_sequence)
             if (
                 header is None
-                or cell.key.segment_id != header.segment_id
+                or (cell.key.segment_id != header.segment_id and cell.key.kind != "standard_v1")
                 or (cell.key, cell.task_sequence) in cell_positions
             ):
                 raise ValueError("checkpoint cell conflicts with transition")

@@ -24,6 +24,7 @@
     "@ag-ui/client": "1.0.3",
     "@ag-ui/core": "1.0.3",
     "@zebra-agent/contracts": "workspace:*",
+    "@zebra-agent/ui-contracts": "workspace:*",
     "fast-json-patch": "3.1.1",
     "rxjs": "7.8.1"
   }
