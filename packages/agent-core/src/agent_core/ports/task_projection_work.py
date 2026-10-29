@@ -8,7 +8,7 @@ from agent_core.ports.task_projection_checkpoints import ProjectionScope
 
 MAX_PENDING_PROJECTION_WORK = 32
 MAX_PROJECTION_WORK_REPAIR = 256
-MAX_ENABLED_PROJECTORS = 6
+MAX_ENABLED_PROJECTORS = 10  # Two legacy and four profiles, each with a privacy variant.
 MAX_PROJECTION_WORK_BYTES = 1_048_576
 PROJECTION_WORK_SECONDS = 2.0
 PROJECTION_PROBLEM_CODES = frozenset({"not_ready", "integrity", "budget", "projection_failed"})

@@ -88,6 +88,7 @@ def prepare_agui_stream(
     initial_metadata: StreamObservationReadPort | None = None,
     source_qualified_task: TaskId | None = None,
     requested_profile: str | None = None,
+    requested_revision: str | None = None,
     profile_registry: AgUiProfileRegistry | None = None,
 ) -> AgUiStreamContext | ApiResponse | None:
     """Indexed, body-free preflight; never adopt/repair/materialize from GET."""
@@ -95,7 +96,9 @@ def prepare_agui_stream(
     if path_identity is None:
         return None
     try:
-        profile = (profile_registry or AgUiProfileRegistry()).select(requested_profile)
+        profile = (profile_registry or AgUiProfileRegistry()).select(
+            requested_profile, requested_revision
+        )
     except AgUiProjectionError:
         return _problem(
             409, "agui_profile_unavailable", "requested AG-UI profile is unavailable", path

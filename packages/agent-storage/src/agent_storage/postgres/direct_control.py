@@ -10,6 +10,7 @@ from uuid import NAMESPACE_URL, UUID, uuid4, uuid5
 
 from agent_core.application.session_command_read_state import SessionCommandReadState
 from agent_core.contracts.session_commands import SessionCommand, SessionCommandKind
+from agent_core.domain.client_preparation import ClientPreparationContext
 from agent_core.domain.cloud_scope import OpaqueAuthorityScope
 from agent_core.domain.events import EventType, SessionEvent
 from agent_core.domain.execution_authority import ExecutionAuthoritySnapshot
@@ -35,6 +36,7 @@ from agent_storage.postgres.session_cancellation import (
 from agent_storage.postgres.task_admission import load_task_binding
 from agent_storage.postgres.task_control_target import require_task_control_target
 from agent_storage.postgres.task_io import TaskIoConnections
+from agent_storage.postgres.work_unit import postgres_transaction_work_unit
 from agent_storage.postgres.workspaces import get_workspace_in_transaction
 from agent_storage.task_read_summary_rows import encoded
 
@@ -113,6 +115,8 @@ class PostgresDirectControl:
         operation_id: UUID | None = None,
         host_context: HostContextEnvelope | None = None,
         task_id: TaskId | None = None,
+        preparation: ClientPreparationContext | None = None,
+        authorize_preparation: Callable[[], None] | None = None,
     ) -> DirectCancellation:
         if not isinstance(scope, OpaqueAuthorityScope) or (
             task_id is None and not scope.allows_session(session_id)
@@ -141,6 +145,23 @@ class PostgresDirectControl:
         operation = operation_id or (
             uuid5(NAMESPACE_URL, f"direct-control:{namespace}:{key}") if key else uuid4()
         )
+        if (preparation is None) != (authorize_preparation is None):
+            raise ValueError("native preparation requires its current authorization")
+        if preparation is not None:
+            if preparation.operation_id != operation or (
+                task_id is not None and preparation.task_id != task_id
+            ):
+                raise ValueError("native cancellation preparation scope conflicts")
+            SessionCommand(
+                session_id=session_id,
+                kind=SessionCommandKind.CANCEL,
+                expected_revision=0,
+                idempotency_key=str(operation),
+                payload={
+                    "input": preparation.input,
+                    "client_preparation": preparation.model_dump(mode="json", exclude={"input"}),
+                },
+            )
         scope_key = direct_scope_key(scope, workspace_ref)
         with self._database.connect_task_io() as connection:
             validate_direct_scope(connection, namespace, session_id, scope, workspace_ref)
@@ -205,9 +226,26 @@ class PostgresDirectControl:
                 )
             if state.terminal_event_id is not None:
                 raise ValueError("session cannot be cancelled from its current state")
-            terminal, revoked = cancel_in_transaction(
-                connection, namespace, state, lease, now, operation_id=operation, command=False
-            )
+            if preparation is None:
+                terminal, revoked = cancel_in_transaction(
+                    connection, namespace, state, lease, now, operation_id=operation, command=False
+                )
+            else:
+                # The native cancellation lock order stays authoritative. All
+                # transport-specific current checks borrow this exact transaction.
+                with postgres_transaction_work_unit(self._database, connection):
+                    assert authorize_preparation is not None
+                    authorize_preparation()
+                    terminal, revoked = cancel_in_transaction(
+                        connection,
+                        namespace,
+                        state,
+                        lease,
+                        now,
+                        operation_id=operation,
+                        command=False,
+                        preparation=preparation,
+                    )
             workspace = get_workspace_in_transaction(connection, namespace, session_id)
             assert workspace is not None
             connection.execute(

@@ -74,7 +74,7 @@ def validate_public_cursor(api: Any, prepared: AgUiStreamContext, public: AgUiPu
         header = api.stores.tasks.read_event_header(public.scope.task_id, position)
         if header is None:
             raise ValueError("cursor source is unavailable")
-        state = standard_state_after(api.stores.tasks, public.scope, run, header)
+        state = standard_state_after(api.stores.tasks, public.scope, run, header, prepared.profile)
         if state.protocol_run_id != public.run_id:
             raise ValueError("cursor belongs to another public slice")
         if state.turn_finished:
@@ -91,7 +91,8 @@ def validate_public_cursor(api: Any, prepared: AgUiStreamContext, public: AgUiPu
 def requested_profile(api: Any, request: Any) -> AgUiProjectionProfile | ApiResponse | None:
     try:
         return (api.agui_profiles or AgUiProfileRegistry()).select(
-            request.headers.get("X-Zebra-AGUI-Profile")
+            request.headers.get("X-Zebra-AGUI-Profile"),
+            request.headers.get("X-Zebra-AGUI-Revision"),
         )
     except ValueError:
         return ApiResponse(409, {"status": "agui_profile_unavailable"})

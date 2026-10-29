@@ -321,6 +321,83 @@ async def authorize_request(
     return None
 
 
+async def authorize_previous_host_grant(
+    request: Request,
+    body: dict[str, Any] | None,
+    *,
+    api: ZebraAgentApi,
+    authorizer: HostGrantRequestAuthorizer | None,
+) -> JSONResponse | None:
+    """Separate current proof for the exact old pending Run; never union grants."""
+    token = request.headers.get("x-zebra-previous-host-grant")
+    previous = (body or {}).get("previousNativeRunId")
+    if token is None and previous is None:
+        return None
+    parts = request.url.path.strip("/").split("/")
+    current = getattr(request.state, "verified_host_grant", None)
+    if (
+        request.method != "POST"
+        or len(parts) != 6
+        or parts[:2] != ["agui", "threads"]
+        or parts[3] != "runs"
+        or parts[5] != "interaction"
+        or request.headers.get("x-zebra-agui-revision") != "2"
+        or not isinstance(previous, str)
+        or not previous
+        or len(previous) > 128
+        or "/" in previous
+        or previous == parts[4]
+        or any(ord(char) < 33 or ord(char) > 126 for char in previous)
+        or token is None
+        or not token.startswith("Bearer ")
+        or not isinstance(current, VerifiedHostGrant)
+        or authorizer is None
+    ):
+        return _forbidden("previous_host_grant_required")
+    old_path = "/agui/threads/" + parts[2] + "/runs/" + previous + "/interaction"
+    deadline = monotonic() + HOST_PREFLIGHT_SECONDS
+
+    def validate(prior: VerifiedHostGrant) -> None:
+        validate_host_target(api, old_path, "POST", None, prior)
+        fields = ("host_app_id", "namespace_id", "workspace_ref", "origin")
+        if (
+            any(
+                getattr(prior.context, field) != getattr(current.context, field) for field in fields
+            )
+            or prior.authority_issuer != current.authority_issuer
+            or prior.subject_ref != current.subject_ref
+            or prior.grant_id == current.grant_id
+        ):
+            raise HostGrantSecurityError("previous Grant belongs to another native authority")
+
+    try:
+        async with asyncio.timeout(HOST_PREFLIGHT_SECONDS):
+            prior = await asyncio.to_thread(
+                authorizer.authorize,
+                HostGrantHttpRequest(
+                    method="POST",
+                    path=old_path,
+                    origin=request.headers.get("origin"),
+                    authorization=token,
+                    deadline=deadline,
+                    before_consume=validate,
+                ),
+            )
+        if not isinstance(prior, VerifiedHostGrant):
+            return _forbidden("previous_host_grant_rejected")
+        request.state.previous_host_context = prior.context
+        request.state.previous_verified_host_grant = prior
+    except _TargetRejected as exc:
+        return JSONResponse(exc.response.body, status_code=exc.response.status_code)
+    except (HostGrantSecurityError, ValueError):
+        return _forbidden("previous_host_grant_rejected")
+    except Exception:
+        return JSONResponse(
+            {"status": "unavailable", "reason": "previous_host_grant_unknown"}, status_code=503
+        )
+    return None
+
+
 def _host_header_error(
     request: Request, authorizer: HostGrantRequestAuthorizer | None, origins: tuple[str, ...]
 ) -> JSONResponse | None:
@@ -394,3 +471,18 @@ def _unauthorized(*, reason: str = "missing_or_invalid_bearer_token") -> JSONRes
 
 def _forbidden(reason: str) -> JSONResponse:
     return JSONResponse(status_code=403, content={"status": "forbidden", "reason": reason})
+
+
+async def read_authorized_body(
+    request: Request,
+    api: ZebraAgentApi,
+    authorizer: HostGrantRequestAuthorizer | None,
+) -> tuple[dict[str, Any] | None, JSONResponse | None]:
+    """Reuse the verified cached body before independently verifying a prior target."""
+    if getattr(request.state, "authorized_body_read", False):
+        body, error = request.state.authorized_body, None
+    else:
+        body, error = await _read_request_body(request)
+    if error is None:
+        error = await authorize_previous_host_grant(request, body, api=api, authorizer=authorizer)
+    return body, error

@@ -313,6 +313,7 @@ async def agui_response(
         if "X-Zebra-AGUI-Profile" in request.headers:
             metadata["requested_profile"] = request.headers["X-Zebra-AGUI-Profile"]
             metadata["profile_registry"] = api.agui_profiles
+            metadata["requested_revision"] = request.headers.get("X-Zebra-AGUI-Revision")
         if (
             proof is not None
             and isinstance(context, V2StreamContext)
@@ -405,7 +406,7 @@ async def raw_response(
     def prepare_context(
         proof: StreamProofSnapshot | None = None,
     ) -> ApiResponse | tuple[V2StreamContext, dict[str, str], UUID, int] | None:
-        if "X-Zebra-AGUI-Profile" in request.headers:
+        if "X-Zebra-AGUI-Profile" in request.headers or "X-Zebra-AGUI-Revision" in request.headers:
             return _problem(409, "agui_profile_unavailable")
         context = (
             prepare_v2(api, request.url.path, query, host, proof=proof)

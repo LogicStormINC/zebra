@@ -49,9 +49,9 @@ from zebra_agent_api.http_host_auth import (
     HostGrantRequestAuthorizer as HostGrantRequestAuthorizer,
 )
 from zebra_agent_api.http_host_auth import (
-    _read_request_body,
     _resolve_host_origins,
     authorize_request,
+    read_authorized_body,
 )
 from zebra_agent_api.http_origins import _normalize_exact_origin as _normalize_exact_origin
 from zebra_agent_api.http_stream_routing import (
@@ -266,10 +266,7 @@ def create_http_app(
         download_response = await artifact_download_response(request, adapter)
         if download_response is not None:
             return download_response
-        if getattr(request.state, "authorized_body_read", False):
-            body, body_error = request.state.authorized_body, None
-        else:
-            body, body_error = await _read_request_body(request)
+        body, body_error = await read_authorized_body(request, api, active_host_grant_authorizer)
         if body_error is not None:
             return body_error
         if _is_agui_stream_request(request):
@@ -277,14 +274,17 @@ def create_http_app(
 
             if stream_response := await agui_response(api, request, body=body):
                 return stream_response
+        state = request.state
         route_request = RouteRequest(
             method=request.method,
             path=request.url.path,
             body=body,
             headers=dict(request.headers),
             query=dict(request.query_params),
-            host_context=getattr(request.state, "host_context", None),
-            verified_host_grant=getattr(request.state, "verified_host_grant", None),
+            host_context=getattr(state, "host_context", None),
+            verified_host_grant=getattr(state, "verified_host_grant", None),
+            previous_host_context=getattr(state, "previous_host_context", None),
+            previous_verified_host_grant=getattr(state, "previous_verified_host_grant", None),
         )
         artifact_parts = tuple(part for part in request.url.path.split("/") if part)
         raw_negotiated = False

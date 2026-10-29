@@ -56,7 +56,7 @@ def handle_agui_prepare(
         if key is None or len(key) > 256:
             raise ValueError("original Idempotency-Key is required")
         profile = (app.agui_profiles or AgUiProfileRegistry()).select(
-            headers.get("x-zebra-agui-profile")
+            headers.get("x-zebra-agui-profile"), headers.get("x-zebra-agui-revision")
         )
         if profile is None:
             return ApiResponse(409, {"status": "agui_profile_unavailable"})
@@ -89,15 +89,17 @@ def handle_agui_prepare(
                 "thread_id": str(task),
                 "run_id": internal,
                 "content": content,
-                "agui_native_preparation": {
-                    "version": 1,
-                    "client_session_id": str(client_auth.client_session_id),
-                },
                 "input": value.model_dump(mode="json", by_alias=True, exclude_none=True),
             }
             denied = _admit_client_mounts(app, payload, request.path, request=request)
             if denied is not None:
                 return denied
+            client = payload.get("client")
+            validated_client = (
+                payload.pop("client")
+                if isinstance(client, dict) and "client_state_admission_contract_version" in client
+                else None
+            )
             response: ApiResponse = app.submit_command(
                 str(segment),
                 {
@@ -108,6 +110,12 @@ def handle_agui_prepare(
                 idempotency_key=key,
                 extension_admission=extension_admission,
                 verified_host_grant=request.verified_host_grant,
+                native_input_owner=client_auth.client_session_id,
+                **(
+                    {"validated_client_admission": validated_client}
+                    if validated_client is not None
+                    else {}
+                ),
             )
             if response.status_code not in {200, 202}:
                 return response

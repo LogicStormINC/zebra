@@ -15,6 +15,10 @@ VERSIONS = (
     "agui-standard-1.0:r1:coverage",
     "zebra-reliable-v2-agui-1.0:r1",
     "zebra-reliable-v2-agui-1.0:r1:coverage",
+    "agui-standard-1.0:r2",
+    "agui-standard-1.0:r2:coverage",
+    "zebra-reliable-v2-agui-1.0:r2",
+    "zebra-reliable-v2-agui-1.0:r2:coverage",
 )
 
 
@@ -32,6 +36,8 @@ def test_all_profile_families_route_exclusively_and_late_privacy_wakes_closed_ru
     stores = [queue.store(version) for version in VERSIONS]
     for store in stores:
         store.enable_projection_work()
+    with pytest.raises(ValueError, match="budget"):
+        queue.store("unsupported-eleventh").enable_projection_work()
     queue.append(0)
     for index, store in enumerate(stores):
         assert bool(store.read_pending_projection_work()) == (index % 2 == 0)

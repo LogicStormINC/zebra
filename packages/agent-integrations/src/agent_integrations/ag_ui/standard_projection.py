@@ -63,7 +63,7 @@ class StandardAgUiProjector(AgUiProjector):
         if ordered and ordered[0].sequence <= state.last_sequence:
             raise AgUiProjectionError("durable events must have unique increasing sequences")
         for event in ordered:
-            public = standard_public_event(event, strict=strict)
+            public = self._public_event(event, strict=strict)
             frames: tuple[Event, ...] = ()
             if public is not None and state.turn_finished:
                 status = {
@@ -119,16 +119,18 @@ class StandardAgUiProjector(AgUiProjector):
                         if state.previous_protocol_run_id is not None
                         else None,
                     ),
-                    StateSnapshotEvent(
-                        snapshot={"execution": dict(state.public_execution)}
-                        if state.public_execution
-                        else {}
-                    ),
+                    StateSnapshotEvent(snapshot=self._initial_snapshot(state)),
                     *frames,
                 )
                 state.started = True
             state.last_sequence = event.sequence
             yield event, frames
+
+    def _public_event(self, event: SessionEvent, *, strict: bool) -> SessionEvent | None:
+        return standard_public_event(event, strict=strict)
+
+    def _initial_snapshot(self, state: StandardProjectionState) -> dict[str, object]:
+        return {"execution": dict(state.public_execution)} if state.public_execution else {}
 
     def _standard_event(
         self,

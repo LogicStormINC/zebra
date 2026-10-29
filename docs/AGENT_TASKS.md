@@ -1,9 +1,12 @@
 ## AGUI-G5A-NATIVE-INTERACTION-20261029 — Native complete response and effect roundtrip
 
-- Status: Ready (2026-10-29; G4 reviewed source6e6334ae published).
+- Status: Review (2026-10-29; implementation complete, SPEC PASS-WITH-NITS
+  with both minors fixed; QUALITY pass executed inline (independent reviewer
+  unavailable: host usage cap), mechanical gates green; awaiting publication).
 - Human owner: Luke Ding; executor: Codex; target: cloud-agent.
-- Planned branch: codex/agui-g5a-native-interaction-20261029; reuse isolated
+- Branch: codex/agui-g5a-native-interaction-20261029; reuse isolated
   trench-spin-sync-20261028/zebra-agent worktree after G4 publication receipt.
+- Exact base/claim: 6f2cbfcb (origin/cloud-agent after reviewed6e6334ae).
 - Scope: actual native complete interrupt responses and receipted frontend-tool
   continuation; exact current authority and original operation reconciliation.
   No generic client-run admission, second execution or browser ToolMessage authority.
@@ -18,6 +21,101 @@
   standard_interrupts.py, standard_public_text.py, client_effect_projection.py;
   focused standard_interaction.py/standard_interaction_state.py/
   standard_interaction_binding.py if selected by the frozen design.
+- Before-code owned-path addendum (2026-10-29): integrations ag_ui/
+  checkpoint_materializer.py passes the selected profile state type through restore;
+  API factory.py and stream_v2_http.py/query.py/wire.py only exact revision
+  composition/selection/binding; apps/config/src/zebra_agent_config/stream_settings.py
+  adds a separate default-off interaction flag; API ag_ui_native_interaction.py
+  is the focused native interaction adapter. Existing storage cell kinds and
+  checkpoint/cursor domains remain unchanged. No core/storage expansion yet.
+- Exact new tests: tests/agent_integrations/test_ag_ui_native_interaction.py,
+  tests/api/test_agui_native_interaction.py; existing tests/config/test_stream_settings.py,
+  tests/agent_integrations/test_ag_ui_profile_isolation.py,
+  tests/agent_integrations/test_ag_ui_standard_checkpoint.py,
+  tests/api/test_agui_native_prepare.py, tests/worker/test_ag_ui_projection_work.py
+  may add focused revision/native interaction regressions.
+- Before-code native receipt addendum (2026-10-29): core ports/
+  client_effect_receipts.py and domain/client_effects.py only the optional typed,
+  provider-neutral native preparation context; agent-control-plane/client_effects.py
+  passes optional context; agent-storage/postgres/client_effects.py extracts
+  existing atomic acceptance to client_effect_receipt_accept.py and forwards
+  optional context into the existing single resume. No migration or new command.
+  Exact tests: tests/agent_storage/test_client_effect_receipt_preparation.py,
+  tests/agent_core/test_client_effect_preparation.py, and focused new API tests.
+- Before-code cancel addendum (2026-10-29): core/domain/client_preparation.py
+  holds the shared opaque ClientPreparationContext; postgres/direct_control.py
+  and postgres/session_cancellation.py add optional native authorization and
+  private preparation only on actual cancellation, preserving the existing lock
+  order/cleanup. tests/agent_storage/test_agui_native_cancellation.py proves the
+  existing native path. No outer stream-lock inversion or new command.
+- Before-code actual-gate fixture addendum (2026-10-29):
+  tests/api/agui_native_interaction_fixture.py reuses initial_native and the
+  existing native PG Worker composition with controlled fake completions;
+  tests/api/test_agui_native_interaction_http.py and
+  tests/conformance/agui_contract/native_interaction_http_gate.mts exercise
+  actual signed HTTP and the official consumer. No production model or replay.
+- Before-code native first-admission test addendum (2026-10-29):
+  tests/api/test_agui_initial_native.py adds optional initial mounted_actions and
+  frontend_profile parameters, defaults unchanged. G5 fixtures publish/admit
+  actual action scope at first native atomic admission; remount guards stay intact.
+- Before-code SDK test addendum (2026-10-29): client-core/tests/
+  agui-native-interaction.test.ts and sdks/typescript/package.json explicit
+  collection. Existing agui_native.ts gains explicit revision-two interaction
+  intent on the existing server-only transport; no frontend runtime changes.
+- Before-code provenance addendum (2026-10-29): API api_command_mixin.py and
+  command_submission.py reject untrusted native preparation markers at the shared
+  command boundary; typed server-only parameters inject legitimate G3/G5 owners
+  after parsing. tests/api/test_session_command_routes.py adds the actual route
+  no-write injection regression. Core accepted envelopes remain unchanged.
+- Before-code composition test addendum (2026-10-29):
+  tests/worker/test_ag_ui_profile_revision_composition.py covers all four flag
+  combinations/API-Worker equality/discovery; existing 692-line projection-work
+  test is kept within its hard limit.
+- Before-code dual-target auth addendum (2026-10-29): API http_host_auth.py
+  verifies the separate prior signed Host Grant with the existing authorizer
+  against the exact old interaction target; http.py/routes.py carry only the
+  server-populated prior verified fields. Same owner/namespace/Task, distinct
+  current nonces; existing single-Run grant rules stay unchanged.
+- Before-code result-contract addendum (2026-10-29): control-plane/
+  agui_client_admission.py exposes its existing restricted validator for native
+  receipt results; control-plane/client_effects.py and API client_effect_receipts.py
+  validate succeeded results against the current published pinned action contract,
+  preserving native failure shapes and empty/default legacy schemas. Focused new
+  API tests and the actual native HTTP gate prove pre-write rejection.
+- Before-code human receipt binding addendum (2026-10-29): integrations/
+  ag_ui/standard_interaction_binding.py validates only actual native MESSAGE and
+  USER clarification receipt provenance, caches bounded identity/hash metadata,
+  and binds prior public identity only for the exact selected privacy/profile
+  version. No source history scan or copied conversation.
+- Before-code queue-capacity/expiry addendum (2026-10-29): core ports/
+  task_projection_work.py, tests/agent_storage/test_task_projection_work.py,
+  test_agui_profile_routing.py, tests/worker/test_agui_profile_composition.py,
+  and tests/api/test_agui_native_recovery_http.py. Existing fixture and HTTP test
+  ownership includes switching observation preparation to actual Worker queue
+  maintenance. Capacity is ten exactly: two legacy plus four r1 and four r2
+  privacy variants; default composition remains two/six when r2 is disabled.
+- Before-code mixed-batch proof addendum (2026-10-29):
+  tests/api/test_agui_native_mixed_tools.py validates the actual sequential native
+  frontend suspension and provider-safe continuation without production harness edits.
+- Before-code mixed-batch continuation addendum (2026-10-29): worker
+  client_effect_resume.py rebases the recovered wakeup conversation to the
+  durably covered calls only — tool results already inside the frozen
+  conversation plus the resumed deferred call; later sequential proposals that
+  stopped before execution are dropped from the provider replay and recorded in
+  wakeup metadata. Worker execution_events.py records durable client-effect
+  admissions seen through external Event adoption and returns the admitted
+  Event when the harness CLIENT_EFFECT_SCHEDULED draft echoes the same effect,
+  so the native stream keeps exactly one schedule fact per effect; local
+  compositions without an external admission keep the draft unchanged. No
+  harness edit; the designated mixed-batch API test proves the provider-safe
+  continuation and existing wakeup/resume worker tests stay unchanged as
+  regression only.
+- Review-fix fixture addendum (2026-10-29): the write-before result-contract
+  validation (frozen contract "claimed digest mismatches fail before write")
+  correctly rejects tests/api/test_client_effect_authority.py's synthetic
+  "a"*64 effect digest against its session's real published
+  app.ui.item.open contract; that existing fixture aligns to the canonical
+  published action digest, no production change.
 - Owned API paths: ag_ui_prepare.py, ag_ui_public_binding.py,
   ag_ui_observation_binding.py, ag_ui_standard_http.py, ag_ui_client_state.py,
   ag_ui_command.py, ag_ui_command_receipts.py, client_approval_operations.py,

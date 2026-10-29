@@ -23,6 +23,7 @@ from agent_core.domain.client_effects import (
     ClientEffectStatus,
     client_effect_idempotency_key,
 )
+from agent_core.domain.client_preparation import ClientPreparationContext
 from agent_core.domain.client_run_bindings import ClientRunBinding
 from agent_core.domain.client_sessions import ClientObserverActionError
 from agent_core.domain.identifiers import SessionId, ToolCallId, new_client_effect_id
@@ -111,6 +112,7 @@ class ClientEffectReceiptService:
         request_fence_hash: str,
         session_id: SessionId,
         controller: bool,
+        preparation: ClientPreparationContext | None = None,
     ) -> ClientReceiptAcceptance:
         if not controller:
             raise ClientObserverActionError(
@@ -120,7 +122,21 @@ class ClientEffectReceiptService:
             receipt,
             request_fence_hash=request_fence_hash,
             session_id=session_id,
+            **({"preparation": preparation} if preparation is not None else {}),
         )
+
+
+def validate_client_effect_result(
+    receipt: ClientEffectReceipt, contract: ClientActionContract
+) -> None:
+    """Native success follows its pinned result schema; failures retain error shapes."""
+    from agent_control_plane.agui_client_admission import validate_client_contract_value
+
+    encoded = json.dumps(receipt.result, sort_keys=True, separators=(",", ":"), allow_nan=False)
+    if len(encoded.encode()) > contract.max_result_bytes:
+        raise ClientEffectServiceError("receipt exceeds the published action result byte budget")
+    if receipt.status is ClientEffectStatus.SUCCEEDED:
+        validate_client_contract_value(receipt.result, contract.result_schema, path="action_result")
 
 
 def original_client_effect_result(

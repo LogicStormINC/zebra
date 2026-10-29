@@ -40,6 +40,8 @@ class RouteRequest:
     query: dict[str, str] | None = None
     host_context: HostContextEnvelope | None = None
     verified_host_grant: VerifiedHostGrant | None = None
+    previous_host_context: HostContextEnvelope | None = None
+    previous_verified_host_grant: VerifiedHostGrant | None = None
 
 
 @dataclass(frozen=True)

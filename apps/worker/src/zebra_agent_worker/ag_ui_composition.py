@@ -48,7 +48,9 @@ def configure_agui_projection_work(
         factory = stores.projection_work_for_version
         if factory is None:
             raise ValueError("AG-UI profiles require exact version work composition")
-        for profile in standard_profiles():
+        for profile in standard_profiles(
+            interactions=settings.stream.agui_native_interaction_enabled
+        ):
             for strict in (False, True):
                 additional.append(
                     consumer(factory(profile.checkpoint_version(coverage=strict)), profile)

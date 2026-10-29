@@ -9,8 +9,9 @@ from agent_core.contracts import (
     SessionCommandStatus,
     decide_session_command,
 )
+from agent_core.domain.client_preparation import ClientPreparationContext
 from agent_core.domain.events import EventActor, EventType, SessionEvent
-from agent_core.domain.identifiers import SessionId, TaskId
+from agent_core.domain.identifiers import ClientSessionId, SessionId, TaskId
 from agent_core.domain.plugin_authority import PluginSelectionRefused
 from agent_core.domain.stream_admission import (
     RunStreamAdmission,
@@ -47,6 +48,9 @@ def submit_session_command(
     verified_host_grant: VerifiedHostGrant | None = None,
     transient_admission_enabled: bool = False,
     capacity_policy: TransientCapacityPolicy | None = None,
+    native_preparation: ClientPreparationContext | None = None,
+    native_input_owner: ClientSessionId | None = None,
+    validated_client_admission: dict[str, object] | None = None,
 ) -> ApiResponse:
     try:
         session_key = SessionId(UUID(session_id))
@@ -63,13 +67,37 @@ def submit_session_command(
             body={"session_id": session_id, "status": "not_found"},
         )
     try:
+        command_payload = _command_payload(payload.get("payload"))
+        if validated_client_admission is not None:
+            version = validated_client_admission.get("client_state_admission_contract_version")
+            if type(version) is not int or version != 1 or "client" in command_payload:
+                raise ValueError("validated native client admission conflicts")
+            command_payload["client"] = dict(validated_client_admission)
+        if native_preparation is not None:
+            if (
+                not isinstance(native_preparation, ClientPreparationContext)
+                or command_payload.get("input") != native_preparation.input
+                or command_payload.get("run_id") != native_preparation.run_id
+                or native_input_owner is not None
+            ):
+                raise ValueError("native preparation does not match its original command")
+            command_payload["client_preparation"] = native_preparation.model_dump(
+                mode="json", exclude={"input"}
+            )
+        if native_input_owner is not None:
+            if not isinstance(native_input_owner, UUID):
+                raise ValueError("native input owner must be a Client Session identity")
+            command_payload["agui_native_preparation"] = {
+                "version": 1,
+                "client_session_id": str(native_input_owner),
+            }
         command = SessionCommand(
             command_id=_command_id(payload.get("command_id")),
             session_id=session_key,
             kind=_command_kind(payload.get("kind")),
             expected_revision=_expected_revision(payload.get("expected_revision")),
             idempotency_key=idempotency_key,
-            payload=_command_payload(payload.get("payload")),
+            payload=command_payload,
         )
     except (TypeError, ValueError, ValidationError) as exc:
         return bad_request(str(exc))
@@ -319,6 +347,15 @@ def _command_payload(value: object) -> dict[str, object]:
         return {}
     if not isinstance(value, dict):
         raise ValueError("payload must be an object")
+    if {
+        "client_preparation",
+        "client_preparation_source",
+        "agui_native_preparation",
+    } & value.keys():
+        raise ValueError("native preparation metadata is server-owned")
+    client = value.get("client")
+    if isinstance(client, dict) and "client_state_admission_contract_version" in client:
+        raise ValueError("native client admission proof is server-owned")
     return dict(value)
 
 

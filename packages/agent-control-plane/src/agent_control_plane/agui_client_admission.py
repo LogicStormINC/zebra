@@ -219,3 +219,8 @@ def _validate_value(value: object, schema: dict[str, object], *, path: str) -> N
         if isinstance(items, dict):
             for index, nested in enumerate(value):
                 _validate_value(nested, items, path=f"{path}[{index}]")
+
+
+def validate_client_contract_value(value: object, schema: dict[str, object], *, path: str) -> None:
+    """Expose the same restricted capability validator for native result admission."""
+    _validate_value(value, schema, path=path)

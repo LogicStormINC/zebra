@@ -110,10 +110,19 @@ def recover_client_effect_wakeup(
         created_at=datetime.now(UTC),
     )
     frozen_call = str(scheduled_payload.get("tool_call_id", ""))
-    conversation = _conversation(continuation.get("conversation"))
+    conversation, dropped_proposals = _provider_safe_conversation(
+        _conversation(continuation.get("conversation")), frozen_call
+    )
     tool_call = _frozen_tool_call(conversation, frozen_call) or _with_identity(
         fallback_call, frozen_call
     )
+    wakeup_metadata: dict[str, object] | None = None
+    if isinstance(frozen_metadata, dict):
+        wakeup_metadata = continuation_metadata(frozen_metadata)
+        if starts:
+            wakeup_metadata["client_effect_recovery_uncertain"] = True
+        if dropped_proposals:
+            wakeup_metadata["client_effect_unexecuted_proposals_dropped"] = dropped_proposals
     return ClientEffectWakeup(
         effect_id=effect_id,
         tool_call=tool_call,
@@ -123,11 +132,7 @@ def recover_client_effect_wakeup(
         conversation=conversation,
         model_calls_used=_as_int(continuation.get("model_calls_used")),
         tool_calls_executed=_as_int(continuation.get("tool_calls_executed")),
-        metadata=(
-            {**continuation_metadata(frozen_metadata),
-             **({"client_effect_recovery_uncertain": True} if starts else {})}
-            if isinstance(frozen_metadata, dict) else None
-        ),
+        metadata=wakeup_metadata,
     )
 
 
@@ -209,3 +214,42 @@ def _frozen_tool_call(
             if str(call.tool_call_id) == frozen_call:
                 return call
     return None
+
+
+def _provider_safe_conversation(
+    conversation: tuple[SessionMessage, ...], deferred_call: str
+) -> tuple[tuple[SessionMessage, ...], list[str]]:
+    """Rebase the suspended assistant batch to durably covered calls.
+
+    A sequential mixed batch stops at the first deferred client effect, so
+    later proposals never executed and hold no durable result; replaying them
+    would hand the provider dangling tool calls. Keep calls answered inside
+    the frozen conversation plus the deferred call itself, and report the
+    dropped proposal ids. Earlier assistant batches already passed the
+    pairing firewall before the suspended request and stay untouched.
+    """
+    answered = {
+        str(message.tool_call_id)
+        for message in conversation
+        if message.role is MessageRole.TOOL and message.tool_call_id is not None
+    }
+    for index in range(len(conversation) - 1, -1, -1):
+        message = conversation[index]
+        if message.role is not MessageRole.ASSISTANT or not message.tool_calls:
+            continue
+        call_ids = [str(call.tool_call_id) for call in message.tool_calls]
+        if deferred_call not in call_ids:
+            return conversation, []
+        covered_ids = {call_id for call_id in call_ids if call_id in answered}
+        covered_ids.add(deferred_call)
+        if covered_ids == set(call_ids):
+            return conversation, []
+        covered = tuple(
+            call
+            for call, call_id in zip(message.tool_calls, call_ids, strict=True)
+            if call_id in covered_ids
+        )
+        dropped = sorted(set(call_ids) - covered_ids)
+        rebased = message.model_copy(update={"tool_calls": covered})
+        return (*conversation[:index], rebased, *conversation[index + 1 :]), dropped
+    return conversation, []

@@ -76,7 +76,10 @@ def _state_for(
         if run is None or run.anchor is None:
             raise AgUiProjectionError("standard state requires canonical binding")
         standard = load_standard(
-            run.anchor.segment_id, reader.load, required=entry.task_sequence > run.start
+            run.anchor.segment_id,
+            reader.load,
+            required=entry.task_sequence > run.start,
+            state_type=state_type,
         )
         public = coverage_projection_event(entry.event, strict=strict_coverage)
         if public is not None:

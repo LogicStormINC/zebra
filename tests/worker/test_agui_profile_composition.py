@@ -47,8 +47,11 @@ def test_profiles_require_explicit_settings_and_bind_the_same_six_versions(tmp_p
                 "SELECT projector_version FROM task_projection_work_projectors WHERE enabled=1"
             )
         } == set(versions)
+    # Four slots are reserved for explicit r2 composition; r1 still enables six.
+    for i in range(4):
+        stores.projection_work_for_version(f"extra-projector-{i}").enable_projection_work()
     with pytest.raises(ValueError):
-        stores.projection_work_for_version("extra-projector").enable_projection_work()
+        stores.projection_work_for_version("unsupported-eleventh").enable_projection_work()
 
 
 def test_new_flag_is_strict_and_preserves_old_positional_settings():

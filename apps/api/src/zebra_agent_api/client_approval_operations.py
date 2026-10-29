@@ -15,6 +15,7 @@ from agent_core.application import (
 from agent_core.application.session_projection import apply_event
 from agent_core.application.workspace_projection import apply_event as apply_workspace_event
 from agent_core.contracts import SessionCommand, SessionCommandKind
+from agent_core.domain.client_preparation import ClientPreparationContext
 from agent_core.domain.client_sessions import ClientControlFence
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId, TaskId
@@ -230,7 +231,12 @@ def handle_client_approval_operation(app: Any, request: Any) -> ApiResponse | No
 
 
 def _commit(
-    app: Any, segment: SessionId, key: str, binding: dict[str, object], decision: Decision
+    app: Any,
+    segment: SessionId,
+    key: str,
+    binding: dict[str, object],
+    decision: Decision,
+    preparation: ClientPreparationContext | None = None,
 ) -> None:
     # Only called inside the native stream lock/work unit. Never load historical event bodies.
     session = app.stores.sessions.get_session(segment)
@@ -247,12 +253,31 @@ def _commit(
             reason=decision.reason,
         ),
     )
-    event = event.model_copy(
-        update={
-            "idempotency_key": key,
-            "payload": {**event.payload, "client_approval_operation": binding},
+    preparation_payload: dict[str, object] = {}
+    if preparation is not None:
+        preparation_payload = {
+            "input": preparation.input,
+            "client_preparation": preparation.model_dump(mode="json", exclude={"input"}),
         }
-    )
+        # Same existing native payload ceiling for both positive and terminal decisions.
+        SessionCommand(
+            session_id=segment,
+            kind=SessionCommandKind.RESUME,
+            expected_revision=event.sequence,
+            idempotency_key=f"approval-resume:{segment}:{event.sequence}:resume",
+            payload=preparation_payload,
+        )
+    event_payload = {**event.payload, "client_approval_operation": binding}
+    if preparation is not None:
+        event_payload.update(
+            client_preparation=preparation.model_dump(mode="json", exclude={"input"}),
+            **(
+                {"client_preparation_source": f"approval-resume:{segment}:{event.sequence}:resume"}
+                if decision.decision == "approve"
+                else {"input": preparation.input}
+            ),
+        )
+    event = event.model_copy(update={"idempotency_key": key, "payload": event_payload})
     app.stores.events.append(event)
     app.stores.sessions.save_session(apply_event(session, event))
     workspace = app.stores.workspaces.get_workspace(segment)
@@ -265,7 +290,7 @@ def _commit(
             kind=SessionCommandKind.RESUME,
             expected_revision=event.sequence,
             idempotency_key=f"approval-resume:{segment}:{event.sequence}:resume",
-            payload={},
+            payload=preparation_payload,
         )
         app.stores.events.append(
             SessionEvent.create(

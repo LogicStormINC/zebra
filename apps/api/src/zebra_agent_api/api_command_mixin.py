@@ -4,8 +4,9 @@ from hashlib import sha256
 from typing import Protocol
 from uuid import UUID
 
+from agent_core.domain.client_preparation import ClientPreparationContext
 from agent_core.domain.events import EventType, SessionEvent
-from agent_core.domain.identifiers import SessionId
+from agent_core.domain.identifiers import ClientSessionId, SessionId
 from agent_security.host_grant import VerifiedHostGrant
 from agent_storage import ControlPlaneStores
 from zebra_agent_config.settings import ZebraAgentSettings
@@ -97,6 +98,9 @@ class ApiCommandMixin:
         idempotency_key: str | None,
         extension_admission: CloudExtensionTurnAdmission | None = None,
         verified_host_grant: VerifiedHostGrant | None = None,
+        native_preparation: ClientPreparationContext | None = None,
+        native_input_owner: ClientSessionId | None = None,
+        validated_client_admission: dict[str, object] | None = None,
     ) -> ApiResponse:
         """Append intent only; a Worker owns the eventual execution side effect."""
         return submit_session_command(
@@ -107,6 +111,9 @@ class ApiCommandMixin:
             extension_admission=extension_admission,
             verified_host_grant=verified_host_grant,
             capacity_policy=self.settings.stream.capacity_policy,
+            native_preparation=native_preparation,
+            native_input_owner=native_input_owner,
+            validated_client_admission=validated_client_admission,
             transient_admission_enabled=(
                 self.settings.storage_authority == "postgresql"
                 and self.settings.stream.new_admission_enabled

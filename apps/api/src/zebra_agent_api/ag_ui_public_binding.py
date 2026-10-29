@@ -44,6 +44,7 @@ def standard_state_after(
     scope: ProjectionScope,
     run: TaskRunHeader,
     source: TaskEventHeader,
+    profile: AgUiProjectionProfile | None = None,
 ) -> StandardProjectionState:
     """No future state, event-body scan, repair, or new identity ledger."""
     if run.anchor is None or tasks.read_event_header(run.task_id, source.task_sequence) != source:
@@ -53,10 +54,14 @@ def standard_state_after(
         raise CheckpointConflict("public binding checkpoint scope conflicts")
     if head.through_sequence < source.task_sequence:
         raise CheckpointNotReady("public binding has not reached its source")
+    state_type = profile.state_type if profile is not None else StandardProjectionState
+    if not issubclass(state_type, StandardProjectionState):
+        raise CheckpointConflict("public binding requires a standard state")
     return load_standard(
         run.anchor.segment_id,
         lambda keys: tasks.read_cells_at(scope, source.task_sequence + 1, keys),
         required=True,
+        state_type=state_type,
     )
 
 
@@ -84,7 +89,7 @@ def resolve_public_continuation(
         profile.checkpoint_version(coverage=run.strict_coverage),
     )
     expected = profile.protocol_run_id(tasks, scope, run, source)
-    state = standard_state_after(tasks, scope, run, source)
+    state = standard_state_after(tasks, scope, run, source, profile)
     if state.protocol_run_id is None or state.continuation_id is None:
         raise CheckpointConflict("standard state omits its public binding")
     if state.protocol_run_id != profile.protocol_id_for_anchor(

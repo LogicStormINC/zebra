@@ -2,15 +2,24 @@
 
 from __future__ import annotations
 
+import json
 from typing import Any
 from uuid import UUID
 
-from agent_control_plane.client_effects import ClientEffectReceiptService
+from agent_control_plane.client_effects import (
+    ClientEffectReceiptService,
+    validate_client_effect_result,
+)
+from agent_core.domain.client_capabilities import (
+    ProfileLifecycle,
+    canonical_client_capability_digest,
+)
 from agent_core.domain.client_effects import (
     ClientEffectError,
     ClientEffectReceipt,
     ClientEffectRequest,
 )
+from agent_core.domain.client_preparation import ClientPreparationContext
 from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.identifiers import ClientEffectId, ClientSessionId
 from agent_security.host_grant import VerifiedHostGrant
@@ -32,6 +41,7 @@ def submit_client_effect_receipt(
     idempotency_key: str,
     host_context: HostContextEnvelope | None = None,
     verified_host_grant: VerifiedHostGrant | None = None,
+    preparation: ClientPreparationContext | None = None,
 ) -> ApiResponse:
     try:
         parsed_effect_id = ClientEffectId(UUID(effect_id))
@@ -52,6 +62,8 @@ def submit_client_effect_receipt(
     denied = _effect_access_response(app, effect, host_context, verified_host_grant)
     if denied is not None:
         return denied
+    if "request_digest" in body and body["request_digest"] != effect.request_digest:
+        return ApiResponse(409, {"status": "rejected", "reason": "effect_request_digest_conflict"})
     try:
         receipt = ClientEffectReceipt.model_validate(
             {
@@ -64,11 +76,42 @@ def submit_client_effect_receipt(
     except ValueError as exc:
         return ApiResponse(400, {"status": "invalid", "reason": str(exc)[:256]})
     try:
+        # A browser/Zod result is not native schema authority. Empty/default
+        # legacy schemas remain unrestricted within the existing platform bound.
+        json.dumps(receipt.result, allow_nan=False)
+        sessions, profiles = platform.client_sessions, platform.frontend_capabilities
+        session = sessions.get_session(client_session_id) if sessions is not None else None
+        profile = (
+            profiles.get_profile_by_digest(
+                session.grant.frontend_app_id, session.grant.profile_digest
+            )
+            if profiles is not None and session is not None
+            else None
+        )
+        if profile is None:
+            if preparation is not None:
+                raise ValueError("current published action profile is unavailable")
+        else:
+            action = next(
+                (action for action in profile.actions if action.name == effect.action_name), None
+            )
+            if (
+                profile.lifecycle is not ProfileLifecycle.PUBLISHED
+                or action is None
+                or canonical_client_capability_digest(action.model_dump(mode="json"))
+                != effect.action_contract_digest
+            ):
+                raise ValueError("published native action contract changed")
+            validate_client_effect_result(receipt, action)
+    except (ValueError, TypeError):
+        return ApiResponse(422, {"status": "invalid", "reason": "effect_result_contract_mismatch"})
+    try:
         acceptance = ClientEffectReceiptService(platform.client_effect_receipts).submit(
             receipt,
             request_fence_hash=_request_fence_hash(fence_token),
             session_id=effect.parent_session_id,
             controller=controller,
+            **({"preparation": preparation} if preparation is not None else {}),
         )
     except ClientEffectError as exc:
         status = 409

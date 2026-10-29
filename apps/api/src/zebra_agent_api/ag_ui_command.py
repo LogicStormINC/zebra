@@ -35,6 +35,7 @@ class _AgUiCommandApp(Protocol):
         idempotency_key: str | None,
         extension_admission: CloudExtensionTurnAdmission | None = None,
         verified_host_grant: VerifiedHostGrant | None = None,
+        validated_client_admission: dict[str, object] | None = None,
     ) -> ApiResponse: ...
 
 
@@ -91,7 +92,12 @@ def handle_agui_command(
 ) -> ApiResponse | None:
     """Handle the AG-UI command paths without importing Worker execution code."""
 
+    from zebra_agent_api.ag_ui_native_interaction import handle_native_interaction
     from zebra_agent_api.ag_ui_prepare import handle_agui_prepare
+
+    interaction = handle_native_interaction(app, request)
+    if interaction is not None:
+        return interaction
 
     prepared = handle_agui_prepare(app, request, extension_admission=extension_admission)
     if prepared is not None:
@@ -150,6 +156,14 @@ def handle_agui_command(
     )
     if renewal_error is not None:
         return _problem_from_response(renewal_error, path)
+    client = command_payload.get("client")
+    validated_client = (
+        client
+        if isinstance(client, dict) and "client_state_admission_contract_version" in client
+        else None
+    )
+    if validated_client is not None:
+        command_payload.pop("client")
     response = app.submit_command(
         str(task.active_segment_id),
         {
@@ -160,6 +174,9 @@ def handle_agui_command(
         idempotency_key=idempotency_key,
         extension_admission=extension_admission,
         verified_host_grant=verified_host_grant,
+        **(
+            {"validated_client_admission": validated_client} if validated_client is not None else {}
+        ),
     )
     if response.status_code in {200, 202}:
         return _success(response, envelope)

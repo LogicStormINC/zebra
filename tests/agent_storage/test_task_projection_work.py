@@ -199,16 +199,16 @@ def test_bounded_roundrobin_and_projector_fanout(queue):
     rest = store.read_pending_projection_work(after_scope=first[-1].scope)
     assert len(rest) == 8
     assert store.read_pending_projection_work(after_scope=rest[-1].scope) == ()
-    for v in range(5):
+    for v in range(9):
         queue.store(version=f"other-{v}").enable_projection_work()
     with pytest.raises(ValueError, match="budget"):
-        queue.store(version="seventh").enable_projection_work()
+        queue.store(version="eleventh").enable_projection_work()
     queue.append(40, body='{"receipt":"fanout"}')
     assert len(store.read_projection_work_repairs()) == 0
     assert len(queue.store(version="other-0").read_projection_work_repairs()) == 1
     store.disable_projection_work()
     assert store.read_pending_projection_work() == ()
-    queue.store(version="seventh").enable_projection_work()
+    queue.store(version="eleventh").enable_projection_work()
     for invalid in (0, 33, True, -1):
         with pytest.raises(ValueError):
             store.read_pending_projection_work(limit=invalid)
@@ -228,23 +228,41 @@ def test_scalar_fanout_receipt_and_next_anchor_are_route_scoped(queue):
             "event_position_state) VALUES (?,?,0,'ready')",
             (str(other_task), queue.namespace),
         )
-        other_before = [dict(row) for row in queue.execute(
-            connection, "SELECT * FROM task_projection_work_routes WHERE task_id=? "
-            "ORDER BY projector_version", (str(other_task),),
-        ).fetchall()]
+        other_before = [
+            dict(row)
+            for row in queue.execute(
+                connection,
+                "SELECT * FROM task_projection_work_routes WHERE task_id=? "
+                "ORDER BY projector_version",
+                (str(other_task),),
+            ).fetchall()
+        ]
     queue.append(0, run="one")
     queue.append(1, body='{"receipt":"fanout"}')
     queue.append(2, kind="message", run="two")
     assert sorted(
-        (row["projector_version"], row["anchor_sequence"], row["requested_through"],
-         row["closed_through"]) for row in queue.work_rows()
-    ) == sorted((version, anchor, through, closed) for version in versions
-                for anchor, through, closed in ((0, 1, 1), (2, 2, None)))
+        (
+            row["projector_version"],
+            row["anchor_sequence"],
+            row["requested_through"],
+            row["closed_through"],
+        )
+        for row in queue.work_rows()
+    ) == sorted(
+        (version, anchor, through, closed)
+        for version in versions
+        for anchor, through, closed in ((0, 1, 1), (2, 2, None))
+    )
     with queue.connect() as connection:
-        assert [dict(row) for row in queue.execute(
-            connection, "SELECT * FROM task_projection_work_routes WHERE task_id=? "
-            "ORDER BY projector_version", (str(other_task),),
-        ).fetchall()] == other_before
+        assert [
+            dict(row)
+            for row in queue.execute(
+                connection,
+                "SELECT * FROM task_projection_work_routes WHERE task_id=? "
+                "ORDER BY projector_version",
+                (str(other_task),),
+            ).fetchall()
+        ] == other_before
 
 
 def test_persistent_finite_defer_and_explicit_retry(queue, monkeypatch):

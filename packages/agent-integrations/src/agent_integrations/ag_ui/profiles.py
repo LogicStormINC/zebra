@@ -91,12 +91,19 @@ class AgUiProjectionProfile:
     ) -> str:
         """Hash an already verified source header; no mutable execution context."""
         self.binding_digest(scope, run)
+        acknowledgement = self.revision == 2 and continuation.event_type in {
+            EventType.APPROVAL_REJECTED,
+            EventType.SESSION_CANCELLED,
+        }
         if continuation != run.anchor and (
             continuation.task_id != run.task_id
-            or continuation.event_type is not EventType.SESSION_COMMAND_ACCEPTED
-            or not continuation.internal_continuation
-            or continuation.command_kind != "resume"
-            or continuation.command_run_id is not None
+            or not acknowledgement
+            and (
+                continuation.event_type is not EventType.SESSION_COMMAND_ACCEPTED
+                or not continuation.internal_continuation
+                or continuation.command_kind != "resume"
+                or continuation.command_run_id is not None
+            )
             or not run.start < continuation.task_sequence <= run.highwater
             or (run.stop is not None and continuation.task_sequence >= run.stop)
         ):
@@ -113,20 +120,36 @@ class AgUiProjectionProfile:
 
 class AgUiProfileRegistry:
     def __init__(self, profiles: tuple[AgUiProjectionProfile, ...] = ()) -> None:
-        self._profiles = {profile.profile_id: profile for profile in profiles}
+        self._profiles = {(profile.profile_id, profile.revision): profile for profile in profiles}
         if len(self._profiles) != len(profiles):
             raise AgUiProjectionError("duplicate AG-UI profile binding")
 
     @property
     def available_profiles(self) -> tuple[str, ...]:
-        return tuple(sorted(self._profiles))
+        return tuple(sorted({name for name, _ in self._profiles}))
 
-    def select(self, requested: str | None) -> AgUiProjectionProfile | None:
+    @property
+    def available_revisions(self) -> dict[str, tuple[int, ...]]:
+        return {
+            name: tuple(sorted(revision for key, revision in self._profiles if key == name))
+            for name in self.available_profiles
+        }
+
+    def select(
+        self, requested: str | None, revision: str | None = None
+    ) -> AgUiProjectionProfile | None:
+        if revision is not None and (
+            not isinstance(revision, str) or re.fullmatch(r"[1-9][0-9]{0,2}", revision) is None
+        ):
+            raise AgUiProjectionError("AG-UI revision is invalid")
         if requested is None:
+            if revision is not None:
+                raise AgUiProjectionError("AG-UI revision requires an explicit profile")
             return None
-        if requested not in self._profiles:
+        key = requested, int(revision) if revision is not None else 1
+        if key not in self._profiles:
             raise AgUiProjectionError("AG-UI profile is unsupported or unavailable")
-        return self._profiles[requested]
+        return self._profiles[key]
 
 
 def _digest(value: list[object]) -> str:

@@ -9,6 +9,7 @@ from agent_core.ports.task_replay import TaskEventHeader, TaskRunHeader
 
 from agent_integrations.ag_ui.contracts import AgUiProjectionError
 from agent_integrations.ag_ui.profiles import AgUiProjectionProfile
+from agent_integrations.ag_ui.standard_interaction_state import InteractionProjectionState
 from agent_integrations.ag_ui.standard_state import StandardProjectionState
 
 
@@ -33,7 +34,20 @@ def bind_standard(
     elif (
         source.internal_continuation
         and state.turn_finished
-        and state.public_execution.get("status") in {"paused", "waiting_input"}
+        and state.public_execution.get("status")
+        in (
+            {"paused", "waiting_input", "waiting_client_effect"}
+            if profile.revision == 2
+            else {"paused", "waiting_input"}
+        )
+    ):
+        chosen = source
+    elif (
+        profile.revision == 2
+        and source.event_type in {EventType.APPROVAL_REJECTED, EventType.SESSION_CANCELLED}
+        and state.turn_finished
+        and isinstance(state, InteractionProjectionState)
+        and state.interrupt_ack_pending
     ):
         chosen = source
     else:

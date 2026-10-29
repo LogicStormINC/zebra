@@ -33,7 +33,15 @@ from tests.test_cloud_api_worker_profile_composition import _cloud_settings as _
 metadata_dsn = _metadata_dsn
 
 
-def initial_native(dsn: str, tmp_path: Path, *, captured: bool = True, wakeup: bool = False):
+def initial_native(
+    dsn: str,
+    tmp_path: Path,
+    *,
+    captured: bool = True,
+    wakeup: bool = False,
+    mounted_actions: tuple[str, ...] = (),
+    frontend_profile=None,
+):
     namespace = "agui-initial-" + uuid4().hex
     bootstrap_control_plane_epoch(dsn, deployment_namespace=namespace)
     if wakeup:
@@ -54,7 +62,7 @@ def initial_native(dsn: str, tmp_path: Path, *, captured: bool = True, wakeup: b
         history_scope=cloud.history_scope,
         continuation_scope=cloud.continuation_scope,
     )
-    profile = _profile()
+    profile = frontend_profile or _profile()
     registry = PostgresClientCapabilityRegistry(dsn, deployment_namespace=namespace)
     registry.publish_profile(profile)
     context = _binding(str(uuid4())).host_capability.host_context
@@ -123,11 +131,11 @@ def initial_native(dsn: str, tmp_path: Path, *, captured: bool = True, wakeup: b
                     "profile_revision": profile.revision,
                     "profile_digest": profile.profile_digest,
                     "ui_revision": 1,
-                    "mounted_actions": [],
+                    "mounted_actions": list(mounted_actions),
                     "mounted_readables": ["app.ui.route"],
                     "mounted_at": datetime.now(UTC).isoformat(),
                 },
-                "task_capability_scope": [],
+                "task_capability_scope": list(mounted_actions),
                 "controller": True,
             },
             "input": {"state": {}, **({"message": message} if captured else {})},

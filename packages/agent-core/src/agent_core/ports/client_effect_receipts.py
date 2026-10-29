@@ -3,7 +3,11 @@
 from dataclasses import dataclass
 from typing import Protocol
 
-from agent_core.domain.client_effects import ClientEffectReceipt, ClientEffectRequest
+from agent_core.domain.client_effects import (
+    ClientEffectReceipt,
+    ClientEffectRequest,
+)
+from agent_core.domain.client_preparation import ClientPreparationContext
 from agent_core.domain.identifiers import ClientEffectId, SessionId
 
 
@@ -22,6 +26,7 @@ class ClientEffectReceiptPort(Protocol):
         *,
         request_fence_hash: str,
         session_id: SessionId,
+        preparation: ClientPreparationContext | None = None,
     ) -> ClientReceiptAcceptance:
         """Validate fence/revision/expiry, then commit receipt + terminal
         status + parent resume command atomically; replays return the

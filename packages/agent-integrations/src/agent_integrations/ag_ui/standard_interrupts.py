@@ -186,3 +186,51 @@ def standard_public_event(event: SessionEvent, *, strict: bool) -> SessionEvent 
         )
         return event.model_copy(update={"payload": {"reason": safe}})
     return public
+
+
+def native_response_interrupt(interrupt: Interrupt, payload: dict[str, object]) -> Interrupt:
+    """Revision-two response descriptions; schemas confer no native permission."""
+    approval = interrupt.reason == "approval_required"
+    metadata: dict[str, object] = {
+        "version": 2,
+        "nativeResponse": "approval" if approval else "clarification",
+    }
+    if not approval and payload.get("response_schema") is not None:
+        return interrupt.model_copy(
+            update={
+                "response_schema": None,
+                "metadata": {"zebra": {"version": 2, "nativeResponse": "unsupported"}},
+            }
+        )
+    properties: dict[str, object] = (
+        {
+            "decision": {"type": "string", "enum": ["approve", "reject"]},
+            "operator": {"type": "string", "minLength": 1, "maxLength": 128},
+            "reason": {"type": "string", "minLength": 1, "maxLength": 1024},
+        }
+        if approval
+        else {"content": {"type": "string", "minLength": 1}}
+    )
+    if not approval:
+        choices = payload.get("choices", [])
+        if (
+            not isinstance(choices, list)
+            or len(choices) > 4
+            or any(
+                not isinstance(choice, str) or not choice.strip() or len(choice) > 200
+                for choice in choices
+            )
+        ):
+            raise ValueError("invalid native clarification choices")
+        metadata["choices"] = list(choices)
+    return interrupt.model_copy(
+        update={
+            "response_schema": {
+                "type": "object",
+                "properties": properties,
+                "required": list(properties),
+                "additionalProperties": False,
+            },
+            "metadata": {"zebra": metadata},
+        }
+    )

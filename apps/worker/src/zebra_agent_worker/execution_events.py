@@ -113,6 +113,10 @@ class DurableHarnessEventRecorder:
         self._execution_status_reader = execution_status_reader
         self._tail_highwater: int | None = None
         self._events: list[SessionEvent] = []
+        # Durable client-effect admissions committed atomically by an
+        # execution-side adapter; the harness draft echo of the same effect
+        # must not duplicate them on the Event stream.
+        self._admitted_client_effects: dict[str, SessionEvent] = {}
         # Timer and execution callbacks share the same per-recorder, reentrant boundary.
         self._mutation_lock = RLock()
         self.effect_started_listener: Callable[[str], None] | None = None
@@ -194,6 +198,20 @@ class DurableHarnessEventRecorder:
         created_at: datetime | None = None,
     ) -> SessionEvent:
         event = self.prepare(event_type, actor, payload, created_at=created_at)
+        if event.event_type is EventType.CLIENT_EFFECT_SCHEDULED:
+            effect_id = event.payload.get("client_effect_id")
+            admitted = (
+                self._admitted_client_effects.get(effect_id)
+                if isinstance(effect_id, str)
+                else None
+            )
+            if admitted is not None:
+                # The dispatch already committed the durable admission Event
+                # atomically with its effects row; persisting the harness echo
+                # would duplicate the schedule fact on the stream. Checked
+                # after prepare so a just-adopted external admission from the
+                # crash window is still honored here.
+                return admitted
         try:
             return self.append_event(event)
         except ValueError:
@@ -282,6 +300,7 @@ class DurableHarnessEventRecorder:
             raise ValueError("execution event session_id does not match recorder")
         if event.sequence != self.next_sequence:
             raise ValueError("execution event sequence does not match recorder")
+        self._note_admitted_client_effect(event)
         authority = self._worker_mutation_authority
         if authority is None:
             self._model_call_indexer.index_event(event)
@@ -348,6 +367,7 @@ class DurableHarnessEventRecorder:
         for event in events:
             if event.session_id != self._session.session_id or event.sequence != self.next_sequence:
                 raise ValueError("committed Context Event sequence does not match recorder")
+            self._note_admitted_client_effect(event)
             authority = self._worker_mutation_authority
             if authority is None:
                 self._model_call_indexer.index_event(event)
@@ -407,6 +427,14 @@ class DurableHarnessEventRecorder:
                 self._session = apply_event(self._session, event)
                 self._workspace = apply_workspace_event(self._workspace, event)
                 self._advance_authority(event)
+                self._note_admitted_client_effect(event)
+
+    def _note_admitted_client_effect(self, event: SessionEvent) -> None:
+        if event.event_type is not EventType.CLIENT_EFFECT_SCHEDULED:
+            return
+        effect_id = event.payload.get("client_effect_id")
+        if isinstance(effect_id, str) and effect_id:
+            self._admitted_client_effects[effect_id] = event
 
     def _tail_budget(self) -> AbstractContextManager[None]:
         return task_io_deadline(monotonic() + 2) if self._tail_reader else nullcontext()

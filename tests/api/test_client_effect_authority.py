@@ -6,6 +6,7 @@ from types import SimpleNamespace
 from uuid import UUID, uuid4
 
 import pytest
+from agent_core.domain.client_capabilities import canonical_client_capability_digest
 from agent_core.domain.client_effects import ClientEffectRequest
 from zebra_agent_api.client_runtime_routes import handle_client_runtime_route
 
@@ -17,6 +18,12 @@ def effect_surface():
     opened = handle_client_runtime_route(app, request)
     assert opened.status_code == 201
     now = datetime.now(UTC)
+    published_action = next(
+        action
+        for profile in bundle.frontend_capabilities.profiles.values()
+        for action in profile.actions
+        if action.name == "app.ui.item.open"
+    )
     effect = ClientEffectRequest(
         effect_id=uuid4(),
         task_id=UUID(request.path.split("/")[3]),
@@ -26,7 +33,9 @@ def effect_surface():
         tool_call_id=uuid4(),
         action_name="app.ui.item.open",
         arguments={"itemId": "private-item"},
-        action_contract_digest="a" * 64,
+        action_contract_digest=canonical_client_capability_digest(
+            published_action.model_dump(mode="json")
+        ),
         client_binding_digest=opened.body["binding_digest"],
         fence_hash="c" * 64,
         expected_ui_revision=1,

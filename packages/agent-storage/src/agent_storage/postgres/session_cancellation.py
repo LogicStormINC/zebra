@@ -5,6 +5,7 @@ from typing import Any
 from uuid import NAMESPACE_URL, UUID, uuid5
 
 from agent_core.application.session_command_read_state import SessionCommandReadState
+from agent_core.domain.client_preparation import ClientPreparationContext
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import EventId, SessionId
 
@@ -49,6 +50,7 @@ def cancel_in_transaction(
     *,
     operation_id: UUID,
     command: bool,
+    preparation: ClientPreparationContext | None = None,
 ) -> tuple[SessionEvent, Any]:
     """Caller holds Session→epoch/lease→stream and already checked caller authority."""
     assert state.session is not None and state.workspace is not None
@@ -69,7 +71,17 @@ def cancel_in_transaction(
             )
         ]
     )
-    types.append((EventType.SESSION_CANCELLED, {}))
+    types.append(
+        (
+            EventType.SESSION_CANCELLED,
+            {}
+            if preparation is None
+            else {
+                "input": preparation.input,
+                "client_preparation": preparation.model_dump(mode="json", exclude={"input"}),
+            },
+        )
+    )
     prefix = "command-control" if command else "direct-control"
     identity = "zebra-control" if command else "zebra-direct-control"
     for event_type, payload in types:

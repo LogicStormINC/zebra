@@ -31,12 +31,13 @@ def load_standard(
     load: Callable[[tuple[ProjectionCellKey, ...]], tuple[ProjectionCell, ...]],
     *,
     required: bool = False,
+    state_type: type[StandardProjectionState] = StandardProjectionState,
 ) -> StandardProjectionState:
     rows = load((state_key(root, "count"),))
     if not rows:
         if required:
             raise AgUiProjectionError("required standard checkpoint is missing")
-        return StandardProjectionState()
+        return state_type()
     try:
         count = int(rows[0].value or "0")
     except (TypeError, ValueError):
@@ -47,7 +48,7 @@ def load_standard(
     values = {row.key.key: row.value for row in rows}
     if any(values.get(str(i)) is None for i in range(count)):
         raise AgUiProjectionError("standard checkpoint is incomplete")
-    return StandardProjectionState.restore("".join(str(values[str(i)]) for i in range(count)))
+    return state_type.restore("".join(str(values[str(i)]) for i in range(count)))
 
 
 def save_standard(

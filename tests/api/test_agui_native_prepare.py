@@ -180,3 +180,20 @@ def test_native_message_reaches_actual_worker_fake_provider_and_standard_post_is
     numeric["state"]["app.ui.route"]["nested"][1]["count"] = 1
     assert client.post(base + "/stream", headers=headers, json=numeric).status_code == 200
     assert adapter.app.stores.events.list_for_session(task) == before
+
+
+def test_native_prepare_revision_cannot_silently_fall_back_to_revision_one(tmp_path):
+    adapter, headers, body, _database, task = prepared_surface(tmp_path)
+    before = adapter.app.stores.events.list_for_session(task)
+    for revision in ("2", "02", " 1", "0", "bad"):
+        response = adapter.handle(
+            RouteRequest(
+                "POST",
+                f"/agui/threads/{task}/runs/run-1/prepare",
+                headers={**headers, "X-Zebra-AGUI-Revision": revision},
+                body=body,
+            )
+        )
+        assert response.status_code == 409, response.body
+        assert response.body["status"] == "agui_preparation_conflict"
+        assert adapter.app.stores.events.list_for_session(task) == before

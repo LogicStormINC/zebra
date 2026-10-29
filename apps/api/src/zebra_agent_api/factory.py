@@ -260,5 +260,9 @@ def _agui_profiles(settings: ZebraAgentSettings) -> AgUiProfileRegistry | None:
     from agent_integrations.ag_ui.standard_profiles import standard_profiles
 
     return (
-        AgUiProfileRegistry(standard_profiles()) if settings.stream.agui_profiles_enabled else None
+        AgUiProfileRegistry(
+            standard_profiles(interactions=settings.stream.agui_native_interaction_enabled)
+        )
+        if settings.stream.agui_profiles_enabled
+        else None
     )

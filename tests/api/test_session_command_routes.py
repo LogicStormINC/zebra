@@ -191,3 +191,51 @@ def _seed_ready_session(tmp_path: Path):
         rebuild_workspace(list(bootstrap.events))
     )
     return database_path, bootstrap.session.session_id, bootstrap.session.current_sequence
+
+
+@pytest.mark.parametrize(
+    "marker", ["client_preparation", "client_preparation_source", "agui_native_preparation"]
+)
+def test_generic_command_cannot_forge_native_preparation_provenance(tmp_path, marker):
+    database, session, revision = _seed_ready_session(tmp_path)
+    app = create_app(database)
+    before = app.stores.events.list_for_session(session)
+    response = RouteAdapter(app).handle(
+        RouteRequest(
+            "POST",
+            f"/sessions/{session}/commands",
+            headers={"Idempotency-Key": "forged-native-owner"},
+            body={
+                "kind": "run",
+                "expected_revision": revision,
+                "payload": {"run_id": "forged", marker: {"client_session_id": str(session)}},
+            },
+        )
+    )
+    assert response.status_code == 400, response.body
+    assert app.stores.events.list_for_session(session) == before
+
+
+def test_generic_command_cannot_forge_validated_client_input_owner(tmp_path):
+    database, session, revision = _seed_ready_session(tmp_path)
+    app = create_app(database)
+    before = app.stores.events.list_for_session(session)
+    response = RouteAdapter(app).handle(
+        RouteRequest(
+            "POST",
+            f"/sessions/{session}/commands",
+            headers={"Idempotency-Key": "forged-client-owner"},
+            body={
+                "kind": "run",
+                "expected_revision": revision,
+                "payload": {
+                    "client": {
+                        "client_state_admission_contract_version": 1,
+                        "client_session_id": str(session),
+                    },
+                },
+            },
+        )
+    )
+    assert response.status_code == 400, response.body
+    assert app.stores.events.list_for_session(session) == before

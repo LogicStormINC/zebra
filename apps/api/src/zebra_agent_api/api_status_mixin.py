@@ -25,7 +25,28 @@ class ApiStatusMixin:
             {
                 "contract_version": 1,
                 **(
-                    {"metadata": {"aguiProfiles": list(profiles.available_profiles)}}
+                    {
+                        "metadata": {
+                            "aguiProfiles": [
+                                name
+                                for name, versions in profiles.available_revisions.items()
+                                if 1 in versions
+                            ],
+                            **(
+                                {
+                                    "aguiProfileRevisions": {
+                                        name: list(versions)
+                                        for name, versions in profiles.available_revisions.items()
+                                    }
+                                }
+                                if any(
+                                    versions != (1,)
+                                    for versions in profiles.available_revisions.values()
+                                )
+                                else {}
+                            ),
+                        }
+                    }
                     if (profiles := getattr(self, "agui_profiles", None)) is not None
                     and profiles.available_profiles
                     else {}

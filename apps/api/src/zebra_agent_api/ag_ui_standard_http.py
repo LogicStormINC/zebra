@@ -28,7 +28,14 @@ from zebra_agent_api.tenant_guard import task_access_response
 
 
 def accepted_input(
-    tasks: Any, task: TaskId, source: Any, *, client_session_id: str | None = None
+    tasks: Any,
+    task: TaskId,
+    source: Any,
+    *,
+    client_session_id: str | None = None,
+    interaction: bool = False,
+    native_run_id: str | None = None,
+    projection_version: str | None = None,
 ) -> RunAgentInput:
     """Read precisely one immutable accepted Event; no command-ID/Event-ID equivalence."""
     page = tasks.read_event_page(
@@ -46,14 +53,38 @@ def accepted_input(
         source.event_id,
         source.segment_id,
         source.segment_sequence,
-    ) or entry.event.event_type is not EventType.SESSION_COMMAND_ACCEPTED:
+    ):
         raise ValueError("accepted command coordinate conflicts")
-    command = validate_accepted_session_command(
-        entry.event.payload,
-        session_id=source.segment_id,
-        idempotency_key=entry.event.idempotency_key,
-    )
-    payload = command.payload
+    if entry.event.event_type is EventType.SESSION_COMMAND_ACCEPTED:
+        command = validate_accepted_session_command(
+            entry.event.payload,
+            session_id=source.segment_id,
+            idempotency_key=entry.event.idempotency_key,
+        )
+        payload = command.payload
+    elif interaction and entry.event.event_type in {
+        EventType.APPROVAL_REJECTED,
+        EventType.SESSION_CANCELLED,
+    }:
+        payload = entry.event.payload
+    else:
+        raise ValueError("accepted command coordinate conflicts")
+    preparation = payload.get("client_preparation") if interaction else None
+    if isinstance(preparation, dict):
+        from agent_core.domain.client_preparation import ClientPreparationContext
+
+        context = ClientPreparationContext.model_validate(
+            {**preparation, "input": payload.get("input")}
+        )
+        if (
+            context.task_id != task
+            or context.run_id != native_run_id
+            or context.projection_version != projection_version
+        ):
+            raise ValueError("original native interaction target conflicts")
+        if str(context.client_session_id) != client_session_id:
+            raise PermissionError("private interaction belongs to another Client Session")
+        return RunAgentInput.model_validate(context.input)
     if client_session_id is not None:
         original = payload.get("agui_native_preparation")
         mounted = payload.get("client")
@@ -107,7 +138,8 @@ async def standard_response(
         try:
             task, internal, incoming = observation_target(request.url.path, body)
             profile = (api.agui_profiles or AgUiProfileRegistry()).select(
-                request.headers.get("X-Zebra-AGUI-Profile")
+                request.headers.get("X-Zebra-AGUI-Profile"),
+                request.headers.get("X-Zebra-AGUI-Revision"),
             )
             if profile is None:
                 return ApiResponse(409, {"status": "agui_profile_unavailable"})
@@ -141,9 +173,17 @@ async def standard_response(
             if auth is None:
                 return ApiResponse(401, {"status": "client_session_authorization_required"})
             accepted = accepted_input(
-                api.stores.tasks, task, public.source, client_session_id=str(auth.client_session_id)
+                api.stores.tasks,
+                task,
+                public.source,
+                client_session_id=str(auth.client_session_id),
+                interaction=profile.revision == 2,
+                native_run_id=internal,
+                projection_version=public.scope.projector_version,
             )
-            if accepted.run_id != internal or accepted.thread_id != str(task):
+            if (accepted.run_id != internal and profile.revision != 2) or accepted.thread_id != str(
+                task
+            ):
                 raise ValueError("accepted input belongs to another native Run")
             if not _same_json(
                 incoming.model_dump(mode="json", exclude={"run_id"}),
@@ -176,6 +216,7 @@ async def standard_response(
                 authorization_expires_at=getattr(host, "expires_at", None),
                 host_context=host,
                 requested_profile=profile.profile_id,
+                requested_revision=str(profile.revision),
                 profile_registry=api.agui_profiles,
             )
             if not isinstance(prepared, AgUiStreamContext):

@@ -1,6 +1,6 @@
 # AG-UI 1.0 标准与 Zebra durable 边界合同
 
-状态：G0 合同冻结；G1/G2V/G2 已审查交付，G3 实施中。不是生产上线或完整兼容认证。
+状态：G0 合同冻结；G1/G2V/G2/G3/G4 已审查交付，G5A 实施中。不是生产上线或完整兼容认证。
 任务：AGUI-G0-CONTRACT-20261028。实施顺序见
 [完整方案](superpowers/plans/2026-10-28-agui-full-interaction.md)。
 
@@ -489,3 +489,20 @@ Expired inputs require explicit cancellation. Schema does not grant edit or
 command permission. Native decision/effect submission remains G5; versions,
 installed tarballs and whole-plan browser/performance acceptance remain G6/T1/G7.
 Default profile activation and the legacy producer are unchanged.
+
+## 15. G5A native complete interaction (revision two)
+
+Native approval/clarification completion and receipted frontend-tool
+continuation are frozen in the focused
+[native interaction contract](AGUI_NATIVE_INTERACTION_CONTRACT.md); that file
+owns the revision-two write, receipt and cancellation semantics. The card
+AGUI-G5A-NATIVE-INTERACTION-20261029 owns implementation, exact tests and the
+two-stage review record. Revision 1 state bytes, keys, legacy projector, cursor
+bytes and HMAC domains remain unchanged; revision 2 stays default-off behind
+both existing profile and new native-interaction flags. Mixed sequential
+batches stop before later unexecuted proposals; the wakeup replay keeps only
+durably covered calls, and each effect carries exactly one durable schedule
+fact (the dispatch-committed admission; the harness echo deduplicates against
+it). G5B Provider/HITL multi-session action safety, G6 packages, T1 Trench and
+G7 whole-plan gates remain required; no activation, registry publish or
+deployment happened in G5A.
