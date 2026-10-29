@@ -8,7 +8,7 @@ from uuid import UUID
 
 from agent_core.application.task_schedule_time import next_fire_at
 from agent_core.domain.host_authority import HostGrantScopeError
-from agent_core.domain.identifiers import TaskScheduleFiringId, TaskScheduleId, new_task_schedule_id
+from agent_core.domain.identifiers import TaskScheduleFiringId, TaskScheduleId
 from agent_core.domain.task_schedule_authority import ScheduleOwner
 from agent_core.domain.task_schedules import (
     ScheduleMisfirePolicy,
@@ -36,6 +36,7 @@ from zebra_agent_api.task_schedule_api_support import (
     schedule_body,
     schedule_path,
 )
+from zebra_agent_api.task_schedule_create_identity import create_identity, replay_create
 from zebra_agent_api.task_schedule_template import (
     ValidatedScheduleTemplate,
     validate_schedule_template,
@@ -170,12 +171,24 @@ def _create(
         return validated
     try:
         trigger = _TRIGGER.validate_python(body.get("trigger"))
+        body = {**body, "title": body.get("title", validated.parsed["title"])}
+        key = idempotency_key(request)
+        schedule_id = create_identity(owner, key)
+        if (
+            key is not None
+            and (
+                replay := replay_create(
+                    store, owner, schedule_id, body, validated.template, trigger
+                )
+            )
+            is not None
+        ):
+            return replay
         moment = datetime.now(UTC)
         timezone_name = str(body.get("timezone", "UTC"))
         first_fire = next_fire_at(trigger, timezone_name=timezone_name, after=moment)
         if first_fire is None:
             return bad_request("trigger does not have a future occurrence")
-        schedule_id = new_task_schedule_id()
         assert request.host_context is not None
         authority = build_schedule_authority(
             request.host_context,
@@ -205,7 +218,8 @@ def _create(
     except (TypeError, ValueError, ValidationError) as exc:
         return bad_request(str(exc))
     except TaskScheduleConflictError:
-        return ApiResponse(409, {"status": "schedule_conflict"})
+        replay = replay_create(store, owner, schedule_id, body, validated.template, trigger)
+        return replay or ApiResponse(409, {"status": "schedule_conflict"})
     return ApiResponse(201, schedule_body(created))
 
 

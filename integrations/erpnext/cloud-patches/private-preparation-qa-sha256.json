@@ -1,0 +1,14 @@
+{
+  "status": "test-only checks executed by root: native Core diagnostic and compiled disposable PostgreSQL105 flows passed",
+  "files": [
+    {
+      "path": "cloud-patches/tests/check_private_preparation_postgres.py",
+      "sha256": "7734dc2bc1bb9a6ac9632c9f1361fba99d79b81c3afee802f754459b9e2b17e6"
+    },
+    {
+      "path": "cloud-patches/tests/check_private_message_fixture_native.py",
+      "sha256": "a9bdc3feafbc0c5b3eca1d2910cac8950dad5925081499d35fa27b63e927be93"
+    }
+  ],
+  "acceptance_evidence": "sibling zebra-erpnext-evidence/private-command-postgres-compiled-f.json"
+}

@@ -193,7 +193,7 @@ def _entry(tmp_path, monkeypatch, *, admitted=True):
         lambda *_: None,
     )
     monkeypatch.setattr(
-        "zebra_agent_worker.execution.runtime_authority.persist_runtime_authority",
+        "zebra_agent_worker.runtime_authority.persist_runtime_authority",
         lambda *_, **__: False,
     )
     monkeypatch.setattr(

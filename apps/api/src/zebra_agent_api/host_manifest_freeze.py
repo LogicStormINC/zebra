@@ -14,6 +14,7 @@ from __future__ import annotations
 from typing import Any
 
 from agent_core.domain.host_authority import HostContextEnvelope
+from agent_core.domain.host_connectors import HostConnectorProfileVersion
 
 
 class HostManifestFreezeError(ValueError):
@@ -127,3 +128,37 @@ def _discover_once(
         raise HostManifestFreezeError(
             f"pinned connector manifest fetch failed; failing closed: {exc}"
         ) from exc
+
+
+def resolve_admission_profile(
+    dsn: str,
+    namespace: str,
+    context: HostContextEnvelope,
+    manifest_digest: str | None,
+) -> HostConnectorProfileVersion | None:
+    """Refuse registry drift between manifest freeze and atomic Task admission."""
+    from agent_integrations.host_tools import HostToolManifest
+    from agent_storage.postgres.host_connectors import PostgresHostConnectorRegistry
+    from agent_storage.postgres.host_manifest_freeze import load_frozen_manifest
+
+    registry = PostgresHostConnectorRegistry(dsn, deployment_namespace=namespace)
+    binding = registry.resolve_binding(context.host_app_id, context.namespace_id)
+    if binding is None:
+        if manifest_digest not in (None, "0" * 64):
+            raise HostManifestFreezeError("frozen connector binding disappeared")
+        return None
+    profile = registry.get_profile(
+        binding.host_app_id, binding.connector_id, binding.profile_revision
+    )
+    if not binding.active or profile is None or profile.status.value != "published":
+        raise HostManifestFreezeError("connector binding is unavailable")
+    frozen = load_frozen_manifest(
+        dsn,
+        deployment_namespace=namespace,
+        host_app_id=profile.host_app_id,
+        connector_id=profile.connector_id,
+        profile_revision=profile.profile_revision,
+    )
+    if frozen is None or HostToolManifest.from_payload(frozen).digest != manifest_digest:
+        raise HostManifestFreezeError("connector changed after manifest freeze")
+    return profile

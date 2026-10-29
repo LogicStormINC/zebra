@@ -1,0 +1,87 @@
+{
+  "approved_base_manifest_sha256": "df8d45aa6de1dd3ed62e631c644d0d544a70929fa2d069e8fd2fc1cf0ea69b76",
+  "host_base_image": "sha256:1a56e963dae6f9cb86399dfa8c3a05fd281bc0cc755b0016b1c10886e542c07d",
+  "host_base_tag_observed": "erpnext:hrms-16.52.0-20261024",
+  "host_base_verification": "Root inspected image identity and live/current-source cloud.py hash; no older r3 tag substitution",
+  "new_baselines": {
+    "baseline/apps/api/src/zebra_agent_api/ag_ui_checkpoint_tail.py": {
+      "sha256": "da328cac2dc70ef28aa98bab8d3e6c219a95ac7e2d14d22733431e8d38246abd",
+      "source": "/Users/lukeding/Documents/Codex/2026-10-23/ni/work/api105-capture/zebra_agent_api/ag_ui_checkpoint_tail.py"
+    },
+    "baseline/apps/api/src/zebra_agent_api/task_header.py": {
+      "sha256": "148bbbe44d1ba9b71b2d219765d2ebb13545ddd6a03224493cd4776ed14cfbad",
+      "source": "/Users/lukeding/Documents/Codex/2026-10-23/ni/work/api105-capture/zebra_agent_api/task_header.py"
+    },
+    "baseline/apps/worker/src/zebra_agent_worker/command_process.py": {
+      "sha256": "dcabb0e982e8ce27e90a83f9649f59b16182f35d05fcf513bd92ff2e844f8bf7",
+      "source": "/Users/lukeding/Documents/Codex/2026-10-23/ni/work/legacy-audit/apps/worker/src/zebra_agent_worker/command_process.py"
+    },
+    "baseline/apps/worker/src/zebra_agent_worker/execution_entrypoints.py": {
+      "sha256": "b838d2dccc11536e82b7e74f60a03fb44109e4acb8717acb5f356ad3ba3a6c70",
+      "source": "/Users/lukeding/Documents/Codex/2026-10-23/ni/work/legacy-audit/apps/worker/src/zebra_agent_worker/execution_entrypoints.py"
+    },
+    "baseline/apps/worker/src/zebra_agent_worker/execution_recovery.py": {
+      "sha256": "fb68f0c7425cc0afbebeafd6c887391548595479f64156c87f2861ae9b2ba6d7",
+      "source": "/Users/lukeding/Documents/Codex/2026-10-23/ni/work/legacy-audit/apps/worker/src/zebra_agent_worker/execution_recovery.py"
+    },
+    "baseline/packages/agent-storage/src/agent_storage/postgres/command_coverage_admission.py": {
+      "sha256": "b1434b53b03f7fad51a32a1022bce1ca496e9c63eab84f387f11875be6c5bcf5",
+      "source": "/Users/lukeding/Documents/Codex/2026-10-23/ni/work/legacy-audit/packages/agent-storage/src/agent_storage/postgres/command_coverage_admission.py"
+    },
+    "baseline/packages/agent-storage/src/agent_storage/postgres/command_wakeup_recovery.py": {
+      "sha256": "e2d41c77e3be972541cefc1419de15daf84892dd7826c8fabfa097146599c15d",
+      "source": "/Users/lukeding/Documents/Codex/2026-10-23/ni/work/legacy-audit/packages/agent-storage/src/agent_storage/postgres/command_wakeup_recovery.py"
+    },
+    "baseline/packages/agent-storage/src/agent_storage/postgres/idempotency.py": {
+      "sha256": "87c5219af9d4ae345bfd92c05818d11d321078e7f496d8014278f30210047cec",
+      "source": "/Users/lukeding/Documents/Codex/2026-10-23/ni/work/legacy-audit/packages/agent-storage/src/agent_storage/postgres/idempotency.py"
+    },
+    "host-baseline/frontend/index.tsx": {
+      "sha256": "a925ef65fe7332f86d7471a3da421dca7a3b393a5c58bee59a009a2ad4c4c4dc",
+      "source": "/Users/lukeding/Documents/Codex/2026-10-23/ni/outputs/zebra-erpnext/frontend/index.tsx"
+    },
+    "host-baseline/frontend/protocol.mjs": {
+      "sha256": "0b55dd2ffef6660ac0bb89c6aa7f1ba4e5a0f72822072bbcdb5da75aebd3f52c",
+      "source": "/Users/lukeding/Documents/Codex/2026-10-23/ni/outputs/zebra-erpnext/frontend/protocol.mjs"
+    },
+    "host-baseline/zebra_erpnext/api.py": {
+      "sha256": "74970322594fb0bb4066b0c203e3628fd5541f7f8ec242d6ed0a3c52d06c4c04",
+      "source": "/Users/lukeding/Documents/Codex/2026-10-23/ni/outputs/zebra-erpnext/zebra_erpnext/api.py"
+    },
+    "host-baseline/zebra_erpnext/chat.py": {
+      "sha256": "470440caa69dd6d967b140b944bae3dae8119da5b177e75f56f3429644bc9406",
+      "source": "/Users/lukeding/Documents/Codex/2026-10-23/ni/outputs/zebra-erpnext/zebra_erpnext/chat.py"
+    },
+    "host-baseline/zebra_erpnext/client.py": {
+      "sha256": "6631bbb511eaf7c2c5cec4b2ae01bbb2dd903ce909ae609878c91cf422bd2d89",
+      "source": "/Users/lukeding/Documents/Codex/2026-10-23/ni/outputs/zebra-erpnext/zebra_erpnext/client.py"
+    },
+    "host-baseline/zebra_erpnext/history.py": {
+      "sha256": "cd86535e7e7ba331b2b307a318feae2e1ed76323eb8a7d65482b9a49d7b27063",
+      "source": "/Users/lukeding/Documents/Codex/2026-10-23/ni/outputs/zebra-erpnext/zebra_erpnext/history.py"
+    },
+    "host-baseline/zebra_erpnext/presentation.py": {
+      "sha256": "37c805fec4379bf3f67dd683982ceb1d279edde0cb3900ebcb6a04ae1e417b65",
+      "source": "/Users/lukeding/Documents/Codex/2026-10-23/ni/outputs/zebra-erpnext/zebra_erpnext/presentation.py"
+    },
+    "host-baseline/zebra_erpnext/public/zebra.css": {
+      "sha256": "862949f04d337998a388d46e693b4474e7f0f837c3684f20b8bddfe0a4a44691",
+      "source": "/Users/lukeding/Documents/Codex/2026-10-23/ni/outputs/zebra-erpnext/zebra_erpnext/public/zebra.css"
+    },
+    "host-baseline/zebra_erpnext/public/zebra.js": {
+      "sha256": "52546e1c44864361bbd136751dae963e5bfde37e28fed92ffd723897a5a3f936",
+      "source": "/Users/lukeding/Documents/Codex/2026-10-23/ni/outputs/zebra-erpnext/zebra_erpnext/public/zebra.js"
+    },
+    "host-baseline/zebra_erpnext/resources.py": {
+      "sha256": "db10c148d1e79d4f888979806c97063842ec45af64b851fc8be60d2a75053410",
+      "source": "/Users/lukeding/Documents/Codex/2026-10-23/ni/outputs/zebra-erpnext/zebra_erpnext/resources.py"
+    }
+  },
+  "refreshed_baselines": {
+    "host-baseline/zebra_erpnext/cloud.py": {
+      "sha256": "d9651de6128cbc87a811d77fba136c68182aa292550efed22bb9abbfedc260fe",
+      "source": "/Users/lukeding/Documents/Codex/2026-10-23/ni/outputs/zebra-erpnext/zebra_erpnext/cloud.py",
+      "superseded_sha256": "fedd425a0bf05fe82cd8855a67348182a0b3713f54c8687aacfa1de4f1890cb7"
+    }
+  }
+}

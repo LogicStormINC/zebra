@@ -1,0 +1,167 @@
+{
+  "baseline_commit": "1ce0889",
+  "baseline_includes_public_dirty_private_hooks": true,
+  "files": [
+    {
+      "path": "cloud-patches/operator/private_workspace_operator.py",
+      "inherited_sha256": "523ff0af520839deb8cbc9e8477b5d0d1dc4be68043457d5fe607ead83dc0949",
+      "candidate_sha256": "e053d94ad12a19d67bf8f6065c47866d39170e1ba90537291745a274a5daef67"
+    },
+    {
+      "path": "cloud-patches/overrides/packages/agent-runtime/src/agent_runtime/erp_private_workspace.py",
+      "inherited_sha256": "ce1117cef39b8c569181c1de2c39c988fb83deec2d26a11779a0b550d5370c5b",
+      "candidate_sha256": "c4a69f3c55e0fd7113ec40aed163173c02311acebeedd8dbf02d83aa1d24aa6f"
+    },
+    {
+      "path": "cloud-patches/overrides/packages/agent-runtime/src/agent_runtime/workspace_runtime_resolver.py",
+      "inherited_sha256": "03234b43c518caab6882734661d16c8dee9934db5f251f03c7eaa0651190972d",
+      "candidate_sha256": "aafb145c8a985fac87b780cfb1ff2ec9cb8bcc9315a027e2da4fa79703ca9b88",
+      "native_capture_sha256": "8a6cf71dcb7eb9159f6c06d328e0a901076c626dba9fa0f6625ff3f6dc674b4e"
+    },
+    {
+      "path": "cloud-patches/overrides/packages/agent-storage/src/agent_storage/postgres/erp_private_workspace.py",
+      "inherited_sha256": "f462cca342e3b41793f96ce23079094a4a9f1afd271369d39bc082f46d801556",
+      "candidate_sha256": "0a716198f7ef6099f2d050a5555d3f1adebfce08476bc87c3c17c84592eac411"
+    },
+    {
+      "path": "cloud-patches/overrides/apps/worker/src/zebra_agent_worker/erp_private_workspace_proof.py",
+      "inherited_sha256": null,
+      "candidate_sha256": "eb3e12b8eccc6ef75e57fda3a8a295d31635ce3d0d7c6b587867a17bad9e9432"
+    },
+    {
+      "path": "cloud-patches/Dockerfile.worker",
+      "inherited_sha256": "da7686bd095b2b641c83ac9fe64987c72b0cabce4a55e452234c7387beae5caf",
+      "candidate_sha256": "cadd48dbbc640b4b1d13702bd43c585f02e61319d6628e918f3a2b6fe6b0a9b8"
+    },
+    {
+      "path": "cloud-patches/tests/check_private_workspace.py",
+      "inherited_sha256": "6adcacb406f8b097a3fd9b90920b8dc0d6c01b31e7f5004dec278edb7e7a2f95",
+      "candidate_sha256": "e89d4ebae399b1006a17da35ebad2bdd5ab0d8fcea6734b90338c796d214cca6"
+    },
+    {
+      "path": "cloud-patches/tests/check_private_workspace_native.py",
+      "inherited_sha256": "fe1d8473cd4144255cb58931e77a07773b2b5ca01837b3b995296bc285070349",
+      "candidate_sha256": "b8ca78fc4b7253ce9603c1ed7fdd174b61d21076680fa414592c7e691e55a994"
+    },
+    {
+      "path": "cloud-patches/tests/check_private_workspace_hardening.py",
+      "inherited_sha256": null,
+      "candidate_sha256": "180bead3d11e4dd9cf30b3585e2c14d0d9845097cd60bf63de7778e7e99a6797"
+    },
+    {
+      "path": "cloud-patches/PRIVATE_WORKSPACE_HARDENING_REVIEW.md",
+      "inherited_sha256": null,
+      "candidate_sha256": "6e6a1fa57e8d50f9d96cad4f2b94f7eb401c2c2c7cf0beffa0a1ad25764a6dee"
+    },
+    {
+      "path": "cloud-patches/overrides/apps/worker/src/zebra_agent_worker/erp_private_preparation.py",
+      "inherited_sha256": null,
+      "candidate_sha256": "8a055dda22fd286562a91c88158a65394c0dab69f7810fbf4f6c60f443964054"
+    },
+    {
+      "path": "cloud-patches/overrides/apps/worker/src/zebra_agent_worker/command_process.py",
+      "inherited_sha256": "01dad3606e096f9045706eee89ce7abf08f4f36792549fa4fe8402eea96dd17c",
+      "candidate_sha256": "873e0c44b663b810a33d9dbcaf7343a54c7c5ce93e1dfb108663ec1bfdb0f8e0",
+      "native_capture_sha256": "dcabb0e982e8ce27e90a83f9649f59b16182f35d05fcf513bd92ff2e844f8bf7"
+    },
+    {
+      "path": "cloud-patches/overrides/apps/worker/src/zebra_agent_worker/loop.py",
+      "inherited_sha256": "f8b240f168d1720a8199a4cfccb916c5ce1b78d1ec97153483a9e1e1da04e08e",
+      "candidate_sha256": "a9df220c898bd1dfc2cbdda17cbca15e615bdb602d98d84a94da7a7ae0b60452",
+      "native_capture_sha256": "6c5016b77970c25cfa7f076f8090d1b28d7f109feeae01757e9a2d64906931e9"
+    },
+    {
+      "path": "cloud-patches/overrides/packages/agent-runtime/src/agent_runtime/command_wakeup_consumer.py",
+      "inherited_sha256": null,
+      "candidate_sha256": "2a15738bea8cf89190c178140cb77d79a297a67c7149c7428af60c6024e62678",
+      "native_capture_sha256": "33af5e99fe86c8c63ed9b88f0b0a6c1e796e89b3bfeaf01ca5f02e9e8731486b"
+    },
+    {
+      "path": "cloud-patches/overrides/packages/agent-storage/src/agent_storage/postgres/command_read_preflight.py",
+      "inherited_sha256": "8bcbf679495add126d8f01d5a38254ac7315f607d8f42db9e8729064695436e2",
+      "candidate_sha256": "d35d06fd74683351c41712b1297a76f61f43eb9831f68c5def1c9bd18d7b29e4",
+      "native_capture_sha256": "43975f6f43fd0e831437512ef1ddba5bad434804d0a8881bb5c85bf4ed83f253"
+    },
+    {
+      "path": "cloud-patches/overrides/packages/agent-storage/src/agent_storage/postgres/command_wakeup_handoff.py",
+      "inherited_sha256": "c0c5b5a281fdb7bbd2cd7f91316ea1e638fdd54b58ef7b2fec178a731f66f4c1",
+      "candidate_sha256": "423bb584dbdf02619d786565a6fd54b1963a0e556e9dde476d92f684c16130a2",
+      "native_capture_sha256": "1f60ab77b498005a555d2eea784cc926a219aa9bee4151204fc027e9e32e8e8a"
+    },
+    {
+      "path": "cloud-patches/overrides/packages/agent-storage/src/agent_storage/postgres/coverage_recovery_preparation.py",
+      "inherited_sha256": null,
+      "candidate_sha256": "dc678a82a81c890c22bea14fc0f3731fe71f2c22cd4a6524c948655656f9e356",
+      "native_capture_sha256": "5e5fe57fc393cd6146081c27de2ff7dbc822560c14915ba06376e2a7996f2e62"
+    },
+    {
+      "path": "cloud-patches/Dockerfile.api",
+      "inherited_sha256": "5bb2e6adc06ac7500947e922f61ac8ac7573b4661acab55ada146b7ce1a9dcc8",
+      "candidate_sha256": "39fc54299a78d67ff39ad96040d5b093f46b2aab78692c7f3a777c449c48d216"
+    },
+    {
+      "path": "cloud-patches/tests/check_legacy_containment.py",
+      "inherited_sha256": "a1c815c2e4b19dfa4f465ae63ce99d5d5d6d93c086c5b12246f34329f191827d",
+      "candidate_sha256": "1c09b518cd3f26af2b557db1e7dd0f9ff5b55195551cca3b3fb377c8383b8673"
+    },
+    {
+      "path": "cloud-patches/tests/check_private_preparation_native.py",
+      "inherited_sha256": null,
+      "candidate_sha256": "a16cc954dd7f64625285f7fd8960ce06898e89c8e0ed70c42345200b1eb7c51b"
+    },
+    {
+      "path": "cloud-patches/overrides/apps/worker/src/zebra_agent_worker/command_consumer.py",
+      "inherited_sha256": "32d35656b8c6c72e0c9cf29b8e56e610b5252c0918347d1dd18de94c03a59b8a",
+      "candidate_sha256": "39a096a6c8454ce6b14422ad28c882a28f25097140f3e144345e017b8eedcf7f",
+      "native_capture_sha256": "109e75e96880b3205bd1307b026a23176ccc218cc92e2f9a62f3158655052583"
+    },
+    {
+      "path": "cloud-patches/overrides/apps/worker/src/zebra_agent_worker/execution_recovery.py",
+      "inherited_sha256": "5e275de7dd2f8298b1f2b630cac87e5d218ab60ace05f8c34ec525f286daf10b",
+      "candidate_sha256": "677f751c9549de2d078cdc3a7902d7b5bd3b9701a22051ff2aee5aa0807e982b",
+      "native_capture_sha256": "fb68f0c7425cc0afbebeafd6c887391548595479f64156c87f2861ae9b2ba6d7"
+    },
+    {
+      "path": "cloud-patches/overrides/packages/agent-storage/src/agent_storage/postgres/command_wakeup_relay.py",
+      "inherited_sha256": null,
+      "candidate_sha256": "3d1d733a620c4cac9ac8f45f77514d030a6ea914fffb34c20a618f29f2d37ddb",
+      "native_capture_sha256": "ede626106935f8387b853fcfc9b3b79a1c63739a6f7dd43a710d69274935ce40"
+    },
+    {
+      "path": "cloud-patches/overrides/packages/agent-storage/src/agent_storage/postgres/command_wakeup_receipts.py",
+      "inherited_sha256": null,
+      "candidate_sha256": "57f7c2dd184888922077fd855ff5f0bdcc3a169670c6a06d86a56d741f1a68a1",
+      "native_capture_sha256": "78223ff8f790b60a3b8341bfa59b29d838d25b663dc5e5c6fae81050d86f2bdc"
+    }
+  ],
+  "inherited_private_hooks": [
+    {
+      "path": "cloud-patches/overrides/apps/worker/src/zebra_agent_worker/cloud_composition.py",
+      "candidate_sha256": "39c4eb59200540beb495f3dc2a2c47273bd19e8b25bbd4a9ac154855b43a5592"
+    },
+    {
+      "path": "cloud-patches/overrides/apps/worker/src/zebra_agent_worker/execution.py",
+      "candidate_sha256": "1e5a0211b900f94df562c5879d10d916bdab69775fcee0e3a307b1bfa30baf5b"
+    },
+    {
+      "path": "cloud-patches/overrides/packages/agent-storage/src/agent_storage/postgres/erp_workspace_policy.py",
+      "candidate_sha256": "9832b9fe1abe1392bbb975301f4a7c1f3c78a750f0ae7501875cda7e39e1677c"
+    },
+    {
+      "path": "cloud-patches/overrides/packages/agent-storage/src/agent_storage/postgres/projections.py",
+      "candidate_sha256": "b59fa3482b7cf09712b1e1379d7ccae7809a43ed997bf01716c850e3ce6a95bb"
+    },
+    {
+      "path": "cloud-patches/tests/overlay_imports.py",
+      "candidate_sha256": "d4a578cea7fcdec3c200afa5e75aa57e50761afac9b1353d8f87a3e7c4dff357"
+    },
+    {
+      "path": "cloud-patches/baseline/packages/agent-runtime/src/agent_runtime/workspace_provisioner.py",
+      "candidate_sha256": "08e47acc09698e10124e9b3447a4d325ab229bba05bce5f038db0d912a99cb49"
+    },
+    {
+      "path": "cloud-patches/baseline/packages/agent-runtime/src/agent_runtime/workspace_quota.py",
+      "candidate_sha256": "3b2ba2ea6a00546bbd42bba3d85735f89787a95e901504f45eef34099e6618b9"
+    }
+  ]
+}

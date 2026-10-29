@@ -4,12 +4,14 @@ from __future__ import annotations
 
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, replace
+from pathlib import Path
 from uuid import UUID, uuid4
 
 import httpx
 from agent_core.domain.cloud_scope import OpaqueAuthorityScope
 from agent_core.domain.identifiers import ArtifactId, SessionId
 from agent_core.domain.sessions import Session
+from agent_core.domain.workspace_control import WorkspaceId
 from agent_core.ports import (
     ArtifactObjectStorePort,
     EffectDispatchPort,
@@ -99,6 +101,8 @@ def compose_cloud_worker(
     memory_settings: MemoryGatewaySettings | None = None,
     memory_environ: Mapping[str, str] | None = None,
     memory_http_client: httpx.Client | None = None,
+    prepare_workspace_volume: Callable[[WorkspaceId, UUID], None] | None = None,
+    verify_workspace_volume: Callable[[WorkspaceId, UUID, Path], None] | None = None,
 ) -> CloudWorkerComposition:
     required_object_operations = (
         "put_if_absent",
@@ -169,7 +173,6 @@ def compose_cloud_worker(
         )
 
     import os
-    from pathlib import Path
 
     from agent_runtime import PostgresWorkspaceProvisioner
 
@@ -227,7 +230,9 @@ def compose_cloud_worker(
                 snapshot_writer=write_object,
                 snapshot_reader=read_object,
                 single_root_layout=os.environ.get("ZEBRA_WORKSPACE_VOLUME_LAYOUT", "") == "root",
-            )
+            ),
+            prepare_volume=prepare_workspace_volume,
+            verify_volume=verify_workspace_volume,
         )
 
     from hashlib import sha256 as _sha

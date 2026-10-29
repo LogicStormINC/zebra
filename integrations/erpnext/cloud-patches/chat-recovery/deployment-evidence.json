@@ -1,0 +1,93 @@
+{
+  "verified_on": "2026-10-28",
+  "timezone": "Asia/Shanghai",
+  "scope_passed": [
+    "real model chat",
+    "permission-scoped ERP reads",
+    "manufacturing queries and conservative scheduling advice",
+    "Production Plan approval preparation and confirmed create/update/submit"
+  ],
+  "maintenance": false,
+  "connector_profile_revision": 3,
+  "binding_revision": 4,
+  "manifest_digest": "a78ee2b09eeede8dc54feac65927e56ce155923c491e42ee7bce5ab0a7b7ef76",
+  "images": {
+    "api": "sha256:6e4b2cdfa32b216800d5b8ff100565eb4b7664347af781a17d3a961bb3edcba2",
+    "worker": "sha256:da5dce924bd38499767fd7ceb2860aa33c3b5bf9f5d5e4066ef56e0ebb045d76",
+    "host": "sha256:334476c787296a08fa4018ec18017062063490cdab0639809a2a2b6faabbad1d"
+  },
+  "deployed_source_files_hash_matched": 27,
+  "erp": {
+    "language": "zh",
+    "currency": "CNY",
+    "timezone": "Asia/Shanghai",
+    "hrms_installed": true,
+    "sales_orders": 28,
+    "work_orders": 46,
+    "job_cards": 168,
+    "workstations": 4
+  },
+  "plan_acceptance": {
+    "name": "MFG-PP-2026-00011",
+    "created_draft_qty": 1,
+    "updated_qty": 2,
+    "final_docstatus": 1,
+    "final_status": "Submitted",
+    "plans_before": 10,
+    "plans_after": 11,
+    "business_unchanged_before_each_confirmation": true,
+    "repeat_confirmation_idempotent": true,
+    "confirmation_path": "independent authenticated cookie and CSRF RPC, authorized by user; not a model tool"
+  },
+  "final_conversation": "3imoo6pgvg",
+  "final_task_id": "d30b250d-8108-4354-9df1-f3462a49d13b",
+  "final_task": {
+    "completed_turns": 3,
+    "failed_or_suspended": 0,
+    "canonical_successful_propose": 2,
+    "canonical_successful_read": 4,
+    "fresh_history": true,
+    "post_submit_model_read_verified": true
+  },
+  "preservation": {
+    "original_tasks": 8,
+    "original_segments": 10,
+    "original_events": 591,
+    "original_bindings": 22,
+    "original_task_row_fingerprints_unchanged": true,
+    "original_business_rows_unchanged_in_tables": 20,
+    "only_new_business_rows": {
+      "Production Plan": 1,
+      "Production Plan Item": 1
+    },
+    "no_new_work_orders_job_cards_stock_or_gl_entries": true,
+    "schema_highest_version": 105,
+    "schema_ledger_records": 104,
+    "original_general_worker_stopped": true,
+    "xgo_stopped": 17
+  },
+  "native_checks_passed": [
+    "API105 binding builder and five drift refusals",
+    "real bound empty extension snapshot with unchanged rows",
+    "native fenced readonly gateway without payload/runtime",
+    "real SQL Context through pre-provider messages with no filesystem access",
+    "real canonical proposal evidence and native contract parser; missing evidence refused"
+  ],
+  "retained_failures": [
+    "original unresolved connector binding",
+    "missing native empty extension store",
+    "unnecessary Effect payload requirement",
+    "logical workspace treated as filesystem path",
+    "full-history projector backfill lock contention",
+    "missing published aggregate argument schema",
+    "read-only stock_uom/description rejected in initial test input",
+    "approval preparation incorrectly inferred as file Artifact before scoped Host contract fix"
+  ],
+  "verification_limits": [
+    "No new browser visual acceptance in this recovery; actual same-origin HTTP and canonical native events verified.",
+    "Scheduling advice is advisory and does not constitute a finite-capacity optimizer.",
+    "Attachment/Artifact, commands, arbitrary ERP mutations, MCP, memory and recurring jobs are not enabled by this bounded recovery.",
+    "Consolidated recipes describe identical production files; deployed images retain separately reviewed layer history."
+  ],
+  "private_server_evidence": "/opt/erpnext/zebra-agent/chat-read-recovery-20261028-1"
+}

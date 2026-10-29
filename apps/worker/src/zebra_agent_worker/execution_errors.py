@@ -44,6 +44,16 @@ class WorkerPluginSetupUnavailable(WorkerExecutionError):
     """Frozen plugin setup failed; suspend without closing or automatic retry."""
 
 
+class WorkerAuthoritySetupUnavailable(WorkerExecutionError):
+    """No model dispatch occurred; retain the Turn and require explicit reconciliation."""
+
+    def __init__(self, reason_code: str = "host_authority_unavailable") -> None:
+        if reason_code not in {"host_authority_unavailable", "host_authority_denied"}:
+            raise ValueError("invalid Host startup refusal")
+        self.reason_code = reason_code
+        super().__init__(reason_code)
+
+
 class RetryableWorkerSetupError(WorkerExecutionError):
     """Transient setup failure leaves the Session resumable."""
 
@@ -147,7 +157,9 @@ def exception_attempt_result(exc: Exception, metadata: dict[str, object]) -> Har
     if isinstance(exc, ExecutionAuthorityResolutionError):
         reason = "execution_authority_unavailable"
     elif isinstance(
-        exc, psycopg.errors.LockNotAvailable | psycopg.errors.DeadlockDetected
+        exc,
+        psycopg.errors.LockNotAvailable
+        | psycopg.errors.DeadlockDetected
         | psycopg.errors.SerializationFailure,
     ):
         reason = "execution_storage_contention"

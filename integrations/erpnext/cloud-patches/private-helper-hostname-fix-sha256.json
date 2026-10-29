@@ -1,0 +1,48 @@
+{
+  "baseline_public_commit": "e6f064cf2bc9588d552ac6ede04deaa185f251c5",
+  "scope": "isolated host operator helper hostname wiring; no server or public repo mutation",
+  "files": [
+    {
+      "path": "cloud-patches/operator/private_workspace_operator.py",
+      "status": "changed",
+      "inherited_sha256": "e053d94ad12a19d67bf8f6065c47866d39170e1ba90537291745a274a5daef67",
+      "candidate_sha256": "14b556b63a0cc627875e7ccaee4323d5d5f8b9a2e2796b486a3bd7a412752ff6"
+    },
+    {
+      "path": "cloud-patches/tests/check_private_workspace_hardening.py",
+      "status": "changed",
+      "inherited_sha256": "180bead3d11e4dd9cf30b3585e2c14d0d9845097cd60bf63de7778e7e99a6797",
+      "candidate_sha256": "630803f4d999605829020c43f3d25b9c08c41daf5bdb4ed7e91442d109e55197"
+    },
+    {
+      "path": "cloud-patches/tests/check_private_workspace.py",
+      "status": "inherited",
+      "inherited_sha256": "e89d4ebae399b1006a17da35ebad2bdd5ab0d8fcea6734b90338c796d214cca6",
+      "candidate_sha256": "e89d4ebae399b1006a17da35ebad2bdd5ab0d8fcea6734b90338c796d214cca6"
+    },
+    {
+      "path": "cloud-patches/overrides/packages/agent-runtime/src/agent_runtime/erp_private_workspace.py",
+      "status": "inherited",
+      "inherited_sha256": "c4a69f3c55e0fd7113ec40aed163173c02311acebeedd8dbf02d83aa1d24aa6f",
+      "candidate_sha256": "c4a69f3c55e0fd7113ec40aed163173c02311acebeedd8dbf02d83aa1d24aa6f"
+    },
+    {
+      "path": "cloud-patches/PRIVATE_WORKSPACE_HARDENING_REVIEW.md",
+      "status": "changed",
+      "inherited_sha256": "6e6a1fa57e8d50f9d96cad4f2b94f7eb401c2c2c7cf0beffa0a1ad25764a6dee",
+      "candidate_sha256": "01e3f5c7271001ac7700bf5c568ba52daea188daf86fa3b85fdeaacd1fc4cd20"
+    },
+    {
+      "path": "cloud-patches/overrides/packages/agent-runtime/src/agent_runtime/workspace_runtime_resolver.py",
+      "status": "inherited",
+      "inherited_sha256": "aafb145c8a985fac87b780cfb1ff2ec9cb8bcc9315a027e2da4fa79703ca9b88",
+      "candidate_sha256": "aafb145c8a985fac87b780cfb1ff2ec9cb8bcc9315a027e2da4fa79703ca9b88"
+    },
+    {
+      "path": "cloud-patches/overrides/apps/worker/src/zebra_agent_worker/execution.py",
+      "status": "inherited",
+      "inherited_sha256": "1e5a0211b900f94df562c5879d10d916bdab69775fcee0e3a307b1bfa30baf5b",
+      "candidate_sha256": "1e5a0211b900f94df562c5879d10d916bdab69775fcee0e3a307b1bfa30baf5b"
+    }
+  ]
+}

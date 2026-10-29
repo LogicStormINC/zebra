@@ -1,0 +1,497 @@
+from __future__ import annotations
+
+import json
+from dataclasses import dataclass, replace
+from datetime import UTC, datetime
+from pathlib import Path
+
+from agent_core.application import attachment_refs_from_event
+from agent_core.application.agent_definition_binding import (
+    DefinitionBindingError,
+    validate_recovered_snapshot,
+)
+from agent_core.application.coverage_admission import validate_coverage_admission
+from agent_core.domain.agent_definition_snapshots import AgentDefinitionSnapshot
+from agent_core.domain.attachments import AttachmentContextInput
+from agent_core.domain.client_context import ClientStateSnapshot
+from agent_core.domain.context_capsule import ContextCapsule
+from agent_core.domain.context_inheritance import DelegatedContextSnapshot
+from agent_core.domain.coverage_task_admission import (
+    CoverageTaskAdmission,
+    coverage_admission_input,
+)
+from agent_core.domain.events import EventType, SessionEvent
+from agent_core.domain.host_authority import HostContextEnvelope
+from agent_core.domain.identifiers import new_message_id
+from agent_core.domain.image_attachments import ImageAttachmentContextInput
+from agent_core.domain.messages import MessageRole, SessionMessage
+from agent_core.domain.modeling import (
+    ModelInvocationPolicy,
+    ModelReasoningEffort,
+    ModelThinkingMode,
+)
+from agent_core.domain.session_history import normalize_history_session_ids
+from agent_core.domain.task_bindings import TaskBindingSnapshot, host_context_digest
+from agent_core.domain.tool_profiles import ToolProfile
+from agent_core.domain.turns import InteractionMode
+from agent_core.domain.workspaces import WorkspaceProjection
+from agent_core.harness.task_contracts import (
+    TaskAcceptanceContract,
+    infer_task_contract,
+    parse_task_contract,
+)
+from agent_core.ports import ArtifactPayloadReadPort
+from agent_core.ports.context_compiler import RuntimeEvidenceInput
+from agent_security import NetworkProfile, PolicyProfile, parse_network_profile
+from agent_storage import (
+    load_attachment_contexts_from_reader,
+    load_image_attachment_contexts_from_reader,
+)
+
+
+def recover_client_state_evidence(
+    events: list[SessionEvent],
+) -> RuntimeEvidenceInput | None:
+    """Recover only the latest API-admitted, redacted Client State snapshot."""
+
+    from agent_context.client_state import client_state_evidence
+
+    for event in reversed(events):
+        if event.event_type is not EventType.SESSION_COMMAND_ACCEPTED:
+            continue
+        command = event.payload.get("payload")
+        client = command.get("client") if isinstance(command, dict) else None
+        if not isinstance(client, dict):
+            continue
+        state = client.get("state_snapshot")
+        if not isinstance(state, dict):
+            continue
+        client_session_id = client.get("client_session_id")
+        frontend_app_id = client.get("frontend_app_id")
+        profile_digest = client.get("profile_digest")
+        ui_revision = client.get("ui_revision")
+        redacted_keys = client.get("redacted_keys", [])
+        if (
+            not isinstance(client_session_id, str)
+            or not client_session_id
+            or (frontend_app_id is not None and not isinstance(frontend_app_id, str))
+            or (profile_digest is not None and not isinstance(profile_digest, str))
+            or type(ui_revision) is not int
+            or ui_revision < 0
+            or not isinstance(redacted_keys, list)
+            or any(not isinstance(item, str) for item in redacted_keys)
+        ):
+            raise ValueError("client state snapshot metadata is invalid")
+        snapshot = ClientStateSnapshot(
+            client_session_id=client_session_id,
+            frontend_app_id=frontend_app_id,
+            profile_digest=profile_digest,
+            ui_revision=ui_revision,
+            state=state,
+            redacted_keys=tuple(redacted_keys),
+        )
+        expected_digest = client.get("state_digest")
+        if expected_digest != snapshot.state_digest:
+            raise ValueError("client state snapshot digest does not match admission")
+        return client_state_evidence(snapshot)
+    return None
+
+
+@dataclass(frozen=True)
+class RecoveredTask:
+    title: str
+    user_input: str
+    workspace_root: Path
+    policy_profile: str
+    tool_profile: ToolProfile
+    network_profile: NetworkProfile
+    mcp_allowlist: tuple[str, ...] | None
+    skill_components: tuple[str, ...] | None
+    history_session_ids: tuple[str, ...] | None
+    max_attempts: int
+    max_model_calls: int | None
+    max_tool_calls: int | None
+    attachments: tuple[AttachmentContextInput, ...]
+    runtime_evidence: tuple[RuntimeEvidenceInput, ...]
+    host_context: HostContextEnvelope | None
+    definition_snapshot: AgentDefinitionSnapshot | None
+    image_attachments: tuple[ImageAttachmentContextInput, ...] = ()
+    conversation_history: tuple[SessionMessage, ...] = ()
+    client_state: RuntimeEvidenceInput | None = None
+    delegated_context: DelegatedContextSnapshot | None = None
+    interaction_mode: InteractionMode = InteractionMode.ONE_SHOT
+    model_invocation_policy: ModelInvocationPolicy | None = None
+    acceptance_contract: TaskAcceptanceContract | None = None
+    coverage_admission: CoverageTaskAdmission | None = None
+
+
+def apply_bound_host_context(
+    task: RecoveredTask,
+    binding: TaskBindingSnapshot | None,
+) -> RecoveredTask:
+    """Use only the exact Host context frozen into the latest binding revision."""
+
+    if binding is None or binding.host_capability.host_context is None:
+        if task.coverage_admission is not None:
+            validate_coverage_admission(
+                task.coverage_admission,
+                host_context=task.host_context if binding is None else None,
+                now=datetime.now(UTC),
+            )
+        return task
+    context = binding.host_capability.host_context
+    host = binding.host_capability
+    if host_context_digest(context) != host.grant_digest:
+        raise ValueError("bound Host context digest does not match the Task binding")
+    if context.host_app_id != host.host_app_id or context.namespace_id != host.namespace_id:
+        raise ValueError("bound Host context authority does not match the Task binding")
+    if task.coverage_admission is not None:
+        validate_coverage_admission(
+            task.coverage_admission, host_context=context, now=datetime.now(UTC)
+        )
+    return replace(task, host_context=context)
+
+
+def recover_task(
+    events: list[SessionEvent],
+    *,
+    workspace: WorkspaceProjection,
+    fallback_title: str,
+    attachment_reader: ArtifactPayloadReadPort,
+    active_capsule: ContextCapsule | None = None,
+    handoff_evidence: RuntimeEvidenceInput | None = None,
+    client_state_evidence: RuntimeEvidenceInput | None = None,
+) -> RecoveredTask:
+    user_input: str | None = None
+    task_payload: dict[str, object] | None = None
+    user_event: SessionEvent | None = None
+    strict_identity: CoverageTaskAdmission | None = None
+    for event in events:
+        if event.event_type is EventType.USER_MESSAGE_RECEIVED:
+            content = event.payload.get("content")
+            if isinstance(content, str) and content.strip():
+                user_input = content.strip()
+                user_event = event
+        if event.event_type is EventType.TASK_PREPARED:
+            raw_admission = event.payload.get("coverage_admission")
+            candidate = (
+                CoverageTaskAdmission.model_validate(coverage_admission_input(raw_admission))
+                if raw_admission is not None
+                else None
+            )
+            if strict_identity is not None and candidate != strict_identity:
+                raise ValueError("TASK_PREPARED dropped or changed strict coverage identity")
+            strict_identity = candidate
+            task_payload = event.payload
+    if user_input is None or user_event is None or task_payload is None:
+        raise ValueError("queued session is missing bootstrap task input")
+    coverage_admission = (
+        validate_coverage_admission(
+            task_payload["coverage_admission"],
+            host_context=task_payload.get("host_context"),
+            now=datetime.now(UTC),
+        )
+        if task_payload.get("coverage_admission") is not None
+        else None
+    )
+    title = task_payload.get("title")
+    resolved_title = title.strip() if isinstance(title, str) and title.strip() else fallback_title
+    policy_profile = workspace.policy_profile or PolicyProfile.WORKSPACE_WRITE.value
+    try:
+        clarification_refs = tuple(
+            ref for item in events if item.sequence > user_event.sequence
+            and item.event_type is EventType.CLARIFICATION_RESPONDED
+            for ref in attachment_refs_from_event(item)
+        )
+        refs = attachment_refs_from_event(user_event) + clarification_refs
+        if clarification_refs:
+            from agent_core.application.session_attachments import validate_attachment_context_budget
+            validate_attachment_context_budget(refs)
+        attachments = load_attachment_contexts_from_reader(
+            attachment_reader,
+            session_id=user_event.session_id,
+            refs=refs,
+        )
+        image_attachments = load_image_attachment_contexts_from_reader(
+            attachment_reader,
+            session_id=user_event.session_id,
+            refs=refs,
+        )
+    except (FileNotFoundError, ValueError) as exc:
+        raise ValueError(f"queued session attachment recovery failed: {exc}") from exc
+    definition_snapshot = _definition_snapshot(task_payload.get("definition_snapshot"))
+    invocation_policy = _model_invocation_policy(user_event.payload, task_payload)
+    if (
+        image_attachments
+        and invocation_policy is not None
+        and invocation_policy.profile_id == "deepseek-v4-pro-executor-v1"
+    ):
+        raise ValueError("image attachments require the DeepSeek V4.1 Flash profile")
+    host_evidence, task_contract = _host_run_context(events, fallback_goal=user_input)
+    return RecoveredTask(
+        title=resolved_title,
+        user_input=user_input,
+        workspace_root=(
+            Path(workspace.workspace_root)
+            if str(workspace.workspace_root).startswith("workspace:/")
+            else Path(workspace.workspace_root).expanduser().resolve()
+        ),
+        policy_profile=policy_profile,
+        tool_profile=workspace.tool_profile,
+        network_profile=parse_network_profile(
+            workspace.network_profile,
+            domain_allowlist=workspace.network_allowlist,
+        ),
+        mcp_allowlist=workspace.mcp_allowlist,
+        skill_components=workspace.skill_components,
+        history_session_ids=_history_session_ids(task_payload.get("history_session_ids")),
+        max_attempts=_optional_positive_int(task_payload.get("max_attempts")) or 1,
+        max_model_calls=_optional_positive_int(task_payload.get("max_model_calls")),
+        max_tool_calls=_optional_positive_int(task_payload.get("max_tool_calls")),
+        attachments=attachments,
+        image_attachments=image_attachments,
+        host_context=_host_context(task_payload.get("host_context")),
+        definition_snapshot=definition_snapshot,
+        conversation_history=_conversation_history(events, before_sequence=user_event.sequence),
+        delegated_context=_delegated_context(task_payload.get("delegated_context")),
+        interaction_mode=_interaction_mode(task_payload.get("interaction_mode")),
+        runtime_evidence=(
+            *host_evidence,
+            *_context_capsule_evidence(events, active_capsule=active_capsule),
+            *((handoff_evidence,) if handoff_evidence is not None else ()),
+            *((client_state_evidence,) if client_state_evidence is not None else ()),
+        ),
+        client_state=client_state_evidence,
+        model_invocation_policy=invocation_policy,
+        acceptance_contract=task_contract,
+        coverage_admission=coverage_admission,
+    )
+
+
+def _host_run_context(
+    events: list[SessionEvent], *, fallback_goal: str
+) -> tuple[tuple[RuntimeEvidenceInput, ...], TaskAcceptanceContract]:
+    """Recover bounded AG-UI Host context from the durable accepted command."""
+
+    evidence: list[RuntimeEvidenceInput] = []
+    contract = infer_task_contract(fallback_goal)
+    for event in reversed(events):
+        if event.event_type is not EventType.SESSION_COMMAND_ACCEPTED:
+            continue
+        raw_payload = event.payload.get("payload")
+        raw_input = raw_payload.get("input") if isinstance(raw_payload, dict) else None
+        raw_context = raw_input.get("context") if isinstance(raw_input, dict) else None
+        if not isinstance(raw_context, list):
+            continue
+        for item in raw_context[:12]:
+            if not isinstance(item, dict):
+                continue
+            description = item.get("description")
+            value = item.get("value")
+            if not isinstance(description, str) or not description.strip():
+                continue
+            if not isinstance(value, str) or not value.strip() or len(value) > 32_000:
+                continue
+            if description == "Agent task contract":
+                try:
+                    parsed = json.loads(value)
+                    if isinstance(parsed, dict):
+                        contract = parse_task_contract(parsed, fallback_goal=fallback_goal)
+                except (ValueError, TypeError, json.JSONDecodeError):
+                    contract = infer_task_contract(fallback_goal)
+                continue
+            evidence.append(
+                RuntimeEvidenceInput(
+                    kind="host_context",
+                    summary=description.strip()[:256],
+                    details=(value.strip(),),
+                    metadata={"source": "ag_ui_context"},
+                )
+            )
+        break
+    return tuple(evidence), contract
+
+
+def _model_invocation_policy(
+    user_payload: dict[str, object], task_payload: dict[str, object]
+) -> ModelInvocationPolicy | None:
+    profile = user_payload.get("model_profile") or task_payload.get("model_profile")
+    effort = user_payload.get("reasoning_effort") or task_payload.get("reasoning_effort")
+    if profile is None and effort is None:
+        return None
+    if profile not in {
+        "deepseek-v4-flash-executor-v1",
+        "deepseek-v4-pro-executor-v1",
+    }:
+        raise ValueError("queued session model_profile is invalid")
+    if effort not in {"none", "low", "high", "max"}:
+        raise ValueError("queued session reasoning_effort is invalid")
+    disabled = effort == "none"
+    return ModelInvocationPolicy(
+        profile_id=str(profile),
+        thinking_mode=(ModelThinkingMode.DISABLED if disabled else ModelThinkingMode.ENABLED),
+        reasoning_effort=(None if disabled else ModelReasoningEffort(str(effort))),
+    )
+
+
+def _conversation_history(
+    events: list[SessionEvent],
+    *,
+    before_sequence: int,
+) -> tuple[SessionMessage, ...]:
+    messages: list[SessionMessage] = []
+    for event in events:
+        if event.sequence >= before_sequence:
+            break
+        role: MessageRole | None = None
+        content: object = None
+        if event.event_type is EventType.USER_MESSAGE_RECEIVED:
+            role = MessageRole.USER
+            content = event.payload.get("content")
+        elif event.event_type is EventType.TURN_COMPLETED:
+            role = MessageRole.ASSISTANT
+            metadata = event.payload.get("metadata")
+            content = metadata.get("assistant_message") if isinstance(metadata, dict) else None
+        if role is None or not isinstance(content, str) or not content.strip():
+            continue
+        messages.append(
+            SessionMessage(
+                message_id=new_message_id(),
+                role=role,
+                content=content.strip(),
+                created_at=event.created_at,
+            )
+        )
+    # The model-aware context gate owns compaction. Truncating here used a
+    # second, character-based budget and silently moved the request prefix on
+    # every sufficiently long cross-turn conversation.
+    return tuple(messages)
+
+
+def _interaction_mode(value: object) -> InteractionMode:
+    if value is None:
+        return InteractionMode.ONE_SHOT
+    if not isinstance(value, str):
+        raise ValueError("queued session interaction_mode must be a string")
+    try:
+        return InteractionMode(value)
+    except ValueError as exc:
+        raise ValueError(f"queued session interaction_mode is invalid: {exc}") from exc
+
+
+def _definition_snapshot(value: object) -> AgentDefinitionSnapshot | None:
+    if value is None:
+        return None
+    if not isinstance(value, dict):
+        raise ValueError("queued session definition_snapshot must be an object")
+    try:
+        snapshot = AgentDefinitionSnapshot.model_validate(value)
+        validate_recovered_snapshot(snapshot)
+        return snapshot
+    except (ValueError, DefinitionBindingError) as exc:
+        raise ValueError(f"queued session Definition snapshot is invalid: {exc}") from exc
+
+
+def _delegated_context(value: object) -> DelegatedContextSnapshot | None:
+    if value is None:
+        return None
+    if not isinstance(value, dict):
+        raise ValueError("queued session delegated_context must be an object")
+    try:
+        return DelegatedContextSnapshot.model_validate(value)
+    except ValueError as exc:
+        raise ValueError(f"queued session delegated_context is invalid: {exc}") from exc
+
+
+def _history_session_ids(value: object) -> tuple[str, ...] | None:
+    if value is None:
+        return None
+    if not isinstance(value, list):
+        raise ValueError("queued session history_session_ids must be a list")
+    return normalize_history_session_ids(value)
+
+
+def _context_capsule_evidence(
+    events: list[SessionEvent],
+    *,
+    active_capsule: ContextCapsule | None = None,
+) -> tuple[RuntimeEvidenceInput, ...]:
+    if active_capsule is not None:
+        return (_capsule_evidence(active_capsule, events=events),)
+    for event in reversed(events):
+        if event.event_type is not EventType.CONTEXT_COMPACTED:
+            continue
+        raw = event.payload.get("capsule")
+        if not isinstance(raw, dict):
+            continue
+        capsule = ContextCapsule.model_validate(raw)
+        return (_capsule_evidence(capsule, events=events),)
+    return ()
+
+
+def _capsule_evidence(
+    capsule: ContextCapsule,
+    *,
+    events: list[SessionEvent],
+) -> RuntimeEvidenceInput:
+    return RuntimeEvidenceInput(
+        kind="conversation_summary",
+        summary=capsule.objective,
+        details=(
+            *capsule.constraints,
+            *capsule.decisions,
+            *capsule.plan,
+            *(f"Completed: {item}" for item in capsule.completed_actions),
+            *(f"Pending: {item}" for item in capsule.pending_actions),
+            *(f"Rejected: {item}" for item in capsule.rejected_approaches),
+            *(f"Permission boundary: {item}" for item in capsule.permission_boundaries),
+            *_exact_tail_details(capsule, events),
+            f"Immediate next: {capsule.immediate_next}",
+        ),
+        metadata={
+            "capsule_id": capsule.capsule_id,
+            "capsule_version": capsule.version,
+            "source_hash": capsule.source_hash,
+            "profile": capsule.profile,
+            "pending_tools": [tool.model_dump(mode="json") for tool in capsule.pending_tools],
+            "artifact_refs": list(capsule.artifact_refs),
+        },
+    )
+
+
+def _exact_tail_details(
+    capsule: ContextCapsule,
+    events: list[SessionEvent],
+) -> tuple[str, ...]:
+    by_sequence = {event.sequence: event for event in events}
+    details: list[str] = []
+    for reference in capsule.recent_exact_tail_refs:
+        if not reference.startswith("event://"):
+            continue
+        _, _, sequence_text = reference.rpartition("/")
+        try:
+            event = by_sequence.get(int(sequence_text))
+        except ValueError:
+            continue
+        if event is None:
+            continue
+        payload = json.dumps(event.payload, sort_keys=True, ensure_ascii=False)[:2_000]
+        details.append(f"Exact tail event {event.sequence} {event.event_type.value}: {payload}")
+    return tuple(details)
+
+
+def _optional_positive_int(value: object) -> int | None:
+    if not isinstance(value, int) or isinstance(value, bool):
+        return None
+    return value if value > 0 else None
+
+
+def _host_context(value: object) -> HostContextEnvelope | None:
+    if value is None:
+        return None
+    if not isinstance(value, dict):
+        raise ValueError("queued session host_context must be an object")
+    try:
+        return HostContextEnvelope.model_validate(value)
+    except ValueError as exc:
+        raise ValueError("queued session host_context is invalid") from exc

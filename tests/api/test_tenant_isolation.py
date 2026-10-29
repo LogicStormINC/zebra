@@ -183,12 +183,13 @@ def test_tenant_memory_routes_are_tenant_scoped(tmp_path: Path) -> None:
     allowed_user = _get(adapter, "/users/user-tenant-a/memory", TENANT_A)
     assert allowed_user.status_code == 200
     allowed_profile = _get(adapter, "/users/user-tenant-a/memory/profile", TENANT_A)
-    assert allowed_profile.status_code == 200
-    assert allowed_profile.body["derived_from"] == "confirmed_governed_memory"
+    assert allowed_profile.status_code == 403
+    assert allowed_profile.body["status"] == "memory_scope_denied"
     denied_tenant = _get(adapter, "/tenants/tenant-b/memory", TENANT_A)
     assert denied_tenant.status_code == 404
     own_tenant = _get(adapter, "/tenants/tenant-a/memory", TENANT_A)
-    assert own_tenant.status_code in (200, 404)
+    assert own_tenant.status_code == 403
+    assert own_tenant.body["status"] == "memory_scope_denied"
     unscoped = _get(adapter, "/tenants/tenant-z/memory", None)
     assert unscoped.status_code in (200, 404)
 

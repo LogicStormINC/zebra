@@ -12,6 +12,7 @@ from agent_context.capsule import execution_evidence_context
 from agent_core.domain.bundle_definition import BundleDefinitionSnapshot
 from agent_core.domain.coverage_contracts import CoverageRefusalReason, CoverageRefusedError
 from agent_core.domain.events import EventActor, EventType, SessionEvent
+from agent_core.domain.execution_authority import ExecutionAuthorityResolutionError
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.leases import WorkerLease
 from agent_core.domain.plugin_authority import PluginAuthorityUnavailable
@@ -25,7 +26,11 @@ import zebra_agent_worker.provider_continuation_execution as provider_runtime
 import zebra_agent_worker.runtime_setup as runtime_setup
 from zebra_agent_worker.claims import ClaimedSession
 from zebra_agent_worker.continuation_lifecycle import restore_suspended_session_claim
-from zebra_agent_worker.execution_errors import WorkerPluginSetupUnavailable, log_worker_failure
+from zebra_agent_worker.execution_errors import (
+    WorkerAuthoritySetupUnavailable,
+    WorkerPluginSetupUnavailable,
+    log_worker_failure,
+)
 from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
 from zebra_agent_worker.execution_finalization import (
     ExecutedSession,
@@ -442,6 +447,8 @@ def raise_runtime_setup_failure(
     )
     if isinstance(error, PluginAuthorityUnavailable):
         raise WorkerPluginSetupUnavailable("accepted plugin authority is unavailable") from None
+    if isinstance(error, ExecutionAuthorityResolutionError):
+        raise WorkerAuthoritySetupUnavailable() from None
     if cleanup_error is not None:
         raise WorkerExecutionError(f"{error}; runtime cleanup failed: {cleanup_error}") from error
     if isinstance(error, RuntimeCapabilityError):

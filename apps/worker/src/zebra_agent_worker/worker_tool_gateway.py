@@ -1,5 +1,6 @@
 """Tool routing and execution resource ownership for one Worker attempt."""
 
+from collections.abc import Callable
 from dataclasses import dataclass
 
 from agent_core.domain.host_authority import HostContextEnvelope
@@ -65,6 +66,7 @@ class WorkerToolGateway:
     resource_authority_issuer: str | None = None
     host_media_importer: HostMediaArtifactImporter | None = None
     native_scripts: NativeScriptTools | None = None
+    authority_check: Callable[[str, str], None] | None = None
 
     @property
     def model_tools(self) -> tuple[ModelToolDefinition, ...]:
@@ -186,16 +188,22 @@ class WorkerToolGateway:
         return self.local.resolve_model_tool_calls(tool_calls)
 
     def reconcile_effect_receipt(self, receipt: HostEffectReceipt) -> HostEffectReceipt:
+        if self.authority_check is not None:
+            self.authority_check("reconcile", receipt.receipt_digest)
         if self.host is None or self.host_context is None:
             return receipt
         return self.host.reconcile_effect(receipt, self.host_context)
 
     def reconcile_deferred_result(self, call: ToolCall, original: ToolResult) -> ToolResult | None:
+        if self.authority_check is not None:
+            self.authority_check("client_reconcile", str(call.tool_call_id))
         if self.client is None:
             return None
         return self.client.reconcile_deferred_result(call, original)
 
     def execute(self, toolCall: ToolCall) -> ToolResult:
+        if self.authority_check is not None:
+            self.authority_check("tool:" + toolCall.name, str(toolCall.tool_call_id))
         return self._execute(toolCall)
 
     def _execute(self, tool_call: ToolCall) -> ToolResult:

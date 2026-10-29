@@ -135,6 +135,7 @@ def prepare_worker_context(
     attempt_number: int = 1,
     execution_input_reader: Callable[[WorkerLease], list[SessionEvent]] | None = None,
     ownership_check: Callable[[], None] | None = None,
+    authority_check: Callable[[list[SessionEvent]], None] | None = None,
 ) -> PreparedWorkerContext:
     session_id = claimed.lease.session_id
     binding = load_bound_binding(task_binding_loader, session_id)
@@ -168,6 +169,14 @@ def prepare_worker_context(
         started_at=as_of,
         attempt_number=attempt_number,
     )
+    if authority_check is not None:
+        authority_check(events)
+        claimed = _refresh_claim(
+            recorder, recovery_service, claimed, ownership_check or recorder._ownership_check
+        )
+        events = _refresh_inputs(
+            event_store, execution_input_reader, claimed.lease, recorder, ownership_check
+        )
     materialization = materialize_worker_context(
         store,
         scope=attempt_authority_scope(authority[1], authority[2], claimed.recovery.session),

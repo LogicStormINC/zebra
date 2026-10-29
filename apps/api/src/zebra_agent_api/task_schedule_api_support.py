@@ -49,6 +49,7 @@ def build_schedule_authority(
                     "mcp_allowlist",
                     "mcp_resource_ids",
                     "mcp_prompt_id",
+                    "extension_selection",
                 )
             }
         ),

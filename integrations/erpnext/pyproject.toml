@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "zebra_erpnext"
+version = "0.1.0"
+description = "Permission-aware Zebra Cloud Agent integration for ERPNext"
+requires-python = ">=3.11"
+license = {text = "GPL-3.0-only"}
+
+[tool.setuptools.packages.find]
+include = ["zebra_erpnext*"]
+
+[tool.setuptools.package-data]
+zebra_erpnext = ["modules.txt", "public/**/*"]

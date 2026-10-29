@@ -36,6 +36,25 @@ r1 state/cursor bytes unchanged; revision2 default-off behind both flags;
 queue cap exactly ten. Next: G5B Provider/HITL multi-session action safety,
 then G6/T1/G7. No activation, registry publish, tgz, Trench change or deploy.
 
+
+## 2026-10-29 Cloud inputs and exact connector pin
+
+Fixed local-store calls in Cloud input ingress, atomic Task/message input facts and current registry/profile freezing. Real isolated PG/S3 rollback/read/isolation/stale-CAS gate passed;14+51 focused checks and make check pass. Full ERP/volume/browser delivery remains in progress; no model/search, original Run replay or production cutover. Details: docs/CLOUD_FULL_CAPABILITY_COMPOSITION.md.
+
+## 2026-10-28 Full capability schedule/startup follow-up
+
+Owner-scoped schedule idempotency, frozen v2/extension admission, typed Host setup suspension and verified researcher parent authority are implemented. Ordinary opaque workspace refs now resolve through trusted volume callbacks. No model/search or production service changes. make check passes; paired full-runtime deployment acceptance remains in progress.
+
+## 2026-10-28 Full capability foundation in progress
+
+CLOUD-FULL-CAPABILITY-COMPOSITION-20261028 adds opt-in generic fresh Host
+boundaries, trusted volume callbacks, bounded historical Artifact membership and
+workspace-scoped Host Memory management. Local defaults remain compatible.
+make check passes;90 focused Worker execution regressions passed, with additional
+no-model authority/model transport/Artifact/Memory checks. Full ERP/S3/quota/
+scheduler/browser composition remains in progress, not deployed or certified.
+Original Runs and Search/MCP processes unchanged; zero model/search requests.
+Details: docs/CLOUD_FULL_CAPABILITY_COMPOSITION.md.
 ## 2026-10-29 G4 source publication / G5A unlock
 
 Reviewed source6e6334ae pushed directly to origin/cloud-agent. SPEC final29 and
@@ -18001,6 +18020,20 @@ and branch base checked before local fast-forward. Integrate both parent histori
 into cloud-agent; no GitHub push, deployment or original Run mutation. Disposable
 gate PG/Redis removed. Legacy productionv108 migration reconciliation is explicitly
 required before any future deployment; no automatic ledger rewriting.
+
+## CLOUD-FULL-CAPABILITY — final compatibility gate, 2026-10-29
+Full make test completed: 11415 passed,3094 skipped,9 failures. Audited all nine
+in one pass. New disabled Host guard settings changed old runtime-bundle digests;
+omit only the disabled guard from the old digest, but pin an enabled guard.
+Shared workspace resolver now passes physical paths through before callbacks,
+avoiding a second resolver/provision entry. Updated one moved test monkeypatch
+and the intentional Host profile/tenant memory denial assertions. All32 focused
+regressions pass; final make check passes (1438 typed modules). No broad repeat
+full-suite loop. Actual cloned PG/S3 input admission, pinned Host Task, root-owned
+256MiB ext4+gVisor CSV/ENOSPC, fresh Worker composition and accepted-Turn Skill
+ZIP read passed. Actual signed scheduler exchange deduplicates a firing and
+refuses tampered signatures/paused schedules; no provider/search requests.
+ERP candidate/browser/cutover acceptance remains a separate repository task.
 
 ## 2026-10-29 AGUI-G2V profile isolation implementation
 

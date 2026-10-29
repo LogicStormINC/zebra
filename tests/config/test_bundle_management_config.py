@@ -23,6 +23,16 @@ def test_api_only_path_preserves_published_baseline_digest(tmp_path: Path) -> No
     assert baseline_digest(original, "ab" * 32) == expected
     assert (
         baseline_digest(
+            replace(
+                original,
+                host_execution_authority=replace(original.host_execution_authority, enabled=True),
+            ),
+            "ab" * 32,
+        )
+        != expected
+    )
+    assert (
+        baseline_digest(
             replace(original, bundle_management_config=str(tmp_path / "approval.json")), "ab" * 32
         )
         == expected

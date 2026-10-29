@@ -1,0 +1,65 @@
+/* zebra ERP Agent design tokens — monochrome (black/white/gray) theme, 2026-10-29.
+   Everything is scoped under #zebra-erpnext-root so the host ERP page is untouched. */
+#zebra-erpnext-root {
+  /* brand: neutral ink scale (zebra monochrome) */
+  --ze-brand-50: #f8fafc; --ze-brand-100: #f1f5f9; --ze-brand-200: #e2e8f0;
+  --ze-brand-500: #64748b; --ze-brand-600: #334155; --ze-brand-700: #1e293b;
+  --ze-brand-800: #111827; --ze-brand-900: #0b1220;
+  /* ink & lines (slate) */
+  --ze-ink: #1e293b; --ze-ink-strong: #0f172a; --ze-ink-soft: #64748b; --ze-ink-faint: #94a3b8;
+  --ze-line: #e2e8f0; --ze-line-soft: #eef2f6;
+  /* surfaces */
+  --ze-page: #fafafa; --ze-surface: #ffffff; --ze-surface-sidebar: #f7f7f8; --ze-surface-subtle: #f1f5f2;
+  /* semantic: monochrome-first, small-surface warn/danger kept for meaning */
+  --ze-danger: #b42318; --ze-danger-bg: #fef3f2;
+  --ze-warn: #92400e; --ze-warn-bg: #fffbeb; --ze-warn-line: #fde68a;
+  --ze-focus: #111827;
+  /* radii & elevation */
+  --ze-radius: 10px; --ze-radius-lg: 14px; --ze-radius-xl: 18px;
+  --ze-shadow-card: 0 2px 12px -2px rgba(16,24,40,.05), 0 1px 3px -1px rgba(16,24,40,.06);
+  --ze-shadow-float: 0 20px 40px -15px rgba(16,24,40,.14), 0 0 1px 1px rgba(16,24,40,.05);
+  --ze-shadow-launch: 0 10px 25px -5px rgba(15,23,42,.35);
+  --ze-shadow-focus: 0 0 0 3px rgba(17,24,39,.16);
+  /* brand logo (64px RGBA, inlined for offline use) */
+  color: var(--ze-ink);
+  font: 14px/1.55 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+#zebra-erpnext-root * { box-sizing: border-box; }
+#zebra-erpnext-root button, #zebra-erpnext-root select, #zebra-erpnext-root input, #zebra-erpnext-root textarea { font: inherit; color: inherit; }
+#zebra-erpnext-root button:focus-visible, #zebra-erpnext-root select:focus-visible, #zebra-erpnext-root input:focus-visible, #zebra-erpnext-root a:focus-visible {
+  outline: 2px solid var(--ze-ink-strong); outline-offset: 2px; border-radius: 4px;
+}
+#zebra-erpnext-root ::-webkit-scrollbar { width: 6px; height: 6px; }
+#zebra-erpnext-root ::-webkit-scrollbar-track { background: transparent; }
+#zebra-erpnext-root ::-webkit-scrollbar-thumb { background: #dbe3ec; border-radius: 999px; }
+#zebra-erpnext-root ::-webkit-scrollbar-thumb:hover { background: #c3cedd; }
+
+/* shared micro-primitives (class level, usable by every component) */
+#zebra-erpnext-root .ze-badge {
+  display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 999px;
+  font-size: 11px; font-weight: 600; line-height: 1.35; white-space: nowrap; border: 1px solid transparent;
+}
+#zebra-erpnext-root .ze-badge--ok { background: var(--ze-brand-100); color: var(--ze-brand-800); border-color: var(--ze-brand-200); }
+#zebra-erpnext-root .ze-badge--warn { background: #fffbeb; color: #92400e; border-color: var(--ze-warn-line); }
+#zebra-erpnext-root .ze-badge--neutral { background: #f1f5f9; color: #475569; border-color: var(--ze-line); }
+#zebra-erpnext-root .ze-dot { width: 8px; height: 8px; border-radius: 999px; background: var(--ze-ink-strong); box-shadow: 0 0 0 3px rgba(17,24,39,.12); flex: none; }
+#zebra-erpnext-root .ze-dot--pulse { animation: ze-pulse 2.4s cubic-bezier(.4,0,.6,1) infinite; }
+@keyframes ze-pulse { 0%,100% { opacity: 1 } 50% { opacity: .45 } }
+@media (prefers-reduced-motion: reduce) { #zebra-erpnext-root .ze-dot--pulse { animation: none } }
+#zebra-erpnext-root .ze-icon-btn {
+  display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; flex: none;
+  border: 0; border-radius: var(--ze-radius); background: transparent; color: var(--ze-ink-soft);
+  cursor: pointer; transition: background .15s ease, color .15s ease;
+}
+#zebra-erpnext-root .ze-icon-btn:hover:not(:disabled) { background: #f1f5f9; color: var(--ze-ink-strong); }
+#zebra-erpnext-root .ze-icon-btn:disabled { opacity: .45; cursor: default; }
+#zebra-erpnext-root .ze-brand-mark {
+  width: 32px; height: 32px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center;
+  background: #ffffff; border: 1px solid var(--ze-line); box-shadow: var(--ze-shadow-card); flex: none; overflow: hidden;
+}
+#zebra-erpnext-root .ze-brand-mark img { width: 26px; height: 26px; object-fit: contain; display: block; }
+#zebra-erpnext-root .ze-logo-chip {
+  width: 18px; height: 18px; border-radius: 5px; background: #fff; display: inline-flex;
+  align-items: center; justify-content: center; overflow: hidden; flex: none;
+}
+#zebra-erpnext-root .ze-logo-chip img { width: 15px; height: 15px; object-fit: contain; display: block; }

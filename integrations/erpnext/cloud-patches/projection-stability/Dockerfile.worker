@@ -1,0 +1,4 @@
+ARG CHAT_WORKER_BASE
+FROM ${CHAT_WORKER_BASE}
+LABEL zebra.erp.fix="dirty-queue-only-projection-repair"
+COPY --chmod=0644 worker/erp_chat_readonly_main.py /app/apps/worker/src/zebra_agent_worker/erp_chat_readonly_main.py

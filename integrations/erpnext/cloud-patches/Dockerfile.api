@@ -1,0 +1,58 @@
+FROM erpnext-agent-api-base:2156443eea6ad9330853d16ece204dfa0995a41e5b5b677063386216797daaef
+LABEL zebra.erp.patch_stage="early-fresh-refusal-review-only"
+# Dedicated ERP DB106 is required; no service activation is performed by build.
+COPY overrides/apps/api/src/zebra_agent_api/ag_ui_command.py /app/apps/api/src/zebra_agent_api/ag_ui_command.py
+COPY overrides/apps/api/src/zebra_agent_api/app.py /app/apps/api/src/zebra_agent_api/app.py
+COPY overrides/apps/api/src/zebra_agent_api/command_submission.py /app/apps/api/src/zebra_agent_api/command_submission.py
+COPY overrides/apps/api/src/zebra_agent_api/host_auth.py /app/apps/api/src/zebra_agent_api/host_auth.py
+COPY overrides/apps/api/src/zebra_agent_api/http_input_attachments.py /app/apps/api/src/zebra_agent_api/http_input_attachments.py
+COPY overrides/apps/api/src/zebra_agent_api/routes.py /app/apps/api/src/zebra_agent_api/routes.py
+COPY overrides/apps/api/src/zebra_agent_api/session_handoff.py /app/apps/api/src/zebra_agent_api/session_handoff.py
+COPY overrides/apps/api/src/zebra_agent_api/session_payloads.py /app/apps/api/src/zebra_agent_api/session_payloads.py
+COPY overrides/apps/api/src/zebra_agent_api/session_queue.py /app/apps/api/src/zebra_agent_api/session_queue.py
+COPY overrides/apps/api/src/zebra_agent_api/task_api.py /app/apps/api/src/zebra_agent_api/task_api.py
+COPY overrides/apps/api/src/zebra_agent_api/task_routes.py /app/apps/api/src/zebra_agent_api/task_routes.py
+COPY overrides/apps/api/src/zebra_agent_api/task_session_api.py /app/apps/api/src/zebra_agent_api/task_session_api.py
+COPY overrides/packages/agent-core/src/agent_core/application/session_attachments.py /app/packages/agent-core/src/agent_core/application/session_attachments.py
+COPY overrides/packages/agent-core/src/agent_core/domain/cloud_artifact_payloads.py /app/packages/agent-core/src/agent_core/domain/cloud_artifact_payloads.py
+COPY overrides/packages/agent-core/src/agent_core/domain/http_input_attachments.py /app/packages/agent-core/src/agent_core/domain/http_input_attachments.py
+COPY overrides/packages/agent-core/src/agent_core/domain/http_input_messages.py /app/packages/agent-core/src/agent_core/domain/http_input_messages.py
+COPY overrides/packages/agent-core/src/agent_core/ports/session_handoff.py /app/packages/agent-core/src/agent_core/ports/session_handoff.py
+COPY overrides/packages/agent-core/src/agent_core/ports/task_admission_transaction.py /app/packages/agent-core/src/agent_core/ports/task_admission_transaction.py
+COPY overrides/packages/agent-security/src/agent_security/host_grant.py /app/packages/agent-security/src/agent_security/host_grant.py
+COPY overrides/packages/agent-storage/src/agent_storage/postgres/artifact_payload_pruning.py /app/packages/agent-storage/src/agent_storage/postgres/artifact_payload_pruning.py
+COPY overrides/packages/agent-storage/src/agent_storage/postgres/artifact_payload_rows.py /app/packages/agent-storage/src/agent_storage/postgres/artifact_payload_rows.py
+COPY overrides/packages/agent-storage/src/agent_storage/postgres/artifact_payload_transaction_support.py /app/packages/agent-storage/src/agent_storage/postgres/artifact_payload_transaction_support.py
+COPY overrides/packages/agent-storage/src/agent_storage/postgres/artifact_payload_worker_transitions.py /app/packages/agent-storage/src/agent_storage/postgres/artifact_payload_worker_transitions.py
+COPY overrides/packages/agent-storage/src/agent_storage/postgres/artifact_payloads.py /app/packages/agent-storage/src/agent_storage/postgres/artifact_payloads.py
+COPY overrides/packages/agent-storage/src/agent_storage/postgres/http_input_attachment_migration.py /app/packages/agent-storage/src/agent_storage/postgres/http_input_attachment_migration.py
+COPY overrides/packages/agent-storage/src/agent_storage/postgres/http_input_attachments.py /app/packages/agent-storage/src/agent_storage/postgres/http_input_attachments.py
+COPY overrides/packages/agent-storage/src/agent_storage/postgres/http_input_messages.py /app/packages/agent-storage/src/agent_storage/postgres/http_input_messages.py
+COPY overrides/packages/agent-storage/src/agent_storage/postgres/migration_catalog_tail.py /app/packages/agent-storage/src/agent_storage/postgres/migration_catalog_tail.py
+COPY overrides/packages/agent-storage/src/agent_storage/postgres/session_handoff_transactions.py /app/packages/agent-storage/src/agent_storage/postgres/session_handoff_transactions.py
+COPY overrides/packages/agent-storage/src/agent_storage/postgres/task_admission.py /app/packages/agent-storage/src/agent_storage/postgres/task_admission.py
+COPY overrides/packages/agent-storage/src/agent_storage/postgres_composition.py /app/packages/agent-storage/src/agent_storage/postgres_composition.py
+COPY overrides/packages/agent-storage/src/agent_storage/task_read_summary_rows.py /app/packages/agent-storage/src/agent_storage/task_read_summary_rows.py
+
+# ERP source-generation containment remains opt-in; this build activates no service.
+COPY overrides/packages/agent-storage/src/agent_storage/postgres/erp_workspace_policy.py /app/packages/agent-storage/src/agent_storage/postgres/erp_workspace_policy.py
+COPY overrides/packages/agent-storage/src/agent_storage/postgres/command_read_preflight.py /app/packages/agent-storage/src/agent_storage/postgres/command_read_preflight.py
+COPY overrides/packages/agent-storage/src/agent_storage/postgres/command_wakeup_handoff.py /app/packages/agent-storage/src/agent_storage/postgres/command_wakeup_handoff.py
+COPY overrides/packages/agent-storage/src/agent_storage/postgres/command_wakeup_outcome.py /app/packages/agent-storage/src/agent_storage/postgres/command_wakeup_outcome.py
+COPY overrides/packages/agent-storage/src/agent_storage/postgres/workspace_control.py /app/packages/agent-storage/src/agent_storage/postgres/workspace_control.py
+COPY overrides/packages/agent-storage/src/agent_storage/postgres/projections.py /app/packages/agent-storage/src/agent_storage/postgres/projections.py
+
+# Durable early fresh refusal: shared metadata proof and native recovery.
+COPY overrides/packages/agent-storage/src/agent_storage/postgres/erp_fresh_disposition.py /app/packages/agent-storage/src/agent_storage/postgres/erp_fresh_disposition.py
+COPY overrides/packages/agent-storage/src/agent_storage/postgres/idempotency.py /app/packages/agent-storage/src/agent_storage/postgres/idempotency.py
+COPY overrides/packages/agent-storage/src/agent_storage/postgres/command_wakeup_recovery.py /app/packages/agent-storage/src/agent_storage/postgres/command_wakeup_recovery.py
+COPY overrides/apps/api/src/zebra_agent_api/task_header.py /app/apps/api/src/zebra_agent_api/task_header.py
+COPY overrides/apps/api/src/zebra_agent_api/ag_ui_checkpoint_tail.py /app/apps/api/src/zebra_agent_api/ag_ui_checkpoint_tail.py
+COPY overrides/packages/agent-storage/src/agent_storage/postgres/command_coverage_admission.py /app/packages/agent-storage/src/agent_storage/postgres/command_coverage_admission.py
+
+# Native private-generation admission uses exact typed Task/segment/source facts.
+COPY overrides/packages/agent-storage/src/agent_storage/postgres/erp_private_workspace.py /app/packages/agent-storage/src/agent_storage/postgres/erp_private_workspace.py
+
+COPY overrides/packages/agent-storage/src/agent_storage/postgres/coverage_recovery_preparation.py /app/packages/agent-storage/src/agent_storage/postgres/coverage_recovery_preparation.py
+COPY overrides/packages/agent-storage/src/agent_storage/postgres/command_wakeup_relay.py /app/packages/agent-storage/src/agent_storage/postgres/command_wakeup_relay.py
+COPY overrides/packages/agent-storage/src/agent_storage/postgres/command_wakeup_receipts.py /app/packages/agent-storage/src/agent_storage/postgres/command_wakeup_receipts.py

@@ -231,6 +231,7 @@ def create_app(
         database_path=active_database_path,
         settings=active_settings,
         _stores=active_stores,
+        input_artifact_objects=cloud_composition.artifact_objects if cloud_composition else None,
         workspace_control_store=workspace_control_store,
         live_event_fanout=live_event_fanout,
         stream_notifications=notifications,

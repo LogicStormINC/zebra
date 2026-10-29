@@ -20,6 +20,8 @@ def apply_workspace_resolver(
 ) -> RecoveredTask:
     """Plain paths pass through; workspace:// refs resolve fail-closed."""
     reference = str(task.workspace_root)
+    if not reference.startswith("workspace:"):
+        return task
     resolved = resolver.resolve(reference, session_id=session_id)
     if str(resolved) == reference:
         return task
