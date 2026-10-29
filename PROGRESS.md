@@ -1,4 +1,24 @@
-## 2026-10-29 AG-UI G4 shared interaction views (published6e6334ae)
+## 2026-10-29 AG-UI G5A native complete interaction (published b60a1b8b)
+
+Native approval/clarification completion and receipted frontend-tool
+continuation are implemented under the frozen revision-two contract; revision
+one bytes, cursors and HMAC domains stay unchanged and revision two remains
+default-off behind both profile and native-interaction flags. Sequential mixed
+batches stop before later unexecuted proposals; the wakeup provider replay
+keeps only durably covered calls, and each effect carries exactly one durable
+schedule fact (dispatch-committed admission; the harness echo deduplicates
+after external sync so the crash window is covered). First receipts capture
+immutable original input/operation/owner atomically; browser ToolMessages
+never grant execution; approved/rejected/cancelled/expired/revoked/unknown and
+three sequential approvals are proven on a real PG worker with the official
+HttpAgent conformance gate. Queue capacity is exactly ten bounded projection
+consumers with default composition unchanged. SPEC review PASS-WITH-NITS with
+both minors fixed; QUALITY passed inline (independent reviewer blocked by host
+usage cap) with mechanical gates green (mypy/ruff/file-size/eval30); SDK275
+zero-skip plus full verify; focused native suites all green. G5B Provider/HITL
+multi-session action safety, G6 packages, T1 Trench and G7 whole-plan gates
+remain; no activation, registry publish or deployment.
+
 
 Official applied documents now feed scoped display indexes and existing React
 widgets. Token updates notify their own entities; settlement/order changes refresh

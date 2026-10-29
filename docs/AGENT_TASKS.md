@@ -1,8 +1,45 @@
+## AGUI-G5B-PROVIDER-ACTION-SAFETY-20261029 — React Provider/HITL multi-session action safety
+
+- Status: Ready (2026-10-29; unlocked by reviewed G5A publication b60a1b8b).
+- Human owner: Luke Ding; executor: Codex; target: cloud-agent.
+- Branch: codex/agui-g5b-provider-action-safety-20261029; reuse isolated
+  trench-spin-sync-20261028/zebra-agent worktree after G5A publication receipt.
+- Exact base/claim: publication tip after b60a1b8b on origin/cloud-agent.
+- Scope: existing React Provider/HITL/runtime multi-session action safety —
+  session-switch late callbacks, cross-session submission isolation, registered
+  handler integration, UI connection and execution-side authority checks.
+  Reuses G5A native continuation authority; no new protocol events, no second
+  execution path, no generic client-run admission.
+- Owned paths (per plan G5 row): client-core src/{runtime_state,
+  command_recovery, receipt_transport, sse_stream}.ts, react src/hitl/index.ts
+  and existing effects consumption call sites, API ag_ui_{command,
+  command_receipts, client_state}.py and client_effect_receipts.py projection
+  consumption; every newly touched call site registered as a before-code
+  addendum here before editing.
+- Frozen prior decisions: G5A revision-two contract and receipts stay
+  authoritative; standard Frontend Tool full roundtrip is already proven —
+  G5B wires existing UI surfaces to it, never re-deriving authority client-side.
+- Exact new tests: client-core/react focused action-safety files named in a
+  before-code addendum before creation; existing SDK collection updated with
+  explicit file list; 1/3/12-session determinism, late-callback-after-switch
+  and revoked-mid-flight coverage required.
+- Acceptance: switching sessions never submits to the previous target;
+  callbacks arriving after unmount/switch are dropped or reconciled read-only;
+  registered handlers complete the G5A receipt roundtrip from the existing
+  Provider; multi-session caches stay Task/Run isolated (known SDK conflict
+  fixed at the shared cache layer); unknown/revoked actions fail closed.
+  Full SDK verify and root make check/test green; two-stage independent review
+  before publication. G6 packages, T1 Trench and G7 gates remain separate.
+- Governance: before-code addenda for any file beyond the list above; one
+  source branch/card; no version/tgz/release/deploy here.
+
 ## AGUI-G5A-NATIVE-INTERACTION-20261029 — Native complete response and effect roundtrip
 
-- Status: Review (2026-10-29; implementation complete, SPEC PASS-WITH-NITS
-  with both minors fixed; QUALITY pass executed inline (independent reviewer
-  unavailable: host usage cap), mechanical gates green; awaiting publication).
+- Status: Review→published (2026-10-29; source b60a1b8b fast-forwarded to
+  origin/cloud-agent; SPEC PASS-WITH-NITS with both minors fixed, QUALITY
+  inline pass recorded honestly — independent reviewer unavailable under the
+  host usage cap; default make test11496 passed with five base-inherited
+  failures documented in WORKLOG).
 - Human owner: Luke Ding; executor: Codex; target: cloud-agent.
 - Branch: codex/agui-g5a-native-interaction-20261029; reuse isolated
   trench-spin-sync-20261028/zebra-agent worktree after G4 publication receipt.

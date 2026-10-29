@@ -1,3 +1,41 @@
+## 2026-10-29 G5A native interaction completed (Review)
+
+Base6f2cbfcb, isolated codex/agui-g5a-native-interaction-20261029. Slice finished
+the usage-limit-interrupted implementation: three fixes landed today.
+(1) worker client_effect_resume.py rebases the wakeup conversation to durably
+covered calls only; mixed sequential batches stop before later unexecuted
+proposals, the provider replay never carries dangling calls, dropped proposal
+ids recorded in wakeup metadata. (2) worker execution_events.py notes durable
+client-effect admissions adopted through external Event sync and returns the
+admitted Event when the harness CLIENT_EFFECT_SCHEDULED draft echoes the same
+effect, checked after prepare so the crash window is covered; local
+compositions keep the draft unchanged. (3) interaction projector self-binds a
+deterministic window-relative agui:sha256 run id for direct projector
+consumers; canonical checkpoints still bind via bind_standard only.
+Also fixed the two strict native privacy projection failures (restore
+round-trip). Designated red test tests/api/test_agui_native_mixed_tools.py
+red-then-green end to end on real PG.
+
+Gates: SPEC independent PASS-WITH-NITS, both minors fixed (post-sync dedup
+check, governance write-back); QUALITY executed inline (independent reviewer
+blocked by host usage cap) PASS — mechanical gates compensate: mypy1455,
+ruff, file-size3545, eval30/30. Focused suites all green: native interaction
+API15+HTTP25 on real PG worker + official HttpAgent incl. conformance gate
+native_interaction_http_gate.mts; integrations26; storage15; worker
+composition+wakeup+recorder regressions43; SDK275/0/0 plus full pnpm verify
+(build/package-audit/consumers/Chromium+WebKit); agui_contract run.sh 7 OK +
+HTTP gate PASS; make check PASS. Full default make test at final code: 11496 passed/5 failed
+(all five verified red at base6f2cbfcb before this slice: two stream-v2 fresh
+access gates, two config baseline digests, one SDK event snapshot) /3139
+conditional skips; crawl 206 network flake passes on rerun(105). Follow-up: execution_events.py at499/500 split candidate;
+ag_ui_native_interaction.py AttributeError-in-409 diagnosability nit; dropped
+-id observability only when continuation metadata dict (pre-existing gating).
+
+No harness/core edits (addendum-registered worker/integration files only);
+r1 state/cursor bytes unchanged; revision2 default-off behind both flags;
+queue cap exactly ten. Next: G5B Provider/HITL multi-session action safety,
+then G6/T1/G7. No activation, registry publish, tgz, Trench change or deploy.
+
 ## 2026-10-29 G4 source publication / G5A unlock
 
 Reviewed source6e6334ae pushed directly to origin/cloud-agent. SPEC final29 and
