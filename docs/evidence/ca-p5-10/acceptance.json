@@ -2,7 +2,7 @@
   "task": "CA-P5-10",
   "baseline": "ce6d7d19",
   "parentFix": "fc53cca6",
-  "status": "producer full gates passed; fixed-image consumer S1 pending",
+  "status": "producer full gates and consumer V31 same-environment S1 passed; Review",
   "codeBlobs": {
     "apps/worker/src/zebra_agent_worker/control.py": "fce12427714066f3ad26dd8f3511581de42d85e5ae36e35a3fd11b388ccc2c56",
     "packages/agent-storage/src/agent_storage/postgres/direct_control.py": "401a205a684630ac0ec57aee6448e2485f1f6989832ac6b68565d963fcd6712a",
@@ -51,5 +51,7 @@
     "temporaryPGRemoved": true,
     "newOwnedVolumesOrNetworks": 0,
     "foreignContainersPreserved": 4
-  }
+  },
+  "consumerCase": "V31",
+  "exitEvidence": "../../CA-P5-08_exit_verification.md"
 }

@@ -1,3 +1,12 @@
+# CA-P5-08 — P5 工程退出验证通过（Review）
+
+固定生产者9e91d75f，源码与完整门禁哈希不变。消费者V31在同一环境完成实际
+SDK/Worker Alpha/Beta/回退、负向门禁/原GET、三处重启和三Task原历史保留。
+Native make test11240/3080条件跳过、make check1448/Eval30，隔离PG8+7通过。
+无原业务重发/Controller重领；保留mock/数据/原收据/Coverage/unknown。
+临时运行资源已清理、数据保留；无主线合并、生产部署/迁移。
+[复核](docs/CA-P5-08_exit_verification.md) · [证据](docs/evidence/ca-p5-08/acceptance.json)。
+
 # CA-P5-10 — Admitted STOP uses durable identity
 
 Claimed before code; original optional expiry STOP fails on published ce6 baseline, not caused by09. Reuse canonical admitted fingerprint and latest durable binding/exact workspace for trusted direct cancellation; current Host API/expiry and execution permissions unchanged. Canonical admitted-event proof retains identity/context validation. Final47 focused, full make test11240 passed/3080 conditional skips, make check1448 sources/Eval30 passed; explicit owned PG legacy8/resource7 passed. Fixed-source image consumer S1 pending. Preserve data/history/Coverage and no unknown HTTP/RUN replay or Controller reclaim. [Boundary](docs/CA-P5-10_admitted_stop_identity.md).
@@ -17612,3 +17621,5 @@ CA-P5-09 optional real-PG legacy suite:7 passed/1 expired admitted STOP failed; 
 CA-P5-10 final design revision: initial full5 identity/context propagation failures were not waived. Retain original delegation and full context; store revalidates exact canonical admitted STOP/CANCEL event and operation, uses immutable admission time only, current default expiry remains strict.47 focused including old five and real-PG forged-event/operation negatives pass. Full source frozen for renewed gates; no publish or new S1 yet.
 
 CA-P5-09/10 combined final producer gates: make test11240 passed/3080 conditional skips, make check0 file-size violations/ruff/mypy1448/Eval30 passed; source hashes unchanged. Legacy real PG8 and original resource binding7 passed in exact-owned temporary PG (historical fixture replaced for isolation only; assertions unchanged). All owned temporary PG/anonymous volumes removed, no new volumes/networks;4 foreign-owner containers preserved. Source publication required before fresh consumer images; P5 not yet closed.
+
+CA-P5-08 verification resumed on9e91d75f after both producer gates passed and GitHub HTTPS remote verified. No code changes; consumer V22 uses new exact-source images in one environment. After cleanup compare frozen blobs and reuse current-turn full result if unchanged. Prior unknowns/data preserved; final S1 still pending.

@@ -1,7 +1,7 @@
 {
   "task": "CA-P5-09",
   "baseline": "ce6d7d19791f34567a5192663ca2c234f7452137",
-  "status": "producer full gates passed; fixed-image consumer S1 pending",
+  "status": "producer full gates and consumer V31 same-environment S1 passed; Review",
   "productionChanges": [
     "packages/agent-storage/src/agent_storage/postgres/legacy_command_candidates.py"
   ],
@@ -46,5 +46,7 @@
     "temporaryPGRemoved": true,
     "newOwnedVolumesOrNetworks": 0,
     "foreignContainersPreserved": 4
-  }
+  },
+  "consumerCase": "V31",
+  "exitEvidence": "../../CA-P5-08_exit_verification.md"
 }
