@@ -1,0 +1,601 @@
+{
+  "deletedLocal": [
+    {
+      "ref": "refs/heads/codex/agui-cloud-integration-20261028",
+      "tip": "34f945771abc7d25fa89b66f47747894fbaeba2c"
+    },
+    {
+      "ref": "refs/heads/codex/agui-cold-recovery-20261028",
+      "tip": "f8cd5d227b8419a9f292480236c4f296f70c0b78"
+    },
+    {
+      "ref": "refs/heads/codex/agui-full-interaction-plan-20261028",
+      "tip": "d083c5587bf617cf250b996ebee1acb52159fe50"
+    },
+    {
+      "ref": "refs/heads/codex/agui-g0-contract-20261028",
+      "tip": "a1a46a5abd2a0b8a06bc2309d809a648839b1b69"
+    },
+    {
+      "ref": "refs/heads/codex/agui-g1-standard-consumer-20261028",
+      "tip": "80570bc6238f09861908b94b2af5d0c24c3397ac"
+    },
+    {
+      "ref": "refs/heads/codex/agui-g2-standard-projection-20261029",
+      "tip": "14359f32afdc55725ab7229e3c21a3cc893dc460"
+    },
+    {
+      "ref": "refs/heads/codex/agui-g2v-profile-isolation-20261028",
+      "tip": "7c382e57b3e5ac1294cd37dee4b8195ea42117dc"
+    },
+    {
+      "ref": "refs/heads/codex/agui-g3-standard-reliable-transport-20261029",
+      "tip": "aace8c80e337c01c463bcf595c8e8542d6f5a345"
+    },
+    {
+      "ref": "refs/heads/codex/agui-g3b-native-http-20261029",
+      "tip": "a02792540705c853af5ab9e7c79e4fe551c22d16"
+    },
+    {
+      "ref": "refs/heads/codex/agui-g4-shared-ui-20261029",
+      "tip": "6f2cbfcbc1deb26b717caf86bc146c8ff3edb4b6"
+    },
+    {
+      "ref": "refs/heads/codex/agui-g5a-native-interaction-20261029",
+      "tip": "308b8a215a36434ae842a6dd0ff021569cb637de"
+    },
+    {
+      "ref": "refs/heads/codex/agui-long-session-20261028",
+      "tip": "12df5800debb5e1f3c3f742f99bc0e18dcef28c5"
+    },
+    {
+      "ref": "refs/heads/codex/approval-bridge-20261028",
+      "tip": "447c3fe0b5c154a4f3607c5c0de4753be29d58ea"
+    },
+    {
+      "ref": "refs/heads/codex/ca-ops-02-owned-test-teardown",
+      "tip": "d5f10cb42e202f7d7db1cf02a3fc4c24a5723551"
+    },
+    {
+      "ref": "refs/heads/codex/ca-p5-01-runtime-gates",
+      "tip": "985a369ae54cd8261bac2b219a1cef622ffdc931"
+    },
+    {
+      "ref": "refs/heads/codex/ca-p5-02a-gate-termination",
+      "tip": "4f53afb5df3109d826041f2ee131e8404d648b71"
+    },
+    {
+      "ref": "refs/heads/codex/ca-p5-03-worker-process-binding",
+      "tip": "e2462c6680d37adced7e3027859f8a7f67ea2906"
+    },
+    {
+      "ref": "refs/heads/codex/ca-p5-04-cloud-script-eval",
+      "tip": "808b6ff32c4a89f6352d70828cafc5d9c8a7d25c"
+    },
+    {
+      "ref": "refs/heads/codex/ca-p5-05-script-authority-refresh",
+      "tip": "145e5de5b5c155197bbe8a9acab1b7e9093ee0af"
+    },
+    {
+      "ref": "refs/heads/codex/ca-p5-06-approval-binding-renewal",
+      "tip": "6dee587ad119d6a8ac56d45231d6c510f106f9e4"
+    },
+    {
+      "ref": "refs/heads/codex/ca-p5-07-worker-graceful-stop",
+      "tip": "ce6d7d19791f34567a5192663ca2c234f7452137"
+    },
+    {
+      "ref": "refs/heads/codex/ca-p5-08-exit-verification",
+      "tip": "f8356c30665722889beab1dc0eeebb9d6ddbf63e"
+    },
+    {
+      "ref": "refs/heads/codex/ca-p5-09-legacy-ready-recovery",
+      "tip": "fc53cca6bb651c9fce60dd746cf62355b25abcf6"
+    },
+    {
+      "ref": "refs/heads/codex/ca-p5-10-admitted-stop-identity",
+      "tip": "9e91d75ff12634d34f5eedf57da6558cccd274e4"
+    },
+    {
+      "ref": "refs/heads/codex/ca-p5-main-integration",
+      "tip": "afb61121b5fc1320082c49ded56a8bf076e0099c"
+    },
+    {
+      "ref": "refs/heads/codex/cloud-continuation-epochs-20261028",
+      "tip": "8b4da99f85d656531575eca1980d5a0bfb9197d2"
+    },
+    {
+      "ref": "refs/heads/codex/cloud-full-capability-composition-20261028",
+      "tip": "89e4afede64615b92c44f6bd83bcfd49e38b3333"
+    },
+    {
+      "ref": "refs/heads/codex/cloud-progress-budget-20261028",
+      "tip": "aecdceddefda1ee42412b854b8c3a291c87a43d0"
+    },
+    {
+      "ref": "refs/heads/codex/cloud-redis-observer-20261024",
+      "tip": "c59c772623a2c71ff784f1c179a2142613a26da7"
+    },
+    {
+      "ref": "refs/heads/codex/cloud-reliability-20261028",
+      "tip": "2d913e52e53ff174a73dc7aaa24883c185dbaec3"
+    },
+    {
+      "ref": "refs/heads/codex/cloud-reliability-boundaries-20261028",
+      "tip": "34a81a31557ebc6b11b18520db18988c55519535"
+    },
+    {
+      "ref": "refs/heads/codex/cloud-runtime-readiness-20261028",
+      "tip": "8c79e118f16555b6af37087fe8eafe2249a3a643"
+    },
+    {
+      "ref": "refs/heads/codex/cloud-safety-header-20261030",
+      "tip": "ac8473b3504ccdcbf5901d1d3c9d76962d0ef5cb"
+    },
+    {
+      "ref": "refs/heads/codex/cloud-trench-spin-sync-20261028",
+      "tip": "d15fe9f608e451cb2c607ddb2622d90cc58a04ba"
+    },
+    {
+      "ref": "refs/heads/codex/source-status-summary-20261028",
+      "tip": "f82e810a39b4293e2f1d3597aeeb4fccd1122830"
+    },
+    {
+      "ref": "refs/heads/codex/worker-commit-confirmation-20261028",
+      "tip": "e2a10e872fa15bfa6176c831358c2d7771313569"
+    }
+  ],
+  "deletedRemote": [
+    {
+      "ref": "refs/remotes/origin/codex/ca-ops-02-owned-test-teardown",
+      "tip": "d5f10cb42e202f7d7db1cf02a3fc4c24a5723551"
+    },
+    {
+      "ref": "refs/remotes/origin/codex/ca-p5-01-runtime-gates",
+      "tip": "985a369ae54cd8261bac2b219a1cef622ffdc931"
+    },
+    {
+      "ref": "refs/remotes/origin/codex/ca-p5-02a-gate-termination",
+      "tip": "4f53afb5df3109d826041f2ee131e8404d648b71"
+    },
+    {
+      "ref": "refs/remotes/origin/codex/ca-p5-03-worker-process-binding",
+      "tip": "e2462c6680d37adced7e3027859f8a7f67ea2906"
+    },
+    {
+      "ref": "refs/remotes/origin/codex/ca-p5-04-cloud-script-eval",
+      "tip": "808b6ff32c4a89f6352d70828cafc5d9c8a7d25c"
+    },
+    {
+      "ref": "refs/remotes/origin/codex/ca-p5-05-script-authority-refresh",
+      "tip": "145e5de5b5c155197bbe8a9acab1b7e9093ee0af"
+    },
+    {
+      "ref": "refs/remotes/origin/codex/ca-p5-06-approval-binding-renewal",
+      "tip": "6dee587ad119d6a8ac56d45231d6c510f106f9e4"
+    },
+    {
+      "ref": "refs/remotes/origin/codex/ca-p5-07-worker-graceful-stop",
+      "tip": "ce6d7d19791f34567a5192663ca2c234f7452137"
+    },
+    {
+      "ref": "refs/remotes/origin/codex/ca-p5-08-exit-verification",
+      "tip": "f8356c30665722889beab1dc0eeebb9d6ddbf63e"
+    },
+    {
+      "ref": "refs/remotes/origin/codex/ca-p5-10-admitted-stop-identity",
+      "tip": "9e91d75ff12634d34f5eedf57da6558cccd274e4"
+    }
+  ],
+  "preserved": [
+    {
+      "ref": "refs/heads/cloud-agent",
+      "tip": "afb61121b5fc1320082c49ded56a8bf076e0099c",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/heads/cloud-agent-trench",
+      "tip": "a4d0e90f01418a0a710945d75cf3e591a2d21974",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/heads/codex/ca-p1-01b2-connector-management",
+      "tip": "6dbb2a8dc145e684d9792cfe9ada0b482c28f343",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/heads/codex/ca-p2-01d-publication-http",
+      "tip": "5ff2ce707928dae4fba2472b4a312df14870ecf0",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/heads/codex/ca-p3-01a-native-script-abi",
+      "tip": "d6729de3c0114448e7579c45be5df449d97fbd0e",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/heads/codex/ca-p3-01b-worker-script-binding",
+      "tip": "60893da8d850687b636d05473fddabc00a7187ae",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/heads/codex/ca-p3-01c-script-validation",
+      "tip": "f154f5d1eb3c744e26e6d74eb093d776bd0d5f34",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/heads/codex/ca-p3-01d-script-publication",
+      "tip": "b78a4ee464aa9c3159d67ec3a318cc9d13c9d6b8",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/heads/codex/ca-p3-01e-script-bundle-validation",
+      "tip": "416f6d8a4e22ced129c783a3eb861f06ba55b096",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/heads/codex/ca-p3-02a-frontend-admission",
+      "tip": "8715d225651a984b43fd6f98bdb9a755d35fcb51",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/heads/codex/ca-p3-02b-effect-authority",
+      "tip": "0aa6e5585b15e56b4a93009137952b49bff11ab6",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/heads/codex/ca-p3-02c-bff-browser",
+      "tip": "a1635a9c0f54a7ab117eb65b9f4a6735a1669ef9",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/heads/codex/ca-p3-02d-surface-metadata",
+      "tip": "d85a613c844576f0da93cf6fa3a5be0cefb308f7",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/heads/codex/ca-p3-02e-sdk-surface-sync",
+      "tip": "61e2cb217b7b3fbc23f0bd0ef45f04863bcf1267",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/heads/codex/ca-p3-02f-readable-admission",
+      "tip": "fb72ef6fce72ac171f947d1c18c57334f587be02",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/heads/codex/ca-p3-02g-readable-submit",
+      "tip": "1e66659d017aba0e84e2740f16d76444719b1f5b",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/heads/codex/ca-p3-02h-command-receipts",
+      "tip": "be9f7cd2bff7e2ba381399d9fd1852d6eaab3184",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/heads/codex/ca-p3-02i-command-recovery",
+      "tip": "be4b442c03d4753012e0543f9c22148eee71657a",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/heads/codex/ca-p3-02j-request-discovery",
+      "tip": "4e629a5aad0d900ea6b32b1b083e720ba5d8e885",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/heads/codex/ca-p3-02k-bff-auth",
+      "tip": "c023fa58c6d5d1f0988d37a11a5566793d7667db",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/heads/codex/ca-p3-02l-auth-lifecycle",
+      "tip": "760fcfb97f48fb6f18e8ba9c3dd3995c8530b02d",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/heads/codex/ca-p3-02m-signed-cloud",
+      "tip": "934d66b8aacad7690cef05aa672e78baf9827da4",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/heads/codex/ca-p3-02z-react-surface-revision",
+      "tip": "d93385bd323ee9ac7b379adfbe7becc744245594",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/heads/codex/ca-p3-03g-host-read-freshness",
+      "tip": "017e04e66ec3e383bf166992ca5ba220b2c216bd",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/heads/codex/cloud-array-source-replay-01",
+      "tip": "b4e22127faf443d99deb79cc044c8c06d5543cde",
+      "reason": "unmerged"
+    },
+    {
+      "ref": "refs/heads/codex/cloud-b1-decision-profile-01",
+      "tip": "fa70133aa3af0c1ae1d276f6b9258531c1bfdca1",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/heads/codex/cloud-citation-delimiter-01",
+      "tip": "a9d7cfcf99fcaff8e3a9a2b7bd7e1cc2162fdf9a",
+      "reason": "unmerged"
+    },
+    {
+      "ref": "refs/heads/codex/cloud-evidence-use-01",
+      "tip": "2a17a30201db2c43f2dce2b9b2580f2dd8d20d22",
+      "reason": "unmerged"
+    },
+    {
+      "ref": "refs/heads/codex/cloud-force-stop-20261030",
+      "tip": "97463d00a84b01969a9ebe63abe0dd2b3ffbac47",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/heads/codex/cloud-native-scope-01",
+      "tip": "e19c72054d7086971a9c091d845c2079cef6101e",
+      "reason": "unmerged"
+    },
+    {
+      "ref": "refs/heads/codex/cloud-search-decision-01",
+      "tip": "cba442096889a078b459f85e0b1ba7c58e6a14d2",
+      "reason": "unmerged"
+    },
+    {
+      "ref": "refs/heads/codex/cloud-search-evidence-roundtrip-01",
+      "tip": "e206e26560d943e2e3b5d7f1ad2f45f51721e7db",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/heads/codex/cloud-skipped-waiting-02",
+      "tip": "02b3ea29489fcbdca02bc9f70e920012b6dccccb",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/heads/codex/cloud-source-decision-check-01",
+      "tip": "0824044c12f4b5e4dc86dd472fc7503fce608281",
+      "reason": "unmerged"
+    },
+    {
+      "ref": "refs/heads/codex/cloud-source-provenance-audit-01",
+      "tip": "24eb69c171bddec0aaccef0711d1bd3d2125d7f1",
+      "reason": "unmerged"
+    },
+    {
+      "ref": "refs/heads/codex/cloud-source-replay-01",
+      "tip": "f14afefab375d68df423d51d91df8731b425ed7f",
+      "reason": "unmerged"
+    },
+    {
+      "ref": "refs/heads/codex/cloud-source-replay-diverse-01",
+      "tip": "876b7d8b03cbbb0983ee49a0f54281b2c39c1034",
+      "reason": "unmerged"
+    },
+    {
+      "ref": "refs/heads/codex/cloud-stream-admission-01",
+      "tip": "ffe8f38ba69f713428e2dac3761f66f59d1d8340",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/heads/codex/cloud-stream-baseline-01",
+      "tip": "f16d8324f592256c32ac48e56c30ff847623fb8b",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/heads/codex/cloud-stream-capacity-01",
+      "tip": "dd66539abdff8cc5603d70cfbd5b64879192a333",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/heads/codex/cloud-stream-client-01",
+      "tip": "249f4e6de22c2c278434802cdfd17adb0983d34d",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/heads/codex/cloud-stream-control-01",
+      "tip": "0d374048b0b0aff93e7d2d9587f341b8f1bb9189",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/heads/codex/cloud-stream-proof-perf-01",
+      "tip": "0f8c1716936dfa44e088c86d8b2e39dbcfa16957",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/heads/codex/cloud-stream-read-01",
+      "tip": "4a79a2701295e363dc76d89af4ffc2ccb17a90dc",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/heads/codex/cloud-stream-relay-01",
+      "tip": "6bea341dd6a7e196d8180234c94f22c326205d08",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/heads/codex/cloud-stream-storage-spec",
+      "tip": "d836b04cef7df21c6130c1df8be74ff200089f32",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/heads/codex/cloud-version-scope-01",
+      "tip": "a5f031c14bd370403a706f1e8426baeda8a4d2c4",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/heads/codex/cloud-version-state-01",
+      "tip": "badd6a204b91cec274e103d62ee63c583139f1e0",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/heads/codex/cloud-web-input-dns-repair",
+      "tip": "91ed10d8e6282645c055295170889ad9ba2dbc7a",
+      "reason": "unmerged"
+    },
+    {
+      "ref": "refs/heads/codex/preserve-local-cloud-agent-97463d00",
+      "tip": "97463d00a84b01969a9ebe63abe0dd2b3ffbac47",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/heads/codex/test-anonymous-volume-cleanup",
+      "tip": "d85a613c844576f0da93cf6fa3a5be0cefb308f7",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/heads/codex/trench-exhaustive-admission-01",
+      "tip": "bcdc9f6dd2e2f12480ac99b985657483f694ee6d",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/heads/codex/trench-spin-sync-20261028",
+      "tip": "4766112cd00d8743a8a15b777548448825da3987",
+      "reason": "unmerged"
+    },
+    {
+      "ref": "refs/heads/main",
+      "tip": "749cfa256af64dd97592d833482ce96261a2c48d",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/remotes/origin/HEAD",
+      "tip": "749cfa256af64dd97592d833482ce96261a2c48d",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/remotes/origin/cloud-agent",
+      "tip": "afb61121b5fc1320082c49ded56a8bf076e0099c",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/remotes/origin/cloud-agent-trench",
+      "tip": "4766112cd00d8743a8a15b777548448825da3987",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/remotes/origin/codex/ca-p1-01b2-connector-management",
+      "tip": "6dbb2a8dc145e684d9792cfe9ada0b482c28f343",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/remotes/origin/codex/ca-p2-01d-publication-http",
+      "tip": "5ff2ce707928dae4fba2472b4a312df14870ecf0",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/remotes/origin/codex/ca-p3-01a-native-script-abi",
+      "tip": "d6729de3c0114448e7579c45be5df449d97fbd0e",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/remotes/origin/codex/ca-p3-01b-worker-script-binding",
+      "tip": "60893da8d850687b636d05473fddabc00a7187ae",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/remotes/origin/codex/ca-p3-01c-script-validation",
+      "tip": "f154f5d1eb3c744e26e6d74eb093d776bd0d5f34",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/remotes/origin/codex/ca-p3-01d-script-publication",
+      "tip": "b78a4ee464aa9c3159d67ec3a318cc9d13c9d6b8",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/remotes/origin/codex/ca-p3-01e-script-bundle-validation",
+      "tip": "416f6d8a4e22ced129c783a3eb861f06ba55b096",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/remotes/origin/codex/ca-p3-02a-frontend-admission",
+      "tip": "8715d225651a984b43fd6f98bdb9a755d35fcb51",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/remotes/origin/codex/ca-p3-02b-effect-authority",
+      "tip": "0aa6e5585b15e56b4a93009137952b49bff11ab6",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/remotes/origin/codex/ca-p3-02c-bff-browser",
+      "tip": "a1635a9c0f54a7ab117eb65b9f4a6735a1669ef9",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/remotes/origin/codex/ca-p3-02d-surface-metadata",
+      "tip": "d85a613c844576f0da93cf6fa3a5be0cefb308f7",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/remotes/origin/codex/ca-p3-02e-sdk-surface-sync",
+      "tip": "61e2cb217b7b3fbc23f0bd0ef45f04863bcf1267",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/remotes/origin/codex/ca-p3-02f-readable-admission",
+      "tip": "fb72ef6fce72ac171f947d1c18c57334f587be02",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/remotes/origin/codex/ca-p3-02g-readable-submit",
+      "tip": "1e66659d017aba0e84e2740f16d76444719b1f5b",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/remotes/origin/codex/ca-p3-02h-command-receipts",
+      "tip": "be9f7cd2bff7e2ba381399d9fd1852d6eaab3184",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/remotes/origin/codex/ca-p3-02i-command-recovery",
+      "tip": "be4b442c03d4753012e0543f9c22148eee71657a",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/remotes/origin/codex/ca-p3-02j-request-discovery",
+      "tip": "4e629a5aad0d900ea6b32b1b083e720ba5d8e885",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/remotes/origin/codex/ca-p3-02k-bff-auth",
+      "tip": "c023fa58c6d5d1f0988d37a11a5566793d7667db",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/remotes/origin/codex/ca-p3-02l-auth-lifecycle",
+      "tip": "760fcfb97f48fb6f18e8ba9c3dd3995c8530b02d",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/remotes/origin/codex/ca-p3-02m-signed-cloud",
+      "tip": "934d66b8aacad7690cef05aa672e78baf9827da4",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/remotes/origin/codex/ca-p3-02z-react-surface-revision",
+      "tip": "d93385bd323ee9ac7b379adfbe7becc744245594",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/remotes/origin/codex/ca-p3-03g-host-read-freshness",
+      "tip": "017e04e66ec3e383bf166992ca5ba220b2c216bd",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    },
+    {
+      "ref": "refs/remotes/origin/main",
+      "tip": "749cfa256af64dd97592d833482ce96261a2c48d",
+      "reason": "protected, dirty/occupied, or not inventoried"
+    }
+  ],
+  "preservedUnpublished": "97463d00a84b01969a9ebe63abe0dd2b3ffbac47",
+  "directoriesRemoved": false,
+  "sourceIntegrationCommit": "afb61121b5fc1320082c49ded56a8bf076e0099c",
+  "originalDirtyOccupiedHeadsPreserved": 39,
+  "actualSourceValidation": "validation.json",
+  "goIntegrationHead": "908160ed2ebf242ac6cfef3d967a376fdc2dfa66",
+  "currentReceiptBranch": "codex/ca-p5-integration-delivery",
+  "receiptBranchDisposition": "local-only; delete after its committed receipt is verified on published cloud-agent; source unchanged",
+  "noDeploymentOrProductionMigration": true
+}

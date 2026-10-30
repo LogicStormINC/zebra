@@ -1,3 +1,12 @@
+## CA-P5-INTEGRATE actual delivery receipt
+
+Source merge afb61121 published and remote verified;36 local/10 origin ancestor refs
+removed with exact old-tip guards.39 dirty occupied worktree heads unchanged; local
+unpublished97463d00 and all directories/data/receipts retained. No owned PG resources
+or verification producers remain; original API/PG/Redis services were not touched.
+This receipt changes governance only and reuses the frozen final-source validation;
+Runtime full/test static baseline failures remain explicitly recorded, not green.
+
 ## CA-P5-INTEGRATE final verification
 
 Final serial source is frozen across3429 entries. Full make test11618 pass/3155

@@ -1,6 +1,8 @@
 ## 2026-10-31 CA-P5-INTEGRATE — authorized mainline integration
 
-P5 f8356c30 is integrated with remote cloud-agent ac8473b3 on an isolated branch.
+P5 f8356c30 and remote ac8473b3 were merged as afb61121 and published to cloud-agent.
+[Actual cleanup receipt](docs/evidence/ca-p5-integration/delivery.json) records36 local/10
+remote merged refs removed,39 dirty occupied heads preserved and unpublished97463d00 retained.
 [Merge and preservation record](docs/CA-P5-INTEGRATION.md) explains Worker safety/gates,
 exact published migration115/116 compatibility without historical-ledger rewrites,
 and preservation of unpublished local97463d00. Source changes remain scoped to merge

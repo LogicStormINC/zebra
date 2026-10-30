@@ -6,8 +6,8 @@
 - [x] Resolve Native merge preserving both lines and exact legacy migration identity.
 - [x] Real PG compatibility/Bundle/Coverage70 and focused18 pass; first interrupted suite is not acceptance.
 - [x] Final Native11618/3155/15; all15 reproduced on clean remote. PG70, mypy1492/Eval30 and Go full gates pass; static inherited errors recorded without bypass.
-- [ ] Push verified Runtime integration cloud-agent, verify remote then clean ancestor refs.
-- [ ] Final preserved-data/dirty-tree/resource and remote-tip audit; no deployment/migration.
+- [x] Published source integration afb61121; remote/ancestry verified;36 local/10 remote refs removed.
+- [x] Final audit passed;39 dirty occupied heads, original receipts/data and local97463d00 preserved; temporary PG resources/producers cleared. Governance-only delivery receipt follows source merge; no deployment/migration.
 
 # CA-P5-08 — P5 工程退出验证通过（Review）
 
