@@ -9,6 +9,7 @@ from agent_core.application.native_script import (
     NativeScriptUnavailable,
 )
 from agent_core.domain.events import EventActor, EventType
+from agent_core.domain.identifiers import SessionId
 from agent_core.domain.native_script import NativeScript
 from agent_core.domain.runtime_bundle_json import json_digest
 from agent_core.domain.script_bundle import ScriptBinding, ScriptRuntimeAssembly
@@ -28,6 +29,7 @@ from zebra_agent_config.native_script import ScriptExecutionCatalog
 
 from zebra_agent_worker.bundle_assembly import task_assembly
 from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
+from zebra_agent_worker.native_script_authority import RenewedBindingAuthority
 from zebra_agent_worker.runtime_factory import (
     build_runtime,
     build_runtime_spec,
@@ -63,6 +65,21 @@ def approved_scripts(
     return catalog
 
 
+class _SwappableAuthority:
+    """Hold the current script authority; renewed generations swap in place."""
+
+    def __init__(
+        self, authority: NativeScriptAuthority, binding: TaskBindingSnapshot, events: EventStorePort
+    ) -> None:
+        self.authority = authority
+        self.binding = binding
+        self._events = events
+
+    def swap(self, renewed: TaskBindingSnapshot | None) -> None:
+        if renewed is not None and renewed.binding_revision > self.binding.binding_revision:
+            self.binding = renewed
+            self.authority = NativeScriptAuthority(self._events, renewed)
+
 def prepare_native_scripts(
     *,
     settings: ZebraAgentSettings,
@@ -73,6 +90,7 @@ def prepare_native_scripts(
     recorder: Callable[[], DurableHarnessEventRecorder],
     instance_factory: BoundInstanceFactory | None,
     attempt_number: int,
+    binding_loader: Callable[[SessionId], object] | None = None,
 ) -> NativeScriptTools | None:
     assembly = task_assembly(task)
     if not isinstance(assembly, ScriptRuntimeAssembly):
@@ -98,10 +116,21 @@ def prepare_native_scripts(
         not set(item.scopes) <= set(context.scopes) for item in assembly.native_scripts.bindings
     ):
         raise NativeScriptUnavailable("NATIVE_SCRIPT_SCOPE_DENIED")
+    current_authority = _SwappableAuthority(authority, binding, events)
+    refresh: RenewedBindingAuthority | None = None
+    if binding_loader is not None:
+        refresh = RenewedBindingAuthority(
+            binding_loader=binding_loader,
+            events=events,
+            session_id=current.session.session_id,
+            attempt_number=attempt_number,
+        )
 
     def check() -> None:
         recorder().require_active_execution()
-        authority.check()
+        if refresh is not None:
+            current_authority.swap(refresh.ensure_current(recorder()))
+        current_authority.authority.check()
 
     def authorize(item: ScriptBinding) -> NativeScript:
         if item not in assembly.native_scripts.bindings:
@@ -113,7 +142,9 @@ def prepare_native_scripts(
             raise NativeScriptUnavailable("NATIVE_SCRIPT_APPROVAL_UNAVAILABLE") from None
 
     def append(event_type: EventType, actor: EventActor, payload: dict[str, object]) -> object:
-        return authority.checked(lambda: recorder().append(event_type, actor, payload))
+        return current_authority.authority.checked(
+            lambda: recorder().append(event_type, actor, payload)
+        )
 
     journal = EventScriptJournal(events, current.session.session_id, append, check)
 
@@ -164,6 +195,6 @@ def prepare_native_scripts(
     def commit_answer(action: Callable[[], None]) -> None:
         recorder().require_active_execution()
         approved_scripts(settings, assembly)
-        authority.commit(action)
+        current_authority.authority.commit(action)
 
     return NativeScriptTools(service, assembly.native_scripts.bindings, commit_answer=commit_answer)

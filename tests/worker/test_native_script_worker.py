@@ -51,7 +51,14 @@ def script_dsn(owned_dsn):
     return owned_dsn
 
 
-def setup(script_dsn, tmp_path, *, verifier=False, tool_source=None):
+def setup(
+    script_dsn,
+    tmp_path,
+    *,
+    verifier=False,
+    tool_source=None,
+    grant_expires_in=timedelta(minutes=10),
+):
     configured = settings()
     configured = replace(
         configured,
@@ -88,7 +95,7 @@ def setup(script_dsn, tmp_path, *, verifier=False, tool_source=None):
         limits={"max_runtime_seconds": 600, "max_model_tokens": 200000, "max_artifact_bytes": 1024},
         origin=scope.authority_issuer,
         policy_version="test-v1",
-        expires_at=now + timedelta(minutes=10),
+        expires_at=now + grant_expires_in,
     )
     boot = SessionBootstrapService().build(
         SessionBootstrapCommand(
@@ -231,7 +238,7 @@ def provider(bodies):
     return httpx.Client(transport=httpx.MockTransport(respond))
 
 
-def worker(configured, stores, claims, binding_value, client, tmp_path):
+def worker(configured, stores, claims, binding_value, client, tmp_path, binding_loader=None):
     service = SessionExecutionService(
         database_path=tmp_path / "aux.db",
         claim_service=claims,
@@ -240,7 +247,7 @@ def worker(configured, stores, claims, binding_value, client, tmp_path):
         stores=stores,
         worker_projection_transaction=stores.workspaces,
         deployment_namespace=stores.deployment_namespace,
-        task_binding_loader=lambda _: binding_value,
+        task_binding_loader=binding_loader or (lambda _: binding_value),
         model_http_client=client,
     )
     from agent_storage import SQLiteEffectLedger, SQLiteProviderContinuationStore
@@ -526,3 +533,85 @@ def test_invocation_cannot_use_a_binding_outside_its_frozen_plan(script_dsn, tmp
         e.event_type is EventType.NATIVE_SCRIPT_INVOCATION
         for e in stores.events.list_for_session(lease.session_id)
     )
+
+
+@pytest.mark.skipif(sys.platform != "darwin", reason="actual native Seatbelt worker proof")
+def test_script_invocation_extends_from_renewed_binding(script_dsn, tmp_path, monkeypatch):
+    """A continuous attempt outliving the frozen grant completes only via renewal.
+
+    The frozen binding expires seconds into the attempt while the native tool
+    script sleeps past it; without an explicitly renewed stored binding the
+    refusal stays fail-closed, with one the whole turn completes.
+    """
+    monkeypatch.setenv("BUNDLE_MODEL_KEY", "private-test-key")
+    slow_tool = (
+        "import time\n"
+        "def execute(arguments):\n"
+        "    time.sleep(4)\n"
+        "    return {'value': 'slow'}\n"
+    )
+    configured, stores, claims, bound, _, _, _ = setup(
+        script_dsn, tmp_path, tool_source=slow_tool, grant_expires_in=timedelta(seconds=3)
+    )
+    loads = {"count": 0, "attempt_at": None}
+
+    def renewing_loader(session_id):
+        loads["count"] += 1
+        if loads["count"] <= 2:
+            # The first loads happen around Attempt start; anchor the renewal
+            # just after the attempt began but before any in-flight refresh.
+            loads["attempt_at"] = loads["attempt_at"] or datetime.now(UTC)
+            return bound
+        renewed_at = (loads["attempt_at"] or datetime.now(UTC)) + timedelta(milliseconds=500)
+        renewed_context = bound.host_capability.host_context.model_copy(
+            update={"expires_at": renewed_at + timedelta(minutes=10)}
+        )
+        renewed_host = bound.host_capability.model_copy(
+            update={
+                "grant_expires_at": renewed_context.expires_at,
+                "grant_digest": host_context_digest(renewed_context),
+                "bound_at": renewed_at,
+                "host_context": renewed_context,
+            }
+        )
+        return bound.model_copy(
+            update={
+                "binding_revision": bound.binding_revision + 1,
+                "bound_at": renewed_at,
+                "host_capability": renewed_host,
+            }
+        )
+
+    bodies = []
+    with provider(bodies) as client:
+        result = worker(
+            configured, stores, claims, bound, client, tmp_path, binding_loader=renewing_loader
+        ).execute_session(__import__('uuid').UUID(bound.task_id), worker_id="native-worker")
+    assert result.session.status is SessionStatus.COMPLETED
+    events = stores.events.list_for_session(result.session.session_id)
+    assert sum(
+        e.event_type is EventType.NATIVE_SCRIPT_INVOCATION
+        and e.payload["phase"] == "completed"
+        for e in events
+    ) == 3
+    assert any(e.event_type is EventType.ANSWER_COMMITTED for e in events)
+
+
+@pytest.mark.skipif(sys.platform != "darwin", reason="actual native Seatbelt worker proof")
+def test_script_invocation_stays_fail_closed_without_renewal(script_dsn, tmp_path, monkeypatch):
+    monkeypatch.setenv("BUNDLE_MODEL_KEY", "private-test-key")
+    slow_tool = (
+        "import time\n"
+        "def execute(arguments):\n"
+        "    time.sleep(4)\n"
+        "    return {'value': 'slow'}\n"
+    )
+    configured, stores, claims, bound, _, _, _ = setup(
+        script_dsn, tmp_path, tool_source=slow_tool, grant_expires_in=timedelta(seconds=3)
+    )
+    bodies = []
+    with provider(bodies) as client:
+        result = worker(configured, stores, claims, bound, client, tmp_path).execute_session(
+            __import__('uuid').UUID(bound.task_id), worker_id="native-worker"
+        )
+    assert result.session.status is SessionStatus.FAILED

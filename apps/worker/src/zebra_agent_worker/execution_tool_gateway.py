@@ -122,6 +122,7 @@ def build_execution_tool_gateway(
     network_cancellation_check: Callable[[], None] | None = None,
     script_recorder: Callable[[], DurableHarnessEventRecorder] | None = None,
     instance_factory: BoundInstanceFactory | None = None,
+    binding_loader: Callable[[SessionId], object] | None = None,
 ) -> WorkerToolGateway:
     """Compose one execution gateway from already trusted Worker state."""
     plugin_guard = prepare_worker_plugins(
@@ -210,6 +211,7 @@ def build_execution_tool_gateway(
             recorder=script_recorder,
             instance_factory=instance_factory,
             attempt_number=attempt_number,
+            binding_loader=binding_loader,
         )
         if scripts is not None:
             if scripts.names & {tool.name for tool in gateway.model_tools}:

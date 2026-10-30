@@ -1,0 +1,12 @@
+{
+ "task": "CA-P5-05",
+ "date": "2026-10-29",
+ "red": "test_script_invocation_extends_from_renewed_binding failed with NativeScriptUnavailable/HostGrantMismatchError/ExecutionAuthorityResolutionError before the pure renewal path and authority swap",
+ "green": "13/13 tests/worker/test_native_script_worker.py including both new boundary tests",
+ "checks": {
+  "ruff": "clean",
+  "mypy": "clean (changed sources)",
+  "suite": "tests/worker/test_native_script_worker.py 13 passed"
+ },
+ "recorded_by": "Codex executor for Luke Ding"
+}

@@ -346,6 +346,7 @@ class SessionExecutionService(SessionExecutionEntrypoints):
                 if effect_recorder
                 else authority_recorder,
                 instance_factory=bound_instance_factory,
+                binding_loader=self._task_binding_loader,
             )
             tool_gateway = guard_worker_effects(
                 local_tool_gateway,
