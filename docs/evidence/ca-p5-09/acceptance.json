@@ -1,0 +1,25 @@
+{
+  "task": "CA-P5-09",
+  "baseline": "ce6d7d19791f34567a5192663ca2c234f7452137",
+  "status": "focused passed; full and S1 pending",
+  "productionChanges": [
+    "packages/agent-storage/src/agent_storage/postgres/legacy_command_candidates.py"
+  ],
+  "sourceBlobs": {
+    "packages/agent-storage/src/agent_storage/postgres/legacy_command_candidates.py": "5d4471ab563b4a8d0f1e598187ec7561934baf75ee66442a3518eee7b8b22e8c",
+    "tests/worker/test_legacy_ready_recovery.py": "84733e528d12a4a33c4af41faff4fcd342a3fdb1c6dc48ddcdd71d1e16da0563"
+  },
+  "focused": {
+    "passed": 33,
+    "red": "4 failed, 2 passed on strict greater-than reader",
+    "logs": {
+      "red": "6d968f10617ad03f82db5719ceeec6baee44b853cd60ed0c128f6bac75ed2702",
+      "green": "139fffd099b58690a46f86912718d29a4c59f5fc0c05b610a8f99c70d66b4a12",
+      "focused": "782a2ce37c654f5fc489dbdcc3582d0f7e5f9e53caf9b5920fe752e9a83d4e46"
+    }
+  },
+  "noSchemaOrPublicContractChange": true,
+  "oldUnknownsRetained": true,
+  "businessReplay": false,
+  "controllerReclaim": false
+}

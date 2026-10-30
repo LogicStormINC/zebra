@@ -1,3 +1,7 @@
+# CA-P5-09 — Legacy READY original frontier
+
+Claimed before implementation. V21 real image/PG incompatibility refusal exposed original RUN hidden after recovery projected its accepted event. Shared scoped read-only last-READY-frontier predicate fixes discovery and next-command read; no new events/HTTP/RUN/Controller, no projection rewind or schema/public contract change. Real PG red4/green6 plus rejection/Worker/close-healing/consumer suite33 passed; full gates and new fixed-image S1 pending. Preserve originals/data/Coverage and single-environment cleanup. [Contract and limits](docs/CA-P5-09_legacy_ready_recovery.md).
+
 # CA-P5-07 final producer gates
 
 First full run caught real CommandWorkerProcess CLI keyword mismatch (11229 passed/1 fail/3080 skips). Fixed common optional stop callback, pre-start consumer refusal, preserved async signal ownership/drain; extracted existing cadence validation for file limit, preserving validation cleanup order.31 focused passed. Final make test11231 passed/3080 skipped; make check1448/30eval/0 size passed. Complete Docker events:4 added Jazz containers/4 Jazz named volumes and8 independent cleanup anonymous volumes, all external and untouched; no confirmed owned leftovers. First-run4 unproven volume chains and earlier23 retained. Source blobs stable throughout final run; runner/event collector exited. Producer Review for source publication, no main/production changes; actual PID1 and S1 remain consumer acceptance.
@@ -17598,3 +17602,5 @@ CA-OPS-02 red6 failed/3 passed/12 conditional skips, then reused real Docker nor
 CA-OPS-02 full Native make test exit0:11225 passed/3080 conditional skips in1305.68s (12 live cleanup cases gated by explicit opt-in; all21 live/static checks separately passed). Container/volume/network ID sets exactly match baseline, including old23 retained volumes; no owned producer/temporary service remains. Final check next; Overdoze25de8c9 unchanged/full gates retained.
 
 CA-OPS-02 make check exit0:1447 typed sources/30eval and zero size/Ruff violations. Final resource identity sets match baseline; old23 unproven volumes retained, no heavy task left. Commit/push test-only source then unlock resource-safe S1; no production operations/main integration.
+
+CA-P5-09 optional real-PG legacy suite:7 passed/1 expired admitted STOP failed; exact published ce6 reader reproduces same failure. Diagnostic reason Host Grant expired. Separate CA-P5-10 dependency must repair durable cancellation identity path before combined final gates; no known failure is waived. Disposable PG removed.

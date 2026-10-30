@@ -1,3 +1,7 @@
+# CA-P5-09 — Legacy READY original frontier
+
+Claimed before implementation. V21 real image/PG incompatibility refusal exposed original RUN hidden after recovery projected its accepted event. Shared scoped read-only last-READY-frontier predicate fixes discovery and next-command read; no new events/HTTP/RUN/Controller, no projection rewind or schema/public contract change. Real PG red4/green6 plus rejection/Worker/close-healing/consumer suite33 passed; full gates and new fixed-image S1 pending. Preserve originals/data/Coverage and single-environment cleanup. [Contract and limits](docs/CA-P5-09_legacy_ready_recovery.md).
+
 # CA-P5-07 — Worker graceful-stop prerequisite
 
 Fallback CLI SIGTERM/SIGINT now requests normal stop/drain and no further pickup; command-consumer ownership remains. Real CLI red -15 -> normal summary;31 focused checks including real command-process CLI adapter passed. Final make test11231/3080 conditional skips and make check1448 sources/30eval passed, source blobs stable. External resource deltas attributed/untouched; first-run4 and earlier23 unproven volumes retained. Producer Review, source publication for downstream S1; actual PID1/Beta/rollback remains Overdoze-owned. No schema/history/Coverage/unknown rewrite. [Boundary](docs/CA-P5-07_worker_graceful_stop.md).
@@ -8276,3 +8280,5 @@ unmeasured. See docs/CLOUD_MCP_PREPARE_TIMING.md.
 
 ## CA-P3-02Q 原准入只读观察（2026-10-24）
 P之后追加原claim/result只读观察，不输出凭据，不推断当前Controller或非提交证明。API/真实PG及消费者实际挂载后丢原收据候选通过；完整make test11057通过/3032条件跳过、check1404类型/30eval通过，[合同](docs/CA-P3-02Q_admission_observation.md)。原unknown不重发/不接管，旧数据/收据/Coverage保留，无迁移/部署。
+
+CA-P5-09 optional real-PG legacy suite:7 passed/1 expired admitted STOP failed; exact published ce6 reader reproduces same failure. Diagnostic reason Host Grant expired. Separate CA-P5-10 dependency must repair durable cancellation identity path before combined final gates; no known failure is waived. Disposable PG removed.

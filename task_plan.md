@@ -1,3 +1,7 @@
+# CA-P5-09 — Legacy READY original frontier
+
+Claimed before implementation. V21 real image/PG incompatibility refusal exposed original RUN hidden after recovery projected its accepted event. Shared scoped read-only last-READY-frontier predicate fixes discovery and next-command read; no new events/HTTP/RUN/Controller, no projection rewind or schema/public contract change. Real PG red4/green6 plus rejection/Worker/close-healing/consumer suite33 passed; full gates and new fixed-image S1 pending. Preserve originals/data/Coverage and single-environment cleanup. [Contract and limits](docs/CA-P5-09_legacy_ready_recovery.md).
+
 # CA-P5-07
 
 1. [x] Trace actual original stop/Worker PID1 fallback and register ownership.
@@ -33,3 +37,5 @@
 - Evidence/tasks updated; commit/push next, then rebuild actual S1 images
   from the published source and continue Overdoze07C. Do not end at this prerequisite.
 - Preserve history/data/originals/Coverage; no production migration/deployment/main merge.
+
+CA-P5-09 optional real-PG legacy suite:7 passed/1 expired admitted STOP failed; exact published ce6 reader reproduces same failure. Diagnostic reason Host Grant expired. Separate CA-P5-10 dependency must repair durable cancellation identity path before combined final gates; no known failure is waived. Disposable PG removed.
