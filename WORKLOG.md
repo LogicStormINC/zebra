@@ -1,3 +1,30 @@
+## CA-P5-INTEGRATE final verification
+
+Final serial source is frozen across3429 entries. Full make test11618 pass/3155
+skip/15 fail in1397.82s; exact same15 fail on clean ac8473b3 in2.70s, no new failure
+IDs. Actual PG70 in104.50s proves both histories, original ledger/unknown receipts,
+startup/capability/command cutover schema checks without granting cutover. Mypy1492,
+Eval30 and both progress checks pass. make check remains red on remote-identical16
+file sizes and4924 ERP Ruff errors; no bypass claimed green. Overdoze full make
+test30 packages and make check pass,74 existing nonblocking warnings. No source
+changes after final freeze. Proceed with explicitly authorized normal cloud-agent
+push and old-tip ancestor-only cleanup; unpublished97463d00/dirty work/data retained.
+
+## 2026-10-31 CA-P5-INTEGRATE
+
+User authorized both mainline merges/push and merged-only cleanup, no deployment or
+production migration. Overdoze main908160e published;24 local/22 remote merged refs
+removed with exact-tip ancestry proof, every directory/data/receipt and untracked
+pnpm-lock preserved. Runtime integration from ac8473b3 + f8356c30 preserves current
+safety net/AG-UI preparation and P5 gates/admitted STOP/graceful shutdown. Published
+migration115/116 collision handled by exact history planning, no historical row
+rewrite or SQL/checksum edit. Local cloud-agent97463d00 preserved on explicit branch.
+Initial full run was interrupted after migration seam/fixture failures; not a pass.
+Runner.MIGRATIONS seam restored, named migration/baseline anchors corrected; PG70/0
+including historical Bundle/Coverage, focused18/0 passed. Fresh full suite is running.
+The16 inherited file-size and4924 ERP Ruff errors match exact ac8473b3 blobs; do not
+call make check green. Full results and final branch delivery follow in evidence.
+
 ## 2026-10-30 safety deployment closeout
 
 User supplied the prepared safety deployment handoff. Live server restored,
@@ -330,6 +357,40 @@ status but neither messaged it nor edited its custom worker/deployment.
 - Release boundary: local source integration only. ERP native105 migration/image
   convergence and production HA/failover remain separate. No blanket retry or
   success relabeling; no provider, search, production data or service operation.
+# CA-P5-08 — P5 工程退出验证通过（Review）
+
+固定生产者9e91d75f，源码与完整门禁哈希不变。消费者V31在同一环境完成实际
+SDK/Worker Alpha/Beta/回退、负向门禁/原GET、三处重启和三Task原历史保留。
+Native make test11240/3080条件跳过、make check1448/Eval30，隔离PG8+7通过。
+无原业务重发/Controller重领；保留mock/数据/原收据/Coverage/unknown。
+临时运行资源已清理、数据保留；无主线合并、生产部署/迁移。
+[复核](docs/CA-P5-08_exit_verification.md) · [证据](docs/evidence/ca-p5-08/acceptance.json)。
+
+# CA-P5-10 — Admitted STOP uses durable identity
+
+Claimed before code; original optional expiry STOP fails on published ce6 baseline, not caused by09. Reuse canonical admitted fingerprint and latest durable binding/exact workspace for trusted direct cancellation; current Host API/expiry and execution permissions unchanged. Canonical admitted-event proof retains identity/context validation. Final47 focused, full make test11240 passed/3080 conditional skips, make check1448 sources/Eval30 passed; explicit owned PG legacy8/resource7 passed. Fixed-source image consumer S1 pending. Preserve data/history/Coverage and no unknown HTTP/RUN replay or Controller reclaim. [Boundary](docs/CA-P5-10_admitted_stop_identity.md).
+
+# CA-P5-09 — Legacy READY original frontier
+
+Claimed before implementation. V21 real image/PG incompatibility refusal exposed original RUN hidden after recovery projected its accepted event. Shared scoped read-only last-READY-frontier predicate fixes discovery and next-command read; no new events/HTTP/RUN/Controller, no projection rewind or schema/public contract change. Real PG red4/green6 plus rejection/Worker/close-healing/consumer suite33 passed; full gates and new fixed-image S1 pending. Preserve originals/data/Coverage and single-environment cleanup. [Contract and limits](docs/CA-P5-09_legacy_ready_recovery.md).
+
+# CA-P5-07 final producer gates
+
+First full run caught real CommandWorkerProcess CLI keyword mismatch (11229 passed/1 fail/3080 skips). Fixed common optional stop callback, pre-start consumer refusal, preserved async signal ownership/drain; extracted existing cadence validation for file limit, preserving validation cleanup order.31 focused passed. Final make test11231 passed/3080 skipped; make check1448/30eval/0 size passed. Complete Docker events:4 added Jazz containers/4 Jazz named volumes and8 independent cleanup anonymous volumes, all external and untouched; no confirmed owned leftovers. First-run4 unproven volume chains and earlier23 retained. Source blobs stable throughout final run; runner/event collector exited. Producer Review for source publication, no main/production changes; actual PID1 and S1 remain consumer acceptance.
+
+# CA-P5-07 start
+
+User requested serial SDK/approval/Worker/Beta/rollback continuation. V15 original Worker stop stayed unknown/running; scoped teardown completed (data retained/quota detached). Source tracing finds signals only on migrated command consumer, not fallback CLI. Registered/claimed CA-P5-07 before code on d5f10cb4 descendant. Real idle CLI signal regression failed -15; scoped CLI signal request, callback pickup boundary and existing drain now pass18 checks. No production migration/deployment or old stop replay; full gates before new image source.
+
+# CA-P5-02A / 2026-10-28
+
+Resumed declared feature branch; process audit found no surviving tests/temporary services. Independent termination authority, exact original hash/CAS, atomic fence/proof and late old-snapshot serialization implemented; maximum raw source/envelope/retention/read-only/revoke cases passed.25 focused plus6 HTTP export checks and full termination-only cloud composition passed. Initial gate concurrency503 diagnosed with15 passing rounds and unchanged assertion; final full gates passed (11203/3067 skips,1443 typed sources/30Eval). First full run:11201 passed/3067 skips with expected migration-catalog115 assertion and one old local LeaseLost; catalog now explicitly includes116 and8 migration/Worker checks passed unchanged. Final full rerun11203 passed/3067 conditional skips; full check1443 typed sources/30Eval passed, original lease/assertion unchanged. Go initial old PG bootstrap timed out; isolated exact case passed, only exact owned orphan container/volume removed, no shared service touched. Go docs/contracts-only handoff follows Native publication. No deployment/prod migration/main integration or mock/BFF/history/receipts/Coverage/unknown replay changes.
+
+# CA-P5-01 / 2026-10-28
+Owner Luke Ding; Codex execution; branch codex/ca-p5-01-runtime-gates from0a50892d, scoped claim/design before code.
+Implemented gate journal/CAS/current approval, admission fence and Worker observations; final recovery hardening reserves open slot and rejects inherited-process observations without affecting work.
+First full candidate deliberately interrupted for these fixes (7810 pass/2181 skips, NOT full success). Final tests /tmp/ca-p5-01-test-delivery.log (session49779), check /tmp/ca-p5-01-check-delivery.log (70224), focused/evidence /tmp/ca-p5-01-evidence-delivery.log (16644); source frozen before these runs.
+Cloud API composition passed; Go published-preparation branch now has docs-only child codex/od-p5-ca01-contract, test log /tmp/od-p5-ca01-test.log. Final Native full exit0:11197 passed/3067 conditional skips; check1436 source files/30Eval passed. Evidence finalized, authorized Native commit/push then immutable Go pin/check and Go commit/push; no main merge/deploy/production migration.
 
 ## CA-P3-03G
 
@@ -18197,3 +18258,53 @@ ERP candidate/browser/cutover acceptance remains a separate repository task.
   scoped remote integration from reviewed7c382 to origin/cloud-agent, leaving that
   unrelated primary branch/dirty work untouched. G3 uses the reviewed remote base.
   Default profile registry remains empty.
+CA-P5-03 claimed from published4f53afb5 for user full-P5 completion. Minimal opt-in signed process binding
+reuses actual observer UUID; no compatibility duplication, HTTP or schema. New process-only setting is
+excluded from baseline_digest; signing key stays outside settings/snapshots. Focused5 pass; full gates follow.
+
+## CA-P5-03 final verification
+11206 passed/3067 conditional skips; make check1445 typed sources/30Eval passed;31 focused repeat and exact emitter golden passed. Retained first failed full run and transient PG SSL boundary in evidence; no skips/cleanup added. Optional signed process metadata preserves historical Bundle digest and BFF/Task/history/Coverage. Parent P5 remains active; no production operations.
+
+2026-10-29 CA-P5-04: reproduce cloud Eval factory rejection without Docker/model I/O. Implement explicit optional cloud Eval resources under original/current publisher authority, admission/hold source fence, and empty script child under declared quota backing.34 targeted PG/Seatbelt/script/containment checks pass. Full gates running. No production operations; continue parent P5 actual S1 after publication.
+
+CA-P5-04 final: make test11209 passed/3067 conditional skips in1198.85s; make check passed;34 targeted PG/Seatbelt/containment checks. Preserve public contracts/history/Coverage; no production operations. Publish focused branch then continue actual owned gVisor S1 in Overdoze07C.
+
+
+## 2026-10-30 — CA-P5-06 authorized approval binding renewal
+
+Preserved the proposed missing renewal and corrected its position: current authorization first, renewal within existing deadline and outside approval lock, locked authorization recheck unchanged. Original GET never renews. Red4/1 then focused28/4 conditional skips; owned disposable PG4 passed. Both repository full gates running; no source-pinned S1 success claimed. Original unknowns/history/Coverage and active lab processes retained.
+
+Full make check passed in both repositories (Overdoze existing Biome warnings). Both first full test jobs received external SIGTERM143 together, with no assertion failure in the captured prefix; source unchanged, no remaining test child processes found. Cause unproven. Restarted complete gates with distinct logs, explicit PID/exit receipts; do not treat interrupted prefixes as passing full gates.
+
+
+## 2026-10-30 — Full tests interrupted for authorized resource recovery
+
+User reports severe Mac pressure. Stopped both owned full make test trees and Overdoze retained S1 producers/containers; no full-test pass claim. Both make check completed exit0, final focused API28/1 conditional skip and owned real PG4 passed. CA-P5-06 source stays uncommitted pending serial full revalidation; no push or S1/P5 completion claim. Operational evidence /tmp/overdoze-resource-recovery-20261030; data/originals/unknown/Coverage retained. Do not auto-restart heavy suites.
+
+Resource-recovery notification received: external SIGTERM was intentional to address severe Mac load; immediately stopped automatic retries. Third full test attempt also interrupted143, never passed. Process inventory confirms no owned make test/pytest/go test or retry wrappers remain. Owned ca-p5-06-owned-pg was already removed after isolated PG checks; no global prune or existing resource/data cleanup. Preserve all code/uncommitted changes and recovery records at /tmp/overdoze-resource-recovery-20261030; no heavy task or Docker recreation until explicit user resume. Source publication/S1 remain pending.
+
+## 2026-10-30 — Explicit user resume after resource recovery
+
+User says continue after paused status. Inspected no owned full-test/S1 producer remains, only two pre-existing unrelated Docker services running, 47% free memory and87GiB disk. Resume one heavyweight suite at a time: Native first, then Overdoze with bounded Go parallelism. No S1 rebuild or automatic retry after interruption. Baseline inventory/process receipts live in /tmp/ca-p5-06-resume-3d3fcdc918. Preserve ops branch25de8c9 and all prior recovery/history/unknown/Coverage records.
+
+Explicit-resume Native make test completed exit0:11216 passed/3068 conditional skips in1338.94s. No full-test overlap/S1 rebuild. Overdoze full race suite follows serially with GOMAXPROCS2/GOFLAGS-p2; no assertion failure or skip-policy change.
+
+CA-P5-06 final serial gates: Native11216 passed/3068 conditional skips in1338.94s, make check1447 typed sources/30eval exit0. Overdoze30 race packages and receipt selfcheck (19 corruption cases) passed; make check exit0 with74 inherited Biome warnings on unchanged25de8c9 ops branch. Bounded GOMAXPROCS2/GOFLAGS-p2 retained race. Before/after container/volume/network identity sets unchanged, both test process trees exited; no S1 rebuild, source-pinned joint or P5 closeout claim. Commit/push source next.
+
+Correction during final inventory review: container/network sets match but23 anonymous volumes were added during Native13:46–14:04 test window; no new Go14:05+ volumes remain. Initial generic unchanged-inventory sentence was premature and corrected before publication. Volumes retained pending ownership/reference proof; no global prune or unproven deletion.
+
+CA-OPS-02 registered/claimed before edits from published6dee587a. Reuse existing cleanup regression and six fixture argv; exact anonymous volume cleanup only, no new abstraction. Preserve old23 uncertain volumes; only the newly inspected regression/test-owned resources may be removed. Native full suite will run serially after live regression; Overdoze source unchanged/full gates already verified.
+
+CA-OPS-02 red6 failed/3 passed/12 conditional skips, then reused real Docker normal/failure/named-sentinel matrix21 passed in13.52s. Six force→force+anonymous-volume flags only. Full before/after identities match (old23 unknown-owner volumes retained), no regression resources remain. New serial Native gate manifest /tmp/ca-ops-02-73d3670dfe/manifest.json. No Go rerun: unchanged source already full-gated.
+
+CA-OPS-02 full Native make test exit0:11225 passed/3080 conditional skips in1305.68s (12 live cleanup cases gated by explicit opt-in; all21 live/static checks separately passed). Container/volume/network ID sets exactly match baseline, including old23 retained volumes; no owned producer/temporary service remains. Final check next; Overdoze25de8c9 unchanged/full gates retained.
+
+CA-OPS-02 make check exit0:1447 typed sources/30eval and zero size/Ruff violations. Final resource identity sets match baseline; old23 unproven volumes retained, no heavy task left. Commit/push test-only source then unlock resource-safe S1; no production operations/main integration.
+
+CA-P5-09 optional real-PG legacy suite:7 passed/1 expired admitted STOP failed; exact published ce6 reader reproduces same failure. Diagnostic reason Host Grant expired. Separate CA-P5-10 dependency must repair durable cancellation identity path before combined final gates; no known failure is waived. Disposable PG removed.
+
+CA-P5-10 final design revision: initial full5 identity/context propagation failures were not waived. Retain original delegation and full context; store revalidates exact canonical admitted STOP/CANCEL event and operation, uses immutable admission time only, current default expiry remains strict.47 focused including old five and real-PG forged-event/operation negatives pass. Full source frozen for renewed gates; no publish or new S1 yet.
+
+CA-P5-09/10 combined final producer gates: make test11240 passed/3080 conditional skips, make check0 file-size violations/ruff/mypy1448/Eval30 passed; source hashes unchanged. Legacy real PG8 and original resource binding7 passed in exact-owned temporary PG (historical fixture replaced for isolation only; assertions unchanged). All owned temporary PG/anonymous volumes removed, no new volumes/networks;4 foreign-owner containers preserved. Source publication required before fresh consumer images; P5 not yet closed.
+
+CA-P5-08 verification resumed on9e91d75f after both producer gates passed and GitHub HTTPS remote verified. No code changes; consumer V22 uses new exact-source images in one environment. After cleanup compare frozen blobs and reuse current-turn full result if unchanged. Prior unknowns/data preserved; final S1 still pending.

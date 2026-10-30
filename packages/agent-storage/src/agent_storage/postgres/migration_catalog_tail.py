@@ -1,5 +1,7 @@
 """Latest additive migrations kept separate from the primary catalog."""
 
+from dataclasses import replace
+
 from agent_storage.postgres.agent_registry_migration import AGENT_REGISTRY_MIGRATION
 from agent_storage.postgres.agui_profile_routing_migration import AGUI_PROFILE_ROUTING_MIGRATION
 from agent_storage.postgres.approval_resume_migration import APPROVAL_RESUME_MIGRATION
@@ -80,6 +82,10 @@ from agent_storage.postgres.projection_work_routing_migration import (
 from agent_storage.postgres.provider_continuation_migration import PROVIDER_CONTINUATION_MIGRATION
 from agent_storage.postgres.publication_migration import PUBLICATION_MIGRATION
 from agent_storage.postgres.research_web_profile_migration import RESEARCH_WEB_PROFILE_MIGRATION
+from agent_storage.postgres.runtime_gate_migration import RUNTIME_GATE_MIGRATION
+from agent_storage.postgres.runtime_gate_termination_migration import (
+    RUNTIME_GATE_TERMINATION_MIGRATION,
+)
 from agent_storage.postgres.session_observation_headers_migration import (
     SESSION_OBSERVATION_HEADERS_MIGRATION,
 )
@@ -194,4 +200,6 @@ LATEST_MIGRATIONS = (
     PLUGIN_DISTRIBUTION_MIGRATION,
     AGUI_PROFILE_ROUTING_MIGRATION,
     STANDARD_PROJECTION_CELLS_MIGRATION,
+    replace(RUNTIME_GATE_MIGRATION, version=118),
+    replace(RUNTIME_GATE_TERMINATION_MIGRATION, version=119),
 )

@@ -126,7 +126,7 @@ def dsn() -> Iterator[str]:
         apply_postgres_migrations(url)
         yield url
     finally:
-        subprocess.run(["docker", "rm", "-f", container], check=True, capture_output=True)
+        subprocess.run(["docker", "rm", "-fv", container], check=True, capture_output=True)
 
 
 @pytest.fixture

@@ -1,0 +1,100 @@
+{
+  "task": "CA-P5-06",
+  "base": "145e5de5b5c155197bbe8a9acab1b7e9093ee0af",
+  "red": {
+    "failed": 4,
+    "passed": 1,
+    "scope": "authorization-before-renewal ordering"
+  },
+  "focused": {
+    "passed": 28,
+    "skipped": 1,
+    "skip": "PostgreSQL-dependent route; separately owned PG run"
+  },
+  "postgres": {
+    "passed": 4,
+    "isolated": true,
+    "owned_container_removed": true,
+    "current_authorization_stub": true
+  },
+  "native_make_check": {
+    "exit_code": 0,
+    "typed_sources": 1447,
+    "eval_cases": 30,
+    "file_size_violations": 0,
+    "log_sha256": "3beb4345e7ecbed6f06e1df5714b319f03e8caa1e17ebebebe0fe8c6c0cf15d0"
+  },
+  "native_make_test": {
+    "exit_code": 0,
+    "passed": 11216,
+    "skipped": 3068,
+    "seconds": 1338.94,
+    "log_sha256": "0cdcb8f0f0f9c3f368332f4dc2a65fae4046dd05f64c953f3de8dc69bb95ec77"
+  },
+  "overdoze_make_check": {
+    "exit_code": 0,
+    "inherited_biome_warnings": 74,
+    "log_sha256": "ae925429cf39f2f9341e1427245dabb6bb37763f67388b13dd0b01022c6b49f4"
+  },
+  "overdoze_make_test": {
+    "exit_code": 0,
+    "race_packages": 30,
+    "worker_selfcheck": "valid receipt,19 corrupted receipts,optimized-Python refusal",
+    "source": "25de8c9",
+    "command": "GOMAXPROCS=2 GOFLAGS=-p=2 make test",
+    "log_sha256": "5fdd342c14ed932be5f5d1bbec0bcb7f46cd39589342d40ab49ad6c7bdc075ef"
+  },
+  "boundaries": [
+    "No production deployment or migration",
+    "No main merge",
+    "No unknown replay or Controller claim",
+    "No source-pinned S1 or complete P5 claim"
+  ],
+  "resume_constraint": "User explicitly resumed2026-10-30; serial heavy suites only, no automatic restart after interruption",
+  "prior_interrupted_tests": {
+    "attempts": 3,
+    "signal": "SIGTERM143",
+    "result": "incomplete; not counted as passing",
+    "reason": "authorized workstation resource recovery"
+  },
+  "resource_changes": {
+    "containers": {
+      "added": [],
+      "removed": []
+    },
+    "volumes": {
+      "added": [
+        "0875c2d2dd6535292c72be7da2912b2fb53bc23353a4eedfddf28c239de46317",
+        "0cebd6e6135727f4aaa9bd8c7917253e8b75e4107d60364be286d5cc03b14fc7",
+        "1ebdac4a3181264f3471866eebcb9ad10270a98e73a0b7980aaea88374448a74",
+        "3e6093626853a1d3296c8473ba81be6616748af559d399b51b2e19f0bcdbf1be",
+        "48b0059358725ef6fabe10880e1b72c3bda496016599399f350e60bc99764bfa",
+        "48ce137bfed0c6244d8ff44573458762bf2a27be6c4e3765e7a8c8293af75c9a",
+        "5461419e22fda1bc5d076b520fc113bfbf23e61a8a16ed27ab41bf07ada7933b",
+        "6576ec7028bee1dd0ec35760db203ebb927a96b2d23800104eb53621da5ecc13",
+        "67efa02ccd4bd1e1bddb5b9c813135cb045fd95e54c82faf1168b9c2981da497",
+        "85c55e710a411dcb49c0e18707b6194fad5494055331bfb28076a22bdb858c8a",
+        "9c9a2e33d7f241535240df1c7888e628000cf14384155fc5d4f65def1abcbe15",
+        "ab2c2267309503edff991c3b7078ad73ae986e0412a5e247a140183376e25915",
+        "ac0cf829d922432f4d85efd8efb6adb04b1cdd4eb874ebb7e910c26683163439",
+        "afee76dd0f0a307d3047b57d4636afee9f5a5cbfa64ce8c601052199bc2969de",
+        "ba9c1f70ed9642e20767f8c0fdecaa7f0c5ca1d7e8e73f731d1de77a74b13a51",
+        "bc1730b05a6c5735845c5dfab8e44091ed89a49f01cd64e8e646ee3c297927e4",
+        "c88d0de8158329e1fd95712f281b0898065d5baeb3ff5f2df556d0fd7a532a0b",
+        "d0fac72cf288774cdbcf7b26a8ee5e827b7e1e9b8a2726f132a146a34e670cdd",
+        "ddb16b26c7fc0b51d134b164dfbdda75d3a54280b706d38c95491fd51007fe4d",
+        "e2d4d73bf0d11ff58e33057a808f1f4c2b4e8b20df673907498416660b46c0f0",
+        "e3678a211ac2c85382af1514f70b8c03cf4eb9592808508974b2f6d4ba11c915",
+        "e7899a5818f0120925b19755c90cf41e9d24ed4dc99664a25e837959bc90fd0d",
+        "eab42a85445d0cdb9c5973969d0842429dd31127aebd4913e2c44a7e64aa4363"
+      ],
+      "removed": []
+    },
+    "networks": {
+      "added": [],
+      "removed": []
+    }
+  },
+  "resource_manifest": "/tmp/ca-p5-06-resume-3d3fcdc918/manifest.json",
+  "resource_cleanup": "No owned process/container/network remains;23 newly observed anonymous volumes retained pending historical ownership proof; not pruned"
+}

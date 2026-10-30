@@ -2,7 +2,6 @@
 
 import asyncio
 import logging
-import math
 import signal
 from collections.abc import Awaitable, Callable
 from concurrent.futures import ThreadPoolExecutor
@@ -28,7 +27,7 @@ from zebra_agent_config import ZebraAgentSettings
 from zebra_agent_worker.command_process_state import CommandRecoverySweep, CommandWorkerCapability
 from zebra_agent_worker.runtime_factory import pin_cloud_engine
 from zebra_agent_worker.worker_loop_service import WorkerLoopRunResult
-from zebra_agent_worker.worker_polling import validate_loop_inputs
+from zebra_agent_worker.worker_polling import validate_command_cadence, validate_loop_inputs
 
 logger = logging.getLogger(__name__)
 QUEUE = "zebra.session.command.ready.q"
@@ -75,25 +74,20 @@ class CommandWorkerProcess:
         max_cycles: int | None = None,
         stop_when_idle: bool = False,
         idle_sleep_seconds: float = 0.1,
+        stop_requested: Callable[[], bool] = lambda: False,
     ) -> WorkerLoopRunResult:
         validate_loop_inputs(
-            batch_size=batch_size,
-            lease_ttl_seconds=lease_ttl_seconds,
-            max_cycles=max_cycles,
-            idle_sleep_seconds=idle_sleep_seconds,
+            batch_size=batch_size, lease_ttl_seconds=lease_ttl_seconds,
+            max_cycles=max_cycles, idle_sleep_seconds=idle_sleep_seconds,
         )
         try:
-            if (
-                type(batch_size) is not int
-                or batch_size > self._settings.command_delivery.batch_size
-            ):
-                raise ValueError("worker batch exceeds configured command batch limit")
-            if (
-                type(idle_sleep_seconds) not in (int, float)
-                or not math.isfinite(idle_sleep_seconds)
-                or not 0 <= idle_sleep_seconds <= 30
-            ):
-                raise ValueError("worker idle interval is outside bounds")
+            validate_command_cadence(
+                batch_size=batch_size, idle_sleep_seconds=idle_sleep_seconds,
+                command_batch_limit=self._settings.command_delivery.batch_size,
+            )
+            if stop_requested():
+                self._drain()
+                return WorkerLoopRunResult(0, 0, "signal", (), ())
             return asyncio.run(
                 self._run(
                     worker_id,
@@ -102,6 +96,7 @@ class CommandWorkerProcess:
                     stop_when_idle,
                     batch_size=batch_size,
                     idle_sleep_seconds=idle_sleep_seconds,
+                    stop_requested=stop_requested,
                 )
             )
         finally:
@@ -118,6 +113,7 @@ class CommandWorkerProcess:
         *,
         batch_size: int | None = None,
         idle_sleep_seconds: float | None = None,
+        stop_requested: Callable[[], bool] = lambda: False,
     ) -> WorkerLoopRunResult:
         config = self._settings.command_delivery
         stop = asyncio.Event()
@@ -394,7 +390,10 @@ class CommandWorkerProcess:
         cycles = idle = 0
         reason = "max_cycles"
         try:
-            while not stop.is_set() and (max_cycles is None or cycles < max_cycles):
+            while (
+                not stop.is_set() and not stop_requested()
+                and (max_cycles is None or cycles < max_cycles)
+            ):
                 outcomes: tuple[PickupOutcome, ...] = ()
                 if config.scan_fallback_enabled:
                     discovery_generation = consumer._execution_discovery_generation
@@ -434,7 +433,7 @@ class CommandWorkerProcess:
                     )
                 except TimeoutError:
                     pass
-            if stop.is_set():
+            if stop.is_set() or stop_requested():
                 reason = "signal"
         finally:
             stop_new_work()

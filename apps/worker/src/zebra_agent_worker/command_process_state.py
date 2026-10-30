@@ -18,6 +18,7 @@ from agent_storage.postgres.command_wakeup_pickup import (
 from agent_storage.postgres.command_wakeup_recovery import recover_command_batch
 from agent_storage.postgres.command_wakeup_recovery_proof import CoverageRecoveryCheck
 from agent_storage.postgres.database import PostgresDatabase
+from agent_storage.postgres.migration_history_plan import migration_history_plan
 from agent_storage.postgres.migrations import MIGRATIONS
 from agent_storage.postgres.worker_capability import (
     PostgresWorkerCapabilities,
@@ -63,16 +64,14 @@ def command_cutover_state(dsn: str, namespace: str, *, require_ready: bool = Fal
             )
         if migrated or require_ready:
             applied = {
-                r["version"]: r
+                r["version"]: (r["name"], r["checksum"])
                 for r in connection.execute(
                     "SELECT version,name,checksum FROM zebra_schema_migrations"
                 ).fetchall()
             }
             if any(
-                m.version not in applied
-                or (applied[m.version]["name"], applied[m.version]["checksum"])
-                != (m.name, m.checksum)
-                for m in MIGRATIONS
+                applied.get(m.version) != (m.name, m.checksum)
+                for m in migration_history_plan(applied, MIGRATIONS)
             ):
                 raise ValueError("command delivery requires the complete verified schema")
         if require_ready and not migrated:

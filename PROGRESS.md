@@ -1,3 +1,13 @@
+## 2026-10-31 CA-P5-INTEGRATE — authorized mainline integration
+
+P5 f8356c30 is integrated with remote cloud-agent ac8473b3 on an isolated branch.
+[Merge and preservation record](docs/CA-P5-INTEGRATION.md) explains Worker safety/gates,
+exact published migration115/116 compatibility without historical-ledger rewrites,
+and preservation of unpublished local97463d00. Source changes remain scoped to merge
+compatibility; no frontend/unknown/Controller/data/Coverage behavior is relaxed.
+Merged full-gate verification is recorded separately; inherited16 size/4924 Ruff
+violations are not claimed green. No deployment or production migration.
+
 ## 2026-10-30 CLOUD-SAFETY-HEADER-20261030
 
 Server reachable; prepared safety source/v117 already deployed in shadow mode.
@@ -245,6 +255,44 @@ checkpoint while exact ACK/closed bounds remain enforced. Native152/SDK stream32
 primary checkout preserved; no model/search/deployment. Full make test11216passed,
 3082conditional skips,0failed. Local cloud-agent integration authorized/completed; see
 `docs/AGUI_CLOUD_INTEGRATION_2026-10-28.md` for boundaries and local integration.
+# CA-P5-08 — P5 工程退出验证通过（Review）
+
+固定生产者9e91d75f，源码与完整门禁哈希不变。消费者V31在同一环境完成实际
+SDK/Worker Alpha/Beta/回退、负向门禁/原GET、三处重启和三Task原历史保留。
+Native make test11240/3080条件跳过、make check1448/Eval30，隔离PG8+7通过。
+无原业务重发/Controller重领；保留mock/数据/原收据/Coverage/unknown。
+临时运行资源已清理、数据保留；无主线合并、生产部署/迁移。
+[复核](docs/CA-P5-08_exit_verification.md) · [证据](docs/evidence/ca-p5-08/acceptance.json)。
+
+# CA-P5-10 — Admitted STOP uses durable identity
+
+Claimed before code; original optional expiry STOP fails on published ce6 baseline, not caused by09. Reuse canonical admitted fingerprint and latest durable binding/exact workspace for trusted direct cancellation; current Host API/expiry and execution permissions unchanged. Canonical admitted-event proof retains identity/context validation. Final47 focused, full make test11240 passed/3080 conditional skips, make check1448 sources/Eval30 passed; explicit owned PG legacy8/resource7 passed. Fixed-source image consumer S1 pending. Preserve data/history/Coverage and no unknown HTTP/RUN replay or Controller reclaim. [Boundary](docs/CA-P5-10_admitted_stop_identity.md).
+
+# CA-P5-09 — Legacy READY original frontier
+
+Claimed before implementation. V21 real image/PG incompatibility refusal exposed original RUN hidden after recovery projected its accepted event. Shared scoped read-only last-READY-frontier predicate fixes discovery and next-command read; no new events/HTTP/RUN/Controller, no projection rewind or schema/public contract change. Real PG red4/green6 plus rejection/Worker/close-healing/consumer suite33 passed; full gates and new fixed-image S1 pending. Preserve originals/data/Coverage and single-environment cleanup. [Contract and limits](docs/CA-P5-09_legacy_ready_recovery.md).
+
+# CA-P5-07 — Worker graceful-stop prerequisite
+
+Fallback CLI SIGTERM/SIGINT now requests normal stop/drain and no further pickup; command-consumer ownership remains. Real CLI red -15 -> normal summary;31 focused checks including real command-process CLI adapter passed. Final make test11231/3080 conditional skips and make check1448 sources/30eval passed, source blobs stable. External resource deltas attributed/untouched; first-run4 and earlier23 unproven volumes retained. Producer Review, source publication for downstream S1; actual PID1/Beta/rollback remains Overdoze-owned. No schema/history/Coverage/unknown rewrite. [Boundary](docs/CA-P5-07_worker_graceful_stop.md).
+
+# CA-OPS-02 — Owned fixture teardown / verified / Review
+
+Six shared test teardown argv now remove anonymous volumes for exact owned containers. Reused existing red6→green21 real Docker checks, including exception cleanup/named sentinel retention; no production code. Native make test11225 passed/3080 conditional skips and make check1447 sources/30eval passed; final resource sets match baseline, including retained23 volumes lacking historical ownership proof. [Boundary](docs/CA-OPS-02_owned_test_teardown.md). No S1 overlap/production operations/main merge.
+
+# CA-P5-06 — Approval binding renewal / verified / Review
+
+[Contract and proof boundaries](docs/CA-P5-06_approval_binding_renewal.md): current authorized approval POST renews its verified HostGrant binding before the approval lock; original GET stays read-only. Frozen ceilings, receipts, unknown and Coverage preserved. API/helper28 and real PG4 pass; full checks passed; full tests interrupted for user-requested resource recovery. Source-pinned S1/P5 acceptance remains separate; no production operations or main merge.
+
+# CA-P5-04 — fenced cloud Eval / verified / Review
+[Boundary and implementation](docs/CA-P5-04_cloud_script_eval.md): dedicated original-owned exact OCI resources, current approval, closed-admission claim fence and unavailable lifecycle proof during unresolved cloud Eval. Shared declared quota backing fixes empty script workspace placement; no Task/lease fabrication, baseline fingerprint or history/Coverage change.34 targeted pass; make test11209/3067 conditional skips and make check exit0. Actual gVisor S1 remains Overdoze07C; all-P5 parent active, no production operations. [Prior](docs/archive/progress-ca-p5-03.md).
+
+# 2026-10-28 — CA-P5-01 Native gates verified / Review
+
+[DDD/API/proof boundaries](docs/CA-P5-01_runtime_gates.md): schema115 additive, explicit scoped machine approval,
+immutable original/CAS, namespace admission fence and actual Worker compatibility/engine observations.
+21 focused checks/cloud API composition passed; make test11197 passed/3067 conditional skips, make check1436 typed sources/30Eval passed. [Evidence](docs/evidence/ca-p5-01/README.md).
+Reserved final open slot prevents retention from stranding drain; no automatic replay, Controller claim, task/history/Coverage mutation or production operations. P5/S1/fleet shutdown/rollback remain open.
 
 # 2026-10-28 — Authorized P4 cloud-agent integration
 
@@ -8612,3 +8660,10 @@ repeat allocation for resolved workspaces. Initial full suite11415 pass/3094 ski
 fail was followed by a single32-test affected regression gate, all passed; make
 check passed. Real isolated ERP PG/S3/Host/Skill/quota/schedule boundary receipts
 exist; no actual model/search request or production activation occurred.
+CA-P5-09 optional real-PG legacy suite:7 passed/1 expired admitted STOP failed; exact published ce6 reader reproduces same failure. Diagnostic reason Host Grant expired. Separate CA-P5-10 dependency must repair durable cancellation identity path before combined final gates; no known failure is waived. Disposable PG removed.
+
+CA-P5-10 final design revision: initial full5 identity/context propagation failures were not waived. Retain original delegation and full context; store revalidates exact canonical admitted STOP/CANCEL event and operation, uses immutable admission time only, current default expiry remains strict.47 focused including old five and real-PG forged-event/operation negatives pass. Full source frozen for renewed gates; no publish or new S1 yet.
+
+CA-P5-09/10 combined final producer gates: make test11240 passed/3080 conditional skips, make check0 file-size violations/ruff/mypy1448/Eval30 passed; source hashes unchanged. Legacy real PG8 and original resource binding7 passed in exact-owned temporary PG (historical fixture replaced for isolation only; assertions unchanged). All owned temporary PG/anonymous volumes removed, no new volumes/networks;4 foreign-owner containers preserved. Source publication required before fresh consumer images; P5 not yet closed.
+
+CA-P5-08 verification resumed on9e91d75f after both producer gates passed and GitHub HTTPS remote verified. No code changes; consumer V22 uses new exact-source images in one environment. After cleanup compare frozen blobs and reuse current-turn full result if unchanged. Prior unknowns/data preserved; final S1 still pending.

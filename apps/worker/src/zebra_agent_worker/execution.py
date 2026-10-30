@@ -248,6 +248,7 @@ class SessionExecutionService(SessionExecutionComposition, SessionExecutionEntry
                 if effect_recorder
                 else authority_recorder,
                 instance_factory=bound_instance_factory,
+                binding_loader=self._task_binding_loader,
             )
             if fresh_authority is not None:
                 local_tool_gateway.authority_check = fresh_authority.check

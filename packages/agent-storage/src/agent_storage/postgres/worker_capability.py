@@ -217,7 +217,7 @@ class PostgresWorkerCapabilities:
 
 
 def _require_schema(connection: Connection[dict[str, Any]]) -> None:
-    from agent_storage.postgres.migrations import MIGRATIONS
+    from agent_storage.postgres.migration_history_plan import migration_history_plan
 
     connection.execute("SET LOCAL lock_timeout = '2s'")
     connection.execute("SET LOCAL statement_timeout = '2s'")
@@ -227,8 +227,9 @@ def _require_schema(connection: Connection[dict[str, Any]]) -> None:
             "SELECT version,name,checksum FROM zebra_schema_migrations"
         ).fetchall()
     }
-    if len(applied) != len(MIGRATIONS) or any(
-        applied.get(m.version) != (m.name, m.checksum) for m in MIGRATIONS
+    plan = migration_history_plan(applied)
+    if len(applied) != len(plan) or any(
+        applied.get(m.version) != (m.name, m.checksum) for m in plan
     ):
         raise WorkerCapabilityLostError("worker capability requires the verified schema")
 

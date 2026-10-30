@@ -1,0 +1,664 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Native Runtime deployment gate observations",
+    "version": "1"
+  },
+  "paths": {
+    "/management/v1/runtime-gates": {
+      "get": {
+        "operationId": "observeGate",
+        "security": [
+          {
+            "GateBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Runtime-Deployment",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Runtime-Audience",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Runtime-Product",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Runtime-Environment",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Runtime-Trust-Revision",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Runtime-Gate-Contract",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "const": "sha256:e799151daf0e6706309ca1b070a953c0b904166f166686c06e4ea27984fe91e0"
+            }
+          },
+          {
+            "name": "X-Runtime-Operation",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Original command or observation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObservationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Rejected/unavailable; no non-commit inference"
+          },
+          "401": {
+            "description": "Rejected/unavailable; no non-commit inference"
+          },
+          "403": {
+            "description": "Rejected/unavailable; no non-commit inference"
+          },
+          "404": {
+            "description": "Rejected/unavailable; no non-commit inference"
+          },
+          "405": {
+            "description": "Rejected/unavailable; no non-commit inference"
+          },
+          "409": {
+            "description": "Rejected/unavailable; no non-commit inference"
+          },
+          "429": {
+            "description": "Rejected/unavailable; no non-commit inference"
+          },
+          "503": {
+            "description": "Rejected/unavailable; no non-commit inference"
+          }
+        }
+      },
+      "post": {
+        "operationId": "changeGate",
+        "security": [
+          {
+            "GateBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Runtime-Deployment",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Runtime-Audience",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Runtime-Product",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Runtime-Environment",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Runtime-Trust-Revision",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Runtime-Gate-Contract",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "const": "sha256:e799151daf0e6706309ca1b070a953c0b904166f166686c06e4ea27984fe91e0"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Original command or observation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommandResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Rejected/unavailable; no non-commit inference"
+          },
+          "401": {
+            "description": "Rejected/unavailable; no non-commit inference"
+          },
+          "403": {
+            "description": "Rejected/unavailable; no non-commit inference"
+          },
+          "404": {
+            "description": "Rejected/unavailable; no non-commit inference"
+          },
+          "405": {
+            "description": "Rejected/unavailable; no non-commit inference"
+          },
+          "409": {
+            "description": "Rejected/unavailable; no non-commit inference"
+          },
+          "429": {
+            "description": "Rejected/unavailable; no non-commit inference"
+          },
+          "503": {
+            "description": "Rejected/unavailable; no non-commit inference"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Command"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "GateBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "rtgate_"
+      }
+    },
+    "schemas": {
+      "GateCandidate": {
+        "additionalProperties": false,
+        "properties": {
+          "definition_id": {
+            "format": "uuid",
+            "title": "Definition Id",
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+          },
+          "version_id": {
+            "format": "uuid",
+            "title": "Version Id",
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+          },
+          "release_id": {
+            "format": "uuid",
+            "title": "Release Id",
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+          },
+          "release_revision": {
+            "exclusiveMaximum": 9007199254740992,
+            "minimum": 1,
+            "title": "Release Revision",
+            "type": "integer"
+          },
+          "definition_digest": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Definition Digest",
+            "type": "string"
+          },
+          "bundle_digest": {
+            "title": "Bundle Digest",
+            "type": "string"
+          }
+        },
+        "required": [
+          "definition_id",
+          "version_id",
+          "release_id",
+          "release_revision",
+          "definition_digest",
+          "bundle_digest"
+        ],
+        "title": "GateCandidate",
+        "type": "object"
+      },
+      "Command": {
+        "additionalProperties": false,
+        "properties": {
+          "operation_id": {
+            "format": "uuid",
+            "title": "Operation Id",
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+          },
+          "action": {
+            "enum": [
+              "assess",
+              "drain",
+              "open"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "expected_revision": {
+            "exclusiveMaximum": 9007199254740991,
+            "minimum": 0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "candidate": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GateCandidate"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          }
+        },
+        "required": [
+          "operation_id",
+          "action",
+          "expected_revision"
+        ],
+        "title": "GateCommand",
+        "type": "object",
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "action": {
+                  "const": "assess"
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "candidate"
+              ],
+              "properties": {
+                "candidate": {
+                  "$ref": "#/components/schemas/GateCandidate"
+                }
+              }
+            },
+            "else": {
+              "properties": {
+                "candidate": {
+                  "type": "null"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "Receipt": {
+        "additionalProperties": false,
+        "properties": {
+          "operationId": {
+            "format": "uuid",
+            "title": "Operationid",
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+          },
+          "action": {
+            "enum": [
+              "assess",
+              "drain",
+              "open"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "inputDigest": {
+            "title": "Inputdigest",
+            "type": "string"
+          },
+          "gateRevision": {
+            "exclusiveMaximum": 9007199254740992,
+            "minimum": 0,
+            "title": "Gaterevision",
+            "type": "integer"
+          },
+          "admission": {
+            "enum": [
+              "open",
+              "draining"
+            ],
+            "title": "Admission",
+            "type": "string"
+          },
+          "actor": {
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Actor",
+            "type": "string"
+          },
+          "trustRevision": {
+            "exclusiveMaximum": 9007199254740992,
+            "minimum": 1,
+            "title": "Trustrevision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "operationId",
+          "action",
+          "inputDigest",
+          "gateRevision",
+          "admission",
+          "actor",
+          "trustRevision"
+        ],
+        "title": "GateReceipt",
+        "type": "object"
+      },
+      "Scope": {
+        "additionalProperties": false,
+        "properties": {
+          "authority_issuer": {
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "Authority Issuer",
+            "type": "string"
+          },
+          "namespace_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Namespace Id",
+            "type": "string"
+          },
+          "product_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Product Id",
+            "type": "string"
+          },
+          "environment": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Environment",
+            "type": "string"
+          },
+          "target_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Target Id",
+            "type": "string"
+          },
+          "deployment_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Deployment Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "authority_issuer",
+          "namespace_id",
+          "product_id",
+          "environment",
+          "target_id",
+          "deployment_id"
+        ],
+        "title": "BundleScope",
+        "type": "object"
+      },
+      "Worker": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "processId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "runtimeClass": {
+            "type": "string"
+          },
+          "compatible": {
+            "type": "boolean"
+          },
+          "reason": {
+            "enum": [
+              "compatible",
+              "incompatible",
+              "source_unproven"
+            ]
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "processId",
+          "runtimeClass",
+          "compatible",
+          "reason",
+          "expiresAt"
+        ]
+      },
+      "CommandResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "contractVersion": {
+            "const": "runtime-gates/1"
+          },
+          "contractDigest": {
+            "const": "sha256:e799151daf0e6706309ca1b070a953c0b904166f166686c06e4ea27984fe91e0"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/Scope"
+          },
+          "trustRevision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "original": {
+            "$ref": "#/components/schemas/Receipt"
+          }
+        },
+        "required": [
+          "contractVersion",
+          "contractDigest",
+          "scope",
+          "trustRevision",
+          "original"
+        ]
+      },
+      "ObservationResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "contractVersion": {
+            "const": "runtime-gates/1"
+          },
+          "contractDigest": {
+            "const": "sha256:e799151daf0e6706309ca1b070a953c0b904166f166686c06e4ea27984fe91e0"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/Scope"
+          },
+          "trustRevision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "original": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Receipt"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "gateRevision": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "observedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "admission": {
+            "enum": [
+              "open",
+              "draining"
+            ]
+          },
+          "proofScope": {
+            "const": "canonical_database_observation"
+          },
+          "checks": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "database": {
+                "const": "verified"
+              },
+              "runtimeEngine": {
+                "enum": [
+                  "verified",
+                  "local_development_only",
+                  "unproven"
+                ]
+              },
+              "candidate": {
+                "enum": [
+                  "verified",
+                  "unproven"
+                ]
+              },
+              "workerCompatibility": {
+                "enum": [
+                  "compatible",
+                  "unproven_or_incompatible"
+                ]
+              }
+            },
+            "required": [
+              "database",
+              "runtimeEngine",
+              "candidate",
+              "workerCompatibility"
+            ]
+          },
+          "qualifiedWorkerObserved": {
+            "type": "boolean"
+          },
+          "blockers": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 33
+            }
+          },
+          "executionQuiescent": {
+            "type": "boolean"
+          },
+          "fleetCoverage": {
+            "const": "not_proven"
+          },
+          "processesStopped": {
+            "const": "not_proven"
+          },
+          "externalEffectsSettled": {
+            "const": "not_proven"
+          },
+          "safeToStop": {
+            "const": false
+          },
+          "activationAuthorized": {
+            "const": false
+          },
+          "workers": {
+            "type": "array",
+            "maxItems": 16,
+            "items": {
+              "$ref": "#/components/schemas/Worker"
+            }
+          }
+        },
+        "required": [
+          "contractVersion",
+          "contractDigest",
+          "scope",
+          "trustRevision",
+          "original",
+          "gateRevision",
+          "observedAt",
+          "admission",
+          "proofScope",
+          "checks",
+          "qualifiedWorkerObserved",
+          "blockers",
+          "executionQuiescent",
+          "fleetCoverage",
+          "processesStopped",
+          "externalEffectsSettled",
+          "safeToStop",
+          "activationAuthorized",
+          "workers"
+        ]
+      }
+    }
+  }
+}

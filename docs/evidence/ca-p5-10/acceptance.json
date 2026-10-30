@@ -1,0 +1,57 @@
+{
+  "task": "CA-P5-10",
+  "baseline": "ce6d7d19",
+  "parentFix": "fc53cca6",
+  "status": "producer full gates and consumer V31 same-environment S1 passed; Review",
+  "codeBlobs": {
+    "apps/worker/src/zebra_agent_worker/control.py": "fce12427714066f3ad26dd8f3511581de42d85e5ae36e35a3fd11b388ccc2c56",
+    "packages/agent-storage/src/agent_storage/postgres/direct_control.py": "401a205a684630ac0ec57aee6448e2485f1f6989832ac6b68565d963fcd6712a",
+    "tests/worker/test_admitted_stop_identity.py": "b4ccd859e26a13d24b5cf2cb31d70b4d1d18e629559e9d1a28d8590376f19048"
+  },
+  "focusedPassed": 47,
+  "redLogSHA256": "ca5d1e2adabf2804c14d8f6f1ec7dbd30ca1c6ff6b21c28215b31405c3436fb9",
+  "greenLogSHA256": "4bcc9fdc505909dfa6dc3277309c8036736ceeb022218af9a9b65d8140499b71",
+  "baselineFailureConfirmed": true,
+  "currentHostGrantChecksUnchanged": true,
+  "executionAuthorityExpanded": false,
+  "schemaChanged": false,
+  "originalsAndCoveragePreserved": true,
+  "productionChanges": [
+    "apps/worker/src/zebra_agent_worker/control.py",
+    "packages/agent-storage/src/agent_storage/postgres/direct_control.py"
+  ],
+  "initialFull": {
+    "failed": 5,
+    "passed": 11235,
+    "conditionalSkips": 3080,
+    "cause": "Host context propagation/identity revalidation contract; implementation revised, existing tests retained"
+  },
+  "revisedFocusedLogSHA256": "e5a1419e825e0fdcf7ef6cbe4259c52a3139858fedc347d8382b0c99dd073c34",
+  "combinedSourceBranch": "codex/ca-p5-10-admitted-stop-identity",
+  "finalFull": {
+    "makeTest": {
+      "exit": 0,
+      "passed": 11240,
+      "conditionalSkips": 3080,
+      "seconds": 1344.56,
+      "logSHA256": "178186693d703dbf1adbe445d6d0fce03a9447d8043beba4e70e073a61aca99a"
+    },
+    "makeCheck": {
+      "exit": 0,
+      "sourceFiles": 1448,
+      "fileSizeViolations": 0,
+      "evalCases": 30,
+      "logSHA256": "bf4901b1542d3e8019735da9b81bcb1c6d7eec8737ec2db6556554db121216f6"
+    },
+    "frozenSourceUnchanged": true,
+    "legacyOwnedPGPassed": 8,
+    "resourceBindingOwnedPGPassed": 7,
+    "resourceFixtureBoundary": "unchanged original seven assertions, replace historical fixed-address scratch fixture with exact-owned isolated PG",
+    "resourceLogSHA256": "77c0c7d21cb7c859206f08759e24213ded843104e55f3b57fb019672a6ecdc40",
+    "temporaryPGRemoved": true,
+    "newOwnedVolumesOrNetworks": 0,
+    "foreignContainersPreserved": 4
+  },
+  "consumerCase": "V31",
+  "exitEvidence": "../../CA-P5-08_exit_verification.md"
+}

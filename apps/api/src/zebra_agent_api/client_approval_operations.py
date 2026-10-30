@@ -186,6 +186,16 @@ def handle_client_approval_operation(app: Any, request: Any) -> ApiResponse | No
             auth = _current(app, request, task, run, segment, write)
             if isinstance(auth, ApiResponse):
                 return auth
+            if write:
+                # Renew only a currently authorized command, outside the approval
+                # stream lock. GET recovery must never extend execution authority.
+                from zebra_agent_api.session_binding import renew_host_binding_for_command
+
+                renewal_error = renew_host_binding_for_command(
+                    app, str(task), request.verified_host_grant
+                )
+                if renewal_error is not None:
+                    return renewal_error
             binding: dict[str, object] = {
                 "version": 1,
                 "task": str(task),

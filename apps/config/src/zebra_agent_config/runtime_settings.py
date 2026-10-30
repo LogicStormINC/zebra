@@ -20,3 +20,22 @@ class RuntimeSettings:
     require_workspace_quota: bool = False
     workspace_quota_mb: int = 10_240
     defer_provision: bool = False
+
+
+def validate_profile_contract(
+    *,
+    profile: str,
+    database_url: str,
+    runtime: RuntimeSettings,
+    development_unrestricted: bool,
+) -> None:
+    if development_unrestricted and profile != "cloud":
+        raise ValueError(
+            "ZEBRA_DEVELOPMENT_UNRESTRICTED=true is allowed only for ZEBRA_PROFILE=cloud"
+        )
+    if profile not in {"cloud", "production"}:
+        return
+    if runtime.runtime_class != "gvisor" and not (profile == "cloud" and development_unrestricted):
+        raise ValueError(f"ZEBRA_PROFILE={profile} requires ZEBRA_RUNTIME_CLASS=gvisor")
+    if not database_url.startswith(("postgresql://", "postgres://")):
+        raise ValueError(f"ZEBRA_PROFILE={profile} requires a PostgreSQL DSN")

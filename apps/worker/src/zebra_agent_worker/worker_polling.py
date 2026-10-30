@@ -1,5 +1,6 @@
-"""Small deterministic rules for the Worker polling fallback."""
+"""Shared deterministic Worker polling and command cadence validation."""
 
+import math
 from typing import Protocol
 
 
@@ -26,3 +27,16 @@ def validate_loop_inputs(
         raise ValueError("max_cycles must be greater than zero when provided")
     if idle_sleep_seconds < 0:
         raise ValueError("idle_sleep_seconds must not be negative")
+
+
+def validate_command_cadence(
+    *, batch_size: int, idle_sleep_seconds: float, command_batch_limit: int,
+) -> None:
+    if type(batch_size) is not int or batch_size > command_batch_limit:
+        raise ValueError("worker batch exceeds configured command batch limit")
+    if (
+        type(idle_sleep_seconds) not in (int, float)
+        or not math.isfinite(idle_sleep_seconds)
+        or not 0 <= idle_sleep_seconds <= 30
+    ):
+        raise ValueError("worker idle interval is outside bounds")

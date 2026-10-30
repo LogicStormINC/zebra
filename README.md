@@ -1,3 +1,17 @@
+Current P5 precursor: [fenced cloud Eval/shared quota backing](docs/CA-P5-04_cloud_script_eval.md); actual owned gVisor lifecycle S1 remains separate.
+
+2026-10-28：[可选签名 Worker 进程绑定](docs/CA-P5-03_worker_process_binding.md)，仅启动身份元数据，不代替就绪/兼容或部署授权；默认不启用。
+
+## Original Runtime gate termination
+
+[CA-P5-02A public contract/proof boundary](docs/CA-P5-02A_gate_termination.md): separate machine authority, durable late-submit fence and original GET; no Task/process/fleet termination or deployment.
+
+## CA-P5-01 — Runtime gates (verified / Review)
+
+[Contract/proof boundaries](docs/CA-P5-01_runtime_gates.md): scoped machine API, immutable original/CAS,
+DB admission drain/open and real Worker snapshot/engine observations. Development mode is explicit;
+no global stop/activation authority, automatic replay, Controller claim, deployment or production migration.
+
 2026-10-28：[P4授权主线整合与分支边界](docs/evidence/p4-integration/2026-10-28.json)；cloud-agent只快进，保留脏工作树/独有实验与冻结兼容基线。无部署或生产迁移。
 
 2026-10-27：[产品分发/当前撤回](docs/CA-P4-02_plugin_distribution.md)，精确原发布/独立业务安装/代际与Worker当前门禁；无部署或生产迁移。

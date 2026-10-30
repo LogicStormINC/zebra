@@ -5,6 +5,7 @@ import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from threading import Lock, Thread
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from agent_core.domain.identifiers import SessionId, TaskId
@@ -33,6 +34,9 @@ from zebra_agent_worker.resume import SessionResumeError
 from zebra_agent_worker.safety_net import WorkerSafetyNet
 from zebra_agent_worker.transient_capacity_maintenance import TransientCapacityMaintenance
 from zebra_agent_worker.worker_polling import has_remaining_cycles, validate_loop_inputs
+
+if TYPE_CHECKING:
+    from zebra_agent_worker.runtime_gates import RuntimeGateWorker
 
 
 @dataclass(frozen=True)
@@ -84,6 +88,7 @@ class WorkerLoopService:
         stream_hint_relay: StreamHintRelay | None = None,
         transient_capacity: TransientCapacityMaintenance | None = None,
         safety_net: WorkerSafetyNet | None = None,
+        runtime_gates: RuntimeGateWorker | None = None,
     ) -> None:
         self._projection_store = projection_store
         self._execution_service = execution_service
@@ -102,6 +107,7 @@ class WorkerLoopService:
         self._client_recovery_at = 0.0
         self._projection_work = projection_work
         self._transient_capacity = transient_capacity
+        self._runtime_gates = runtime_gates
         self._stream_hint_relay = stream_hint_relay
         self._relay_at = 0.0
         self._relay_lock = Lock()
@@ -112,7 +118,7 @@ class WorkerLoopService:
         try:
             if time.monotonic() < self._relay_at:
                 return
-            self._relay_at = time.monotonic()+1  # Rate ceiling, not a delivery latency promise.
+            self._relay_at = time.monotonic() + 1  # Rate ceiling, not a delivery latency promise.
             self._stream_hint_relay.tick()
         finally:
             self._relay_lock.release()
@@ -140,6 +146,8 @@ class WorkerLoopService:
         batch_size: int,
         lease_ttl_seconds: int,
     ) -> None:
+        if self._runtime_gates is not None:
+            self._runtime_gates.tick()
         if self._transient_capacity is not None:
             self._transient_capacity.tick()
         self._relay_stream_hints()
@@ -152,6 +160,8 @@ class WorkerLoopService:
         )
 
     def drain(self) -> None:
+        if self._runtime_gates is not None:
+            self._runtime_gates.close()
         if self._transient_capacity is not None:
             self._transient_capacity.close()
         if self._stream_hint_relay is not None:
@@ -169,7 +179,10 @@ class WorkerLoopService:
         worker_id: str,
         batch_size: int = 1,
         lease_ttl_seconds: int = 30,
+        stop_requested: Callable[[], bool] = lambda: False,
     ) -> WorkerLoopCycleResult:
+        if self._runtime_gates is not None:
+            self._runtime_gates.tick()
         if self._transient_capacity is not None:
             self._transient_capacity.tick()
         self._relay_stream_hints()
@@ -182,7 +195,7 @@ class WorkerLoopService:
                 lease_ttl_seconds=lease_ttl_seconds,
                 batch_size=batch_size,
             )
-            if self._command_consumer is not None
+            if self._command_consumer is not None and not stop_requested()
             else None
         )
         executed_ids: list[str] = []
@@ -212,6 +225,8 @@ class WorkerLoopService:
         )
         ready_ids = tuple(str(session.session_id) for session in ready_sessions)
         for session in ready_sessions:
+            if stop_requested():
+                break
             session_id = str(session.session_id)
             if session_id in executed_ids:
                 continue
@@ -247,7 +262,7 @@ class WorkerLoopService:
                 )
                 continue
             executed_ids.append(session_id)
-        if command_result is None or command_result.status == "idle":
+        if not stop_requested() and (command_result is None or command_result.status == "idle"):
             self._start_memory_delivery(worker_id=worker_id, batch_size=batch_size)
             self._start_cloud_memory_recovery(
                 worker_id=worker_id,
@@ -350,8 +365,11 @@ class WorkerLoopService:
         max_cycles: int | None = None,
         stop_when_idle: bool = False,
         idle_sleep_seconds: float = 0.1,
+        stop_requested: Callable[[], bool] = lambda: False,
     ) -> WorkerLoopRunResult:
         try:
+            if stop_requested():
+                return WorkerLoopRunResult(0, 0, "signal", (), ())
             if self.migrated_run is not None:
                 return self.migrated_run(
                     worker_id=worker_id,
@@ -360,6 +378,7 @@ class WorkerLoopService:
                     max_cycles=max_cycles,
                     stop_when_idle=stop_when_idle,
                     idle_sleep_seconds=idle_sleep_seconds,
+                    stop_requested=stop_requested,
                 )
             validate_loop_inputs(
                 batch_size=batch_size,
@@ -370,6 +389,9 @@ class WorkerLoopService:
             accumulator = _LoopAccumulator()
             stop_reason = "max_cycles"
             while max_cycles is None or accumulator.cycles_completed < max_cycles:
+                if stop_requested():
+                    stop_reason = "signal"
+                    break
                 if self._cutover_probe is not None and self._cutover_probe():
                     stop_reason = "cutover_requires_restart"
                     break
@@ -377,10 +399,14 @@ class WorkerLoopService:
                     worker_id=worker_id,
                     batch_size=batch_size,
                     lease_ttl_seconds=lease_ttl_seconds,
+                    stop_requested=stop_requested,
                 )
                 accumulator.cycles_completed += 1
                 accumulator.executed_session_ids.extend(cycle.executed_session_ids)
                 accumulator.skipped_session_ids.extend(cycle.skipped_session_ids)
+                if stop_requested():
+                    stop_reason = "signal"
+                    break
                 if not cycle.ready_session_ids:
                     accumulator.idle_cycles += 1
                     if stop_when_idle:

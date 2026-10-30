@@ -22,6 +22,7 @@ from agent_storage import (
 from agent_storage.postgres.skill_publications import PostgresSkillPublicationStore
 from agent_storage.postgres.worker_replay_reader import PostgresWorkerReplayReader
 from agent_tools.skill_publications import SkillPublicationService
+from psycopg import Connection
 from zebra_agent_config import ZebraAgentSettings
 
 from zebra_agent_worker.ag_ui_composition import configure_agui_projection_work
@@ -161,7 +162,6 @@ def build_worker_loop_service(
         )
     else:
         from agent_storage import sqlite_control_plane_stores
-
         active_stores = stores or sqlite_control_plane_stores(database_path)
         cloud_memory_store = None
         active_transaction = worker_projection_transaction
@@ -206,7 +206,6 @@ def build_worker_loop_service(
     delegation_store = None
     if settings.storage_authority == "postgresql":
         from agent_storage.postgres.task_admission import load_session_task_binding as _load_binding
-
         binding_dsn = cloud_bundle.dsn or ""
         if binding_dsn:
 
@@ -424,6 +423,7 @@ def build_worker_loop_service(
     stream_hint_relay, checkpoint_committed = configure_stream_hint_relay(
         execution_stores, settings
     )
+    from zebra_agent_worker.runtime_gates import configure_runtime_gates
     from zebra_agent_worker.transient_capacity_maintenance import (
         configure_transient_capacity_maintenance,
     )
@@ -432,7 +432,7 @@ def build_worker_loop_service(
     if active_namespace and getattr(settings, "storage_authority", None) == "postgresql":
         from zebra_agent_worker.safety_net import WorkerSafetyNet
 
-        def _safety_connect():
+        def _safety_connect() -> Connection:
             import psycopg
 
             return psycopg.connect(cloud_bundle.dsn or settings.database_url)
@@ -443,6 +443,7 @@ def build_worker_loop_service(
         )
     service = WorkerLoopService(
         safety_net=safety_net,
+        runtime_gates=configure_runtime_gates(settings, active_namespace),
         transient_capacity=configure_transient_capacity_maintenance(active_namespace, settings),
         projection_store=execution_stores.sessions,
         execution_service=execution_service,

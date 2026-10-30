@@ -1,0 +1,38 @@
+{
+  "contractVersion": "runtime-gates/1",
+  "actions": [
+    "read",
+    "assess",
+    "drain",
+    "open"
+  ],
+  "admissionFence": [
+    "session_created",
+    "user_message_received",
+    "session_command_accepted except cancel/stop/suspend"
+  ],
+  "proofBoundary": {
+    "database": "exact migration identity and repeatable-read source facts",
+    "worker": "actual Worker snapshot guard plus read-only runtime capability preflight; trusted-local is development only; DB-clock15s expiry and exact source/epoch",
+    "executionQuiescent": "closed new admission and no named canonical blockers",
+    "fleetCoverage": "not_proven",
+    "processesStopped": "not_proven",
+    "externalEffectsSettled": "not_proven",
+    "safeToStop": false,
+    "activationAuthorized": false,
+    "proofScope": "canonical_database_observation"
+  },
+  "limits": {
+    "bodyBytes": 16384,
+    "activeSessions": 32,
+    "sourceBytes": 2097152,
+    "retainedOperations": 128,
+    "workersPerOperation": 16,
+    "operationsPerWorkerTick": 4,
+    "reservedOpenSlots": 1
+  },
+  "unknown": "GET original operation only; missing receipt is not non-commit proof",
+  "organization": "explicit dedicated namespace only; shared namespace unsupported",
+  "baselineCompatibility": "new opt-in excluded; old snapshots and baselines unchanged",
+  "mutatingCredentialsRequireRead": true
+}

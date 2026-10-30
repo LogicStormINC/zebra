@@ -1,0 +1,31 @@
+{
+  "base": "0a50892d1adbef7ae61b7f17527ec0385425494e",
+  "contractDigest": "sha256:e799151daf0e6706309ca1b070a953c0b904166f166686c06e4ea27984fe91e0",
+  "files": {
+    "apps/api/src/zebra_agent_api/host_registry_management.py": "1e54018698eac3c700ba269502e2784d8838563bc62a59da2555add306ea5c27",
+    "apps/api/src/zebra_agent_api/runtime_gates.py": "676e5f71aff9e2ebfe180413c18d03d3f31a510d3228e7d96e3b442d337ddc04",
+    "apps/api/src/zebra_agent_api/runtime_gates_admin.py": "892b6a335fdea765ca2655c7c5c8edb2f6874d64dc7b254a0dfb93961070ef61",
+    "apps/api/src/zebra_agent_api/runtime_gates_config.py": "e104c7c4fc04c504f4bde828dbaa69f43598b88a8b9c173b355ea856df3bc24e",
+    "apps/config/src/zebra_agent_config/bundle_settings.py": "80b34798e2d0159d2850410eec3d2650c9dab4e3583688b1fd2f041a7c45da91",
+    "apps/config/src/zebra_agent_config/settings.py": "6a1e6b67d9f7222ecb97d2bc8584f706caf9d5b121fc16d403f3b921ab456ffa",
+    "apps/worker/src/zebra_agent_worker/loop.py": "635e92668b9f220aae06657cbd03223c6dfdb8af54ffd85822ee4ed666bcc612",
+    "apps/worker/src/zebra_agent_worker/runtime_gates.py": "870842a690ddd8cb1ba8ac3ed7f4893d75c958fa4a945042c067851d9f2f02a9",
+    "apps/worker/src/zebra_agent_worker/worker_loop_service.py": "b5bf87be400da35d11b499e0623c036664a311cc98ea0bae82b25cca8a2fbd0d",
+    "docs/contracts/runtime-gates-v1/contract.json": "c46997aba10006864300970db1f9ec29a7e64f812c6bee098f384f3d817db223",
+    "docs/contracts/runtime-gates-v1/digest.txt": "ae626823c8a7d8ff947dfc18d13de28d9729b68f8c39e1f1ddae8dc2d567a469",
+    "docs/contracts/runtime-gates-v1/openapi.json": "b7a427345062ebb683e521726cc01461ee27c63c62bc76fd55e25d964531abfe",
+    "docs/evidence/ca-p5-01/composition_acceptance.py": "9b560c0de9cb2bdca1fe89045f3048082781947dd443ef347c1f25de34cfe310",
+    "packages/agent-core/src/agent_core/application/runtime_gates.py": "9fafb1cd586622fbd6740d73a0be09c1e9d8c5a96c10648c8c9d4e096db1c732",
+    "packages/agent-core/src/agent_core/domain/runtime_gates.py": "ba54ba263ec71d067177234c2a2134d87aa990064a4ad961e34783988dfe1e98",
+    "packages/agent-core/src/agent_core/ports/runtime_gates.py": "c1ae19164f5ffe2bf3ea052cf979159dec8ae3fd6f9df6575a85578c6515c524",
+    "packages/agent-storage/src/agent_storage/postgres/migration_catalog_tail.py": "409f95240871688a9e084f35fafa10ea0ee8fc1e18aa971e739736a762d8e603",
+    "packages/agent-storage/src/agent_storage/postgres/runtime_gate_migration.py": "bfd05902f2cefb20064e8786dd93e146ef962fc59e61de6b477ee2b772fc23a8",
+    "packages/agent-storage/src/agent_storage/postgres/runtime_gate_sources.py": "57aabc9e0205ceb7b71aabc44ce60975f74f3761e126594864023368d889668e",
+    "packages/agent-storage/src/agent_storage/postgres/runtime_gate_worker.py": "d60f0e0a0314deb2f8fec675a9bc64abfd4448cd00710184662495ec59a37abd",
+    "packages/agent-storage/src/agent_storage/postgres/runtime_gates.py": "404fadece52e8c5c4153495ca256099511c2964f9935ddb5289949f9171d388d",
+    "tests/agent_core/test_runtime_gate_domain.py": "6531c131e0b2b903ecf48ea6a65c482038dd5ff5b4a5cbe32a3cb30114f4b0f1",
+    "tests/agent_storage/test_branch_migration_catalog.py": "21ad01eb23afc27959050b41108968f72c4220c0dbfd950f9f63b7690d5a4933",
+    "tests/api/test_runtime_gate_management.py": "0d74ee4e9231880e5ec50dedf75aafd34a2f61e5426bd176cc08cf4350f38d5e",
+    "tests/worker/test_runtime_gate_observer.py": "d425b0c6605cc869e8207238f35e431afa1ca33dfae7995284538d76e887d98c"
+  }
+}

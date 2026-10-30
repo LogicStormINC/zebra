@@ -444,3 +444,47 @@ def _assistant_only_gateway(*, settings: ZebraAgentSettings) -> ScriptedModelGat
 
 def _created_at() -> datetime:
     return datetime(2026, 6, 23, 9, 0, tzinfo=UTC)
+
+
+def test_stop_request_finishes_current_execution_without_next_pickup(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    database_path = tmp_path / "worker.db"
+    first = _seed_ready_session(database_path, tmp_path)
+    second = _seed_ready_session(database_path, tmp_path)
+    monkeypatch.setattr(
+        "zebra_agent_worker.execution.build_model_gateway",
+        lambda settings: _assistant_only_gateway(settings=settings),
+    )
+    service = build_worker_loop_service(
+        database_path=database_path, settings=_settings(database_path)
+    )
+    execute = service._execution_service.execute_session
+    stopping = False
+
+    def finish_current(*args: Any, **kwargs: Any) -> Any:
+        nonlocal stopping
+        result = execute(*args, **kwargs)
+        stopping = True
+        return result
+
+    monkeypatch.setattr(service._execution_service, "execute_session", finish_current)
+    result = service.run(worker_id="worker-stop", batch_size=2, stop_requested=lambda: stopping)
+    assert result.stop_reason == "signal"
+    assert result.executed_session_ids == (str(first),)
+    assert SQLiteProjectionStore(database_path).get_session(first).status is SessionStatus.COMPLETED
+    assert SQLiteProjectionStore(database_path).get_session(second).status is SessionStatus.READY
+
+
+def test_stop_before_start_does_not_enter_migrated_consumer(tmp_path: Path) -> None:
+    database_path = tmp_path / "worker.db"
+    service = build_worker_loop_service(
+        database_path=database_path, settings=_settings(database_path)
+    )
+
+    def forbidden(**_kwargs: Any) -> Any:
+        raise AssertionError("stopped CLI must not begin a new consumer")
+
+    service.migrated_run = forbidden
+    result = service.run(worker_id="worker-stop", stop_requested=lambda: True)
+    assert result.stop_reason == "signal" and result.cycles_completed == 0

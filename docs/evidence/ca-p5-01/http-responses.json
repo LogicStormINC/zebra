@@ -1,0 +1,194 @@
+[
+  {
+    "schema": "CommandResponse",
+    "body": {
+      "contractVersion": "runtime-gates/1",
+      "contractDigest": "sha256:e799151daf0e6706309ca1b070a953c0b904166f166686c06e4ea27984fe91e0",
+      "scope": {
+        "authority_issuer": "https://business.example",
+        "namespace_id": "gate-6f89465db3bf",
+        "product_id": "product-a",
+        "environment": "test",
+        "target_id": "target/native",
+        "deployment_id": "deployment/declared"
+      },
+      "trustRevision": 1,
+      "original": {
+        "operationId": "0707ab8a-5845-4467-b9fc-650d6970e85f",
+        "action": "assess",
+        "inputDigest": "sha256:e74277614494144fd783552b6b8949a0fed04da665d85f2b5ba3fdb1eef9de23",
+        "gateRevision": 0,
+        "admission": "open",
+        "actor": "gate-overdoze",
+        "trustRevision": 1
+      }
+    }
+  },
+  {
+    "schema": "ObservationResponse",
+    "body": {
+      "contractVersion": "runtime-gates/1",
+      "contractDigest": "sha256:e799151daf0e6706309ca1b070a953c0b904166f166686c06e4ea27984fe91e0",
+      "scope": {
+        "authority_issuer": "https://business.example",
+        "namespace_id": "gate-6f89465db3bf",
+        "product_id": "product-a",
+        "environment": "test",
+        "target_id": "target/native",
+        "deployment_id": "deployment/declared"
+      },
+      "trustRevision": 1,
+      "original": {
+        "operationId": "0707ab8a-5845-4467-b9fc-650d6970e85f",
+        "action": "assess",
+        "inputDigest": "sha256:e74277614494144fd783552b6b8949a0fed04da665d85f2b5ba3fdb1eef9de23",
+        "gateRevision": 0,
+        "admission": "open",
+        "actor": "gate-overdoze",
+        "trustRevision": 1
+      },
+      "gateRevision": 0,
+      "observedAt": "2026-10-28T04:14:42.578011+00:00",
+      "proofScope": "canonical_database_observation",
+      "admission": "open",
+      "checks": {
+        "database": "verified",
+        "runtimeEngine": "unproven",
+        "candidate": "verified",
+        "workerCompatibility": "unproven_or_incompatible"
+      },
+      "qualifiedWorkerObserved": false,
+      "blockers": {
+        "unreleased_leases": 0,
+        "pending_commands": 0,
+        "unsettled_effects": 0,
+        "projection_lag": 0,
+        "active_sessions": 0,
+        "scope_conflict": 0,
+        "overflow": 0,
+        "unbound_tasks": 0
+      },
+      "executionQuiescent": false,
+      "fleetCoverage": "not_proven",
+      "processesStopped": "not_proven",
+      "externalEffectsSettled": "not_proven",
+      "safeToStop": false,
+      "activationAuthorized": false,
+      "workers": []
+    }
+  },
+  {
+    "schema": "ObservationResponse",
+    "body": {
+      "contractVersion": "runtime-gates/1",
+      "contractDigest": "sha256:e799151daf0e6706309ca1b070a953c0b904166f166686c06e4ea27984fe91e0",
+      "scope": {
+        "authority_issuer": "https://business.example",
+        "namespace_id": "gate-6f89465db3bf",
+        "product_id": "product-a",
+        "environment": "test",
+        "target_id": "target/native",
+        "deployment_id": "deployment/declared"
+      },
+      "trustRevision": 1,
+      "original": {
+        "operationId": "0707ab8a-5845-4467-b9fc-650d6970e85f",
+        "action": "assess",
+        "inputDigest": "sha256:e74277614494144fd783552b6b8949a0fed04da665d85f2b5ba3fdb1eef9de23",
+        "gateRevision": 0,
+        "admission": "open",
+        "actor": "gate-overdoze",
+        "trustRevision": 1
+      },
+      "gateRevision": 0,
+      "observedAt": "2026-10-28T04:14:42.747101+00:00",
+      "proofScope": "canonical_database_observation",
+      "admission": "open",
+      "checks": {
+        "database": "verified",
+        "runtimeEngine": "local_development_only",
+        "candidate": "verified",
+        "workerCompatibility": "compatible"
+      },
+      "qualifiedWorkerObserved": true,
+      "blockers": {
+        "unreleased_leases": 0,
+        "pending_commands": 0,
+        "unsettled_effects": 0,
+        "projection_lag": 0,
+        "active_sessions": 0,
+        "scope_conflict": 0,
+        "overflow": 0,
+        "unbound_tasks": 0
+      },
+      "executionQuiescent": false,
+      "fleetCoverage": "not_proven",
+      "processesStopped": "not_proven",
+      "externalEffectsSettled": "not_proven",
+      "safeToStop": false,
+      "activationAuthorized": false,
+      "workers": [
+        {
+          "processId": "fa020904-f739-4f9d-b00e-4ae1d55cbe0f",
+          "runtimeClass": "trusted-local",
+          "compatible": true,
+          "reason": "compatible",
+          "expiresAt": "2026-10-28T04:14:57.670558+00:00"
+        }
+      ]
+    }
+  },
+  {
+    "schema": "ObservationResponse",
+    "body": {
+      "contractVersion": "runtime-gates/1",
+      "contractDigest": "sha256:e799151daf0e6706309ca1b070a953c0b904166f166686c06e4ea27984fe91e0",
+      "scope": {
+        "authority_issuer": "https://business.example",
+        "namespace_id": "gate-6f89465db3bf",
+        "product_id": "product-a",
+        "environment": "test",
+        "target_id": "target/native",
+        "deployment_id": "deployment/declared"
+      },
+      "trustRevision": 1,
+      "original": {
+        "operationId": "0707ab8a-5845-4467-b9fc-650d6970e85f",
+        "action": "assess",
+        "inputDigest": "sha256:e74277614494144fd783552b6b8949a0fed04da665d85f2b5ba3fdb1eef9de23",
+        "gateRevision": 0,
+        "admission": "open",
+        "actor": "gate-overdoze",
+        "trustRevision": 1
+      },
+      "gateRevision": 0,
+      "observedAt": "2026-10-28T04:14:42.907377+00:00",
+      "proofScope": "canonical_database_observation",
+      "admission": "open",
+      "checks": {
+        "database": "verified",
+        "runtimeEngine": "unproven",
+        "candidate": "verified",
+        "workerCompatibility": "unproven_or_incompatible"
+      },
+      "qualifiedWorkerObserved": false,
+      "blockers": {
+        "unreleased_leases": 0,
+        "pending_commands": 0,
+        "unsettled_effects": 0,
+        "projection_lag": 0,
+        "active_sessions": 0,
+        "scope_conflict": 0,
+        "overflow": 0,
+        "unbound_tasks": 0
+      },
+      "executionQuiescent": false,
+      "fleetCoverage": "not_proven",
+      "processesStopped": "not_proven",
+      "externalEffectsSettled": "not_proven",
+      "safeToStop": false,
+      "activationAuthorized": false,
+      "workers": []
+    }
+  }
+]
