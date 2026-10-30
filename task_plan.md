@@ -1,3 +1,7 @@
+# CA-P5-10 — Admitted STOP uses durable identity
+
+Claimed before code; original optional expiry STOP fails on published ce6 baseline, not caused by09. Reuse canonical admitted fingerprint and latest durable binding/exact workspace for trusted direct cancellation; current Host API/expiry and execution permissions unchanged. Canonical admitted-event proof retains identity/context validation. Final47 focused, full make test11240 passed/3080 conditional skips, make check1448 sources/Eval30 passed; explicit owned PG legacy8/resource7 passed. Fixed-source image consumer S1 pending. Preserve data/history/Coverage and no unknown HTTP/RUN replay or Controller reclaim. [Boundary](docs/CA-P5-10_admitted_stop_identity.md).
+
 # CA-P5-09 — Legacy READY original frontier
 
 Claimed before implementation. V21 real image/PG incompatibility refusal exposed original RUN hidden after recovery projected its accepted event. Shared scoped read-only last-READY-frontier predicate fixes discovery and next-command read; no new events/HTTP/RUN/Controller, no projection rewind or schema/public contract change. Real PG red4/green6 plus rejection/Worker/close-healing/consumer suite33 passed; full gates and new fixed-image S1 pending. Preserve originals/data/Coverage and single-environment cleanup. [Contract and limits](docs/CA-P5-09_legacy_ready_recovery.md).
@@ -39,3 +43,7 @@ Claimed before implementation. V21 real image/PG incompatibility refusal exposed
 - Preserve history/data/originals/Coverage; no production migration/deployment/main merge.
 
 CA-P5-09 optional real-PG legacy suite:7 passed/1 expired admitted STOP failed; exact published ce6 reader reproduces same failure. Diagnostic reason Host Grant expired. Separate CA-P5-10 dependency must repair durable cancellation identity path before combined final gates; no known failure is waived. Disposable PG removed.
+
+CA-P5-10 final design revision: initial full5 identity/context propagation failures were not waived. Retain original delegation and full context; store revalidates exact canonical admitted STOP/CANCEL event and operation, uses immutable admission time only, current default expiry remains strict.47 focused including old five and real-PG forged-event/operation negatives pass. Full source frozen for renewed gates; no publish or new S1 yet.
+
+CA-P5-09/10 combined final producer gates: make test11240 passed/3080 conditional skips, make check0 file-size violations/ruff/mypy1448/Eval30 passed; source hashes unchanged. Legacy real PG8 and original resource binding7 passed in exact-owned temporary PG (historical fixture replaced for isolation only; assertions unchanged). All owned temporary PG/anonymous volumes removed, no new volumes/networks;4 foreign-owner containers preserved. Source publication required before fresh consumer images; P5 not yet closed.

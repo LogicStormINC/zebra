@@ -1,7 +1,7 @@
 {
   "task": "CA-P5-09",
   "baseline": "ce6d7d19791f34567a5192663ca2c234f7452137",
-  "status": "focused passed; full and S1 pending",
+  "status": "producer full gates passed; fixed-image consumer S1 pending",
   "productionChanges": [
     "packages/agent-storage/src/agent_storage/postgres/legacy_command_candidates.py"
   ],
@@ -21,5 +21,30 @@
   "noSchemaOrPublicContractChange": true,
   "oldUnknownsRetained": true,
   "businessReplay": false,
-  "controllerReclaim": false
+  "controllerReclaim": false,
+  "combinedSourceBranch": "codex/ca-p5-10-admitted-stop-identity",
+  "finalFull": {
+    "makeTest": {
+      "exit": 0,
+      "passed": 11240,
+      "conditionalSkips": 3080,
+      "seconds": 1344.56,
+      "logSHA256": "178186693d703dbf1adbe445d6d0fce03a9447d8043beba4e70e073a61aca99a"
+    },
+    "makeCheck": {
+      "exit": 0,
+      "sourceFiles": 1448,
+      "fileSizeViolations": 0,
+      "evalCases": 30,
+      "logSHA256": "bf4901b1542d3e8019735da9b81bcb1c6d7eec8737ec2db6556554db121216f6"
+    },
+    "frozenSourceUnchanged": true,
+    "legacyOwnedPGPassed": 8,
+    "resourceBindingOwnedPGPassed": 7,
+    "resourceFixtureBoundary": "unchanged original seven assertions, replace historical fixed-address scratch fixture with exact-owned isolated PG",
+    "resourceLogSHA256": "77c0c7d21cb7c859206f08759e24213ded843104e55f3b57fb019672a6ecdc40",
+    "temporaryPGRemoved": true,
+    "newOwnedVolumesOrNetworks": 0,
+    "foreignContainersPreserved": 4
+  }
 }

@@ -9,7 +9,11 @@ from typing import TYPE_CHECKING, Any
 from uuid import NAMESPACE_URL, UUID, uuid4, uuid5
 
 from agent_core.application.session_command_read_state import SessionCommandReadState
-from agent_core.contracts.session_commands import SessionCommand, SessionCommandKind
+from agent_core.contracts.session_commands import (
+    SessionCommand,
+    SessionCommandKind,
+    validate_accepted_session_command,
+)
 from agent_core.domain.cloud_scope import OpaqueAuthorityScope
 from agent_core.domain.events import EventType, SessionEvent
 from agent_core.domain.execution_authority import ExecutionAuthoritySnapshot
@@ -97,10 +101,20 @@ class PostgresDirectControl:
         return proof.read_task_binding(task_id)
 
     def host_scope(
-        self, session_id: SessionId, context: HostContextEnvelope
+        self,
+        session_id: SessionId,
+        context: HostContextEnvelope,
+        *,
+        admitted_event: SessionEvent | None = None,
     ) -> OpaqueAuthorityScope:
         with self._database.connect_task_io() as connection:
-            return _host_scope(connection, self.deployment_namespace, session_id, context)
+            return _host_scope(
+                connection,
+                self.deployment_namespace,
+                session_id,
+                context,
+                admitted_event=admitted_event,
+            )
 
     @command_read_budget
     def cancel(
@@ -113,6 +127,7 @@ class PostgresDirectControl:
         operation_id: UUID | None = None,
         host_context: HostContextEnvelope | None = None,
         task_id: TaskId | None = None,
+        admitted_event: SessionEvent | None = None,
     ) -> DirectCancellation:
         if not isinstance(scope, OpaqueAuthorityScope) or (
             task_id is None and not scope.allows_session(session_id)
@@ -121,6 +136,12 @@ class PostgresDirectControl:
         if task_id is not None and not isinstance(task_id, UUID):
             raise ValueError("invalid Task cancellation target")
         namespace = self.deployment_namespace
+        if admitted_event is not None and (
+            operation_id is None
+            or host_context is None
+            or admitted_event.payload.get("command_id") != str(operation_id)
+        ):
+            raise ValueError("admitted cancellation operation conflicts")
         if operation_id is not None and (
             not isinstance(operation_id, UUID) or idempotency_key is not None
         ):
@@ -171,7 +192,9 @@ class PostgresDirectControl:
             except CheckpointNotReady as progress:
                 raise CommandReadPreparing("direct cancellation source advanced") from progress
             if host_context is not None:
-                verified = _host_scope(connection, namespace, session_id, host_context)
+                verified = _host_scope(
+                    connection, namespace, session_id, host_context, admitted_event=admitted_event
+                )
                 if (
                     verified.scope_key != scope.scope_key
                     or host_context.workspace_ref != workspace_ref
@@ -356,7 +379,12 @@ def _identity_event(
 
 
 def _host_scope(
-    connection: Any, namespace: str, session_id: SessionId, context: HostContextEnvelope
+    connection: Any,
+    namespace: str,
+    session_id: SessionId,
+    context: HostContextEnvelope,
+    *,
+    admitted_event: SessionEvent | None = None,
 ) -> OpaqueAuthorityScope:
     context.require_scope("agent.run")
     row = connection.execute(
@@ -370,7 +398,24 @@ def _host_scope(
     binding = None if row is None else TaskBindingSnapshot.model_validate(row["snapshot_json"])
     if binding is None:
         raise ValueError("direct cancellation Host identity conflicts")
-    require_task_host_context(binding, context, task_id=str(row["task_id"]), now=datetime.now(UTC))
+    authorized_at = datetime.now(UTC)
+    if admitted_event is not None:
+        original = command_event_at(connection, namespace, session_id, admitted_event.event_id)
+        if (
+            original is None
+            or original != admitted_event
+            or original.event_type is not EventType.SESSION_COMMAND_ACCEPTED
+        ):
+            raise ValueError("admitted cancellation canonical event conflicts")
+        accepted = validate_accepted_session_command(
+            original.payload,
+            session_id=session_id,
+            idempotency_key=original.idempotency_key,
+        )
+        if accepted.kind not in {SessionCommandKind.STOP, SessionCommandKind.CANCEL}:
+            raise ValueError("admitted cancellation is not a control command")
+        authorized_at = original.created_at
+    require_task_host_context(binding, context, task_id=str(row["task_id"]), now=authorized_at)
     return OpaqueAuthorityScope(
         authority_issuer=binding.host_capability.authority_issuer,
         namespace_id=context.namespace_id,
