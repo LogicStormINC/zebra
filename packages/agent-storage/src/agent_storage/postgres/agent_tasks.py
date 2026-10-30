@@ -438,7 +438,7 @@ def read_task_header(
         "SELECT t.active_segment_id,t.next_event_sequence,t.event_position_state,"
         "h.title,h.status,h.current_sequence AS active_segment_sequence,"
         "h.title_truncated,h.clarification_id,h.clarification_invalid,"
-        "MAX(o.kind IN ('dead_letter','watchdog','zombie_repair') AND NOT o.shadow) "
+        "(o.kind IN ('dead_letter','watchdog','zombie_repair') AND NOT o.shadow) "
         "AS safety_terminal "
         "FROM agent_tasks t LEFT JOIN session_observation_headers h "
         "ON h.deployment_namespace=t.deployment_namespace "
@@ -446,10 +446,7 @@ def read_task_header(
         "LEFT JOIN agent_safety_overrides o "
         "ON o.deployment_namespace=t.deployment_namespace "
         "AND o.session_id::text=t.active_segment_id::text "
-        "WHERE t.deployment_namespace=%s AND t.task_id=%s "
-        "GROUP BY t.active_segment_id,t.next_event_sequence,t.event_position_state,"
-        "h.title,h.status,h.current_sequence,h.title_truncated,"
-        "h.clarification_id,h.clarification_invalid",
+        "WHERE t.deployment_namespace=%s AND t.task_id=%s",
         (namespace, task_id),
     ).fetchone()
     if row is None:

@@ -1,3 +1,16 @@
+## 2026-10-30 CLOUD-SAFETY-HEADER-20261030
+
+Server reachable; prepared safety source/v117 already deployed in shadow mode.
+Actual signed header500 traced to unsupported MAX(boolean), fixed the shared
+unique join without aggregation. Real PostgreSQL temporary-table regression and
+17 focused tests pass; Ruff/mypy pass. make check hits16 confirmed inherited
+size violations (changed source shrank518→515); no unrelated test/fixture fixes.
+API/Worker narrow image layers deployed after no-running/no-lease check. Normal
+ERP STOP closes original fsj8f3bttd same Task/Run: native41command/42TurnCancelled/
+43SessionCancelled; Host actual snapshotcancelled/pendingfalse. No model/search,
+Run replay or Search/MCP restart. Shadow remains enabled; no real-model/HA claim.
+[Evidence and deployment](docs/CLOUD_SAFETY_HEADER_20261030.md).
+
 ## 2026-10-29 AG-UI G5A native complete interaction (published b60a1b8b)
 
 Native approval/clarification completion and receipted frontend-tool

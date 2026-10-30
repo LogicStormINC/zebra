@@ -1,3 +1,17 @@
+## 2026-10-30 safety deployment closeout
+
+User supplied the prepared safety deployment handoff. Live server restored,
+image/v117 source already deployed; preserved that work rather than rebuilding
+all sources. Actual signed task header500 exposed new MAX(boolean) PostgreSQL
+regression. Claim CLOUD-SAFETY-HEADER before minimal shared query repair; new
+real-PG temp-table check passed,17 focused tests/ruff/mypy passed. Full make check
+stops on16 inherited size failures; all confirmed in HEAD, modified source shrank.
+Narrow immutable API/Worker patch layers deployed after0 running/0 active leases,
+fresh DB/Compose/process backup. Actual original ERP STOP accepted once; canonical
+cancelled43 and Host snapshotcancelled, same IDs and pendingfalse. No new model or
+search, no replay or Search/MCP restart; shadow unchanged. Details and immutable
+IDs in docs/CLOUD_SAFETY_HEADER_20261030.md. Primary user dirt untouched.
+
 ## 2026-10-29 G5A remote integration merge (d8330ee4)
 
 Push of b60a1b8b/78d34e8f found origin/cloud-agent advanced to49658f42 by the

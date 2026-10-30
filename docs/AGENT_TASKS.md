@@ -1,3 +1,14 @@
+# CLOUD-SAFETY-HEADER-20261030
+- Created Ready then claimed In Progress before code; now Review, deployed and original Run cancelled; owner Luke Ding / Codex.
+- Branch codex/cloud-safety-header-20261030; target cloud-agent; primary worktree.
+- Scope: production safetynet task-header SQL regression; finish already authorized
+  shadow deployment and original ERP fsj8f3bttd STOP without model/search/replay.
+- Owned paths: packages/agent-storage/src/agent_storage/postgres/agent_tasks.py;
+  tests/test_postgres_task_header_safety.py; docs/CLOUD_SAFETY_HEADER_20261030.md;
+  docs/AGENT_TASKS.md, PROGRESS.md, WORKLOG.md.
+- Real PostgreSQL regression must use connection-local temporary tables and rollback;
+  preserve all business rows, original stream facts, active work and Search/MCP.
+
 ## AGUI-G5B-PROVIDER-ACTION-SAFETY-20261029 — React Provider/HITL multi-session action safety
 
 - Status: Ready (2026-10-29; unlocked by reviewed G5A publication b60a1b8b).
