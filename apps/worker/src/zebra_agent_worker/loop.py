@@ -428,7 +428,21 @@ def build_worker_loop_service(
         configure_transient_capacity_maintenance,
     )
 
+    safety_net = None
+    if active_namespace and getattr(settings, "storage_authority", None) == "postgresql":
+        from zebra_agent_worker.safety_net import WorkerSafetyNet
+
+        def _safety_connect():
+            import psycopg
+
+            return psycopg.connect(cloud_bundle.dsn or settings.database_url)
+
+        safety_net = WorkerSafetyNet(
+            namespace=active_namespace,
+            connect=_safety_connect,
+        )
     service = WorkerLoopService(
+        safety_net=safety_net,
         transient_capacity=configure_transient_capacity_maintenance(active_namespace, settings),
         projection_store=execution_stores.sessions,
         execution_service=execution_service,

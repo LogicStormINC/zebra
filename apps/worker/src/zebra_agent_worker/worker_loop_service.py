@@ -30,6 +30,7 @@ from zebra_agent_worker.lease_heartbeat import LeaseHeartbeatError
 from zebra_agent_worker.memory_delivery_consumer import MemoryDeliveryConsumption
 from zebra_agent_worker.recovery import SessionRecoveryError
 from zebra_agent_worker.resume import SessionResumeError
+from zebra_agent_worker.safety_net import WorkerSafetyNet
 from zebra_agent_worker.transient_capacity_maintenance import TransientCapacityMaintenance
 from zebra_agent_worker.worker_polling import has_remaining_cycles, validate_loop_inputs
 
@@ -82,9 +83,11 @@ class WorkerLoopService:
         projection_work: AgUiProjectionWorkService | None = None,
         stream_hint_relay: StreamHintRelay | None = None,
         transient_capacity: TransientCapacityMaintenance | None = None,
+        safety_net: WorkerSafetyNet | None = None,
     ) -> None:
         self._projection_store = projection_store
         self._execution_service = execution_service
+        self._safety_net = safety_net
         self._cloud_memory_recovery = cloud_memory_recovery
         self._child_wakeup_service = child_wakeup_service
         self._sleep = sleep
@@ -189,6 +192,13 @@ class WorkerLoopService:
                 executed_ids.append(command_result.session_id)
             elif command_result.status == "skipped":
                 skipped_ids.append(command_result.session_id)
+                if self._safety_net is not None:
+                    self._safety_net.note_recovery_failure(
+                        str(command_result.session_id),
+                        f"command:{command_result.command_kind}",
+                        None,
+                        reason=str(command_result.reason),
+                    )
                 print(
                     f"worker command skipped: session={command_result.session_id} "
                     f"kind={command_result.command_kind} reason={command_result.reason}",
@@ -204,6 +214,10 @@ class WorkerLoopService:
         for session in ready_sessions:
             session_id = str(session.session_id)
             if session_id in executed_ids:
+                continue
+            if self._safety_net is not None and self._safety_net.should_skip(session_id):
+                # A control-plane terminal override ends the retry storm.
+                skipped_ids.append(session_id)
                 continue
             try:
                 self._execution_service.execute_session(
@@ -221,6 +235,10 @@ class WorkerLoopService:
                 LeaseLostError,
             ) as skip_error:
                 skipped_ids.append(session_id)
+                if self._safety_net is not None:
+                    self._safety_net.note_recovery_failure(
+                        session_id, "session_scan", skip_error
+                    )
                 print(
                     f"worker session skipped: session={session_id} "
                     f"reason={type(skip_error).__name__}",

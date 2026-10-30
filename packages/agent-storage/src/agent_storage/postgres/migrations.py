@@ -22,6 +22,7 @@ from agent_storage.postgres.migration_extensions import RELIABILITY_MIGRATIONS
 from agent_storage.postgres.migration_types import Migration
 from agent_storage.postgres.orchestration_migration import ORCHESTRATION_MIGRATION
 from agent_storage.postgres.research_profile_migration import RESEARCH_TOOL_PROFILE_MIGRATION
+from agent_storage.postgres.safety_override_migration import SAFETY_OVERRIDE_MIGRATION
 from agent_storage.postgres.session_tenant_migration import SESSION_TENANT_NAMESPACE_MIGRATION
 from agent_storage.postgres.skill_publications_migration import SKILL_PUBLICATIONS_MIGRATION
 from agent_storage.postgres.skill_uploads_migration import SKILL_UPLOADS_MIGRATION
@@ -491,4 +492,5 @@ MIGRATIONS = (
     MCP_CREDENTIALS_MIGRATION,
     MCP_CATALOG_MIGRATION,
     *LATEST_MIGRATIONS,
+    SAFETY_OVERRIDE_MIGRATION,
 )
