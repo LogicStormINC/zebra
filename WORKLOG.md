@@ -1,3 +1,97 @@
+## 2026-10-30 CLOUD-FORCE-STOP-20261030 — closed loop and local integration
+
+Completed the same claimed slice: immutable independent user-stop signal/receipt;
+registered private Linux executor with subreaper draining escaped descendants;
+independent short-timeout/reconnectable control I/O; exact exit/fence ACK; raw lease
+revocation; server-owned OCI identity cleanup; canonical Turn/Session synchronization.
+Preserved completed/failed results, frozen descendant authority, 1 MiB lifecycle input
+limit and new/current lease fences. Historical binding changes cannot resurrect stops.
+Core runtime process primitives live in agent-runtime; Worker/API only compose them.
+No business-specific authorization or ERP/Trench imports. Operator opt-in and dedicated
+cleanup consumer are documented; no production activation has been attempted.
+
+Final real PostgreSQL/Linux/OCI + existing worker/API regression bundle: 99 passed,
+2 skipped in 117.98 s. Skips are the two existing completion-reader header_scratch
+cases because ZEBRA_HEADER_SCRATCH_DSN was not configured; actual new stop-path PG
+and OCI gates ran. Evidence: .artifacts/cloud-force-stop-20261030/live-acceptance.json;
+hung executor + escaped child exit 2761.9 ms; expired Task I/O did not block control;
+sibling executor/container/lease and shared parent remained live; cleanup succeeded
+while canonical event lock remained held; final state stopped with all proofs true.
+Repeat control caused zero added events. Disposable owned fixtures/schema removed.
+After formatting/type normalization, the focused Worker/API repeat passed39 /2 optional
+skips. Scoped Ruff, mypy15 modules and runtime product-boundary check pass. Root make check
+stops on15 inherited size violations; all15 paths unchanged from base. No unrelated
+fixture/test repairs. Final options typing normalization is behavior-preserving.
+
+Commit only declared owned paths and fast-forward local cloud-agent from ac8473b3;
+preserve unrelated working-tree changes. No push, deployment, model/search requests,
+original Run replay, Search/MCP changes, data/workspace deletion, or broad process kill.
+Unknown old/unmanaged executors, missing exit ACK or unkillable processes remain
+requires_reconciliation; production multi-host HA and browser acceptance are not claimed.
+
+## 2026-10-30 CLOUD-FORCE-STOP-20261030 — generic API draft
+
+User explicitly placed force-stop in Cloud Agent, not ERP. Added the draft
+control contract: POST /tasks/{id}/cancel {"force":true}, GET /tasks/{id}/stop.
+Fresh verified Task-scoped Host authority and immutable Task ownership apply;
+Run-narrowed grants cannot elevate to whole-Task control. Stable receipts preserve
+stop identity. HTTP202 confirms acceptance only; exit/lease/sandbox facts remain
+unconfirmed until independently verified. Commit/transport failures report unknown.
+Shared safety writers cannot erase enforced user stops; legacy plaintext diagnostics
+are excluded from JSON parsing. No business adapter dependencies were introduced.
+
+Validation: 31 focused no-model tests passed, including real PostgreSQL held
+Session+stream locks, fencing, authority/expiry, idempotency, a non-ERP host and
+competing safety writers. The final committed-visibility safety-writer test was
+rerun separately: 1 passed. Scoped Ruff and mypy (4 source modules) pass.
+No model/search requests, original Run replay, production deployment or service
+restart occurred. This is NOT full force-stop acceptance: exact executor ACK,
+independent resource cleanup, descendant aggregation and bounded canonical
+reconciliation remain required. Work stays uncommitted on the claimed branch;
+not merged into cloud-agent or advertised as a released capability.
+
+## 2026-10-30 CLOUD-FORCE-STOP-20261030 — interrupted handoff
+
+User clarified sidebar STOP must terminate an unresponsive harness and release
+execution resources. Existing deployed ERP e61f214 is ordinary STOP only and is
+NOT the completed force-stop implementation. No force-stop production switch
+has occurred. Search/MCP and original Runs were not restarted/replayed.
+
+Branch: codex/cloud-force-stop-20261030, based on cloud-agent ac8473b3.
+Draft code is uncommitted and incomplete. Generic isolation prototypes, exact
+cleanup consumer and uncertain-child suspension checks exist. Core focused
+checks: 68 passed/2 optional PG skips; real PG direct-control checks 39 passed;
+real owned Docker cleanup 6 passed. These preceded the latest out-of-band
+signal wiring, which is NOT yet regression-validated. Never cite those counts
+as proof of the unfinished force-stop flow.
+
+Critical finding: canonical cancel can block on a lock held by the stuck
+harness. Reuse v117 FK-free agent_safety_overrides as an authenticated explicit
+watchdog intervention (reason=user_force_stop) BEFORE canonical event writes.
+New force_stop_signal/force_stops and API routing are drafts. Still required:
+- verify task_force_stop verified-grant/issuer wiring, authority/idempotency,
+  and source get-status/lease queries under real PG and held Session locks;
+- wire exact fence-bound supervisor acknowledgements (method now requires
+  sid plus fence), independent recovery/cleanup, bounded fanout, status polling;
+- finish ERP Full force=true path and progress handling; its current draft
+  still uses ordinary direct cancel and is not the final protocol;
+- validate scope/late receipts/child exit/canonical completion protection,
+  then rebuild matching API/Worker/ERP images and perform no-model page test;
+- update PROGRESS/docs, commit canonical ERP, export mirror, integrate cloud-agent.
+
+Artifacts: .artifacts/cloud-force-stop-20261030/ and server
+/opt/erpnext/zebra-agent/force-stop-20261030/. Staged images are stale prototypes,
+NOT deployment-ready; compose.candidate.json has NOT replaced normal compose.
+No migration was applied, no normal API/Worker was replaced in this slice.
+
+Owned disposable no-model test data was prepared via real authenticated APIs:
+ERP conversation b1ui3ucog9, Task 25122292-4e4b-48ca-b35e-1dc21a6f5ed5,
+logical Run 43ef5d9a-a810-4d28-a7fe-7b4c08ebc723; create execute=false,
+no execution command, model requests 0. Fake harness was NOT launched. Host
+mapping says running but Native Task is prepared; close/clean this owned
+fixture without a model before any renewed acceptance. Do not touch fsj8f3bttd.
+Preserve unrelated dirty AGENTS.md/.DS_Store/conformance script/Jorice files.
+
 ## 2026-10-30 safety deployment closeout
 
 User supplied the prepared safety deployment handoff. Live server restored,

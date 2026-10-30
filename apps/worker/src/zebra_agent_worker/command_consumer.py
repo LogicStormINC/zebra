@@ -29,6 +29,8 @@ from zebra_agent_worker.command_rejections import (
     reject_command,
 )
 from zebra_agent_worker.control import SessionControlError, UnsupportedSessionControlError
+from zebra_agent_worker.execution_errors import WorkerExecutionError
+from zebra_agent_worker.execution_events import ExecutionInterrupted
 from zebra_agent_worker.recovery import SessionRecoveryError, SessionRecoveryService
 from zebra_agent_worker.resume import SessionResumeError
 
@@ -164,6 +166,8 @@ class SessionCommandConsumer:
                 SessionControlError,
                 SessionRecoveryError,
                 SessionResumeError,
+                ExecutionInterrupted,
+                WorkerExecutionError,
             ) as exc:
                 skipped = CommandConsumption(
                     session_id=str(session.session_id),

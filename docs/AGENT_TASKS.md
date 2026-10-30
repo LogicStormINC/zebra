@@ -1,3 +1,36 @@
+# CLOUD-FORCE-STOP-20261030
+- Status: Done (validated for local cloud-agent integration; production activation remains separate).
+- Created Ready then claimed In Progress before implementation; owner Luke Ding / Codex.
+- Branch codex/cloud-force-stop-20261030; target cloud-agent.
+- User clarified menu STOP is an out-of-harness force termination/resource-release
+  fallback, not just queued STOP. Ordinary menu UI was deployed in ERP e61f214;
+  that alone does NOT meet the clarified requirement.
+- Owned paths: apps/worker/src/zebra_agent_worker/{session_process,session_process_child,runtime_cleanup_service}.py;
+  apps/worker/src/zebra_agent_worker/{execution,execution_errors,execution_finalization,execution_failure_finalization,command_consumer}.py;
+  apps/worker/src/zebra_agent_worker/loop.py and config/main composition only if needed;
+  packages/agent-storage/src/agent_storage/postgres/{force_stop_signal,force_stops,force_stop_recovery,force_stop_targets,force_stop_executors,task_read_header,projections,leases,agent_tasks,safety_overrides}.py;
+  packages/agent-runtime/src/agent_runtime/{force_stop_cleanup,process_supervision,executor_supervisor}.py;
+  apps/api/src/zebra_agent_api/{task_api,task_routes,task_force_stop}.py;
+  tests/agent_storage/test_postgres_force_stops.py; tests/agent_storage/test_postgres_force_stop_recovery.py;
+  tests/agent_runtime/test_force_stop_live.py; tests/agent_runtime/force_stop_probe.py;
+  focused tests/worker/test_session_process.py and existing direct-control/cleanup tests;
+  docs/contracts/cloud-force-stop-v1/contract.json; tests/api/test_cloud_force_stop_contract.py;
+  docs/CLOUD_FORCE_STOP_20261030.md, docs/AGENT_TASKS.md, PROGRESS.md, WORKLOG.md.
+- Latest validation: 99 passed, 2 optional header_scratch checks skipped (DSN not configured).
+  Real Linux/PG/OCI proof: hung executor and escaped child exit, independent expired-I/O
+  control, raw lease revoked, exact sandbox cleanup before blocked canonical sync;
+  sibling executor/sandbox/lease and shared Worker survive. Repeated receipt adds no events.
+  Scoped Ruff and mypy (15 modules), runtime product boundary pass. Root make check
+  stops at 15 inherited untouched ERP size violations. Local integration only; not deployed.
+- Product scope: generic Cloud Agent control-plane API, independent of ERP/Trench/AG-UI.
+  Business UIs are adapters only; no business conversation IDs or company rules in this API.
+- Reuse direct Task cancellation, lease revocation, immutable receipts and exact
+  runtime cleanup. Isolate Cloud session execution as an opt-in trusted process;
+  local behavior unchanged. No arbitrary worker kill, DB kill, authority bypass,
+  source rewriting or simulated success. Client sees terminal vs cleanup pending
+  separately. No new model/search; blocked-process/real sandbox no-model checks.
+- ERP follow-up stays in its canonical repository; no Trench domain dependency.
+
 # CLOUD-SAFETY-HEADER-20261030
 - Created Ready then claimed In Progress before code; now Review, deployed and original Run cancelled; owner Luke Ding / Codex.
 - Branch codex/cloud-safety-header-20261030; target cloud-agent; primary worktree.
@@ -3444,7 +3477,7 @@
   packages/agent-core/src/agent_core/domain/event_payloads*.py;
   packages/agent-core/src/agent_core/domain/task_admission*.py;
   apps/worker/src/zebra_agent_worker/task_recovery.py;
-  apps/worker/src/zebra_agent_worker/execution_entrypoints.py;
+  apps/worker/src/zebra_agent_worker/{execution,execution_errors,execution_finalization,execution_failure_finalization,command_consumer}.py;
   tests/agent_core/test_session_bootstrap*.py; tests/worker/test_task_recovery*.py;
   tests/agent_core/test_coverage_semantic*.py.
 - Exact contract/adapter paths for this continuation:

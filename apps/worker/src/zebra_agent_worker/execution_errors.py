@@ -40,6 +40,10 @@ class WorkerExecutionError(ValueError):
         super().__init__(*args)
 
 
+class WorkerExecutorInterrupted(WorkerExecutionError):
+    """Executor outcome is uncertain; retain output and require explicit recovery."""
+
+
 class WorkerPluginSetupUnavailable(WorkerExecutionError):
     """Frozen plugin setup failed; suspend without closing or automatic retry."""
 

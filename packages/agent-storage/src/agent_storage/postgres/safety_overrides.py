@@ -67,7 +67,10 @@ class PostgresSafetyOverrideStore:
                      shadow, created_at, updated_at)
                 VALUES (%s, %s, 'failure_count', %s, %s, %s, %s, %s)
                 ON CONFLICT (deployment_namespace, session_id) DO UPDATE SET
-                    reason = EXCLUDED.reason,
+                    reason = CASE
+                        WHEN agent_safety_overrides.reason = 'user_force_stop'
+                         AND NOT agent_safety_overrides.shadow
+                        THEN agent_safety_overrides.reason ELSE EXCLUDED.reason END,
                     attempts = CASE
                         WHEN agent_safety_overrides.kind = 'failure_count'
                         THEN agent_safety_overrides.attempts + 1
@@ -78,12 +81,7 @@ class PostgresSafetyOverrideStore:
                 """,
                 (namespace, session_id, reason[:500], 1 if structural else 0, shadow, now, now),
             ).fetchone()
-        if (
-            row is not None
-            and row[1] == "failure_count"
-            and structural
-            and row[3] >= max_attempts
-        ):
+        if row is not None and row[1] == "failure_count" and structural and row[3] >= max_attempts:
             return self.finalize(
                 namespace=namespace,
                 session_id=session_id,
@@ -124,8 +122,10 @@ class PostgresSafetyOverrideStore:
                     reason = EXCLUDED.reason,
                     diagnostics = EXCLUDED.diagnostics,
                     updated_at = EXCLUDED.updated_at
-                WHERE agent_safety_overrides.kind = 'failure_count'
-                   OR agent_safety_overrides.kind <> EXCLUDED.kind
+                WHERE (agent_safety_overrides.kind = 'failure_count'
+                   OR agent_safety_overrides.kind <> EXCLUDED.kind)
+                  AND NOT (agent_safety_overrides.reason = 'user_force_stop'
+                           AND NOT agent_safety_overrides.shadow)
                 RETURNING session_id::text, kind, reason, attempts, shadow, updated_at
                 """,
                 (namespace, session_id, kind, reason[:500], diagnostics[:4000], shadow, now, now),

@@ -1,3 +1,20 @@
+## 2026-10-30 CLOUD-FORCE-STOP-20261030 (native closed loop accepted)
+
+Generic Cloud force-stop now includes durable lock-independent admission, private Linux
+executor/subreaper termination, fence-bound exit receipts, lease revocation, exact OCI
+cleanup and bounded canonical Turn/Session synchronization. ERP and other hosts consume
+POST Task cancel(force=true) / GET stop; runtime has no business adapter dependency.
+Real no-model acceptance: 99 passed / 2 optional header_scratch skips; hung/escaped
+processes stopped in 2.762 s, expired task I/O did not block control, original shared
+Worker plus another Task's executor/sandbox/lease survived. Cleanup preceded blocked
+canonical synchronization; final resources_released required all four proofs. Replays
+added zero events. Scoped Ruff/mypy (15 modules) and runtime boundary pass. make check
+is blocked by 15 confirmed inherited untouched ERP file-size violations.
+Local cloud-agent integration; no production activation, original Run replay, provider
+or search requests, or Search/MCP restart. Default isolation remains opt-in; missing
+executor proof is requires_reconciliation, never fabricated success or automatic replay.
+[Contract, operator activation and acceptance](docs/CLOUD_FORCE_STOP_20261030.md).
+
 ## 2026-10-30 CLOUD-SAFETY-HEADER-20261030
 
 Server reachable; prepared safety source/v117 already deployed in shadow mode.

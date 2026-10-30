@@ -74,6 +74,22 @@ def handle_task_route(app: ZebraAgentApi, request: TaskRouteRequest) -> ApiRespo
     if not request.path.startswith("/tasks/"):
         return None
     parts = _parts(request.path, "/tasks/")
+    if len(parts) == 2 and (
+        method == "GET"
+        and parts[1] == "stop"
+        or (method == "POST" and parts[1] == "cancel" and (request.body or {}).get("force") is True)
+    ):
+        from zebra_agent_api.task_force_stop import force_stop_task
+
+        return force_stop_task(
+            app,
+            parts[0],
+            request.host_context,
+            _idempotency_key(request),
+            read=method == "GET",
+            verified=request.verified_host_grant,
+            payload=request.body,
+        )
     if method == "GET" and len(parts) == 3 and parts[1:] == ("messages", "receipt"):
         return read_task_message_receipt(app, parts[0], request.headers)
     if (
