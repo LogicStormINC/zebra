@@ -51,5 +51,5 @@ def test_new_migration_only_extends_derived_cells():
     # Exact previous source catalog is read in a separate process by the parent
     # stable baseline; here enforce additive version and immutable named migration.
     current = MIGRATIONS[-1]
-    assert current.version == 116 and current.name == "standard_projection_cells"
+    assert current.version == 117 and current.name == "agent_safety_overrides"
     assert "session_events" not in "\n".join(current.statements)
