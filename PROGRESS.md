@@ -1,3 +1,7 @@
+# CA-P5-07 — Worker graceful-stop prerequisite
+
+Fallback CLI SIGTERM/SIGINT now requests normal stop/drain and no further pickup; command-consumer ownership remains. Real CLI red -15 -> normal summary;31 focused checks including real command-process CLI adapter passed. Final make test11231/3080 conditional skips and make check1448 sources/30eval passed, source blobs stable. External resource deltas attributed/untouched; first-run4 and earlier23 unproven volumes retained. Producer Review, source publication for downstream S1; actual PID1/Beta/rollback remains Overdoze-owned. No schema/history/Coverage/unknown rewrite. [Boundary](docs/CA-P5-07_worker_graceful_stop.md).
+
 # CA-OPS-02 — Owned fixture teardown / verified / Review
 
 Six shared test teardown argv now remove anonymous volumes for exact owned containers. Reused existing red6→green21 real Docker checks, including exception cleanup/named sentinel retention; no production code. Native make test11225 passed/3080 conditional skips and make check1447 sources/30eval passed; final resource sets match baseline, including retained23 volumes lacking historical ownership proof. [Boundary](docs/CA-OPS-02_owned_test_teardown.md). No S1 overlap/production operations/main merge.

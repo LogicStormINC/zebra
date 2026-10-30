@@ -392,3 +392,11 @@ def test_cli_batch_and_idle_values_are_effective_with_configured_ceiling(wired, 
     )  # CLI execution cadence; config maintenance cadence
     with pytest.raises(ValueError, match="batch limit"):
         process.run(worker_id="w", batch_size=17, max_cycles=1)
+
+
+def test_cli_stop_request_does_not_start_consumer_or_transport(wired):
+    log, objects, *_ = wired
+    result = _process(wired).run(worker_id="w", stop_requested=lambda: True)
+    assert result.stop_reason == "signal" and result.cycles_completed == 0
+    assert objects == []
+    assert log == ["memory-drained"]

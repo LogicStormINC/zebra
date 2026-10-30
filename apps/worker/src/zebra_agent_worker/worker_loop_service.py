@@ -176,6 +176,7 @@ class WorkerLoopService:
         worker_id: str,
         batch_size: int = 1,
         lease_ttl_seconds: int = 30,
+        stop_requested: Callable[[], bool] = lambda: False,
     ) -> WorkerLoopCycleResult:
         if self._runtime_gates is not None:
             self._runtime_gates.tick()
@@ -191,7 +192,7 @@ class WorkerLoopService:
                 lease_ttl_seconds=lease_ttl_seconds,
                 batch_size=batch_size,
             )
-            if self._command_consumer is not None
+            if self._command_consumer is not None and not stop_requested()
             else None
         )
         executed_ids: list[str] = []
@@ -214,6 +215,8 @@ class WorkerLoopService:
         )
         ready_ids = tuple(str(session.session_id) for session in ready_sessions)
         for session in ready_sessions:
+            if stop_requested():
+                break
             session_id = str(session.session_id)
             if session_id in executed_ids:
                 continue
@@ -241,7 +244,7 @@ class WorkerLoopService:
                 )
                 continue
             executed_ids.append(session_id)
-        if command_result is None or command_result.status == "idle":
+        if not stop_requested() and (command_result is None or command_result.status == "idle"):
             self._start_memory_delivery(worker_id=worker_id, batch_size=batch_size)
             self._start_cloud_memory_recovery(
                 worker_id=worker_id,
@@ -344,8 +347,11 @@ class WorkerLoopService:
         max_cycles: int | None = None,
         stop_when_idle: bool = False,
         idle_sleep_seconds: float = 0.1,
+        stop_requested: Callable[[], bool] = lambda: False,
     ) -> WorkerLoopRunResult:
         try:
+            if stop_requested():
+                return WorkerLoopRunResult(0, 0, "signal", (), ())
             if self.migrated_run is not None:
                 return self.migrated_run(
                     worker_id=worker_id,
@@ -354,6 +360,7 @@ class WorkerLoopService:
                     max_cycles=max_cycles,
                     stop_when_idle=stop_when_idle,
                     idle_sleep_seconds=idle_sleep_seconds,
+                    stop_requested=stop_requested,
                 )
             validate_loop_inputs(
                 batch_size=batch_size,
@@ -364,6 +371,9 @@ class WorkerLoopService:
             accumulator = _LoopAccumulator()
             stop_reason = "max_cycles"
             while max_cycles is None or accumulator.cycles_completed < max_cycles:
+                if stop_requested():
+                    stop_reason = "signal"
+                    break
                 if self._cutover_probe is not None and self._cutover_probe():
                     stop_reason = "cutover_requires_restart"
                     break
@@ -371,10 +381,14 @@ class WorkerLoopService:
                     worker_id=worker_id,
                     batch_size=batch_size,
                     lease_ttl_seconds=lease_ttl_seconds,
+                    stop_requested=stop_requested,
                 )
                 accumulator.cycles_completed += 1
                 accumulator.executed_session_ids.extend(cycle.executed_session_ids)
                 accumulator.skipped_session_ids.extend(cycle.skipped_session_ids)
+                if stop_requested():
+                    stop_reason = "signal"
+                    break
                 if not cycle.ready_session_ids:
                     accumulator.idle_cycles += 1
                     if stop_when_idle:

@@ -1,3 +1,10 @@
+# CA-P5-07
+
+1. [x] Trace actual original stop/Worker PID1 fallback and register ownership.
+2. [x] Real CLI red signal regression, minimal scoped stdlib stop request and pickup boundaries.
+3. [x] Full Native make test11231/3080 skips and make check passed; complete event/resource reconciliation; producer source delivery.
+4. [x] Handoff source prerequisite to OD-P5-07C-R; image rebuild/actual S1 is consumer-owned, not a producer completion claim.
+
 # CA-OPS-02 current task
 
 - Claimed Ready from published CA-P5-06 6dee587a; exact six teardown flags only.

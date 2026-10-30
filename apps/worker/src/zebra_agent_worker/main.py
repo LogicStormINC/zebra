@@ -17,6 +17,7 @@ from zebra_agent_worker.claims import SessionClaimService
 from zebra_agent_worker.loop import WorkerLoopService, build_worker_loop_service
 from zebra_agent_worker.recovery import SessionRecoveryService
 from zebra_agent_worker.resume import SessionResumeService
+from zebra_agent_worker.worker_signals import worker_stop_signals
 
 
 def worker_banner() -> str:
@@ -32,12 +33,14 @@ def main(argv: Sequence[str] | None = None) -> int:
     # The process may need an internal CA for Host Grant traffic, but model
     # providers use public TLS. Keep their client independent of SSL_CERT_FILE.
     with (
-        postgres_pool_scope(settings.database_url)
-        if settings.storage_authority == "postgresql" else nullcontext()
-    ), httpx.Client(
-        timeout=httpx.Timeout(60.0, connect=10.0),
-        trust_env=False,
-    ) as model_http_client:
+        worker_stop_signals() as stop_requested,
+        (postgres_pool_scope(settings.database_url)
+         if settings.storage_authority == "postgresql" else nullcontext()),
+        httpx.Client(
+            timeout=httpx.Timeout(60.0, connect=10.0),
+            trust_env=False,
+        ) as model_http_client,
+    ):
         loop_service = build_worker_loop_service(
             database_path=database_path,
             settings=settings,
@@ -50,6 +53,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             max_cycles=namespace.max_cycles,
             stop_when_idle=namespace.stop_when_idle,
             idle_sleep_seconds=namespace.idle_sleep_seconds,
+            stop_requested=stop_requested,
         )
     print(
         json.dumps(
