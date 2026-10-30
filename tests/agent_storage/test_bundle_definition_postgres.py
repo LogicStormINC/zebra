@@ -84,7 +84,7 @@ def raw_bundle_dsn() -> Iterator[str]:
                 time.sleep(0.1)
         yield dsn
     finally:
-        subprocess.run(["docker", "rm", "-f", name], check=True, capture_output=True)
+        subprocess.run(["docker", "rm", "-fv", name], check=True, capture_output=True)
 
 
 @pytest.fixture

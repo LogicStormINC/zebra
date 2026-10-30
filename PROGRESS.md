@@ -1,3 +1,7 @@
+# CA-OPS-02 — Owned fixture teardown / verified / Review
+
+Six shared test teardown argv now remove anonymous volumes for exact owned containers. Reused existing red6→green21 real Docker checks, including exception cleanup/named sentinel retention; no production code. Native make test11225 passed/3080 conditional skips and make check1447 sources/30eval passed; final resource sets match baseline, including retained23 volumes lacking historical ownership proof. [Boundary](docs/CA-OPS-02_owned_test_teardown.md). No S1 overlap/production operations/main merge.
+
 # CA-P5-06 — Approval binding renewal / verified / Review
 
 [Contract and proof boundaries](docs/CA-P5-06_approval_binding_renewal.md): current authorized approval POST renews its verified HostGrant binding before the approval lock; original GET stays read-only. Frozen ceilings, receipts, unknown and Coverage preserved. API/helper28 and real PG4 pass; full checks passed; full tests interrupted for user-requested resource recovery. Source-pinned S1/P5 acceptance remains separate; no production operations or main merge.

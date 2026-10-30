@@ -1,3 +1,11 @@
+# CA-OPS-02 current task
+
+- Claimed Ready from published CA-P5-06 6dee587a; exact six teardown flags only.
+- Reuse previous cleanup regression: red6 failures; live21 pass.
+- Native full make test11225/3080 conditional skips and make check passed; final resource identities match baseline.
+- Retain old23 uncertain volumes; no global prune or business data mutation.
+- Publish verified fixture source, then unlock OD-P5-07C-R actual single-environment S1.
+
 # CA-P5-06 current task
 
 - Review: authorized approval binding renewal; original GET stays read-only.
