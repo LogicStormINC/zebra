@@ -1,3 +1,15 @@
+## 2026-10-29 G5A remote integration merge (d8330ee4)
+
+Push of b60a1b8b/78d34e8f found origin/cloud-agent advanced to49658f42 by the
+parallel full-capability/erpnext lane (516 files). Merged cleanly; only three
+doc conflicts (PROGRESS/WORKLOG/AGENT_TASKS) resolved keeping both sides.
+Merged-tree gates: mypy1465 clean, eval30/30, boundary PASS, native focused93
+including real-PG HTTP gates all green; sdks untouched by the merge so SDK275
+verify stands. Inherited remote conditions documented, not G5A's: file-size
+gate15 violations and ruff4924 errors, all inside integrations/erpnext/
+(present at49658f42 before this slice). Not fixed here — different lane's
+owned paths. origin/cloud-agent now at d8330ee4.
+
 ## 2026-10-29 G5A native interaction completed (Review)
 
 Base6f2cbfcb, isolated codex/agui-g5a-native-interaction-20261029. Slice finished
