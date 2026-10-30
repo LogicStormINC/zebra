@@ -17558,3 +17558,27 @@ excluded from baseline_digest; signing key stays outside settings/snapshots. Foc
 2026-10-29 CA-P5-04: reproduce cloud Eval factory rejection without Docker/model I/O. Implement explicit optional cloud Eval resources under original/current publisher authority, admission/hold source fence, and empty script child under declared quota backing.34 targeted PG/Seatbelt/script/containment checks pass. Full gates running. No production operations; continue parent P5 actual S1 after publication.
 
 CA-P5-04 final: make test11209 passed/3067 conditional skips in1198.85s; make check passed;34 targeted PG/Seatbelt/containment checks. Preserve public contracts/history/Coverage; no production operations. Publish focused branch then continue actual owned gVisor S1 in Overdoze07C.
+
+
+## 2026-10-30 — CA-P5-06 authorized approval binding renewal
+
+Preserved the proposed missing renewal and corrected its position: current authorization first, renewal within existing deadline and outside approval lock, locked authorization recheck unchanged. Original GET never renews. Red4/1 then focused28/4 conditional skips; owned disposable PG4 passed. Both repository full gates running; no source-pinned S1 success claimed. Original unknowns/history/Coverage and active lab processes retained.
+
+Full make check passed in both repositories (Overdoze existing Biome warnings). Both first full test jobs received external SIGTERM143 together, with no assertion failure in the captured prefix; source unchanged, no remaining test child processes found. Cause unproven. Restarted complete gates with distinct logs, explicit PID/exit receipts; do not treat interrupted prefixes as passing full gates.
+
+
+## 2026-10-30 — Full tests interrupted for authorized resource recovery
+
+User reports severe Mac pressure. Stopped both owned full make test trees and Overdoze retained S1 producers/containers; no full-test pass claim. Both make check completed exit0, final focused API28/1 conditional skip and owned real PG4 passed. CA-P5-06 source stays uncommitted pending serial full revalidation; no push or S1/P5 completion claim. Operational evidence /tmp/overdoze-resource-recovery-20261030; data/originals/unknown/Coverage retained. Do not auto-restart heavy suites.
+
+Resource-recovery notification received: external SIGTERM was intentional to address severe Mac load; immediately stopped automatic retries. Third full test attempt also interrupted143, never passed. Process inventory confirms no owned make test/pytest/go test or retry wrappers remain. Owned ca-p5-06-owned-pg was already removed after isolated PG checks; no global prune or existing resource/data cleanup. Preserve all code/uncommitted changes and recovery records at /tmp/overdoze-resource-recovery-20261030; no heavy task or Docker recreation until explicit user resume. Source publication/S1 remain pending.
+
+## 2026-10-30 — Explicit user resume after resource recovery
+
+User says continue after paused status. Inspected no owned full-test/S1 producer remains, only two pre-existing unrelated Docker services running, 47% free memory and87GiB disk. Resume one heavyweight suite at a time: Native first, then Overdoze with bounded Go parallelism. No S1 rebuild or automatic retry after interruption. Baseline inventory/process receipts live in /tmp/ca-p5-06-resume-3d3fcdc918. Preserve ops branch25de8c9 and all prior recovery/history/unknown/Coverage records.
+
+Explicit-resume Native make test completed exit0:11216 passed/3068 conditional skips in1338.94s. No full-test overlap/S1 rebuild. Overdoze full race suite follows serially with GOMAXPROCS2/GOFLAGS-p2; no assertion failure or skip-policy change.
+
+CA-P5-06 final serial gates: Native11216 passed/3068 conditional skips in1338.94s, make check1447 typed sources/30eval exit0. Overdoze30 race packages and receipt selfcheck (19 corruption cases) passed; make check exit0 with74 inherited Biome warnings on unchanged25de8c9 ops branch. Bounded GOMAXPROCS2/GOFLAGS-p2 retained race. Before/after container/volume/network identity sets unchanged, both test process trees exited; no S1 rebuild, source-pinned joint or P5 closeout claim. Commit/push source next.
+
+Correction during final inventory review: container/network sets match but23 anonymous volumes were added during Native13:46–14:04 test window; no new Go14:05+ volumes remain. Initial generic unchanged-inventory sentence was premature and corrected before publication. Volumes retained pending ownership/reference proof; no global prune or unproven deletion.

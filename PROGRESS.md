@@ -1,3 +1,7 @@
+# CA-P5-06 — Approval binding renewal / verified / Review
+
+[Contract and proof boundaries](docs/CA-P5-06_approval_binding_renewal.md): current authorized approval POST renews its verified HostGrant binding before the approval lock; original GET stays read-only. Frozen ceilings, receipts, unknown and Coverage preserved. API/helper28 and real PG4 pass; full checks passed; full tests interrupted for user-requested resource recovery. Source-pinned S1/P5 acceptance remains separate; no production operations or main merge.
+
 # CA-P5-04 — fenced cloud Eval / verified / Review
 [Boundary and implementation](docs/CA-P5-04_cloud_script_eval.md): dedicated original-owned exact OCI resources, current approval, closed-admission claim fence and unavailable lifecycle proof during unresolved cloud Eval. Shared declared quota backing fixes empty script workspace placement; no Task/lease fabrication, baseline fingerprint or history/Coverage change.34 targeted pass; make test11209/3067 conditional skips and make check exit0. Actual gVisor S1 remains Overdoze07C; all-P5 parent active, no production operations. [Prior](docs/archive/progress-ca-p5-03.md).
 
