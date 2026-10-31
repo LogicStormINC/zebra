@@ -95,3 +95,6 @@ Worker原进展和私有文件；没有执行权限/Task终态变更。仅02候�
 
 CA-HA-02候选复核：[58项定向验证及修复证据](evidence/ca-ha-02/review-validation.json)。
 就绪不过真实进展截止、只读普通本机文件、关闭失败仍尝试其余资源；完整门禁/真实PG未验。
+
+[CA-HA-02完整门禁、真实PG及基线阻塞](evidence/ca-ha-02/full-validation.json)：PG5通过，
+完整门禁15失败/16尺寸/Ruff4924均已基线复现；未主线合入，03依赖复核见02前置文档第8节。

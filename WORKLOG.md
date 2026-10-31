@@ -18484,3 +18484,28 @@ Original52 evidence files untouched; new review evidence/log hashes separate.
 No core/storage/deploy/SDK changes, history/original receipts/unknown/Coverage
 preserved. Complete gates and real dependencies remain unverified, no merge or
 deployment;03 remainsLocked until02 dependency and explicit validation satisfied.
+
+
+## 2026-10-31 — CA-HA-02 serial full gates / actual PG
+
+User explicitly lifted heavy/Docker pause for bounded serial acceptance and conditional merge.
+Frozen uv sync in own venv; no lock/dependency source changes. Full make test exit2:
+11641passed/15failed/3155skipped,1387.95s; new opt-in PG test added after collection,
+then exercised separately twice (final5passed/11.09s incl inspect quota assertions).
+make check exit2 at16 size violations; remaining recipe steps all run serially:
+Ruff4924ERP errors, mypy1494source clean, eval30/30, postcommit/risk pass.
+Clean mainline e8a4f10b imports confirmed; exact15 failed nodes all reproduce1.87s.
+Baseline size16 same; Ruff tuples(relative path,code,message,row,column) all4924
+identical; violating file bytes match. Baseline failures are not a pass: no merge.
+New PG fixture opt-in only, own UUID server,1CPU/512MiB/PID128 inspect asserted,
+data tmpfs256MiB, schema applied only in disposable server; role slot exhaustion,
+locked reads, pause/unpause, current/incompatible startup schema and actual native
+Worker capability expiry covered. Unused fake object reader/HostGrant authorizer
+explicit, no model/IdP/Broker/fleet/capacity acceptance claim. Five tests pass.
+Auto fixture docker run/create capped/labelled via temporary PATH wrapper, native
+finally and parent EXIT rm-fv; final both owner labels empty, existing303c33d83297
+overdoze-dev-pg unchanged. No shared prune/volume deletion/service restart or prod
+migration/deployment. Earlier52/58 evidence immutable; full evidence separate.
+03 dependency review:01merged,02notmerged/blocked, hence03Locked; reuse existing
+lanes/pools, quantify all-process/executor totals, reserve control/GET and validate
+namespace fairness/backoff; server-vs-Helm pool coverage must precede08. No03code.

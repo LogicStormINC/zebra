@@ -184,3 +184,8 @@ E1-A短任务、E1-R恢复、多用户E1-C及超载E1-O分别验收，不拼接�
   R14含历史Trench组合，仅复用通用发布/证据方法，不重新引入业务依赖。
 - [Kubernetes Disruptions](https://kubernetes.io/docs/concepts/workloads/pods/disruptions/)：PDB不阻止非自愿中断。
 - [PostgreSQL 主备复制](https://www.postgresql.org/docs/17/warm-standby.html)：异步复制的切换丢失边界。
+
+2026-10-31状态补充：[02完整门禁/真实PG证据](evidence/ca-ha-02/full-validation.json)。
+真实PG5项通过；完整test15失败、check16尺寸/Ruff4924违规均在干净主线复现。
+其余mypy1494源/Eval30及进度风险检查通过，不折算为整树通过，不合并失败候选；
+03仍等待02验证与集成。保留原合同revision4/SLO，不将单实例微型故障验收冒称容量/集群HA。

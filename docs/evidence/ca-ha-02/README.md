@@ -26,3 +26,13 @@ python -m pytest -q tests/api/test_cloud_ha_health.py tests/api/test_host_auth_h
 新增RED覆盖真实进展截止、记录耗时不可延长截止、符号链接与异常关闭漏清理；
 FIFO负例在5s超时可杀并回收的子进程中执行，节点在finally删除，无Docker/数据库环境。
 本轮同样没有全量门禁或真实PG/故障/UX容量验收，不据此解锁03。
+
+## 完整门禁与真实PostgreSQL（2026-10-31）
+
+[full-validation.json](full-validation.json)为当前状态：真实PG5项通过；完整make test为
+11641通过/15失败/3155条件跳过，make check在16处尺寸违规失败。其余步骤补充串行执行，
+Ruff4924错误，mypy1494源/Eval30及两个进度风险检查通过。全部失败已在干净e8a4f10b
+精确复现：[对照](full-baseline-comparison.json)。基线失败不等于通过，不执行条件合并。
+原52/58项证据不覆盖、不改写；本轮完整测试先执行，新增PG模块五项随后单独真实执行。
+临时容器及时rm-fv，独立PG使用tmpfs且配额经inspect断言；仅原有overdoze-dev-pg留存。
+无部署/生产迁移，03保持Locked。

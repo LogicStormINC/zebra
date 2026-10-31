@@ -1,3 +1,12 @@
+# CA-HA-02 完整门禁与真实PG
+
+- 已完成：限额串行完整make test/check及全部剩余检查；真实PG5项通过并回收。
+- 阻塞：test15失败、check16尺寸/Ruff4924违规，已在干净e8a4f10b逐项复现。
+- mypy1494/Eval30/postcommit/risk通过，不视作整树通过。
+- 条件合并未执行；02Review/03Locked；下一步先拆分基线门禁修复，再复验合入02。
+- 保留历史/原收据/unknown/Coverage/前端mock和无关改动，无部署/生产迁移。
+- 正式证据：docs/evidence/ca-ha-02/full-validation.json；03范围见02前置文档第8节。
+
 # CA-HA-02 Review续作
 
 - 输入6af4e5dd，沿原Owned paths复核，不启动03/重型验证/Docker。

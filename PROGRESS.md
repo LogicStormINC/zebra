@@ -1,3 +1,13 @@
+## 2026-10-31 — CA-HA-02完整验收 / 基线门禁阻塞
+
+[完整证据](docs/evidence/ca-ha-02/full-validation.json)：单进程串行完整make test11641通过、
+15失败、3155条件跳过；make check在16尺寸违规失败，补充Ruff4924错误。干净主线
+e8a4f10b逐项复现15失败/16尺寸与4924相同诊断，违规源字节相同，不宣称全绿。
+mypy1494源、Eval30及postcommit/risk通过；新增独立真实PG5通过，默认关闭。
+限额1CPU/512MiB/PID128、PG数据tmpfs；全部临时容器及时回收，原overdoze-dev-pg保留。
+02继续Review，条件合并未执行；03仍Locked，已核对预算/退避/公平/入口池范围。
+未部署/生产迁移；历史数据、原收据、unknown、Coverage、前端mock及无关脏工作树保持。
+
 ## 2026-10-31 — CA-HA-02候选复核 / 58项定向通过
 
 修正就绪缓存越过真实进展、采样耗时续期、本机链接/FIFO读取及关闭异常遗漏资源。

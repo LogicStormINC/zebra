@@ -1,6 +1,6 @@
 # CA-HA-02 任务、依赖与候选实施
 
-日期2026-10-31；当前状态Review候选：用户后续已授权02实施，实际行为和限制见第6节。
+日期2026-10-31；当前状态Review，完整门禁被基线失败阻塞；最新验收见第8节，历史候选见第6–7节。
 以下1–5节保留领取前设计边界；01 revision 2前置已合入cloud-agent 1dd88bfd。
 原文档阶段未实施；本轮已先登记Ready后领取02，依然不启动重型/Docker环境。
 依赖：[CA-HA-01 revision 2](contracts/cloud-ha-v1/README.md)、[逐卡范围](CA-HA-01_baseline_and_scope.md)。
@@ -136,3 +136,43 @@ SIGTERM只立即反映现有退出状态；真正排空/强停与资源证明仍
 
 [新增证据](evidence/ca-ha-02/review-validation.json)：58项定向回归、局部Ruff/mypy7与
 产品边界检查；原52项证据保留。仍无真实PG、完整门禁或集群/UX容量验证，02保持Review。
+
+## 8. 完整验收与03依赖复核
+
+用户已明确授权本次完整门禁、真实PG、限额串行与及时回收；此前重型暂停不再阻止本次
+验收，不扩大为部署/生产迁移或持续压测许可。详见[证据](evidence/ca-ha-02/full-validation.json)。
+
+- 完整make test：11641通过、15失败、3155条件跳过；用时1387.95s。新增PG模块在
+  收集之后加入，五项单独真实执行5通过/0跳过，不将它们加进完整套件通过数。
+- 完整make check：16处尺寸违规而失败。补跑全部剩余步骤，Ruff4924错误全部在ERPNext；
+  mypy1494源、Eval30、postcommit和risk检查通过，不宣称完整check通过。
+- 干净主线e8a4f10b上逐项复现全部15失败（1.87s）；尺寸16处相同，Ruff4924诊断逐项
+  按相对路径/规则/消息/行列完全一致，违规源码字节相同。15个尺寸违规在ERPNext，
+  另1个为原postgres/agent_tasks.py515行；没有在02中改写无关集成/存储源码或放松门禁。
+- 独立真实PG：正常Cloud factory/epoch、暂停恢复、真实角色连接槽耗尽、实际查询锁超时
+  与恢复、匿名liveness预算、关闭无遗留探测线程/会话、不兼容schema启动拒绝；另验证
+  实际PG Worker能力TTL使本机缓存失效。S3/授权用既有无访问对象和假授权器，非IdP联调。
+- 错误观测须3s内使ready503（早于5s缓存过期），故障中10次live合计<1s。
+  这是微型功能负例，不代表p99/多租户容量或集群HA；角色连接槽不代替03的全副本池预算。
+- 单pytest/nice10/原生线程变量1；自动Docker fixture通过临时CLI包装限额1CPU/512MiB/
+  PID128并标归属，fixture finally与父EXIT兜底回收；独立PG数据tmpfs256MiB，
+  配额由inspect断言，所有临时容器用完rm-fv，无新持久卷/网络，原overdoze-dev-pg保持。
+
+本轮未满足“全部验证通过后合并”的条件，02继续Review，cloud-agent不合入失败树。
+现有历史数据、原收据、unknown、Coverage与前端mock不变；没有生产操作。
+
+03依赖：01已合入；02完整门禁未通过且未合入，因此03仍Locked、不领取/写代码。
+后续先拆分并修复基线门禁，再复验/集成02；03复核范围仍按01冻结清单：
+
+1. 复用Worker现有control/maintenance lane，区分空队列、blocked、错误的退避/抖动，
+   先复现当前真实cutover路径，不增加假进展或对unknown重发。
+2. 连接总预算包含API副本、Worker进程/执行器、控制恢复、scheduler及02只读探测，
+   不能把单池max8或单角色额度当全实例上限；保留控制与原GET预算。
+3. 核对server.py池组合与Helm直接uvicorn入口差异；03若更改共享入口/模板先更新卡，
+   08等待03合入后只改剩余部署职责。
+4. 确定性退避/有界队列/namespace公平回归与隔离实测分层举证；记录CPU、SQL次数、
+   池等待、排队年龄/拒绝率，短任务p95≤2s/p99≤5s，合法低负载scope同样计入。
+
+基线修复应另卡/另分支：优先追踪Coverage9项与当前流访问2项，再审查已发布默认摘要2项
+和固定SDK枚举1项；不能盲改golden、降级Coverage/鉴权或用全目录排除掩盖ERPNext违规。
+最后完成原生/集成尺寸与风格整改，再跑完整门禁，成功后才集成02/解锁03。

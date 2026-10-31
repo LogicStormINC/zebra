@@ -1,6 +1,6 @@
 # Cloud Agent 高可用分阶段任务清单 v1
 
-当前实施：02候选Review，[实现/限制/验证](CA-HA-02_readiness_preflight.md#6-ca-ha-02候选实现2026-10-31review)；不代表完整HA/性能达标。
+当前实施：02完整门禁被基线失败阻塞、真实PG5项通过；保持Review，[实现/限制/验证](CA-HA-02_readiness_preflight.md#6-ca-ha-02候选实现2026-10-31review)；不代表完整HA/性能达标。
 
 日期2026-10-31；配套[正式方案](CLOUD_HIGH_AVAILABILITY_PLAN_v1.md)。
 本文件是执行拆解，不是已实现能力列表；00已合入并推送cloud-agent，UX文档补充已完成；用户后续仅授权CA-HA-02候选实施，其他任务仍未启动。
@@ -14,7 +14,7 @@
 | CA-HA-UX-00 | 用户体验/并发性能验收文档补充 | Review：revision 3目标未验证 | 01已集成e8a4f10b；本轮仅文档授权 | TL/QA |
 | CA-HA-00 | 正式方案、任务和文档索引 | Done：已集成推送d782039c | 当前用户授权 | TL/文档 |
 | CA-HA-01 | 固定基线、DDD不变量、SLO与故障合同 | Done：revision 2文档已集成1dd88bfd，非实现 | 00评审并集成，且用户另行授权后续工作 | TL/CORE/QA |
-| CA-HA-02 | API/Worker真实就绪与健康合同 | Review：候选代码/定向验证，未联合验收 | 01 | APP/RUNTIME |
+| CA-HA-02 | API/Worker真实就绪与健康合同 | Review：真实PG5通过，完整门禁失败且已基线复现 | 01 | APP/RUNTIME |
 | CA-HA-03 | 资源预算、空转退避与租户技术隔离 | Locked | 01、02（共享Worker接线须串行） | RUNTIME/CORE |
 | CA-HA-04 | 排空、进程隔离、强停与资源回收 | Locked | 02、03；强停候选须独立合入/验收 | RUNTIME/SRE |
 | CA-HA-05 | Worker跨副本接管与旧执行者隔离 | Locked | 03、04 | CORE/存储 |
@@ -230,3 +230,7 @@ CA-HA-UX-00只补合同revision 3和下述验收，状态Review；不改变03–
 
 所有UX场景均not_run。强停候选未合入时UX-06相应子场景标blocked_dependency，
 未完成消费者登记/真实浏览器环境时端到端UI指标标environment_unverified；不能以替身填PASS。
+
+2026-10-31完整验收：[当前证据](evidence/ca-ha-02/full-validation.json)。02未满足条件合并，
+03继续Locked；已核对01完成、02未合入，预算/退避/公平及入口池覆盖范围见
+[02第8节](CA-HA-02_readiness_preflight.md#8-完整验收与03依赖复核)，没有提前启动03。
