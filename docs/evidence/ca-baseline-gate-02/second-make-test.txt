@@ -1670,7 +1670,7 @@ __ test_preparation_handoff_renews_latest_checkpoint_without_releasing_lease ___
         )
         resumed = Event()
         checkpoints = []
-    
+
         def renew(current, *, lease_ttl_seconds, checkpoint=None):
             value = current.checkpoint if checkpoint is None else checkpoint
             assert not checkpoints or value >= checkpoints[-1]
@@ -1678,7 +1678,7 @@ __ test_preparation_handoff_renews_latest_checkpoint_without_releasing_lease ___
             if len(checkpoints) >= 2:
                 resumed.set()
             return current.model_copy(update={"checkpoint": value})
-    
+
         claims = Mock()
         claims.heartbeat_lease.side_effect = renew
         heartbeat = LeaseHeartbeat(claims, lease, lease_ttl_seconds=3, release_on_exit=False)

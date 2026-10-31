@@ -10,3 +10,5 @@
 - 复现完整验证：uv sync --frozen --all-packages --group dev；nice10/OMP_NUM_THREADS=1/OPENBLAS_NUM_THREADS=1下串行make -j1 check与make -j1 test。
 - PG单独执行：ZEBRA_HA_POSTGRES_ACCEPTANCE=1 uv run pytest -q tests/api/test_cloud_ha_health_postgres.py；fixture使用唯一自有容器并finally rm-fv，不能复用业务数据库。
 - 非生产单PG功能验收不代表集群故障切换、生产30日SLO、真实IdP/ERP105或多租户容量；这些边界及条件跳过不冒充已验。无部署/生产迁移；HA03仅Ready。
+
+原pytest失败输出中的尾随空格仅在阅读版txt中规范化；精确原字节另存同名txt.gz，原始SHA在validation.json单独固定，未改测试结果或覆盖原HA证据。

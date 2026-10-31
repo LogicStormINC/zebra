@@ -25,7 +25,7 @@ ______ test_additive_gate_setting_preserves_exact_old_baseline_algorithm _______
         historical = "sha256:" + hmac.new(bytes.fromhex("ab" * 32), raw, hashlib.sha256).hexdigest()
 >       assert baseline_digest(original, "ab" * 32) == historical
 E       AssertionError: assert 'sha256:c7748...65a5cce900fdc' == 'sha256:1bcba...53c92e84cd73f'
-E         
+E
 E         - sha256:1bcba9cf83df0210d435af0775a9e97a5bea57ecf993f502cdf53c92e84cd73f
 E         + sha256:c7748ed8d32a5c534d4c7c8290fd71f5d5d3c01d46c3d38c53665a5cce900fdc
 

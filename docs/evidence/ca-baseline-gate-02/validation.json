@@ -88,13 +88,15 @@
     "status": "Ready after local cloud-agent integration; not claimed or implemented"
   },
   "evidence_sha256": {
-    "README.md": "ff557bb71bf5046cfcb34be84c4709bb09b9bd70b7be5370c3ad89c7332fd06e",
+    "README.md": "e2a6a5d60195c6031274b8e3825ae453883a3e81724bc022020261dae03e13a9",
     "docker-operations.jsonl": "f577c32c5c603a5da5cd54c5a2ee7237728c9786e82dd2b1eb71517837b9c854",
     "final-make-check.txt": "7527d16cf32283792687b9a36d4895b72fbb4682d47f8cff54dac47f2226b942",
     "first-make-test-result.json": "63749df4f48c2ef9f44ea4c858ec184f7c786cb81eb8f0a7c3ebcac991bee272",
-    "first-make-test.txt": "1bd11cab82487f4aae1f340fd43c931311fee670db1b80044729755af7d7d71f",
+    "first-make-test.txt": "ad58174673cc4b196c96bd5bae95b6d5bf4ca93cb2575b75d2b7ed6a3e83d324",
+    "first-make-test.txt.gz": "ecb6d190a0ced0301529ae9f23a031870c0f596902124bed5fe20c00da8a64eb",
     "gate-domain-after.txt": "5bc98b91e61ce500535cea287c37127ba034db04d988e810fed0b3dc0a8d48ed",
-    "gate-domain-before.txt": "c0d64a2467373d3bc3e15c5500905c942cdadf315914a0d8f887b5d9c82224a0",
+    "gate-domain-before.txt": "74d6c43f8e8abea62fdcb423454455329884ec23fb34be5a625a3791e9a2b297",
+    "gate-domain-before.txt.gz": "520135c8056436c52fec7e5adeae8b0fc2162217a8795e47d5550efbf3386387",
     "heartbeat-order-after.txt": "8b77a70d9ba15d9dd8a5a3329d4d537d026c46ac3509d9fb7b65f8b67b9c83f8",
     "heartbeat-order-before.txt": "dc3ee0fd399d518e8ea882ce505ec0fd9483a248eccbffd6f9a82123dcf5330d",
     "heartbeat-order-repeat.txt": "150f1cb684f12fdfb30ef6cfeff0a4fe9a228fa9f756594e1a09e1ebb8152d07",
@@ -107,7 +109,25 @@
     "resources-after-test.json": "da5bcb88f210f3f3fc566160e5623c46132786cf0fc5485a8b50c437fdb038cb",
     "resources-before.json": "9c80745c502c83b707feb3702d23247b7de8b813703adad00217cc6ac0db2564",
     "second-make-test-result.json": "bbd838e0fc5de175d8fb7e55a1d45acee28afd69eca59b85b1dd5047ec89cb1e",
-    "second-make-test.txt": "374c00529b466809f958f8bd73eb6f7b9a8891d0ffe89ef9203151b89aa87d55"
+    "second-make-test.txt": "84390c1bd7eef5ea8bc4ff19a17c852ef2d85558885ad39f2f1a33e2254c5eea",
+    "second-make-test.txt.gz": "63c0a6baefcf582b37cd7345610f0f84ed6a528cdf820d00b150eefc31acf571"
   },
-  "final_documentation_check": "final-make-check.txt"
+  "final_documentation_check": "final-make-check.txt",
+  "raw_output_preservation": {
+    "readable_copy": "only trailing spaces removed for repository whitespace hygiene; result text unchanged",
+    "originals": {
+      "gate-domain-before.txt": {
+        "original_sha256": "c0d64a2467373d3bc3e15c5500905c942cdadf315914a0d8f887b5d9c82224a0",
+        "exact_original_gzip": "gate-domain-before.txt.gz"
+      },
+      "second-make-test.txt": {
+        "original_sha256": "374c00529b466809f958f8bd73eb6f7b9a8891d0ffe89ef9203151b89aa87d55",
+        "exact_original_gzip": "second-make-test.txt.gz"
+      },
+      "first-make-test.txt": {
+        "original_sha256": "1bd11cab82487f4aae1f340fd43c931311fee670db1b80044729755af7d7d71f",
+        "exact_original_gzip": "first-make-test.txt.gz"
+      }
+    }
+  }
 }
