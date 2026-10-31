@@ -1,3 +1,10 @@
+# 当前 CA-BASELINE-GATE-02
+
+1. canonical源规则/Owned paths已核对并领取；拆分和机械整改在独立仓库候选中完成，集中验证中。
+2. 保留原生01与HA02历史证据，canonical通过后发布固定提交并git archive同步SOURCE。
+3. 整合HA02，串行限额执行组合树make check、make test和真实PostgreSQL5场景；及时回收自有容器。
+4. 所有门禁通过后才条件合入cloud-agent并推送；HA03此前Locked；无部署/生产迁移。
+
 # CA-BASELINE-GATE-01 原生门禁整改
 
 - 已领取独立任务/分支/Owner并完成根因追踪与原生修复。

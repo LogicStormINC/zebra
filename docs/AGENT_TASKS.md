@@ -8,10 +8,12 @@
 - Verification: 优先无Docker定向RED→GREEN；串行限额；原生修复不宣称ERPNext违规已清零，不提前解锁HA03。
 
 # CA-BASELINE-GATE-02 — ERPNext源仓库与同步导出门禁
-- Status: Ready（未领取）；与原生01无代码依赖；领取前读取canonical规则、登记单一人类Owner/分支/worktree并细化逐组Owned paths，当前没有ERP代码修改。
-- Source: LogicStormINC/zebra-erpnext main2e8606a，cloud-agent中的integrations/erpnext是该提交导出。
-- Scope: canonical的Frappe App/frontend/deploy工具及固定cloud-patches；对应导出及SOURCE索引；禁止扩展到生产数据/部署；细节docs/CA_BASELINE_GATE_REMEDIATION.md。
-- Exit: 不排除门禁，保留导入/原收据/unknown/历史兼容；canonical及组合树完整验证后集成。
+- Status: Ready → In Progress；Owner Luke Ding，执行Codex；用户本轮明确授权。
+- Branch/worktree: codex/ca-baseline-gate-02；ca-baseline-gate-02/zebra-agent；原生01候选6ac3d008为组合输入，主线base e8a4f10b。
+- Source: LogicStormINC/zebra-erpnext main2e8606a；同名独立候选分支/worktree，源任务docs/CA_BASELINE_GATE_02.md已先领取并限定逐组职责。
+- Owned paths: integrations/erpnext/的固定canonical导出（含SOURCE.md）；docs/{CA_BASELINE_GATE_REMEDIATION,AGENT_TASKS,README,CLOUD_HIGH_AVAILABILITY_TASKS_v1,CA-HA-02_readiness_preflight}.md；docs/evidence/ca-baseline-gate-02/；PROGRESS.md、WORKLOG.md、task_plan.md；整合已验证原生01/HA02时仅解决其文档冲突，不改其已发布历史证据。
+- Invariants: 不修改根门禁/规则/阈值，不排除ERPNext；保留旧manifest/部署与来源证据、历史、原收据、unknown和Coverage。无部署/生产迁移。
+- Verification: canonical前端/离线检查、源职责/装配审查后提交发布；git archive导出后组合树串行限额make test/check与HA02真实PG复验，全部通过才合入cloud-agent；当前不宣称已通过。
 
 # CA-HA-02 — API/Worker就绪与健康（独立候选）
 - Status: Review；代码/完整门禁/真实PG证据已在codex/ca-ha-02-readiness的d16645aa发布，未合入主线。
