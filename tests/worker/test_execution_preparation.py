@@ -23,6 +23,7 @@ def test_preparation_handoff_renews_latest_checkpoint_without_releasing_lease():
         heartbeat_at=now,
         expires_at=now + timedelta(seconds=3),
     )
+    initial_renewal = Event()
     resumed = Event()
     checkpoints = []
 
@@ -30,7 +31,9 @@ def test_preparation_handoff_renews_latest_checkpoint_without_releasing_lease():
         value = current.checkpoint if checkpoint is None else checkpoint
         assert not checkpoints or value >= checkpoints[-1]
         checkpoints.append(value)
-        if len(checkpoints) >= 2:
+        if checkpoint is None and value == 0:
+            initial_renewal.set()
+        if checkpoint is None and value == 100:
             resumed.set()
         return current.model_copy(update={"checkpoint": value})
 
@@ -39,10 +42,12 @@ def test_preparation_handoff_renews_latest_checkpoint_without_releasing_lease():
     heartbeat = LeaseHeartbeat(claims, lease, lease_ttl_seconds=3, release_on_exit=False)
     heartbeat._interval_seconds = 0.01
     with heartbeat:
+        # Explicitly exercise the legal background-first ordering.
+        assert initial_renewal.wait(1)
         assert heartbeat.advance_checkpoint(100).checkpoint == 100
         assert resumed.wait(1)
         heartbeat.require_owned()
-    assert checkpoints[0] == 100
+    assert checkpoints[0] == 0 and checkpoints[-1] == 100
     claims.release_lease.assert_not_called()
 
 

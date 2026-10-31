@@ -12,6 +12,7 @@
 - Branch/worktree: codex/ca-baseline-gate-02；ca-baseline-gate-02/zebra-agent；原生01候选6ac3d008为组合输入，主线base e8a4f10b。
 - Source: LogicStormINC/zebra-erpnext main2e8606a；同名独立候选分支/worktree，源任务docs/CA_BASELINE_GATE_02.md已先领取并限定逐组职责。
 - Owned paths: integrations/erpnext/的固定canonical导出（含SOURCE.md）；docs/{CA_BASELINE_GATE_REMEDIATION,AGENT_TASKS,README,CLOUD_HIGH_AVAILABILITY_TASKS_v1,CA-HA-02_readiness_preflight}.md；docs/evidence/ca-baseline-gate-02/；PROGRESS.md、WORKLOG.md、task_plan.md；整合已验证原生01/HA02时仅解决其文档冲突，不改其已发布历史证据。
+- Owned paths addendum before scheduling-fixture repair: tests/worker/test_execution_preparation.py；仅将租约续约回归改为显式先完成合法初始心跳，再证明handoff后后台续约最新checkpoint，保留单调与不释放断言；不改生产实现/超时。
 - Owned paths addendum before combined-gate repair: tests/agent_core/test_runtime_gate_domain.py；仅补齐旧手工摘要夹具的历史字段投影与已发布固定摘要断言，不改生产算法。
 - Invariants: 不修改根门禁/规则/阈值，不排除ERPNext；保留旧manifest/部署与来源证据、历史、原收据、unknown和Coverage。无部署/生产迁移。
 - Verification: canonical前端/离线检查、源职责/装配审查后提交发布；git archive导出后组合树串行限额make test/check与HA02真实PG复验，全部通过才合入cloud-agent；当前不宣称已通过。
