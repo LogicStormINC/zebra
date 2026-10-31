@@ -46,6 +46,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             settings=settings,
             model_http_client=model_http_client,
         )
+        if namespace.health_file is not None:
+            loop_service.health.attach(namespace.health_file)
         result = loop_service.run(
             worker_id=namespace.worker_id,
             batch_size=namespace.batch_size,
@@ -126,6 +128,7 @@ def _build_parser() -> argparse.ArgumentParser:
         default=0.1,
         help="Sleep duration between idle polls when not stopping.",
     )
+    parser.add_argument("--health-file", type=Path, help="Private local Worker observation file.")
     return parser
 
 

@@ -1,0 +1,4 @@
+worker_progress_timeout stage=checkpoint canonical_committed=True location=persist:180;repair_commentary:55;catch_up:92;timeout_after_commentary:86
+worker_progress_timeout stage=canonical_append canonical_committed=False location=persist:176;unknown:123
+confirmed-source deferral and exact-once repair pass; unknown commit propagates
+timer and store-owned effect observation retain unknown-write failures

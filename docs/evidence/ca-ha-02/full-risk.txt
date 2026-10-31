@@ -1,0 +1,9 @@
+priority passed
+membership_read passed
+evidence_retention passed
+postcommit_dedup passed
+unknown_write passed
+pending_recovery_stage passed
+verified_source_reuse passed
+progress_head_read passed
+signature_membership_batch passed

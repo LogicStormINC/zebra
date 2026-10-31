@@ -18416,3 +18416,118 @@ No production migration/deployment, original services/receipts/unknown/Coverage 
 ERP upstream main matches export2e8606a; next card must claim canonical source and
 sync reviewed export, not locally rewrite pinned overlays/exclude gate. HA02/03
 merge dependency remains unsatisfied; publish native candidate only.
+
+## 2026-10-31 — CA-HA-UX-00 user responsiveness/performance design
+
+User authorizes formal HA plan/tasks supplement only; independent branch/worktree
+frome8a4f10b. Registered Ready/claimed before edits. Added revision3 UX01–10:
+client submission vs receipted acceptance, queue/fairness, model TTFT vs durable
+frame/render, stall observations vs lawful waiting/unknown, hanging-task isolation,
+control acceptance vs actual executor/lease/cleanup proof, original-cursor recovery,
+overload hard caps, large-history bounded reads/UI and24h resource evidence.
+E1-C scopes at fixed total load andE1-O pressure steps are separate fromE1-R.
+All values are design targets/not_run, no actual performance claim. Map to owning
+03/04/07/08/09/10;02 remains technical health observation. No new DDD aggregate,
+second execution queue, browser credentials, state rewriting or consumer code.
+Frontend mock retained; real SDK/BFF/UI requires separately registered consumer
+source/contracts. Prior01 revision2 review remains historical evidence only.
+No business-code changes, make test/check, heavy tests, Docker, model calls or
+production operations. Final static verification recorded below.
+
+Static validation PASS: JSON parses,revision3; all10UX IDs appear in plan,
+contract and task index with owning cards; existing SLO admission/GET budgets
+remain consistent. All UX/F1 remain not_run and02–10Locked; authorization flags
+false. Relative links and changed document sizes pass (plan186,task230,contract
+243,JSON433,scope97,index87 lines); only10 registered documentation paths changed,
+no source/deploy/test/SDK delta or untracked runtime files. Initial ID check
+found grouped UX-03/07 spelling hiding literalUX-07; expanded grouped IDs and
+reran successfully. Per-scope insufficient samples explicitly remain unverified.
+No make test/check or environments run. Local source commit only; no mainline
+merge or GitHub push requested/performed for this supplement.
+
+
+## 2026-10-31 — CA-HA-02 scoped implementation
+
+User starts implementation. Selected next02, retained no-Docker/heavy-test pause.
+Independent codex/ca-ha-02-readiness frome8a4f10b, UX docs cherry-picked559422d7;
+claimed Ready/owned paths before code. Existing shared environment had older
+ag-ui-protocol missingTokenUsage; created ignored local venv reusing dependency
+paths, installed only existing lock-pinned ag-ui-protocol1.0.0 there, no shared
+environment mutation. Correct-environment baseline3 passed. New feature RED was
+missing health modules, not product baseline failures. Unique Worker test basename
+avoids existing pytest import collision; no global config workaround.
+
+API moves original lifespan into health module with same warm/stream cleanup;
+exact FastAPI GET routes before authenticated catch-all, no prefix/auth loosening.
+One lifecycle-owned probe,0.75s existing Task I/O epoch read,1s after-completion
+interval,5s cache,2s bounded join. Startup schema validation retained; common
+control-plane availability only, not runtime schema drift/all feature health.
+Worker uses existing consumer capability and real control/maintenance times,
+opt-in0600 atomic snapshot; current PID/instance required, no port. Legacy busy
+returns unknown progress/not-ready, never task failure/kill. File error does not
+abort execution. Added valid_until so observation cannot outlive capability;
+removed guard in owned temp experiment => one expected regression failure, then
+restored. Original Task/Run/fence/receipts/unknown/Coverage untouched.
+
+Source limits observed: API http487; Worker loop487,command_process500,loop service441.
+No packages/core/storage/Helm/SDK/frontend changes. Local focused/typing/lint and
+product-boundary evidence only, no complete make test/check, realPG, Docker,
+external models, fault clusters, heavy workloads, deployment or migration.
+02Review until broader verification/integration;03 staysLocked. Final results below.
+
+Final focused51 passed/0failed/0skipped in11.77s; changed-module Ruff pass,
+scoped mypy7 sources pass with current source MYPYPATH (initial reused environment
+had import-untyped discovery errors, no ignore-error workaround), runtime product
+boundary pass. Expiry guard red1 expected failure then full focused green51.
+Evidence/log hashes stored docs/evidence/ca-ha-02. No full-gate/realPG/HA claim.
+02Review candidate, no source main merge/deployment or heavy validation.
+
+Final additional guard: Worker health attach uses exclusive fresh0600 paths,
+refuses existing files/other snapshots; existing-data preservation regression
+passed. Close is idempotent. Stable-path takeover requires separate owner-fenced
+protocol/manager cleanup, not implicit overwrite. New API health responses use
+Cache-Control:no-store (tested). Final focused52 passed/0failed/0skipped; scoped
+Ruff/mypy7 and product-boundary PASS. Current evidence files/log hashes refreshed;
+full gates and real dependencies remain not_run, no production HA/UX claim.
+
+
+## 2026-10-31 — CA-HA-02 review continuation
+
+Continued within originalReview owned paths and resource pause. Reproduced RED:
+control-age/link2 failures, reader-close1 failure/health-close1 pass, absolute
+progress-deadline1 failure. Fixed shared WorkerHealth record/snapshot/reader and
+API lifespan using absolute deadlines, no-follow nonblocking regular-file reads
+and stdlibAsyncExitStack. Six added cases: control-age, symlink, FIFO, two cleanup
+failure branches and recording-overhead deadline; final58 passed in13.22s.
+Ruff scoped7source/3test modules pass, mypy7source follow-imports silent pass,
+runtime product boundary pass. FIFO child bounded5s and reaped on timeout, node
+removed in finally; no persistent background job or Docker/PG/model/pressure run.
+Original52 evidence files untouched; new review evidence/log hashes separate.
+No core/storage/deploy/SDK changes, history/original receipts/unknown/Coverage
+preserved. Complete gates and real dependencies remain unverified, no merge or
+deployment;03 remainsLocked until02 dependency and explicit validation satisfied.
+
+
+## 2026-10-31 — CA-HA-02 serial full gates / actual PG
+
+User explicitly lifted heavy/Docker pause for bounded serial acceptance and conditional merge.
+Frozen uv sync in own venv; no lock/dependency source changes. Full make test exit2:
+11641passed/15failed/3155skipped,1387.95s; new opt-in PG test added after collection,
+then exercised separately twice (final5passed/11.09s incl inspect quota assertions).
+make check exit2 at16 size violations; remaining recipe steps all run serially:
+Ruff4924ERP errors, mypy1494source clean, eval30/30, postcommit/risk pass.
+Clean mainline e8a4f10b imports confirmed; exact15 failed nodes all reproduce1.87s.
+Baseline size16 same; Ruff tuples(relative path,code,message,row,column) all4924
+identical; violating file bytes match. Baseline failures are not a pass: no merge.
+New PG fixture opt-in only, own UUID server,1CPU/512MiB/PID128 inspect asserted,
+data tmpfs256MiB, schema applied only in disposable server; role slot exhaustion,
+locked reads, pause/unpause, current/incompatible startup schema and actual native
+Worker capability expiry covered. Unused fake object reader/HostGrant authorizer
+explicit, no model/IdP/Broker/fleet/capacity acceptance claim. Five tests pass.
+Auto fixture docker run/create capped/labelled via temporary PATH wrapper, native
+finally and parent EXIT rm-fv; final both owner labels empty, existing303c33d83297
+overdoze-dev-pg unchanged. No shared prune/volume deletion/service restart or prod
+migration/deployment. Earlier52/58 evidence immutable; full evidence separate.
+03 dependency review:01merged,02notmerged/blocked, hence03Locked; reuse existing
+lanes/pools, quantify all-process/executor totals, reserve control/GET and validate
+namespace fairness/backoff; server-vs-Helm pool coverage must precede08. No03code.

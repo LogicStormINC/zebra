@@ -1,3 +1,10 @@
+## 2026-10-31 — CA-BASELINE-GATE-02 / 组合验收中
+
+canonical ERP源修复与离线验证进行中；原生01/HA02候选已组合进本功能分支，尚未合入cloud-agent。
+旧原生/HA02证据原样保留；ERP15尺寸/4924Ruff整改不降低规则，源提交发布后才git archive同步。
+组合完整make test/check与HA02真实PG尚待复验；未完成前HA03不解锁、不得宣布整体全绿。
+无部署/生产迁移；历史、原收据、unknown、Coverage及无关工作树保持。
+
 ## 2026-10-31 — CA-BASELINE-GATE-01 原生整改 / Review
 
 修复关闭AGUI开关造成的历史HMAC基线漂移，精确兼容c774与过渡1bc，不改旧Task/原事件。
@@ -8,6 +15,42 @@ Task元数据函数原AST移至已有读取模块并保留旧类型/运行期导
 完整门禁仍有ERPNext15尺寸/4924Ruff，未重跑整套或主线合并；ERP02待领取，HA03继续Locked。
 自有临时容器按1CPU/512MiB/PID128限额并回收，原服务/历史/原收据/unknown/Coverage保持。
 无部署/生产迁移；只推独立候选，不混入HA02或无关脏改动。
+
+## 2026-10-31 — CA-HA-02完整验收 / 基线门禁阻塞
+
+[完整证据](docs/evidence/ca-ha-02/full-validation.json)：单进程串行完整make test11641通过、
+15失败、3155条件跳过；make check在16尺寸违规失败，补充Ruff4924错误。干净主线
+e8a4f10b逐项复现15失败/16尺寸与4924相同诊断，违规源字节相同，不宣称全绿。
+mypy1494源、Eval30及postcommit/risk通过；新增独立真实PG5通过，默认关闭。
+限额1CPU/512MiB/PID128、PG数据tmpfs；全部临时容器及时回收，原overdoze-dev-pg保留。
+02继续Review，条件合并未执行；03仍Locked，已核对预算/退避/公平/入口池范围。
+未部署/生产迁移；历史数据、原收据、unknown、Coverage、前端mock及无关脏工作树保持。
+
+## 2026-10-31 — CA-HA-02候选复核 / 58项定向通过
+
+修正就绪缓存越过真实进展、采样耗时续期、本机链接/FIFO读取及关闭异常遗漏资源。
+使用原进展绝对截止、非阻塞普通文件读取和标准库AsyncExitStack，不改执行/授权/原收据语义。
+[新增证据](docs/evidence/ca-ha-02/review-validation.json)单独保留原52项记录；本轮58项定向通过，
+局部Ruff/mypy7与产品边界通过。无Docker/完整门禁/真实PG/故障/UX容量，02仍Review，03仍Locked。
+
+## 2026-10-31 — CA-HA-02候选实现 / Review
+
+新增精确GET /health/live、/health/ready，保留旧/health；1条有界后台观测线程复用原epoch读取与
+Task I/O预算，匿名只报status。Worker观测来自真实控制/维护及能力凭据，缓存不过能力到期；
+默认关闭的私有原子文件CLI不增端口，旧串行忙执行不假报可调度/不误杀Task。
+[实际实现与限制](docs/CA-HA-02_readiness_preflight.md#6-ca-ha-02候选实现2026-10-31review) ·
+[证据](docs/evidence/ca-ha-02/validation.json)。无core/storage/Helm/前端变更，旧数据/收据/unknown/Coverage不变。
+只做定向回归/局部静态检查；完整门禁、真实PG/依赖/集群故障和UX容量尚未验。
+02候选未部署/未主线合入，03–10仍Locked；无Docker/重型验证/生产操作。
+
+## 2026-10-31 — CA-HA-UX-00 用户体验/并发性能补充（文档Review）
+
+[正式方案](docs/CLOUD_HIGH_AVAILABILITY_PLAN_v1.md)及[合同revision 3](docs/contracts/cloud-ha-v1/README.md)
+新增UX-01–10：首响应/排队/流式、疑似停滞、scope隔离、停止回收、容量/长历史/持续负载。
+区分准入与开始执行、上游TTFT与平台延迟、疑似卡死与终态、停止接受与精确退出/回收；
+E1-C多scope/E1-O分档独立验收，不从在线数或双副本推断执行容量。指标均未实测，02–10继续Locked。
+DDD保留原状态/事务/lease与派生视图边界；凭据留BFF，旧数据/原收据/unknown/Coverage不变。
+仅文档静态检查；无业务修改、重型测试/Docker、部署迁移，平台前端mock保持。
 
 ## 2026-10-31 — CA-HA-01文档已复核集成 / CA-HA-02待授权
 

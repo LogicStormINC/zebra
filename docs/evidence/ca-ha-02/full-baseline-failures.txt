@@ -1,0 +1,876 @@
+/Users/lukeding/.codex/worktrees/ca-p5-main-integration/zebra-agent/apps/api/src/zebra_agent_api/__init__.py
+/Users/lukeding/.codex/worktrees/ca-p5-main-integration/zebra-agent/packages/agent-storage/src/agent_storage/__init__.py
+FFFFFFFFFFFFFFF                                                          [100%]
+=================================== FAILURES ===================================
+_ test_queued_receipt_and_canonical_run_are_built_before_single_atomic_admission[None] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10eb65df0>
+validation_mode = None
+
+    @pytest.mark.parametrize("validation_mode", [None, "eager", "final_certification"])
+    def test_queued_receipt_and_canonical_run_are_built_before_single_atomic_admission(
+        monkeypatch, validation_mode
+    ):
+        from agent_storage.postgres import command_coverage_admission
+        from zebra_agent_api import session_binding
+    
+        raw = payload()
+        expected = dict(raw["coverage_admission"])
+        assert "validation_mode" not in expected
+        if validation_mode is not None:
+            raw["coverage_admission"]["validation_mode"] = validation_mode
+        if validation_mode == "final_certification":
+            expected["validation_mode"] = validation_mode
+        captured = []
+        monkeypatch.setattr(CoverageHttpAdmission, "preflight", lambda self: None)
+        monkeypatch.setattr(session_binding, "_frozen_manifest_digest", lambda *args: "b" * 64)
+    
+        def admit(database_dsn, namespace, request, digest):
+            request.validate()
+            captured.append(request)
+            assert digest == "a" * 64 and namespace == "test-deployment"
+            assert len(request.events) == 4
+            prepared, run = request.events[2:]
+            assert prepared.event_type is EventType.TASK_PREPARED
+            assert prepared.payload["coverage_admission"] == expected
+            assert run.event_type is EventType.SESSION_COMMAND_ACCEPTED
+            accepted = validate_accepted_session_command(
+                run.payload,
+                session_id=run.session_id,
+                idempotency_key=run.idempotency_key,
+            )
+            assert accepted.expected_revision == request.session.current_sequence == 2
+            assert request.workspace.current_sequence == 2
+            assert request.idempotency.response_body["status"] == "queued"
+            assert request.idempotency.response_body["idempotency_key"] == "public-key"
+            assert request.idempotency.response_body["command"]["event_sequence"] == run.sequence == 3
+            return TaskAdmissionReceipt(
+                request.session.session_id,
+                request.session.session_id,
+                4,
+                request.binding.binding_digest,
+            )
+    
+        monkeypatch.setattr(command_coverage_admission, "admit_coverage_task", admit)
+        verified = grant()
+        response = composed_app().create_session(
+            raw,
+            idempotency_key="public-key",
+            host_context=verified.context,
+            verified_host_grant=verified,
+        )
+>       assert response.status_code == 201 and len(captured) == 1
+E       AssertionError: assert (503 == 201)
+E        +  where 503 = ApiResponse(status_code=503, body={'status': 'coverage_admission_unavailable', 'reason': 'strict_native_refused'}).status_code
+
+tests/api/test_coverage_http_admission.py:174: AssertionError
+_ test_queued_receipt_and_canonical_run_are_built_before_single_atomic_admission[eager] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10ea98380>
+validation_mode = 'eager'
+
+    @pytest.mark.parametrize("validation_mode", [None, "eager", "final_certification"])
+    def test_queued_receipt_and_canonical_run_are_built_before_single_atomic_admission(
+        monkeypatch, validation_mode
+    ):
+        from agent_storage.postgres import command_coverage_admission
+        from zebra_agent_api import session_binding
+    
+        raw = payload()
+        expected = dict(raw["coverage_admission"])
+        assert "validation_mode" not in expected
+        if validation_mode is not None:
+            raw["coverage_admission"]["validation_mode"] = validation_mode
+        if validation_mode == "final_certification":
+            expected["validation_mode"] = validation_mode
+        captured = []
+        monkeypatch.setattr(CoverageHttpAdmission, "preflight", lambda self: None)
+        monkeypatch.setattr(session_binding, "_frozen_manifest_digest", lambda *args: "b" * 64)
+    
+        def admit(database_dsn, namespace, request, digest):
+            request.validate()
+            captured.append(request)
+            assert digest == "a" * 64 and namespace == "test-deployment"
+            assert len(request.events) == 4
+            prepared, run = request.events[2:]
+            assert prepared.event_type is EventType.TASK_PREPARED
+            assert prepared.payload["coverage_admission"] == expected
+            assert run.event_type is EventType.SESSION_COMMAND_ACCEPTED
+            accepted = validate_accepted_session_command(
+                run.payload,
+                session_id=run.session_id,
+                idempotency_key=run.idempotency_key,
+            )
+            assert accepted.expected_revision == request.session.current_sequence == 2
+            assert request.workspace.current_sequence == 2
+            assert request.idempotency.response_body["status"] == "queued"
+            assert request.idempotency.response_body["idempotency_key"] == "public-key"
+            assert request.idempotency.response_body["command"]["event_sequence"] == run.sequence == 3
+            return TaskAdmissionReceipt(
+                request.session.session_id,
+                request.session.session_id,
+                4,
+                request.binding.binding_digest,
+            )
+    
+        monkeypatch.setattr(command_coverage_admission, "admit_coverage_task", admit)
+        verified = grant()
+        response = composed_app().create_session(
+            raw,
+            idempotency_key="public-key",
+            host_context=verified.context,
+            verified_host_grant=verified,
+        )
+>       assert response.status_code == 201 and len(captured) == 1
+E       AssertionError: assert (503 == 201)
+E        +  where 503 = ApiResponse(status_code=503, body={'status': 'coverage_admission_unavailable', 'reason': 'strict_native_refused'}).status_code
+
+tests/api/test_coverage_http_admission.py:174: AssertionError
+_ test_queued_receipt_and_canonical_run_are_built_before_single_atomic_admission[final_certification] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10ef138c0>
+validation_mode = 'final_certification'
+
+    @pytest.mark.parametrize("validation_mode", [None, "eager", "final_certification"])
+    def test_queued_receipt_and_canonical_run_are_built_before_single_atomic_admission(
+        monkeypatch, validation_mode
+    ):
+        from agent_storage.postgres import command_coverage_admission
+        from zebra_agent_api import session_binding
+    
+        raw = payload()
+        expected = dict(raw["coverage_admission"])
+        assert "validation_mode" not in expected
+        if validation_mode is not None:
+            raw["coverage_admission"]["validation_mode"] = validation_mode
+        if validation_mode == "final_certification":
+            expected["validation_mode"] = validation_mode
+        captured = []
+        monkeypatch.setattr(CoverageHttpAdmission, "preflight", lambda self: None)
+        monkeypatch.setattr(session_binding, "_frozen_manifest_digest", lambda *args: "b" * 64)
+    
+        def admit(database_dsn, namespace, request, digest):
+            request.validate()
+            captured.append(request)
+            assert digest == "a" * 64 and namespace == "test-deployment"
+            assert len(request.events) == 4
+            prepared, run = request.events[2:]
+            assert prepared.event_type is EventType.TASK_PREPARED
+            assert prepared.payload["coverage_admission"] == expected
+            assert run.event_type is EventType.SESSION_COMMAND_ACCEPTED
+            accepted = validate_accepted_session_command(
+                run.payload,
+                session_id=run.session_id,
+                idempotency_key=run.idempotency_key,
+            )
+            assert accepted.expected_revision == request.session.current_sequence == 2
+            assert request.workspace.current_sequence == 2
+            assert request.idempotency.response_body["status"] == "queued"
+            assert request.idempotency.response_body["idempotency_key"] == "public-key"
+            assert request.idempotency.response_body["command"]["event_sequence"] == run.sequence == 3
+            return TaskAdmissionReceipt(
+                request.session.session_id,
+                request.session.session_id,
+                4,
+                request.binding.binding_digest,
+            )
+    
+        monkeypatch.setattr(command_coverage_admission, "admit_coverage_task", admit)
+        verified = grant()
+        response = composed_app().create_session(
+            raw,
+            idempotency_key="public-key",
+            host_context=verified.context,
+            verified_host_grant=verified,
+        )
+>       assert response.status_code == 201 and len(captured) == 1
+E       AssertionError: assert (503 == 201)
+E        +  where 503 = ApiResponse(status_code=503, body={'status': 'coverage_admission_unavailable', 'reason': 'strict_native_refused'}).status_code
+
+tests/api/test_coverage_http_admission.py:174: AssertionError
+__________ test_agui_preparations_share_one_fresh_access_gate[False] ___________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10ef12b70>
+denied = False
+
+    @pytest.mark.parametrize("denied", [False, True])
+    def test_agui_preparations_share_one_fresh_access_gate(monkeypatch, denied):
+        import asyncio
+    
+        from zebra_agent_api.responses import ApiResponse
+        from zebra_agent_api.stream_v2_http import agui_response
+    
+        calls = []
+        api = SimpleNamespace(
+            stores=SimpleNamespace(),
+            live_event_fanout=None,
+            command_outcome=None,
+            stream_notifications=None,
+        )
+        request = SimpleNamespace(
+            state=SimpleNamespace(host_context=None),
+            query_params={},
+            headers={},
+            url=SimpleNamespace(path="/tasks/task/ag-ui/stream"),
+        )
+    
+        def access(*args):
+            calls.append("authorize")
+            return ApiResponse(403, {"status": "forbidden"}) if denied else None
+    
+        def negotiate(*args):
+            calls.append("negotiate")
+            return None
+    
+        def prepare(*args, **kwargs):
+            calls.append("prepare")
+            return None
+    
+        monkeypatch.setattr("zebra_agent_api.stream_v2_http.task_access_response", access)
+        monkeypatch.setattr("zebra_agent_api.stream_v2_http.prepare_v2", negotiate)
+        monkeypatch.setattr("zebra_agent_api.stream_v2_http.prepare_agui_stream", prepare)
+>       result = asyncio.run(agui_response(api, request))
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/api/test_stream_v2_http.py:517: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../../../.local/share/uv/python/cpython-3.12.9-macos-aarch64-none/lib/python3.12/asyncio/runners.py:195: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+../../../../.local/share/uv/python/cpython-3.12.9-macos-aarch64-none/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../../.local/share/uv/python/cpython-3.12.9-macos-aarch64-none/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+api = namespace(stores=namespace(), live_event_fanout=None, command_outcome=None, stream_notifications=None)
+request = namespace(state=namespace(host_context=None), query_params={}, headers={}, url=namespace(path='/tasks/task/ag-ui/stream'))
+
+    async def agui_response(
+        api: ZebraAgentApi, request: Request, *, body: object = None
+    ) -> JSONResponse | StreamingResponse | None:
+>       if request.method.upper() == "POST":
+           ^^^^^^^^^^^^^^
+E       AttributeError: 'types.SimpleNamespace' object has no attribute 'method'
+
+apps/api/src/zebra_agent_api/stream_v2_http.py:267: AttributeError
+___________ test_agui_preparations_share_one_fresh_access_gate[True] ___________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10ef139e0>
+denied = True
+
+    @pytest.mark.parametrize("denied", [False, True])
+    def test_agui_preparations_share_one_fresh_access_gate(monkeypatch, denied):
+        import asyncio
+    
+        from zebra_agent_api.responses import ApiResponse
+        from zebra_agent_api.stream_v2_http import agui_response
+    
+        calls = []
+        api = SimpleNamespace(
+            stores=SimpleNamespace(),
+            live_event_fanout=None,
+            command_outcome=None,
+            stream_notifications=None,
+        )
+        request = SimpleNamespace(
+            state=SimpleNamespace(host_context=None),
+            query_params={},
+            headers={},
+            url=SimpleNamespace(path="/tasks/task/ag-ui/stream"),
+        )
+    
+        def access(*args):
+            calls.append("authorize")
+            return ApiResponse(403, {"status": "forbidden"}) if denied else None
+    
+        def negotiate(*args):
+            calls.append("negotiate")
+            return None
+    
+        def prepare(*args, **kwargs):
+            calls.append("prepare")
+            return None
+    
+        monkeypatch.setattr("zebra_agent_api.stream_v2_http.task_access_response", access)
+        monkeypatch.setattr("zebra_agent_api.stream_v2_http.prepare_v2", negotiate)
+        monkeypatch.setattr("zebra_agent_api.stream_v2_http.prepare_agui_stream", prepare)
+>       result = asyncio.run(agui_response(api, request))
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/api/test_stream_v2_http.py:517: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../../../.local/share/uv/python/cpython-3.12.9-macos-aarch64-none/lib/python3.12/asyncio/runners.py:195: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+../../../../.local/share/uv/python/cpython-3.12.9-macos-aarch64-none/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../../.local/share/uv/python/cpython-3.12.9-macos-aarch64-none/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+api = namespace(stores=namespace(), live_event_fanout=None, command_outcome=None, stream_notifications=None)
+request = namespace(state=namespace(host_context=None), query_params={}, headers={}, url=namespace(path='/tasks/task/ag-ui/stream'))
+
+    async def agui_response(
+        api: ZebraAgentApi, request: Request, *, body: object = None
+    ) -> JSONResponse | StreamingResponse | None:
+>       if request.method.upper() == "POST":
+           ^^^^^^^^^^^^^^
+E       AttributeError: 'types.SimpleNamespace' object has no attribute 'method'
+
+apps/api/src/zebra_agent_api/stream_v2_http.py:267: AttributeError
+____________ test_api_only_path_preserves_published_baseline_digest ____________
+
+tmp_path = PosixPath('/private/var/folders/qx/n_v9dpmd12dgb9m1s75tjgtm0000gn/T/pytest-of-lukeding/pytest-899/test_api_only_path_preserves_p0')
+
+    def test_api_only_path_preserves_published_baseline_digest(tmp_path: Path) -> None:
+        configured = load_settings({"ZEBRA_BUNDLE_MANAGEMENT_CONFIG": str(tmp_path / "approval.json")})
+        assert getattr(configured, "bundle_management_config", None) == str(tmp_path / "approval.json")
+        expected = "sha256:c7748ed8d32a5c534d4c7c8290fd71f5d5d3c01d46c3d38c53665a5cce900fdc"
+        original = settings()
+>       assert (
+            baseline_digest(
+                replace(original, publication_management_config="/private/publisher"), "ab" * 32
+            )
+            == expected
+        )
+E       AssertionError: assert 'sha256:1bcba...53c92e84cd73f' == 'sha256:c7748...65a5cce900fdc'
+E         
+E         - sha256:c7748ed8d32a5c534d4c7c8290fd71f5d5d3c01d46c3d38c53665a5cce900fdc
+E         + sha256:1bcba9cf83df0210d435af0775a9e97a5bea57ecf993f502cdf53c92e84cd73f
+
+tests/config/test_bundle_management_config.py:17: AssertionError
+__________________ test_setting_does_not_change_old_baseline ___________________
+
+tmp_path = PosixPath('/private/var/folders/qx/n_v9dpmd12dgb9m1s75tjgtm0000gn/T/pytest-of-lukeding/pytest-899/test_setting_does_not_change_o0')
+
+    def test_setting_does_not_change_old_baseline(tmp_path):
+        expected = "sha256:c7748ed8d32a5c534d4c7c8290fd71f5d5d3c01d46c3d38c53665a5cce900fdc"
+        active = settings()
+>       assert baseline_digest(active, "ab" * 32) == expected
+E       AssertionError: assert 'sha256:1bcba...53c92e84cd73f' == 'sha256:c7748...65a5cce900fdc'
+E         
+E         - sha256:c7748ed8d32a5c534d4c7c8290fd71f5d5d3c01d46c3d38c53665a5cce900fdc
+E         + sha256:1bcba9cf83df0210d435af0775a9e97a5bea57ecf993f502cdf53c92e84cd73f
+
+tests/config/test_script_validation_config.py:19: AssertionError
+____________ test_event_type_snapshot_matches_reviewed_sdk_version _____________
+
+    def test_event_type_snapshot_matches_reviewed_sdk_version() -> None:
+>       assert tuple(item.value for item in EventType) == EXPECTED_EVENT_TYPES_0_1_19
+E       AssertionError: assert ('TEXT_MESSAG...LL_ARGS', ...) == ('TEXT_MESSAG...CONTENT', ...)
+E         
+E         At index 4 diff: 'TOOL_CALL_START' != 'THINKING_TEXT_MESSAGE_START'
+E         Right contains 2 more items, first extra item: 'REASONING_END'
+E         Use -v to get more diff
+
+tests/spikes/ag_ui/test_forward_compatibility.py:48: AssertionError
+____________________ test_repository_file_size_gate_passes _____________________
+
+    def test_repository_file_size_gate_passes() -> None:
+        root = Path(__file__).resolve().parents[1]
+        tracked = checker.tracked_paths(root)
+    
+        _, violations = checker.check_paths(root, tracked)
+    
+>       assert violations == ()
+E       AssertionError: assert (FileSizeViol...mit=500), ...) == ()
+E         
+E         Left contains 16 more items, first extra item: FileSizeViolation(path='integrations/erpnext/cloud-patches/chat-recovery/host/business.py', actual=595, limit=500)
+E         Use -v to get more diff
+
+tests/test_file_size_limits.py:58: AssertionError
+_ test_actual_execution_recovery_refuses_unconfigured_strict_before_workspace[True-False-None] _
+
+tmp_path = PosixPath('/private/var/folders/qx/n_v9dpmd12dgb9m1s75tjgtm0000gn/T/pytest-of-lukeding/pytest-899/test_actual_execution_recovery0')
+strict = False, cloud_deployment = True, workspace_error = None
+
+    @pytest.mark.parametrize(
+        "workspace_error", [None, PermissionError("workspace denied"), OSError("disk full")]
+    )
+    @pytest.mark.parametrize("strict", [True, False])
+    @pytest.mark.parametrize("cloud_deployment", [True, False])
+    def test_actual_execution_recovery_refuses_unconfigured_strict_before_workspace(
+        tmp_path: Path,
+        strict: bool,
+        cloud_deployment: bool,
+        workspace_error: OSError | None,
+    ) -> None:
+        raw = events(tmp_path, strict=strict)
+        now = datetime.now(UTC)
+        session_id = raw[0].session_id
+        claimed = ClaimedSession(
+            recovery=RecoveredSession(
+                session=rebuild_session(raw),
+                workspace=rebuild_workspace(raw),
+                event_count=len(raw),
+                last_sequence=raw[-1].sequence,
+                is_terminal=False,
+            ),
+            lease=WorkerLease(
+                session_id=session_id,
+                fence=LeaseFence(
+                    control_plane_epoch=UUID("11111111-1111-1111-1111-111111111111"),
+                    fencing_token=1,
+                    owner_instance_id="test-worker",
+                ),
+                acquired_at=now,
+                heartbeat_at=now,
+                expires_at=now + timedelta(minutes=1),
+            ),
+        )
+        resolver = Mock()
+        resolver.resolve.return_value = tmp_path / "resolved"
+        resolver.resolve.side_effect = workspace_error
+        inputs = dict(
+            claimed=claimed,
+            session_id=session_id,
+            started_at=now,
+            cloud_deployment=cloud_deployment,
+            cloud_provider_continuation_factory=None,
+            provider_continuation_store=Mock(),
+            control_service=Mock(),
+            recovery_service=Mock(),
+            event_store=Mock(list_for_session=Mock(return_value=raw)),
+            context_lifecycle_store=Mock(get_active_capsule=Mock(return_value=None)),
+            handoff_gate=Mock(recover=Mock(return_value=None)),
+            artifact_payload_reader=LocalArtifactPayloadReader(
+                SQLiteArtifactPayloadStore(tmp_path / "db.sqlite")
+            ),
+            workspace_resolver=resolver,
+            execution_input_reader=(lambda _lease: raw) if cloud_deployment else None,
+        )
+        # Exercise actual Task parsing and the shared entry, with only storage and
+        # infrastructure stubbed. No dispatcher or fake configured capability.
+        if strict:
+            with pytest.raises(
+                WorkerExecutionError, match="^strict coverage refused: coverage_unsupported$"
+            ) as refused:
+                recover_execution_inputs(**inputs)
+            assert refused.value.coverage_refusal_reason is CoverageRefusalReason.UNSUPPORTED
+            resolver.resolve.assert_not_called()
+        elif workspace_error is not None:
+            with pytest.raises(WorkerExecutionError, match=str(workspace_error)) as failed:
+                recover_execution_inputs(**inputs)
+            assert failed.value.__cause__ is workspace_error
+            resolver.resolve.assert_called_once_with(str(tmp_path), session_id=session_id)
+        else:
+            recovered = recover_execution_inputs(**inputs)
+            assert recovered.claimed is claimed
+            assert recovered.session_events == raw
+            assert recovered.task.coverage_admission is None
+>           assert recovered.task.workspace_root == tmp_path / "resolved"
+E           AssertionError: assert PosixPath('/private/var/folders/qx/n_v9dpmd12dgb9m1s75tjgtm0000gn/T/pytest-of-lukeding/pytest-899/test_actual_execution_recovery0') == (PosixPath('/private/var/folders/qx/n_v9dpmd12dgb9m1s75tjgtm0000gn/T/pytest-of-lukeding/pytest-899/test_actual_execution_recovery0') / 'resolved')
+E            +  where PosixPath('/private/var/folders/qx/n_v9dpmd12dgb9m1s75tjgtm0000gn/T/pytest-of-lukeding/pytest-899/test_actual_execution_recovery0') = RecoveredTask(title='task', user_input='review history-1', workspace_root=PosixPath('/private/var/folders/qx/n_v9dpmd1...tching_citation=False, require_verification=False, require_artifact=False, version_scopes=()), coverage_admission=None).workspace_root
+E            +    where RecoveredTask(title='task', user_input='review history-1', workspace_root=PosixPath('/private/var/folders/qx/n_v9dpmd1...tching_citation=False, require_verification=False, require_artifact=False, version_scopes=()), coverage_admission=None) = RecoveredExecutionInputs(claimed=ClaimedSession(recovery=RecoveredSession(session=Session(session_id=UUID('27ee1dc8-5e...function test_actual_execution_recovery_refuses_unconfigured_strict_before_workspace.<locals>.<lambda> at 0x10ecfeac0>).task
+
+tests/worker/test_coverage_task_recovery.py:370: AssertionError
+_ test_actual_execution_recovery_refuses_unconfigured_strict_before_workspace[True-False-workspace_error1] _
+
+tmp_path = PosixPath('/private/var/folders/qx/n_v9dpmd12dgb9m1s75tjgtm0000gn/T/pytest-of-lukeding/pytest-899/test_actual_execution_recovery1')
+strict = False, cloud_deployment = True
+workspace_error = PermissionError('workspace denied')
+
+    @pytest.mark.parametrize(
+        "workspace_error", [None, PermissionError("workspace denied"), OSError("disk full")]
+    )
+    @pytest.mark.parametrize("strict", [True, False])
+    @pytest.mark.parametrize("cloud_deployment", [True, False])
+    def test_actual_execution_recovery_refuses_unconfigured_strict_before_workspace(
+        tmp_path: Path,
+        strict: bool,
+        cloud_deployment: bool,
+        workspace_error: OSError | None,
+    ) -> None:
+        raw = events(tmp_path, strict=strict)
+        now = datetime.now(UTC)
+        session_id = raw[0].session_id
+        claimed = ClaimedSession(
+            recovery=RecoveredSession(
+                session=rebuild_session(raw),
+                workspace=rebuild_workspace(raw),
+                event_count=len(raw),
+                last_sequence=raw[-1].sequence,
+                is_terminal=False,
+            ),
+            lease=WorkerLease(
+                session_id=session_id,
+                fence=LeaseFence(
+                    control_plane_epoch=UUID("11111111-1111-1111-1111-111111111111"),
+                    fencing_token=1,
+                    owner_instance_id="test-worker",
+                ),
+                acquired_at=now,
+                heartbeat_at=now,
+                expires_at=now + timedelta(minutes=1),
+            ),
+        )
+        resolver = Mock()
+        resolver.resolve.return_value = tmp_path / "resolved"
+        resolver.resolve.side_effect = workspace_error
+        inputs = dict(
+            claimed=claimed,
+            session_id=session_id,
+            started_at=now,
+            cloud_deployment=cloud_deployment,
+            cloud_provider_continuation_factory=None,
+            provider_continuation_store=Mock(),
+            control_service=Mock(),
+            recovery_service=Mock(),
+            event_store=Mock(list_for_session=Mock(return_value=raw)),
+            context_lifecycle_store=Mock(get_active_capsule=Mock(return_value=None)),
+            handoff_gate=Mock(recover=Mock(return_value=None)),
+            artifact_payload_reader=LocalArtifactPayloadReader(
+                SQLiteArtifactPayloadStore(tmp_path / "db.sqlite")
+            ),
+            workspace_resolver=resolver,
+            execution_input_reader=(lambda _lease: raw) if cloud_deployment else None,
+        )
+        # Exercise actual Task parsing and the shared entry, with only storage and
+        # infrastructure stubbed. No dispatcher or fake configured capability.
+        if strict:
+            with pytest.raises(
+                WorkerExecutionError, match="^strict coverage refused: coverage_unsupported$"
+            ) as refused:
+                recover_execution_inputs(**inputs)
+            assert refused.value.coverage_refusal_reason is CoverageRefusalReason.UNSUPPORTED
+            resolver.resolve.assert_not_called()
+        elif workspace_error is not None:
+>           with pytest.raises(WorkerExecutionError, match=str(workspace_error)) as failed:
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE <class 'zebra_agent_worker.execution_errors.WorkerExecutionError'>
+
+tests/worker/test_coverage_task_recovery.py:361: Failed
+_ test_actual_execution_recovery_refuses_unconfigured_strict_before_workspace[True-False-workspace_error2] _
+
+tmp_path = PosixPath('/private/var/folders/qx/n_v9dpmd12dgb9m1s75tjgtm0000gn/T/pytest-of-lukeding/pytest-899/test_actual_execution_recovery2')
+strict = False, cloud_deployment = True, workspace_error = OSError('disk full')
+
+    @pytest.mark.parametrize(
+        "workspace_error", [None, PermissionError("workspace denied"), OSError("disk full")]
+    )
+    @pytest.mark.parametrize("strict", [True, False])
+    @pytest.mark.parametrize("cloud_deployment", [True, False])
+    def test_actual_execution_recovery_refuses_unconfigured_strict_before_workspace(
+        tmp_path: Path,
+        strict: bool,
+        cloud_deployment: bool,
+        workspace_error: OSError | None,
+    ) -> None:
+        raw = events(tmp_path, strict=strict)
+        now = datetime.now(UTC)
+        session_id = raw[0].session_id
+        claimed = ClaimedSession(
+            recovery=RecoveredSession(
+                session=rebuild_session(raw),
+                workspace=rebuild_workspace(raw),
+                event_count=len(raw),
+                last_sequence=raw[-1].sequence,
+                is_terminal=False,
+            ),
+            lease=WorkerLease(
+                session_id=session_id,
+                fence=LeaseFence(
+                    control_plane_epoch=UUID("11111111-1111-1111-1111-111111111111"),
+                    fencing_token=1,
+                    owner_instance_id="test-worker",
+                ),
+                acquired_at=now,
+                heartbeat_at=now,
+                expires_at=now + timedelta(minutes=1),
+            ),
+        )
+        resolver = Mock()
+        resolver.resolve.return_value = tmp_path / "resolved"
+        resolver.resolve.side_effect = workspace_error
+        inputs = dict(
+            claimed=claimed,
+            session_id=session_id,
+            started_at=now,
+            cloud_deployment=cloud_deployment,
+            cloud_provider_continuation_factory=None,
+            provider_continuation_store=Mock(),
+            control_service=Mock(),
+            recovery_service=Mock(),
+            event_store=Mock(list_for_session=Mock(return_value=raw)),
+            context_lifecycle_store=Mock(get_active_capsule=Mock(return_value=None)),
+            handoff_gate=Mock(recover=Mock(return_value=None)),
+            artifact_payload_reader=LocalArtifactPayloadReader(
+                SQLiteArtifactPayloadStore(tmp_path / "db.sqlite")
+            ),
+            workspace_resolver=resolver,
+            execution_input_reader=(lambda _lease: raw) if cloud_deployment else None,
+        )
+        # Exercise actual Task parsing and the shared entry, with only storage and
+        # infrastructure stubbed. No dispatcher or fake configured capability.
+        if strict:
+            with pytest.raises(
+                WorkerExecutionError, match="^strict coverage refused: coverage_unsupported$"
+            ) as refused:
+                recover_execution_inputs(**inputs)
+            assert refused.value.coverage_refusal_reason is CoverageRefusalReason.UNSUPPORTED
+            resolver.resolve.assert_not_called()
+        elif workspace_error is not None:
+>           with pytest.raises(WorkerExecutionError, match=str(workspace_error)) as failed:
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE <class 'zebra_agent_worker.execution_errors.WorkerExecutionError'>
+
+tests/worker/test_coverage_task_recovery.py:361: Failed
+_ test_actual_execution_recovery_refuses_unconfigured_strict_before_workspace[False-False-None] _
+
+tmp_path = PosixPath('/private/var/folders/qx/n_v9dpmd12dgb9m1s75tjgtm0000gn/T/pytest-of-lukeding/pytest-899/test_actual_execution_recovery3')
+strict = False, cloud_deployment = False, workspace_error = None
+
+    @pytest.mark.parametrize(
+        "workspace_error", [None, PermissionError("workspace denied"), OSError("disk full")]
+    )
+    @pytest.mark.parametrize("strict", [True, False])
+    @pytest.mark.parametrize("cloud_deployment", [True, False])
+    def test_actual_execution_recovery_refuses_unconfigured_strict_before_workspace(
+        tmp_path: Path,
+        strict: bool,
+        cloud_deployment: bool,
+        workspace_error: OSError | None,
+    ) -> None:
+        raw = events(tmp_path, strict=strict)
+        now = datetime.now(UTC)
+        session_id = raw[0].session_id
+        claimed = ClaimedSession(
+            recovery=RecoveredSession(
+                session=rebuild_session(raw),
+                workspace=rebuild_workspace(raw),
+                event_count=len(raw),
+                last_sequence=raw[-1].sequence,
+                is_terminal=False,
+            ),
+            lease=WorkerLease(
+                session_id=session_id,
+                fence=LeaseFence(
+                    control_plane_epoch=UUID("11111111-1111-1111-1111-111111111111"),
+                    fencing_token=1,
+                    owner_instance_id="test-worker",
+                ),
+                acquired_at=now,
+                heartbeat_at=now,
+                expires_at=now + timedelta(minutes=1),
+            ),
+        )
+        resolver = Mock()
+        resolver.resolve.return_value = tmp_path / "resolved"
+        resolver.resolve.side_effect = workspace_error
+        inputs = dict(
+            claimed=claimed,
+            session_id=session_id,
+            started_at=now,
+            cloud_deployment=cloud_deployment,
+            cloud_provider_continuation_factory=None,
+            provider_continuation_store=Mock(),
+            control_service=Mock(),
+            recovery_service=Mock(),
+            event_store=Mock(list_for_session=Mock(return_value=raw)),
+            context_lifecycle_store=Mock(get_active_capsule=Mock(return_value=None)),
+            handoff_gate=Mock(recover=Mock(return_value=None)),
+            artifact_payload_reader=LocalArtifactPayloadReader(
+                SQLiteArtifactPayloadStore(tmp_path / "db.sqlite")
+            ),
+            workspace_resolver=resolver,
+            execution_input_reader=(lambda _lease: raw) if cloud_deployment else None,
+        )
+        # Exercise actual Task parsing and the shared entry, with only storage and
+        # infrastructure stubbed. No dispatcher or fake configured capability.
+        if strict:
+            with pytest.raises(
+                WorkerExecutionError, match="^strict coverage refused: coverage_unsupported$"
+            ) as refused:
+                recover_execution_inputs(**inputs)
+            assert refused.value.coverage_refusal_reason is CoverageRefusalReason.UNSUPPORTED
+            resolver.resolve.assert_not_called()
+        elif workspace_error is not None:
+            with pytest.raises(WorkerExecutionError, match=str(workspace_error)) as failed:
+                recover_execution_inputs(**inputs)
+            assert failed.value.__cause__ is workspace_error
+            resolver.resolve.assert_called_once_with(str(tmp_path), session_id=session_id)
+        else:
+            recovered = recover_execution_inputs(**inputs)
+            assert recovered.claimed is claimed
+            assert recovered.session_events == raw
+            assert recovered.task.coverage_admission is None
+>           assert recovered.task.workspace_root == tmp_path / "resolved"
+E           AssertionError: assert PosixPath('/private/var/folders/qx/n_v9dpmd12dgb9m1s75tjgtm0000gn/T/pytest-of-lukeding/pytest-899/test_actual_execution_recovery3') == (PosixPath('/private/var/folders/qx/n_v9dpmd12dgb9m1s75tjgtm0000gn/T/pytest-of-lukeding/pytest-899/test_actual_execution_recovery3') / 'resolved')
+E            +  where PosixPath('/private/var/folders/qx/n_v9dpmd12dgb9m1s75tjgtm0000gn/T/pytest-of-lukeding/pytest-899/test_actual_execution_recovery3') = RecoveredTask(title='task', user_input='review history-1', workspace_root=PosixPath('/private/var/folders/qx/n_v9dpmd1...tching_citation=False, require_verification=False, require_artifact=False, version_scopes=()), coverage_admission=None).workspace_root
+E            +    where RecoveredTask(title='task', user_input='review history-1', workspace_root=PosixPath('/private/var/folders/qx/n_v9dpmd1...tching_citation=False, require_verification=False, require_artifact=False, version_scopes=()), coverage_admission=None) = RecoveredExecutionInputs(claimed=ClaimedSession(recovery=RecoveredSession(session=Session(session_id=UUID('00f87dd5-0f...version_scopes=()), coverage_admission=None), active_capsule=None, recovered_handoff=None, execution_input_reader=None).task
+
+tests/worker/test_coverage_task_recovery.py:370: AssertionError
+_ test_actual_execution_recovery_refuses_unconfigured_strict_before_workspace[False-False-workspace_error1] _
+
+tmp_path = PosixPath('/private/var/folders/qx/n_v9dpmd12dgb9m1s75tjgtm0000gn/T/pytest-of-lukeding/pytest-899/test_actual_execution_recovery4')
+strict = False, cloud_deployment = False
+workspace_error = PermissionError('workspace denied')
+
+    @pytest.mark.parametrize(
+        "workspace_error", [None, PermissionError("workspace denied"), OSError("disk full")]
+    )
+    @pytest.mark.parametrize("strict", [True, False])
+    @pytest.mark.parametrize("cloud_deployment", [True, False])
+    def test_actual_execution_recovery_refuses_unconfigured_strict_before_workspace(
+        tmp_path: Path,
+        strict: bool,
+        cloud_deployment: bool,
+        workspace_error: OSError | None,
+    ) -> None:
+        raw = events(tmp_path, strict=strict)
+        now = datetime.now(UTC)
+        session_id = raw[0].session_id
+        claimed = ClaimedSession(
+            recovery=RecoveredSession(
+                session=rebuild_session(raw),
+                workspace=rebuild_workspace(raw),
+                event_count=len(raw),
+                last_sequence=raw[-1].sequence,
+                is_terminal=False,
+            ),
+            lease=WorkerLease(
+                session_id=session_id,
+                fence=LeaseFence(
+                    control_plane_epoch=UUID("11111111-1111-1111-1111-111111111111"),
+                    fencing_token=1,
+                    owner_instance_id="test-worker",
+                ),
+                acquired_at=now,
+                heartbeat_at=now,
+                expires_at=now + timedelta(minutes=1),
+            ),
+        )
+        resolver = Mock()
+        resolver.resolve.return_value = tmp_path / "resolved"
+        resolver.resolve.side_effect = workspace_error
+        inputs = dict(
+            claimed=claimed,
+            session_id=session_id,
+            started_at=now,
+            cloud_deployment=cloud_deployment,
+            cloud_provider_continuation_factory=None,
+            provider_continuation_store=Mock(),
+            control_service=Mock(),
+            recovery_service=Mock(),
+            event_store=Mock(list_for_session=Mock(return_value=raw)),
+            context_lifecycle_store=Mock(get_active_capsule=Mock(return_value=None)),
+            handoff_gate=Mock(recover=Mock(return_value=None)),
+            artifact_payload_reader=LocalArtifactPayloadReader(
+                SQLiteArtifactPayloadStore(tmp_path / "db.sqlite")
+            ),
+            workspace_resolver=resolver,
+            execution_input_reader=(lambda _lease: raw) if cloud_deployment else None,
+        )
+        # Exercise actual Task parsing and the shared entry, with only storage and
+        # infrastructure stubbed. No dispatcher or fake configured capability.
+        if strict:
+            with pytest.raises(
+                WorkerExecutionError, match="^strict coverage refused: coverage_unsupported$"
+            ) as refused:
+                recover_execution_inputs(**inputs)
+            assert refused.value.coverage_refusal_reason is CoverageRefusalReason.UNSUPPORTED
+            resolver.resolve.assert_not_called()
+        elif workspace_error is not None:
+>           with pytest.raises(WorkerExecutionError, match=str(workspace_error)) as failed:
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE <class 'zebra_agent_worker.execution_errors.WorkerExecutionError'>
+
+tests/worker/test_coverage_task_recovery.py:361: Failed
+_ test_actual_execution_recovery_refuses_unconfigured_strict_before_workspace[False-False-workspace_error2] _
+
+tmp_path = PosixPath('/private/var/folders/qx/n_v9dpmd12dgb9m1s75tjgtm0000gn/T/pytest-of-lukeding/pytest-899/test_actual_execution_recovery5')
+strict = False, cloud_deployment = False, workspace_error = OSError('disk full')
+
+    @pytest.mark.parametrize(
+        "workspace_error", [None, PermissionError("workspace denied"), OSError("disk full")]
+    )
+    @pytest.mark.parametrize("strict", [True, False])
+    @pytest.mark.parametrize("cloud_deployment", [True, False])
+    def test_actual_execution_recovery_refuses_unconfigured_strict_before_workspace(
+        tmp_path: Path,
+        strict: bool,
+        cloud_deployment: bool,
+        workspace_error: OSError | None,
+    ) -> None:
+        raw = events(tmp_path, strict=strict)
+        now = datetime.now(UTC)
+        session_id = raw[0].session_id
+        claimed = ClaimedSession(
+            recovery=RecoveredSession(
+                session=rebuild_session(raw),
+                workspace=rebuild_workspace(raw),
+                event_count=len(raw),
+                last_sequence=raw[-1].sequence,
+                is_terminal=False,
+            ),
+            lease=WorkerLease(
+                session_id=session_id,
+                fence=LeaseFence(
+                    control_plane_epoch=UUID("11111111-1111-1111-1111-111111111111"),
+                    fencing_token=1,
+                    owner_instance_id="test-worker",
+                ),
+                acquired_at=now,
+                heartbeat_at=now,
+                expires_at=now + timedelta(minutes=1),
+            ),
+        )
+        resolver = Mock()
+        resolver.resolve.return_value = tmp_path / "resolved"
+        resolver.resolve.side_effect = workspace_error
+        inputs = dict(
+            claimed=claimed,
+            session_id=session_id,
+            started_at=now,
+            cloud_deployment=cloud_deployment,
+            cloud_provider_continuation_factory=None,
+            provider_continuation_store=Mock(),
+            control_service=Mock(),
+            recovery_service=Mock(),
+            event_store=Mock(list_for_session=Mock(return_value=raw)),
+            context_lifecycle_store=Mock(get_active_capsule=Mock(return_value=None)),
+            handoff_gate=Mock(recover=Mock(return_value=None)),
+            artifact_payload_reader=LocalArtifactPayloadReader(
+                SQLiteArtifactPayloadStore(tmp_path / "db.sqlite")
+            ),
+            workspace_resolver=resolver,
+            execution_input_reader=(lambda _lease: raw) if cloud_deployment else None,
+        )
+        # Exercise actual Task parsing and the shared entry, with only storage and
+        # infrastructure stubbed. No dispatcher or fake configured capability.
+        if strict:
+            with pytest.raises(
+                WorkerExecutionError, match="^strict coverage refused: coverage_unsupported$"
+            ) as refused:
+                recover_execution_inputs(**inputs)
+            assert refused.value.coverage_refusal_reason is CoverageRefusalReason.UNSUPPORTED
+            resolver.resolve.assert_not_called()
+        elif workspace_error is not None:
+>           with pytest.raises(WorkerExecutionError, match=str(workspace_error)) as failed:
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE <class 'zebra_agent_worker.execution_errors.WorkerExecutionError'>
+
+tests/worker/test_coverage_task_recovery.py:361: Failed
+=========================== short test summary info ============================
+FAILED tests/api/test_coverage_http_admission.py::test_queued_receipt_and_canonical_run_are_built_before_single_atomic_admission[None]
+FAILED tests/api/test_coverage_http_admission.py::test_queued_receipt_and_canonical_run_are_built_before_single_atomic_admission[eager]
+FAILED tests/api/test_coverage_http_admission.py::test_queued_receipt_and_canonical_run_are_built_before_single_atomic_admission[final_certification]
+FAILED tests/api/test_stream_v2_http.py::test_agui_preparations_share_one_fresh_access_gate[False]
+FAILED tests/api/test_stream_v2_http.py::test_agui_preparations_share_one_fresh_access_gate[True]
+FAILED tests/config/test_bundle_management_config.py::test_api_only_path_preserves_published_baseline_digest
+FAILED tests/config/test_script_validation_config.py::test_setting_does_not_change_old_baseline
+FAILED tests/spikes/ag_ui/test_forward_compatibility.py::test_event_type_snapshot_matches_reviewed_sdk_version
+FAILED tests/test_file_size_limits.py::test_repository_file_size_gate_passes
+FAILED tests/worker/test_coverage_task_recovery.py::test_actual_execution_recovery_refuses_unconfigured_strict_before_workspace[True-False-None]
+FAILED tests/worker/test_coverage_task_recovery.py::test_actual_execution_recovery_refuses_unconfigured_strict_before_workspace[True-False-workspace_error1]
+FAILED tests/worker/test_coverage_task_recovery.py::test_actual_execution_recovery_refuses_unconfigured_strict_before_workspace[True-False-workspace_error2]
+FAILED tests/worker/test_coverage_task_recovery.py::test_actual_execution_recovery_refuses_unconfigured_strict_before_workspace[False-False-None]
+FAILED tests/worker/test_coverage_task_recovery.py::test_actual_execution_recovery_refuses_unconfigured_strict_before_workspace[False-False-workspace_error1]
+FAILED tests/worker/test_coverage_task_recovery.py::test_actual_execution_recovery_refuses_unconfigured_strict_before_workspace[False-False-workspace_error2]
+15 failed in 1.87s

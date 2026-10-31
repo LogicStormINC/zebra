@@ -33,6 +33,7 @@ from zebra_agent_worker.recovery import SessionRecoveryError
 from zebra_agent_worker.resume import SessionResumeError
 from zebra_agent_worker.safety_net import WorkerSafetyNet
 from zebra_agent_worker.transient_capacity_maintenance import TransientCapacityMaintenance
+from zebra_agent_worker.worker_health import WorkerHealth
 from zebra_agent_worker.worker_polling import has_remaining_cycles, validate_loop_inputs
 
 if TYPE_CHECKING:
@@ -90,6 +91,7 @@ class WorkerLoopService:
         safety_net: WorkerSafetyNet | None = None,
         runtime_gates: RuntimeGateWorker | None = None,
     ) -> None:
+        self.health = WorkerHealth()
         self._projection_store = projection_store
         self._execution_service = execution_service
         self._safety_net = safety_net
@@ -395,12 +397,14 @@ class WorkerLoopService:
                 if self._cutover_probe is not None and self._cutover_probe():
                     stop_reason = "cutover_requires_restart"
                     break
+                self.health.legacy_tick(busy=True)
                 cycle = self.poll_once(
                     worker_id=worker_id,
                     batch_size=batch_size,
                     lease_ttl_seconds=lease_ttl_seconds,
                     stop_requested=stop_requested,
                 )
+                self.health.legacy_tick(busy=False)
                 accumulator.cycles_completed += 1
                 accumulator.executed_session_ids.extend(cycle.executed_session_ids)
                 accumulator.skipped_session_ids.extend(cycle.skipped_session_ids)
@@ -433,4 +437,5 @@ class WorkerLoopService:
                 skipped_session_ids=tuple(accumulator.skipped_session_ids),
             )
         finally:
+            self.health.close()
             self.drain()

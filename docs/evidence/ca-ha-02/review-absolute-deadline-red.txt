@@ -1,0 +1,21 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+___________ test_recording_overhead_cannot_extend_progress_deadline ____________
+
+    def test_recording_overhead_cannot_extend_progress_deadline():
+        now = [14.0]
+    
+        def clock():
+            now[0] += 0.1
+            return now[0]
+    
+        health = WorkerHealth(clock=clock)
+        lease = SimpleNamespace(expires_at=datetime.now(UTC) + timedelta(seconds=30))
+        health.command_tick(lease, 10.0)
+>       assert health.snapshot()["valid_until"] <= 15.0
+E       assert 15.1 <= 15.0
+
+tests/worker/test_worker_health_observation.py:224: AssertionError
+=========================== short test summary info ============================
+FAILED tests/worker/test_worker_health_observation.py::test_recording_overhead_cannot_extend_progress_deadline
+1 failed in 1.22s

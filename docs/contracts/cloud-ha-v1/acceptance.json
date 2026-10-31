@@ -1,9 +1,9 @@
 {
   "contract": "cloud-ha-v1",
-  "revision": 2,
-  "status": "design_reviewed_single_reviewer",
+  "revision": 4,
+  "status": "scoped_candidate_implementation_review",
   "baseline_commit": "d782039caa2543cff66afadf64c77969b4037641",
-  "implementation_authorized": false,
+  "implementation_authorized": true,
   "heavy_validation_authorized": false,
   "production_authorized": false,
   "protected": [
@@ -77,6 +77,35 @@
         "queued_tasks": 24,
         "sustained_new_admissions_per_second": 0
       }
+    ],
+    "user_scenarios": [
+      {
+        "id": "E1-C",
+        "scope_populations": [
+          1,
+          16,
+          32
+        ],
+        "total_admissions_per_second": 5,
+        "total_sse_connections": 256,
+        "quiet_scope_rps": 1,
+        "other_scopes_combined_rps": 4,
+        "scope_from_verified_authority_only": true,
+        "result": "not_run"
+      },
+      {
+        "id": "E1-O",
+        "base": "E1-A",
+        "rate_multipliers": [
+          0.5,
+          1,
+          1.5,
+          2
+        ],
+        "stop_at_first_safety_limit": true,
+        "generator_saturation_can_pass": false,
+        "result": "not_run"
+      }
     ]
   },
   "required_environment_parameters": [
@@ -88,7 +117,13 @@
     "object_durability",
     "broker_revocation_cache_policy",
     "cutover_flags",
-    "runtime_isolation_flags"
+    "runtime_isolation_flags",
+    "reference_browser_and_ui_source",
+    "clock_sync_error",
+    "queue_thread_sse_executor_hard_caps",
+    "control_plane_reserved_budget",
+    "scope_fair_share_limits",
+    "model_tool_fixture_budget"
   ],
   "fault_model": "F1_single_fault",
   "faults": [
@@ -207,7 +242,7 @@
     "tests/worker/test_command_process.py"
   ],
   "future_task_status": {
-    "CA-HA-02": "Locked",
+    "CA-HA-02": "Review",
     "CA-HA-03": "Locked",
     "CA-HA-04": "Locked",
     "CA-HA-05": "Locked",
@@ -246,13 +281,164 @@
     "response_budget_ms": 1000,
     "max_observation_age_seconds": 5,
     "probe_reads_refresh_timestamp": false,
-    "worker_surface": "process_local_read_only_no_public_port",
-    "implementation_status": "not_implemented"
+    "worker_surface": "opt-in private atomic file via --health-file, no public port",
+    "implementation_status": "candidate_focused_verification_only",
+    "readiness_scope": "common control-plane epoch availability after factory startup schema validation; not all feature dependencies",
+    "runtime_schema_drift_detection": false,
+    "probe_io_budget_ms": 750,
+    "probe_interval_after_completion_seconds": 1,
+    "probe_shutdown_budget_seconds": 2,
+    "worker_snapshot_requires": "current PID and instance pinned out of band; fresh observation and unexpired capability",
+    "legacy_busy_policy": "not_ready / progress unknown, no task failure or automatic kill"
   },
   "path_overlap_order": {
     "CA-HA-03": [
       "CA-HA-01",
       "CA-HA-02"
     ]
-  }
+  },
+  "ux_design_baseline": "e8a4f10b7ede3a8343f568eb126a1ab64bdea9fc",
+  "ux_targets": {
+    "UX-01": {
+      "local_feedback_p99_ms": 200,
+      "confirmed_feedback_p99_ms": 3000,
+      "server_admission_p99_ms": 2000,
+      "tasks": [
+        "CA-HA-07",
+        "CA-HA-09"
+      ],
+      "result": "not_run"
+    },
+    "UX-02": {
+      "eligible_short_queue_p95_ms": 2000,
+      "eligible_short_queue_p99_ms": 5000,
+      "tasks": [
+        "CA-HA-03",
+        "CA-HA-09"
+      ],
+      "result": "not_run"
+    },
+    "UX-03": {
+      "eligible_short_first_content_p99_ms": 2000,
+      "durable_event_to_present_p99_ms": 500,
+      "report_provider_ttft_separately": true,
+      "tasks": [
+        "CA-HA-07",
+        "CA-HA-09"
+      ],
+      "result": "not_run"
+    },
+    "UX-04": {
+      "no_substantive_progress_seconds": 60,
+      "classification_delay_seconds": 5,
+      "wait_fact_to_display_p99_ms": 1000,
+      "automatic_kill": false,
+      "tasks": [
+        "CA-HA-03",
+        "CA-HA-07",
+        "CA-HA-09"
+      ],
+      "result": "not_run"
+    },
+    "UX-05": {
+      "quiet_scope_queue_p99_ms": 5000,
+      "unbounded_resources_allowed": false,
+      "tasks": [
+        "CA-HA-03",
+        "CA-HA-04",
+        "CA-HA-09"
+      ],
+      "result": "not_run"
+    },
+    "UX-06": {
+      "control_admission_p99_ms": 2000,
+      "accepted_to_executor_exit_seconds": 10,
+      "accepted_to_full_cleanup_seconds": 30,
+      "precondition": "authorized isolation and available dependencies; unmerged force-stop blocks dependent subcases",
+      "tasks": [
+        "CA-HA-04",
+        "CA-HA-09"
+      ],
+      "result": "not_run"
+    },
+    "UX-07": {
+      "network_recovered_authorized_catchup_seconds": 5,
+      "new_run_or_business_replay": false,
+      "tasks": [
+        "CA-HA-07",
+        "CA-HA-09"
+      ],
+      "result": "not_run"
+    },
+    "UX-08": {
+      "overload_rejection_p99_ms": 2000,
+      "ambiguous_commit_action": "original_get_only",
+      "tasks": [
+        "CA-HA-03",
+        "CA-HA-08",
+        "CA-HA-09"
+      ],
+      "result": "not_run"
+    },
+    "UX-09": {
+      "history_event_counts": [
+        10000,
+        100000,
+        1000000
+      ],
+      "max_page_items": 100,
+      "max_visible_items": 100,
+      "status_original_get_p99_ms": 1000,
+      "ui_interaction_p99_ms": 200,
+      "tasks": [
+        "CA-HA-07",
+        "CA-HA-09"
+      ],
+      "result": "not_run"
+    },
+    "UX-10": {
+      "rss_last_to_first_steady_hour_max_ratio": 1.1,
+      "owned_reconstructible_running_resources_after_cleanup": 0,
+      "delete_history_to_meet_target": false,
+      "tasks": [
+        "CA-HA-04",
+        "CA-HA-09",
+        "CA-HA-10"
+      ],
+      "result": "not_run"
+    }
+  },
+  "ux_measurement": {
+    "reference_browser_and_hardware_required": true,
+    "reference_network_max_rtt_ms": 50,
+    "max_clock_error_fraction_of_segment_target": 0.1,
+    "minimum_samples_per_metric_and_profile": 1000,
+    "timestamp_reads_are_not_progress": true,
+    "model_fixture_ttft_ms": 100,
+    "model_fixture_response_ms": 300,
+    "single_tool_fixture_ms": 200,
+    "short_task_slot_occupancy_target_ms": 1000,
+    "phase_points": [
+      "T0",
+      "T1",
+      "T2",
+      "T3",
+      "T4",
+      "T5",
+      "T6",
+      "T7",
+      "T8",
+      "T9",
+      "S0",
+      "S1",
+      "S2",
+      "S3"
+    ],
+    "no_independent_progress_authority": true
+  },
+  "prior_review_evidence_applies_to_revision": 2,
+  "implementation_authorized_tasks": [
+    "CA-HA-02"
+  ],
+  "implementation_authorization_note": "Authorization applies ONLY to listed tasks, not the entire program; heavy and production permissions remain false."
 }

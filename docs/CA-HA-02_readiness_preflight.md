@@ -1,7 +1,8 @@
-# CA-HA-02 任务与依赖核对（不实施）
+# CA-HA-02 任务、依赖与候选实施
 
-日期2026-10-31；状态Locked：01 revision 2已合入并推送cloud-agent 1dd88bfd，技术前置满足，仍等待明确业务实现授权。
-本轮只形成此文档，不领取In Progress，不创建代码占位，不运行环境。
+日期2026-10-31；当前状态Review，完整门禁被基线失败阻塞；最新验收见第8节，历史候选见第6–7节。
+以下1–5节保留领取前设计边界；01 revision 2前置已合入cloud-agent 1dd88bfd。
+原文档阶段未实施；本轮已先登记Ready后领取02，依然不启动重型/Docker环境。
 依赖：[CA-HA-01 revision 2](contracts/cloud-ha-v1/README.md)、[逐卡范围](CA-HA-01_baseline_and_scope.md)。
 
 ## 1. 前置结论
@@ -69,3 +70,109 @@ SIGTERM只立即反映现有退出状态；真正排空/强停与资源证明仍
 
 实施授权后先最小确定性回归，后完整make test/check和必要真实组合验证；禁止将mock健康
 测试当生产HA证明。当前仅文档静态校验，不声称任何上述场景已运行/通过。
+
+## 6. CA-HA-02候选实现（2026-10-31，Review）
+
+用户后续“开始实施”授权本卡代码，旧的未授权说明保留作前置历史；本节是当前实施状态。
+分支codex/ca-ha-02-readiness从主线e8a4f10b开始，摘取UX文档01530810为559422d7。
+实现仅组合/技术观测，无core/storage/Helm/业务BFF变更，前端mock保持。
+
+### API
+
+- 新GET /health/live总是快速返回200/{status:alive}；不执行依赖检查。
+- 新GET /health/ready只读缓存，未知/失败/过期/关闭503/{status:not_ready}，新鲜成功200/{status:ready}。
+  FastAPI注册精确GET路由，排在原鉴权catch-all前；没有增加任何前缀匿名豁免。
+  新健康响应带Cache-Control:no-store避免中间缓存；原GET /health及原HostGrant/本地bearer路径保持。POST/子路径/尾斜线仍进入原鉴权。
+- ApiHealth承接原lifespan的HostGrant预热和流读取器/通知器关闭，保留原行为；
+  预热失败不启动后台探测。lifespan成功后仅1条本机观测线程，无请求触发的额外线程。
+- 默认Cloud观测只覆盖共同控制面：启动factory的原有schema校验后，通过既有
+  read_control_plane_epoch及Task I/O deadline进行单次只读epoch查询，预算0.75s，
+  完成后间隔1s，无立即重试风暴，结果最大年龄5s。DNS子进程/套接字/查询/退出预算复用原存储实现。
+- 不额外创建连接池，不执行DDL/DML/业务工作，不把数据库异常文本传给匿名调用者。
+  本地开发组合成功启动后可就绪；Cloud注入的非Postgres stores不能报告就绪。
+- 原schema校验依旧发生在factory启动，不将本卡包装成运行期schema漂移检测。
+  readiness只说明公共控制面可服务，不证明全部模型/工具/S3/Broker端点均可用；
+  各功能仍有原准入检查，依赖角色与全面容错留给06，完整就绪部署留给08。
+- 正常退出先关闭本卡探测，再关闭原流资源；探测未在2s内退出会显式报错，不能悄悄假报回收。
+
+### Worker
+
+- WorkerLoopService创建本机WorkerHealth；新CLI参数--health-file为默认关闭的本机只读
+  观测文件输出选项，不开端口。每进程须由管理方提供新的文件路径，已有文件以O_EXCL拒绝覆盖，
+  避免误配置破坏业务文件或其他实例快照；稳定路径接管不在本卡实现。只允许绝对、受控、本机目录（推荐运行时tmpfs），不支持网络文件系统。
+- 文件以临时文件+原子replace更新，权限0600，含PID/独立进程实例ID、观测时间、phase、
+  control_fresh、ready和有效截止时间；不含业务身份、token、Task状态或资源释放收据。
+- 消费方须从进程管理侧固定当前PID/实例ID后调用read_worker_health；不能仅信任文件自报身份，
+  也不能把该观测当执行授权或Task完成证明。格式损坏、超长、实例不匹配、过期均不就绪。
+- 命令模式只采样原control/maintenance已完成的进展及实际consumer拥有的能力凭据；
+  无新鲜进展、能力缺失/过期或停止即不就绪。缓存截止不越过能力凭据的实际到期时间。
+  没有新增数据库探针、伪造心跳或改动领取/恢复/执行算法。
+- 旧串行模式：poll前legacy_busy且非就绪，完成后legacy_idle短期就绪；合法长调用期间
+  没有独立控制tick，保守表示观测不足，不表示Task失败或建议自动杀进程。
+  本卡没有把旧模式改造成并行控制，也不声称补齐了04的独立终止能力。
+- 命令模式收到原停止信号时关闭观测，再走既有真实drain；正常/异常run退出也关闭。
+  无强停/清理/租约变化，观察文件写失败只使观测不可信，不中断业务执行。
+
+### 验证与未验证
+
+仅运行SQLite/内存/假I/O的定向回归和局部静态检查；没有真实PG、Redis、Broker、Docker、
+外部模型、故障集群、全量make test/check或生产验证。真实PG就绪/schema不兼容等联合
+场景仍须在后续明确允许环境验收后证明；不能把本地测试当作生产HA或UX容量达标。
+旧基础3项先验证；新API/Worker用例有实现前模块缺失RED，能力到期回归另做撤去守卫
+失败→恢复通过。具体命令/版本/结果和资源边界见[证据](evidence/ca-ha-02/validation.json)。
+02保持Review候选，未合并/部署；03及其后任务仍Locked。重型验证/Docker暂停继续有效。
+
+## 7. 候选复核修复
+
+输入6af4e5dd，本轮内联单人复核，不冒称独立双人审查。
+
+- 命令模式的ready/control_fresh受真实control/maintenance进展限制；valid_until取能力
+  截止、真实进展+5s、采样缓存截止的绝对最小值。采样/落盘耗时或反复tick不能续期旧进展。
+  私有文件增补control_observed_at以区别采样时刻与原进展时刻，不形成执行凭据。
+- 本机读取使用O_NOFOLLOW/O_NONBLOCK并以fstat确认普通文件；符号链接、FIFO、目录
+  均按unknown/non-ready处理，不读取替代目标或阻塞控制通路。仍仅支持受控本机目录。
+- API生命周期以AsyncExitStack独立尝试探测线程、流读取器与通知器关闭；一项异常
+  不跳过后续关闭，错误仍传播，不假报已释放。保留原流资源的关闭预算，不宣称总关闭≤2s。
+
+[新增证据](evidence/ca-ha-02/review-validation.json)：58项定向回归、局部Ruff/mypy7与
+产品边界检查；原52项证据保留。仍无真实PG、完整门禁或集群/UX容量验证，02保持Review。
+
+## 8. 完整验收与03依赖复核
+
+用户已明确授权本次完整门禁、真实PG、限额串行与及时回收；此前重型暂停不再阻止本次
+验收，不扩大为部署/生产迁移或持续压测许可。详见[证据](evidence/ca-ha-02/full-validation.json)。
+
+- 完整make test：11641通过、15失败、3155条件跳过；用时1387.95s。新增PG模块在
+  收集之后加入，五项单独真实执行5通过/0跳过，不将它们加进完整套件通过数。
+- 完整make check：16处尺寸违规而失败。补跑全部剩余步骤，Ruff4924错误全部在ERPNext；
+  mypy1494源、Eval30、postcommit和risk检查通过，不宣称完整check通过。
+- 干净主线e8a4f10b上逐项复现全部15失败（1.87s）；尺寸16处相同，Ruff4924诊断逐项
+  按相对路径/规则/消息/行列完全一致，违规源码字节相同。15个尺寸违规在ERPNext，
+  另1个为原postgres/agent_tasks.py515行；没有在02中改写无关集成/存储源码或放松门禁。
+- 独立真实PG：正常Cloud factory/epoch、暂停恢复、真实角色连接槽耗尽、实际查询锁超时
+  与恢复、匿名liveness预算、关闭无遗留探测线程/会话、不兼容schema启动拒绝；另验证
+  实际PG Worker能力TTL使本机缓存失效。S3/授权用既有无访问对象和假授权器，非IdP联调。
+- 错误观测须3s内使ready503（早于5s缓存过期），故障中10次live合计<1s。
+  这是微型功能负例，不代表p99/多租户容量或集群HA；角色连接槽不代替03的全副本池预算。
+- 单pytest/nice10/原生线程变量1；自动Docker fixture通过临时CLI包装限额1CPU/512MiB/
+  PID128并标归属，fixture finally与父EXIT兜底回收；独立PG数据tmpfs256MiB，
+  配额由inspect断言，所有临时容器用完rm-fv，无新持久卷/网络，原overdoze-dev-pg保持。
+
+本轮未满足“全部验证通过后合并”的条件，02继续Review，cloud-agent不合入失败树。
+现有历史数据、原收据、unknown、Coverage与前端mock不变；没有生产操作。
+
+03依赖：01已合入；02完整门禁未通过且未合入，因此03仍Locked、不领取/写代码。
+后续先拆分并修复基线门禁，再复验/集成02；03复核范围仍按01冻结清单：
+
+1. 复用Worker现有control/maintenance lane，区分空队列、blocked、错误的退避/抖动，
+   先复现当前真实cutover路径，不增加假进展或对unknown重发。
+2. 连接总预算包含API副本、Worker进程/执行器、控制恢复、scheduler及02只读探测，
+   不能把单池max8或单角色额度当全实例上限；保留控制与原GET预算。
+3. 核对server.py池组合与Helm直接uvicorn入口差异；03若更改共享入口/模板先更新卡，
+   08等待03合入后只改剩余部署职责。
+4. 确定性退避/有界队列/namespace公平回归与隔离实测分层举证；记录CPU、SQL次数、
+   池等待、排队年龄/拒绝率，短任务p95≤2s/p99≤5s，合法低负载scope同样计入。
+
+基线修复应另卡/另分支：优先追踪Coverage9项与当前流访问2项，再审查已发布默认摘要2项
+和固定SDK枚举1项；不能盲改golden、降级Coverage/鉴权或用全目录排除掩盖ERPNext违规。
+最后完成原生/集成尺寸与风格整改，再跑完整门禁，成功后才集成02/解锁03。

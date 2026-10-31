@@ -1,0 +1,49 @@
+{
+  "baseline_commit": "e8a4f10b7ede3a8343f568eb126a1ab64bdea9fc",
+  "baseline_imports": [
+    "/Users/lukeding/.codex/worktrees/ca-p5-main-integration/zebra-agent/apps/api/src/zebra_agent_api/__init__.py",
+    "/Users/lukeding/.codex/worktrees/ca-p5-main-integration/zebra-agent/packages/agent-storage/src/agent_storage/__init__.py"
+  ],
+  "failed_nodes_reproduced": [
+    "tests/api/test_coverage_http_admission.py::test_queued_receipt_and_canonical_run_are_built_before_single_atomic_admission[None]",
+    "tests/api/test_coverage_http_admission.py::test_queued_receipt_and_canonical_run_are_built_before_single_atomic_admission[eager]",
+    "tests/api/test_coverage_http_admission.py::test_queued_receipt_and_canonical_run_are_built_before_single_atomic_admission[final_certification]",
+    "tests/api/test_stream_v2_http.py::test_agui_preparations_share_one_fresh_access_gate[False]",
+    "tests/api/test_stream_v2_http.py::test_agui_preparations_share_one_fresh_access_gate[True]",
+    "tests/config/test_bundle_management_config.py::test_api_only_path_preserves_published_baseline_digest",
+    "tests/config/test_script_validation_config.py::test_setting_does_not_change_old_baseline",
+    "tests/spikes/ag_ui/test_forward_compatibility.py::test_event_type_snapshot_matches_reviewed_sdk_version",
+    "tests/test_file_size_limits.py::test_repository_file_size_gate_passes",
+    "tests/worker/test_coverage_task_recovery.py::test_actual_execution_recovery_refuses_unconfigured_strict_before_workspace[True-False-None]",
+    "tests/worker/test_coverage_task_recovery.py::test_actual_execution_recovery_refuses_unconfigured_strict_before_workspace[True-False-workspace_error1]",
+    "tests/worker/test_coverage_task_recovery.py::test_actual_execution_recovery_refuses_unconfigured_strict_before_workspace[True-False-workspace_error2]",
+    "tests/worker/test_coverage_task_recovery.py::test_actual_execution_recovery_refuses_unconfigured_strict_before_workspace[False-False-None]",
+    "tests/worker/test_coverage_task_recovery.py::test_actual_execution_recovery_refuses_unconfigured_strict_before_workspace[False-False-workspace_error1]",
+    "tests/worker/test_coverage_task_recovery.py::test_actual_execution_recovery_refuses_unconfigured_strict_before_workspace[False-False-workspace_error2]"
+  ],
+  "size_violations_identical": 16,
+  "ruff_diagnostics_identical": 4924,
+  "ruff_outside_erpnext": 0,
+  "unchanged_violating_files_sha256": {
+    "integrations/erpnext/cloud-patches/chat-recovery/host/business.py": "a7c4c7d656d02fb1d301590e319a54f2239d9c270c941541bc11bc14ae638475",
+    "integrations/erpnext/cloud-patches/chat-recovery/tools/effect_guard.py": "5da48edee0e10fccc6bfc575f74ee352505b806c8342e0faf325b34c41251d41",
+    "integrations/erpnext/cloud-patches/chat-recovery/worker/loop.py": "92e221ef162acd6fb28c9025acf5f9803c2378ee4e76cf1fca787104fb42ad4b",
+    "integrations/erpnext/cloud-patches/overrides/apps/api/src/zebra_agent_api/session_payloads.py": "5dce0c60889a50fefb6528817c811868eef1443856e7758c42f89f7a4760e56f",
+    "integrations/erpnext/cloud-patches/overrides/apps/worker/src/zebra_agent_worker/command_process.py": "873e0c44b663b810a33d9dbcaf7343a54c7c5ce93e1dfb108663ec1bfdb0f8e0",
+    "integrations/erpnext/cloud-patches/overrides/apps/worker/src/zebra_agent_worker/execution.py": "1e5a0211b900f94df562c5879d10d916bdab69775fcee0e3a307b1bfa30baf5b",
+    "integrations/erpnext/cloud-patches/overrides/apps/worker/src/zebra_agent_worker/loop.py": "a9df220c898bd1dfc2cbdda17cbca15e615bdb602d98d84a94da7a7ae0b60452",
+    "integrations/erpnext/cloud-patches/overrides/packages/agent-integrations/src/agent_integrations/openai_compatible.py": "66ee404aef1a38d9c5c3266c1ad3a3fb11fa613a8a88fe49b6bca75ba322589a",
+    "integrations/erpnext/cloud-patches/overrides/packages/agent-storage/src/agent_storage/postgres/command_wakeup_handoff.py": "423bb584dbdf02619d786565a6fd54b1963a0e556e9dde476d92f684c16130a2",
+    "integrations/erpnext/cloud-patches/overrides/packages/agent-storage/src/agent_storage/postgres/command_wakeup_recovery.py": "cb7cb175df244c0f119e5249cdda0ce8feb9b93977b2a57a11969fd53a873560",
+    "integrations/erpnext/cloud-patches/overrides/packages/agent-tools/src/agent_tools/effect_guard.py": "818fc2752892e84a15bd63275b51f328c0636be9441eec826a6c2c7bd52809c1",
+    "integrations/erpnext/cloud-patches/transfer_erp_database.py": "64521353628c8d28a47df4262b10bf47448ee72e20b475e76f9fc8bdbe3f3168",
+    "integrations/erpnext/frontend/index.tsx": "d495bca978368a7644fcd4a27218a061fa2d5bcede47bb3634f4c2eb13c4c165",
+    "integrations/erpnext/zebra_erpnext/business.py": "ea112dd4a812cc31fdb982db98275bfeaff507c9bdaa31dfd4e857eb7c26eb2f",
+    "integrations/erpnext/zebra_erpnext/chat.py": "d6e2a79da828a79ab46bd7b08e00bdcb0e6a900041688871bb27239f5be573e7",
+    "packages/agent-storage/src/agent_storage/postgres/agent_tasks.py": "80f1085f6c711fdbdae21b5ee2671d2c2164e058c2c970914e2a1d20541d266d"
+  },
+  "baseline_command_exits": {
+    "sizes": 1,
+    "ruff": 1
+  }
+}

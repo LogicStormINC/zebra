@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import AsyncIterator, Mapping
+from collections.abc import Mapping
 from pathlib import Path
 
 from agent_core.application.agent_definitions import PublisherGrantPort
@@ -40,6 +40,7 @@ from zebra_agent_api.extension_reads import (
     extension_error,
     is_extension_path,
 )
+from zebra_agent_api.health_readiness import ApiHealth
 from zebra_agent_api.host_registry_management import deployment_namespace as _deployment_namespace
 from zebra_agent_api.host_registry_management import register_management_routes
 from zebra_agent_api.http_host_auth import (
@@ -188,23 +189,9 @@ def create_http_app(
         active_host_grant_authorizer,
         host_grant_origins,
     )
-    from contextlib import asynccontextmanager
-
-    @asynccontextmanager
-    async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
-        try:
-            if active_settings.deployment != "local":
-                from zebra_agent_api.host_auth import warm_host_grant_keys
-
-                await warm_host_grant_keys(active_host_grant_authorizer)
-            yield
-        finally:
-            if api.stream_v2_reader is not None:
-                await api.stream_v2_reader.close()
-            if api.stream_notifications is not None:
-                await api.stream_notifications.close()
-
-    app = FastAPI(title="Zebra Agent API", lifespan=lifespan)
+    health = ApiHealth(api, active_host_grant_authorizer)
+    app = FastAPI(title="Zebra Agent API", lifespan=health.lifespan)
+    health.register(app)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"] if active_settings.deployment == "local" else exact_host_origins,
