@@ -255,3 +255,7 @@ Worker通过已有控制/维护进展与当前consumer能力采样；本机文�
 
 JSON的implementation_authorized仅限implementation_authorized_tasks列出的CA-HA-02，
 不授权其他HA任务/重型验证/生产操作，也不是Runtime的权限凭据或执行门禁。
+
+02候选后续复核将缓存截止同时绑定真实控制进展、能力到期和采样窗口，使用绝对截止
+避免采样耗时续期；本机读取拒绝链接/非普通文件；资源关闭异常不跳过其余关闭。
+这是满足既有revision4语义的实现修复，未改变SLO/权限/unknown或Task状态合同。

@@ -3,6 +3,7 @@
 import json
 import logging
 import os
+import stat
 import tempfile
 from collections.abc import Callable
 from contextlib import suppress
@@ -24,6 +25,7 @@ class WorkerHealth:
         self._phase = "starting"
         self._at: float | None = None
         self._ready = False
+        self._control_at: float | None = None
         self._valid_until = 0.0
         self._path: Path | None = None
         self._write_failed = False
@@ -46,12 +48,22 @@ class WorkerHealth:
                 raise
             self._path = path
 
-    def _record(self, phase: str, ready: bool, *, valid_for: float = 5) -> None:
+    def _record(
+        self,
+        phase: str,
+        ready: bool,
+        *,
+        valid_until: float | None = None,
+        progress_at: float | None = None,
+    ) -> None:
         with self._lock:
             if self._phase == "stopped":
                 return
             self._phase, self._ready, self._at = phase, ready, self._clock()
-            self._valid_until = self._at + min(5, max(0, valid_for))
+            self._control_at = self._at if progress_at is None else progress_at
+            self._valid_until = min(
+                self._at + 5, self._at + 5 if valid_until is None else valid_until
+            )
             self._publish()
 
     def legacy_tick(self, *, busy: bool) -> None:
@@ -59,23 +71,33 @@ class WorkerHealth:
         self._record("legacy_busy" if busy else "legacy_idle", not busy)
 
     def command_tick(self, lease: Any, work_completed_at: float) -> None:
+        now = self._clock()
         current = (
             lease is not None
             and lease.expires_at > datetime.now(UTC)
-            and 0 < work_completed_at <= self._clock()
-            and self._clock() - work_completed_at <= 5
+            and 0 < work_completed_at <= now
+            and now - work_completed_at <= 5
         )
         remaining = 0 if lease is None else (lease.expires_at - datetime.now(UTC)).total_seconds()
-        self._record("command", current, valid_for=remaining)
+        self._record(
+            "command",
+            current,
+            valid_until=min(now + remaining, work_completed_at + 5),
+            progress_at=work_completed_at,
+        )
 
     def snapshot(self) -> dict[str, Any]:
         with self._lock:
             fresh = self._at is not None and 0 <= self._clock() - self._at <= 5
+            control_fresh = (
+                self._control_at is not None and 0 <= self._clock() - self._control_at <= 5
+            )
             return {
                 "pid": os.getpid(),
                 "instance_id": self._instance,
                 "phase": self._phase,
                 "observed_at": self._at,
+                "control_observed_at": self._control_at,
                 "ready": (
                     self._ready
                     and fresh
@@ -83,7 +105,7 @@ class WorkerHealth:
                     and not self._write_failed
                 ),
                 "valid_until": self._valid_until,
-                "control_fresh": fresh and self._phase not in {"legacy_busy", "stopped"},
+                "control_fresh": control_fresh and self._phase not in {"legacy_busy", "stopped"},
             }
 
     def close(self) -> None:
@@ -121,7 +143,10 @@ class WorkerHealth:
 def read_worker_health(path: Path, pid: int, instance_id: str, *, now: float) -> dict[str, Any]:
     """Caller pins the expected process identity; file contents cannot grant execution."""
     try:
-        with path.open() as stream:
+        descriptor = os.open(path, os.O_RDONLY | os.O_NONBLOCK | os.O_NOFOLLOW)
+        with os.fdopen(descriptor) as stream:
+            if not stat.S_ISREG(os.fstat(stream.fileno()).st_mode):
+                return {"ready": False, "control_fresh": False, "phase": "unknown"}
             raw = stream.read(4097)
         if len(raw) > 4096:
             return {"ready": False, "control_fresh": False, "phase": "unknown"}

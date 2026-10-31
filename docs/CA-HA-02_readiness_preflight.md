@@ -121,3 +121,18 @@ SIGTERM只立即反映现有退出状态；真正排空/强停与资源证明仍
 旧基础3项先验证；新API/Worker用例有实现前模块缺失RED，能力到期回归另做撤去守卫
 失败→恢复通过。具体命令/版本/结果和资源边界见[证据](evidence/ca-ha-02/validation.json)。
 02保持Review候选，未合并/部署；03及其后任务仍Locked。重型验证/Docker暂停继续有效。
+
+## 7. 候选复核修复
+
+输入6af4e5dd，本轮内联单人复核，不冒称独立双人审查。
+
+- 命令模式的ready/control_fresh受真实control/maintenance进展限制；valid_until取能力
+  截止、真实进展+5s、采样缓存截止的绝对最小值。采样/落盘耗时或反复tick不能续期旧进展。
+  私有文件增补control_observed_at以区别采样时刻与原进展时刻，不形成执行凭据。
+- 本机读取使用O_NOFOLLOW/O_NONBLOCK并以fstat确认普通文件；符号链接、FIFO、目录
+  均按unknown/non-ready处理，不读取替代目标或阻塞控制通路。仍仅支持受控本机目录。
+- API生命周期以AsyncExitStack独立尝试探测线程、流读取器与通知器关闭；一项异常
+  不跳过后续关闭，错误仍传播，不假报已释放。保留原流资源的关闭预算，不宣称总关闭≤2s。
+
+[新增证据](evidence/ca-ha-02/review-validation.json)：58项定向回归、局部Ruff/mypy7与
+产品边界检查；原52项证据保留。仍无真实PG、完整门禁或集群/UX容量验证，02保持Review。

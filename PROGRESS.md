@@ -1,3 +1,10 @@
+## 2026-10-31 — CA-HA-02候选复核 / 58项定向通过
+
+修正就绪缓存越过真实进展、采样耗时续期、本机链接/FIFO读取及关闭异常遗漏资源。
+使用原进展绝对截止、非阻塞普通文件读取和标准库AsyncExitStack，不改执行/授权/原收据语义。
+[新增证据](docs/evidence/ca-ha-02/review-validation.json)单独保留原52项记录；本轮58项定向通过，
+局部Ruff/mypy7与产品边界通过。无Docker/完整门禁/真实PG/故障/UX容量，02仍Review，03仍Locked。
+
 ## 2026-10-31 — CA-HA-02候选实现 / Review
 
 新增精确GET /health/live、/health/ready，保留旧/health；1条有界后台观测线程复用原epoch读取与

@@ -18467,3 +18467,20 @@ protocol/manager cleanup, not implicit overwrite. New API health responses use
 Cache-Control:no-store (tested). Final focused52 passed/0failed/0skipped; scoped
 Ruff/mypy7 and product-boundary PASS. Current evidence files/log hashes refreshed;
 full gates and real dependencies remain not_run, no production HA/UX claim.
+
+
+## 2026-10-31 — CA-HA-02 review continuation
+
+Continued within originalReview owned paths and resource pause. Reproduced RED:
+control-age/link2 failures, reader-close1 failure/health-close1 pass, absolute
+progress-deadline1 failure. Fixed shared WorkerHealth record/snapshot/reader and
+API lifespan using absolute deadlines, no-follow nonblocking regular-file reads
+and stdlibAsyncExitStack. Six added cases: control-age, symlink, FIFO, two cleanup
+failure branches and recording-overhead deadline; final58 passed in13.22s.
+Ruff scoped7source/3test modules pass, mypy7source follow-imports silent pass,
+runtime product boundary pass. FIFO child bounded5s and reaped on timeout, node
+removed in finally; no persistent background job or Docker/PG/model/pressure run.
+Original52 evidence files untouched; new review evidence/log hashes separate.
+No core/storage/deploy/SDK changes, history/original receipts/unknown/Coverage
+preserved. Complete gates and real dependencies remain unverified, no merge or
+deployment;03 remainsLocked until02 dependency and explicit validation satisfied.

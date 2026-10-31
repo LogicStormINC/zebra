@@ -92,3 +92,6 @@ and a path-bounded implementation task is explicitly activated in `AGENT_TASKS.m
 [定向证据](evidence/ca-ha-02/validation.json)。精确GET存活/就绪、公共控制面有界观测、
 Worker原进展和私有文件；没有执行权限/Task终态变更。仅02候选Review，03–10仍Locked；
 完整测试/真实PG/故障与UX容量未验，不恢复重型测试或Docker，不部署/生产迁移。
+
+CA-HA-02候选复核：[58项定向验证及修复证据](evidence/ca-ha-02/review-validation.json)。
+就绪不过真实进展截止、只读普通本机文件、关闭失败仍尝试其余资源；完整门禁/真实PG未验。

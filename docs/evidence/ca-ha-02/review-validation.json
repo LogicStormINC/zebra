@@ -1,0 +1,68 @@
+{
+  "task": "CA-HA-02",
+  "review_input_commit": "6af4e5dd1ad20f49f735d031396a96cc35af3792",
+  "status": "Review_candidate_not_deployed",
+  "reviewer": "Codex inline, not independent peer review",
+  "findings": [
+    {
+      "id": "H02-R1",
+      "problem": "cached readiness/control_fresh could outlive real completed control/maintenance progress",
+      "resolution": "absolute minimum of capability expiry, real progress+5s and sample cache; sampling overhead cannot extend deadline",
+      "regression": "two failed checks before fix, then green: control age and recording overhead"
+    },
+    {
+      "id": "H02-R2",
+      "problem": "local snapshot reader followed symlinks and could block opening a FIFO",
+      "resolution": "O_NOFOLLOW/O_NONBLOCK plus descriptor regular-file check, bounded read, fail closed",
+      "regression": "symlink RED; actual FIFO in reaped 5s-bounded subprocess"
+    },
+    {
+      "id": "H02-R3",
+      "problem": "stream-reader close failure skipped notification resource close",
+      "resolution": "stdlib AsyncExitStack attempts all owned cleanup callbacks and propagates errors",
+      "regression": "reader-close RED; both health/reader failure branches green"
+    }
+  ],
+  "verification": {
+    "focused": {
+      "passed": 58,
+      "failed": 0,
+      "skipped": 0,
+      "log": "review-focused.txt"
+    },
+    "ruff": {
+      "status": "pass",
+      "log": "review-ruff.txt"
+    },
+    "mypy": {
+      "status": "pass",
+      "source_files": 7,
+      "follow_imports": "silent",
+      "log": "review-mypy.txt"
+    },
+    "runtime_product_boundary": "pass",
+    "complete_make_test": "not_run_user_pause",
+    "complete_make_check": "not_run_user_pause",
+    "real_pg_or_cluster": "not_run",
+    "docker_or_external_model": "not_started",
+    "ux_capacity": "not_run"
+  },
+  "preserved": [
+    "original_52_test_evidence_at_6af4e5dd",
+    "original_task_run_and_execution_authority",
+    "history",
+    "original_receipts",
+    "unknown_get_only",
+    "coverage",
+    "frontend_mock",
+    "core_storage_helm_sources"
+  ],
+  "logs_sha256": {
+    "review-focused.txt": "80fb09b7bf6e09f9f6952695e52af46ea120536fcf2f31c21741e593de9b4647",
+    "review-ruff.txt": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+    "review-mypy.txt": "050c52a2b0c61e8b681ef5c485e0bc03340b8d55148e0acef27d744c8be42033",
+    "review-progress-and-link-red.txt": "59a1e4220df96572b40f7eb78e84f8393d971c3e7becb51fb321af5204bab697",
+    "review-shutdown-red.txt": "1bc515ae0e6d928b9a4463c96becb3949eb345819b91d30eb9d954c0d430365e",
+    "review-absolute-deadline-red.txt": "2146e14cfc4a9cc8982ea51b2adccad20de3aed3066a2f8e831b261ba54db764"
+  }
+}

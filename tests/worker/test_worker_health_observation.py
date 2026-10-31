@@ -161,3 +161,64 @@ def test_attach_never_overwrites_existing_data_or_another_instance(tmp_path):
     stopped = owned.read_bytes()
     first.close()
     assert owned.read_bytes() == stopped
+
+
+def test_cached_readiness_cannot_outlive_real_control_progress(tmp_path):
+    now = [14.5]
+    path = tmp_path / "control-age.json"
+    health = WorkerHealth(clock=lambda: now[0])
+    health.attach(path)
+    lease = SimpleNamespace(expires_at=datetime.now(UTC) + timedelta(seconds=30))
+    health.command_tick(lease, 10.0)  # The last real completed control/maintenance is 4.5s old.
+    state = health.snapshot()
+    assert state["ready"]
+    now[0] = 15.1  # Cache is fresh, but actual progress is older than the five-second budget.
+    assert not health.snapshot()["ready"]
+    assert not health.snapshot()["control_fresh"]
+    assert not read_worker_health(path, state["pid"], state["instance_id"], now=now[0])["ready"]
+
+
+def test_local_reader_rejects_symbolic_link(tmp_path):
+    health = WorkerHealth()
+    source = tmp_path / "source.json"
+    alias = tmp_path / "alias.json"
+    health.attach(source)
+    health.legacy_tick(busy=False)
+    state = health.snapshot()
+    alias.symlink_to(source)
+    assert not read_worker_health(
+        alias, state["pid"], state["instance_id"], now=state["observed_at"]
+    )["ready"]
+
+
+def test_local_reader_rejects_fifo_without_blocking(tmp_path):
+    import os
+    import subprocess
+    import sys
+
+    path = tmp_path / "not-a-snapshot"
+    os.mkfifo(path)
+    code = (
+        "from pathlib import Path; from time import monotonic; "
+        "from zebra_agent_worker.worker_health import read_worker_health; "
+        "import sys; assert not read_worker_health(Path(sys.argv[1]), 1, 'expected', "
+        "now=monotonic())['ready']"
+    )
+    # A reverted blocking FIFO open must fail and be reaped, never hang the test runner.
+    try:
+        subprocess.run([sys.executable, "-c", code, str(path)], check=True, timeout=5)
+    finally:
+        path.unlink(missing_ok=True)
+
+
+def test_recording_overhead_cannot_extend_progress_deadline():
+    now = [14.0]
+
+    def clock():
+        now[0] += 0.1
+        return now[0]
+
+    health = WorkerHealth(clock=clock)
+    lease = SimpleNamespace(expires_at=datetime.now(UTC) + timedelta(seconds=30))
+    health.command_tick(lease, 10.0)
+    assert health.snapshot()["valid_until"] <= 15.0

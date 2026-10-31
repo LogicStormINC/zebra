@@ -6,10 +6,11 @@
 - Acceptance: 合同revision同步、UX指标与场景/任务逐项对应、目标不冒充实测、旧数据/收据/unknown/Coverage不变；仅静态文档校验，无业务实现/重型测试/Docker/生产操作。
 
 # CA-HA-02 — API/Worker就绪与健康（实施）
-- Status: Review（候选）；2026-10-31 定向52通过、局部Ruff/mypy/产品边界通过；完整门禁/真实PG/集群未验；用户“开始实施”授权后Ready并领取；Owner Luke Ding，执行Codex；branch codex/ca-ha-02-readiness，独立worktree ca-ha-02-readiness/zebra-agent。
+- Status: Review（候选）；2026-10-31 初次52项保留；本轮复核修复后58项通过、局部Ruff/mypy/产品边界通过；完整门禁/真实PG/集群未验；用户“开始实施”授权后Ready并领取；Owner Luke Ding，执行Codex；branch codex/ca-ha-02-readiness，独立worktree ca-ha-02-readiness/zebra-agent。
 - Depends on: 01 revision2已合入e8a4f10b；本分支摘取UX文档01530810为559422d7，不夹带业务父提交。02无强停依赖；03仍等待02。
 - Owned paths: apps/api/src/zebra_agent_api/{http,http_host_auth,routes,api_status_mixin,health_readiness}.py；apps/worker/src/zebra_agent_worker/{main,loop,command_process,worker_loop_service,worker_health}.py；tests/api/{test_routes,test_host_auth_http,test_cloud_ha_health}.py；tests/worker/{test_loop,test_command_process,test_worker_health_observation}.py；docs/CA-HA-02_readiness_preflight.md、docs/contracts/cloud-ha-v1/、docs/evidence/ca-ha-02/；docs/{AGENT_TASKS.md,README.md,CLOUD_HIGH_AVAILABILITY_PLAN_v1.md,CLOUD_HIGH_AVAILABILITY_TASKS_v1.md}；PROGRESS.md、WORKLOG.md、task_plan.md。
 - Boundary: 复用既有epoch只读查询、Task I/O预算、启动schema校验和Worker真实进展；不写core/storage/Helm，不改执行/租约/收据/unknown/Coverage。仅精确GET健康路径，旧/health保持。
+- Review follow-up：用户“继续”授权本卡复核修复；重点为真实控制进展截止与本机读取非阻塞；沿用原Owned paths，不解锁03。
 - Verification: 允许轻量定向pytest/局部静态检查；此前Docker/全量重型验证/持续压测暂停继续有效，未通过完整门禁不宣称全绿或生产HA。
 
 # CA-HA-01 — HA基线、DDD不变量与验收合同（仅文档）

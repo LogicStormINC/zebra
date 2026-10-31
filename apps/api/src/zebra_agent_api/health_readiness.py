@@ -1,7 +1,7 @@
 """Process health and aged control-plane observations; never execution authority."""
 
 from collections.abc import AsyncIterator, Callable
-from contextlib import asynccontextmanager
+from contextlib import AsyncExitStack, asynccontextmanager
 from threading import Event, Lock, Thread
 from time import monotonic
 from typing import Any
@@ -111,18 +111,15 @@ class ApiHealth:
 
     @asynccontextmanager
     async def lifespan(self, _app: FastAPI) -> AsyncIterator[None]:
-        try:
+        async with AsyncExitStack() as cleanup:
+            if self.api.stream_notifications is not None:
+                cleanup.push_async_callback(self.api.stream_notifications.close)
+            if self.api.stream_v2_reader is not None:
+                cleanup.push_async_callback(self.api.stream_v2_reader.close)
+            cleanup.callback(self.close)
             if self.api.settings.deployment != "local":
                 from zebra_agent_api.host_auth import warm_host_grant_keys
 
                 await warm_host_grant_keys(self.authorizer)
             self.start()
             yield
-        finally:
-            try:
-                self.close()
-            finally:
-                if self.api.stream_v2_reader is not None:
-                    await self.api.stream_v2_reader.close()
-                if self.api.stream_notifications is not None:
-                    await self.api.stream_notifications.close()

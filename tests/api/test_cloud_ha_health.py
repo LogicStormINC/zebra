@@ -3,6 +3,7 @@
 from threading import Event
 from time import monotonic
 
+import pytest
 from fastapi.testclient import TestClient
 from zebra_agent_api import create_http_app
 from zebra_agent_api.health_readiness import ApiHealth
@@ -126,7 +127,6 @@ def test_startup_dependency_failure_never_starts_or_readies_probe(monkeypatch):
     import asyncio
     from types import SimpleNamespace
 
-    import pytest
     from zebra_agent_api import host_auth
 
     async def unavailable(_):
@@ -147,3 +147,44 @@ def test_startup_dependency_failure_never_starts_or_readies_probe(monkeypatch):
 
     asyncio.run(enter())
     assert not health.running and health.status() == "not_ready"
+
+
+@pytest.mark.parametrize("failing", ["health", "reader"])
+def test_shutdown_attempts_every_owned_resource_even_after_failure(monkeypatch, failing):
+    import asyncio
+    from types import SimpleNamespace
+
+    log = []
+
+    async def reader_close():
+        log.append("reader")
+        if failing == "reader":
+            raise RuntimeError("owned reader close failed")
+
+    async def notification_close():
+        log.append("notifications")
+
+    api = SimpleNamespace(
+        settings=SimpleNamespace(deployment="local"),
+        stream_v2_reader=SimpleNamespace(close=reader_close),
+        stream_notifications=SimpleNamespace(close=notification_close),
+    )
+    health = ApiHealth(api, check=lambda: True)
+    close = health.close
+
+    def health_close():
+        log.append("health")
+        close()
+        if failing == "health":
+            raise RuntimeError("owned health close failed")
+
+    monkeypatch.setattr(health, "close", health_close)
+
+    async def run():
+        with pytest.raises(RuntimeError, match="owned .* close failed"):
+            async with health.lifespan(None):
+                assert health.running
+
+    asyncio.run(run())
+    assert not health.running
+    assert log == ["health", "reader", "notifications"]

@@ -1,0 +1,55 @@
+.F                                                                       [100%]
+=================================== FAILURES ===================================
+____ test_shutdown_attempts_every_owned_resource_even_after_failure[reader] ____
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10fc445c0>
+failing = 'reader'
+
+    @pytest.mark.parametrize("failing", ["health", "reader"])
+    def test_shutdown_attempts_every_owned_resource_even_after_failure(monkeypatch, failing):
+        import asyncio
+        from types import SimpleNamespace
+    
+        log = []
+    
+        async def reader_close():
+            log.append("reader")
+            if failing == "reader":
+                raise RuntimeError("owned reader close failed")
+    
+        async def notification_close():
+            log.append("notifications")
+    
+        api = SimpleNamespace(
+            settings=SimpleNamespace(deployment="local"),
+            stream_v2_reader=SimpleNamespace(close=reader_close),
+            stream_notifications=SimpleNamespace(close=notification_close),
+        )
+        health = ApiHealth(api, check=lambda: True)
+        close = health.close
+    
+        def health_close():
+            log.append("health")
+            close()
+            if failing == "health":
+                raise RuntimeError("owned health close failed")
+    
+        monkeypatch.setattr(health, "close", health_close)
+    
+        async def run():
+            with pytest.raises(RuntimeError, match="owned .* close failed"):
+                async with health.lifespan(None):
+                    assert health.running
+    
+        asyncio.run(run())
+        assert not health.running
+>       assert log == ["health", "reader", "notifications"]
+E       AssertionError: assert ['health', 'reader'] == ['health', 'r...otifications']
+E         
+E         Right contains one more item: 'notifications'
+E         Use -v to get more diff
+
+tests/api/test_cloud_ha_health.py:190: AssertionError
+=========================== short test summary info ============================
+FAILED tests/api/test_cloud_ha_health.py::test_shutdown_attempts_every_owned_resource_even_after_failure[reader]
+1 failed, 1 passed in 1.37s

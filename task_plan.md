@@ -1,3 +1,10 @@
+# CA-HA-02 Review续作
+
+- 输入6af4e5dd，沿原Owned paths复核，不启动03/重型验证/Docker。
+- 修复真实控制进展绝对截止、符号链接/FIFO、关闭异常后资源遗漏；对应RED→GREEN。
+-58项定向/局部Ruff/mypy7/产品边界通过，新证据与原52项分开保存。
+-02保持Review，完整make test/check及真实PG/故障/容量未验，不据此合并/部署或解锁03。
+
 # CA-HA-02 当前实现
 
 - 从e8a4f10b独立分支，摘取UX文档01530810为559422d7；Ready/Owned paths先登记。
