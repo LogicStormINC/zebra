@@ -1,6 +1,6 @@
 # CA-HA-01 基线、依赖和后续范围
 
-日期2026-10-31；状态Review：仅设计合同/静态复核完成；独立评审及实现验证未执行。
+日期2026-10-31；状态：revision 2已完成本轮单人文档复核，待授权集成；非独立双人审查，未执行实现验证。
 [DDD/SLO/F1合同](contracts/cloud-ha-v1/README.md) · [任务总表](CLOUD_HIGH_AVAILABILITY_TASKS_v1.md)。
 
 ## 1. 依赖核对
@@ -37,7 +37,7 @@
 
 | 卡 | 现有候选路径（相对仓库根） | 拟新增最小职责文件/证据 |
 | --- | --- | --- |
-| 02 | apps/api/src/zebra_agent_api/api_status_mixin.py、routes.py；apps/worker/src/zebra_agent_worker/main.py | apps/api/src/zebra_agent_api/health_readiness.py；apps/worker/src/zebra_agent_worker/worker_health.py；tests/api/test_cloud_ha_health.py；tests/worker/test_cloud_ha_health.py |
+| 02 | apps/api/src/zebra_agent_api/{http,http_host_auth,api_status_mixin,routes}.py；apps/worker/src/zebra_agent_worker/{main,loop,command_process,worker_loop_service}.py | apps/api/src/zebra_agent_api/health_readiness.py；apps/worker/src/zebra_agent_worker/worker_health.py；tests/api/test_cloud_ha_health.py；tests/worker/test_cloud_ha_health.py |
 | 03 | apps/worker/src/zebra_agent_worker/worker_polling.py、worker_loop_service.py、command_process.py；packages/agent-storage/src/agent_storage/postgres/connection_pool.py、task_io.py；apps/api/src/zebra_agent_api/server.py；deploy/helm/zebra-agent/templates/api-deployment.yaml | tests/worker/test_cloud_ha_polling.py；tests/agent_storage/test_cloud_ha_budgets.py；入口池修复与08模板重叠须先合03、08只改剩余部分 |
 | 04 | apps/worker/src/zebra_agent_worker/command_process.py；候选97463d00a的session_process.py、runtime_cleanup_service.py及agent-runtime/force_stop_cleanup.py、process_supervision.py尚未进入主线，当前只读依赖 | tests/worker/test_cloud_ha_drain.py；docs/evidence/ca-ha-04/；不授权将候选文件重复实现 |
 | 05 | apps/worker/src/zebra_agent_worker/claims.py、recovery.py、lease_heartbeat.py；packages/agent-storage/src/agent_storage/postgres/leases.py | tests/worker/test_cloud_ha_takeover.py；tests/agent_storage/test_cloud_ha_fencing.py |
@@ -76,6 +76,13 @@
 
 本卡不冻结生产资源规格或认定环境达标；冻结的是E1目标、F1故障和测量合同。
 修改E1、SLO、排除范围或不变量须提升合同revision，重新评审受影响验收。
-本卡Review不自动解锁02；独立评审待安排，不冒称已做双人审查。
+本轮单人复核不冒称独立双人审查；01合入后02技术依赖满足，但当前仅[02前置文档](CA-HA-02_readiness_preflight.md)，无实现授权，仍Locked。
+02/03共享Worker采样/控制接线，03须依赖02合入。02文件尺寸临界时仅抽取本职责，不能超限堆代码。
 如需未合并强停实现、生产参数、重型环境或新domain行为，停在所属依赖，保留明确未验证项。
 只允许轻量diff、JSON、链接、路径与任务一致性检查，完整make test/check未运行。
+
+## 6. 本轮复核修正
+
+revision 2修正执行fence与API控制CAS范围、原证明与可重建投影边界、
+RTO探测/p99与DR水位口径、E1分型、故障子项重复次数、匿名健康最小信息与有界采样、
+02真实HTTP鉴权/生命周期范围及02→03串行依赖。详见[复核记录](evidence/ca-ha-01/review.json)。

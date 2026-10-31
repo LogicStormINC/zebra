@@ -18369,3 +18369,19 @@ and10 fault IDs; new/affected HA documents81/113/157/185 lines with valid local
 links. No change under apps/packages/deploy/tests/sdks. No full gate pass claimed.
 CA-HA-01 remains Review until independent review/integration; feature source
 publication is separate from production release and does not unlock02.
+
+
+## 2026-10-31 — CA-HA-01 review fixes and CA-HA-02 preflight
+
+User authorizes documentation review/fix/integration/push plus02 dependency check;
+no business code, heavy tests or Docker. Input7e692719; remote cloud-agent fetched
+atd782039c. Nine inline single-review findings recorded; no independent reviewer
+claim. Contract revision2 distinguishes worker fence vs API/control CAS, immutable
+proof vs derived projections, RTO/p99/DR clocks and sample denominators, E1 short
+admission vs prefilled recovery, per-subcase faults and exact safe anonymous
+health/aged background observations. Extended02 HTTP lifecycle/auth and Worker
+progress wiring;03 now waits02 to avoid shared-file collision. Source sizes were
+read only: http/routes500, auth488, loop486, command_process488; future code must
+extract only relevant responsibility and preserve guards.02 remains Locked,
+unclaimed, no implementation/new files under source/test paths. Originals/data/
+unknown/Coverage and primary dirty bytes preserved. Integration outcome below.

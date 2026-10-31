@@ -1,0 +1,76 @@
+{
+  "task": "CA-HA-01",
+  "review_input_commit": "7e692719d86d0e6f7fa28c26933a42c6269728d3",
+  "contract_revision_before": 1,
+  "contract_revision_after": 2,
+  "reviewer": "Codex inline single reviewer",
+  "independent_review": false,
+  "authorization": "documentation review, merge/push and CA-HA-02 dependency check only",
+  "findings": [
+    {
+      "id": "R-01",
+      "problem": "Worker执行fence与API/独立控制CAS混为一谈",
+      "resolution": "限定INV-02，控制准入不依赖Worker持有lease",
+      "status": "resolved_in_documentation"
+    },
+    {
+      "id": "R-02",
+      "problem": "不可变证明与可重建投影未区分",
+      "resolution": "限定INV-07，允许来源一致的投影重建而不改原证明",
+      "status": "resolved_in_documentation"
+    },
+    {
+      "id": "R-03",
+      "problem": "RTO探测频率、p99样本与DR水位不明确",
+      "resolution": "每秒10组恢复探测、1000样本nearest-rank、PG/对象共同恢复水位",
+      "status": "resolved_in_documentation"
+    },
+    {
+      "id": "R-04",
+      "problem": "持续5rps与32个长期活跃Task口径冲突",
+      "resolution": "E1-A短任务开环与E1-R预填恢复分开验收，饱和/超限不删样本",
+      "status": "resolved_in_documentation"
+    },
+    {
+      "id": "R-05",
+      "problem": "F编号包含多个故障但重复次数可被误解",
+      "resolution": "每个具体case_id独立3次，排除同时切断多个依赖冒充单故障",
+      "status": "resolved_in_documentation"
+    },
+    {
+      "id": "R-06",
+      "problem": "探针鉴权及公开信息与预算边界不足",
+      "resolution": "两个精确匿名GET，公开status-only，后台观测有界，过期非就绪",
+      "status": "resolved_in_documentation"
+    },
+    {
+      "id": "R-07",
+      "problem": "02缺真实HTTP生命周期/鉴权/Worker tick接线范围",
+      "resolution": "补http/http_host_auth/loop/command_process/worker_loop_service及负面回归",
+      "status": "resolved_in_documentation"
+    },
+    {
+      "id": "R-08",
+      "problem": "02/03共享Worker文件却无先后依赖",
+      "resolution": "03依赖02合入，维持独占范围",
+      "status": "resolved_in_documentation"
+    },
+    {
+      "id": "R-09",
+      "problem": "http/routes已500行但后续方案默认可以堆接线",
+      "resolution": "02前置明确仅职责抽取与接线，不删保护，不越500行",
+      "status": "resolved_in_documentation"
+    }
+  ],
+  "implementation_tests": "not_run",
+  "fault_experiments": "not_run",
+  "docker": "not_started",
+  "protected": [
+    "unrelated_dirty_work",
+    "history",
+    "original_receipts",
+    "unknown",
+    "coverage"
+  ],
+  "static_validation": "pass: diff whitespace, JSON, source path existence, links, document limits, task locks, revision and unchanged implementation trees"
+}

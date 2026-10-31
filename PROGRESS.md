@@ -1,3 +1,11 @@
+## 2026-10-31 — CA-HA-01 revision 2复核 / 02前置
+
+单人文档复核修正9项：[记录](docs/evidence/ca-ha-01/review.json)。区分执行fence/控制CAS、
+原证明/可重建投影，明确SLO/DR和E1-A/E1-R及故障子项计量，补探针鉴权/预算和实际接线路径。
+02前置见[任务核对](docs/CA-HA-02_readiness_preflight.md)，技术依赖随01合入满足但仍Locked；
+03因共享Worker文件须依赖02。http/routes已500行，未来须职责抽取而不是叠加逻辑。
+只有文档静态检查，无业务实现、完整门禁/故障实测/Docker/生产操作；历史/原收据/unknown/Coverage不变。
+
 ## 2026-10-31 — CA-HA-00 已集成，CA-HA-01设计合同Review
 
 00文档已单独摘取并推送cloud-agent d782039c，未带入父97463d00a的强停业务代码。

@@ -72,3 +72,9 @@ and a path-bounded implementation task is explicitly activated in `AGENT_TASKS.m
 - [基线、依赖、开关与逐卡路径](CA-HA-01_baseline_and_scope.md)。
 - [DDD不变量、SLO、E1/F1及证据](contracts/cloud-ha-v1/README.md) · [机器可读规划](contracts/cloud-ha-v1/acceptance.json)。
 - 00已推送cloud-agent d782039c；01仅设计Review，02–10 Locked；强停候选仍独立依赖。
+
+## CA-HA-01 revision 2复核与02前置
+
+- [复核发现与修正记录](evidence/ca-ha-01/review.json)：单人文档复核，不是独立审查或HA实测。
+- [CA-HA-02任务与依赖](CA-HA-02_readiness_preflight.md)：01合入后技术前置满足；未获实施授权仍Locked。
+- [合同](contracts/cloud-ha-v1/README.md)与JSON同步revision 2；03因共享Worker文件改为依赖02。

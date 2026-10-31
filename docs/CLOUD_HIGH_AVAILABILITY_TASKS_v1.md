@@ -12,7 +12,7 @@
 | CA-HA-00 | 正式方案、任务和文档索引 | Done：已集成推送d782039c | 当前用户授权 | TL/文档 |
 | CA-HA-01 | 固定基线、DDD不变量、SLO与故障合同 | Review：设计/静态复核，非实现 | 00评审并集成，且用户另行授权后续工作 | TL/CORE/QA |
 | CA-HA-02 | API/Worker真实就绪与健康合同 | Locked | 01 | APP/RUNTIME |
-| CA-HA-03 | 资源预算、空转退避与租户技术隔离 | Locked | 01 | RUNTIME/CORE |
+| CA-HA-03 | 资源预算、空转退避与租户技术隔离 | Locked | 01、02（共享Worker接线须串行） | RUNTIME/CORE |
 | CA-HA-04 | 排空、进程隔离、强停与资源回收 | Locked | 02、03；强停候选须独立合入/验收 | RUNTIME/SRE |
 | CA-HA-05 | Worker跨副本接管与旧执行者隔离 | Locked | 03、04 | CORE/存储 |
 | CA-HA-06 | PostgreSQL/对象/Redis/身份依赖容错 | Locked | 02、05 | SRE/存储/安全 |
@@ -50,10 +50,11 @@ Review不是Done；Done须合并并回写。生产运行及生产故障注入不
 ### CA-HA-02 — 健康与就绪
 
 - 复用：api_status_mixin.py、routes.py、现有Runtime Gate只读观测；不复制领域判定。
-- 候选Owned paths：apps/api/src/zebra_agent_api/{api_status_mixin,routes}.py；
-  apps/worker/src/zebra_agent_worker/{main,runtime_preflight}.py；
+- 候选Owned paths：apps/api/src/zebra_agent_api/{http,http_host_auth,api_status_mixin,routes}.py；
+  apps/worker/src/zebra_agent_worker/{main,loop,command_process,worker_loop_service}.py；
   tests/api/test_cloud_ha_health.py、tests/worker/test_cloud_ha_health.py；对应合同/证据。
 - 补齐：显式存活/启动/就绪语义与Worker能力观测，兼容现有/health消费者。
+- [02依赖/鉴权/尺寸/验收前置](CA-HA-02_readiness_preflight.md)；依赖满足不等于本轮授权代码实现。
 - 验收：数据库不可达、连接耗尽、版本不兼容、排空分别返回明确非就绪；
   进程存活不因共享依赖故障被判死；恢复后自动恢复就绪且不开新Task。
 - 探针短预算、缓存不掩盖超期事实；不加载历史/创建资源；错误响应不泄露DSN和凭据。

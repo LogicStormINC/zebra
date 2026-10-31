@@ -1,7 +1,7 @@
 {
   "contract": "cloud-ha-v1",
-  "revision": 1,
-  "status": "design_review",
+  "revision": 2,
+  "status": "design_reviewed_single_reviewer",
   "baseline_commit": "d782039caa2543cff66afadf64c77969b4037641",
   "implementation_authorized": false,
   "heavy_validation_authorized": false,
@@ -59,7 +59,25 @@
     "max_input_kib": 64,
     "max_event_payload_kib": 16,
     "reference_tasks": 10000,
-    "reference_events": 1000000
+    "reference_events": 1000000,
+    "scenarios": [
+      {
+        "id": "E1-A",
+        "arrival_model": "open_loop",
+        "admissions_per_second": 5,
+        "workload": "declared deterministic short model/tool responses, actual API/PG/Worker",
+        "active_task_target_ceiling": 32,
+        "client_saturation": "not_passed; record offered/issued/completed; no dropped samples"
+      },
+      {
+        "id": "E1-R",
+        "arrival_model": "prefill_then_fault",
+        "active_tasks": 32,
+        "executing_slots": 8,
+        "queued_tasks": 24,
+        "sustained_new_admissions_per_second": 0
+      }
+    ]
   },
   "required_environment_parameters": [
     "storage_versions_and_limits",
@@ -180,7 +198,13 @@
     "deploy/helm/zebra-agent/templates/api-pdb.yaml",
     "deploy/helm/zebra-agent/templates/worker-pdb.yaml",
     "tests/deploy/test_helm_chart.py",
-    "scripts/build_release_evidence.py"
+    "scripts/build_release_evidence.py",
+    "apps/api/src/zebra_agent_api/http.py",
+    "apps/api/src/zebra_agent_api/http_host_auth.py",
+    "tests/api/test_routes.py",
+    "tests/api/test_host_auth_http.py",
+    "tests/worker/test_loop.py",
+    "tests/worker/test_command_process.py"
   ],
   "future_task_status": {
     "CA-HA-02": "Locked",
@@ -193,5 +217,42 @@
     "CA-HA-09": "Locked",
     "CA-HA-10": "Locked"
   },
-  "evidence_status": "static_documentation_only"
+  "evidence_status": "static_documentation_only",
+  "review_input_commit": "7e692719d86d0e6f7fa28c26933a42c6269728d3",
+  "review_evidence": "../../evidence/ca-ha-01/review.json",
+  "invariant_scopes": {
+    "INV-02": "execution lease/fence for Worker commits; API/control use owning authorization/CAS/original transactions",
+    "INV-07": "immutable originals preserved; derived projections may rebuild without replacing source proofs"
+  },
+  "slo_measurement": {
+    "api_recovery_probe_interval_seconds": 1,
+    "api_recovery_consecutive_groups": 10,
+    "api_recovery_completion": "last complete group via LB and authoritative original reads; not /health",
+    "p99_algorithm": "nearest_rank",
+    "minimum_samples_per_operation": 1000,
+    "warmup_minutes": 5,
+    "steady_minutes": 30,
+    "error_samples": "never excluded; deadline samples and failure ratio retained",
+    "dr_watermark": "common PG/object recoverable checkpoint plus original Coverage read-back"
+  },
+  "fault_repetition_scope": "every concrete unique case_id/subcase, not one arbitrary example per F-ID",
+  "health_design": {
+    "existing_health": "unchanged",
+    "anonymous_exact_get_paths": [
+      "/health/live",
+      "/health/ready"
+    ],
+    "public_body": "status_only_no_dependency_or_topology",
+    "response_budget_ms": 1000,
+    "max_observation_age_seconds": 5,
+    "probe_reads_refresh_timestamp": false,
+    "worker_surface": "process_local_read_only_no_public_port",
+    "implementation_status": "not_implemented"
+  },
+  "path_overlap_order": {
+    "CA-HA-03": [
+      "CA-HA-01",
+      "CA-HA-02"
+    ]
+  }
 }
