@@ -1,5 +1,5 @@
 # CA-HA-00 — Cloud Agent 高可用正式方案与任务拆解
-- Status: Review；2026-10-31 文档完成并通过静态检查，待评审/集成；先登记 Ready 后领取；人类 Owner Luke Ding，执行 Codex。
+- Status: Review；2026-10-31 文档完成并通过静态检查，本轮授权仅文档集成及GitHub推送；先登记 Ready 后领取；人类 Owner Luke Ding，执行 Codex。
 - Branch: codex/ca-ha-00-plan；独立 worktree ca-ha-00-plan/zebra-agent；基线97463d00a。
 - Owned paths: docs/CLOUD_HIGH_AVAILABILITY_PLAN_v1.md、docs/CLOUD_HIGH_AVAILABILITY_TASKS_v1.md、docs/README.md、docs/AGENT_TASKS.md、docs/实施任务拆解与阶段验收.md、PROGRESS.md、WORKLOG.md、task_plan.md。
 - 本轮仅正式文档和轻量静态校验；不得修改业务代码、启动重型测试/Docker、部署或迁移。

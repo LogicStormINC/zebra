@@ -18335,3 +18335,14 @@ all local links resolved; CA-HA-01–10 each has a detailed card and Locked stat
 all eight changed/new paths are documentation within registered ownership.
 No make test/check, Docker, runtime/model or production commands executed.
 CA-HA-00 moves to Review, not Done; no implementation card unlocked.
+
+
+## 2026-10-31 — CA-HA-00 documentation-only integration
+
+Fetched origin/cloud-agent9cde8f7e. Original f0762ca5 has unmerged business-code
+parent97463d00a; cherry-picked only its documentation as d7aabfaa. Five governance
+conflicts resolved by retaining target bytes plus exact HA additions; no force-stop
+source/history was merged. Corrected baseline/dependency wording and removed the
+relative link to the absent candidate force-stop document. Independent integration
+worktree protects primary dirty changes. Documentation diff/link/task checks only;
+no business code, heavy tests, Docker, production deployment or migration.

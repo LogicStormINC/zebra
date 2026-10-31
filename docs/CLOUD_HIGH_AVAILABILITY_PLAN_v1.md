@@ -16,8 +16,9 @@ HA 的目标是故障期间安全接收、有限降级、可证明接管和恢�
 
 ## 2. 评估基线与证据等级
 
-本地代码基线97463d00a（包含通用强停），本地 origin/cloud-agent 记录9cde8f7e。
-未联网确认最新 GitHub、未检查生产拓扑或执行故障注入；实施时必须固定新候选源。
+原评估基线97463d00a包含未合入的通用强停；本次文档集成基线为已联网核对的
+origin/cloud-agent 9cde8f7e。仅摘取f0762ca5文档，不将97463d00a业务代码一同合入。
+本次已fetch确认GitHub分支；未检查生产拓扑或执行故障注入，实施时仍须固定新候选源。
 primary 工作树的无关未提交修改未纳入本方案基线，也未改动。
 
 | 等级 | 含义 | 本方案使用方式 |
@@ -36,7 +37,7 @@ primary 工作树的无关未提交修改未纳入本方案基线，也未改动
 | 租约 fencing | postgres/leases.py：数据库时间、epoch/token/owner 校验 | 杀 Worker、旧 Worker 复活与网络分区的联合证据；识别不能被本地 fence 撤回的外部请求 |
 | 数据库预算 | postgres/connection_pool.py：池1–8、等待上限32、超时2s；task_io.py 独立预算 | 核对各组合根/子进程是否覆盖，计算全副本总连接，连接切换后安全恢复 |
 | Worker 并发与退出 | command_process.py 有界执行/维护及真实 drain；旧循环仍在 | 固定 cutover/开关；查 blocked candidate、异常与恢复扫描是否空转或饥饿 |
-| 强停与精确清理 | CLOUD_FORCE_STOP_20261030.md；H：99通过/2条件跳过；Cloud/Linux显式启用 | 纳入实际部署组合与跨副本演练；未证明退出时保持 requires_reconciliation |
+| 强停与精确清理 | 候选97463d00a的CLOUD_FORCE_STOP_20261030.md；H：99通过/2条件跳过；尚未合入本次主线 | 纳入实际部署组合与跨副本演练；未证明退出时保持 requires_reconciliation |
 | 发布与门禁 | Runtime Gate、P5 原意图/排空/回退及固定镜像合同 | 接入实际就绪/退出；升级与回退不能令旧任务快照或旧协议漂移 |
 | 部署 | deploy/helm/zebra-agent：API/Worker各2副本、PDB、资源限制 | 跨节点/故障域、Worker探针、排空预算；不能只靠副本数/PDB判定 HA |
 | API 健康 | api_status_mixin.py health() 固定200/ok；Helm三种探针共用/health | 分离存活、启动与就绪；关键依赖不可用时撤流，避免依赖故障触发重启风暴 |
@@ -147,7 +148,9 @@ HTTP可用性样本包含服务错误、超时及服务端过载拒绝；调用�
 ## 9. 参考与权威
 
 - [最终架构](Codex-like工程Agent平台最终架构设计_v1.0.md)、[协作规则](02_Codex-like工程Agent平台_多人协作任务分配与RACI_v1.0.md)。
-- [通用强停合同与证明](CLOUD_FORCE_STOP_20261030.md)、[既有发布演练](CLOUD-ROLLOUT-R14.md)。
+- 通用强停候选：97463d00a的`docs/CLOUD_FORCE_STOP_20261030.md`，在本地
+  `codex/cloud-force-stop-20261030`保留，未随文档集成；后续启用必须单独评审合入。
+- [既有发布演练](CLOUD-ROLLOUT-R14.md)。
   R14含历史Trench组合，仅复用通用发布/证据方法，不重新引入业务依赖。
 - [Kubernetes Disruptions](https://kubernetes.io/docs/concepts/workloads/pods/disruptions/)：PDB不阻止非自愿中断。
 - [PostgreSQL 主备复制](https://www.postgresql.org/docs/17/warm-standby.html)：异步复制的切换丢失边界。

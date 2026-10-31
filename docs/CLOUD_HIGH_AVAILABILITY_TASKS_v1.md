@@ -13,7 +13,7 @@
 | CA-HA-01 | 固定基线、DDD不变量、SLO与故障合同 | Locked | 00评审并集成，且用户另行授权后续工作 | TL/CORE/QA |
 | CA-HA-02 | API/Worker真实就绪与健康合同 | Locked | 01 | APP/RUNTIME |
 | CA-HA-03 | 资源预算、空转退避与租户技术隔离 | Locked | 01 | RUNTIME/CORE |
-| CA-HA-04 | 排空、进程隔离、强停与资源回收 | Locked | 02、03 | RUNTIME/SRE |
+| CA-HA-04 | 排空、进程隔离、强停与资源回收 | Locked | 02、03；强停候选须独立合入/验收 | RUNTIME/SRE |
 | CA-HA-05 | Worker跨副本接管与旧执行者隔离 | Locked | 03、04 | CORE/存储 |
 | CA-HA-06 | PostgreSQL/对象/Redis/身份依赖容错 | Locked | 02、05 | SRE/存储/安全 |
 | CA-HA-07 | 多API、流重连、调度与原操作恢复 | Locked | 05、06 | APP/CORE |
