@@ -100,6 +100,7 @@
     "heartbeat-order-after.txt": "8b77a70d9ba15d9dd8a5a3329d4d537d026c46ac3509d9fb7b65f8b67b9c83f8",
     "heartbeat-order-before.txt": "dc3ee0fd399d518e8ea882ce505ec0fd9483a248eccbffd6f9a82123dcf5330d",
     "heartbeat-order-repeat.txt": "150f1cb684f12fdfb30ef6cfeff0a4fe9a228fa9f756594e1a09e1ebb8152d07",
+    "historical-output-integrity.json": "ae7b2a5641d23b52fff728c8dba0895e11f9beb165827bdb0e78f6be3867ff46",
     "make-check.txt": "7527d16cf32283792687b9a36d4895b72fbb4682d47f8cff54dac47f2226b942",
     "make-test-result.json": "7cf2286f92a396716ef7609ce8ecba9f45e3a1aa3154d1ca8ac751fe40e97dab",
     "make-test.txt": "1e821072e9aab5a1f3ef54d8d53f94531a307b01e8b0b4491eb97266473195fd",
@@ -129,5 +130,6 @@
         "exact_original_gzip": "first-make-test.txt.gz"
       }
     }
-  }
+  },
+  "historical_raw_output_audit": "historical-output-integrity.json"
 }
