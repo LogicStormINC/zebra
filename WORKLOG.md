@@ -18393,3 +18393,32 @@ trees byte-identical to d782039c (git diff --exit-code). CA-HA-01 now Done for
 documentation only;02 dependencies satisfied but Locked/unclaimed without code
 authorization. No heavy tests or Docker started. Remaining housekeeping receipt
 updates status only; no inherited business changes or force-stop integration.
+
+
+## 2026-10-31 — CA-HA-UX-00 user responsiveness/performance design
+
+User authorizes formal HA plan/tasks supplement only; independent branch/worktree
+frome8a4f10b. Registered Ready/claimed before edits. Added revision3 UX01–10:
+client submission vs receipted acceptance, queue/fairness, model TTFT vs durable
+frame/render, stall observations vs lawful waiting/unknown, hanging-task isolation,
+control acceptance vs actual executor/lease/cleanup proof, original-cursor recovery,
+overload hard caps, large-history bounded reads/UI and24h resource evidence.
+E1-C scopes at fixed total load andE1-O pressure steps are separate fromE1-R.
+All values are design targets/not_run, no actual performance claim. Map to owning
+03/04/07/08/09/10;02 remains technical health observation. No new DDD aggregate,
+second execution queue, browser credentials, state rewriting or consumer code.
+Frontend mock retained; real SDK/BFF/UI requires separately registered consumer
+source/contracts. Prior01 revision2 review remains historical evidence only.
+No business-code changes, make test/check, heavy tests, Docker, model calls or
+production operations. Final static verification recorded below.
+
+Static validation PASS: JSON parses,revision3; all10UX IDs appear in plan,
+contract and task index with owning cards; existing SLO admission/GET budgets
+remain consistent. All UX/F1 remain not_run and02–10Locked; authorization flags
+false. Relative links and changed document sizes pass (plan186,task230,contract
+243,JSON433,scope97,index87 lines); only10 registered documentation paths changed,
+no source/deploy/test/SDK delta or untracked runtime files. Initial ID check
+found grouped UX-03/07 spelling hiding literalUX-07; expanded grouped IDs and
+reran successfully. Per-scope insufficient samples explicitly remain unverified.
+No make test/check or environments run. Local source commit only; no mainline
+merge or GitHub push requested/performed for this supplement.

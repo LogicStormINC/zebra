@@ -1,3 +1,10 @@
+# CA-HA-UX-00 — 用户卡顿/卡死与多用户性能验收补充（文档）
+- Status: Review（文档）；2026-10-31 补充及静态校验完成；先登记Ready后领取；人类Owner Luke Ding，执行Codex。
+- Branch: codex/ca-ha-ux-00-plan；Worktree: ca-ha-ux-00-plan/zebra-agent；基线e8a4f10b。
+- Owned paths: docs/CLOUD_HIGH_AVAILABILITY_PLAN_v1.md、docs/CLOUD_HIGH_AVAILABILITY_TASKS_v1.md、docs/contracts/cloud-ha-v1/{README.md,acceptance.json}、docs/CA-HA-01_baseline_and_scope.md、docs/README.md、docs/AGENT_TASKS.md、PROGRESS.md、WORKLOG.md、task_plan.md。
+- Scope: 仅首响应/排队/流式/卡死/隔离/停止回收/容量的DDD归属、指标/分母/证明及原任务验收补充；不新建业务状态机或第二执行队列。
+- Acceptance: 合同revision同步、UX指标与场景/任务逐项对应、目标不冒充实测、旧数据/收据/unknown/Coverage不变；仅静态文档校验，无业务实现/重型测试/Docker/生产操作。
+
 # CA-HA-02 — API/Worker就绪与健康（前置核对，未实施）
 - Status: Locked；CA-HA-01 revision 2已于cloud-agent 1dd88bfd合入推送，技术依赖满足；仍需用户明确授权业务实现，本轮仅依赖核对。
 - Owner: 未领取；候选范围与验收见docs/CA-HA-02_readiness_preflight.md；不创建代码占位。

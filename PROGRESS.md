@@ -1,3 +1,12 @@
+## 2026-10-31 — CA-HA-UX-00 用户体验/并发性能补充（文档Review）
+
+[正式方案](docs/CLOUD_HIGH_AVAILABILITY_PLAN_v1.md)及[合同revision 3](docs/contracts/cloud-ha-v1/README.md)
+新增UX-01–10：首响应/排队/流式、疑似停滞、scope隔离、停止回收、容量/长历史/持续负载。
+区分准入与开始执行、上游TTFT与平台延迟、疑似卡死与终态、停止接受与精确退出/回收；
+E1-C多scope/E1-O分档独立验收，不从在线数或双副本推断执行容量。指标均未实测，02–10继续Locked。
+DDD保留原状态/事务/lease与派生视图边界；凭据留BFF，旧数据/原收据/unknown/Coverage不变。
+仅文档静态检查；无业务修改、重型测试/Docker、部署迁移，平台前端mock保持。
+
 ## 2026-10-31 — CA-HA-01文档已复核集成 / CA-HA-02待授权
 
 CA-HA-01 revision 2及复核修正已合入并推送cloud-agent 1dd88bfd，只有文档差异。

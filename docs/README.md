@@ -78,3 +78,10 @@ and a path-bounded implementation task is explicitly activated in `AGENT_TASKS.m
 - [复核发现与修正记录](evidence/ca-ha-01/review.json)：单人文档复核，不是独立审查或HA实测。
 - [CA-HA-02任务与依赖](CA-HA-02_readiness_preflight.md)：01合入后技术前置满足；未获实施授权仍Locked。
 - [合同](contracts/cloud-ha-v1/README.md)与JSON同步revision 2；03因共享Worker文件改为依赖02。
+
+## 用户卡顿/卡死与多用户性能（CA-HA-UX-00，仅设计）
+
+- [正式方案用户体验补充](CLOUD_HIGH_AVAILABILITY_PLAN_v1.md#9-用户卡顿卡死与多用户性能保障)。
+- [revision 3：UX-01–10计时、分母、E1-C/E1-O与验收](contracts/cloud-ha-v1/README.md#7-用户卡顿卡死与并发性能合同revision-3补充)。
+- [任务与验收映射](CLOUD_HIGH_AVAILABILITY_TASKS_v1.md#8-用户体验专项验收索引均未运行) · [机器可读目标](contracts/cloud-ha-v1/acceptance.json)。
+- 新增目标全部not_run，待评审；02–10仍Locked，前端mock和暂停重型环境的约束不变。
