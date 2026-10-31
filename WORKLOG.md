@@ -18317,3 +18317,21 @@ CA-P5-10 final design revision: initial full5 identity/context propagation failu
 CA-P5-09/10 combined final producer gates: make test11240 passed/3080 conditional skips, make check0 file-size violations/ruff/mypy1448/Eval30 passed; source hashes unchanged. Legacy real PG8 and original resource binding7 passed in exact-owned temporary PG (historical fixture replaced for isolation only; assertions unchanged). All owned temporary PG/anonymous volumes removed, no new volumes/networks;4 foreign-owner containers preserved. Source publication required before fresh consumer images; P5 not yet closed.
 
 CA-P5-08 verification resumed on9e91d75f after both producer gates passed and GitHub HTTPS remote verified. No code changes; consumer V22 uses new exact-source images in one environment. After cleanup compare frozen blobs and reuse current-turn full result if unchanged. Prior unknowns/data preserved; final S1 still pending.
+
+
+## 2026-10-31 — CA-HA-00 documentation-only HA plan
+
+User authorizes formal design/tasks only. Created independent codex/ca-ha-00-plan
+worktree from97463d00a; preserved primary dirty files. Recorded DDD owners, reuse
+and missing proofs, provisional SLO/fault envelope, stages01–10, immutable old
+Task/Run/receipts/unknown/Coverage and resource-cleanup rules. Updated docs index,
+stage entry, registry and progress. No business code, heavy tests, Docker commands,
+model calls, deployment or migration. Static documentation verification recorded
+below after execution; inherited oversized governance files are not restructured
+in this bounded task. Source remote/production topology remain unverified.
+
+Static validation PASS: git diff --check; new plan153 lines/tasks184 lines,
+all local links resolved; CA-HA-01–10 each has a detailed card and Locked status;
+all eight changed/new paths are documentation within registered ownership.
+No make test/check, Docker, runtime/model or production commands executed.
+CA-HA-00 moves to Review, not Done; no implementation card unlocked.

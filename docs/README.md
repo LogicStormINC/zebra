@@ -60,3 +60,9 @@ Historical documents must not override the active execution set.
 
 Accepted directions become executable only after their required ADR is approved
 and a path-bounded implementation task is explicitly activated in `AGENT_TASKS.md`.
+
+## Cloud Agent 高可用专项（规划，非HA达标证明）
+
+- [正式方案、DDD边界与目标](CLOUD_HIGH_AVAILABILITY_PLAN_v1.md)：复用矩阵、缺口、兼容/unknown保护及证据等级。
+- [分阶段任务与验收](CLOUD_HIGH_AVAILABILITY_TASKS_v1.md)：CA-HA-00–10、依赖、候选路径和故障矩阵。
+- 当前仅CA-HA-00文档授权；后续卡Locked，不恢复暂停的重型验收或Docker环境。

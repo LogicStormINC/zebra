@@ -1,3 +1,11 @@
+## 2026-10-31 — CA-HA-00 高可用正式方案（仅文档）
+
+[方案](docs/CLOUD_HIGH_AVAILABILITY_PLAN_v1.md)与[分阶段任务](docs/CLOUD_HIGH_AVAILABILITY_TASKS_v1.md)
+固定本地97463d00a静态基线，区分现有能力、历史证据和待验收缺口；不代表生产HA达标。
+DDD归属、旧任务/历史/原收据/unknown/Coverage保护、候选SLO与逐项故障证据均已定义。
+后续CA-HA-01–10保持Locked，未启动业务实现/重型测试/Docker/部署/迁移；暂停指令不变。
+本轮文档静态检查结果见WORKLOG；原工作树无关修改保持原样。
+
 ## 2026-10-31 CA-P5-INTEGRATE — authorized mainline integration
 
 P5 f8356c30 and remote ac8473b3 were merged as afb61121 and published to cloud-agent.

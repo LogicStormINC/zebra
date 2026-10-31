@@ -1,3 +1,10 @@
+# CA-HA-00 — Cloud Agent 高可用正式方案与任务拆解
+- Status: Review；2026-10-31 文档完成并通过静态检查，待评审/集成；先登记 Ready 后领取；人类 Owner Luke Ding，执行 Codex。
+- Branch: codex/ca-ha-00-plan；独立 worktree ca-ha-00-plan/zebra-agent；基线97463d00a。
+- Owned paths: docs/CLOUD_HIGH_AVAILABILITY_PLAN_v1.md、docs/CLOUD_HIGH_AVAILABILITY_TASKS_v1.md、docs/README.md、docs/AGENT_TASKS.md、docs/实施任务拆解与阶段验收.md、PROGRESS.md、WORKLOG.md、task_plan.md。
+- 本轮仅正式文档和轻量静态校验；不得修改业务代码、启动重型测试/Docker、部署或迁移。
+- 验收：DDD归属、复用/缺口、依赖和逐项证明标准、旧数据/原收据/unknown/Coverage保护、索引与登记一致。后续实现全部 Locked；不因文档完成自动解锁。
+
 # CA-P5-INTEGRATE — authorized mainline merge and cleanup
 - Status: Done; source merge afb61121 published on cloud-agent;36 local/10 remote ancestor refs removed;39 dirty occupied heads and unpublished97463d00 preserved. Actual delivery.json records source integration/cleanup; this governance-only receipt does not change validated source. Explicitly authorized integration task, human owner Luke Ding/Codex, branch codex/ca-p5-main-integration, isolated worktree. Full11618/3155/15 with all15 baseline reproduced; no new failing cases. PG70, mypy1492/Eval30, Go full gates pass; inherited static gates remain red and are recorded. Mainline push/cleanup exact-tip verification passed.
 - Owned paths: apps/config settings/runtime_settings profile-validator relocation for merged file-size compliance; native_script_authority trailing-blank cleanup; merge conflicts in Worker loop/service, direct_control, migration catalog/tests; additive exact migration compatibility in migration_runner/worker_capability/Worker command_process_state and focused compatibility tests and merged baseline/schema-anchor tests; governance docs/evidence. Preserve both published feature paths and immutable historical migration rows/checksums; no production migration.

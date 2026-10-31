@@ -1,3 +1,11 @@
+# CA-HA-00 当前文档任务
+
+1. 在97463d00a独立分支/worktree登记任务，保留原树无关修改。
+2. 正式方案：DDD、复用/缺口、候选目标、兼容和安全证明边界。
+3. 正式任务：CA-HA-01–10依赖/路径/验收，保持Locked；更新索引/阶段入口。
+4. 仅检查diff、Markdown本地链接、范围和新文档尺寸；不运行重型测试或Docker。
+5. 文档Review不等于实现或生产HA完成；后续须重新授权并领取Ready卡。
+
 ## Active: CA-P5-INTEGRATE
 
 - [x] Audit both actual mainlines, dirty trees, refs and verified P5 evidence.
