@@ -12,7 +12,6 @@ from pathlib import Path
 from uuid import UUID
 
 from agent_core.domain.workspace_control import WorkspaceId, WorkspaceLifecycleState
-
 from agent_runtime.workspace_provisioner import PostgresWorkspaceProvisioner
 
 WORKSPACE_URI_PREFIX = "workspace://"
@@ -30,7 +29,9 @@ class WorkspaceRuntimeResolver:
     def resolve(self, workspace_ref: str, *, session_id: UUID) -> Path:
         if not _is_workspace_reference(workspace_ref):
             if self._private_guard is not None:
-                raise WorkspaceRuntimeResolutionError("private ERP runtime requires a native workspace UUID")
+                raise WorkspaceRuntimeResolutionError(
+                    "private ERP runtime requires a native workspace UUID"
+                )
             return Path(workspace_ref)
         workspace_id = _workspace_id(workspace_ref)
         existing = self._provisioner.store.get(workspace_id)
@@ -39,7 +40,11 @@ class WorkspaceRuntimeResolver:
                 f"workspace {workspace_ref} is unknown to the control plane"
             )
         if self._private_guard is not None:
-            self._private_guard(session_id, existing, allow_allocate=existing.state is WorkspaceLifecycleState.PENDING)
+            self._private_guard(
+                session_id,
+                existing,
+                allow_allocate=existing.state is WorkspaceLifecycleState.PENDING,
+            )
         instance = self._provisioner.provision_existing(workspace_id)
         if self._private_guard is not None:
             self._private_guard(session_id, instance, allow_allocate=False)
@@ -49,7 +54,9 @@ class WorkspaceRuntimeResolver:
         """Continuation path: never provisions, only verifies fenced facts."""
         if not _is_workspace_reference(workspace_ref):
             if self._private_guard is not None:
-                raise WorkspaceRuntimeResolutionError("private ERP runtime requires a native workspace UUID")
+                raise WorkspaceRuntimeResolutionError(
+                    "private ERP runtime requires a native workspace UUID"
+                )
             return Path(workspace_ref)
         store = self._provisioner.store
         instance = store.get(_workspace_id(workspace_ref))
@@ -61,10 +68,14 @@ class WorkspaceRuntimeResolver:
             self._private_guard(session_id, instance, allow_allocate=False)
         return self._require_materialized(workspace_ref, instance)
 
-    def verify_revision(self, workspace_ref: str, *, materialized_revision: str, session_id: UUID | None = None) -> None:
+    def verify_revision(
+        self, workspace_ref: str, *, materialized_revision: str, session_id: UUID | None = None
+    ) -> None:
         if not _is_workspace_reference(workspace_ref):
             if self._private_guard is not None:
-                raise WorkspaceRuntimeResolutionError("private ERP runtime requires a native workspace UUID")
+                raise WorkspaceRuntimeResolutionError(
+                    "private ERP runtime requires a native workspace UUID"
+                )
             return
         instance = self._provisioner.store.get(_workspace_id(workspace_ref))
         if instance is None or instance.materialized_revision != materialized_revision:
@@ -73,7 +84,9 @@ class WorkspaceRuntimeResolver:
             )
         if self._private_guard is not None:
             if session_id is None:
-                raise WorkspaceRuntimeResolutionError("private revision verification requires session identity")
+                raise WorkspaceRuntimeResolutionError(
+                    "private revision verification requires session identity"
+                )
             self._private_guard(session_id, instance, allow_allocate=False)
 
     def _require_materialized(self, workspace_ref: str, instance: object) -> Path:

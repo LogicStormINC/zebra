@@ -1,0 +1,17 @@
+ReferenceError: textRef is not defined
+    at Object.send (evalmachine.<anonymous>:2:81)
+    at [stdin]:29:38
+    at [stdin]:45:3
+    at runScriptInThisContext (node:internal/vm:209:10)
+    at node:internal/process/execution:446:12
+    at [stdin]-wrapper:6:24
+    at runScriptInContext (node:internal/process/execution:444:60)
+    at evalFunction (node:internal/process/execution:279:30)
+    at evalTypeScript (node:internal/process/execution:291:3)
+    at node:internal/main/eval_stdin:53:5
+Traceback (most recent call last):
+  File "/var/folders/qx/n_v9dpmd12dgb9m1s75tjgtm0000gn/T/ca-g02-erp-source-baseline-rdvyuxkz/tests/test_maintenance_checks.py", line 31, in <module>
+    subprocess.run(['node', '-', *map(str, front_paths)], cwd=ROOT, check=True, text=True, input=r'''
+  File "/Users/lukeding/.local/share/uv/python/cpython-3.12.9-macos-aarch64-none/lib/python3.12/subprocess.py", line 573, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['node', '-', '/private/var/folders/qx/n_v9dpmd12dgb9m1s75tjgtm0000gn/T/ca-g02-erp-source-baseline-rdvyuxkz/frontend/index.tsx']' returned non-zero exit status 1.

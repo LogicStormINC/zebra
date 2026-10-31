@@ -8,7 +8,6 @@ from agent_core.domain.events import SessionEvent
 from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.identifiers import TaskId
 from agent_core.ports.task_replay import TaskRunHeader
-
 from agent_storage.postgres.command_wakeup import (
     _host_context_from_row,
     command_scope_key,
@@ -40,11 +39,18 @@ class PostgresCommandOutcomeReader:
     def fresh_header_outcome(self, task_id: TaskId, host_context: HostContextEnvelope):
         """One authorized exact-Run snapshot; no private payload recovery."""
         runs = [r.resource_id for r in host_context.resource_refs if r.resource_type == "run"]
-        if (host_context.host_app_id, host_context.namespace_id) != ("erpnext", "erpnext") or len(runs) != 1:
+        if (host_context.host_app_id, host_context.namespace_id) != ("erpnext", "erpnext") or len(
+            runs
+        ) != 1:
             return None
         from agent_storage.postgres.erp_fresh_disposition import (
-            REFUSED, UNAVAILABLE, EXHAUSTED, verified_fresh_disposition, fresh_retry_eligible,
+            EXHAUSTED,
+            REFUSED,
+            UNAVAILABLE,
+            fresh_retry_eligible,
+            verified_fresh_disposition,
         )
+
         namespace = self.deployment_namespace
         with self._database.connect_task_io() as connection:
             connection.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY")
@@ -58,9 +64,13 @@ class PostgresCommandOutcomeReader:
             if proof is None or proof["run_id"] != runs[0] or proof["task_id"] != str(task_id):
                 raise ValueError("fresh outcome canonical Run conflicts")
             terminal = proof["mode"] == "classic" or code != UNAVAILABLE
-            return {"code": code, "run_id": runs[0], "accepted_event_id": str(run.anchor.event_id),
-                    "retry_eligible": terminal and fresh_retry_eligible(connection, namespace, proof),
-                    "retry_scheduled": not terminal}
+            return {
+                "code": code,
+                "run_id": runs[0],
+                "accepted_event_id": str(run.anchor.event_id),
+                "retry_eligible": terminal and fresh_retry_eligible(connection, namespace, proof),
+                "retry_scheduled": not terminal,
+            }
 
     def __call__(
         self,
@@ -148,18 +158,28 @@ def command_outcome_from_row(
     pending, receipt, control, outbox = (
         row[name] for name in ("pending", "receipt", "control", "outbox")
     )
-    if pending is None or str(pending.get("recovery_code") or "").startswith("erp_fresh_authority_"):
-        from agent_storage.postgres.erp_fresh_disposition import verified_fresh_disposition, EXHAUSTED
+    if pending is None or str(pending.get("recovery_code") or "").startswith(
+        "erp_fresh_authority_"
+    ):
+        from agent_storage.postgres.erp_fresh_disposition import (
+            EXHAUSTED,
+            verified_fresh_disposition,
+        )
 
         proof = verified_fresh_disposition(connection, namespace, run.anchor.event_id)
         if proof is not None:
-            return EXHAUSTED if pending is not None and pending["recovery_code"] == EXHAUSTED else proof["code"]
+            return (
+                EXHAUSTED
+                if pending is not None and pending["recovery_code"] == EXHAUSTED
+                else proof["code"]
+            )
     if pending is None:
         return None
     if receipt is not None and receipt["handled_event_id"] is not None:
         return None
     if pending["status"] == "dead" and pending["recovery_code"] in {
-        "legacy_observation_only", "private_workspace_not_activated",
+        "legacy_observation_only",
+        "private_workspace_not_activated",
     }:
         return pending["recovery_code"]
     if receipt is not None and receipt["status"] == "requires_reconciliation":

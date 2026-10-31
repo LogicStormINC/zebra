@@ -5,7 +5,6 @@ from typing import Protocol
 from agent_core.domain.host_authority import HostContextEnvelope
 from agent_security.host_grant import VerifiedHostGrant
 from agent_storage import PostgresControlPlaneStores
-
 from zebra_agent_api.app import ZebraAgentApi
 from zebra_agent_api.responses import ApiResponse
 from zebra_agent_api.subagent_read import SubagentReadApi
@@ -108,7 +107,10 @@ def handle_task_route(app: ZebraAgentApi, request: TaskRouteRequest) -> ApiRespo
         return TaskReadApi(app.stores).get(parts[0])
     if method == "GET" and len(parts) == 2 and parts[1] == "header":
         return TaskReadApi(app.stores).header(
-            parts[0], host_context=(request.verified_host_grant.context if request.verified_host_grant else None),
+            parts[0],
+            host_context=(
+                request.verified_host_grant.context if request.verified_host_grant else None
+            ),
             command_outcome=app.command_outcome,
         )
     if method == "GET" and len(parts) == 2 and parts[1] in {"usage", "attachments"}:

@@ -9,6 +9,7 @@ COPY overrides/apps/api/src/zebra_agent_api/http_input_attachments.py /app/apps/
 COPY overrides/apps/api/src/zebra_agent_api/routes.py /app/apps/api/src/zebra_agent_api/routes.py
 COPY overrides/apps/api/src/zebra_agent_api/session_handoff.py /app/apps/api/src/zebra_agent_api/session_handoff.py
 COPY overrides/apps/api/src/zebra_agent_api/session_payloads.py /app/apps/api/src/zebra_agent_api/session_payloads.py
+COPY overrides/apps/api/src/zebra_agent_api/session_model_options.py /app/apps/api/src/zebra_agent_api/session_model_options.py
 COPY overrides/apps/api/src/zebra_agent_api/session_queue.py /app/apps/api/src/zebra_agent_api/session_queue.py
 COPY overrides/apps/api/src/zebra_agent_api/task_api.py /app/apps/api/src/zebra_agent_api/task_api.py
 COPY overrides/apps/api/src/zebra_agent_api/task_routes.py /app/apps/api/src/zebra_agent_api/task_routes.py
@@ -38,14 +39,20 @@ COPY overrides/packages/agent-storage/src/agent_storage/task_read_summary_rows.p
 COPY overrides/packages/agent-storage/src/agent_storage/postgres/erp_workspace_policy.py /app/packages/agent-storage/src/agent_storage/postgres/erp_workspace_policy.py
 COPY overrides/packages/agent-storage/src/agent_storage/postgres/command_read_preflight.py /app/packages/agent-storage/src/agent_storage/postgres/command_read_preflight.py
 COPY overrides/packages/agent-storage/src/agent_storage/postgres/command_wakeup_handoff.py /app/packages/agent-storage/src/agent_storage/postgres/command_wakeup_handoff.py
+COPY overrides/packages/agent-storage/src/agent_storage/postgres/command_handoff_types.py /app/packages/agent-storage/src/agent_storage/postgres/command_handoff_types.py
+COPY overrides/packages/agent-storage/src/agent_storage/postgres/command_handoff_inbox.py /app/packages/agent-storage/src/agent_storage/postgres/command_handoff_inbox.py
+COPY overrides/packages/agent-storage/src/agent_storage/postgres/command_handoff_policy.py /app/packages/agent-storage/src/agent_storage/postgres/command_handoff_policy.py
+COPY overrides/packages/agent-storage/src/agent_storage/postgres/command_handoff_envelope.py /app/packages/agent-storage/src/agent_storage/postgres/command_handoff_envelope.py
 COPY overrides/packages/agent-storage/src/agent_storage/postgres/command_wakeup_outcome.py /app/packages/agent-storage/src/agent_storage/postgres/command_wakeup_outcome.py
 COPY overrides/packages/agent-storage/src/agent_storage/postgres/workspace_control.py /app/packages/agent-storage/src/agent_storage/postgres/workspace_control.py
 COPY overrides/packages/agent-storage/src/agent_storage/postgres/projections.py /app/packages/agent-storage/src/agent_storage/postgres/projections.py
 
 # Durable early fresh refusal: shared metadata proof and native recovery.
 COPY overrides/packages/agent-storage/src/agent_storage/postgres/erp_fresh_disposition.py /app/packages/agent-storage/src/agent_storage/postgres/erp_fresh_disposition.py
+COPY overrides/packages/agent-storage/src/agent_storage/postgres/erp_fresh_disposition_evidence.py /app/packages/agent-storage/src/agent_storage/postgres/erp_fresh_disposition_evidence.py
 COPY overrides/packages/agent-storage/src/agent_storage/postgres/idempotency.py /app/packages/agent-storage/src/agent_storage/postgres/idempotency.py
 COPY overrides/packages/agent-storage/src/agent_storage/postgres/command_wakeup_recovery.py /app/packages/agent-storage/src/agent_storage/postgres/command_wakeup_recovery.py
+COPY overrides/packages/agent-storage/src/agent_storage/postgres/command_recovery_records.py /app/packages/agent-storage/src/agent_storage/postgres/command_recovery_records.py
 COPY overrides/apps/api/src/zebra_agent_api/task_header.py /app/apps/api/src/zebra_agent_api/task_header.py
 COPY overrides/apps/api/src/zebra_agent_api/ag_ui_checkpoint_tail.py /app/apps/api/src/zebra_agent_api/ag_ui_checkpoint_tail.py
 COPY overrides/packages/agent-storage/src/agent_storage/postgres/command_coverage_admission.py /app/packages/agent-storage/src/agent_storage/postgres/command_coverage_admission.py

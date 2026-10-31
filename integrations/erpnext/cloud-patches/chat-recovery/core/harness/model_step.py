@@ -32,9 +32,9 @@ from agent_core.harness.model_step_support import (
     final_answer_instruction,
     selected_skill_message,
     task_acceptance_message,
-    tool_result_message,
     user_personalization_message,
 )
+from agent_core.harness.model_tool_messages import append_tool_batch, append_tool_result
 from agent_core.harness.models import HarnessEventDraft, HarnessTask
 from agent_core.harness.protocol_invariants import validate_tool_call_pairing
 from agent_core.harness.provider_continuation import (
@@ -100,6 +100,7 @@ class HarnessModelStep:
             if event_sink is not None
             else None
         )
+
     def prepare_conversation(
         self,
         messages: list[SessionMessage],
@@ -121,6 +122,7 @@ class HarnessModelStep:
             user_goal=user_goal,
             created_at=created_at,
         )
+
     def request_initial_completion(
         self,
         task: HarnessTask,
@@ -141,6 +143,7 @@ class HarnessModelStep:
         return self.request_completion(
             messages, model_gateway, allow_tools=True, response_repair_limit=repair_limit
         )
+
     def request_completion(
         self,
         messages: list[SessionMessage],
@@ -277,6 +280,7 @@ class HarnessModelStep:
                 model_call_id=model_call_id,
             ),
         )
+
     def prepare_provider_continuation(
         self,
         model_gateway: ModelGatewayPort,
@@ -289,10 +293,12 @@ class HarnessModelStep:
         )
         self._provider_continuation = selection.reference
         self._emit_continuation_selection(selection)
+
     def _emit_continuation_selection(self, selection: PreparedProviderContinuation) -> None:
         if self._event_sink is None:
             return
         self._event_sink(continuation_event(selection, attempt_number=self._attempt_number))
+
     def append_tool_exchange(
         self,
         messages: list[SessionMessage],
@@ -314,26 +320,9 @@ class HarnessModelStep:
             created_at=created_at,
         )
 
-    @staticmethod
-    def append_tool_batch(
-        messages: list[SessionMessage],
-        *,
-        completion: ModelCompletion,
-        tool_calls: tuple[ToolCall, ...],
-    ) -> None:
-        if not tool_calls:
-            raise ValueError("tool batch must not be empty")
-        messages.append(completion.assistant_message.model_copy(update={"tool_calls": tool_calls}))
+    append_tool_batch = staticmethod(append_tool_batch)
 
-    @staticmethod
-    def append_tool_result(
-        messages: list[SessionMessage],
-        *,
-        tool_call: ToolCall,
-        tool_result: ToolResult,
-        created_at: datetime,
-    ) -> None:
-        messages.append(tool_result_message(tool_call, tool_result, created_at=created_at))
+    append_tool_result = staticmethod(append_tool_result)
 
     def request_tool_result_completion(
         self,
@@ -381,8 +370,10 @@ class HarnessModelStep:
         identity_directive = task.identity_directive or ZEBRA_AGENT_IDENTITY_DIRECTIVE
         identity_directive += f"\n\n{AGENT_EXECUTION_GUIDANCE}"
         messages: list[SessionMessage] = []
-        if self._context_compiler is not None and (task.workspace_root is not None
-                or getattr(self._context_compiler, "supports_workspace_free_context", False)):
+        if self._context_compiler is not None and (
+            task.workspace_root is not None
+            or getattr(self._context_compiler, "supports_workspace_free_context", False)
+        ):
             if task.attachments:
                 system_prompt = self._context_compiler.build_system_prompt(
                     task_input=task.user_input,

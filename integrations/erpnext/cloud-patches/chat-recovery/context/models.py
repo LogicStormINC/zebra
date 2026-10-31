@@ -23,9 +23,7 @@ RUNTIME_EVIDENCE_KINDS = frozenset(
         ContextItemKind.CLIENT_STATE,
     }
 )
-RUNTIME_EVIDENCE_SOURCE_TYPES = frozenset(
-    {"session_projection", "tool_trace", "client_state"}
-)
+RUNTIME_EVIDENCE_SOURCE_TYPES = frozenset({"session_projection", "tool_trace", "client_state"})
 MEMORY_SOURCE_TYPES = frozenset({"confirmed_memory"})
 ATTACHMENT_SOURCE_TYPES = frozenset({"user_attachment", "mcp_resource", "mcp_prompt"})
 CLIENT_STATE_SOURCE_TYPES = frozenset({"client_state"})

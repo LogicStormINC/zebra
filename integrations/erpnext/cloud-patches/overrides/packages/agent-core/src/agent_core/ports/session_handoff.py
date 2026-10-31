@@ -4,8 +4,8 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Protocol
 
-from agent_core.domain.identifiers import HandoffId, SessionId
 from agent_core.domain.http_input_messages import PreparedHttpInputMessage
+from agent_core.domain.identifiers import HandoffId, SessionId
 from agent_core.domain.leases import LeaseFence
 from agent_core.domain.session_handoff import (
     DEFAULT_MAX_HANDOFF_STAGE,
@@ -66,7 +66,11 @@ def canonical_handoff_request_hash(
             "objective": objective,
             "completed_work": completed_work,
             "pending_work": pending_work,
-            **({"http_input_request_hash": request.http_input_request_hash} if request.http_input_request_hash is not None else {}),
+            **(
+                {"http_input_request_hash": request.http_input_request_hash}
+                if request.http_input_request_hash is not None
+                else {}
+            ),
         },
         sort_keys=True,
         separators=(",", ":"),

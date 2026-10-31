@@ -13,7 +13,6 @@ from agent_core.domain.events import SessionEvent
 from agent_core.domain.identifiers import TaskId
 from agent_core.domain.task_bindings import TaskBindingSnapshot, host_context_digest
 from agent_core.ports.task_admission_transaction import TaskAdmissionReceipt, TaskAdmissionRequest
-
 from agent_storage.postgres.database import PostgresDatabase
 from agent_storage.postgres.task_event_positions import _lock_task
 from agent_storage.postgres.worker_capability import (
@@ -32,7 +31,9 @@ CONTROL_KINDS = {SessionCommandKind.STOP, SessionCommandKind.CANCEL, SessionComm
 
 
 def reject_missing_command_consumer(
-    connection: Any, namespace: str, accepted_event_id: UUID,
+    connection: Any,
+    namespace: str,
+    accepted_event_id: UUID,
     consumer_capability: WorkerCapabilityLease | None,
 ) -> None:
     """Negative-only preflight; never substitutes for final locked admission.
@@ -40,11 +41,15 @@ def reject_missing_command_consumer(
     An unregistered consumer cannot run expensive strict recovery first. Non-
     strict commands still use the ordinary path without a process capability.
     """
-    if consumer_capability is None and connection.execute(
-        "SELECT 1 FROM command_coverage_requirements "
-        "WHERE deployment_namespace=%s AND accepted_event_id=%s",
-        (namespace, accepted_event_id),
-    ).fetchone() is not None:
+    if (
+        consumer_capability is None
+        and connection.execute(
+            "SELECT 1 FROM command_coverage_requirements "
+            "WHERE deployment_namespace=%s AND accepted_event_id=%s",
+            (namespace, accepted_event_id),
+        ).fetchone()
+        is not None
+    ):
         raise WorkerCapabilityLostError("strict command requires a qualified consumer")
 
 
@@ -309,7 +314,8 @@ def pin_command_consumer(
         require_process=True,
         continuation_digest=(
             continuation_configuration_digest(row["configuration_digest"])
-            if protocol is not None else None
+            if protocol is not None
+            else None
         ),
     )
     deadlines: list[datetime] = []

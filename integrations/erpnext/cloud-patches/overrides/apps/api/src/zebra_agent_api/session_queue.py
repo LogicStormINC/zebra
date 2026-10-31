@@ -14,9 +14,10 @@ from agent_core.ports.task_admission_transaction import (
 )
 from agent_security.host_grant import VerifiedHostGrant
 from agent_storage import ControlPlaneStores
-
+from agent_storage.postgres.http_input_attachments import (
+    HttpInputAuthorityError as HttpInputAuthorityError,
+)
 from zebra_agent_api.responses import ApiResponse
-from agent_storage.postgres.http_input_attachments import HttpInputAuthorityError
 from zebra_agent_api.session_attachment_persistence import persist_initial_attachments
 from zebra_agent_api.session_payloads import CreateSessionPayload, parse_create_session_payload
 
@@ -72,34 +73,45 @@ def create_queued_session(
     http_input = None
     if admission_dsn and admission_namespace:
         raw_binding = _derive_binding(
-            bootstrap.session.session_id, host_context=host_context,
-            definition_snapshot=definition_snapshot, deployment_namespace=admission_namespace,
-            frozen_manifest_digest=frozen_manifest_digest, verified_host_grant=verified_host_grant)
-    if parsed['attachments'] and admission_dsn:
-        from zebra_agent_api.http_input_attachments import verified_input_authority
+            bootstrap.session.session_id,
+            host_context=host_context,
+            definition_snapshot=definition_snapshot,
+            deployment_namespace=admission_namespace,
+            frozen_manifest_digest=frozen_manifest_digest,
+            verified_host_grant=verified_host_grant,
+        )
+    if parsed["attachments"] and admission_dsn:
         from agent_storage.postgres.http_input_attachments import HttpInputAuthorityError
+        from zebra_agent_api.http_input_attachments import verified_input_authority
+
         try:
             authority = verified_input_authority(verified_host_grant, raw_binding)
         except ValueError:
-            return ApiResponse(403, {'status': 'http_input_authority_required'})
+            return ApiResponse(403, {"status": "http_input_authority_required"})
         admission = stores.http_input_admission
         if admission is None:
-            return ApiResponse(503, {'status': 'http_input_admission_unavailable'})
+            return ApiResponse(503, {"status": "http_input_admission_unavailable"})
         events = tuple(bootstrap.events)
         from agent_core.domain.events import EventType
-        user = next(event for event in events if event.event_type is EventType.USER_MESSAGE_RECEIVED)
+
+        user = next(
+            event for event in events if event.event_type is EventType.USER_MESSAGE_RECEIVED
+        )
         try:
-            attached, http_input = admission.prepare(authority, raw_binding, user, parsed['attachments'])
+            attached, http_input = admission.prepare(
+                authority, raw_binding, user, parsed["attachments"]
+            )
         except HttpInputAuthorityError:
-            return ApiResponse(403, {'status': 'http_input_authority_rejected'})
+            return ApiResponse(403, {"status": "http_input_authority_rejected"})
         except Exception:
             # No canonical input is committed. Unknown object ACKs stay staged.
-            return ApiResponse(503, {'status': 'http_input_object_staging_unavailable'})
+            return ApiResponse(503, {"status": "http_input_object_staging_unavailable"})
         events = tuple(attached if event.event_id == user.event_id else event for event in events)
         attachment_refs = tuple(entry.reference for entry in http_input.entries)
     else:
         events, attachment_refs = persist_initial_attachments(
-            stores.artifact_payloads, tuple(bootstrap.events), parsed['attachments'])
+            stores.artifact_payloads, tuple(bootstrap.events), parsed["attachments"]
+        )
     workspace = rebuild_workspace(list(events))
     response = ApiResponse(
         status_code=201,
@@ -191,7 +203,7 @@ def create_queued_session(
                     admission_dsn, deployment_namespace=admission_namespace
                 ).admit(request)
         except HttpInputAuthorityError:
-            return ApiResponse(403, {'status': 'http_input_authority_rejected'})
+            return ApiResponse(403, {"status": "http_input_authority_rejected"})
         except TaskAdmissionIdempotencyConflict:
             return ApiResponse(
                 status_code=409,

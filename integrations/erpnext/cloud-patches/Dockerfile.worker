@@ -4,6 +4,7 @@ LABEL zebra.erp.patch_stage="early-fresh-refusal-review-only"
 COPY overrides/apps/worker/src/zebra_agent_worker/clarification_continuation.py /app/apps/worker/src/zebra_agent_worker/clarification_continuation.py
 COPY overrides/apps/worker/src/zebra_agent_worker/continuation_dispatch.py /app/apps/worker/src/zebra_agent_worker/continuation_dispatch.py
 COPY overrides/apps/worker/src/zebra_agent_worker/task_recovery.py /app/apps/worker/src/zebra_agent_worker/task_recovery.py
+COPY overrides/apps/worker/src/zebra_agent_worker/task_host_context.py /app/apps/worker/src/zebra_agent_worker/task_host_context.py
 COPY overrides/packages/agent-core/src/agent_core/application/session_attachments.py /app/packages/agent-core/src/agent_core/application/session_attachments.py
 COPY overrides/packages/agent-core/src/agent_core/domain/cloud_artifact_payloads.py /app/packages/agent-core/src/agent_core/domain/cloud_artifact_payloads.py
 COPY overrides/packages/agent-core/src/agent_core/domain/http_input_attachments.py /app/packages/agent-core/src/agent_core/domain/http_input_attachments.py
@@ -29,16 +30,24 @@ COPY overrides/packages/agent-storage/src/agent_storage/task_read_summary_rows.p
 COPY overrides/packages/agent-storage/src/agent_storage/postgres/erp_workspace_policy.py /app/packages/agent-storage/src/agent_storage/postgres/erp_workspace_policy.py
 COPY overrides/packages/agent-storage/src/agent_storage/postgres/command_read_preflight.py /app/packages/agent-storage/src/agent_storage/postgres/command_read_preflight.py
 COPY overrides/packages/agent-storage/src/agent_storage/postgres/command_wakeup_handoff.py /app/packages/agent-storage/src/agent_storage/postgres/command_wakeup_handoff.py
+COPY overrides/packages/agent-storage/src/agent_storage/postgres/command_handoff_types.py /app/packages/agent-storage/src/agent_storage/postgres/command_handoff_types.py
+COPY overrides/packages/agent-storage/src/agent_storage/postgres/command_handoff_inbox.py /app/packages/agent-storage/src/agent_storage/postgres/command_handoff_inbox.py
+COPY overrides/packages/agent-storage/src/agent_storage/postgres/command_handoff_policy.py /app/packages/agent-storage/src/agent_storage/postgres/command_handoff_policy.py
+COPY overrides/packages/agent-storage/src/agent_storage/postgres/command_handoff_envelope.py /app/packages/agent-storage/src/agent_storage/postgres/command_handoff_envelope.py
 COPY overrides/packages/agent-storage/src/agent_storage/postgres/command_wakeup_outcome.py /app/packages/agent-storage/src/agent_storage/postgres/command_wakeup_outcome.py
 COPY overrides/packages/agent-storage/src/agent_storage/postgres/workspace_control.py /app/packages/agent-storage/src/agent_storage/postgres/workspace_control.py
 COPY overrides/packages/agent-storage/src/agent_storage/postgres/projections.py /app/packages/agent-storage/src/agent_storage/postgres/projections.py
 COPY overrides/apps/worker/src/zebra_agent_worker/execution.py /app/apps/worker/src/zebra_agent_worker/execution.py
+COPY overrides/apps/worker/src/zebra_agent_worker/execution_attempt.py /app/apps/worker/src/zebra_agent_worker/execution_attempt.py
 COPY overrides/apps/worker/src/zebra_agent_worker/cloud_composition.py /app/apps/worker/src/zebra_agent_worker/cloud_composition.py
 COPY overrides/apps/worker/src/zebra_agent_worker/cloud_memory_recovery.py /app/apps/worker/src/zebra_agent_worker/cloud_memory_recovery.py
 COPY overrides/apps/worker/src/zebra_agent_worker/command_consumer.py /app/apps/worker/src/zebra_agent_worker/command_consumer.py
 COPY overrides/apps/worker/src/zebra_agent_worker/command_rejections.py /app/apps/worker/src/zebra_agent_worker/command_rejections.py
 COPY overrides/apps/worker/src/zebra_agent_worker/worker_loop_service.py /app/apps/worker/src/zebra_agent_worker/worker_loop_service.py
 COPY overrides/apps/worker/src/zebra_agent_worker/loop.py /app/apps/worker/src/zebra_agent_worker/loop.py
+COPY overrides/apps/worker/src/zebra_agent_worker/projection_work_composition.py /app/apps/worker/src/zebra_agent_worker/projection_work_composition.py
+COPY overrides/apps/worker/src/zebra_agent_worker/skill_catalog_composition.py /app/apps/worker/src/zebra_agent_worker/skill_catalog_composition.py
+COPY overrides/apps/worker/src/zebra_agent_worker/client_effect_recovery_composition.py /app/apps/worker/src/zebra_agent_worker/client_effect_recovery_composition.py
 
 # Fresh ERP authority is disabled by default and does not activate private workspaces.
 COPY overrides/apps/worker/src/zebra_agent_worker/erp_fresh_authority.py /app/apps/worker/src/zebra_agent_worker/erp_fresh_authority.py
@@ -48,16 +57,22 @@ COPY overrides/apps/worker/src/zebra_agent_worker/worker_tool_gateway.py /app/ap
 COPY overrides/apps/worker/src/zebra_agent_worker/progress_recovery.py /app/apps/worker/src/zebra_agent_worker/progress_recovery.py
 COPY overrides/apps/worker/src/zebra_agent_worker/execution_context.py /app/apps/worker/src/zebra_agent_worker/execution_context.py
 COPY overrides/packages/agent-integrations/src/agent_integrations/openai_compatible.py /app/packages/agent-integrations/src/agent_integrations/openai_compatible.py
+COPY overrides/packages/agent-integrations/src/agent_integrations/openai_input_defaults.py /app/packages/agent-integrations/src/agent_integrations/openai_input_defaults.py
 COPY overrides/packages/agent-integrations/src/agent_integrations/deepseek_responses.py /app/packages/agent-integrations/src/agent_integrations/deepseek_responses.py
 COPY overrides/packages/agent-tools/src/agent_tools/effect_guard.py /app/packages/agent-tools/src/agent_tools/effect_guard.py
+COPY overrides/packages/agent-tools/src/agent_tools/effect_receipt_reconciliation.py /app/packages/agent-tools/src/agent_tools/effect_receipt_reconciliation.py
 
 # Durable early fresh refusal: shared metadata proof and native recovery.
 COPY overrides/packages/agent-storage/src/agent_storage/postgres/erp_fresh_disposition.py /app/packages/agent-storage/src/agent_storage/postgres/erp_fresh_disposition.py
+COPY overrides/packages/agent-storage/src/agent_storage/postgres/erp_fresh_disposition_evidence.py /app/packages/agent-storage/src/agent_storage/postgres/erp_fresh_disposition_evidence.py
 COPY overrides/packages/agent-storage/src/agent_storage/postgres/idempotency.py /app/packages/agent-storage/src/agent_storage/postgres/idempotency.py
 COPY overrides/packages/agent-storage/src/agent_storage/postgres/command_wakeup_recovery.py /app/packages/agent-storage/src/agent_storage/postgres/command_wakeup_recovery.py
+COPY overrides/packages/agent-storage/src/agent_storage/postgres/command_recovery_records.py /app/packages/agent-storage/src/agent_storage/postgres/command_recovery_records.py
 COPY overrides/apps/worker/src/zebra_agent_worker/execution_entrypoints.py /app/apps/worker/src/zebra_agent_worker/execution_entrypoints.py
 COPY overrides/apps/worker/src/zebra_agent_worker/execution_recovery.py /app/apps/worker/src/zebra_agent_worker/execution_recovery.py
 COPY overrides/apps/worker/src/zebra_agent_worker/command_process.py /app/apps/worker/src/zebra_agent_worker/command_process.py
+COPY overrides/apps/worker/src/zebra_agent_worker/command_run_limits.py /app/apps/worker/src/zebra_agent_worker/command_run_limits.py
+COPY overrides/apps/worker/src/zebra_agent_worker/command_shutdown_signals.py /app/apps/worker/src/zebra_agent_worker/command_shutdown_signals.py
 COPY overrides/packages/agent-storage/src/agent_storage/postgres/command_coverage_admission.py /app/packages/agent-storage/src/agent_storage/postgres/command_coverage_admission.py
 
 # Native per-UUID quota hook. Disabled until isolated DB/operator/live gates pass.

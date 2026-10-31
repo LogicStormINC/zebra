@@ -1,0 +1,18 @@
+Shared admission survives grant commits; duplicate and lost-ack retries preserve dispatch coordinates
+Stop acknowledgement loss preserves the pinned command revision
+First task preparation survives surface ACK loss without duplicating the user message
+Rename validation, shared delete admission, running-task rejection and approval/grant revocation passed
+Model and effort propagate on first/follow-up turns; invalid or changed retry options rejected; lost ACK preserves settings
+Traceback (most recent call last):
+  File "/var/folders/qx/n_v9dpmd12dgb9m1s75tjgtm0000gn/T/ca-g02-erp-source-baseline-rdvyuxkz/tests/test_chat_checks.py", line 281, in <module>
+    chat.submit(doc.name,'client state check',str(uuid4()),{'route':['Workspaces','Home']},model_profile=pro,reasoning_effort='low')
+  File "/private/var/folders/qx/n_v9dpmd12dgb9m1s75tjgtm0000gn/T/ca-g02-erp-source-baseline-rdvyuxkz/zebra_erpnext/chat.py", line 97, in submit
+    return _submit(name, message, request_id, page, model_profile, reasoning_effort, attachments, admission_lock=admission_lock)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/private/var/folders/qx/n_v9dpmd12dgb9m1s75tjgtm0000gn/T/ca-g02-erp-source-baseline-rdvyuxkz/zebra_erpnext/chat.py", line 226, in _submit
+    body = _run_body(doc, run_id, revision, page, surface,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/private/var/folders/qx/n_v9dpmd12dgb9m1s75tjgtm0000gn/T/ca-g02-erp-source-baseline-rdvyuxkz/zebra_erpnext/chat.py", line 364, in _run_body
+    profileDigest=surface.get("profileDigest") or profile["digest"],
+                                                  ~~~~~~~^^^^^^^^^^
+KeyError: 'digest'

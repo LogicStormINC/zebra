@@ -44,9 +44,19 @@ def attachment_refs_from_event(event: SessionEvent) -> tuple[SessionAttachmentRe
 def validate_attachment_context_budget(attachments) -> None:
     """Clarification extends one input context, so retain native admission caps."""
     from agent_core.domain.attachments import SessionAttachmentRef
-    sizes = [(item.media_type, item.size_bytes if isinstance(item,SessionAttachmentRef) else len(item.payload),
-              getattr(item,'original_size_bytes',None) or 0) for item in attachments]
-    if (len(sizes)>4 or sum(size for media,size,_ in sizes if media.startswith('image/'))>32*1024*1024
-        or sum(size for media,size,_ in sizes if not media.startswith('image/'))>131072
-        or sum(original for _,_,original in sizes)>8*1024*1024):
-        raise ValueError('attachment context exceeds native four-file/aggregate limits')
+
+    sizes = [
+        (
+            item.media_type,
+            item.size_bytes if isinstance(item, SessionAttachmentRef) else len(item.payload),
+            getattr(item, "original_size_bytes", None) or 0,
+        )
+        for item in attachments
+    ]
+    if (
+        len(sizes) > 4
+        or sum(size for media, size, _ in sizes if media.startswith("image/")) > 32 * 1024 * 1024
+        or sum(size for media, size, _ in sizes if not media.startswith("image/")) > 131072
+        or sum(original for _, _, original in sizes) > 8 * 1024 * 1024
+    ):
+        raise ValueError("attachment context exceeds native four-file/aggregate limits")

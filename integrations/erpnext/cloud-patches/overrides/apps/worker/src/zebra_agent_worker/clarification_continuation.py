@@ -1,12 +1,11 @@
 from dataclasses import dataclass
 from uuid import UUID
 
-from agent_core.domain.events import EventType, SessionEvent
 from agent_core.application.session_attachments import attachment_refs_from_event
+from agent_core.domain.events import EventType, SessionEvent
 from agent_core.domain.identifiers import ToolCallId
 from agent_core.domain.messages import SessionMessage
 from agent_core.domain.tools import ToolCall
-
 from zebra_agent_worker.continuation_boundaries import has_later_attempt_result_boundary
 
 
@@ -76,7 +75,9 @@ def recover_clarification_continuation(
             provider_call_id=_optional_string(requested.payload.get("provider_call_id")),
         ),
         response=_required_string(responded.payload, "content"),
-        attachment_ids=tuple(str(ref.attachment_id) for ref in attachment_refs_from_event(responded)),
+        attachment_ids=tuple(
+            str(ref.attachment_id) for ref in attachment_refs_from_event(responded)
+        ),
         conversation=_conversation(requested.payload.get("conversation")),
         model_calls_used=_non_negative_int(requested.payload.get("model_calls_used"), 1),
         tool_calls_executed=_non_negative_int(requested.payload.get("tool_calls_executed"), 0),

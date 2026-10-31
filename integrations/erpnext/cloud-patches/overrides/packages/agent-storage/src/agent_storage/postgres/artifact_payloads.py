@@ -19,8 +19,6 @@ from agent_core.domain.cloud_artifact_requests import (
 )
 from agent_core.domain.leases import LeaseLostError
 from agent_core.ports.aggregate_mutation import WorkerMutationAuthority
-from psycopg import errors
-
 from agent_storage.postgres.artifact_payload_management import ArtifactPayloadManagementMixin
 from agent_storage.postgres.artifact_payload_pruning import begin_prune, complete_prune
 from agent_storage.postgres.artifact_payload_rows import artifact_payload_from_row
@@ -32,6 +30,7 @@ from agent_storage.postgres.artifact_payload_worker_transitions import (
 from agent_storage.postgres.database import PostgresDatabase
 from agent_storage.postgres.leases import assert_current_lease_fence
 from agent_storage.postgres.task_io import TaskIoConnections
+from psycopg import errors
 
 
 class PostgresCloudArtifactPayloadStore(ArtifactPayloadManagementMixin):
@@ -274,7 +273,9 @@ def _require_same_reservation(
     request_hash: str,
 ) -> CloudArtifactPayloadRecord:
     if row["authority_kind"] != "worker":
-        raise CloudArtifactPayloadConflictError("Worker reservation cannot reuse HTTP input authority")
+        raise CloudArtifactPayloadConflictError(
+            "Worker reservation cannot reuse HTTP input authority"
+        )
     if row["request_hash"] != request_hash:
         raise CloudArtifactPayloadConflictError(
             "artifact idempotency key reused with a different reservation"
@@ -297,9 +298,7 @@ def _assert_stream_revision(
         (namespace, session_id),
     ).fetchone()
     if row is None or row["current_version"] != expected_revision:
-        raise CloudArtifactPayloadConflictError(
-            "artifact reservation stream revision is stale"
-        )
+        raise CloudArtifactPayloadConflictError("artifact reservation stream revision is stale")
 
 
 def _hash_text(value: str) -> str:

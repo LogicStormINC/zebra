@@ -20,7 +20,6 @@ from agent_core.domain.modeling import (
     ModelToolDefinition,
 )
 from agent_core.ports.model_gateway import ModelResponseRejectedError
-
 from agent_integrations.bounded_model_http import post_bounded_json, validate_bounded_policy
 from agent_integrations.coverage_model_request import (
     PreparedChatRequests,
@@ -37,6 +36,12 @@ from agent_integrations.model_errors import (
     ModelProviderError,
     log_provider_attempt,
     normalize_provider_error,
+)
+from agent_integrations.openai_input_defaults import (
+    _read_defaults as _read_defaults,
+)
+from agent_integrations.openai_input_defaults import (
+    _serialized_tool_name as _serialized_tool_name,
 )
 from agent_integrations.openai_payloads import (
     internal_tool_names,
@@ -372,7 +377,10 @@ class OpenAICompatibleModelGateway:
         return httpx.Timeout(120.0, connect=10.0)
 
     def _post_chat_completion(
-        self, body: dict[str, Any] | bytes, *, endpoint: str | None = None,
+        self,
+        body: dict[str, Any] | bytes,
+        *,
+        endpoint: str | None = None,
         deadline_s: float | None = None,
     ) -> dict[str, Any]:
         if deadline_s is not None:
@@ -386,14 +394,18 @@ class OpenAICompatibleModelGateway:
                 deadline_s=deadline_s,
             )
         client = self._client or httpx.Client(
-            timeout=self._client_timeout(), trust_env=not isinstance(body, bytes),
+            timeout=self._client_timeout(),
+            trust_env=not isinstance(body, bytes),
         )
         should_close = self._client is None
         try:
             url = endpoint or f"{self._base_url}{CHAT_COMPLETIONS_PATH}"
             if isinstance(body, bytes):
                 request = _build_prepared_http_request(
-                    client, endpoint=url, headers=self._headers(), body=body,
+                    client,
+                    endpoint=url,
+                    headers=self._headers(),
+                    body=body,
                 )
                 response = client.send(request, auth=None, follow_redirects=False)
             else:
@@ -484,24 +496,3 @@ def build_model_gateway(
         deepseek_router=router,
         client=client,
     )
-
-
-def _read_defaults(path: Path) -> dict[str, str]:
-    if not path.exists():
-        return {}
-    defaults: dict[str, str] = {}
-    for line in path.read_text(encoding="utf-8").splitlines():
-        stripped = line.strip()
-        if not stripped or stripped.startswith("#") or "=" not in stripped:
-            continue
-        key, value = stripped.split("=", maxsplit=1)
-        defaults[key.strip()] = value.strip()
-    return defaults
-
-
-def _serialized_tool_name(tool: dict[str, object]) -> str:
-    function = tool.get("function")
-    if not isinstance(function, dict):
-        return ""
-    name = function.get("name")
-    return name if isinstance(name, str) else ""

@@ -1,0 +1,6 @@
+# Preserve native package import classification, with the same full ERP/root rule set.
+extend = "../../../../pyproject.toml"
+src = ["src"]
+
+[lint.isort]
+known-first-party = ["agent_integrations"]

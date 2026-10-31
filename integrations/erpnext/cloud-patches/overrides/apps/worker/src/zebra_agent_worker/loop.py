@@ -24,9 +24,9 @@ from agent_storage.postgres.skill_publications import PostgresSkillPublicationSt
 from agent_storage.postgres.worker_replay_reader import PostgresWorkerReplayReader
 from agent_tools.skill_publications import SkillPublicationService
 from zebra_agent_config import ZebraAgentSettings
-
 from zebra_agent_worker.ag_ui_projection_work import AgUiProjectionWorkService
 from zebra_agent_worker.claims import SessionClaimService
+from zebra_agent_worker.client_effect_recovery_composition import compose_client_effect_recovery
 from zebra_agent_worker.client_effect_runtime import compose_client_runtime
 from zebra_agent_worker.cloud_composition import CloudWorkerComposition, compose_cloud_worker
 from zebra_agent_worker.cloud_memory_recovery import (
@@ -42,12 +42,14 @@ from zebra_agent_worker.live_event_runtime import (
 from zebra_agent_worker.mcp_composition import compose_worker_mcp
 from zebra_agent_worker.model_call_index import ModelCallIndexer
 from zebra_agent_worker.plugin_composition import compose_worker_plugins
+from zebra_agent_worker.projection_work_composition import build_projection_work
 from zebra_agent_worker.provider_configuration import model_provider_settings
 from zebra_agent_worker.provider_continuation_commit import (
     CloudProviderContinuationCoordinator,
 )
 from zebra_agent_worker.recovery import SessionRecoveryService
 from zebra_agent_worker.resume import SessionResumeService
+from zebra_agent_worker.skill_catalog_composition import build_extension_skills
 from zebra_agent_worker.tool_run_index import ToolRunIndexer
 from zebra_agent_worker.worker_loop_service import (
     WorkerLoopCycleResult as WorkerLoopCycleResult,
@@ -122,24 +124,13 @@ def build_worker_loop_service(
             cloud_bundle.extension_snapshots if settings.cloud_extension_worker_enabled else None
         )
         active_memory_runtime = cloud_bundle.memory_runtime
-        if settings.cloud_skill_worker_enabled:
-            assert cloud_bundle.extensions is not None and cloud_bundle.skill_objects is not None
-            active_extension_skills = WorkerSkillCatalogSource(
-                cloud_bundle.extensions,
-                cloud_bundle.skill_objects,
-                SkillPublicationService(
-                    PostgresSkillPublicationStore(
-                        cloud_bundle.dsn,
-                        deployment_namespace=cloud_bundle.deployment_namespace,
-                    ),
-                    cloud_bundle.skill_objects,
-                    cloud_bundle.deployment_namespace,
-                )
-                if cloud_bundle.dsn
-                else None,
-            )
-        else:
-            active_extension_skills = None
+        active_extension_skills = build_extension_skills(
+            settings,
+            cloud_bundle,
+            catalog_factory=WorkerSkillCatalogSource,
+            publication_factory=SkillPublicationService,
+            store_factory=PostgresSkillPublicationStore,
+        )
         active_stores: ControlPlaneStores | PostgresControlPlaneStores = cloud_bundle.stores
         cloud_memory_store: GovernedMemoryStorePort | None = cloud_bundle.stores.memories
         active_transaction: WorkerProjectionTransactionPort | None = (
@@ -305,7 +296,9 @@ def build_worker_loop_service(
         deployment_namespace=active_namespace,
         task_binding_loader=task_binding_loader,
         erp_workspace_containment=(
-            cloud_bundle.erp_workspace_containment if settings.storage_authority == "postgresql" else None
+            cloud_bundle.erp_workspace_containment
+            if settings.storage_authority == "postgresql"
+            else None
         ),
         transient_output_factory=transient_factory,
         egress_registry=egress_registry,
@@ -360,16 +353,28 @@ def build_worker_loop_service(
     elif settings.command_delivery.publish_enabled or settings.command_delivery.consume_enabled:
         raise ValueError("Rabbit command delivery requires PostgreSQL cloud composition")
     from agent_storage.postgres.erp_workspace_policy import private_activation_enabled
+
     if private_activation_enabled(active_namespace):
         from agent_storage.postgres.database import PostgresDatabase
         from zebra_agent_worker.erp_private_preparation import require_modern_private_delivery
+
         if cloud_bundle.dsn is None:
-            raise ValueError('ERP private workspaces require an explicit cloud DSN')
-        with PostgresDatabase(cloud_bundle.dsn, deployment_namespace=active_namespace).connect_task_io() as connection:
-            rollout = connection.execute('SELECT admission_enabled FROM command_wakeup_rollouts WHERE deployment_namespace=%s',
-                (active_namespace,)).fetchone()
-        require_modern_private_delivery(settings, migrated=migrated,
-            admission_enabled=None if rollout is None else rollout['admission_enabled'])
+            raise ValueError("ERP private workspaces require an explicit cloud DSN")
+        with PostgresDatabase(
+            cloud_bundle.dsn, deployment_namespace=active_namespace
+        ).connect_task_io() as connection:
+            rollout = connection.execute(
+                (
+                    "SELECT admission_enabled FROM command_wakeup_rollouts WHERE depl"
+                    "oyment_namespace=%s"
+                ),
+                (active_namespace,),
+            ).fetchone()
+        require_modern_private_delivery(
+            settings,
+            migrated=migrated,
+            admission_enabled=None if rollout is None else rollout["admission_enabled"],
+        )
     cloud_control = None
     command_sessions = None
     if settings.storage_authority == "postgresql" and not migrated:
@@ -424,15 +429,9 @@ def build_worker_loop_service(
                 else build_model_gateway(model_provider_settings(settings))
             ),
         )
-    client_effect_recovery = None
-    if settings.storage_authority == "postgresql":
-        from agent_storage.postgres.client_effect_recovery import ClientEffectRecovery
-
-        assert cloud_bundle.dsn is not None and active_namespace is not None
-        client_effect_recovery = ClientEffectRecovery(
-            cloud_bundle.dsn,
-            deployment_namespace=active_namespace,
-        ).reconcile
+    client_effect_recovery = compose_client_effect_recovery(
+        settings, cloud_bundle, active_namespace
+    )
     stream_hint_relay, checkpoint_committed = configure_stream_hint_relay(
         execution_stores, settings
     )
@@ -451,38 +450,14 @@ def build_worker_loop_service(
         client_effect_recovery=client_effect_recovery,
         stream_hint_relay=stream_hint_relay,
         projection_work=(
-            AgUiProjectionWorkService(
-                AgUiCheckpointConsumer(
-                    execution_stores.tasks,
-                    execution_stores.projection_work,
-                    namespace=active_namespace or "local",
-                    checkpoint_committed=checkpoint_committed,
-                    notification_required=settings.deployment == "cloud",
-                    read_summaries=(
-                        execution_stores.tasks
-                        if isinstance(execution_stores, PostgresControlPlaneStores)
-                        else None
-                    ),
-                ),
-                coverage_consumer=(
-                    AgUiCheckpointConsumer(
-                        execution_stores.tasks,
-                        execution_stores.coverage_projection_work,
-                        namespace=active_namespace or "local",
-                        checkpoint_committed=checkpoint_committed,
-                        notification_required=settings.deployment == "cloud",
-                        read_summaries=(
-                            execution_stores.tasks
-                            if isinstance(execution_stores, PostgresControlPlaneStores)
-                            else None
-                        ),
-                    )
-                    if execution_stores.coverage_projection_work is not None
-                    else None
-                ),
+            build_projection_work(
+                execution_stores,
+                active_namespace,
+                checkpoint_committed,
+                settings,
+                projection_factory=AgUiProjectionWorkService,
+                consumer_factory=AgUiCheckpointConsumer,
             )
-            if execution_stores.projection_work is not None
-            else None
         ),
         scan_ready_sessions=not migrated and settings.deployment != "cloud",
         cutover_probe=None if migrated else cutover_probe,
@@ -491,10 +466,10 @@ def build_worker_loop_service(
         ),
     )
     if migrated:
+        from agent_storage.postgres.erp_workspace_policy import private_activation_enabled
         from zebra_agent_worker.command_process import CommandWorkerProcess
         from zebra_agent_worker.coverage_recovery_preparation import NativeCoverageRecoveryCheck
         from zebra_agent_worker.erp_private_preparation import prepare_private_command
-        from agent_storage.postgres.erp_workspace_policy import private_activation_enabled
 
         assert cloud_bundle.dsn is not None and active_namespace is not None
         service.migrated_run = CommandWorkerProcess(
@@ -504,8 +479,11 @@ def build_worker_loop_service(
             execute=execution_service.execute_claimed_session,
             maintenance=service.maintenance_once,
             drain=service.drain,
-            private_preparation=(partial(prepare_private_command, execution_service)
-                if private_activation_enabled(active_namespace) else None),
+            private_preparation=(
+                partial(prepare_private_command, execution_service)
+                if private_activation_enabled(active_namespace)
+                else None
+            ),
             coverage_check=(
                 None
                 if cloud_bundle.coverage_runtime is None

@@ -1,0 +1,6 @@
+{
+  "source_commit": "2e8606a603ffe8836fc8a42874b9771f470bc82c",
+  "logical_root": "cloud-patches/host-baseline",
+  "sha256": "9614fd6a7460af985d23bbb4ec7119b5347a9c32ccf192b05b370bb1e92dd791",
+  "role": "original immutable source evidence only; normalized working references remain subject to all source gates; never deployed from archive"
+}

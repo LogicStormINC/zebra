@@ -7,7 +7,6 @@ from agent_core.contracts.broker_envelope import PrincipalScope
 from agent_core.domain.events import EventType
 from agent_core.domain.identifiers import SessionId
 from agent_core.ports.task_projection_checkpoints import CheckpointNotReady
-
 from agent_storage.postgres.command_read_state import command_event_at, finish_command_read_state
 from agent_storage.postgres.command_rollout import command_scope_mode
 from agent_storage.postgres.command_wakeup import command_scope_key
@@ -54,8 +53,16 @@ def prepare_command_candidate(
         ).fetchone()
         if outbox is None:
             raise ValueError("missing canonical command outbox")
-        from agent_storage.postgres.erp_workspace_policy import containment_enabled, private_activation_enabled
-        if containment_enabled(namespace) and pending['command_kind'] in {'run', 'resume', 'message'}:
+        from agent_storage.postgres.erp_workspace_policy import (
+            containment_enabled,
+            private_activation_enabled,
+        )
+
+        if containment_enabled(namespace) and pending["command_kind"] in {
+            "run",
+            "resume",
+            "message",
+        }:
             if not private_activation_enabled(namespace) or not callable(private_preparation):
                 return None
             private_preparation(connection, namespace, accepted_id)

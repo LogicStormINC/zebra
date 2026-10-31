@@ -316,7 +316,9 @@ async def tail_checkpoint_frames(
                         "erp_fresh_authority_unavailable",
                         "erp_fresh_authority_retry_exhausted",
                     }:
-                        yield observation_problem(outcome, retryable=outcome == "erp_fresh_authority_unavailable")
+                        yield observation_problem(
+                            outcome, retryable=outcome == "erp_fresh_authority_unavailable"
+                        )
                         return
             failures = 0
         except CheckpointNotReady:

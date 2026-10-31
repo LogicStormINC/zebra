@@ -72,3 +72,9 @@ Production Chrome remains unauthenticated; page click acceptance not claimed.
 New runtime boot reconciliation is ordered after private mounts/socket; actual
 unit start succeeded without replacing running containers. No host reboot or
 HA/SLO claim. Full details and rollback in ERP_CAPABILITY_RELEASE_20261028.md.
+
+## 2026-10-31 CA-BASELINE-GATE-02 source candidate
+
+Claimed canonical task/Owner/branch before source edits. Fixed original4924Ruff violations without ignores or lower gates; used package-local isort context for byte-identical frozen native code. Split App/Runtime/transfer/operator and tests by concrete responsibility; explicit imports, constructor seams and Docker source closure retained. All original frozen manifest/provenance/deployment evidence and native baseline Python preserved; original Host/chat source archived and dual-checked with separate candidate manifest. Portable stdlib zip keeps worker argv/path and avoids namespace injection. No transfer/deploy/privileged execution.
+
+Spec then independent quality review passed for five split groups and follow-ups. Source Ruff0; exact parent size411/0; npm build/test PASS; offline assertions and9 native composition scripts PASS, delayed-refusal callback regression PASS. Seven stale baseline fixture failures reproduced on2e8606a first; updated only fixture setup or actual source-owner references and preserved all assertions. Native dependencies119+IO doubles are not deployed105 acceptance; transfer105 SQL remains not_run, correct guard refusal retained. Parent full gates/HA02 PG pending. No Docker resources created here, no data/history/receipts/unknown/Coverage rewrites or backend connection for platform mock.

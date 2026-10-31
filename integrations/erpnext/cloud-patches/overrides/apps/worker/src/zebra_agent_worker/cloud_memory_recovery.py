@@ -18,9 +18,8 @@ from agent_core.ports import (
     ProjectionStorePort,
     WorkspaceProjectionStorePort,
 )
-from agent_storage.postgres.worker_replay_reader import PostgresWorkerReplayReader
 from agent_storage.postgres.erp_workspace_policy import ERPWorkspacePolicyRefusal
-
+from agent_storage.postgres.worker_replay_reader import PostgresWorkerReplayReader
 from zebra_agent_worker.claims import SessionClaimService
 from zebra_agent_worker.cloud_memory_finalization import (
     finalize_cloud_memory,
@@ -150,11 +149,17 @@ class CloudMemoryFinalizationRecovery:
         replay_reader: PostgresWorkerReplayReader | None = None,
         erp_workspace_containment: object | None = None,
     ) -> None:
-        from agent_storage.postgres.erp_workspace_policy import ERPWorkspaceContainment, containment_enabled
+        from agent_storage.postgres.erp_workspace_policy import (
+            ERPWorkspaceContainment,
+            containment_enabled,
+        )
 
-        if containment_enabled(deployment_namespace) and not isinstance(erp_workspace_containment, ERPWorkspaceContainment):
+        if containment_enabled(deployment_namespace) and not isinstance(
+            erp_workspace_containment, ERPWorkspaceContainment
+        ):
             raise ValueError("ERP memory recovery requires native containment policy")
         from zebra_agent_worker.erp_fresh_authority import enabled
+
         self.fresh_maintenance_blocked = enabled(deployment_namespace)
         self._erp_workspace_containment = erp_workspace_containment
         self._claim_service = claim_service
@@ -192,7 +197,9 @@ class CloudMemoryFinalizationRecovery:
         ) as heartbeat:
             if self._erp_workspace_containment is not None:
                 heartbeat.require_owned()
-                self._erp_workspace_containment.require(session_id, workspace=claimed.recovery.workspace)
+                self._erp_workspace_containment.require(
+                    session_id, workspace=claimed.recovery.workspace
+                )
             if claimed.recovery.session.status not in {
                 SessionStatus.COMPLETED,
                 SessionStatus.AWAITING_TURN,
@@ -294,7 +301,12 @@ def recover_completed_cloud_memory(
                 recovered_at=datetime.now(UTC),
                 lease_ttl_seconds=lease_ttl_seconds,
             )
-        except (LeaseConflictError, SessionRecoveryError, WorkerExecutionError, ERPWorkspacePolicyRefusal):
+        except (
+            LeaseConflictError,
+            SessionRecoveryError,
+            WorkerExecutionError,
+            ERPWorkspacePolicyRefusal,
+        ):
             # Deterministic configuration/projection/contract errors are
             # deliberately NOT swallowed: they must surface instead of
             # forming an invisible hot loop over corrupted sessions.

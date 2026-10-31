@@ -8,8 +8,6 @@ from uuid import UUID
 
 from agent_core.contracts.broker_envelope import ZebraCommandEnvelope, parse_broker_envelope
 from agent_core.domain.events import EventType, SessionEvent
-from pydantic import ValidationError
-
 from agent_storage.postgres.command_wakeup import (
     _canonical_json,
     _envelope,
@@ -18,6 +16,7 @@ from agent_storage.postgres.command_wakeup import (
 )
 from agent_storage.postgres.command_wakeup_discovery import _database
 from agent_storage.postgres.command_wakeup_recovery_proof import recovery_approval
+from pydantic import ValidationError
 
 MAX_RELAY_BATCH = 32
 
@@ -54,7 +53,9 @@ def _now(connection: Any) -> datetime:
     return value.astimezone(UTC)
 
 
-def _validated_body(connection: Any, namespace: str, row: dict[str, Any], *, metadata_only: bool = False) -> bytes:
+def _validated_body(
+    connection: Any, namespace: str, row: dict[str, Any], *, metadata_only: bool = False
+) -> bytes:
     body = _canonical_json(row["envelope_json"]).encode("utf-8")
     envelope = parse_broker_envelope(body)
     if not isinstance(envelope, ZebraCommandEnvelope):
@@ -73,7 +74,11 @@ def _validated_body(connection: Any, namespace: str, row: dict[str, Any], *, met
         raise ValueError("outbox identity mismatch")
     # Historical no-effect settlement needs the canonical envelope and scope,
     # never the nested command's business content. Live callers keep full reads.
-    payload = "(payload - 'payload') || jsonb_build_object('payload','{}'::jsonb) AS payload" if metadata_only else 'payload'
+    payload = (
+        "(payload - 'payload') || jsonb_build_object('payload','{}'::jsonb) AS payload"
+        if metadata_only
+        else "payload"
+    )
     event_row = connection.execute(
         f"""SELECT event_id, session_id, sequence, event_type, {payload}, actor,
                   created_at, causation_id, correlation_id, idempotency_key,

@@ -14,3 +14,10 @@ include = ["zebra_erpnext*"]
 
 [tool.setuptools.package-data]
 zebra_erpnext = ["modules.txt", "public/**/*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]

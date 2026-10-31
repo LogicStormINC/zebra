@@ -1,3 +1,12 @@
+# 当前：CA-BASELINE-GATE-02
+
+独立源仓库分支已领取；范围/不变量见docs/CA_BASELINE_GATE_02.md。
+1. 保存原始AST与违规清单，核对源码/测试/装配边界。
+2. 机械格式、显式导入和闭包修复；按职责拆超限模块且保留导出/装配。
+3. 本地隔离验证、源提交发布；git archive同步父仓库。
+4. 组合树串行限额完整门禁及HA02真实PG，全部通过才合入cloud-agent。
+不部署、不执行生产迁移，不修改下列历史执行记录。
+
 # ERP capability integration
 
 ## Goal

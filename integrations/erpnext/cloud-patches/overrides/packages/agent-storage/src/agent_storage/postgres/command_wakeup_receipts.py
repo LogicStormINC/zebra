@@ -11,7 +11,6 @@ from agent_core.contracts.turn_events import validate_turn_identity
 from agent_core.domain.events import EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId
 from agent_core.ports.aggregate_mutation import WorkerMutationAuthority
-
 from agent_storage.postgres.command_wakeup import command_scope_key
 from agent_storage.postgres.command_wakeup_relay import _validated_body
 
@@ -23,11 +22,15 @@ def _validate(
     outbox: dict[str, Any],
     scope: PrincipalScope,
     raw: bytes | None,
-    *, metadata_only: bool = False,
+    *,
+    metadata_only: bool = False,
 ) -> None:
     try:
-        body = (_validated_body(connection, namespace, outbox, metadata_only=True) if metadata_only
-                else _validated_body(connection, namespace, outbox))
+        body = (
+            _validated_body(connection, namespace, outbox, metadata_only=True)
+            if metadata_only
+            else _validated_body(connection, namespace, outbox)
+        )
         envelope = parse_broker_envelope(body)
         if (
             not isinstance(envelope, ZebraCommandEnvelope)
@@ -45,12 +48,21 @@ def _validate(
     except (ValueError, TypeError, KeyError):
         raise ValueError("command handoff canonical identity or scope mismatch") from None
 
-HANDLED_EVENTS = frozenset({
-    EventType.APPROVAL_REQUESTED, EventType.CLARIFICATION_REQUESTED,
-    EventType.SESSION_WAITING_FOR_CLIENT_EFFECT, EventType.SESSION_SUSPENDED,
-    EventType.TURN_COMPLETED, EventType.TURN_FAILED, EventType.TURN_CANCELLED,
-    EventType.SESSION_COMPLETED, EventType.SESSION_FAILED, EventType.SESSION_CANCELLED,
-})
+
+HANDLED_EVENTS = frozenset(
+    {
+        EventType.APPROVAL_REQUESTED,
+        EventType.CLARIFICATION_REQUESTED,
+        EventType.SESSION_WAITING_FOR_CLIENT_EFFECT,
+        EventType.SESSION_SUSPENDED,
+        EventType.TURN_COMPLETED,
+        EventType.TURN_FAILED,
+        EventType.TURN_CANCELLED,
+        EventType.SESSION_COMPLETED,
+        EventType.SESSION_FAILED,
+        EventType.SESSION_CANCELLED,
+    }
+)
 
 
 def _terminal_session(connection: Any, namespace: str, session_id: SessionId) -> bool:
@@ -63,7 +75,9 @@ def _terminal_session(connection: Any, namespace: str, session_id: SessionId) ->
 
 
 def record_worker_command_boundary(
-    connection: Any, event: SessionEvent, authority: WorkerMutationAuthority,
+    connection: Any,
+    event: SessionEvent,
+    authority: WorkerMutationAuthority,
 ) -> None:
     """Caller already holds the current lease and committed canonical projections.
 
@@ -99,8 +113,13 @@ def record_worker_command_boundary(
              AND receipt.status = 'accepted' AND receipt.control_plane_epoch = %s
              AND receipt.fencing_token = %s AND receipt.owner_instance_id = %s
            FOR UPDATE OF receipt""",
-        (authority.deployment_namespace, event.session_id, fence.control_plane_epoch,
-         fence.fencing_token, fence.owner_instance_id),
+        (
+            authority.deployment_namespace,
+            event.session_id,
+            fence.control_plane_epoch,
+            fence.fencing_token,
+            fence.owner_instance_id,
+        ),
     ).fetchone()
     if row is None or row["origin"] != "live" or row["execution_floor_sequence"] is None:
         return
@@ -127,10 +146,11 @@ def record_worker_command_boundary(
                 (event.event_id, authority.deployment_namespace, row["accepted_event_id"]),
             )
         return
-    if (row["started_sequence"] is None or event.sequence <= row["started_sequence"]
-            or row["started_sequence"] <= max(
-                row["accepted_sequence"], row["execution_floor_sequence"]
-            )):
+    if (
+        row["started_sequence"] is None
+        or event.sequence <= row["started_sequence"]
+        or row["started_sequence"] <= max(row["accepted_sequence"], row["execution_floor_sequence"])
+    ):
         return
     turn_id = event.payload.get("turn_id")
     if turn_id is not None:

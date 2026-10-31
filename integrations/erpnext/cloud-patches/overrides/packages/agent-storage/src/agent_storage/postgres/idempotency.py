@@ -5,10 +5,9 @@ from datetime import datetime
 from typing import Any
 
 from agent_core.ports.idempotency_store import IdempotencyRecord, IdempotencyStorePort
-from psycopg.types.json import Jsonb
-
 from agent_storage.idempotency import IdempotencyConflictError
 from agent_storage.postgres.database import PostgresDatabase
+from psycopg.types.json import Jsonb
 
 
 class PostgresIdempotencyStore(IdempotencyStorePort):
@@ -38,7 +37,9 @@ class PostgresIdempotencyStore(IdempotencyStorePort):
 
 
 def save_idempotency_in_transaction(
-    connection: Any, namespace: str, record: IdempotencyRecord,
+    connection: Any,
+    namespace: str,
+    record: IdempotencyRecord,
 ) -> IdempotencyRecord:
     existing = connection.execute(
         """

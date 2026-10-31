@@ -74,10 +74,18 @@ def test_additive_gate_setting_preserves_exact_old_baseline_algorithm():
         del values[key]
     if not original.host_execution_authority.enabled:
         del values["host_execution_authority"]
+    # The published algorithm predates these two dormant stream fields.
+    for field in ("agui_profiles_enabled", "agui_native_interaction_enabled"):
+        assert values["stream"][field] is False
+        del values["stream"][field]
     raw = json.dumps(
         values, sort_keys=True, ensure_ascii=True, allow_nan=False, separators=(",", ":")
     ).encode()
     historical = "sha256:" + hmac.new(bytes.fromhex("ab" * 32), raw, hashlib.sha256).hexdigest()
+    assert historical == "sha256:c7748ed8d32a5c534d4c7c8290fd71f5d5d3c01d46c3d38c53665a5cce900fdc"
+    assert baseline_digest(original, "ab" * 32, include_disabled_agui_defaults=True) == (
+        "sha256:1bcba9cf83df0210d435af0775a9e97a5bea57ecf993f502cdf53c92e84cd73f"
+    )
     assert baseline_digest(original, "ab" * 32) == historical
     assert (
         baseline_digest(replace(original, runtime_gate_config="/private/new-gates.json"), "ab" * 32)

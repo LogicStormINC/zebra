@@ -9,7 +9,6 @@ from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.session_handoff import HandoffActorKind
 from agent_security.host_grant import VerifiedHostGrant
-
 from zebra_agent_api.ag_ui_command import handle_agui_command
 from zebra_agent_api.agent_definitions import handle_agent_definition_route
 from zebra_agent_api.app import ZebraAgentApi
@@ -166,9 +165,13 @@ class RouteAdapter:
                 return self.app.recover_session_context(parts[0], request.body or {})
             if len(parts) == 2 and parts[1] == "messages":
                 if self.app.settings.deployment == "cloud":
-                    if 'attachments' in (request.body or {}):
-                        return self.app.append_session_message(parts[0],request.body or {},
-                            verified_host_grant=request.verified_host_grant,idempotency_key=_idempotency_key(request))
+                    if "attachments" in (request.body or {}):
+                        return self.app.append_session_message(
+                            parts[0],
+                            request.body or {},
+                            verified_host_grant=request.verified_host_grant,
+                            idempotency_key=_idempotency_key(request),
+                        )
                     command = _cloud_command_payload("message", request.body or {})
                     if isinstance(command, ApiResponse):
                         return command
@@ -315,10 +318,9 @@ class RouteAdapter:
                 and parts[1]
                 == "memory-overdue-retention-breach-follow-through-verification-outcomes"
             ):
-                return (
-                    self.app.get_memory_overdue_retention_breach_follow_through_verification_outcomes(
-                        parts[0], request.body or {}
-                    )
+                app = self.app
+                return app.get_memory_overdue_retention_breach_follow_through_verification_outcomes(
+                    parts[0], request.body or {}
                 )
             if len(parts) == 3 and parts[1] == "memory" and parts[2] == "review-queue-preview":
                 return self.app.preview_session_memory_queue(parts[0], request.body or {})

@@ -8,6 +8,8 @@ from dataclasses import dataclass, replace
 from datetime import datetime
 from typing import Any, Literal, Never
 
+import zebra_agent_worker.provider_continuation_execution as provider_runtime
+import zebra_agent_worker.runtime_setup as runtime_setup
 from agent_context.capsule import execution_evidence_context
 from agent_core.domain.coverage_contracts import CoverageRefusalReason, CoverageRefusedError
 from agent_core.domain.events import EventActor, EventType, SessionEvent
@@ -19,9 +21,6 @@ from agent_core.ports.runtime import RuntimeCapabilityError
 from agent_core.ports.task_projection_checkpoints import CheckpointNotReady
 from agent_core.ports.worker_preparation import PreparationAdvanced
 from agent_storage.postgres.connection_scope import postgres_connection_scope
-
-import zebra_agent_worker.provider_continuation_execution as provider_runtime
-import zebra_agent_worker.runtime_setup as runtime_setup
 from zebra_agent_worker.claims import ClaimedSession
 from zebra_agent_worker.continuation_lifecycle import restore_suspended_session_claim
 from zebra_agent_worker.execution_errors import WorkerPluginSetupUnavailable, log_worker_failure
@@ -272,12 +271,13 @@ def execute_session_with_lease(
     from datetime import datetime as _dt
 
     from agent_storage.postgres.erp_workspace_policy import private_activation_enabled
-    if private_activation_enabled(getattr(service, '_execution_namespace', None)):
-        policy = getattr(service, '_erp_workspace_containment', None)
+
+    if private_activation_enabled(getattr(service, "_execution_namespace", None)):
+        policy = getattr(service, "_erp_workspace_containment", None)
         if policy is None:
-            raise ValueError('private direct execution requires native source policy')
+            raise ValueError("private direct execution requires native source policy")
         policy.require(session_id)
-        raise WorkerExecutionError('erp_private_requires_modern_handoff')
+        raise WorkerExecutionError("erp_private_requires_modern_handoff")
     started_at = executed_at or _dt.now(_UTC)
     claimed = service._claim_service.claim_session(
         session_id,

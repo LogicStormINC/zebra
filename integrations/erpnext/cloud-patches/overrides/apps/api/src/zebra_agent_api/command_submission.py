@@ -25,7 +25,6 @@ from agent_storage import ControlPlaneStores
 from agent_storage.postgres.command_wakeup import CommandAdmissionCapacityError
 from agent_storage.postgres.extensions import ExtensionSnapshotAdmissionConflictError
 from pydantic import ValidationError
-
 from zebra_agent_api.extension_turn_admission import (
     ClientExtensionBindingError,
     CloudExtensionTurnAdmission,
@@ -74,8 +73,9 @@ def submit_session_command(
         return bad_request(str(exc))
 
     from zebra_agent_api.http_input_attachments import has_raw_input_attachments
+
     if has_raw_input_attachments(command.payload):
-        return bad_request('attachments require canonical Task/message admission before a command')
+        return bad_request("attachments require canonical Task/message admission before a command")
     events = stores.events.list_for_session(session_key)
     if not events:
         return ApiResponse(

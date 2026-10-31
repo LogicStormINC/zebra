@@ -12,7 +12,6 @@ from agent_core.domain.cloud_artifact_requests import (
     ArtifactCompletePruneRequest,
 )
 from agent_core.ports.aggregate_mutation import WorkerMutationAuthority
-
 from agent_storage.postgres.artifact_payload_rows import artifact_payload_from_row
 from agent_storage.postgres.artifact_payload_transaction_support import (
     assert_worker_boundary,

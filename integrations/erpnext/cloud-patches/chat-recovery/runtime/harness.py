@@ -21,6 +21,22 @@ from agent_core.ports.model_gateway import ModelGatewayPort
 from agent_core.ports.runtime import RuntimeHandle, RuntimePort
 from agent_core.ports.session_history import SessionHistoryPort
 from agent_core.ports.tool_gateway import ToolGatewayPort
+from agent_runtime.adapters.local import LocalRuntime
+from agent_runtime.artifact_tools import build_artifact_read_tools
+from agent_runtime.cloud_mcp_transport import CloudMcpTransport
+from agent_runtime.deferred import DeferredRuntime
+from agent_runtime.harness_defaults import DEFAULT_TEST_PRESETS
+from agent_runtime.mcp_protocol import McpAnyServerSpec
+from agent_runtime.mcp_routing import build_mcp_transport
+from agent_runtime.readonly_tool_gateway import build_readonly_gateway
+from agent_runtime.research import LocalResearchSubagentRunner, ResearchSubagentTool
+from agent_runtime.skill_requirements import build_skill_read_requirements
+from agent_runtime.subagents import LocalResearchSubagentCoordinator
+from agent_runtime.tool_output_projection import build_output_projector, project_tool_output
+from agent_runtime.web_gateway import LocalWebGatewayTransport, sticky_network_cancellation_check
+from agent_runtime.web_search import LocalWebSearchTransport
+from agent_runtime.web_tools import register_web_tools
+from agent_runtime.workspace import LocalWorkspace
 from agent_security import DEFAULT_NETWORK_PROFILE, LocalPolicyEngine, NetworkProfile, PolicyProfile
 from agent_tools import (
     AuthorizedMcpToolCatalog,
@@ -54,22 +70,6 @@ from agent_tools.skills_catalog import (
     SkillCatalog,
     SkillEnablementState,
 )
-
-from agent_runtime.adapters.local import LocalRuntime
-from agent_runtime.artifact_tools import build_artifact_read_tools
-from agent_runtime.cloud_mcp_transport import CloudMcpTransport
-from agent_runtime.deferred import DeferredRuntime
-from agent_runtime.harness_defaults import DEFAULT_TEST_PRESETS
-from agent_runtime.mcp_protocol import McpAnyServerSpec
-from agent_runtime.mcp_routing import build_mcp_transport
-from agent_runtime.research import LocalResearchSubagentRunner, ResearchSubagentTool
-from agent_runtime.skill_requirements import build_skill_read_requirements
-from agent_runtime.subagents import LocalResearchSubagentCoordinator
-from agent_runtime.tool_output_projection import build_output_projector, project_tool_output
-from agent_runtime.web_gateway import LocalWebGatewayTransport, sticky_network_cancellation_check
-from agent_runtime.web_search import LocalWebSearchTransport
-from agent_runtime.web_tools import register_web_tools
-from agent_runtime.workspace import LocalWorkspace
 
 DEFAULT_RESEARCH_CHILD_LIMIT = 3
 
@@ -232,7 +232,8 @@ class LocalToolGateway(ToolGatewayPort):
         )
         self._output_projector = output_projector
         self._network_check = sticky_network_cancellation_check(
-            network_cancellation_check, reuse_doh=reuse_doh_transport,
+            network_cancellation_check,
+            reuse_doh=reuse_doh_transport,
             egress_endpoint=egress_endpoint,
         )
         registry = ToolRegistry()
@@ -309,9 +310,11 @@ class LocalToolGateway(ToolGatewayPort):
             max_output_bytes=None if output_projector is not None else 32_768,
             cloud=cloud_mcp_transport,
         )
-        self._runtime_free_mcp_tools = frozenset(
-            tool.name for tool in cloud_mcp_transport.model_tools
-        ) if cloud_mcp_transport is not None else frozenset()
+        self._runtime_free_mcp_tools = (
+            frozenset(tool.name for tool in cloud_mcp_transport.model_tools)
+            if cloud_mcp_transport is not None
+            else frozenset()
+        )
         self._mcp_catalog = AuthorizedMcpToolCatalog(
             mcp_transport.model_tools if mcp_transport is not None else ()
         )
@@ -362,24 +365,7 @@ class LocalToolGateway(ToolGatewayPort):
 
     @classmethod
     def erp_chat_readonly(cls, runtime, check):
-        # ponytail: this explicit zero-workspace surface only reuses native plan/clarify.
-        # Files/commands require the separate private runtime release, never this mode.
-        self = cls.__new__(cls)
-        self._runtime, self._runtime_handle, self._network_check = runtime, None, check
-        self._output_projector, self._subagents = None, None
-        self._delegation_mode = DelegationMode.DISABLED
-        self._skill_component_names, self._skill_requirements = (), ()
-        self._mcp_catalog = AuthorizedMcpToolCatalog(())
-        self._runtime_free_mcp_tools = frozenset()
-        registry = ToolRegistry()
-        for tool in (ClarifyTool(), PlanTool()):
-            registry.register(tool.contract, tool.handle)
-        self._model_tools = registry.model_tools()
-        self._parallel_safe_tools = registry.parallel_safe_names()
-        self._parallel_batch_limits = {}
-        self._runtime_free_web_tools = frozenset(tool.name for tool in self._model_tools)
-        self._executor = ToolExecutor(registry)
-        return self
+        return build_readonly_gateway(cls, runtime, check)
 
     @property
     def delegation_mode(self) -> DelegationMode:
@@ -419,19 +405,23 @@ class LocalToolGateway(ToolGatewayPort):
         # ponytail: Skill/Artifact reads use bounded stores, not an OCI workspace.
         # Selected Cloud MCP uses Worker HTTPS, never the local sandbox/stdio path.
         prepare_ms = 0.0
-        if (isinstance(self._runtime, DeferredRuntime)
-                and tool_call.name not in self._runtime_free_web_tools
-                and tool_call.name not in self._runtime_free_mcp_tools
-                and tool_call.name not in {"artifacts.read", "skills.list", "skills.read"}):
+        if (
+            isinstance(self._runtime, DeferredRuntime)
+            and tool_call.name not in self._runtime_free_web_tools
+            and tool_call.name not in self._runtime_free_mcp_tools
+            and tool_call.name not in {"artifacts.read", "skills.list", "skills.read"}
+        ):
             started = perf_counter()
             self._runtime.ensure_ready()
             prepare_ms = (perf_counter() - started) * 1000
         try:
             result = self._executor.execute(tool_call)
             if isinstance(self._runtime, DeferredRuntime):
-                result = result.model_copy(update={
-                    "metadata": {**result.metadata, "runtime_prepare_ms": prepare_ms},
-                })
+                result = result.model_copy(
+                    update={
+                        "metadata": {**result.metadata, "runtime_prepare_ms": prepare_ms},
+                    }
+                )
             if self._network_check is not None:
                 self._network_check()
             result = self._project_tool_output(tool_call, result)
@@ -472,13 +462,19 @@ class LocalToolGateway(ToolGatewayPort):
             limit = current.arguments.get("limit")
             # ponytail: only the five exact native search wire spellings; Policy
             # still validates canonical arguments, and provider replay stays raw.
-            if (current.name == "web.search" and current.provider_arguments is None
-                    and isinstance(limit, str) and limit in ("1", "2", "3", "4", "5")):
-                current = current.model_copy(update={
-                    "arguments": {**current.arguments, "limit": int(limit)},
-                    "provider_tool_name": current.name,
-                    "provider_arguments": dict(current.arguments),
-                })
+            if (
+                current.name == "web.search"
+                and current.provider_arguments is None
+                and isinstance(limit, str)
+                and limit in ("1", "2", "3", "4", "5")
+            ):
+                current = current.model_copy(
+                    update={
+                        "arguments": {**current.arguments, "limit": int(limit)},
+                        "provider_tool_name": current.name,
+                        "provider_arguments": dict(current.arguments),
+                    }
+                )
             resolved.append(current)
         return tuple(resolved)
 

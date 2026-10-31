@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "scripts": {
     "build": "esbuild frontend/index.tsx --bundle --format=iife --target=es2022 --minify --define:process.env.NODE_ENV=\"\\\"production\\\"\" --outfile=zebra_erpnext/public/zebra.js",
-    "test": "node frontend/check.mjs && node frontend/workbench-check.mjs && node frontend/ui-actions-check.mjs"
+    "test": "node frontend/check.mjs && node frontend/workbench-check.mjs && node frontend/ui-actions-check.mjs && node frontend/host-api-check.mjs"
   },
   "dependencies": {
     "@zebra-agent/client-core": "file:vendor/zebra-agent-client-core-0.1.0.tgz",

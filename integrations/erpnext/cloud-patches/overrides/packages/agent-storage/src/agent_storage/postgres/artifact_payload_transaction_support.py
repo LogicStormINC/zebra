@@ -13,10 +13,9 @@ from agent_core.domain.cloud_artifact_payloads import (
 from agent_core.domain.identifiers import ArtifactId, SessionId
 from agent_core.domain.leases import LeaseLostError
 from agent_core.ports.aggregate_mutation import WorkerMutationAuthority
-from pydantic import BaseModel
-
 from agent_storage.postgres.artifact_payload_rows import artifact_payload_from_row
 from agent_storage.postgres.leases import assert_current_lease_fence
+from pydantic import BaseModel
 
 
 def assert_worker_boundary(
@@ -59,7 +58,8 @@ def lock_payload(
     namespace: str,
     artifact_id: ArtifactId,
     session_id: SessionId,
-    *, worker_only: bool = False,
+    *,
+    worker_only: bool = False,
 ) -> dict[str, Any]:
     row = connection.execute(
         """
@@ -71,8 +71,8 @@ def lock_payload(
     ).fetchone()
     if row is None:
         raise CloudArtifactPayloadNotFoundError("artifact payload metadata not found")
-    if worker_only and row['authority_kind'] != 'worker':
-        raise CloudArtifactPayloadConflictError('Worker cannot mutate HTTP input authority')
+    if worker_only and row["authority_kind"] != "worker":
+        raise CloudArtifactPayloadConflictError("Worker cannot mutate HTTP input authority")
     return cast("dict[str, Any]", row)
 
 

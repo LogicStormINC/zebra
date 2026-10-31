@@ -18531,3 +18531,9 @@ migration/deployment. Earlier52/58 evidence immutable; full evidence separate.
 03 dependency review:01merged,02notmerged/blocked, hence03Locked; reuse existing
 lanes/pools, quantify all-process/executor totals, reserve control/GET and validate
 namespace fairness/backoff; server-vs-Helm pool coverage must precede08. No03code.
+
+## 2026-10-31 CA-BASELINE-GATE-02 combined candidate
+
+Canonical source published92b308b (implementation439fb72), exported via git archive with541files and exact SOURCE reference. Original native baseline Python/frozen manifests/provenance/deployment evidence retained; current candidate integrity and immutable archived original separately checked. Source Ruff0/size411/0; frontend build/test and19offline checks plus9native-doubles scripts and deferred-refusal callback regression pass. Exact105 psycopg/data transfer and deployed ERP remain not_run; version guard unchanged.
+
+Composed native01 andHA02 with documentation-only merge conflicts preserving both historical records. Combined makecheck allgreen:4046sizefiles/0, Ruff0, mypy1494, Eval30, product/postcommit/risk pass. First fullmaketest11671pass/1fail/3161skip in1298.84s. Failure is another hand-built old-baseline fixture still including two later dormantAGUIfields, conflicting with restoredpublishedc774. Expanded ownedpath beforefix; independent manualprojection now assertsbothFalse beforeomission andhardpins publishedc774/intermediate1bc, preserving allgatepath assertions. Focus19pass1.90s. Spec reviewPASS; qualityreview/secondfullsuite/HA02realPGpending. No mainline merge/push yet. Singlepytest/nice10/threads1; Docker defaults1CPU/512MiB/PID128 withownedlabels, originaloverdoze-dev-pg unchanged; firstsuite leftno ownedcontainers. No deployment/production migration or history/receipt/unknown/Coverage rewrite.

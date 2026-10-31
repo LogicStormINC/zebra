@@ -4,6 +4,7 @@ from collections.abc import Callable
 from time import monotonic
 from typing import Any
 
+import zebra_agent_worker.provider_continuation_execution as provider_runtime
 from agent_context import (
     context_inputs_from_delegated_snapshot,
     context_inputs_from_materialization,
@@ -21,8 +22,6 @@ from agent_core.ports import MemoryReadPort, UserPersonalizationStorePort
 from agent_core.ports.context_compiler import ConfirmedMemoryInput, RuntimeEvidenceInput
 from agent_storage import list_confirmed_repo_memories
 from agent_tools import FencedEffectToolGateway
-
-import zebra_agent_worker.provider_continuation_execution as provider_runtime
 from zebra_agent_worker.progress_recovery import WorkerProgressRecovery
 from zebra_agent_worker.public_output_runtime import publication_scope
 from zebra_agent_worker.task_recovery import RecoveredTask
@@ -135,6 +134,7 @@ def build_worker_orchestrator(
         if isinstance(tool_gateway, FencedEffectToolGateway):
             tool_gateway.execution_finished_listener = _effect_terminal_observer(progress)
         persist_event = progress
+
     def start_public_call(call_id: str, attempt: int) -> None:
         if fresh_authority_check is not None:
             fresh_authority_check("transient_start", call_id)

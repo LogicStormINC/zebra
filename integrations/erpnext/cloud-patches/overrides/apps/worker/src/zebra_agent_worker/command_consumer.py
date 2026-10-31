@@ -19,9 +19,9 @@ from agent_core.domain.identifiers import SessionId
 from agent_core.domain.sessions import Session, SessionStatus
 from agent_core.ports.projection_store import ProjectionStorePort
 from agent_storage import ControlPlaneStores, LeaseConflictError, PostgresControlPlaneStores
+from agent_storage.postgres.erp_workspace_policy import ERPWorkspacePolicyRefusal
 from psycopg import OperationalError
 from pydantic import ValidationError
-
 from zebra_agent_worker.client_effect_continuation import pending_client_effect_ids
 from zebra_agent_worker.command_rejections import (
     command_rejected,
@@ -31,7 +31,6 @@ from zebra_agent_worker.command_rejections import (
 from zebra_agent_worker.control import SessionControlError, UnsupportedSessionControlError
 from zebra_agent_worker.recovery import SessionRecoveryError, SessionRecoveryService
 from zebra_agent_worker.resume import SessionResumeError
-from agent_storage.postgres.erp_workspace_policy import ERPWorkspacePolicyRefusal
 
 if TYPE_CHECKING:
     from zebra_agent_worker.execution import SessionExecutionService
@@ -104,16 +103,26 @@ class SessionCommandConsumer:
             previous = self._scan_after
             self._scan_after = session.session_id
             from agent_storage.postgres.erp_workspace_policy import private_activation_enabled
-            if private_activation_enabled(getattr(self._execution_service, '_execution_namespace', None)):
-                policy = getattr(self._execution_service, '_erp_workspace_containment', None)
+
+            if private_activation_enabled(
+                getattr(self._execution_service, "_execution_namespace", None)
+            ):
+                policy = getattr(self._execution_service, "_erp_workspace_containment", None)
                 if policy is None:
-                    raise ValueError('private classic command consumer requires native source policy')
+                    raise ValueError(
+                        "private classic command consumer requires native source policy"
+                    )
                 try:
                     policy.require(session.session_id)
                 except ERPWorkspacePolicyRefusal:
                     pass  # Preserve legacy observation/control handling below.
                 else:
-                    skipped = CommandConsumption(str(session.session_id), None, 'deferred', 'erp_private_requires_modern_handoff')
+                    skipped = CommandConsumption(
+                        str(session.session_id),
+                        None,
+                        "deferred",
+                        "erp_private_requires_modern_handoff",
+                    )
                     continue  # Never load a private command body on the classic path.
             try:
                 command_event = self._next_command(
@@ -143,19 +152,25 @@ class SessionCommandConsumer:
                 fail_rejected_continuation(self._stores.events, command_event)
                 reject_command(self._stores.idempotency, command_event, "invalid_command")
                 skipped = CommandConsumption(
-                    str(session.session_id), _command_kind(command_event),
-                    "skipped", "invalid_command",
+                    str(session.session_id),
+                    _command_kind(command_event),
+                    "skipped",
+                    "invalid_command",
                 )
                 continue
             policy = getattr(self._execution_service, "_erp_workspace_containment", None)
             if policy is not None and command.kind in {
-                SessionCommandKind.RUN, SessionCommandKind.RESUME, SessionCommandKind.MESSAGE,
+                SessionCommandKind.RUN,
+                SessionCommandKind.RESUME,
+                SessionCommandKind.MESSAGE,
             }:
                 try:
                     policy.require(command.session_id)
                 except ERPWorkspacePolicyRefusal as refusal:
                     reject_command(self._stores.idempotency, command_event, refusal.code)
-                    skipped = CommandConsumption(str(session.session_id), command.kind.value, "skipped", refusal.code)
+                    skipped = CommandConsumption(
+                        str(session.session_id), command.kind.value, "skipped", refusal.code
+                    )
                     continue
             try:
                 if command.kind in {SessionCommandKind.STOP, SessionCommandKind.CANCEL}:
@@ -171,17 +186,27 @@ class SessionCommandConsumer:
                 }:
                     early = {}
                     if getattr(self._execution_service, "_erp_fresh_enabled", False):
-                        from agent_storage.postgres.erp_fresh_disposition import persist_fresh_disposition
+                        from agent_storage.postgres.erp_fresh_disposition import (
+                            persist_fresh_disposition,
+                        )
                         from agent_storage.postgres.idempotency import PostgresIdempotencyStore
 
                         if not isinstance(self._stores.idempotency, PostgresIdempotencyStore):
-                            raise ValueError("ERP fresh disposition requires native PostgreSQL receipts")
+                            raise ValueError(
+                                "ERP fresh disposition requires native PostgreSQL receipts"
+                            )
                         database = self._stores.idempotency._database
 
-                        def refuse(lease, decision):
+                        def refuse(
+                            lease, decision, *, command_event=command_event, database=database
+                        ):
                             return persist_fresh_disposition(
-                                database._dsn, database.deployment_namespace, lease,
-                                code=decision.code, reason=decision.reason, accepted_event=command_event,
+                                database._dsn,
+                                database.deployment_namespace,
+                                lease,
+                                code=decision.code,
+                                reason=decision.reason,
+                                accepted_event=command_event,
                             )
 
                         early["early_authority_refusal"] = refuse
@@ -194,7 +219,10 @@ class SessionCommandConsumer:
             except UnsupportedSessionControlError:
                 reject_command(self._stores.idempotency, command_event, "unsupported_control")
                 skipped = CommandConsumption(
-                    str(session.session_id), command.kind.value, "skipped", "unsupported_control",
+                    str(session.session_id),
+                    command.kind.value,
+                    "skipped",
+                    "unsupported_control",
                 )
                 continue
             except (
@@ -226,7 +254,8 @@ class SessionCommandConsumer:
             return self._command_reader(session_id, current_sequence)
         for event in self._stores.events.read_since(session_id, current_sequence):
             if event.event_type is EventType.SESSION_COMMAND_ACCEPTED and not command_rejected(
-                self._stores.idempotency, event,
+                self._stores.idempotency,
+                event,
             ):
                 return event
         if status is not SessionStatus.WAITING_CLIENT_EFFECT:
@@ -242,7 +271,8 @@ class SessionCommandConsumer:
         }
         for event in reversed(events):
             if event.event_type is not EventType.SESSION_COMMAND_ACCEPTED or command_rejected(
-                self._stores.idempotency, event,
+                self._stores.idempotency,
+                event,
             ):
                 continue
             result = event.payload.get("payload")

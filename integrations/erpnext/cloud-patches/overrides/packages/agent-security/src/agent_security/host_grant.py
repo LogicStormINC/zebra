@@ -13,8 +13,6 @@ from enum import StrEnum
 from typing import Protocol
 from urllib.parse import urlsplit
 
-from agent_core.domain.http_input_attachments import ConsumedHostGrantProof
-
 from agent_core.domain.host_authority import (
     HostContextEnvelope,
     HostGrantMismatchError,
@@ -22,6 +20,7 @@ from agent_core.domain.host_authority import (
     HostResourceRef,
     HostSessionGrant,
 )
+from agent_core.domain.http_input_attachments import ConsumedHostGrantProof
 
 
 class HostGrantSecurityError(ValueError):

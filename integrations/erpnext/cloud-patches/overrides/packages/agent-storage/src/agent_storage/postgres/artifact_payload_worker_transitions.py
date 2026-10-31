@@ -14,7 +14,6 @@ from agent_core.domain.cloud_artifact_requests import (
     ArtifactRecordObjectRequest,
 )
 from agent_core.ports.aggregate_mutation import WorkerMutationAuthority
-
 from agent_storage.postgres.artifact_payload_rows import artifact_payload_from_row
 from agent_storage.postgres.artifact_payload_transaction_support import (
     assert_worker_boundary,
@@ -33,7 +32,9 @@ def record_object(
     authority: WorkerMutationAuthority,
 ) -> CloudArtifactPayloadRecord:
     assert_worker_boundary(connection, namespace, request.session_id, authority)
-    row = lock_payload(connection, namespace, request.artifact_id, request.session_id, worker_only=True)
+    row = lock_payload(
+        connection, namespace, request.artifact_id, request.session_id, worker_only=True
+    )
     replay = mutation_replay(connection, namespace, row, "record_object", request)
     if replay is not None:
         return replay
@@ -86,7 +87,9 @@ def finalize_after_boundary(
     namespace: str,
     request: ArtifactFinalizeRequest,
 ) -> CloudArtifactPayloadRecord:
-    row = lock_payload(connection, namespace, request.artifact_id, request.session_id, worker_only=True)
+    row = lock_payload(
+        connection, namespace, request.artifact_id, request.session_id, worker_only=True
+    )
     replay = mutation_replay(connection, namespace, row, "finalize", request)
     if replay is not None:
         return replay
@@ -148,7 +151,9 @@ def compensate_after_boundary(
     namespace: str,
     request: ArtifactCompensateRequest,
 ) -> CloudArtifactPayloadRecord:
-    row = lock_payload(connection, namespace, request.artifact_id, request.session_id, worker_only=True)
+    row = lock_payload(
+        connection, namespace, request.artifact_id, request.session_id, worker_only=True
+    )
     replay = mutation_replay(connection, namespace, row, "compensate", request)
     if replay is not None:
         return replay

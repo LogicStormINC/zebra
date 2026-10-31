@@ -33,11 +33,6 @@ from agent_storage import (
 )
 from agent_storage.postgres.command_wakeup_outcome import PostgresCommandOutcomeReader
 from agent_storage.postgres.direct_control import PostgresDirectControl
-from zebra_agent_config import (
-    ZebraAgentSettings,
-    trusted_local_mode_enabled,
-)
-
 from zebra_agent_api.agent_definition_binding import resolve_definition_binding
 from zebra_agent_api.agent_definitions import ApiAgentDefinitionsMixin
 from zebra_agent_api.agent_release_api import ApiAgentReleaseMixin
@@ -87,6 +82,10 @@ from zebra_agent_api.skills_admin import (
 from zebra_agent_api.storage_composition import ControlPlaneStorageMixin
 from zebra_agent_api.stream_v2_reader import StreamV2Reader
 from zebra_agent_api.usage_api import UsageEvidenceReader
+from zebra_agent_config import (
+    ZebraAgentSettings,
+    trusted_local_mode_enabled,
+)
 
 
 @dataclass(frozen=True)
@@ -314,18 +313,33 @@ class ZebraAgentApi(
             },
         )
 
-    def append_session_message(self, session_id: str, payload: dict[str, object], *,
-                               verified_host_grant: VerifiedHostGrant | None = None,
-                               idempotency_key: str | None = None) -> ApiResponse:
+    def append_session_message(
+        self,
+        session_id: str,
+        payload: dict[str, object],
+        *,
+        verified_host_grant: VerifiedHostGrant | None = None,
+        idempotency_key: str | None = None,
+    ) -> ApiResponse:
         from agent_storage import PostgresControlPlaneStores
+
         if isinstance(self.stores, PostgresControlPlaneStores):
             from zebra_agent_api.http_input_attachments import append_cloud_input
-            parsed_id=self._parse_session_id(session_id)
-            if isinstance(parsed_id,ApiResponse):return parsed_id
-            task_id=self.stores.tasks.task_id_for_session(parsed_id)
-            if task_id is None:return ApiResponse(404,{'status':'not_found'})
-            return append_cloud_input(self,task_id,payload,verified_host_grant=verified_host_grant,
-                idempotency_key=idempotency_key,explicit_session=parsed_id)
+
+            parsed_id = self._parse_session_id(session_id)
+            if isinstance(parsed_id, ApiResponse):
+                return parsed_id
+            task_id = self.stores.tasks.task_id_for_session(parsed_id)
+            if task_id is None:
+                return ApiResponse(404, {"status": "not_found"})
+            return append_cloud_input(
+                self,
+                task_id,
+                payload,
+                verified_host_grant=verified_host_grant,
+                idempotency_key=idempotency_key,
+                explicit_session=parsed_id,
+            )
         parsed = parse_append_session_message_payload(payload)
         if isinstance(parsed, ApiResponse):
             return parsed

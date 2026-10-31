@@ -3,13 +3,11 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from uuid import UUID
 
-from agent_core.domain.attachments import TextAttachmentInput
 from agent_core.domain.coverage_task_admission import (
     CoverageTaskAdmission,
     coverage_admission_input,
 )
 from agent_core.domain.identifiers import AgentDefinitionId
-from agent_core.domain.image_attachments import ImageAttachmentInput
 from agent_core.domain.mcp import normalize_mcp_allowlist
 from agent_core.domain.memories import MemoryType
 from agent_core.domain.networking import NetworkProfileName
@@ -19,9 +17,17 @@ from agent_core.domain.turns import InteractionMode
 from agent_core.domain.workspace_control import WorkspaceSource
 from agent_runtime import normalize_mcp_resource_ids
 from agent_security import NetworkProfileError, PolicyProfile, parse_network_profile
-
 from zebra_agent_api.responses import ApiResponse, bad_request, service_unavailable
 from zebra_agent_api.session_attachment_inputs import parse_attachment_inputs
+from zebra_agent_api.session_model_options import (
+    _has_images as _has_images,
+)
+from zebra_agent_api.session_model_options import (
+    _model_profile as _model_profile,
+)
+from zebra_agent_api.session_model_options import (
+    _reasoning_effort as _reasoning_effort,
+)
 from zebra_agent_api.session_payload_types import (
     AppendSessionMessagePayload,
     ApprovalDecisionPayload,
@@ -319,31 +325,6 @@ def parse_append_session_message_payload(
         "model_profile": model_profile,
         "reasoning_effort": reasoning_effort,
     }
-
-
-def _model_profile(value: object) -> str | None | ApiResponse:
-    if value is None:
-        return None
-    if value not in {
-        "deepseek-v4-flash-executor-v1",
-        "deepseek-v4-pro-executor-v1",
-    }:
-        return bad_request("model_profile is not supported")
-    return str(value)
-
-
-def _has_images(
-    attachments: tuple[TextAttachmentInput | ImageAttachmentInput, ...],
-) -> bool:
-    return any(isinstance(attachment, ImageAttachmentInput) for attachment in attachments)
-
-
-def _reasoning_effort(value: object) -> str | None | ApiResponse:
-    if value is None:
-        return None
-    if value not in {"none", "low", "high", "max"}:
-        return bad_request("reasoning_effort is not supported")
-    return str(value)
 
 
 def parse_approval_decision_payload(

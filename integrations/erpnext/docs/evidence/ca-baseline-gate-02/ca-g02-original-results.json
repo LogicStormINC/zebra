@@ -1,0 +1,37 @@
+[
+  {
+    "path": "tests/test_chat_checks.py",
+    "exit": 1,
+    "log": "/tmp/ca-g02-original-test_chat_checks.log"
+  },
+  {
+    "path": "tests/test_full_capability_checks.py",
+    "exit": 1,
+    "log": "/tmp/ca-g02-original-test_full_capability_checks.log"
+  },
+  {
+    "path": "tests/test_maintenance_checks.py",
+    "exit": 1,
+    "log": "/tmp/ca-g02-original-test_maintenance_checks.log"
+  },
+  {
+    "path": "tests/test_manage_checks.py",
+    "exit": 1,
+    "log": "/tmp/ca-g02-original-test_manage_checks.log"
+  },
+  {
+    "path": "tests/test_workspace_checks.py",
+    "exit": 1,
+    "log": "/tmp/ca-g02-original-test_workspace_checks.log"
+  },
+  {
+    "path": "cloud-patches/tests/check_private_workspace.py",
+    "exit": 1,
+    "log": "/tmp/ca-g02-original-check_private_workspace.log"
+  },
+  {
+    "path": "cloud-patches/tests/check_private_workspace_hardening.py",
+    "exit": 1,
+    "log": "/tmp/ca-g02-original-check_private_workspace_hardening.log"
+  }
+]
