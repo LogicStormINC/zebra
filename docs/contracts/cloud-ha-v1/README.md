@@ -1,6 +1,6 @@
 # Cloud HA v1：DDD 与验收合同
 
-状态：cloud-ha-v1 revision 3，新增用户体验/并发性能目标，待评审；未实现新接口，未运行验收，不是生产SLA。
+状态：cloud-ha-v1 revision 4，仅02获代码实施授权并形成候选；其余性能目标仍待验证；新健康接口为候选实现，仅定向验证，不是生产SLA。
 基线d782039c；[静态发现、依赖和路径](../../CA-HA-01_baseline_and_scope.md)。
 本合同细化[总方案](../../CLOUD_HIGH_AVAILABILITY_PLAN_v1.md)，机器可读规划见
 [acceptance.json](acceptance.json)。定义变动须升revision，并使受影响的旧验收失效；
@@ -113,8 +113,8 @@ F1每次仅注入一个主要故障；组合故障、整AZ丢失、多区域双�
 
 ## 5. 就绪/存活与恢复合同决策
 
-以下为02的设计输入，不是当前可调用API：保留/health兼容语义，拟增
-GET /health/live、GET /health/ready；需02冻结响应/认证边界后实现。
+以下设计已在02候选接线，未部署：保留/health兼容语义，新增
+GET /health/live、GET /health/ready；实际范围和验证见第8节。
 readiness响应预算≤1s；从有界后台依赖观测取结果，观测过期/未完成返回非就绪，
 不在探针线程直接执行可能受libpq最短超时/DNS阻塞影响的数据库连接。
 后台探测并发/队列有界，不能每次HTTP请求创建新线程；观测最大年龄5s，排空立即非就绪。
@@ -241,3 +241,17 @@ RSS/连接/线程/执行器曲线、停止与资源原证明及回收清单。�
 02提供可信健康观测；03负责公平/预算/反空转；04负责隔离停止回收；07负责流/界面事实；
 08仅容量配置/部署；09测量容量与长历史；10逐UX条目验收，不新增平行性能执行平台。
 本补充所有UX场景not_run，02–10继续Locked，不解除重型验收暂停。
+
+## 8. CA-HA-02实施交接（revision 4）
+
+用户授权范围仅CA-HA-02，不是整个HA计划；[候选行为与限制](../../CA-HA-02_readiness_preflight.md#6-ca-ha-02候选实现2026-10-31review)。
+新增精确匿名GET已在FastAPI真实路由接线；后台公共控制面epoch观测复用Task I/O预算，
+启动schema校验未搬到探针线程；未检查全部可选外部依赖，不当作整个执行平面可用证明。
+Worker通过已有控制/维护进展与当前consumer能力采样；本机文件默认关闭、0600、原子写，
+依赖管理侧固定当前PID/实例，缓存不过能力到期。旧串行长任务期间不假报控制进展，不据此杀任务。
+这些观测从不赋予执行权限，不改变原Task/Run/租约/原收据/unknown/Coverage。
+02仅定向验证，完整门禁及真实PG/集群场景尚未运行，保持Review候选；03–10仍Locked。
+所有UX目标/F1实验仍not_run，本卡不宣称容量、强停、排空或生产HA通过。
+
+JSON的implementation_authorized仅限implementation_authorized_tasks列出的CA-HA-02，
+不授权其他HA任务/重型验证/生产操作，也不是Runtime的权限凭据或执行门禁。

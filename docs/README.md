@@ -85,3 +85,10 @@ and a path-bounded implementation task is explicitly activated in `AGENT_TASKS.m
 - [revision 3：UX-01–10计时、分母、E1-C/E1-O与验收](contracts/cloud-ha-v1/README.md#7-用户卡顿卡死与并发性能合同revision-3补充)。
 - [任务与验收映射](CLOUD_HIGH_AVAILABILITY_TASKS_v1.md#8-用户体验专项验收索引均未运行) · [机器可读目标](contracts/cloud-ha-v1/acceptance.json)。
 - 新增目标全部not_run，待评审；02–10仍Locked，前端mock和暂停重型环境的约束不变。
+
+## CA-HA-02候选实现（未部署）
+
+[API/Worker实际行为、旧模式限制和验证边界](CA-HA-02_readiness_preflight.md#6-ca-ha-02候选实现2026-10-31review) ·
+[定向证据](evidence/ca-ha-02/validation.json)。精确GET存活/就绪、公共控制面有界观测、
+Worker原进展和私有文件；没有执行权限/Task终态变更。仅02候选Review，03–10仍Locked；
+完整测试/真实PG/故障与UX容量未验，不恢复重型测试或Docker，不部署/生产迁移。

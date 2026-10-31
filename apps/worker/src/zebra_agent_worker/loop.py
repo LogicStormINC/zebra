@@ -477,6 +477,7 @@ def build_worker_loop_service(
             execute=execution_service.execute_claimed_session,
             maintenance=service.maintenance_once,
             drain=service.drain,
+            health=service.health,
             coverage_check=(
                 None
                 if cloud_bundle.coverage_runtime is None

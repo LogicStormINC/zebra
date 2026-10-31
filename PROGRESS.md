@@ -1,3 +1,13 @@
+## 2026-10-31 — CA-HA-02候选实现 / Review
+
+新增精确GET /health/live、/health/ready，保留旧/health；1条有界后台观测线程复用原epoch读取与
+Task I/O预算，匿名只报status。Worker观测来自真实控制/维护及能力凭据，缓存不过能力到期；
+默认关闭的私有原子文件CLI不增端口，旧串行忙执行不假报可调度/不误杀Task。
+[实际实现与限制](docs/CA-HA-02_readiness_preflight.md#6-ca-ha-02候选实现2026-10-31review) ·
+[证据](docs/evidence/ca-ha-02/validation.json)。无core/storage/Helm/前端变更，旧数据/收据/unknown/Coverage不变。
+只做定向回归/局部静态检查；完整门禁、真实PG/依赖/集群故障和UX容量尚未验。
+02候选未部署/未主线合入，03–10仍Locked；无Docker/重型验证/生产操作。
+
 ## 2026-10-31 — CA-HA-UX-00 用户体验/并发性能补充（文档Review）
 
 [正式方案](docs/CLOUD_HIGH_AVAILABILITY_PLAN_v1.md)及[合同revision 3](docs/contracts/cloud-ha-v1/README.md)

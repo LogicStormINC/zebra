@@ -18422,3 +18422,48 @@ found grouped UX-03/07 spelling hiding literalUX-07; expanded grouped IDs and
 reran successfully. Per-scope insufficient samples explicitly remain unverified.
 No make test/check or environments run. Local source commit only; no mainline
 merge or GitHub push requested/performed for this supplement.
+
+
+## 2026-10-31 — CA-HA-02 scoped implementation
+
+User starts implementation. Selected next02, retained no-Docker/heavy-test pause.
+Independent codex/ca-ha-02-readiness frome8a4f10b, UX docs cherry-picked559422d7;
+claimed Ready/owned paths before code. Existing shared environment had older
+ag-ui-protocol missingTokenUsage; created ignored local venv reusing dependency
+paths, installed only existing lock-pinned ag-ui-protocol1.0.0 there, no shared
+environment mutation. Correct-environment baseline3 passed. New feature RED was
+missing health modules, not product baseline failures. Unique Worker test basename
+avoids existing pytest import collision; no global config workaround.
+
+API moves original lifespan into health module with same warm/stream cleanup;
+exact FastAPI GET routes before authenticated catch-all, no prefix/auth loosening.
+One lifecycle-owned probe,0.75s existing Task I/O epoch read,1s after-completion
+interval,5s cache,2s bounded join. Startup schema validation retained; common
+control-plane availability only, not runtime schema drift/all feature health.
+Worker uses existing consumer capability and real control/maintenance times,
+opt-in0600 atomic snapshot; current PID/instance required, no port. Legacy busy
+returns unknown progress/not-ready, never task failure/kill. File error does not
+abort execution. Added valid_until so observation cannot outlive capability;
+removed guard in owned temp experiment => one expected regression failure, then
+restored. Original Task/Run/fence/receipts/unknown/Coverage untouched.
+
+Source limits observed: API http487; Worker loop487,command_process500,loop service441.
+No packages/core/storage/Helm/SDK/frontend changes. Local focused/typing/lint and
+product-boundary evidence only, no complete make test/check, realPG, Docker,
+external models, fault clusters, heavy workloads, deployment or migration.
+02Review until broader verification/integration;03 staysLocked. Final results below.
+
+Final focused51 passed/0failed/0skipped in11.77s; changed-module Ruff pass,
+scoped mypy7 sources pass with current source MYPYPATH (initial reused environment
+had import-untyped discovery errors, no ignore-error workaround), runtime product
+boundary pass. Expiry guard red1 expected failure then full focused green51.
+Evidence/log hashes stored docs/evidence/ca-ha-02. No full-gate/realPG/HA claim.
+02Review candidate, no source main merge/deployment or heavy validation.
+
+Final additional guard: Worker health attach uses exclusive fresh0600 paths,
+refuses existing files/other snapshots; existing-data preservation regression
+passed. Close is idempotent. Stable-path takeover requires separate owner-fenced
+protocol/manager cleanup, not implicit overwrite. New API health responses use
+Cache-Control:no-store (tested). Final focused52 passed/0failed/0skipped; scoped
+Ruff/mypy7 and product-boundary PASS. Current evidence files/log hashes refreshed;
+full gates and real dependencies remain not_run, no production HA/UX claim.

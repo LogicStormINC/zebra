@@ -26,6 +26,7 @@ from zebra_agent_config import ZebraAgentSettings
 
 from zebra_agent_worker.command_process_state import CommandRecoverySweep, CommandWorkerCapability
 from zebra_agent_worker.runtime_factory import pin_cloud_engine
+from zebra_agent_worker.worker_health import WorkerHealth
 from zebra_agent_worker.worker_loop_service import WorkerLoopRunResult
 from zebra_agent_worker.worker_polling import validate_command_cadence, validate_loop_inputs
 
@@ -58,11 +59,13 @@ class CommandWorkerProcess:
         drain: Callable[[], None],
         transport_factory: Callable[..., Any] | None = None,
         coverage_check: CoverageRecoveryCheck | None = None,
+        health: WorkerHealth | None = None,
     ) -> None:
         self._dsn, self._namespace, self._settings = dsn, namespace, settings
         self._execute, self._maintenance, self._drain = execute, maintenance, drain
         self._transport_factory = transport_factory
         self._coverage_check = coverage_check
+        self._health = health
         self._muted: list[tuple[logging.Logger, bool]] = []
 
     def run(
@@ -100,6 +103,8 @@ class CommandWorkerProcess:
                 )
             )
         finally:
+            if self._health is not None:
+                self._health.close()
             for log, disabled in self._muted:
                 log.disabled = disabled
             self._muted.clear()
@@ -126,6 +131,8 @@ class CommandWorkerProcess:
         consumer: CommandWakeupConsumer | None = None
 
         def stop_new_work() -> None:
+            if self._health is not None:
+                self._health.close()
             stop.set()
             if consumer is not None:
                 consumer.stop_new_admissions()
@@ -419,6 +426,11 @@ class CommandWorkerProcess:
                                 )
                             except Exception:
                                 logger.warning("worker_capability_tick_failed")
+                if self._health is not None:
+                    self._health.command_tick(
+                        capability.lease_for(consumer),
+                        min(recovery_completed_at, control_completed_at),
+                    )
                 cycles += 1
                 with execution_lock:
                     is_idle = config.scan_fallback_enabled and not outcomes and running == 0

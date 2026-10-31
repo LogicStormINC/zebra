@@ -1,7 +1,8 @@
-# CA-HA-02 任务与依赖核对（不实施）
+# CA-HA-02 任务、依赖与候选实施
 
-日期2026-10-31；状态Locked：01 revision 2已合入并推送cloud-agent 1dd88bfd，技术前置满足，仍等待明确业务实现授权。
-本轮只形成此文档，不领取In Progress，不创建代码占位，不运行环境。
+日期2026-10-31；当前状态Review候选：用户后续已授权02实施，实际行为和限制见第6节。
+以下1–5节保留领取前设计边界；01 revision 2前置已合入cloud-agent 1dd88bfd。
+原文档阶段未实施；本轮已先登记Ready后领取02，依然不启动重型/Docker环境。
 依赖：[CA-HA-01 revision 2](contracts/cloud-ha-v1/README.md)、[逐卡范围](CA-HA-01_baseline_and_scope.md)。
 
 ## 1. 前置结论
@@ -69,3 +70,54 @@ SIGTERM只立即反映现有退出状态；真正排空/强停与资源证明仍
 
 实施授权后先最小确定性回归，后完整make test/check和必要真实组合验证；禁止将mock健康
 测试当生产HA证明。当前仅文档静态校验，不声称任何上述场景已运行/通过。
+
+## 6. CA-HA-02候选实现（2026-10-31，Review）
+
+用户后续“开始实施”授权本卡代码，旧的未授权说明保留作前置历史；本节是当前实施状态。
+分支codex/ca-ha-02-readiness从主线e8a4f10b开始，摘取UX文档01530810为559422d7。
+实现仅组合/技术观测，无core/storage/Helm/业务BFF变更，前端mock保持。
+
+### API
+
+- 新GET /health/live总是快速返回200/{status:alive}；不执行依赖检查。
+- 新GET /health/ready只读缓存，未知/失败/过期/关闭503/{status:not_ready}，新鲜成功200/{status:ready}。
+  FastAPI注册精确GET路由，排在原鉴权catch-all前；没有增加任何前缀匿名豁免。
+  新健康响应带Cache-Control:no-store避免中间缓存；原GET /health及原HostGrant/本地bearer路径保持。POST/子路径/尾斜线仍进入原鉴权。
+- ApiHealth承接原lifespan的HostGrant预热和流读取器/通知器关闭，保留原行为；
+  预热失败不启动后台探测。lifespan成功后仅1条本机观测线程，无请求触发的额外线程。
+- 默认Cloud观测只覆盖共同控制面：启动factory的原有schema校验后，通过既有
+  read_control_plane_epoch及Task I/O deadline进行单次只读epoch查询，预算0.75s，
+  完成后间隔1s，无立即重试风暴，结果最大年龄5s。DNS子进程/套接字/查询/退出预算复用原存储实现。
+- 不额外创建连接池，不执行DDL/DML/业务工作，不把数据库异常文本传给匿名调用者。
+  本地开发组合成功启动后可就绪；Cloud注入的非Postgres stores不能报告就绪。
+- 原schema校验依旧发生在factory启动，不将本卡包装成运行期schema漂移检测。
+  readiness只说明公共控制面可服务，不证明全部模型/工具/S3/Broker端点均可用；
+  各功能仍有原准入检查，依赖角色与全面容错留给06，完整就绪部署留给08。
+- 正常退出先关闭本卡探测，再关闭原流资源；探测未在2s内退出会显式报错，不能悄悄假报回收。
+
+### Worker
+
+- WorkerLoopService创建本机WorkerHealth；新CLI参数--health-file为默认关闭的本机只读
+  观测文件输出选项，不开端口。每进程须由管理方提供新的文件路径，已有文件以O_EXCL拒绝覆盖，
+  避免误配置破坏业务文件或其他实例快照；稳定路径接管不在本卡实现。只允许绝对、受控、本机目录（推荐运行时tmpfs），不支持网络文件系统。
+- 文件以临时文件+原子replace更新，权限0600，含PID/独立进程实例ID、观测时间、phase、
+  control_fresh、ready和有效截止时间；不含业务身份、token、Task状态或资源释放收据。
+- 消费方须从进程管理侧固定当前PID/实例ID后调用read_worker_health；不能仅信任文件自报身份，
+  也不能把该观测当执行授权或Task完成证明。格式损坏、超长、实例不匹配、过期均不就绪。
+- 命令模式只采样原control/maintenance已完成的进展及实际consumer拥有的能力凭据；
+  无新鲜进展、能力缺失/过期或停止即不就绪。缓存截止不越过能力凭据的实际到期时间。
+  没有新增数据库探针、伪造心跳或改动领取/恢复/执行算法。
+- 旧串行模式：poll前legacy_busy且非就绪，完成后legacy_idle短期就绪；合法长调用期间
+  没有独立控制tick，保守表示观测不足，不表示Task失败或建议自动杀进程。
+  本卡没有把旧模式改造成并行控制，也不声称补齐了04的独立终止能力。
+- 命令模式收到原停止信号时关闭观测，再走既有真实drain；正常/异常run退出也关闭。
+  无强停/清理/租约变化，观察文件写失败只使观测不可信，不中断业务执行。
+
+### 验证与未验证
+
+仅运行SQLite/内存/假I/O的定向回归和局部静态检查；没有真实PG、Redis、Broker、Docker、
+外部模型、故障集群、全量make test/check或生产验证。真实PG就绪/schema不兼容等联合
+场景仍须在后续明确允许环境验收后证明；不能把本地测试当作生产HA或UX容量达标。
+旧基础3项先验证；新API/Worker用例有实现前模块缺失RED，能力到期回归另做撤去守卫
+失败→恢复通过。具体命令/版本/结果和资源边界见[证据](evidence/ca-ha-02/validation.json)。
+02保持Review候选，未合并/部署；03及其后任务仍Locked。重型验证/Docker暂停继续有效。

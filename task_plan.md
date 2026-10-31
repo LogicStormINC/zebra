@@ -1,3 +1,11 @@
+# CA-HA-02 当前实现
+
+- 从e8a4f10b独立分支，摘取UX文档01530810为559422d7；Ready/Owned paths先登记。
+- 新精确GET与原lifespan组合、有界epoch观测；保留原健康/鉴权/关闭行为。
+- Worker健康只读采样、能力到期约束、默认关闭本机原子文件，不改原任务执行。
+- 定向pytest、局部Ruff/mypy/边界与尺寸；不运行完整门禁/Docker/故障负载。
+- 02候选Review；真实PG/完整门禁未验，03–10仍Locked，无部署/生产迁移。
+
 # CA-HA-UX-00 用户体验性能文档补充
 
 - 从cloud-agent e8a4f10b建独立分支/worktree，登记Ready后领取。

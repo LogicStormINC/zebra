@@ -1,9 +1,9 @@
 {
   "contract": "cloud-ha-v1",
-  "revision": 3,
-  "status": "design_review",
+  "revision": 4,
+  "status": "scoped_candidate_implementation_review",
   "baseline_commit": "d782039caa2543cff66afadf64c77969b4037641",
-  "implementation_authorized": false,
+  "implementation_authorized": true,
   "heavy_validation_authorized": false,
   "production_authorized": false,
   "protected": [
@@ -242,7 +242,7 @@
     "tests/worker/test_command_process.py"
   ],
   "future_task_status": {
-    "CA-HA-02": "Locked",
+    "CA-HA-02": "Review",
     "CA-HA-03": "Locked",
     "CA-HA-04": "Locked",
     "CA-HA-05": "Locked",
@@ -281,8 +281,15 @@
     "response_budget_ms": 1000,
     "max_observation_age_seconds": 5,
     "probe_reads_refresh_timestamp": false,
-    "worker_surface": "process_local_read_only_no_public_port",
-    "implementation_status": "not_implemented"
+    "worker_surface": "opt-in private atomic file via --health-file, no public port",
+    "implementation_status": "candidate_focused_verification_only",
+    "readiness_scope": "common control-plane epoch availability after factory startup schema validation; not all feature dependencies",
+    "runtime_schema_drift_detection": false,
+    "probe_io_budget_ms": 750,
+    "probe_interval_after_completion_seconds": 1,
+    "probe_shutdown_budget_seconds": 2,
+    "worker_snapshot_requires": "current PID and instance pinned out of band; fresh observation and unexpired capability",
+    "legacy_busy_policy": "not_ready / progress unknown, no task failure or automatic kill"
   },
   "path_overlap_order": {
     "CA-HA-03": [
@@ -429,5 +436,9 @@
     ],
     "no_independent_progress_authority": true
   },
-  "prior_review_evidence_applies_to_revision": 2
+  "prior_review_evidence_applies_to_revision": 2,
+  "implementation_authorized_tasks": [
+    "CA-HA-02"
+  ],
+  "implementation_authorization_note": "Authorization applies ONLY to listed tasks, not the entire program; heavy and production permissions remain false."
 }
