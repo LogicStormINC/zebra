@@ -18393,3 +18393,26 @@ trees byte-identical to d782039c (git diff --exit-code). CA-HA-01 now Done for
 documentation only;02 dependencies satisfied but Locked/unclaimed without code
 authorization. No heavy tests or Docker started. Remaining housekeeping receipt
 updates status only; no inherited business changes or force-stop integration.
+
+
+## 2026-10-31 — CA-BASELINE-GATE-01
+
+Claimed Ready native baseline task before code in new branch/worktree from e8a4f10b.
+Root cause: new dormant AGUI flags changed published HMAC.2RED/1pass before fix;
+canonical old pin restored and exact intermediate encoding accepted read-only.
+Actual SQLite Task recovery retains original event bytes; credential/Host/AGUI
+drift refused for both pins. Coverage tests updated to current connector lookup
+and plain/URI contracts; runtime refusal unchanged, connector negative retained.
+Real Starlette request tests preserve one fresh access before stream preparation;
+SDK enum now asserts locked1.0.0, no dependency changes. Task header helper moved
+with exact AST and runtime alias preserved; mypy caught missing explicit reexport,
+fixed self-alias and verified all1492source files. One full-schema actual PG test
+with metadata-only/no-body/no-write role passes and canonical event rows unchanged.
+Expanded242passed/29conditional skips15.36s; realPG1passed0.74s; Eval30, scoped Ruff,
+product boundary/postcommit/risk pass. Separate current full size diagnostic15
+ERP-only; Ruff4924ERP-only remain; full suites not repeated/claimed passed.
+DisposablePG1CPU/512MiB/PID128 inspected, tmpfs256MiB, exact finally rm-fv done.
+No production migration/deployment, original services/receipts/unknown/Coverage kept.
+ERP upstream main matches export2e8606a; next card must claim canonical source and
+sync reviewed export, not locally rewrite pinned overlays/exclude gate. HA02/03
+merge dependency remains unsatisfied; publish native candidate only.

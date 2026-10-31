@@ -78,3 +78,6 @@ and a path-bounded implementation task is explicitly activated in `AGENT_TASKS.m
 - [复核发现与修正记录](evidence/ca-ha-01/review.json)：单人文档复核，不是独立审查或HA实测。
 - [CA-HA-02任务与依赖](CA-HA-02_readiness_preflight.md)：01合入后技术前置满足；未获实施授权仍Locked。
 - [合同](contracts/cloud-ha-v1/README.md)与JSON同步revision 2；03因共享Worker文件改为依赖02。
+
+[原生基线门禁整改与ERPNext同步计划](CA_BASELINE_GATE_REMEDIATION.md)：原生候选定向/
+真实PG通过，ERPNext门禁仍阻塞；HA02未合入，HA03未解锁。

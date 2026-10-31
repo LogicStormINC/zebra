@@ -1,9 +1,23 @@
-# CA-HA-02 — API/Worker就绪与健康（前置核对，未实施）
-- Status: Locked；CA-HA-01 revision 2已于cloud-agent 1dd88bfd合入推送，技术依赖满足；仍需用户明确授权业务实现，本轮仅依赖核对。
-- Owner: 未领取；候选范围与验收见docs/CA-HA-02_readiness_preflight.md；不创建代码占位。
-- Depends on: CA-HA-01 revision 2进入cloud-agent；不依赖未合入97463d00a强停实现。
-- Boundary: /health兼容；精确匿名GET、生命周期和Worker当前进展的只读技术观测；不改领域规则/调度/停止协议/存储或Helm。03共享文件须在02合入后实施。
-- No business-code or heavy-validation authorization in the current request; no Docker/production operations.
+# CA-BASELINE-GATE-01 — 原生基线门禁修复
+
+- Status: Review（原生修复候选）；用户继续授权后Ready并领取；Owner Luke Ding，执行Codex。
+- Branch/worktree: codex/ca-baseline-gate-01，ca-baseline-gate-01/zebra-agent；base e8a4f10b。
+- Depends: CA-HA-02真实PG/完整门禁对照证据已发布d16645aa；本卡先修原生，ERPNext导出另卡跟踪。
+- Owned paths: apps/api/src/zebra_agent_api/{coverage_http_admission,session_queue,session_binding,stream_v2_http,ag_ui_task_view}.py；apps/worker/src/zebra_agent_worker/{execution_recovery,task_recovery,workspace_resolution,bundle_assembly}.py；apps/config/src/zebra_agent_config/{bundle_settings,settings}.py；packages/agent-storage/src/agent_storage/postgres/{agent_tasks,task_replay_headers}.py；tests/api/{test_coverage_http_admission,test_coverage_connector_gate,test_stream_v2_http}.py；tests/worker/{test_coverage_task_recovery,test_bundle_baseline_history}.py；tests/agent_storage/test_postgres_task_read_header.py；tests/config/{test_bundle_management_config,test_script_validation_config,test_bundle_settings}.py；tests/spikes/ag_ui/test_forward_compatibility.py；docs/evidence/ca-baseline-gate-01/、docs/CA_BASELINE_GATE_REMEDIATION.md；docs/{AGENT_TASKS,README,CLOUD_HIGH_AVAILABILITY_TASKS_v1}.md；PROGRESS.md、WORKLOG.md、task_plan.md。
+- Invariants: 保留历史/原收据/unknown/Coverage；不得删除拒绝门禁、改golden掩盖摘要漂移、排除整个ERPNext。
+- Verification: 优先无Docker定向RED→GREEN；串行限额；原生修复不宣称ERPNext违规已清零，不提前解锁HA03。
+
+# CA-BASELINE-GATE-02 — ERPNext源仓库与同步导出门禁
+- Status: Ready（未领取）；与原生01无代码依赖；领取前读取canonical规则、登记单一人类Owner/分支/worktree并细化逐组Owned paths，当前没有ERP代码修改。
+- Source: LogicStormINC/zebra-erpnext main2e8606a，cloud-agent中的integrations/erpnext是该提交导出。
+- Scope: canonical的Frappe App/frontend/deploy工具及固定cloud-patches；对应导出及SOURCE索引；禁止扩展到生产数据/部署；细节docs/CA_BASELINE_GATE_REMEDIATION.md。
+- Exit: 不排除门禁，保留导入/原收据/unknown/历史兼容；canonical及组合树完整验证后集成。
+
+# CA-HA-02 — API/Worker就绪与健康（独立候选）
+- Status: Review；代码/完整门禁/真实PG证据已在codex/ca-ha-02-readiness的d16645aa发布，未合入主线。
+- Verification: PG5通过；完整test11641通过/15基线失败/3155跳过；check16尺寸/Ruff4924基线违规。原生01已修相关原生项，ERP02仍待实施；不把继承失败算通过。
+- Depends: 01revision2已合入；条件合并仍等待组合树完整门禁；03保持Locked，未启动。
+- Boundary: 保留旧/health、只读技术观测、历史/原收据/unknown/Coverage，不部署/生产迁移。
 
 # CA-HA-01 — HA基线、DDD不变量与验收合同（仅文档）
 - Status: Done（仅设计文档）；2026-10-31 单人文档复核修正9项，revision 2及01文档已合入并推送cloud-agent 1dd88bfd；未运行实现或故障验收；用户授权后登记Ready并领取；Owner Luke Ding，执行Codex；独立评审待安排。

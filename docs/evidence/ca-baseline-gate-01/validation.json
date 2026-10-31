@@ -1,0 +1,94 @@
+{
+  "task": "CA-BASELINE-GATE-01",
+  "status": "Review_not_merged",
+  "base": "e8a4f10b7ede3a8343f568eb126a1ab64bdea9fc",
+  "ha02_failure_evidence_commit": "d16645aa",
+  "findings": [
+    {
+      "cause": "Two new false AGUI stream flags changed historical HMAC baseline, despite dormant behavior",
+      "fix": "Default digest c774 restored; exact intermediate 1bc encoding also accepted on Worker with the same private key/configuration. Changed API credentials, Host authority or enabled AGUI flags still refused; original catalog pins and Session event bytes untouched."
+    },
+    {
+      "cause": "Coverage orchestration unit mock froze nonzero connector digest but omitted current Profile lookup; invalid unused-dsn reached real boundary",
+      "fix": "Mock current unbound profile and zero sentinel explicitly; add negative current-connector failure test; no production admission bypass."
+    },
+    {
+      "cause": "Coverage nonstrict tests expected plain paths to call resolver, contradicting efba8aa2 pass-through fix",
+      "fix": "Test separate plain/URI matrix for local/cloud, failures and strict refusal-before-workspace; production resolver/refusal unchanged."
+    },
+    {
+      "cause": "Stream test request lacked real HTTP method and API profile field; fixture path lacked actual /v1 prefix",
+      "fix": "Use actual Starlette Request and configured profile placeholder; keep single-current-access-before-preparation assertions."
+    },
+    {
+      "cause": "SDK spike checked0.1.19 enum against already locked1.0.0",
+      "fix": "Pin installed version1.0.0 plus exact reviewed enum; no dependency or adapter/history changes."
+    },
+    {
+      "cause": "Postgres Task facade515 lines",
+      "fix": "Move unchanged read_task_header AST to existing replay-header reader; explicit same-name reexport retains old runtime/type imports; facade452/reader445 lines."
+    }
+  ],
+  "verification": {
+    "red": {
+      "failed": 2,
+      "passed": 1
+    },
+    "focused": {
+      "passed": 242,
+      "failed": 0,
+      "skipped": 29,
+      "duration_seconds": 15.36
+    },
+    "actual_pg": {
+      "passed": 1,
+      "failed": 0,
+      "skipped": 0,
+      "duration_seconds": 0.74,
+      "proof": "full migrated disposable schema; metadata-only login cannot read Event bodies/write; Store facade/header and old export work, before/after canonical events identical"
+    },
+    "mypy": {
+      "status": "pass",
+      "source_files": 1492
+    },
+    "ruff_changed_sources_and_tests": "pass",
+    "eval_cases": 30,
+    "postcommit": "pass",
+    "risk": "pass",
+    "runtime_product_boundary": "pass",
+    "complete_make_test": "not_repeated_this_slice; inherited ERP gate failure remains",
+    "complete_make_check": "not_passed;15 size/4924 Ruff remain entirely in ERPNext export"
+  },
+  "resource_limits": {
+    "serial": true,
+    "nice": 10,
+    "cpus": 1,
+    "memory_bytes": 536870912,
+    "pids": 128,
+    "pg_data": "tmpfs256MiB",
+    "inspect_assertions": true,
+    "owned_container_removed_in_finally": true
+  },
+  "next": {
+    "task": "CA-BASELINE-GATE-02",
+    "status": "Ready_unclaimed",
+    "canonical_erp_main": "2e8606a603ffe8836fc8a42874b9771f470bc82c",
+    "export_matches_recorded_source": true,
+    "requirement": "Fix canonical ERP app/overlays under separate ownership, preserve exports; then sync and run combined full gates before HA02 conditional merge"
+  },
+  "ha03": "Locked, HA02 not merged",
+  "logs_sha256": {
+    "digest-red.txt": "030701251ec4a8ed486824ca207dc45102d35e15673bac6bc421ba1755fba26f",
+    "digest-green.txt": "536b45b49bf680ebd2001d37db4a862a10b83ff07d3bfee6f91dce56ce17d680",
+    "regression.txt": "d808574f3e87c08c8bfda010ab49b9e18fb7e0f0d78d8104465581ca6db40bc4",
+    "real-postgres.txt": "b7b3aa92344a38bedb2ba74f765049f69319b8af87f14816cc3a4df38eeb870a",
+    "mypy.txt": "ab8fc1439cc9bea4a047c843de6897a5ec92878c1761fbea8343f096bcf2b502",
+    "ruff.txt": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+    "remaining-sizes.txt": "fa12e475a2f49d80984e4b005e45d595e6a0895a69791a62df16c80984e601af",
+    "eval.txt": "5d01963817cada8561b23ceb33d13d0fb1ea355db78681193e64ca98cc4edbde",
+    "postcommit.txt": "e3b0f9296f584acc7d3ca565ba97e246516514b54042acdecd4b889e824bb79f",
+    "risk.txt": "10708e58f3ffbf876a665fe3593d2a75a0b570003e625ef1fbd721409588e94e",
+    "boundary.txt": "0dd799c4177abc2ca49e7e028a73adcbb0c65c07faf1efbac940e1cd3f8b48dd",
+    "resource-manifest.json": "14a532ef96e5bd37de68984be10e0813a0174c4249902af1fc4f651dc3b82bbe"
+  }
+}

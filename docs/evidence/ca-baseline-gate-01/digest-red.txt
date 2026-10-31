@@ -1,0 +1,99 @@
+FF.                                                                      [100%]
+=================================== FAILURES ===================================
+_ test_disabled_agui_defaults_keep_published_digest_and_enabled_flags_stay_pinned _
+
+    def test_disabled_agui_defaults_keep_published_digest_and_enabled_flags_stay_pinned():
+        original = settings()
+>       assert baseline_digest(original, "ab" * 32) == PUBLISHED
+E       AssertionError: assert 'sha256:1bcba...53c92e84cd73f' == 'sha256:c7748...65a5cce900fdc'
+E         
+E         - sha256:c7748ed8d32a5c534d4c7c8290fd71f5d5d3c01d46c3d38c53665a5cce900fdc
+E         + sha256:1bcba9cf83df0210d435af0775a9e97a5bea57ecf993f502cdf53c92e84cd73f
+
+tests/worker/test_bundle_baseline_history.py:23: AssertionError
+_ test_actual_frozen_task_accepts_exact_history_and_rejects_configuration_drift[sha256:c7748ed8d32a5c534d4c7c8290fd71f5d5d3c01d46c3d38c53665a5cce900fdc] _
+
+tmp_path = PosixPath('/private/var/folders/qx/n_v9dpmd12dgb9m1s75tjgtm0000gn/T/pytest-of-lukeding/pytest-901/test_actual_frozen_task_accept0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10a5df470>
+digest = 'sha256:c7748ed8d32a5c534d4c7c8290fd71f5d5d3c01d46c3d38c53665a5cce900fdc'
+
+    @pytest.mark.parametrize("digest", [PUBLISHED, INTERMEDIATE])
+    def test_actual_frozen_task_accepts_exact_history_and_rejects_configuration_drift(
+        tmp_path, monkeypatch, digest
+    ):
+        with monkeypatch.context() as fixture:
+            fixture.setattr("tests.test_bundle_assembly.baseline_digest", lambda *args: digest)
+            assembly, configured, _ = write_catalog(tmp_path, settings())
+        sid, _ = seed(tmp_path, assembly)
+        store = SQLiteEventStore(tmp_path / "worker.db")
+        events = store.list_for_session(sid)
+        before = [event.model_dump_json() for event in events]
+        task = recover_task(
+            events,
+            workspace=rebuild_workspace(events),
+            fallback_title="fallback",
+            attachment_reader=LocalArtifactPayloadReader(SQLiteArtifactPayloadStore(tmp_path / "read.db")),
+        )
+        monkeypatch.setenv("BUNDLE_MODEL_KEY", "fixture-only")
+>       require_task_compatibility(configured, task)
+
+tests/worker/test_bundle_baseline_history.py:47: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+apps/worker/src/zebra_agent_worker/bundle_assembly.py:86: in require_task_compatibility
+    assembly = require_snapshot_compatibility(settings, task.definition_snapshot)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+settings = ZebraAgentSettings(profile='test', database_url='private-dsn', api=ApiSettings(auth_token='private-token'), model=Mode...d_secret=None, host_manifest_binding_policy='declared', development_unrestricted=False, web_egress_socks_endpoint=None)
+snapshot = BundleDefinitionSnapshot(snapshot_schema_version='agent-definition-snapshot/2', definition_id=UUID('ad0a7fa2-a31f-48bb... api_key_env='BUNDLE_MODEL_KEY', models=('alpha', 'beta'), max_context_window_tokens=128000, max_output_tokens=4096))))
+
+    def require_snapshot_compatibility(
+        settings: ZebraAgentSettings,
+        snapshot: AgentDefinitionSnapshot | None,
+    ) -> RuntimeAssembly | None:
+        try:
+            assembly = snapshot_assembly(snapshot)
+            if assembly is None:
+                return None
+            if settings.mcp_servers or any(
+                (
+                    settings.skill_roots,
+                    settings.skill_roots_system,
+                    settings.skill_roots_admin,
+                    settings.skill_roots_repo,
+                )
+            ):
+                raise ValueError("unversioned local extension configuration")
+            catalog = load_execution_catalog(settings.runtime_bundle_config)
+            manifest = assembly.bundle.manifest
+            if (
+                manifest.scope != catalog.scope
+                or manifest.engine.image != catalog.image
+                or manifest.baseline_config != catalog.baseline_config
+                or not hmac.compare_digest(
+                    manifest.baseline_config.digest, baseline_digest(settings, catalog.baseline_key)
+                )
+            ):
+                raise ValueError("baseline or target mismatch")
+            if settings.runtime.runtime_class != "trusted-local" and not re.fullmatch(
+                r".+@sha256:[0-9a-f]{64}", settings.runtime.image
+            ):
+                raise ValueError("sandbox image must be content addressed")
+            from agent_core.domain.script_bundle import ScriptRuntimeAssembly
+    
+            if isinstance(assembly, ScriptRuntimeAssembly):
+                from zebra_agent_worker.native_scripts import approved_scripts
+    
+                approved_scripts(settings, assembly)
+            if not os.environ.get(assembly.provider_profile.api_key_env, "").strip():
+                raise ValueError("provider credential unavailable")
+            return assembly
+        except (ValueError, TypeError, AssertionError, PermissionError, OSError, RuntimeError):
+>           raise RetryableWorkerSetupError("INCOMPATIBLE_RUNTIME_BUNDLE") from None
+E           zebra_agent_worker.execution_errors.RetryableWorkerSetupError: INCOMPATIBLE_RUNTIME_BUNDLE
+
+apps/worker/src/zebra_agent_worker/bundle_assembly.py:82: RetryableWorkerSetupError
+=========================== short test summary info ============================
+FAILED tests/worker/test_bundle_baseline_history.py::test_disabled_agui_defaults_keep_published_digest_and_enabled_flags_stay_pinned
+FAILED tests/worker/test_bundle_baseline_history.py::test_actual_frozen_task_accepts_exact_history_and_rejects_configuration_drift[sha256:c7748ed8d32a5c534d4c7c8290fd71f5d5d3c01d46c3d38c53665a5cce900fdc]
+2 failed, 1 passed in 1.77s

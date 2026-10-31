@@ -17,7 +17,9 @@ from zebra_agent_config.private_configuration import read_private_configuration
 from zebra_agent_config.settings import ZebraAgentSettings
 
 
-def baseline_digest(settings: ZebraAgentSettings, key: str) -> str:
+def baseline_digest(
+    settings: ZebraAgentSettings, key: str, *, include_disabled_agui_defaults: bool = False
+) -> str:
     """Pin all non-model settings; HMAC keeps credential-bearing settings private."""
     if not re.fullmatch(r"[0-9a-f]{64}", key):
         raise ValueError("INVALID_BASELINE_KEY")
@@ -33,6 +35,12 @@ def baseline_digest(settings: ZebraAgentSettings, key: str) -> str:
     del values["plugin_admission_config"]
     if not settings.host_execution_authority.enabled:
         del values["host_execution_authority"]
+    # ponytail: retain published defaults; the exact intermediate encoding is read-only history.
+    if not include_disabled_agui_defaults and not (
+        settings.stream.agui_profiles_enabled or settings.stream.agui_native_interaction_enabled
+    ):
+        del values["stream"]["agui_profiles_enabled"]
+        del values["stream"]["agui_native_interaction_enabled"]
     encoded = json.dumps(
         values, sort_keys=True, ensure_ascii=True, allow_nan=False, separators=(",", ":")
     ).encode()

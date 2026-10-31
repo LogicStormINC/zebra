@@ -271,3 +271,54 @@ def test_native_preparation_deadline_rolls_back_and_does_not_change_global_gucs(
     with psycopg.connect(dsn) as verify:
         assert verify.execute("SELECT COUNT(*) FROM session_observation_headers").fetchone() == (0,)
         assert verify.execute("SHOW statement_timeout").fetchone() == ("0",)
+
+
+def test_full_schema_facade_and_old_export_are_body_free_and_read_only(postgres_dsn, tmp_path):
+    from agent_storage import bootstrap_control_plane_epoch
+    from agent_storage.postgres.agent_tasks import read_task_header as old_export
+    from agent_storage.postgres.task_replay_headers import read_task_header
+
+    from tests.agent_storage.test_postgres_agent_tasks import _seed_session
+
+    assert old_export is read_task_header
+    namespace, role = "gate-header-" + uuid4().hex, "gate_header_" + uuid4().hex
+    bootstrap_control_plane_epoch(postgres_dsn, deployment_namespace=namespace)
+    sid = _seed_session(postgres_dsn, namespace, tmp_path, "Frozen title")
+    task = TaskId(sid)
+    store = PostgresAgentTaskStore(postgres_dsn, deployment_namespace=namespace)
+    store.ensure_for_session(sid)
+    assert store.backfill_event_positions(task)
+    with psycopg.connect(postgres_dsn) as c:
+        before = c.execute(
+            "SELECT * FROM session_events WHERE deployment_namespace=%s ORDER BY sequence",
+            (namespace,),
+        ).fetchall()
+        c.execute(
+            sql.SQL("CREATE ROLE {} LOGIN PASSWORD 'gate-header-test'").format(sql.Identifier(role))
+        )
+        c.execute(
+            sql.SQL(
+                "GRANT SELECT ON agent_tasks,session_observation_headers,"
+                "agent_safety_overrides TO {}"
+            ).format(sql.Identifier(role))
+        )
+    try:
+        readonly = PostgresAgentTaskStore(
+            make_conninfo(postgres_dsn, user=role, password="gate-header-test"),
+            deployment_namespace=namespace,
+        )
+        header = readonly.read_task_header(task)
+        assert header.title == "Frozen title"
+        assert readonly.stream_head_reads_compatible
+        with psycopg.connect(postgres_dsn) as c:
+            assert (
+                c.execute(
+                    "SELECT * FROM session_events WHERE deployment_namespace=%s ORDER BY sequence",
+                    (namespace,),
+                ).fetchall()
+                == before
+            )
+    finally:
+        with psycopg.connect(postgres_dsn) as c:
+            c.execute(sql.SQL("DROP OWNED BY {}").format(sql.Identifier(role)))
+            c.execute(sql.SQL("DROP ROLE {}").format(sql.Identifier(role)))

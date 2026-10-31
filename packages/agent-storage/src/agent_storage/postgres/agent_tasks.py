@@ -8,13 +8,9 @@ from agent_core.domain.agent_tasks import AgentTask, ExecutionSegment, RolloverR
 from agent_core.domain.events import EventType
 from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.identifiers import SessionId, TaskId
-from agent_core.domain.sessions import SessionStatus
 from agent_core.ports.agent_tasks import FencedAgentTaskStorePort, TaskEvent, TaskEventPage
 from agent_core.ports.aggregate_mutation import WorkerMutationAuthority
 from agent_core.ports.stream_source_head import StreamCheckpointHead, StreamSourceHead
-from agent_core.ports.task_projection_checkpoints import (
-    CheckpointNotReady,
-)
 from agent_core.ports.task_replay import TaskEventHeader, TaskReadHeader, TaskRunHeader
 
 from agent_storage.postgres.database import PostgresDatabase
@@ -46,6 +42,9 @@ from agent_storage.postgres.task_replay_headers import (
     read_event_header,
     read_event_header_by_key,
     read_run_header,
+)
+from agent_storage.postgres.task_replay_headers import (
+    read_task_header as read_task_header,
 )
 from agent_storage.postgres.worker_progress import PostgresWorkerProgressMixin
 
@@ -430,66 +429,6 @@ class PostgresAgentTaskStore(
                 return False
         return True
 
-
-def read_task_header(
-    connection: Any, namespace: str, task_id: TaskId, *, require_source_coverage: bool = False
-) -> TaskReadHeader | None:
-    row = connection.execute(
-        "SELECT t.active_segment_id,t.next_event_sequence,t.event_position_state,"
-        "h.title,h.status,h.current_sequence AS active_segment_sequence,"
-        "h.title_truncated,h.clarification_id,h.clarification_invalid,"
-        "(o.kind IN ('dead_letter','watchdog','zombie_repair') AND NOT o.shadow) "
-        "AS safety_terminal "
-        "FROM agent_tasks t LEFT JOIN session_observation_headers h "
-        "ON h.deployment_namespace=t.deployment_namespace "
-        "AND h.session_id=t.active_segment_id::text "
-        "LEFT JOIN agent_safety_overrides o "
-        "ON o.deployment_namespace=t.deployment_namespace "
-        "AND o.session_id::text=t.active_segment_id::text "
-        "WHERE t.deployment_namespace=%s AND t.task_id=%s",
-        (namespace, task_id),
-    ).fetchone()
-    if row is None:
-        return None
-    if row["safety_terminal"]:
-        # A control-plane terminal override is authoritative even when the
-        # event projection is missing or stale: readers must always see a
-        # terminal header for dead-lettered/watchdog/zombie sessions instead
-        # of an endless projection_not_ready 409.
-        return TaskReadHeader(
-            task_id,
-            SessionId(row["active_segment_id"]),
-            row["next_event_sequence"] - 1,
-            title=row["title"],
-            status=SessionStatus.FAILED,
-            active_segment_sequence=row["active_segment_sequence"],
-            title_truncated=bool(row["title_truncated"]),
-            clarification_id=row["clarification_id"],
-            clarification_invalid=bool(row["clarification_invalid"]),
-        )
-    strict_coverage = None
-    if require_source_coverage:
-        from agent_storage.postgres.stream_read_preflight import require_stream_source
-
-        if row["event_position_state"] != "ready":
-            raise CheckpointNotReady("Task Event positions require explicit backfill")
-        if row["status"] is None or row["active_segment_sequence"] is None:
-            raise CheckpointNotReady("stream observation header requires explicit preparation")
-        strict_coverage = require_stream_source(connection, namespace, task_id, row)
-    if row["event_position_state"] != "ready":
-        raise CheckpointNotReady("Task Event positions require explicit backfill")
-    return TaskReadHeader(
-        task_id,
-        SessionId(row["active_segment_id"]),
-        row["next_event_sequence"] - 1,
-        title=row["title"],
-        status=SessionStatus(row["status"]) if row["status"] is not None else None,
-        active_segment_sequence=row["active_segment_sequence"],
-        title_truncated=bool(row["title_truncated"]),
-        clarification_id=row["clarification_id"],
-        clarification_invalid=bool(row["clarification_invalid"]),
-        strict_coverage=strict_coverage,
-    )
 
 
 __all__ = [

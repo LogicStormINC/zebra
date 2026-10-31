@@ -487,17 +487,18 @@ def test_agui_preparations_share_one_fresh_access_gate(monkeypatch, denied):
 
     calls = []
     api = SimpleNamespace(
+        agui_profiles=None,
         stores=SimpleNamespace(),
         live_event_fanout=None,
         command_outcome=None,
         stream_notifications=None,
     )
-    request = SimpleNamespace(
-        state=SimpleNamespace(host_context=None),
-        query_params={},
-        headers={},
-        url=SimpleNamespace(path="/tasks/task/ag-ui/stream"),
-    )
+    from starlette.requests import Request
+
+    request = Request({
+        "type": "http", "method": "GET", "path": "/v1/tasks/task/ag-ui/stream",
+        "headers": [], "query_string": b"", "state": {"host_context": None},
+    })
 
     def access(*args):
         calls.append("authorize")

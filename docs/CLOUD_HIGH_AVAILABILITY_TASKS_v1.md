@@ -1,3 +1,7 @@
+当前状态补充：HA02候选已在独立分支发布，真实PG通过，完整门禁被基线阻塞；原生整改01
+候选242定向+1真实PG通过，ERPNext整改02待领取。见[分批整改](CA_BASELINE_GATE_REMEDIATION.md)。
+HA02未主线合入，03仍Locked，不宣称下游就绪。以下保留原规划状态作为历史。
+
 # Cloud Agent 高可用分阶段任务清单 v1
 
 日期2026-10-31；配套[正式方案](CLOUD_HIGH_AVAILABILITY_PLAN_v1.md)。
@@ -11,7 +15,7 @@
 | --- | --- | --- | --- | --- |
 | CA-HA-00 | 正式方案、任务和文档索引 | Done：已集成推送d782039c | 当前用户授权 | TL/文档 |
 | CA-HA-01 | 固定基线、DDD不变量、SLO与故障合同 | Done：revision 2文档已集成1dd88bfd，非实现 | 00评审并集成，且用户另行授权后续工作 | TL/CORE/QA |
-| CA-HA-02 | API/Worker真实就绪与健康合同 | Locked | 01 | APP/RUNTIME |
+| CA-HA-02 | API/Worker真实就绪与健康合同 | Review：独立候选，待基线整改/整树验证 | 01 | APP/RUNTIME |
 | CA-HA-03 | 资源预算、空转退避与租户技术隔离 | Locked | 01、02（共享Worker接线须串行） | RUNTIME/CORE |
 | CA-HA-04 | 排空、进程隔离、强停与资源回收 | Locked | 02、03；强停候选须独立合入/验收 | RUNTIME/SRE |
 | CA-HA-05 | Worker跨副本接管与旧执行者隔离 | Locked | 03、04 | CORE/存储 |

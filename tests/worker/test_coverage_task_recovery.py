@@ -80,12 +80,14 @@ def context() -> HostContextEnvelope:
     )
 
 
-def events(tmp_path: Path, *, strict: bool = True) -> list[SessionEvent]:
+def events(
+    tmp_path: Path, *, strict: bool = True, workspace: Path | None = None
+) -> list[SessionEvent]:
     bootstrap = SessionBootstrapService().build(
         SessionBootstrapCommand(
             title="task",
             user_input="review history-1",
-            workspace_root=tmp_path,
+            workspace_root=workspace or tmp_path,
             coverage_admission=identity() if strict else None,
             host_context=context() if strict else None,
             model_profile="deepseek-v4-flash-executor-v1",
@@ -298,13 +300,18 @@ def test_no_binding_still_revalidates_clock_and_forged_nested_identity(tmp_path:
 )
 @pytest.mark.parametrize("strict", [True, False])
 @pytest.mark.parametrize("cloud_deployment", [True, False])
+@pytest.mark.parametrize("workspace_uri", [False, True])
 def test_actual_execution_recovery_refuses_unconfigured_strict_before_workspace(
     tmp_path: Path,
     strict: bool,
     cloud_deployment: bool,
     workspace_error: OSError | None,
+    workspace_uri: bool,
 ) -> None:
-    raw = events(tmp_path, strict=strict)
+    reference = (
+        Path("workspace://00000000-0000-0000-0000-000000000001") if workspace_uri else tmp_path
+    )
+    raw = events(tmp_path, strict=strict, workspace=reference)
     now = datetime.now(UTC)
     session_id = raw[0].session_id
     claimed = ClaimedSession(
@@ -357,17 +364,21 @@ def test_actual_execution_recovery_refuses_unconfigured_strict_before_workspace(
             recover_execution_inputs(**inputs)
         assert refused.value.coverage_refusal_reason is CoverageRefusalReason.UNSUPPORTED
         resolver.resolve.assert_not_called()
+    elif not workspace_uri:
+        recovered = recover_execution_inputs(**inputs)
+        assert recovered.task.workspace_root == tmp_path
+        resolver.resolve.assert_not_called()
     elif workspace_error is not None:
         with pytest.raises(WorkerExecutionError, match=str(workspace_error)) as failed:
             recover_execution_inputs(**inputs)
         assert failed.value.__cause__ is workspace_error
-        resolver.resolve.assert_called_once_with(str(tmp_path), session_id=session_id)
+        resolver.resolve.assert_called_once_with(str(reference), session_id=session_id)
     else:
         recovered = recover_execution_inputs(**inputs)
         assert recovered.claimed is claimed
         assert recovered.session_events == raw
         assert recovered.task.coverage_admission is None
         assert recovered.task.workspace_root == tmp_path / "resolved"
-        resolver.resolve.assert_called_once_with(str(tmp_path), session_id=session_id)
+        resolver.resolve.assert_called_once_with(str(reference), session_id=session_id)
     if cloud_deployment:
         inputs["event_store"].list_for_session.assert_not_called()

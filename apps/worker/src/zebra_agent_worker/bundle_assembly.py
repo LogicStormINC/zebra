@@ -60,8 +60,14 @@ def require_snapshot_compatibility(
             manifest.scope != catalog.scope
             or manifest.engine.image != catalog.image
             or manifest.baseline_config != catalog.baseline_config
-            or not hmac.compare_digest(
-                manifest.baseline_config.digest, baseline_digest(settings, catalog.baseline_key)
+            or not any(
+                hmac.compare_digest(
+                    manifest.baseline_config.digest,
+                    baseline_digest(
+                        settings, catalog.baseline_key, include_disabled_agui_defaults=historical
+                    ),
+                )
+                for historical in (False, True)
             )
         ):
             raise ValueError("baseline or target mismatch")

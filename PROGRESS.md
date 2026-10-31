@@ -1,3 +1,14 @@
+## 2026-10-31 — CA-BASELINE-GATE-01 原生整改 / Review
+
+修复关闭AGUI开关造成的历史HMAC基线漂移，精确兼容c774与过渡1bc，不改旧Task/原事件。
+修正Coverage当前Profile、普通路径/URI和流式请求夹具；固定官方SDK1.0.0枚举，生产拒绝保留。
+Task元数据函数原AST移至已有读取模块并保留旧类型/运行期导出，消除原生515行超限。
+[正式方案](docs/CA_BASELINE_GATE_REMEDIATION.md) · [证据](docs/evidence/ca-baseline-gate-01/validation.json)。
+242定向通过/29条件跳过，另1真实PG只读验证通过；mypy1492/Eval30/局部Ruff/风险检查通过。
+完整门禁仍有ERPNext15尺寸/4924Ruff，未重跑整套或主线合并；ERP02待领取，HA03继续Locked。
+自有临时容器按1CPU/512MiB/PID128限额并回收，原服务/历史/原收据/unknown/Coverage保持。
+无部署/生产迁移；只推独立候选，不混入HA02或无关脏改动。
+
 ## 2026-10-31 — CA-HA-01文档已复核集成 / CA-HA-02待授权
 
 CA-HA-01 revision 2及复核修正已合入并推送cloud-agent 1dd88bfd，只有文档差异。
