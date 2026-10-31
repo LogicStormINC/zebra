@@ -1,3 +1,12 @@
+## 2026-10-31 — CA-HA-00 已集成，CA-HA-01设计合同Review
+
+00文档已单独摘取并推送cloud-agent d782039c，未带入父97463d00a的强停业务代码。
+01以该主线为基线，明确[逐卡范围与依赖](docs/CA-HA-01_baseline_and_scope.md)、
+[DDD/SLO/E1/F1设计合同](docs/contracts/cloud-ha-v1/README.md)及机器可读规划。
+新发现Helm直接uvicorn与server.main池作用域的入口差异，纳入03范围，未修改业务实现。
+所有指标是未验证设计目标；生产参数/独立评审/重型故障演练未验，02–10保持Locked。
+仅文档静态校验，无Docker/重型测试/生产部署迁移；旧数据/原收据/unknown/Coverage不变。
+
 ## 2026-10-31 — CA-HA-00 高可用正式方案（仅文档）
 
 [方案](docs/CLOUD_HIGH_AVAILABILITY_PLAN_v1.md)与[分阶段任务](docs/CLOUD_HIGH_AVAILABILITY_TASKS_v1.md)

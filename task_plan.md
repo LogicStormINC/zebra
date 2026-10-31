@@ -1,3 +1,11 @@
+# CA-HA-01 当前文档任务
+
+- 00已单独摘取d7aabfaa并修正d782039c，GitHub cloud-agent已推送，本地主线已同步。
+- 01从d782039c独立分支/worktree，Ready后领取；不包含强停候选97463d00a。
+- 固定9条DDD不变量、SLO口径、E1包络、F1单故障矩阵、开关和逐卡范围。
+- 只做JSON/链接/真实路径/尺寸/差异检查，未运行make test/check、Docker或重型环境。
+- 01设计Review，独立评审待安排；02–10仍Locked，不能自动实施/恢复暂停任务。
+
 # CA-HA-00 当前文档任务
 
 1. 在97463d00a独立分支/worktree登记任务，保留原树无关修改。

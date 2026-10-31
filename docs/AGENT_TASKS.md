@@ -1,5 +1,13 @@
+# CA-HA-01 — HA基线、DDD不变量与验收合同（仅文档）
+- Status: Review；2026-10-31 设计合同/范围静态复核完成，独立评审待安排；用户授权后登记Ready并领取；Owner Luke Ding，执行Codex；独立评审待安排。
+- Branch: codex/ca-ha-01-contract；Worktree: ca-ha-01-contract/zebra-agent；基线d782039c。
+- Depends on: CA-HA-00已集成并推送GitHub；强停候选97463d00a未合入，是04后续独立依赖，不阻塞本卡只读合同。
+- Owned paths: docs/CA-HA-01_baseline_and_scope.md；docs/contracts/cloud-ha-v1/{README.md,acceptance.json}；docs/CLOUD_HIGH_AVAILABILITY_{PLAN,TASKS}_v1.md；docs/{README.md,AGENT_TASKS.md}；PROGRESS.md、WORKLOG.md、task_plan.md。
+- Scope: 仅DDD不变量、SLO/样本口径、故障/负载包络、开关与依赖、后续精确候选路径；不实现业务代码/新接口，不解除重型验收暂停。
+- Acceptance: 合同与机器可读文档一致；现有路径可定位；后续卡全部Locked；仅Markdown/文档JSON静态校验；不将SLO、容量或生产参数标为实测。
+
 # CA-HA-00 — Cloud Agent 高可用正式方案与任务拆解
-- Status: Review；2026-10-31 文档完成并通过静态检查，本轮授权仅文档集成及GitHub推送；先登记 Ready 后领取；人类 Owner Luke Ding，执行 Codex。
+- Status: Done；2026-10-31 文档单独摘取d7aabfaa，修正集成边界d782039c，已合入并推送cloud-agent；先登记 Ready 后领取；人类 Owner Luke Ding，执行 Codex。
 - Branch: codex/ca-ha-00-plan；独立 worktree ca-ha-00-plan/zebra-agent；基线97463d00a。
 - Owned paths: docs/CLOUD_HIGH_AVAILABILITY_PLAN_v1.md、docs/CLOUD_HIGH_AVAILABILITY_TASKS_v1.md、docs/README.md、docs/AGENT_TASKS.md、docs/实施任务拆解与阶段验收.md、PROGRESS.md、WORKLOG.md、task_plan.md。
 - 本轮仅正式文档和轻量静态校验；不得修改业务代码、启动重型测试/Docker、部署或迁移。

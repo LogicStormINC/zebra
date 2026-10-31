@@ -18346,3 +18346,26 @@ source/history was merged. Corrected baseline/dependency wording and removed the
 relative link to the absent candidate force-stop document. Independent integration
 worktree protects primary dirty changes. Documentation diff/link/task checks only;
 no business code, heavy tests, Docker, production deployment or migration.
+
+
+## 2026-10-31 — CA-HA-01 documentation-only contract
+
+User authorizes00 integration/push then01 scope/contract, no business/heavy/Docker.
+00 pushed cloud-agent d782039c (confirmed push); local branch fast-forwarded.
+01 claimed Ready before edits from that exact source, independent worktree.
+Defined INV01–09, per-operation availability/latency, eligible-takeover vs safe
+blocked classification, E1 reference load and F1 faults, RPO/DR preconditions and
+revisioned JSON design (not implemented public API/config). Static source tracing
+found Helm uvicorn vs server.main pool-scope composition difference. Assigned
+03 follow-up, no speculative production fix. Force-stop97463d00a remains unmerged
+explicit04 dependency. All02–10 and06 child cards remain Locked. Credentials stay
+in BFF, historical data/receipts/unknown/Coverage preserved; no replay/newRun.
+No heavy tests, Docker, production access/deployment/migration or independent
+review performed. Final static verification below; primary dirty work untouched.
+
+Static validation PASS: git diff --check; JSON parse and locked/not-run flags;
+all listed existing implementation paths exist; contract includes9 invariant IDs
+and10 fault IDs; new/affected HA documents81/113/157/185 lines with valid local
+links. No change under apps/packages/deploy/tests/sdks. No full gate pass claimed.
+CA-HA-01 remains Review until independent review/integration; feature source
+publication is separate from production release and does not unlock02.
