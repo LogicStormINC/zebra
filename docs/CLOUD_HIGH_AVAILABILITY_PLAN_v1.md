@@ -1,7 +1,7 @@
 # Cloud Agent 高可用正式方案 v1
 
 - 日期：2026-10-31；状态：正式规划，待评审，不是生产 HA 认证。
-- 00已集成推送d782039c；01形成[基线与范围](CA-HA-01_baseline_and_scope.md)、[设计合同](contracts/cloud-ha-v1/README.md)，待评审。
+- 00已集成推送d782039c；01形成[基线与范围](CA-HA-01_baseline_and_scope.md)、[设计合同](contracts/cloud-ha-v1/README.md)，revision 2已复核集成1dd88bfd（仅设计）。
 - [分阶段任务与验收](CLOUD_HIGH_AVAILABILITY_TASKS_v1.md)；后续实现02–10均Locked。
 - 本轮授权：只读代码评估和文档；不改业务代码，不运行重型测试、Docker、部署或迁移。
 - 主线集成目标：cloud-agent；不操作历史 main。实施前重新核对最新主线及并行任务。

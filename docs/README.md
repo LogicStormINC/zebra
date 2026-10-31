@@ -65,13 +65,13 @@ and a path-bounded implementation task is explicitly activated in `AGENT_TASKS.m
 
 - [正式方案、DDD边界与目标](CLOUD_HIGH_AVAILABILITY_PLAN_v1.md)：复用矩阵、缺口、兼容/unknown保护及证据等级。
 - [分阶段任务与验收](CLOUD_HIGH_AVAILABILITY_TASKS_v1.md)：CA-HA-00–10、依赖、候选路径和故障矩阵。
-- 00已合入并推送；01仅文档合同Review，02–10仍Locked，不恢复暂停的重型验收或Docker环境。
+- 00已合入并推送；01文档合同已集成，02–10仍Locked，不恢复暂停的重型验收或Docker环境。
 
-## CA-HA-01 固定基线与设计合同（未实现/未演练）
+## CA-HA-01 固定基线与设计合同（已集成，未实现/未演练）
 
 - [基线、依赖、开关与逐卡路径](CA-HA-01_baseline_and_scope.md)。
 - [DDD不变量、SLO、E1/F1及证据](contracts/cloud-ha-v1/README.md) · [机器可读规划](contracts/cloud-ha-v1/acceptance.json)。
-- 00已推送cloud-agent d782039c；01仅设计Review，02–10 Locked；强停候选仍独立依赖。
+- 00已推送cloud-agent d782039c；01 revision 2设计已集成1dd88bfd，02–10 Locked；强停候选仍独立依赖。
 
 ## CA-HA-01 revision 2复核与02前置
 

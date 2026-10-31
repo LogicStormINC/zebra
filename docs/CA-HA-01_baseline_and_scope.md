@@ -1,6 +1,6 @@
 # CA-HA-01 基线、依赖和后续范围
 
-日期2026-10-31；状态：revision 2已完成本轮单人文档复核，待授权集成；非独立双人审查，未执行实现验证。
+日期2026-10-31；状态：revision 2已完成单人文档复核，已授权合入并推送cloud-agent 1dd88bfd；非独立双人审查，未执行实现验证。
 [DDD/SLO/F1合同](contracts/cloud-ha-v1/README.md) · [任务总表](CLOUD_HIGH_AVAILABILITY_TASKS_v1.md)。
 
 ## 1. 依赖核对

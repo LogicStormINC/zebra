@@ -1,3 +1,9 @@
+## 2026-10-31 — CA-HA-01文档已复核集成 / CA-HA-02待授权
+
+CA-HA-01 revision 2及复核修正已合入并推送cloud-agent 1dd88bfd，只有文档差异。
+CA-HA-02技术依赖已满足，但本轮只核对依赖，保持Locked/未领取，未授权业务实现或环境运行。
+03依赖02合入，强停候选97463d00a仍未集成；所有业务代码和历史/原收据/unknown/Coverage不变。
+
 ## 2026-10-31 — CA-HA-01 revision 2复核 / 02前置
 
 单人文档复核修正9项：[记录](docs/evidence/ca-ha-01/review.json)。区分执行fence/控制CAS、

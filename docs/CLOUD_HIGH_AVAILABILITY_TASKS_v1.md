@@ -10,7 +10,7 @@
 | ID | 阶段/交付 | 状态 | 依赖 | 建议负责角色 |
 | --- | --- | --- | --- | --- |
 | CA-HA-00 | 正式方案、任务和文档索引 | Done：已集成推送d782039c | 当前用户授权 | TL/文档 |
-| CA-HA-01 | 固定基线、DDD不变量、SLO与故障合同 | Review：设计/静态复核，非实现 | 00评审并集成，且用户另行授权后续工作 | TL/CORE/QA |
+| CA-HA-01 | 固定基线、DDD不变量、SLO与故障合同 | Done：revision 2文档已集成1dd88bfd，非实现 | 00评审并集成，且用户另行授权后续工作 | TL/CORE/QA |
 | CA-HA-02 | API/Worker真实就绪与健康合同 | Locked | 01 | APP/RUNTIME |
 | CA-HA-03 | 资源预算、空转退避与租户技术隔离 | Locked | 01、02（共享Worker接线须串行） | RUNTIME/CORE |
 | CA-HA-04 | 排空、进程隔离、强停与资源回收 | Locked | 02、03；强停候选须独立合入/验收 | RUNTIME/SRE |
@@ -27,7 +27,7 @@
 Review不是Done；Done须合并并回写。生产运行及生产故障注入不由任何文档卡自动授权。
 
 以下Owned paths是候选边界，不是当前编辑授权。01的[精确范围和依赖](CA-HA-01_baseline_and_scope.md)及
-[DDD/SLO/F1合同](contracts/cloud-ha-v1/README.md)已形成待评审版本；后续领取须冻结本卡文件子集。
+[DDD/SLO/F1合同](contracts/cloud-ha-v1/README.md)revision 2已复核集成；后续领取须冻结本卡文件子集。
 发现超界先修卡/拆卡，不以扩写整个packages/apps作为临时共享所有权。
 命名新增文件须职责明确，无utils/helpers倾倒文件，不引入空DDD层或无需求抽象。
 
