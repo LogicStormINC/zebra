@@ -1,0 +1,6 @@
+{
+  "command": "make -j1 test",
+  "tested_commit": "2b908448864db8d6ad692bdca9562c8e2e6cd3a2",
+  "exit": 0,
+  "elapsed_seconds": 1340.276
+}

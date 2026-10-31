@@ -1,10 +1,12 @@
 # Cloud Agent 基线门禁整改
 
+当前：2026-11-01 原生01/ERP02/HA02完整组合验收通过并快进本地cloud-agent；最终结果见第3节。第1–2节保留当时输入与阻塞记录。
+
 2026-10-31；基线e8a4f10b；Owner Luke Ding，执行Codex。
 输入为CA-HA-02独立候选d16645aa发布的完整门禁与干净基线复现，非HA02新引入。
 本轮分支codex/ca-baseline-gate-01从主线独立创建，不混入HA02代码或无关脏工作树。
 
-## 1. 原生整改（01 / Review）
+## 1. 原生整改（01 / 历史候选记录）
 
 - 真实缺陷：两个新增AGUI关闭开关进入asdict，旧默认基线c774漂移为1bc。恢复默认
   canonical编码，并仅以同一配置/私钥精确计算兼容两种已有编码，不改原pin/快照/事件。
@@ -25,7 +27,7 @@
 字节保持；镜像复用且限1CPU/512MiB/PID128、数据tmpfs256MiB，inspect校验，finally回收。
 mypy1492源、Eval30及局部Ruff/进度风险/产品边界通过；完整门禁尚未通过，不作生产证明。
 
-## 2. ERPNext整改（02 / Ready，未领取）
+## 2. ERPNext整改（02 / 历史计划，已完成）
 
 `integrations/erpnext/SOURCE.md`声明独立仓库zebra-erpnext的同步导出。只读核对GitHub
 main仍为2e8606a603ffe8836fc8a42874b9771f470bc82c，与记录一致，无已修复上游可直接同步。
@@ -44,3 +46,16 @@ main仍为2e8606a603ffe8836fc8a42874b9771f470bc82c，与记录一致，无已修
 
 02候选仍Review，未满足用户条件合并；HA03依赖01已完成，但HA02未合入，继续Locked。
 本轮没有部署、生产迁移或真实业务/模型请求。
+
+## 3. CA-BASELINE-GATE-02 完整结果与集成
+
+- canonical独立分支codex/ca-baseline-gate-02：源实现439fb72、证据92b308b已发布；用git archive精确导出541文件，SOURCE固定完整SHA。未在副本排除/隐藏违规。
+- Python/Ruff按原E/F/I/UP/B、100列、py312规则执行；冻结native baseline Python字节不改，仅补准确项目isort上下文，无新增忽略/降低阈值。源尺寸411/0，组合4046/0，Ruff0。
+- App/Runtime/转移/Operator依职责拆分，显式导出和所有构建源闭包保持；原frozen-manifest/provenance/部署证据不改，原Host/chat源码归档与新候选清单双重验证，不能冒充旧部署。
+- Transfer Worker使用标准库确定性自包含ZIP，保留原worker.py路径/argv/独占写入/协议；Operator三个相邻文件均按root:root0644安装；只编辑和离线检查，未执行物理/部署/转移操作。
+- 前端build/test、19源离线检查、9当前原生119依赖+doubles检查、延迟拒绝回调的原数据库/命名空间/命令回归通过。105真实镜像/SQL/迁移不宣称通过；原版本守卫仍拒绝119目录。
+- 两次完整树验收暴露夹具问题：旧手工摘要仍纳入后加False字段；租约测试假定主线程必先于后台续约。先保留RED和原树字节证据，再修独立投影与实际事件交接证明；没有修改生产实现或改掉旧历史摘要，分别19项、23项/6条件跳过及20重复通过，规格/质量复核通过。
+- 最终make test11672通过/0失败/3161条件跳过（1331.53s）；make check全绿：尺寸4046/0、Ruff0、mypy1494、Eval30及产品/进度/unknown风险全部通过。
+- HA02真实PG5通过11.30s，原生epoch/角色槽耗尽/锁超时恢复/schema拒绝/Worker能力到期；单容器1CPU/512MiB/PID128/tmpfs256MiB，finally回收。前后仅原overdoze-dev-pg；不是集群/真实IdP/UX负载证明。
+- 已验证代码2b908448已快进至本地cloud-agent；本次最终证据提交随主线推送。旧数据、原收据、unknown、Coverage、前端mock和无关工作树保持，无部署/生产迁移。
+- [机器收据及全量日志](evidence/ca-baseline-gate-02/validation.json)保留每轮失败与最终成功；01/02/HA02完成，CA-HA-03仅Ready，后续领取后再实施。

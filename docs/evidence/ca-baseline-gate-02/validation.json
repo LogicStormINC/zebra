@@ -1,0 +1,113 @@
+{
+  "task": "CA-BASELINE-GATE-02",
+  "date": "2026-11-01",
+  "status": "verified_and_locally_integrated_cloud_agent",
+  "verified_code_commit": "2b908448864db8d6ad692bdca9562c8e2e6cd3a2",
+  "native_baseline_candidate": "6ac3d008",
+  "ha02_candidate": "d16645aa",
+  "canonical_source_commit": "92b308b2e0c269071beeae74be33834395b52337",
+  "canonical_source_branch": "codex/ca-baseline-gate-02",
+  "source_implementation": "439fb72",
+  "export": "git archive; source541files unchanged except parent SOURCE.md",
+  "make_test": {
+    "exit": 0,
+    "passed": 11672,
+    "failed": 0,
+    "skipped": 3161,
+    "pytest_seconds": 1331.53,
+    "command": "make -j1 test",
+    "conditional_skips": "dedicated external/PG/browser/other opt-in environments remain gated; explicit HA02 PG separately executed"
+  },
+  "make_check": {
+    "exit": 0,
+    "size_checked": 4046,
+    "size_violations": 0,
+    "ruff_diagnostics": 0,
+    "mypy_files": 1494,
+    "eval_passed": 30,
+    "product_boundary": "pass",
+    "postcommit_and_risk": "pass"
+  },
+  "real_postgres": {
+    "exit": 0,
+    "passed": 5,
+    "failed": 0,
+    "skipped": 0,
+    "seconds": 11.3,
+    "module": "tests/api/test_cloud_ha_health_postgres.py",
+    "limits_verified": "1CPU/512MiB/PID128/tmpfs256MiB",
+    "production_code_identical_between_pg_and_final_test": true,
+    "boundary": "single disposable PG readiness/role saturation/lock and recovery/schema refusal/Worker expiry; not cluster failover, IdP or UX capacity"
+  },
+  "prior_full_attempts": [
+    {
+      "passed": 11671,
+      "failed": 1,
+      "skipped": 3161,
+      "seconds": 1298.84,
+      "cause": "manual old baseline projection included two later dormant AGUI fields; corrected independent projection and literal published/intermediate anchors"
+    },
+    {
+      "passed": 11671,
+      "failed": 1,
+      "skipped": 3161,
+      "seconds": 1300.87,
+      "cause": "unchanged baseline test assumed foreground advance precedes legal first background heartbeat; deterministic actual-order proof replaces schedule assumption"
+    }
+  ],
+  "focused_repairs": {
+    "baseline_projection_passed": 19,
+    "heartbeat_passed": 23,
+    "heartbeat_conditional_skips": 6,
+    "heartbeat_actual_background_first_repetitions": 20,
+    "independent_spec_quality": "PASS for both corrections; no production code changed for these two fixtures"
+  },
+  "resources": {
+    "original_preserved_container": "303c33d83297 overdoze-dev-pg",
+    "owned_remaining": 0,
+    "policy": "serial pytest/nice10/native threads1; own labels and finally cleanup; no prune/new persistent volume or network"
+  },
+  "preservation": [
+    "historical data",
+    "original receipts",
+    "unknown no automatic resend",
+    "Coverage",
+    "original source manifests/provenance/native baseline Python",
+    "unrelated worktrees",
+    "frontend mock"
+  ],
+  "not_run": [
+    "production deployment",
+    "production migration",
+    "actual ERP105 image/IdP acceptance",
+    "105 database transfer",
+    "cluster HA/throughput/UX capacity"
+  ],
+  "next": {
+    "task": "CA-HA-03",
+    "status": "Ready after local cloud-agent integration; not claimed or implemented"
+  },
+  "evidence_sha256": {
+    "README.md": "ff557bb71bf5046cfcb34be84c4709bb09b9bd70b7be5370c3ad89c7332fd06e",
+    "docker-operations.jsonl": "f577c32c5c603a5da5cd54c5a2ee7237728c9786e82dd2b1eb71517837b9c854",
+    "final-make-check.txt": "7527d16cf32283792687b9a36d4895b72fbb4682d47f8cff54dac47f2226b942",
+    "first-make-test-result.json": "63749df4f48c2ef9f44ea4c858ec184f7c786cb81eb8f0a7c3ebcac991bee272",
+    "first-make-test.txt": "1bd11cab82487f4aae1f340fd43c931311fee670db1b80044729755af7d7d71f",
+    "gate-domain-after.txt": "5bc98b91e61ce500535cea287c37127ba034db04d988e810fed0b3dc0a8d48ed",
+    "gate-domain-before.txt": "c0d64a2467373d3bc3e15c5500905c942cdadf315914a0d8f887b5d9c82224a0",
+    "heartbeat-order-after.txt": "8b77a70d9ba15d9dd8a5a3329d4d537d026c46ac3509d9fb7b65f8b67b9c83f8",
+    "heartbeat-order-before.txt": "dc3ee0fd399d518e8ea882ce505ec0fd9483a248eccbffd6f9a82123dcf5330d",
+    "heartbeat-order-repeat.txt": "150f1cb684f12fdfb30ef6cfeff0a4fe9a228fa9f756594e1a09e1ebb8152d07",
+    "make-check.txt": "7527d16cf32283792687b9a36d4895b72fbb4682d47f8cff54dac47f2226b942",
+    "make-test-result.json": "7cf2286f92a396716ef7609ce8ecba9f45e3a1aa3154d1ca8ac751fe40e97dab",
+    "make-test.txt": "1e821072e9aab5a1f3ef54d8d53f94531a307b01e8b0b4491eb97266473195fd",
+    "real-postgres-result.json": "5bbee669978598e4dd733c8db85cfc85bab598f26d7bf81abd0b9037ee088875",
+    "real-postgres.txt": "8bc4b130346da37c83794c3c762e616cdf05e3a2052faede1d533fb3dd8bc631",
+    "resources-after-postgres.json": "4ce0aa271465fd045ce949785a3c2b82f4ba143da18af7bf704472f684c2ad34",
+    "resources-after-test.json": "da5bcb88f210f3f3fc566160e5623c46132786cf0fc5485a8b50c437fdb038cb",
+    "resources-before.json": "9c80745c502c83b707feb3702d23247b7de8b813703adad00217cc6ac0db2564",
+    "second-make-test-result.json": "bbd838e0fc5de175d8fb7e55a1d45acee28afd69eca59b85b1dd5047ec89cb1e",
+    "second-make-test.txt": "374c00529b466809f958f8bd73eb6f7b9a8891d0ffe89ef9203151b89aa87d55"
+  },
+  "final_documentation_check": "final-make-check.txt"
+}

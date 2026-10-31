@@ -1,3 +1,10 @@
+## 2026-11-01 — CA-BASELINE-GATE-02 / 完整组合门禁通过并集成
+
+原生01/HA02与canonical ERP02（源实现439fb72、发布92b308b、精确archive）完成组合验收，代码2b908448已快进本地cloud-agent；最终文档/证据提交随主线推送。
+最终完整test11672通过/0失败/3161条件跳过；make check尺寸4046/0、Ruff0、mypy1494、Eval30及产品/进度风险全绿；独立实际PG5通过。两轮失败及夹具根因/独立复核分别留档，无放宽门禁或重写原证据。
+[正式结果](docs/CA_BASELINE_GATE_REMEDIATION.md#3-ca-baseline-gate-02-完整结果与集成) · [证据](docs/evidence/ca-baseline-gate-02/validation.json)。01/02/HA02 Done，03仅Ready待领取；集群/UX容量仍未验。
+串行/nice10/单原生线程、自有PG1CPU/512MiB/PID128/tmpfs256MiB并已回收，仅原overdoze-dev-pg保留。历史/原收据/unknown/Coverage/前端mock和无关工作树保持，无部署/生产迁移。
+
 ## 2026-10-31 — CA-BASELINE-GATE-02 / 组合验收中
 
 canonical ERP源修复与离线验证进行中；原生01/HA02候选已组合进本功能分支，尚未合入cloud-agent。

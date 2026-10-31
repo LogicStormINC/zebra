@@ -1,0 +1,55 @@
+{"at": "2026-10-31T14:48:03.143105+00:00", "operation": "run", "--name": "zebra-bundle-definition-b51fb8f376fe", "--cpus": "1", "--memory": "512m", "--pids-limit": "128"}
+{"at": "2026-10-31T14:48:17.911820+00:00", "operation": "run", "--name": "zebra-host-management-c6755558fca8", "--cpus": "1", "--memory": "512m", "--pids-limit": "128"}
+{"at": "2026-10-31T14:48:24.400800+00:00", "operation": "run", "--name": "zebra-connector-management-c54198126917", "--cpus": "1", "--memory": "512m", "--pids-limit": "128"}
+{"at": "2026-10-31T14:48:34.735747+00:00", "operation": "run", "--name": "zebra-host-management-6eb7e6fbe9c6", "--cpus": "1", "--memory": "512m", "--pids-limit": "128"}
+{"at": "2026-10-31T14:49:56.990342+00:00", "operation": "run", "--name": "zebra-host-management-1b883a2a9894", "--cpus": "1", "--memory": "512m", "--pids-limit": "128"}
+{"at": "2026-10-31T14:55:44.680111+00:00", "operation": "run", "--cpus": "1", "--memory": "512m", "--pids-limit": "128"}
+{"at": "2026-10-31T14:55:52.184175+00:00", "operation": "run", "--cpus": "1", "--memory": "512m", "--pids-limit": "128"}
+{"at": "2026-10-31T14:55:54.801828+00:00", "operation": "run", "--cpus": "1", "--memory": "512m", "--pids-limit": "128"}
+{"at": "2026-10-31T14:56:35.510075+00:00", "operation": "run", "--name": "zebra-host-management-aa3645d4e1cb", "--cpus": "1", "--memory": "512m", "--pids-limit": "128"}
+{"at": "2026-10-31T14:56:40.334511+00:00", "operation": "run", "--name": "zebra-host-management-3c386fd0001d", "--cpus": "1", "--memory": "512m", "--pids-limit": "128"}
+{"at": "2026-10-31T14:56:44.979174+00:00", "operation": "run", "--name": "zebra-host-management-b8e580e43f7d", "--cpus": "1", "--memory": "512m", "--pids-limit": "128"}
+{"at": "2026-10-31T14:56:53.762012+00:00", "operation": "run", "--name": "zebra-host-management-59480dd58c17", "--cpus": "1", "--memory": "512m", "--pids-limit": "128"}
+{"at": "2026-10-31T14:57:09.339516+00:00", "operation": "run", "--name": "zebra-host-management-8a10b633d0a7", "--cpus": "1", "--memory": "512m", "--pids-limit": "128"}
+{"at": "2026-10-31T14:57:25.521151+00:00", "operation": "run", "--name": "zebra-host-management-c56548dd3901", "--cpus": "1", "--memory": "512m", "--pids-limit": "128"}
+{"at": "2026-10-31T15:00:53.523527+00:00", "operation": "run", "--name": "zebra-host-management-bef05807b084", "--cpus": "1", "--memory": "512m", "--pids-limit": "128"}
+{"at": "2026-10-31T15:04:08.466984+00:00", "operation": "run", "--name": "zebra-host-management-cb7efaa9f03c", "--cpus": "1", "--memory": "512m", "--pids-limit": "128"}
+{"at": "2026-10-31T15:04:23.854806+00:00", "operation": "run", "--name": "zebra-bundle-definition-407a38d3f782", "--cpus": "1", "--memory": "512m", "--pids-limit": "128"}
+{"at": "2026-10-31T15:04:49.765807+00:00", "operation": "run", "--name": "zebra-bundle-definition-a9bf1f40e7af", "--cpus": "1", "--memory": "512m", "--pids-limit": "128"}
+{"at": "2026-10-31T15:48:49.892203+00:00", "operation": "run", "--name": "zebra-bundle-definition-19cf1800cf53", "--cpus": "1", "--memory": "512m", "--pids-limit": "128"}
+{"at": "2026-10-31T15:49:04.220979+00:00", "operation": "run", "--name": "zebra-host-management-bbb9f7c80bd8", "--cpus": "1", "--memory": "512m", "--pids-limit": "128"}
+{"at": "2026-10-31T15:49:10.621278+00:00", "operation": "run", "--name": "zebra-connector-management-2eade934d18a", "--cpus": "1", "--memory": "512m", "--pids-limit": "128"}
+{"at": "2026-10-31T15:49:21.270872+00:00", "operation": "run", "--name": "zebra-host-management-cf4b8d1e0fa7", "--cpus": "1", "--memory": "512m", "--pids-limit": "128"}
+{"at": "2026-10-31T15:50:43.503904+00:00", "operation": "run", "--name": "zebra-host-management-0c59ebafc545", "--cpus": "1", "--memory": "512m", "--pids-limit": "128"}
+{"at": "2026-10-31T15:56:37.945316+00:00", "operation": "run", "--cpus": "1", "--memory": "512m", "--pids-limit": "128"}
+{"at": "2026-10-31T15:56:45.764113+00:00", "operation": "run", "--cpus": "1", "--memory": "512m", "--pids-limit": "128"}
+{"at": "2026-10-31T15:56:48.487999+00:00", "operation": "run", "--cpus": "1", "--memory": "512m", "--pids-limit": "128"}
+{"at": "2026-10-31T15:57:30.178651+00:00", "operation": "run", "--name": "zebra-host-management-c59984b0cf25", "--cpus": "1", "--memory": "512m", "--pids-limit": "128"}
+{"at": "2026-10-31T15:57:34.829163+00:00", "operation": "run", "--name": "zebra-host-management-6170d53fd75c", "--cpus": "1", "--memory": "512m", "--pids-limit": "128"}
+{"at": "2026-10-31T15:57:38.957428+00:00", "operation": "run", "--name": "zebra-host-management-79bc61b5eb40", "--cpus": "1", "--memory": "512m", "--pids-limit": "128"}
+{"at": "2026-10-31T15:57:47.724079+00:00", "operation": "run", "--name": "zebra-host-management-c47106c5a279", "--cpus": "1", "--memory": "512m", "--pids-limit": "128"}
+{"at": "2026-10-31T15:58:03.685515+00:00", "operation": "run", "--name": "zebra-host-management-483c3694d4e4", "--cpus": "1", "--memory": "512m", "--pids-limit": "128"}
+{"at": "2026-10-31T15:58:19.737628+00:00", "operation": "run", "--name": "zebra-host-management-a031a34eb780", "--cpus": "1", "--memory": "512m", "--pids-limit": "128"}
+{"at": "2026-10-31T16:01:51.288127+00:00", "operation": "run", "--name": "zebra-host-management-f84ec95f1f66", "--cpus": "1", "--memory": "512m", "--pids-limit": "128"}
+{"at": "2026-10-31T16:05:13.543444+00:00", "operation": "run", "--name": "zebra-host-management-def3339832a3", "--cpus": "1", "--memory": "512m", "--pids-limit": "128"}
+{"at": "2026-10-31T16:05:30.374211+00:00", "operation": "run", "--name": "zebra-bundle-definition-9302457b87b4", "--cpus": "1", "--memory": "512m", "--pids-limit": "128"}
+{"at": "2026-10-31T16:05:56.581316+00:00", "operation": "run", "--name": "zebra-bundle-definition-4d2b8df31ff6", "--cpus": "1", "--memory": "512m", "--pids-limit": "128"}
+{"at": "2026-10-31T16:10:24.060064+00:00", "operation": "run", "--name": "ca-ha-02-pg-0a218dda11da"}
+{"at": "2026-10-31T16:16:07.660408+00:00", "operation": "run", "--name": "zebra-bundle-definition-25f026ac9947", "--cpus": "1", "--memory": "512m", "--pids-limit": "128"}
+{"at": "2026-10-31T16:16:22.581601+00:00", "operation": "run", "--name": "zebra-host-management-3838ce29621e", "--cpus": "1", "--memory": "512m", "--pids-limit": "128"}
+{"at": "2026-10-31T16:16:29.171498+00:00", "operation": "run", "--name": "zebra-connector-management-b4454497a1ce", "--cpus": "1", "--memory": "512m", "--pids-limit": "128"}
+{"at": "2026-10-31T16:16:39.617217+00:00", "operation": "run", "--name": "zebra-host-management-58e55eeb5493", "--cpus": "1", "--memory": "512m", "--pids-limit": "128"}
+{"at": "2026-10-31T16:18:05.214839+00:00", "operation": "run", "--name": "zebra-host-management-8da2945ede3f", "--cpus": "1", "--memory": "512m", "--pids-limit": "128"}
+{"at": "2026-10-31T16:24:09.735781+00:00", "operation": "run", "--cpus": "1", "--memory": "512m", "--pids-limit": "128"}
+{"at": "2026-10-31T16:24:17.349936+00:00", "operation": "run", "--cpus": "1", "--memory": "512m", "--pids-limit": "128"}
+{"at": "2026-10-31T16:24:20.451338+00:00", "operation": "run", "--cpus": "1", "--memory": "512m", "--pids-limit": "128"}
+{"at": "2026-10-31T16:25:03.216083+00:00", "operation": "run", "--name": "zebra-host-management-c2ef06a8f0c5", "--cpus": "1", "--memory": "512m", "--pids-limit": "128"}
+{"at": "2026-10-31T16:25:08.596541+00:00", "operation": "run", "--name": "zebra-host-management-bef09281e584", "--cpus": "1", "--memory": "512m", "--pids-limit": "128"}
+{"at": "2026-10-31T16:25:13.090720+00:00", "operation": "run", "--name": "zebra-host-management-3f38f74a10f1", "--cpus": "1", "--memory": "512m", "--pids-limit": "128"}
+{"at": "2026-10-31T16:25:21.883221+00:00", "operation": "run", "--name": "zebra-host-management-275c0daf1c25", "--cpus": "1", "--memory": "512m", "--pids-limit": "128"}
+{"at": "2026-10-31T16:25:37.937710+00:00", "operation": "run", "--name": "zebra-host-management-5c84edb4f734", "--cpus": "1", "--memory": "512m", "--pids-limit": "128"}
+{"at": "2026-10-31T16:25:55.295073+00:00", "operation": "run", "--name": "zebra-host-management-49cd4ede4743", "--cpus": "1", "--memory": "512m", "--pids-limit": "128"}
+{"at": "2026-10-31T16:29:34.282064+00:00", "operation": "run", "--name": "zebra-host-management-501a8c0efada", "--cpus": "1", "--memory": "512m", "--pids-limit": "128"}
+{"at": "2026-10-31T16:32:57.671620+00:00", "operation": "run", "--name": "zebra-host-management-731b097796fa", "--cpus": "1", "--memory": "512m", "--pids-limit": "128"}
+{"at": "2026-10-31T16:33:14.276016+00:00", "operation": "run", "--name": "zebra-bundle-definition-3aed4712ee88", "--cpus": "1", "--memory": "512m", "--pids-limit": "128"}
+{"at": "2026-10-31T16:33:40.895895+00:00", "operation": "run", "--name": "zebra-bundle-definition-c6606afed2c9", "--cpus": "1", "--memory": "512m", "--pids-limit": "128"}

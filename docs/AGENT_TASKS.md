@@ -1,14 +1,17 @@
 # CA-BASELINE-GATE-01 — 原生基线门禁修复
 
-- Status: Review（原生修复候选）；用户继续授权后Ready并领取；Owner Luke Ding，执行Codex。
+- Status: Done；2026-11-01 条件完整验收后已快进至本地cloud-agent；Owner Luke Ding，执行Codex。
 - Branch/worktree: codex/ca-baseline-gate-01，ca-baseline-gate-01/zebra-agent；base e8a4f10b。
 - Depends: CA-HA-02真实PG/完整门禁对照证据已发布d16645aa；本卡先修原生，ERPNext导出另卡跟踪。
 - Owned paths: apps/api/src/zebra_agent_api/{coverage_http_admission,session_queue,session_binding,stream_v2_http,ag_ui_task_view}.py；apps/worker/src/zebra_agent_worker/{execution_recovery,task_recovery,workspace_resolution,bundle_assembly}.py；apps/config/src/zebra_agent_config/{bundle_settings,settings}.py；packages/agent-storage/src/agent_storage/postgres/{agent_tasks,task_replay_headers}.py；tests/api/{test_coverage_http_admission,test_coverage_connector_gate,test_stream_v2_http}.py；tests/worker/{test_coverage_task_recovery,test_bundle_baseline_history}.py；tests/agent_storage/test_postgres_task_read_header.py；tests/config/{test_bundle_management_config,test_script_validation_config,test_bundle_settings}.py；tests/spikes/ag_ui/test_forward_compatibility.py；docs/evidence/ca-baseline-gate-01/、docs/CA_BASELINE_GATE_REMEDIATION.md；docs/{AGENT_TASKS,README,CLOUD_HIGH_AVAILABILITY_TASKS_v1}.md；PROGRESS.md、WORKLOG.md、task_plan.md。
 - Invariants: 保留历史/原收据/unknown/Coverage；不得删除拒绝门禁、改golden掩盖摘要漂移、排除整个ERPNext。
 - Verification: 优先无Docker定向RED→GREEN；串行限额；原生修复不宣称ERPNext违规已清零，不提前解锁HA03。
 
+
+- Current receipt: docs/evidence/ca-baseline-gate-02/validation.json；最终完整test11672/0/3161skip、check全绿、真实PG5通过；本卡先前验证为当时历史记录，不覆盖旧证据。
+
 # CA-BASELINE-GATE-02 — ERPNext源仓库与同步导出门禁
-- Status: Ready → In Progress；Owner Luke Ding，执行Codex；用户本轮明确授权。
+- Status: Done；2026-11-01 条件完整验收后已快进至本地cloud-agent；Owner Luke Ding，执行Codex。
 - Branch/worktree: codex/ca-baseline-gate-02；ca-baseline-gate-02/zebra-agent；原生01候选6ac3d008为组合输入，主线base e8a4f10b。
 - Source: LogicStormINC/zebra-erpnext main2e8606a；同名独立候选分支/worktree，源任务docs/CA_BASELINE_GATE_02.md已先领取并限定逐组职责。
 - Owned paths: integrations/erpnext/的固定canonical导出（含SOURCE.md）；docs/{CA_BASELINE_GATE_REMEDIATION,AGENT_TASKS,README,CLOUD_HIGH_AVAILABILITY_TASKS_v1,CA-HA-02_readiness_preflight}.md；docs/evidence/ca-baseline-gate-02/；PROGRESS.md、WORKLOG.md、task_plan.md；整合已验证原生01/HA02时仅解决其文档冲突，不改其已发布历史证据。
@@ -17,22 +20,39 @@
 - Invariants: 不修改根门禁/规则/阈值，不排除ERPNext；保留旧manifest/部署与来源证据、历史、原收据、unknown和Coverage。无部署/生产迁移。
 - Verification: canonical前端/离线检查、源职责/装配审查后提交发布；git archive导出后组合树串行限额make test/check与HA02真实PG复验，全部通过才合入cloud-agent；当前不宣称已通过。
 
+
+- Current receipt: docs/evidence/ca-baseline-gate-02/validation.json；最终完整test11672/0/3161skip、check全绿、真实PG5通过；本卡先前验证为当时历史记录，不覆盖旧证据。
+
 # CA-HA-UX-00 — 用户卡顿/卡死与多用户性能验收补充（文档）
-- Status: Review（文档）；2026-10-31 补充及静态校验完成；先登记Ready后领取；人类Owner Luke Ding，执行Codex。
+- Status: Done；2026-11-01 条件完整验收后已快进至本地cloud-agent；Owner Luke Ding，执行Codex。
 - Branch: codex/ca-ha-ux-00-plan；Worktree: ca-ha-ux-00-plan/zebra-agent；基线e8a4f10b。
 - Owned paths: docs/CLOUD_HIGH_AVAILABILITY_PLAN_v1.md、docs/CLOUD_HIGH_AVAILABILITY_TASKS_v1.md、docs/contracts/cloud-ha-v1/{README.md,acceptance.json}、docs/CA-HA-01_baseline_and_scope.md、docs/README.md、docs/AGENT_TASKS.md、PROGRESS.md、WORKLOG.md、task_plan.md。
 - Scope: 仅首响应/排队/流式/卡死/隔离/停止回收/容量的DDD归属、指标/分母/证明及原任务验收补充；不新建业务状态机或第二执行队列。
 - Acceptance: 合同revision同步、UX指标与场景/任务逐项对应、目标不冒充实测、旧数据/收据/unknown/Coverage不变；仅静态文档校验，无业务实现/重型测试/Docker/生产操作。
 
+
+- Current receipt: docs/evidence/ca-baseline-gate-02/validation.json；最终完整test11672/0/3161skip、check全绿、真实PG5通过；本卡先前验证为当时历史记录，不覆盖旧证据。
+
 # CA-HA-02 — API/Worker就绪与健康（实施）
 - Current integration: 原生01与HA02已进入本02功能分支组合；ERP02源验证中，组合完整门禁尚待执行，非主线完成。
-- Status: Review（完整门禁被基线阻塞）；2026-10-31 原52/58项证据保留；真实PG5通过；完整test11641通过/15失败/3155跳过，check16尺寸/Ruff4924违规，与e8a4f10b精确相同；mypy1494/Eval30等通过；用户“开始实施”授权后Ready并领取；Owner Luke Ding，执行Codex；branch codex/ca-ha-02-readiness，独立worktree ca-ha-02-readiness/zebra-agent。
+- Status: Done；2026-11-01 条件完整验收后已快进至本地cloud-agent；Owner Luke Ding，执行Codex。
 - Depends on: 01 revision2已合入e8a4f10b；本分支摘取UX文档01530810为559422d7，不夹带业务父提交。02无强停依赖；03仍等待02。
 - Owned paths: apps/api/src/zebra_agent_api/{http,http_host_auth,routes,api_status_mixin,health_readiness}.py；apps/worker/src/zebra_agent_worker/{main,loop,command_process,worker_loop_service,worker_health}.py；tests/api/{test_routes,test_host_auth_http,test_cloud_ha_health,test_cloud_ha_health_postgres}.py；tests/worker/{test_loop,test_command_process,test_worker_health_observation}.py；docs/CA-HA-02_readiness_preflight.md、docs/contracts/cloud-ha-v1/、docs/evidence/ca-ha-02/；docs/{AGENT_TASKS.md,README.md,CLOUD_HIGH_AVAILABILITY_PLAN_v1.md,CLOUD_HIGH_AVAILABILITY_TASKS_v1.md}；PROGRESS.md、WORKLOG.md、task_plan.md。
 - Boundary: 复用既有epoch只读查询、Task I/O预算、启动schema校验和Worker真实进展；不写core/storage/Helm，不改执行/租约/收据/unknown/Coverage。仅精确GET健康路径，旧/health保持。
 - Full-gate follow-up：用户已授权串行限额完整make test/check与独立真实PostgreSQL验收、成功后合入cloud-agent；Owner/branch/Owned paths沿用本卡；临时资源按本次owner清单回收，不部署/迁移生产，不提前实施03。
 - Review follow-up：用户“继续”授权本卡复核修复；重点为真实控制进展截止与本机读取非阻塞；沿用原Owned paths，不解锁03。
 - Verification: 用户已授权本次限额串行完整门禁/真实PG；实际结果及基线复现见docs/evidence/ca-ha-02/full-validation.json。临时容器全部及时回收，原服务/历史数据保留；完整门禁仍失败，不合并、不解锁03、不部署。
+
+
+- Current receipt: docs/evidence/ca-baseline-gate-02/validation.json；最终完整test11672/0/3161skip、check全绿、真实PG5通过；本卡先前验证为当时历史记录，不覆盖旧证据。
+
+# CA-HA-03 — 资源预算、退避与技术namespace隔离
+- Status: Ready（未领取/未实施）；01已合入，02已完成组合完整验收并快进至本地cloud-agent；不自动开工。
+- Scope: 复用现有Worker control/maintenance lane、TaskIoConnections和连接池；细化前先复核真实cutover/组合入口，不新增第二执行队列或商业租户聚合。
+- Required claim: 单一人类Owner/独立功能分支/worktree及精确Owned paths；候选Worker轮询/配置、storage postgres/{connection_pool,task_io}.py及专职回归；入口/Helm超出范围先更新任务，不提前混入08。
+- Invariants: 凭据留BFF；unknown不自动重发/重领Controller；保留原历史、收据、Coverage和前端mock。
+- Acceptance: 区分空/blocked/error退避与抖动，SQL/CPU/线程/连接/队列硬预算，跨namespace公平，控制/原GET独立预算；E1-C/E1-O分层统计p95/p99/拒绝率，不以单池或单角色上限冒充全副本预算。
+- Dependencies/boundaries: docs/CA-HA-02_readiness_preflight.md 第8、9节；仅设计目标/后续待验，不部署/生产迁移。
 
 # CA-HA-01 — HA基线、DDD不变量与验收合同（仅文档）
 - Status: Done（仅设计文档）；2026-10-31 单人文档复核修正9项，revision 2及01文档已合入并推送cloud-agent 1dd88bfd；未运行实现或故障验收；用户授权后登记Ready并领取；Owner Luke Ding，执行Codex；独立评审待安排。

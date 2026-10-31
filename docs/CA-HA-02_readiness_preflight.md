@@ -1,6 +1,6 @@
 # CA-HA-02 任务、依赖与候选实施
 
-日期2026-10-31；当前状态Review，完整门禁被基线失败阻塞；最新验收见第8节，历史候选见第6–7节。
+日期2026-10-31；2026-11-01 当前Done：组合验收通过并快进本地cloud-agent；最新见第9节，第6–8节保留历史过程。
 以下1–5节保留领取前设计边界；01 revision 2前置已合入cloud-agent 1dd88bfd。
 原文档阶段未实施；本轮已先登记Ready后领取02，依然不启动重型/Docker环境。
 依赖：[CA-HA-01 revision 2](contracts/cloud-ha-v1/README.md)、[逐卡范围](CA-HA-01_baseline_and_scope.md)。
@@ -176,3 +176,12 @@ SIGTERM只立即反映现有退出状态；真正排空/强停与资源证明仍
 基线修复应另卡/另分支：优先追踪Coverage9项与当前流访问2项，再审查已发布默认摘要2项
 和固定SDK枚举1项；不能盲改golden、降级Coverage/鉴权或用全目录排除掩盖ERPNext违规。
 最后完成原生/集成尺寸与风格整改，再跑完整门禁，成功后才集成02/解锁03。
+
+## 9. 组合门禁完成与03解锁（2026-11-01）
+
+原生基线01与canonical ERP02已组合；最终make test11672通过/0失败/3161条件跳过，make check尺寸4046/0、Ruff0、mypy1494、Eval30和全部风险/产品检查通过；HA02独立实际PG5通过。
+[完整证据](evidence/ca-baseline-gate-02/validation.json)保留两轮夹具失败及最终整树通过，不覆盖原HA02证据。已验证代码2b908448快进本地cloud-agent，最终文档/证据随主线发布。
+
+03依赖满足，状态Ready，未领取/未实施。后续仍按第8节四项范围先核对cutover/入口/全副本预算再领取精确Owned paths；控制/恢复/原GET及02只读探测均计连接总预算。合法等待/unknown不视作失败或触发业务重发，不重领Controller。
+
+本次单PG功能/失败恢复不代表集群HA、多用户p99、24h资源或真实IdP/ERP105验证；UX-01–10及其他专项仍not_run。历史、原收据、unknown、Coverage和前端mock保持；只回收自有临时容器，无部署/生产迁移。

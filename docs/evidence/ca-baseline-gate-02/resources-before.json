@@ -1,0 +1,23 @@
+{
+  "owner_label": "codex.owner=ca-baseline-gate-02-20261031",
+  "containers": [
+    {
+      "Command": "\"docker-entrypoint.s\u2026\"",
+      "CreatedAt": "2026-10-31 16:49:16 +0800 CST",
+      "ID": "303c33d83297",
+      "Image": "postgres:17-alpine",
+      "Labels": "",
+      "LocalVolumes": "1",
+      "Mounts": "fb54c5e73d069d\u2026",
+      "Names": "overdoze-dev-pg",
+      "Networks": "bridge",
+      "Platform": null,
+      "Ports": "127.0.0.1:55432->5432/tcp",
+      "RunningFor": "6 hours ago",
+      "Size": "189kB (virtual 291MB)",
+      "State": "running",
+      "Status": "Up 6 hours"
+    }
+  ],
+  "policy": "single process; add defaults only when no explicit cap; rm -fv only exact owner label; no prune"
+}

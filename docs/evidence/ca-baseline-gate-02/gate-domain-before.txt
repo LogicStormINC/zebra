@@ -1,0 +1,35 @@
+........F.                                                               [100%]
+=================================== FAILURES ===================================
+______ test_additive_gate_setting_preserves_exact_old_baseline_algorithm _______
+
+    def test_additive_gate_setting_preserves_exact_old_baseline_algorithm():
+        original = settings()
+        values = asdict(original)
+        for key in [
+            "model",
+            "runtime_bundle_config",
+            "bundle_management_config",
+            "publication_management_config",
+            "script_validation_config",
+            "plugin_admission_config",
+            "runtime_gate_config",
+            "runtime_gate_termination_config",
+            "runtime_instance_id",
+        ]:
+            del values[key]
+        if not original.host_execution_authority.enabled:
+            del values["host_execution_authority"]
+        raw = json.dumps(
+            values, sort_keys=True, ensure_ascii=True, allow_nan=False, separators=(",", ":")
+        ).encode()
+        historical = "sha256:" + hmac.new(bytes.fromhex("ab" * 32), raw, hashlib.sha256).hexdigest()
+>       assert baseline_digest(original, "ab" * 32) == historical
+E       AssertionError: assert 'sha256:c7748...65a5cce900fdc' == 'sha256:1bcba...53c92e84cd73f'
+E         
+E         - sha256:1bcba9cf83df0210d435af0775a9e97a5bea57ecf993f502cdf53c92e84cd73f
+E         + sha256:c7748ed8d32a5c534d4c7c8290fd71f5d5d3c01d46c3d38c53665a5cce900fdc
+
+tests/agent_core/test_runtime_gate_domain.py:81: AssertionError
+=========================== short test summary info ============================
+FAILED tests/agent_core/test_runtime_gate_domain.py::test_additive_gate_setting_preserves_exact_old_baseline_algorithm
+1 failed, 9 passed in 0.47s

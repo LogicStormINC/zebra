@@ -101,3 +101,7 @@ CA-HA-02候选复核：[58项定向验证及修复证据](evidence/ca-ha-02/revi
 
 [CA-HA-02完整门禁、真实PG及基线阻塞](evidence/ca-ha-02/full-validation.json)：PG5通过，
 完整门禁15失败/16尺寸/Ruff4924均已基线复现；未主线合入，03依赖复核见02前置文档第8节。
+
+## CA-BASELINE-GATE-02 完整验收与集成（2026-11-01）
+
+[整改正式结果](CA_BASELINE_GATE_REMEDIATION.md#3-ca-baseline-gate-02-完整结果与集成) · [完整日志/机器收据](evidence/ca-baseline-gate-02/validation.json)。canonical92b308b精确导出；完整test11672/0/3161条件跳过，check全绿，HA02实际PG5通过。已验证代码2b908448快进本地cloud-agent，最终证据随主线发布；CA-HA-03仅Ready，不是集群HA/UX容量验收，无部署/生产迁移。前文Review/失败为当时历史记录。

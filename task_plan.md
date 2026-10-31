@@ -1,3 +1,15 @@
+# CA-BASELINE-GATE-02 完成；CA-HA-03 Ready
+
+1. canonical规则/所有权/源修复、职责与装配复核、源验证及GitHub候选92b308b已完成。
+2. 精确git archive同步SOURCE；组合原生01/HA02，旧证据保留，两处整树夹具问题稳定复现并修正。
+3. 最终完整make test11672通过/0失败/3161条件跳过，make check全部通过，HA02真实PG5通过；owner临时资源已回收。
+4. 代码2b908448已快进本地cloud-agent；本次最终文档/证据随主线推送GitHub。不部署/生产迁移。
+5. 03只核对并解锁Ready，尚未领取/实施；先复核cutover、预算/退避、公平/入口范围和精确Owned paths。
+
+正式结果docs/CA_BASELINE_GATE_REMEDIATION.md；证据docs/evidence/ca-baseline-gate-02/validation.json。
+
+## 历史执行计划（保留，状态以当前顶部为准）
+
 # 当前：CA-BASELINE-GATE-02 组合验收
 
 canonical源候选整改与验证中；原生01/HA02进入同一组合树，尚未主线合入。

@@ -18,8 +18,8 @@ HA02未主线合入，03仍Locked，不宣称下游就绪。以下保留原规�
 | CA-HA-UX-00 | 用户体验/并发性能验收文档补充 | Review：revision 3目标未验证 | 01已集成e8a4f10b；本轮仅文档授权 | TL/QA |
 | CA-HA-00 | 正式方案、任务和文档索引 | Done：已集成推送d782039c | 当前用户授权 | TL/文档 |
 | CA-HA-01 | 固定基线、DDD不变量、SLO与故障合同 | Done：revision 2文档已集成1dd88bfd，非实现 | 00评审并集成，且用户另行授权后续工作 | TL/CORE/QA |
-| CA-HA-02 | API/Worker真实就绪与健康合同 | Review：原生01/ERP02组合完整门禁复验中 | 01 | APP/RUNTIME |
-| CA-HA-03 | 资源预算、空转退避与租户技术隔离 | Locked | 01、02（共享Worker接线须串行） | RUNTIME/CORE |
+| CA-HA-02 | API/Worker真实就绪与健康合同 | Done：完整组合门禁/实际PG5通过，代码已入本地cloud-agent | 01 | APP/RUNTIME |
+| CA-HA-03 | 资源预算、空转退避与租户技术隔离 | Ready（未领取/未实施） | 01、02（共享Worker接线须串行） | RUNTIME/CORE |
 | CA-HA-04 | 排空、进程隔离、强停与资源回收 | Locked | 02、03；强停候选须独立合入/验收 | RUNTIME/SRE |
 | CA-HA-05 | Worker跨副本接管与旧执行者隔离 | Locked | 03、04 | CORE/存储 |
 | CA-HA-06 | PostgreSQL/对象/Redis/身份依赖容错 | Locked | 02、05 | SRE/存储/安全 |
@@ -238,3 +238,5 @@ CA-HA-UX-00只补合同revision 3和下述验收，状态Review；不改变03–
 2026-10-31完整验收：[当前证据](evidence/ca-ha-02/full-validation.json)。02未满足条件合并，
 03继续Locked；已核对01完成、02未合入，预算/退避/公平及入口池覆盖范围见
 [02第8节](CA-HA-02_readiness_preflight.md#8-完整验收与03依赖复核)，没有提前启动03。
+
+当前集成：2026-11-01 原生01/ERP02/HA02已完成组合门禁，代码2b908448快进本地cloud-agent；[证据](evidence/ca-baseline-gate-02/validation.json)。最终文档/证据随主线推送。CA-HA-03仅Ready；其他Locked/UX not_run不因本次健康验收自动升级，未部署/生产迁移。
