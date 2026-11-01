@@ -1,3 +1,8 @@
+## 2026-11-01 z1 合入 cloud-agent
+
+ca-p5-main-integration worktree ff c69449f4→822e7fb4 已推 origin（纯快进，树与已验证 tip 一致）。
+overdoze 侧 o1（合同/构造器/catalog/digest 重导出）解锁。
+
 ## 2026-11-01 CA-P7-01A-z1 budget 可配化
 
 首个可配域 budget 落地（设计稿 §2.1）：类型/装配/catalog 三层 + 生产者工件九件同窗重导出。
