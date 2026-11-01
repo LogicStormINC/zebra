@@ -1,3 +1,7 @@
+# CA-P7-01A-z1 — zebra budget 可配化（schema/批准/校验）（Done / 已推送）
+- Done; 2026-11-01 分支 codex/ca-p7-01a-z1-budget tip 已推 origin，worktree ~/Documents/Codex/2026-11-01/ca-p7-01a-z1（基 cloud-agent c69449f4）。交付：BudgetParameters/ConfigurableBudgetDomain（budget 域判别联合，pinned 兼容）+ AssetKind 增 budget-profile + 组件 catalog budget→configurable（catalog digest 5141e64c）+ lock 闭包纳入可配 budget 的 profile pin + BudgetProfile 上限批准（pin digest=去 pin 字段 canonical digest）+ RuntimeAssembly.budget_profile 必填与双模校验（可配须等于批准 pin 且逐项 ≤ 上限；pinned 合法不消费批准）+ catalog.budget 必填与 resolve BUNDLE_BUDGET_NOT_APPROVED。生产者工件九件同窗重导出（合同 digest 4350a319→17b3ebfc——OD-P7-01A-o1 依赖此值）。验证：tests/agent_core+tests/api+bundle postgres 全量 3783 passed/193 skipped（新增 3 用例）；make check 全绿。
+- 关键实施事实：①参数 schema 进组件 digest——AssetKind/budget 参数类型的任何改动都换全部组件 digest 与 catalog digest，生产者工件必须同窗重导出（本次九件：contract/envelope.schema/component-catalog/manifest.canonical/digest-vectors/正负向量/script 合同+request.schema）；②负向量从正向量重导出（stage 语义：unapproved model/thinking enabled/foreign scope）；③digest-vectors 重导出用 ResolvedRuntimeBundle 直算 canonical（旧 digest 装载会先挂在 envelope 校验）。
+
 # CA-BRIDGE-01A — 管理面任务观察端点（task-observations）
 
 - Done; 2026-11-01 用户授权合入后随 cloud-agent 6f98d3dd 可达（fast-forward，树与已验证分支 tip 逐字节一致）。

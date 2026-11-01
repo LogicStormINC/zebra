@@ -1,3 +1,9 @@
+## 2026-11-01 CA-P7-01A-z1 budget 可配化
+
+首个可配域 budget 落地（设计稿 §2.1）：类型/装配/catalog 三层 + 生产者工件九件同窗重导出。
+验证 3783/193 + make check 全绿；分支已推 origin，待合入 cloud-agent（解锁 overdoze 侧
+OD-P7-01A-o1：Go NativeContractDigest→17b3ebfc + TS 构造器 + catalog 三处 + 验收栈）。
+
 ## 2026-11-01 CA-BRIDGE-01A 合入 cloud-agent
 
 用户授权"合入"：ca-p5-main-integration worktree（cloud-agent 检出处，干净、与 origin 同步）
