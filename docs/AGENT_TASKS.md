@@ -1,4 +1,5 @@
 # CA-P7-02A/B/C — 编排消费方三切片（Done / 已推送待合入）
+- 合入 cloud-agent：2026-11-01 用户"按照设计方案全部做完"授权，ff 已推 origin。
 - Done; 2026-11-01 分支 codex/ca-p7-02-orchestration tip 31a4e9d2 已推 origin，worktree ~/Documents/Codex/2026-11-01/ca-p7-02（基 cloud-agent 74444850）。设计稿四断层全部闭合：
 - **02A 工具集**：OrchestrationRuntimePort（propose_plan/request_task + 类型化错误）+ orchestration.plan.propose/orchestration.task.request 两工具（Agent Layer、无 runtime fail-closed）+ harness 注册 + GENERAL 白名单。9 测试。
 - **02B 运行时循环**：OrchestrationRuntime 实现 port + materialize（CAS 状态机）→ evaluate（**每次从 store 重建调度态=崩溃恢复语义**）→ request_task（派发置 running）→ complete_node（终态写入+失败策略）→ synthesize（全终态门）；预算经 parent_remaining_budget 进 validate_plan（**z2 桥消费闭环**）。Postgres store 补 read_node_statuses/transition_node/read_run_status（v27 表读写面）。7 测试：串行全生命周期/预算触顶拒/失败先于综合/崩溃恢复同决策/并行就绪。
