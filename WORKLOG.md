@@ -1,3 +1,10 @@
+## 2026-11-01 CA-P7-01A-z2 根预算接线
+
+勘察关键事实：validate_plan 无生产调用方——"执行接线"的完整意义尚不存在。诚实切片：提取桥
+（root_budget_from_parameters + task_root_budget）+ 触顶行为记账证明。BudgetReservation 是
+pydantic frozen 模型：位置参数构造直接 TypeError（测试里 BudgetReservation(0,0,0) 会炸）。
+分支 6d7362f7 已推 origin，待合入 cloud-agent。
+
 ## 2026-11-01 z1 合入 cloud-agent
 
 ca-p5-main-integration worktree ff c69449f4→822e7fb4 已推 origin（纯快进，树与已验证 tip 一致）。
