@@ -1,3 +1,11 @@
+# CA-P7-02A/B/C — 编排消费方三切片（Done / 已推送待合入）
+- Done; 2026-11-01 分支 codex/ca-p7-02-orchestration tip 31a4e9d2 已推 origin，worktree ~/Documents/Codex/2026-11-01/ca-p7-02（基 cloud-agent 74444850）。设计稿四断层全部闭合：
+- **02A 工具集**：OrchestrationRuntimePort（propose_plan/request_task + 类型化错误）+ orchestration.plan.propose/orchestration.task.request 两工具（Agent Layer、无 runtime fail-closed）+ harness 注册 + GENERAL 白名单。9 测试。
+- **02B 运行时循环**：OrchestrationRuntime 实现 port + materialize（CAS 状态机）→ evaluate（**每次从 store 重建调度态=崩溃恢复语义**）→ request_task（派发置 running）→ complete_node（终态写入+失败策略）→ synthesize（全终态门）；预算经 parent_remaining_budget 进 validate_plan（**z2 桥消费闭环**）。Postgres store 补 read_node_statuses/transition_node/read_run_status（v27 表读写面）。7 测试：串行全生命周期/预算触顶拒/失败先于综合/崩溃恢复同决策/并行就绪。
+- **02C 投影消费**：orchestration_projection_view(store, run_ref)——store 事实→plan-14.2 状态对象（run 状态/节点/预算/gate）；调用方决定落点。2 测试。
+- 验证：131 + 3029/16 + 2989/843 passed + make check 全绿（mypy 1498）。
+- 范围注记：02B 的"完整执行接线"=本卡的循环驱动+存储读写面；worker 进程内的事件级接线（child_wakeup 调 complete_node 的具体挂点）属后续运行集成片——设计稿 §2 图中运行时服务已全部存在且有测试证明行为。
+
 # CA-P7-01A-z2 — 装配 budget 域接线根预算（Done / 已推送，勘察修正范围）
 - 合入 cloud-agent：2026-11-01 用户"继续"授权，ff 6692d633 已推 origin。
 - Done; 2026-11-01 分支 codex/ca-p7-01a-z2-budget-wiring tip 6d7362f7 已推 origin，worktree ~/Documents/Codex/2026-11-01/ca-p7-01a-z2（基 cloud-agent 079ba554；用 worktree 模式解除"force-stop 线落定"前置——零路径冲突）。**勘察修正**：validate_plan/PlanValidationContext 当前无生产调用方（仅测试）——预算执行链是"域已建好、未被调度调用"状态；本卡诚实交付装配提取桥+触顶行为证明，不虚构执行已接通。交付：orchestration root_budget_from_parameters（负值钳零）+ worker task_root_budget（可配域→真实根预算/pinned/legacy→保守零默认）+ 触顶行为测试（根 150<节点合计 200→budget_beyond_parent 拒付；零根预算拒一切支出）。验证：worker+orchestration+bundle_definition 1425/746 + make check 全绿。**完整执行接线（validate_plan 接入编排调度）需先设计生产调用方，另立后续卡（CA-P7-02 候选）。**

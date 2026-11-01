@@ -1,3 +1,12 @@
+## 2026-11-01 CA-P7-02A/B/C 编排消费方链
+
+设计稿四断层一次闭合（工具/校验开跑/调度派发/投影装配）。实施要点：①崩溃恢复不缓存——
+evaluate 每次从 store 重建 SchedulingState，测试用"丢弃实例重建同决策"证明；②Postgres
+orchestration_nodes.status 列有表无读写 API——补 read_node_statuses/transition_node（按
+current_plan_revision 定位）；③harness 参数走鸭子 Any helper 避免包级硬依赖（agent-runtime
+经 agent-tools 传递依赖 agent-orchestration）；④工具 fail-closed 双态（无 runtime 类型化
+拒绝）与 agent.plan 同款纪律。分支 31a4e9d2 已推 origin 待合入。
+
 ## 2026-11-01 z2 合入 cloud-agent
 
 ff 079ba554→6692d633 已推 origin（纯快进）。事故记录：docs 提交一度误落主 checkout 的
