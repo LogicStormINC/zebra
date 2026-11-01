@@ -1,5 +1,6 @@
 # CA-BRIDGE-01A — 管理面任务观察端点（task-observations）
 
+- Done; 2026-11-01 用户授权合入后随 cloud-agent 6f98d3dd 可达（fast-forward，树与已验证分支 tip 逐字节一致）。
 - Status: Review; implemented2026-11-01 same session; owner Luke Ding，执行Codex；base cloud-agent 29ecde64；worktree ca-bridge-01a（常驻 force-stop 工作树未触碰）。跨仓设计稿见 overdoze docs/superpowers/specs/2026-11-01-task-observations-bridge-design.md；overdoze 侧消费卡 CA-BRIDGE-01B/OD-CO-19 已在该仓登记。
 - Depends: 无（overdoze OD-CO-18 改卡确立的 native 代理路径的第一片）。
 - Owned paths: apps/api/src/zebra_agent_api/{task_observation_management.py（新增）,host_registry_config.py,host_registry_management.py}；tests/api/test_task_observation_management.py（新增）；docs/contracts/task-observation-management-v1.openapi.json（新增）；docs/evidence/ca-bridge-01a/；docs/{AGENT_TASKS,README}.md；PROGRESS.md、WORKLOG.md。

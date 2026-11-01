@@ -1,3 +1,11 @@
+## 2026-11-01 CA-BRIDGE-01A 合入 cloud-agent
+
+用户授权"合入"：ca-p5-main-integration worktree（cloud-agent 检出处，干净、与 origin 同步）
+fast-forward 29ecde64 → 6f98d3dd——纯快进，树与已通过 tests/api 1744/0 + make check 的分支
+tip 逐字节一致，未重跑（沿用 ff-已验证-tip 回执纪律）。01A 分支与 worktree
+（~/Documents/Codex/2026-11-01/ca-bridge-01a）保留待清理决策。overdoze 侧 CA-BRIDGE-01B
+（无状态代理 + BFF + 合同 lattice pin 6f98d3dd）解锁。
+
 ## 2026-11-01 CA-BRIDGE-01A 任务观察端点
 
 跨仓纠偏记录：用户明确 cloud-agent 才是 zebra 真实主线（main 停在 desktop/react 时代，落后
