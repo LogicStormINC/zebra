@@ -19,6 +19,7 @@ from agent_core.domain.runtime_bundle_types import (
     ArtifactPin,
     BundleScope,
     BundleValue,
+    ConfigurableBudgetDomain,
     Digest,
     EngineBinding,
     InstructionsDomain,
@@ -87,6 +88,9 @@ class ResolvedRuntimeBundle(BundleValue):
             self.domains.instructions.parameters.output_schema,
             *self.build_evidence,
         ]
+        budget = self.domains.budget
+        if isinstance(budget, ConfigurableBudgetDomain):
+            references.append(budget.parameters.budget_profile)
         for domain in RuntimeDomains.model_fields:
             component = getattr(self.domains, domain).component
             if component != builtin_component_pin(domain):

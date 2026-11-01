@@ -9,6 +9,7 @@
             "baseline-config",
             "component",
             "provider-profile",
+            "budget-profile",
             "output-schema",
             "build-evidence"
           ],
@@ -38,6 +39,38 @@
         "digest"
       ],
       "title": "ArtifactPin",
+      "type": "object"
+    },
+    "BudgetParameters": {
+      "additionalProperties": false,
+      "description": "Root budget reservation within operator-approved ceilings.",
+      "properties": {
+        "budget_profile": {
+          "$ref": "#/$defs/ArtifactPin"
+        },
+        "model_tokens": {
+          "minimum": 0,
+          "title": "Model Tokens",
+          "type": "integer"
+        },
+        "tool_calls": {
+          "minimum": 0,
+          "title": "Tool Calls",
+          "type": "integer"
+        },
+        "runtime_seconds": {
+          "minimum": 0,
+          "title": "Runtime Seconds",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "budget_profile",
+        "model_tokens",
+        "tool_calls",
+        "runtime_seconds"
+      ],
+      "title": "BudgetParameters",
       "type": "object"
     },
     "BundleScope": {
@@ -89,6 +122,29 @@
         "deployment_id"
       ],
       "title": "BundleScope",
+      "type": "object"
+    },
+    "ConfigurableBudgetDomain": {
+      "additionalProperties": false,
+      "properties": {
+        "component": {
+          "$ref": "#/$defs/ArtifactPin"
+        },
+        "mode": {
+          "const": "configurable",
+          "title": "Mode",
+          "type": "string"
+        },
+        "parameters": {
+          "$ref": "#/$defs/BudgetParameters"
+        }
+      },
+      "required": [
+        "component",
+        "mode",
+        "parameters"
+      ],
+      "title": "ConfigurableBudgetDomain",
       "type": "object"
     },
     "EmptyParameters": {
@@ -562,7 +618,22 @@
           "$ref": "#/$defs/PinnedDomain"
         },
         "budget": {
-          "$ref": "#/$defs/PinnedDomain"
+          "discriminator": {
+            "mapping": {
+              "configurable": "#/$defs/ConfigurableBudgetDomain",
+              "pinned": "#/$defs/PinnedDomain"
+            },
+            "propertyName": "mode"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/PinnedDomain"
+            },
+            {
+              "$ref": "#/$defs/ConfigurableBudgetDomain"
+            }
+          ],
+          "title": "Budget"
         },
         "verification": {
           "$ref": "#/$defs/PinnedDomain"

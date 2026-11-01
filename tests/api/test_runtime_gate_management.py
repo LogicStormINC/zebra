@@ -58,6 +58,7 @@ def gate(tmp_path, host_management_dsn, monkeypatch):  # noqa:F811
     assembly = RuntimeAssembly(
         bundle=seal_runtime_bundle(ResolvedRuntimeBundle.model_validate(manifest)),
         provider_profile=assembly.provider_profile,
+        budget_profile=assembly.budget_profile,
     )
     catalog["scope"] = scope
     catalog_path = tmp_path / "catalog.json"

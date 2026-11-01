@@ -7,10 +7,19 @@ import re
 from dataclasses import asdict
 from typing import Annotated, Literal, Self
 
-from agent_core.domain.runtime_assembly import RuntimeAssembly, RuntimeProviderProfile
+from agent_core.domain.runtime_assembly import (
+    BudgetProfile,
+    RuntimeAssembly,
+    RuntimeProviderProfile,
+)
 from agent_core.domain.runtime_bundle import RuntimeBundleEnvelope
 from agent_core.domain.runtime_bundle_json import load_bundle_json
-from agent_core.domain.runtime_bundle_types import ArtifactPin, BundleScope, BundleValue
+from agent_core.domain.runtime_bundle_types import (
+    ArtifactPin,
+    BundleScope,
+    BundleValue,
+    ConfigurableBudgetDomain,
+)
 from pydantic import Field, model_validator
 
 from zebra_agent_config.private_configuration import read_private_configuration
@@ -54,6 +63,7 @@ class RuntimeExecutionCatalog(BundleValue):
     baseline_config: ArtifactPin
     baseline_key: Annotated[str, Field(pattern=r"^[0-9a-f]{64}$", repr=False, exclude=True)]
     providers: Annotated[tuple[RuntimeProviderProfile, ...], Field(min_length=1, max_length=32)]
+    budget: BudgetProfile
     output_schema: ArtifactPin
     build_evidence: Annotated[tuple[ArtifactPin, ...], Field(min_length=1, max_length=32)]
 
@@ -62,6 +72,7 @@ class RuntimeExecutionCatalog(BundleValue):
         if (
             self.image.kind != "image"
             or self.baseline_config.kind != "baseline-config"
+            or self.budget.pin.kind != "budget-profile"
             or self.output_schema.kind != "output-schema"
             or any(pin.kind != "build-evidence" for pin in self.build_evidence)
             or len({profile.pin for profile in self.providers}) != len(self.providers)
@@ -84,7 +95,15 @@ class RuntimeExecutionCatalog(BundleValue):
         profile = next((item for item in self.providers if item.pin == pin), None)
         if profile is None:
             raise ValueError("BUNDLE_PROVIDER_NOT_APPROVED")
-        return RuntimeAssembly(bundle=bundle, provider_profile=profile)
+        budget = manifest.domains.budget
+        if (
+            isinstance(budget, ConfigurableBudgetDomain)
+            and budget.parameters.budget_profile != self.budget.pin
+        ):
+            raise ValueError("BUNDLE_BUDGET_NOT_APPROVED")
+        return RuntimeAssembly(
+            bundle=bundle, provider_profile=profile, budget_profile=self.budget
+        )
 
 
 def load_execution_catalog(path: str | None) -> RuntimeExecutionCatalog:

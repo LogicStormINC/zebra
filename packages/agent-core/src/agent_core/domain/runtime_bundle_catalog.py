@@ -5,6 +5,7 @@ from typing import Any
 from agent_core.domain.runtime_bundle_json import json_digest
 from agent_core.domain.runtime_bundle_types import (
     ArtifactPin,
+    BudgetParameters,
     BundleValue,
     EmptyParameters,
     InstructionsParameters,
@@ -40,9 +41,10 @@ def _descriptor(domain: str, source: str) -> dict[str, Any]:
     parameter_types: dict[str, type[BundleValue]] = {
         "model": ModelParameters,
         "instructions": InstructionsParameters,
+        "budget": BudgetParameters,
     }
     parameters = parameter_types.get(domain, EmptyParameters)
-    configurable = domain in ("model", "instructions")
+    configurable = domain in ("model", "instructions", "budget")
     descriptor = {
         "domain": domain,
         "id": f"cloud-agent/native/{domain}",

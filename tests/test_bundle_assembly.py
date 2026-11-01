@@ -46,6 +46,7 @@ def approved_assembly(worker_settings, model="alpha"):
     from agent_core.domain.runtime_assembly import (
         TEXT_OUTPUT_SCHEMA_DIGEST,
         RuntimeAssembly,
+        canonical_budget_profile_digest,
         canonical_provider_profile_digest,
     )
     from agent_core.domain.runtime_bundle import parse_runtime_bundle
@@ -77,10 +78,17 @@ def approved_assembly(worker_settings, model="alpha"):
         **manifest["domains"]["instructions"]["parameters"]["output_schema"],
         "digest": TEXT_OUTPUT_SCHEMA_DIGEST,
     }
+    budget = dict(max_model_tokens=1_000_000, max_tool_calls=500, max_runtime_seconds=3600)
+    budget_pin = {
+        **manifest["domains"]["budget"]["parameters"]["budget_profile"],
+        "digest": canonical_budget_profile_digest(budget),
+    }
+    budget["pin"] = budget_pin
     replacements = {
         ("provider-profile", provider_pin["id"]): provider_pin,
         ("baseline-config", baseline["id"]): baseline,
         ("output-schema", output["id"]): output,
+        ("budget-profile", budget_pin["id"]): budget_pin,
     }
     manifest["baseline_config"] = baseline
     params.update(
@@ -102,7 +110,7 @@ def approved_assembly(worker_settings, model="alpha"):
     envelope["bundle_digest"] = json_digest(manifest)
     bundle = parse_runtime_bundle(json.dumps(envelope).encode())
     assembly = RuntimeAssembly.model_validate_json(
-        json.dumps(dict(bundle=envelope, provider_profile=profile))
+        json.dumps(dict(bundle=envelope, provider_profile=profile, budget_profile=budget))
     )
     catalog = dict(
         schema_version="cloud-agent.execution-catalog/1",
@@ -111,6 +119,7 @@ def approved_assembly(worker_settings, model="alpha"):
         baseline_config=baseline,
         baseline_key="ab" * 32,
         providers=[profile],
+        budget=budget,
         output_schema=output,
         build_evidence=manifest["build_evidence"],
     )
@@ -165,3 +174,143 @@ def test_missing_changed_unapproved_or_hostile_catalog_is_refused(tmp_path):
         path.write_bytes(raw)
         with pytest.raises(ValueError, match="^INVALID_EXECUTION_CATALOG$"):
             load_execution_catalog(str(path))
+
+
+def _configurable_budget_envelope(worker_settings, ceilings=None):
+    """Example envelope with budget switched to configurable within approval."""
+    import json
+    from pathlib import Path
+
+    from agent_core.domain.runtime_assembly import canonical_budget_profile_digest
+    from agent_core.domain.runtime_bundle import parse_runtime_bundle
+    from agent_core.domain.runtime_bundle_json import json_digest
+
+    assembly, catalog = approved_assembly(settings())
+    envelope = json.loads(
+        Path("docs/contracts/runtime-bundle-v1/example-envelope.json").read_bytes()
+    )
+    manifest = envelope["manifest"]
+    # 复用 approved_assembly 的既有替换（provider/baseline/output）再补 budget。
+    approved = assembly.bundle.manifest.model_dump(mode="json")
+    manifest.update(
+        baseline_config=approved["baseline_config"],
+        lock=approved["lock"],
+    )
+    manifest["domains"]["model"]["parameters"] = approved["domains"]["model"]["parameters"]
+    manifest["domains"]["instructions"]["parameters"] = approved["domains"]["instructions"][
+        "parameters"
+    ]
+    profile = dict(catalog["budget"])
+    if ceilings is not None:
+        profile.update(ceilings)
+        profile["pin"] = {
+            **profile["pin"],
+            "digest": canonical_budget_profile_digest(
+                {k: v for k, v in profile.items() if k != "pin"}
+            ),
+        }
+    manifest["domains"]["budget"] = {
+        "component": approved["domains"]["budget"]["component"],
+        "mode": "configurable",
+        "parameters": {
+            "budget_profile": profile["pin"],
+            "model_tokens": min(profile["max_model_tokens"], 1000),
+            "tool_calls": min(profile["max_tool_calls"], 10),
+            "runtime_seconds": min(profile["max_runtime_seconds"], 60),
+        },
+    }
+    lock = {**{json.dumps(p, sort_keys=True): p for p in manifest["lock"]}}
+    lock[json.dumps(profile["pin"], sort_keys=True)] = profile["pin"]
+    manifest["lock"] = sorted(lock.values(), key=lambda p: (p["kind"], p["id"], p["version"]))
+    envelope["bundle_digest"] = json_digest(manifest)
+    bundle = parse_runtime_bundle(json.dumps(envelope).encode())
+    return bundle, profile, catalog
+
+
+def test_configurable_budget_within_ceiling_resolves():
+
+    bundle, profile, catalog = _configurable_budget_envelope(settings())
+    catalog = dict(catalog, budget=profile)
+    from zebra_agent_config.bundle_settings import RuntimeExecutionCatalog
+
+    resolved = RuntimeExecutionCatalog.model_validate(
+        dict(
+            catalog,
+            providers=tuple(catalog["providers"]),
+            build_evidence=tuple(catalog["build_evidence"]),
+        )
+    )
+    assembly = resolved.resolve(bundle)
+    assert assembly.budget_profile.pin.model_dump(mode="json") == profile["pin"]
+    tokens = assembly.bundle.manifest.domains.budget.parameters.model_tokens
+    assert tokens <= profile["max_model_tokens"]
+
+
+def test_configurable_budget_over_ceiling_rejected():
+    """同 pin、参数超该 pin 上限——纯超限（批准一致但预算越界）。"""
+    import json
+    from pathlib import Path
+
+    import pytest
+    from agent_core.domain.runtime_assembly import RuntimeAssembly
+    from agent_core.domain.runtime_bundle import parse_runtime_bundle
+    from agent_core.domain.runtime_bundle_json import json_digest
+
+    assembly, catalog = approved_assembly(settings())
+    profile = catalog["budget"]
+    envelope = json.loads(
+        Path("docs/contracts/runtime-bundle-v1/example-envelope.json").read_bytes()
+    )
+    manifest = envelope["manifest"]
+    approved = assembly.bundle.manifest.model_dump(mode="json")
+    manifest.update(baseline_config=approved["baseline_config"], lock=approved["lock"])
+    manifest["domains"]["model"]["parameters"] = approved["domains"]["model"]["parameters"]
+    manifest["domains"]["instructions"]["parameters"] = approved["domains"]["instructions"][
+        "parameters"
+    ]
+    manifest["domains"]["budget"] = {
+        "component": approved["domains"]["budget"]["component"],
+        "mode": "configurable",
+        "parameters": {
+            "budget_profile": profile["pin"],
+            "model_tokens": profile["max_model_tokens"] + 1,
+            "tool_calls": 0,
+            "runtime_seconds": 0,
+        },
+    }
+    lock = {json.dumps(p, sort_keys=True): p for p in manifest["lock"]}
+    lock[json.dumps(profile["pin"], sort_keys=True)] = profile["pin"]
+    manifest["lock"] = sorted(lock.values(), key=lambda p: (p["kind"], p["id"], p["version"]))
+    envelope["bundle_digest"] = json_digest(manifest)
+    bundle = parse_runtime_bundle(json.dumps(envelope).encode())
+    with pytest.raises(ValueError, match="exceeds exact budget approval"):
+        RuntimeAssembly(
+            bundle=bundle,
+            provider_profile=assembly.provider_profile,
+            budget_profile=assembly.budget_profile,
+        )
+
+
+def test_unapproved_budget_pin_rejected_at_resolve():
+    from agent_core.domain.runtime_assembly import canonical_budget_profile_digest
+
+    bundle, profile, catalog = _configurable_budget_envelope(settings())
+    other = dict(profile, max_tool_calls=profile["max_tool_calls"] + 1)
+    other["pin"] = {
+        **other["pin"],
+        "digest": canonical_budget_profile_digest({k: v for k, v in other.items() if k != "pin"}),
+    }
+    from zebra_agent_config.bundle_settings import RuntimeExecutionCatalog
+
+    resolved = RuntimeExecutionCatalog.model_validate(
+        dict(
+            catalog,
+            budget=other,
+            providers=tuple(catalog["providers"]),
+            build_evidence=tuple(catalog["build_evidence"]),
+        )
+    )
+    import pytest
+
+    with pytest.raises(ValueError, match="BUNDLE_BUDGET_NOT_APPROVED"):
+        resolved.resolve(bundle)

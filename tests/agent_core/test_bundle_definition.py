@@ -19,6 +19,7 @@ from agent_core.domain.identifiers import AgentDefinitionId, AgentDefinitionVers
 from agent_core.domain.runtime_assembly import (
     TEXT_OUTPUT_SCHEMA_DIGEST,
     RuntimeAssembly,
+    canonical_budget_profile_digest,
     canonical_provider_profile_digest,
 )
 from agent_core.domain.runtime_bundle_json import json_digest
@@ -56,8 +57,19 @@ def assembly_payload():
         ],
         key=lambda pin: (pin["kind"], pin["id"], pin["version"]),
     )
+    budget = {
+        "max_model_tokens": 1_000_000,
+        "max_tool_calls": 500,
+        "max_runtime_seconds": 3600,
+    }
+    budget["pin"] = {
+        "kind": "budget-profile",
+        "id": "budget/example",
+        "version": "1.0.0",
+        "digest": canonical_budget_profile_digest(budget),
+    }
     bundle["bundle_digest"] = json_digest(manifest)
-    return {"bundle": bundle, "provider_profile": profile}
+    return {"bundle": bundle, "provider_profile": profile, "budget_profile": budget}
 
 
 def test_assembly_is_immutable_exact_roundtrip():

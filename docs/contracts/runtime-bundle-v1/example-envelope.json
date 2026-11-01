@@ -1,5 +1,5 @@
 {
-  "bundle_digest": "sha256:47496f12c8f87f23652295a2271c02ded89c84c48de5238812cf65cb3928c545",
+  "bundle_digest": "sha256:9c5c8c6462d3824b01ceb75dd8de362e2d0cb47b1eedd2c239f9d11d74c68967",
   "manifest": {
     "baseline_config": {
       "digest": "sha256:6e7ab72c651a6ef974afb6d25f7fa773bcd2b3933afaa1662823d45457ab19da",
@@ -15,14 +15,14 @@
         "version": "1.0.0"
       }
     ],
-    "catalog_digest": "sha256:d29c5b6fe97cb064b1e45a60e9d9554a8909c1aa9bb7e97fea1d8b4dc4198eb6",
+    "catalog_digest": "sha256:5141e64c4633479c7007f6aada39f3113ffed0016d9920f3fd83b052bf3d1219",
     "domains": {
       "addons": {
         "component": {
-          "digest": "sha256:8dda0ba288309092a56cb7afc82b250e81e7ec3c56255e85d91ba9402ec75ea7",
-          "id": "cloud-agent/native/addons",
           "kind": "component",
-          "version": "1.0.0"
+          "id": "cloud-agent/native/addons",
+          "version": "1.0.0",
+          "digest": "sha256:8dda0ba288309092a56cb7afc82b250e81e7ec3c56255e85d91ba9402ec75ea7"
         },
         "mode": "pinned",
         "parameters": {},
@@ -30,21 +30,30 @@
       },
       "budget": {
         "component": {
-          "digest": "sha256:367c08c957e3e7777b26f51a3a0b0beca5e0c170c6ebc51f95ec300d2d1fe40b",
-          "id": "cloud-agent/native/budget",
           "kind": "component",
-          "version": "1.0.0"
+          "id": "cloud-agent/native/budget",
+          "version": "1.0.0",
+          "digest": "sha256:8d4a2c313704499c7d6d444754426931c44d83f6e384dcf36121bbd446a8cc10"
         },
-        "mode": "pinned",
-        "parameters": {},
-        "reason": "requires-runtime-assembly"
+        "mode": "configurable",
+        "parameters": {
+          "budget_profile": {
+            "kind": "budget-profile",
+            "id": "budget/example",
+            "version": "1.0.0",
+            "digest": "sha256:5eeba34dab48aa649f0a30e31ced2c3df41eb55059ab1588f77c40a51d135659"
+          },
+          "model_tokens": 250000,
+          "tool_calls": 120,
+          "runtime_seconds": 900
+        }
       },
       "content": {
         "component": {
-          "digest": "sha256:8fe3a00b99c0e001897ee266285bfcf22d0099b6778d3936a23e13ca7ea2b744",
-          "id": "cloud-agent/native/content",
           "kind": "component",
-          "version": "1.0.0"
+          "id": "cloud-agent/native/content",
+          "version": "1.0.0",
+          "digest": "sha256:8fe3a00b99c0e001897ee266285bfcf22d0099b6778d3936a23e13ca7ea2b744"
         },
         "mode": "pinned",
         "parameters": {},
@@ -52,10 +61,10 @@
       },
       "context": {
         "component": {
-          "digest": "sha256:78947a2c5e75dac73d94da9f556609a72a9963e619ba8da64934713ea2db55fe",
-          "id": "cloud-agent/native/context",
           "kind": "component",
-          "version": "1.0.0"
+          "id": "cloud-agent/native/context",
+          "version": "1.0.0",
+          "digest": "sha256:78947a2c5e75dac73d94da9f556609a72a9963e619ba8da64934713ea2db55fe"
         },
         "mode": "pinned",
         "parameters": {},
@@ -63,10 +72,10 @@
       },
       "engine": {
         "component": {
-          "digest": "sha256:e9f0c031d3fdd533cc1a3eaf152eba620c5d604487ae99782ed52904b4bfb56b",
-          "id": "cloud-agent/native/engine",
           "kind": "component",
-          "version": "1.0.0"
+          "id": "cloud-agent/native/engine",
+          "version": "1.0.0",
+          "digest": "sha256:e9f0c031d3fdd533cc1a3eaf152eba620c5d604487ae99782ed52904b4bfb56b"
         },
         "mode": "pinned",
         "parameters": {},
@@ -74,10 +83,10 @@
       },
       "execution": {
         "component": {
-          "digest": "sha256:a0d994cacb1d988e25c889a83b7dea307b948f905a2a836241ced9e87423d9ab",
-          "id": "cloud-agent/native/execution",
           "kind": "component",
-          "version": "1.0.0"
+          "id": "cloud-agent/native/execution",
+          "version": "1.0.0",
+          "digest": "sha256:a0d994cacb1d988e25c889a83b7dea307b948f905a2a836241ced9e87423d9ab"
         },
         "mode": "pinned",
         "parameters": {},
@@ -85,10 +94,10 @@
       },
       "frontend": {
         "component": {
-          "digest": "sha256:dcd04923c138f739acac280db193bf51aace56ec5c79461e2664dc631497ef9e",
-          "id": "cloud-agent/native/frontend",
           "kind": "component",
-          "version": "1.0.0"
+          "id": "cloud-agent/native/frontend",
+          "version": "1.0.0",
+          "digest": "sha256:dcd04923c138f739acac280db193bf51aace56ec5c79461e2664dc631497ef9e"
         },
         "mode": "pinned",
         "parameters": {},
@@ -96,10 +105,10 @@
       },
       "instructions": {
         "component": {
-          "digest": "sha256:3fd895d437e70c20be011bc12819f74698364bd08d99be563d3eb25e9a2316eb",
-          "id": "cloud-agent/native/instructions",
           "kind": "component",
-          "version": "1.0.0"
+          "id": "cloud-agent/native/instructions",
+          "version": "1.0.0",
+          "digest": "sha256:29341502d05d2a374f499b27e9703add21d92226f4baf4c83a8194b0ec0f13fb"
         },
         "mode": "configurable",
         "parameters": {
@@ -111,15 +120,15 @@
             "kind": "output-schema",
             "version": "1.0.0"
           },
-          "system_text": "\u4f60\u597d Zebra \ud83d\ude00\n\"quoted\"\\path\t"
+          "system_text": "你好 Zebra 😀\n\"quoted\"\\path\t"
         }
       },
       "lifecycle": {
         "component": {
-          "digest": "sha256:da2555a3632d6e2a3f6e66aa8423a57c9d9b1417280674f4f38245d1f13e6cb2",
-          "id": "cloud-agent/native/lifecycle",
           "kind": "component",
-          "version": "1.0.0"
+          "id": "cloud-agent/native/lifecycle",
+          "version": "1.0.0",
+          "digest": "sha256:da2555a3632d6e2a3f6e66aa8423a57c9d9b1417280674f4f38245d1f13e6cb2"
         },
         "mode": "pinned",
         "parameters": {},
@@ -127,10 +136,10 @@
       },
       "memory": {
         "component": {
-          "digest": "sha256:e4bcb5ec54ef1845f8a205372c56789c9ae2043a2b24ed2275f6eb26ece07e9e",
-          "id": "cloud-agent/native/memory",
           "kind": "component",
-          "version": "1.0.0"
+          "id": "cloud-agent/native/memory",
+          "version": "1.0.0",
+          "digest": "sha256:e4bcb5ec54ef1845f8a205372c56789c9ae2043a2b24ed2275f6eb26ece07e9e"
         },
         "mode": "pinned",
         "parameters": {},
@@ -138,10 +147,10 @@
       },
       "model": {
         "component": {
-          "digest": "sha256:33a0106be7b8481c827a3eec94ca3fb8117e502093a30e53144c4cdbd4f651d1",
-          "id": "cloud-agent/native/model",
           "kind": "component",
-          "version": "1.0.0"
+          "id": "cloud-agent/native/model",
+          "version": "1.0.0",
+          "digest": "sha256:658dd8b220a9f84b453bc69a38c142bd57db22f0d14185c582a5c88592b0adc3"
         },
         "mode": "configurable",
         "parameters": {
@@ -161,10 +170,10 @@
       },
       "native": {
         "component": {
-          "digest": "sha256:f91d53de20582a37a7626ab8d01ce2f75a1ba7994958c01d6be5a796e7414039",
-          "id": "cloud-agent/native/native",
           "kind": "component",
-          "version": "1.0.0"
+          "id": "cloud-agent/native/native",
+          "version": "1.0.0",
+          "digest": "sha256:f91d53de20582a37a7626ab8d01ce2f75a1ba7994958c01d6be5a796e7414039"
         },
         "mode": "pinned",
         "parameters": {},
@@ -172,10 +181,10 @@
       },
       "operations": {
         "component": {
-          "digest": "sha256:61bb0c9a5850fecaafba846057e7dce458ab843a2c3a35e86f44adf5aacfa1f2",
-          "id": "cloud-agent/native/operations",
           "kind": "component",
-          "version": "1.0.0"
+          "id": "cloud-agent/native/operations",
+          "version": "1.0.0",
+          "digest": "sha256:61bb0c9a5850fecaafba846057e7dce458ab843a2c3a35e86f44adf5aacfa1f2"
         },
         "mode": "pinned",
         "parameters": {},
@@ -183,10 +192,10 @@
       },
       "policy": {
         "component": {
-          "digest": "sha256:5b787796d9d3ecd03675fb2f291fd5151cd12211f60757d51b9feb14c32dea23",
-          "id": "cloud-agent/native/policy",
           "kind": "component",
-          "version": "1.0.0"
+          "id": "cloud-agent/native/policy",
+          "version": "1.0.0",
+          "digest": "sha256:5b787796d9d3ecd03675fb2f291fd5151cd12211f60757d51b9feb14c32dea23"
         },
         "mode": "pinned",
         "parameters": {},
@@ -194,10 +203,10 @@
       },
       "sandbox": {
         "component": {
-          "digest": "sha256:de9912c4a584fa92f5172be7927fe2c3c6a0d9862b313575a81695e0796540c0",
-          "id": "cloud-agent/native/sandbox",
           "kind": "component",
-          "version": "1.0.0"
+          "id": "cloud-agent/native/sandbox",
+          "version": "1.0.0",
+          "digest": "sha256:de9912c4a584fa92f5172be7927fe2c3c6a0d9862b313575a81695e0796540c0"
         },
         "mode": "pinned",
         "parameters": {},
@@ -205,10 +214,10 @@
       },
       "storage": {
         "component": {
-          "digest": "sha256:427fcdf73ceb5b6177591893c0107043bd1c4d906d6d856340967f5b3c52444f",
-          "id": "cloud-agent/native/storage",
           "kind": "component",
-          "version": "1.0.0"
+          "id": "cloud-agent/native/storage",
+          "version": "1.0.0",
+          "digest": "sha256:427fcdf73ceb5b6177591893c0107043bd1c4d906d6d856340967f5b3c52444f"
         },
         "mode": "pinned",
         "parameters": {},
@@ -216,10 +225,10 @@
       },
       "tools": {
         "component": {
-          "digest": "sha256:5f578704858b79f4e9c60239355cb3341083f58e92e997fe2ac966584b2c00a0",
-          "id": "cloud-agent/native/tools",
           "kind": "component",
-          "version": "1.0.0"
+          "id": "cloud-agent/native/tools",
+          "version": "1.0.0",
+          "digest": "sha256:5f578704858b79f4e9c60239355cb3341083f58e92e997fe2ac966584b2c00a0"
         },
         "mode": "pinned",
         "parameters": {},
@@ -227,10 +236,10 @@
       },
       "transport": {
         "component": {
-          "digest": "sha256:d1c52c7007be3714bf4a6c35062b4827ddaa46db8ae5a02f809654f68aef54f4",
-          "id": "cloud-agent/native/transport",
           "kind": "component",
-          "version": "1.0.0"
+          "id": "cloud-agent/native/transport",
+          "version": "1.0.0",
+          "digest": "sha256:d1c52c7007be3714bf4a6c35062b4827ddaa46db8ae5a02f809654f68aef54f4"
         },
         "mode": "pinned",
         "parameters": {},
@@ -238,10 +247,10 @@
       },
       "triggers": {
         "component": {
-          "digest": "sha256:4d8b8e2585c073f65d8d0ed00c9e845ad62eeea09fbe708741b0eacae6dbd3d1",
-          "id": "cloud-agent/native/triggers",
           "kind": "component",
-          "version": "1.0.0"
+          "id": "cloud-agent/native/triggers",
+          "version": "1.0.0",
+          "digest": "sha256:4d8b8e2585c073f65d8d0ed00c9e845ad62eeea09fbe708741b0eacae6dbd3d1"
         },
         "mode": "pinned",
         "parameters": {},
@@ -249,10 +258,10 @@
       },
       "verification": {
         "component": {
-          "digest": "sha256:18e4d227c4f3e9d236a3e119b5ed07230343d91d42bc13f514de02c6b2efe04d",
-          "id": "cloud-agent/native/verification",
           "kind": "component",
-          "version": "1.0.0"
+          "id": "cloud-agent/native/verification",
+          "version": "1.0.0",
+          "digest": "sha256:18e4d227c4f3e9d236a3e119b5ed07230343d91d42bc13f514de02c6b2efe04d"
         },
         "mode": "pinned",
         "parameters": {},
@@ -278,130 +287,136 @@
         "version": "1.0.0"
       },
       {
+        "kind": "budget-profile",
+        "id": "budget/example",
+        "version": "1.0.0",
+        "digest": "sha256:5eeba34dab48aa649f0a30e31ced2c3df41eb55059ab1588f77c40a51d135659"
+      },
+      {
         "digest": "sha256:1b9d0df1fc46ba6fe42ba0c8e715dd4278f1ed0baad791d7c29c6254afa2c189",
         "id": "evidence/declared-source",
         "kind": "build-evidence",
         "version": "1.0.0"
       },
       {
-        "digest": "sha256:8dda0ba288309092a56cb7afc82b250e81e7ec3c56255e85d91ba9402ec75ea7",
+        "kind": "component",
         "id": "cloud-agent/native/addons",
-        "kind": "component",
-        "version": "1.0.0"
+        "version": "1.0.0",
+        "digest": "sha256:8dda0ba288309092a56cb7afc82b250e81e7ec3c56255e85d91ba9402ec75ea7"
       },
       {
-        "digest": "sha256:367c08c957e3e7777b26f51a3a0b0beca5e0c170c6ebc51f95ec300d2d1fe40b",
+        "kind": "component",
         "id": "cloud-agent/native/budget",
-        "kind": "component",
-        "version": "1.0.0"
+        "version": "1.0.0",
+        "digest": "sha256:8d4a2c313704499c7d6d444754426931c44d83f6e384dcf36121bbd446a8cc10"
       },
       {
-        "digest": "sha256:8fe3a00b99c0e001897ee266285bfcf22d0099b6778d3936a23e13ca7ea2b744",
+        "kind": "component",
         "id": "cloud-agent/native/content",
-        "kind": "component",
-        "version": "1.0.0"
+        "version": "1.0.0",
+        "digest": "sha256:8fe3a00b99c0e001897ee266285bfcf22d0099b6778d3936a23e13ca7ea2b744"
       },
       {
-        "digest": "sha256:78947a2c5e75dac73d94da9f556609a72a9963e619ba8da64934713ea2db55fe",
+        "kind": "component",
         "id": "cloud-agent/native/context",
-        "kind": "component",
-        "version": "1.0.0"
+        "version": "1.0.0",
+        "digest": "sha256:78947a2c5e75dac73d94da9f556609a72a9963e619ba8da64934713ea2db55fe"
       },
       {
-        "digest": "sha256:e9f0c031d3fdd533cc1a3eaf152eba620c5d604487ae99782ed52904b4bfb56b",
+        "kind": "component",
         "id": "cloud-agent/native/engine",
-        "kind": "component",
-        "version": "1.0.0"
+        "version": "1.0.0",
+        "digest": "sha256:e9f0c031d3fdd533cc1a3eaf152eba620c5d604487ae99782ed52904b4bfb56b"
       },
       {
-        "digest": "sha256:a0d994cacb1d988e25c889a83b7dea307b948f905a2a836241ced9e87423d9ab",
+        "kind": "component",
         "id": "cloud-agent/native/execution",
-        "kind": "component",
-        "version": "1.0.0"
+        "version": "1.0.0",
+        "digest": "sha256:a0d994cacb1d988e25c889a83b7dea307b948f905a2a836241ced9e87423d9ab"
       },
       {
-        "digest": "sha256:dcd04923c138f739acac280db193bf51aace56ec5c79461e2664dc631497ef9e",
+        "kind": "component",
         "id": "cloud-agent/native/frontend",
-        "kind": "component",
-        "version": "1.0.0"
+        "version": "1.0.0",
+        "digest": "sha256:dcd04923c138f739acac280db193bf51aace56ec5c79461e2664dc631497ef9e"
       },
       {
-        "digest": "sha256:3fd895d437e70c20be011bc12819f74698364bd08d99be563d3eb25e9a2316eb",
+        "kind": "component",
         "id": "cloud-agent/native/instructions",
-        "kind": "component",
-        "version": "1.0.0"
+        "version": "1.0.0",
+        "digest": "sha256:29341502d05d2a374f499b27e9703add21d92226f4baf4c83a8194b0ec0f13fb"
       },
       {
-        "digest": "sha256:da2555a3632d6e2a3f6e66aa8423a57c9d9b1417280674f4f38245d1f13e6cb2",
+        "kind": "component",
         "id": "cloud-agent/native/lifecycle",
-        "kind": "component",
-        "version": "1.0.0"
+        "version": "1.0.0",
+        "digest": "sha256:da2555a3632d6e2a3f6e66aa8423a57c9d9b1417280674f4f38245d1f13e6cb2"
       },
       {
-        "digest": "sha256:e4bcb5ec54ef1845f8a205372c56789c9ae2043a2b24ed2275f6eb26ece07e9e",
+        "kind": "component",
         "id": "cloud-agent/native/memory",
-        "kind": "component",
-        "version": "1.0.0"
+        "version": "1.0.0",
+        "digest": "sha256:e4bcb5ec54ef1845f8a205372c56789c9ae2043a2b24ed2275f6eb26ece07e9e"
       },
       {
-        "digest": "sha256:33a0106be7b8481c827a3eec94ca3fb8117e502093a30e53144c4cdbd4f651d1",
+        "kind": "component",
         "id": "cloud-agent/native/model",
-        "kind": "component",
-        "version": "1.0.0"
+        "version": "1.0.0",
+        "digest": "sha256:658dd8b220a9f84b453bc69a38c142bd57db22f0d14185c582a5c88592b0adc3"
       },
       {
-        "digest": "sha256:f91d53de20582a37a7626ab8d01ce2f75a1ba7994958c01d6be5a796e7414039",
+        "kind": "component",
         "id": "cloud-agent/native/native",
-        "kind": "component",
-        "version": "1.0.0"
+        "version": "1.0.0",
+        "digest": "sha256:f91d53de20582a37a7626ab8d01ce2f75a1ba7994958c01d6be5a796e7414039"
       },
       {
-        "digest": "sha256:61bb0c9a5850fecaafba846057e7dce458ab843a2c3a35e86f44adf5aacfa1f2",
+        "kind": "component",
         "id": "cloud-agent/native/operations",
-        "kind": "component",
-        "version": "1.0.0"
+        "version": "1.0.0",
+        "digest": "sha256:61bb0c9a5850fecaafba846057e7dce458ab843a2c3a35e86f44adf5aacfa1f2"
       },
       {
-        "digest": "sha256:5b787796d9d3ecd03675fb2f291fd5151cd12211f60757d51b9feb14c32dea23",
+        "kind": "component",
         "id": "cloud-agent/native/policy",
-        "kind": "component",
-        "version": "1.0.0"
+        "version": "1.0.0",
+        "digest": "sha256:5b787796d9d3ecd03675fb2f291fd5151cd12211f60757d51b9feb14c32dea23"
       },
       {
-        "digest": "sha256:de9912c4a584fa92f5172be7927fe2c3c6a0d9862b313575a81695e0796540c0",
+        "kind": "component",
         "id": "cloud-agent/native/sandbox",
-        "kind": "component",
-        "version": "1.0.0"
+        "version": "1.0.0",
+        "digest": "sha256:de9912c4a584fa92f5172be7927fe2c3c6a0d9862b313575a81695e0796540c0"
       },
       {
-        "digest": "sha256:427fcdf73ceb5b6177591893c0107043bd1c4d906d6d856340967f5b3c52444f",
+        "kind": "component",
         "id": "cloud-agent/native/storage",
-        "kind": "component",
-        "version": "1.0.0"
+        "version": "1.0.0",
+        "digest": "sha256:427fcdf73ceb5b6177591893c0107043bd1c4d906d6d856340967f5b3c52444f"
       },
       {
-        "digest": "sha256:5f578704858b79f4e9c60239355cb3341083f58e92e997fe2ac966584b2c00a0",
+        "kind": "component",
         "id": "cloud-agent/native/tools",
-        "kind": "component",
-        "version": "1.0.0"
+        "version": "1.0.0",
+        "digest": "sha256:5f578704858b79f4e9c60239355cb3341083f58e92e997fe2ac966584b2c00a0"
       },
       {
-        "digest": "sha256:d1c52c7007be3714bf4a6c35062b4827ddaa46db8ae5a02f809654f68aef54f4",
+        "kind": "component",
         "id": "cloud-agent/native/transport",
-        "kind": "component",
-        "version": "1.0.0"
+        "version": "1.0.0",
+        "digest": "sha256:d1c52c7007be3714bf4a6c35062b4827ddaa46db8ae5a02f809654f68aef54f4"
       },
       {
-        "digest": "sha256:4d8b8e2585c073f65d8d0ed00c9e845ad62eeea09fbe708741b0eacae6dbd3d1",
+        "kind": "component",
         "id": "cloud-agent/native/triggers",
-        "kind": "component",
-        "version": "1.0.0"
+        "version": "1.0.0",
+        "digest": "sha256:4d8b8e2585c073f65d8d0ed00c9e845ad62eeea09fbe708741b0eacae6dbd3d1"
       },
       {
-        "digest": "sha256:18e4d227c4f3e9d236a3e119b5ed07230343d91d42bc13f514de02c6b2efe04d",
-        "id": "cloud-agent/native/verification",
         "kind": "component",
-        "version": "1.0.0"
+        "id": "cloud-agent/native/verification",
+        "version": "1.0.0",
+        "digest": "sha256:18e4d227c4f3e9d236a3e119b5ed07230343d91d42bc13f514de02c6b2efe04d"
       },
       {
         "digest": "sha256:b0568a6cec77a668e7557f7d207f5d500014e2899b1eec1749f142198f12614a",

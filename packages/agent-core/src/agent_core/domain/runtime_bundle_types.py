@@ -25,7 +25,13 @@ Version = Annotated[
     ),
 ]
 AssetKind = Literal[
-    "image", "baseline-config", "component", "provider-profile", "output-schema", "build-evidence"
+    "image",
+    "baseline-config",
+    "component",
+    "provider-profile",
+    "budget-profile",
+    "output-schema",
+    "build-evidence",
 ]
 
 
@@ -117,6 +123,21 @@ class InstructionsParameters(BundleValue):
         return self
 
 
+class BudgetParameters(BundleValue):
+    """Root budget reservation within operator-approved ceilings."""
+
+    budget_profile: ArtifactPin
+    model_tokens: Annotated[int, Field(ge=0)]
+    tool_calls: Annotated[int, Field(ge=0)]
+    runtime_seconds: Annotated[int, Field(ge=0)]
+
+    @model_validator(mode="after")
+    def profile_kind(self) -> Self:
+        if self.budget_profile.kind != "budget-profile":
+            raise ValueError("budget profile pin required")
+        return self
+
+
 class EmptyParameters(BundleValue):
     """Pinned domains cannot smuggle configuration through a mutable mapping."""
 
@@ -140,6 +161,18 @@ class InstructionsDomain(BundleValue):
     parameters: InstructionsParameters
 
 
+class ConfigurableBudgetDomain(BundleValue):
+    component: ArtifactPin
+    mode: Literal["configurable"]
+    parameters: BudgetParameters
+
+
+# budget 保持 pinned 兼容（既有 envelope 合法），可配形态经判别联合引入。
+BudgetDomain = Annotated[
+    PinnedDomain | ConfigurableBudgetDomain, Field(discriminator="mode")
+]
+
+
 class RuntimeDomains(BundleValue):
     engine: PinnedDomain
     execution: PinnedDomain
@@ -158,6 +191,6 @@ class RuntimeDomains(BundleValue):
     transport: PinnedDomain
     frontend: PinnedDomain
     triggers: PinnedDomain
-    budget: PinnedDomain
+    budget: BudgetDomain
     verification: PinnedDomain
     operations: PinnedDomain

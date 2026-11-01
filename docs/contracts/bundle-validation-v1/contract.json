@@ -11,6 +11,7 @@
               "baseline-config",
               "component",
               "provider-profile",
+              "budget-profile",
               "output-schema",
               "build-evidence"
             ],
@@ -40,6 +41,38 @@
           "digest"
         ],
         "title": "ArtifactPin",
+        "type": "object"
+      },
+      "BudgetParameters": {
+        "additionalProperties": false,
+        "description": "Root budget reservation within operator-approved ceilings.",
+        "properties": {
+          "budget_profile": {
+            "$ref": "#/$defs/ArtifactPin"
+          },
+          "model_tokens": {
+            "minimum": 0,
+            "title": "Model Tokens",
+            "type": "integer"
+          },
+          "tool_calls": {
+            "minimum": 0,
+            "title": "Tool Calls",
+            "type": "integer"
+          },
+          "runtime_seconds": {
+            "minimum": 0,
+            "title": "Runtime Seconds",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "budget_profile",
+          "model_tokens",
+          "tool_calls",
+          "runtime_seconds"
+        ],
+        "title": "BudgetParameters",
         "type": "object"
       },
       "BundleScope": {
@@ -91,6 +124,29 @@
           "deployment_id"
         ],
         "title": "BundleScope",
+        "type": "object"
+      },
+      "ConfigurableBudgetDomain": {
+        "additionalProperties": false,
+        "properties": {
+          "component": {
+            "$ref": "#/$defs/ArtifactPin"
+          },
+          "mode": {
+            "const": "configurable",
+            "title": "Mode",
+            "type": "string"
+          },
+          "parameters": {
+            "$ref": "#/$defs/BudgetParameters"
+          }
+        },
+        "required": [
+          "component",
+          "mode",
+          "parameters"
+        ],
+        "title": "ConfigurableBudgetDomain",
         "type": "object"
       },
       "EmptyParameters": {
@@ -406,7 +462,22 @@
             "$ref": "#/$defs/PinnedDomain"
           },
           "budget": {
-            "$ref": "#/$defs/PinnedDomain"
+            "discriminator": {
+              "mapping": {
+                "configurable": "#/$defs/ConfigurableBudgetDomain",
+                "pinned": "#/$defs/PinnedDomain"
+              },
+              "propertyName": "mode"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/$defs/PinnedDomain"
+              },
+              {
+                "$ref": "#/$defs/ConfigurableBudgetDomain"
+              }
+            ],
+            "title": "Budget"
           },
           "verification": {
             "$ref": "#/$defs/PinnedDomain"
@@ -489,19 +560,87 @@
         "domain": "budget",
         "id": "cloud-agent/native/budget",
         "version": "1.0.0",
-        "mode": "pinned",
-        "reason": "requires-runtime-assembly",
+        "mode": "configurable",
+        "reason": "validation-only",
         "parameters_schema": {
+          "$defs": {
+            "ArtifactPin": {
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "enum": [
+                    "image",
+                    "baseline-config",
+                    "component",
+                    "provider-profile",
+                    "budget-profile",
+                    "output-schema",
+                    "build-evidence"
+                  ],
+                  "title": "Kind",
+                  "type": "string"
+                },
+                "id": {
+                  "maxLength": 256,
+                  "minLength": 1,
+                  "title": "Id",
+                  "type": "string"
+                },
+                "version": {
+                  "maxLength": 64,
+                  "title": "Version",
+                  "type": "string"
+                },
+                "digest": {
+                  "title": "Digest",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "kind",
+                "id",
+                "version",
+                "digest"
+              ],
+              "title": "ArtifactPin",
+              "type": "object"
+            }
+          },
           "additionalProperties": false,
-          "description": "Pinned domains cannot smuggle configuration through a mutable mapping.",
-          "properties": {},
-          "title": "EmptyParameters",
+          "description": "Root budget reservation within operator-approved ceilings.",
+          "properties": {
+            "budget_profile": {
+              "$ref": "#/$defs/ArtifactPin"
+            },
+            "model_tokens": {
+              "minimum": 0,
+              "title": "Model Tokens",
+              "type": "integer"
+            },
+            "tool_calls": {
+              "minimum": 0,
+              "title": "Tool Calls",
+              "type": "integer"
+            },
+            "runtime_seconds": {
+              "minimum": 0,
+              "title": "Runtime Seconds",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "budget_profile",
+            "model_tokens",
+            "tool_calls",
+            "runtime_seconds"
+          ],
+          "title": "BudgetParameters",
           "type": "object"
         },
         "source_refs": [
           "packages/agent-core/src/agent_core/domain/coverage_model_budget.py"
         ],
-        "digest": "sha256:367c08c957e3e7777b26f51a3a0b0beca5e0c170c6ebc51f95ec300d2d1fe40b"
+        "digest": "sha256:8d4a2c313704499c7d6d444754426931c44d83f6e384dcf36121bbd446a8cc10"
       },
       {
         "domain": "content",
@@ -610,6 +749,7 @@
                     "baseline-config",
                     "component",
                     "provider-profile",
+                    "budget-profile",
                     "output-schema",
                     "build-evidence"
                   ],
@@ -675,7 +815,7 @@
         "source_refs": [
           "packages/agent-context/src/agent_context/prompt_layout.py"
         ],
-        "digest": "sha256:3fd895d437e70c20be011bc12819f74698364bd08d99be563d3eb25e9a2316eb"
+        "digest": "sha256:29341502d05d2a374f499b27e9703add21d92226f4baf4c83a8194b0ec0f13fb"
       },
       {
         "domain": "lifecycle",
@@ -730,6 +870,7 @@
                     "baseline-config",
                     "component",
                     "provider-profile",
+                    "budget-profile",
                     "output-schema",
                     "build-evidence"
                   ],
@@ -822,7 +963,7 @@
         "source_refs": [
           "packages/agent-core/src/agent_core/domain/modeling.py"
         ],
-        "digest": "sha256:33a0106be7b8481c827a3eec94ca3fb8117e502093a30e53144c4cdbd4f651d1"
+        "digest": "sha256:658dd8b220a9f84b453bc69a38c142bd57db22f0d14185c582a5c88592b0adc3"
       },
       {
         "domain": "native",
@@ -988,7 +1129,7 @@
       }
     ]
   },
-  "catalogDigest": "sha256:d29c5b6fe97cb064b1e45a60e9d9554a8909c1aa9bb7e97fea1d8b4dc4198eb6",
+  "catalogDigest": "sha256:5141e64c4633479c7007f6aada39f3113ffed0016d9920f3fd83b052bf3d1219",
   "nativeFormats": {
     "definition": [
       "agent-definition/1",
@@ -1044,5 +1185,5 @@
     "persistence": "unsupported",
     "execution": "unsupported"
   },
-  "contractDigest": "sha256:4350a319ac359fa841cea0efb870e40ceb3771aba1c25d4846d3e7ff9e4c4275"
+  "contractDigest": "sha256:17b3ebfcee574f12cc2338e573b51707c44386b15e20a75360e93cdab82787a4"
 }
