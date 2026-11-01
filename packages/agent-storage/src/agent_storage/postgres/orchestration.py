@@ -290,3 +290,65 @@ class PostgresOrchestrationStore:
                     edge.to_node,
                 ),
             )
+
+    def read_run_status(self, run_ref: str) -> str:
+        with self._database.connect() as connection:
+            row = connection.execute(
+                """
+                SELECT status FROM orchestration_runs
+                WHERE deployment_namespace = %s AND run_id = %s
+                """,
+                (self.deployment_namespace, run_ref),
+            ).fetchone()
+        if row is None:
+            raise OrchestrationStorageError(f"unknown orchestration run {run_ref}")
+        return str(row["status"])
+
+    # CA-P7-02B: node-status surface the runtime loop rebuilds scheduling from.
+    def read_node_statuses(self, run_ref: str) -> dict[str, str]:
+        with self._database.connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT node_key, status
+                FROM orchestration_nodes
+                WHERE deployment_namespace = %s
+                  AND run_id = %s
+                  AND plan_revision = (
+                      SELECT current_plan_revision
+                      FROM orchestration_runs
+                      WHERE deployment_namespace = %s AND run_id = %s
+                  )
+                """,
+                (self.deployment_namespace, run_ref, self.deployment_namespace, run_ref),
+            ).fetchall()
+        return {row["node_key"]: row["status"] for row in rows}
+
+    def transition_node(
+        self, run_ref: str, node_key: str, target_status: str
+    ) -> None:
+        with self._database.connect() as connection:
+            updated = connection.execute(
+                """
+                UPDATE orchestration_nodes
+                SET status = %s, updated_at = transaction_timestamp()
+                WHERE deployment_namespace = %s AND run_id = %s AND node_key = %s
+                    AND plan_revision = (
+                        SELECT current_plan_revision
+                        FROM orchestration_runs
+                        WHERE deployment_namespace = %s AND run_id = %s
+                    )
+                RETURNING node_key
+                """,
+                (
+                    target_status,
+                    self.deployment_namespace,
+                    run_ref,
+                    node_key,
+                    self.deployment_namespace,
+                    run_ref,
+                ),
+            ).fetchone()
+        if updated is None:
+            raise OrchestrationStorageError(
+                f"node transition failed: {run_ref}/{node_key} not found"
+            )

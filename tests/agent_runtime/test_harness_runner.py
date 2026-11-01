@@ -393,6 +393,8 @@ def test_run_local_harness_advertises_its_executable_tools(tmp_path) -> None:
         "files.list",
         "files.read",
         "files.search",
+        "orchestration.plan.propose",
+        "orchestration.task.request",
         "patch.apply",
         "web.fetch",
     )
@@ -600,6 +602,8 @@ def test_local_tool_gateway_exposes_coding_profile_tools(tmp_path) -> None:
         "files.read",
         "files.search",
         "git.status",
+        "orchestration.plan.propose",
+        "orchestration.task.request",
         "patch.apply",
         "tests.run",
         "web.fetch",

@@ -94,3 +94,36 @@ def _gate_view(gate: CompletionGateReceipt | None) -> dict[str, object] | None:
         "passed": gate.passed,
         "reasonCode": gate.reason_code,
     }
+
+
+def orchestration_projection_view(
+    store: object,
+    run_ref: str,
+) -> dict[str, object] | None:
+    """CA-P7-02C: assemble OrchestrationStateInput from the store and project.
+
+    `store` is any object with the OrchestrationStorePort surface plus a
+    run-status read; returns the plan-14.2 state object or None when the run
+    is unknown. The caller decides where the view lands (checkpoint state,
+    task view, stream metadata).
+    """
+
+    snapshot = store.get_snapshot(run_ref)  # type: ignore[attr-defined]
+    if snapshot is None:
+        return None
+    statuses = store.read_node_statuses(run_ref)  # type: ignore[attr-defined]
+    run_status = getattr(store, "read_run_status", None)
+    status_value = (
+        run_status(run_ref) if run_status is not None else "validated"
+    )
+    from agent_orchestration.domain.orchestration import OrchestrationRunStatus
+
+    state = OrchestrationStateInput(
+        snapshot=snapshot,
+        run_status=OrchestrationRunStatus(status_value),
+        node_facts={
+            node_key: AgUiNodeFacts(status=status)
+            for node_key, status in statuses.items()
+        },
+    )
+    return project_orchestration_state(state)

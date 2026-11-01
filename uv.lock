@@ -193,10 +193,14 @@ version = "0.1.0"
 source = { editable = "packages/agent-tools" }
 dependencies = [
     { name = "agent-core" },
+    { name = "agent-orchestration" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "agent-core", editable = "packages/agent-core" }]
+requires-dist = [
+    { name = "agent-core", editable = "packages/agent-core" },
+    { name = "agent-orchestration", editable = "packages/agent-orchestration" },
+]
 
 [[package]]
 name = "aio-pika"
