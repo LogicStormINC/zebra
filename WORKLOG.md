@@ -1,3 +1,9 @@
+## 2026-11-01 z2 合入 cloud-agent
+
+ff 079ba554→6692d633 已推 origin（纯快进）。事故记录：docs 提交一度误落主 checkout 的
+force-stop 分支（shell cwd 重置），已用 reset --soft + 定向 checkout 撤销——用户未提交改动
+零损伤；教训=跨 worktree 操作后每条 git 命令前确认 pwd。
+
 ## 2026-11-01 CA-P7-01A-z2 根预算接线
 
 勘察关键事实：validate_plan 无生产调用方——"执行接线"的完整意义尚不存在。诚实切片：提取桥

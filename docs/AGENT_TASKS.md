@@ -1,4 +1,5 @@
 # CA-P7-01A-z2 — 装配 budget 域接线根预算（Done / 已推送，勘察修正范围）
+- 合入 cloud-agent：2026-11-01 用户"继续"授权，ff 6692d633 已推 origin。
 - Done; 2026-11-01 分支 codex/ca-p7-01a-z2-budget-wiring tip 6d7362f7 已推 origin，worktree ~/Documents/Codex/2026-11-01/ca-p7-01a-z2（基 cloud-agent 079ba554；用 worktree 模式解除"force-stop 线落定"前置——零路径冲突）。**勘察修正**：validate_plan/PlanValidationContext 当前无生产调用方（仅测试）——预算执行链是"域已建好、未被调度调用"状态；本卡诚实交付装配提取桥+触顶行为证明，不虚构执行已接通。交付：orchestration root_budget_from_parameters（负值钳零）+ worker task_root_budget（可配域→真实根预算/pinned/legacy→保守零默认）+ 触顶行为测试（根 150<节点合计 200→budget_beyond_parent 拒付；零根预算拒一切支出）。验证：worker+orchestration+bundle_definition 1425/746 + make check 全绿。**完整执行接线（validate_plan 接入编排调度）需先设计生产调用方，另立后续卡（CA-P7-02 候选）。**
 
 # CA-P7-01A-z1 — zebra budget 可配化（schema/批准/校验）（Done / 已推送）
