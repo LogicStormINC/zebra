@@ -1,3 +1,14 @@
+## 2026-11-01 CA-BRIDGE-01A 任务观察端点
+
+跨仓纠偏记录：用户明确 cloud-agent 才是 zebra 真实主线（main 停在 desktop/react 时代，落后
+399+ 提交）——跨仓基线一律从 cloud-agent 拉。实施选 worktree（~/Documents/Codex/2026-11-01/
+ca-bridge-01a），常驻 codex/cloud-force-stop-20261030 脏工作树零接触。三个实现要点：①端点挂在
+既有 rthm_ 管理传输族（该族禁 query——limit 固定 25 不做参数，分页留给后续片）；②种子测试踩
+agent_tasks_active_segment_owner DEFERRABLE 约束——种子须同事务先 agent_tasks 后
+execution_segments；③host 管理动作是固定词表（新增 tasks.read 属 additive，config 测试已覆盖）。
+合同双锚定：OpenAPI 文档 additionalProperties=false 且无 title 字段 + 测试断言 SECRET_TITLE
+不在响应 JSON。
+
 ## CA-P5-INTEGRATE actual delivery receipt
 
 Source merge afb61121 published and remote verified;36 local/10 origin ancestor refs

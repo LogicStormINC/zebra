@@ -1,3 +1,11 @@
+# CA-BRIDGE-01A — 管理面任务观察端点（task-observations）
+
+- Status: Review; implemented2026-11-01 same session; owner Luke Ding，执行Codex；base cloud-agent 29ecde64；worktree ca-bridge-01a（常驻 force-stop 工作树未触碰）。跨仓设计稿见 overdoze docs/superpowers/specs/2026-11-01-task-observations-bridge-design.md；overdoze 侧消费卡 CA-BRIDGE-01B/OD-CO-19 已在该仓登记。
+- Depends: 无（overdoze OD-CO-18 改卡确立的 native 代理路径的第一片）。
+- Owned paths: apps/api/src/zebra_agent_api/{task_observation_management.py（新增）,host_registry_config.py,host_registry_management.py}；tests/api/test_task_observation_management.py（新增）；docs/contracts/task-observation-management-v1.openapi.json（新增）；docs/evidence/ca-bridge-01a/；docs/{AGENT_TASKS,README}.md；PROGRESS.md、WORKLOG.md。
+- Invariants: 只读端点（无任何写路径）；namespace 取部署配置不取请求参数，存储层强制隔离；标题等用户内容、事件正文、凭据线索不出域（OpenAPI additionalProperties=false + 测试双锚定）；管理传输族既有约束不变（rthm_ 令牌、禁 query/cookie、no-store、容量闸）。
+- Verification: 新测试 4/4（隔离 docker PG 真实迁移 schema）；tests/api 全量 1744 passed/192 skipped 零回归；host_connector+config 103 passed；make check 全绿（ruff/mypy 1495 文件）。[回执](evidence/ca-bridge-01a/validation.json)。
+
 # CA-BASELINE-GATE-01 — 原生基线门禁修复
 
 - Status: Done；2026-11-01 条件完整验收后已快进至本地cloud-agent；Owner Luke Ding，执行Codex。

@@ -126,6 +126,9 @@ def register_management_routes(
     from zebra_agent_api.frontend_profile_management import register_frontend_profile_management
 
     register_frontend_profile_management(app, host_settings, current)
+    from zebra_agent_api.task_observation_management import register_task_observation_management
+
+    register_task_observation_management(app, host_settings, current)
 
 
 def deployment_namespace(api: object) -> str | None:

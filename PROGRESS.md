@@ -1,3 +1,13 @@
+# CA-BRIDGE-01A — 管理面任务观察端点（2026-11-01）
+
+overdoze 控制台桥接第一片（跨仓设计稿 task-observations-bridge-design）：新增只读
+GET /management/v1/task-observations——rthm_ 管理传输族 + tasks.read 动作（词表 additive）、
+namespace 取部署配置且存储层强制隔离、固定观察窗 25（updated_at DESC）、最小事实集
+{taskId,status,activeSegmentId,currentSequence}（用户内容零出域，OpenAPI+测试双锚定）。
+复用 PostgresAgentTaskStore.list_tasks 只读原语，无新写路径。验证：新测试 4/4、tests/api
+全量 1744/0、make check 全绿。分支 codex/ca-bridge-01a-task-observations（worktree 实施，
+基 cloud-agent 29ecde64；常驻 force-stop 工作树未触碰）。
+
 ## 2026-11-01 — CA-BASELINE-GATE-02 / 完整组合门禁通过并集成
 
 原生01/HA02与canonical ERP02（源实现439fb72、发布92b308b、精确archive）完成组合验收，代码2b908448已快进本地cloud-agent；最终文档/证据提交随主线推送。
