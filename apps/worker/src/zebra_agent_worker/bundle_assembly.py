@@ -22,6 +22,8 @@ from zebra_agent_worker.workspace_resolution import apply_workspace_resolver
 
 if TYPE_CHECKING:
     from agent_runtime.workspace_runtime_resolver import WorkspaceRuntimeResolver
+from agent_orchestration.domain.orchestration_budget import BudgetReservation
+
 from zebra_agent_worker.task_recovery import RecoveredTask
 
 
@@ -35,6 +37,30 @@ def snapshot_assembly(snapshot: AgentDefinitionSnapshot | None) -> RuntimeAssemb
 
 def task_assembly(task: RecoveredTask) -> RuntimeAssembly | None:
     return snapshot_assembly(task.definition_snapshot)
+
+
+def task_root_budget(task: RecoveredTask) -> BudgetReservation:
+    """CA-P7-01A-z2: assembly budget domain -> root accounting reservation.
+
+    Pinned/absent budget keeps the conservative zero default: without an
+    explicit approved reservation nothing may be spent by accounting. The
+    assembly itself was already ceiling-checked at validation time.
+    """
+    from agent_core.domain.runtime_bundle_types import ConfigurableBudgetDomain
+    from agent_orchestration.application.orchestration_validation import (
+        root_budget_from_parameters,
+    )
+
+    assembly = task_assembly(task)
+    if assembly is None:
+        return root_budget_from_parameters(0, 0, 0)
+    budget = assembly.bundle.manifest.domains.budget
+    if not isinstance(budget, ConfigurableBudgetDomain):
+        return root_budget_from_parameters(0, 0, 0)
+    parameters = budget.parameters
+    return root_budget_from_parameters(
+        parameters.model_tokens, parameters.tool_calls, parameters.runtime_seconds
+    )
 
 
 def require_snapshot_compatibility(

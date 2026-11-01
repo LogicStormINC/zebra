@@ -24,6 +24,22 @@ from agent_orchestration.domain.orchestration import (
 )
 from agent_orchestration.domain.orchestration_budget import BudgetReservation
 
+
+def root_budget_from_parameters(
+    model_tokens: int, tool_calls: int, runtime_seconds: int
+) -> BudgetReservation:
+    """Root reservation derived from a configurable Bundle budget domain.
+
+    Pinned/absent budget domains keep the conservative zero default: without an
+    explicit approved reservation nothing may be spent by accounting.
+    """
+    return BudgetReservation(
+        model_tokens=max(0, model_tokens),
+        tool_calls=max(0, tool_calls),
+        runtime_seconds=max(0, runtime_seconds),
+    )
+
+
 DEFAULT_MAX_DEPTH = 4
 DEFAULT_MAX_PARALLELISM = 2
 

@@ -399,3 +399,35 @@ def test_unversioned_local_extensions_cannot_hide_behind_matching_baseline(
                 sid, worker_id="unversioned-extension-worker"
             )
     assert SQLiteProjectionStore(database).get_session(sid).status is SessionStatus.READY
+
+
+def test_task_root_budget_follows_configurable_bundle_domain(tmp_path, monkeypatch):
+    """CA-P7-01A-z2: assembly budget 域 → 根预算（可配=真实值；pinned/legacy=零默认）。"""
+    from agent_orchestration.domain.orchestration_budget import BudgetReservation
+    from zebra_agent_worker.bundle_assembly import task_root_budget
+
+    assembly, _configured, _catalog = write_catalog(tmp_path, settings())
+    scope = assembly.bundle.manifest.scope
+    snapshot = snapshot_from_version(
+        version=bundle_version(
+            runtime_assembly=assembly,
+            authority_issuer=scope.authority_issuer,
+            namespace_id=scope.namespace_id,
+        ),
+        resolved_at=NOW,
+    )
+    bundled = SimpleNamespace(
+        definition_snapshot=snapshot, coverage_admission=None, model_invocation_policy=None
+    )
+    root = task_root_budget(bundled)
+    assert isinstance(root, BudgetReservation)
+    # 可配 budget（example envelope 默认 250k/120/900）经装配链提取为根预算
+    budget = assembly.bundle.manifest.domains.budget
+    assert root.model_tokens == budget.parameters.model_tokens
+    assert root.tool_calls == budget.parameters.tool_calls
+    assert root.runtime_seconds == budget.parameters.runtime_seconds
+
+    legacy = SimpleNamespace(definition_snapshot=None)
+    assert task_root_budget(legacy) == BudgetReservation(
+        model_tokens=0, tool_calls=0, runtime_seconds=0
+    )
