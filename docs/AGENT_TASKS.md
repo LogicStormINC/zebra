@@ -1,3 +1,12 @@
+# CLOUD-FIRST-REPLY-COMPARE-20261103
+- Status: Done (read-only diagnosis and plan only; implementation not started).
+- Ready then claimed; owner Luke Ding / Codex; branch codex/cloud-first-reply-compare-20261103.
+- Scope: read-only production ERP/Trench first-reply comparison and root-cause plan; no implementation.
+- Owned paths: docs/CLOUD_FIRST_REPLY_ROOT_CAUSE_20261103.md, docs/AGENT_TASKS.md, PROGRESS.md, WORKLOG.md.
+- Source/base cloud-agent0b92baf2; preserve dirty/unrelated worktrees and active HA resources.
+- No model/search, original Run replay, service/config/DB modification or Search/MCP restart.
+- Define separately first model, public commentary, answer body and browser display; old samples are not paired/SLO proof.
+
 # CLOUD-REPLY-ROBUSTNESS-20261103
 - Status: Done on local cloud-agent integration; fixed117 production and no-model acceptance verified.
 - Ready then claimed; Luke Ding / Codex; codex/cloud-reply-robustness-20261103; target cloud-agent.

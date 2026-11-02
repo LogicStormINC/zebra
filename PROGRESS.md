@@ -8879,3 +8879,12 @@ and10 API cases;57 original rejected intent recovered without replay. Proof-impo
 median3.455→1.379s; saved inventory79,060→7,964 visible bytes. No model/search,
 no Search/MCP restart; original ledger/events/volumes retained. Not a whole-Run
 latency or production HA/SLO claim. See docs/CLOUD_REPLY_ROBUSTNESS_20261103.md.
+
+## 2026-11-03 — CLOUD-FIRST-REPLY-COMPARE-20261103（只读方案）
+
+最新ERP5uktl70svi进入模型事件13.078s，首轮Provider2.321s，首公开commentary15.625s；
+两次独立proof合计5.264s，物理格式化/挂载只有几十ms。Trench最近高思考Flash样本首模型6.453s；
+两者额外Host probe/资源组合不同，不是同题配对。已部署应用schema没有穿透按profile revision缓存的
+旧Native清单，实际schema hash仍与旧样本一致；新Run417后因authority unavailable暂停，未完成答案。
+方案先贯通清单发布及细分诊断，再通用按需物理工作区，最后按实测考虑常驻proof/洁净执行器。
+本轮无模型/搜索/重跑/生产修改或部署；详见docs/CLOUD_FIRST_REPLY_ROOT_CAUSE_20261103.md。
