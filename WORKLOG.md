@@ -1,3 +1,14 @@
+## 2026-11-02 CLOUD-EXECUTOR-STARTUP local integration verification
+
+Merged289a2ce2 preserves CA-CONCURRENCY-LIFECYCLE; only three shared documentation
+conflicts, resolved retaining both complete task records. Combined no-model53 passed/
+2 conditional skips. Full make check green (4113 sizes, Ruff, mypy1530, Eval30 and
+progress safety). Consumer parity port kept existing split/frozen source boundaries;
+canonical878ed20 independently committed. Live acceptance-final.json confirms original
+model188/session52/events/ledger, eight filesystems, stable allocator and restored
+admission. QA container/network/image and owned repair script cleaned. No push/model
+or original Run replay. Historical inner trigger remains unprovable, not falsely closed.
+
 ## 2026-11-02 CLOUD-EXECUTOR-STARTUP-20261102
 
 Known execution-input failures now retain a bounded session/fence-bound private IPC receipt

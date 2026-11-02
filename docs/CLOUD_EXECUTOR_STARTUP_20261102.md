@@ -64,3 +64,11 @@ passed4107 files with zero violations. Owned temporary QA containers/network and
 runner image were reclaimed; immutable production/rollback images and original
 workspace data remain. Final live receipt confirms the same allocator PID,
 zero restarts since recovery and restored admission.
+
+Local cloud-agent merge289a2ce2 retained the concurrent cancellation/shutdown
+repair without code conflicts; both task records and progress entries preserved.
+Post-merge no-model Worker/completion/shutdown/subagent regression:53 passed,
+2 conditional skips. `UV_NO_SYNC=1 make check` passed (4113 size checks, Ruff,
+1530 mypy source files, deterministic30 evals and both progress-safety checks).
+One Python3.12 union-type Ruff correction was made only in the consumer port.
+No GitHub publication was performed in this repair.

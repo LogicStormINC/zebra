@@ -82,7 +82,7 @@ def allocator_reply(allocator, key, data, peer):
     except Exception as error:
         code = (
             "workspace_preparation_timeout"
-            if isinstance(error, (TimeoutError, subprocess.TimeoutExpired))
+            if isinstance(error, TimeoutError | subprocess.TimeoutExpired)
             else "workspace_not_allocatable"
             if str(error) == "only a fresh pending workspace can allocate"
             else "workspace_capacity_exhausted"
