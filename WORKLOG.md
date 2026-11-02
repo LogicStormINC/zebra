@@ -18319,3 +18319,18 @@ ERP candidate/browser/cutover acceptance remains a separate repository task.
 不覆盖 integrations/erpnext 同步导出，不引入 ERP 业务依赖到 Native。源与部署隔离验证、
 174模型计数不变、原Run/搜索/MCP保留，见 docs/ERP_AUTONOMOUS_ADMIN_20261102.md。
 本仓库仅跟踪该授权/兼容决策和发布证据；Native WRITE/Scope策略已有支持，无需新通用抽象。
+
+
+## 2026-11-02 ERP-NATIVE-SURFACE — accepted adapter release
+
+Native controller dispatch/returned docs/CSV export/operation metadata and safe Unknown diagnostics implemented.
+9 local scripts + existing full-capability check in isolated image, npm, Ruff F, Native35 and real signed QA4 pass.
+15 positive workflow checks across 89 gateway calls; ten original failed/prerequisite samples retained.
+Only five ERP app services updated to immutable746563c4, production backup retained, exact configuration restored.
+Actual production HTTP manifest + Native declared parsing pass; idle invoke denial preserved, no fabricated production Run.
+No model/search or original replay, Search/MCP unchanged. Existing Native Scheduler schema mismatch observed
+(before99 restarts, after104); separate runtime alignment remains necessary. See focused doc for certification limits.
+
+Read-only scheduler diagnosis: immutable Scheduler recognizes115, API and database117 match exactly.
+Registered separate Ready alignment task; did not weaken migration guard, edit ledger, restart Native
+or activate pending schedules. Owned QA resources cleaned precisely (3 containers/2 volumes/network/2 images).

@@ -1,3 +1,22 @@
+# ERP-NATIVE-SCHEDULER-ALIGN-20261102
+- Status: Ready; unassigned follow-up, not implemented by native-surface task.
+- Observed root cause: scheduler application schema115 versus API/database117; API checksum set matches.
+- Scope: align only immutable Native Scheduler runtime with the accepted API/Worker schema;
+  inspect enabled/due schedules before activation. Never rewrite migration ledger or disable schema guard.
+- Owned paths when claimed: focused deploy/native_scheduler_*.py in canonical ERP adapter;
+  docs/ERP_NATIVE_SCHEDULER_20261102.md, docs/AGENT_TASKS.md, WORKLOG.md;
+  root release docs/PROGRESS only via a separate release card. Remote Native scheduler image field only.
+- Preserve original Runs, Search/MCP and no model/search budget; no automatic pending schedule/model dispatch.
+
+# ERP-NATIVE-SURFACE-RELEASE-20261102
+- Status: Review; ERP Host deployed; docs ready for local cloud-agent integration.
+- Created Ready then claimed In Progress; owner Luke Ding / Codex.
+- Branch codex/erp-native-surface-release-20261102; target cloud-agent.
+- Owned paths docs/AGENT_TASKS.md, docs/ERP_NATIVE_SURFACE_20261102.md, PROGRESS.md, WORKLOG.md;
+  private .artifacts/erp-native-surface-20261102/.
+- Canonical ERP implements native surface completion; no ERP domain changes in Cloud core.
+- No model/search/original Run replay; isolate real workflow acceptance, preserve Search/MCP.
+
 # ERP-AUTONOMOUS-ADMIN-RELEASE-20261102
 - Follow-up: only prepared/read ingress; stopped stale candidate when concurrent address migration was detected.
 - Follow-up owned remote paths before ingress migration: only ERP block in /opt/caddy/Caddyfile and frontend ports in /opt/erpnext/zebra-agent/erpnext-override.json; preserve logical site/Grant identities and other ingress routes. User supplied the new server address 192.168.101.7.
