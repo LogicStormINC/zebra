@@ -1,3 +1,13 @@
+# ERP-CLOUD-FORCE-STOP-RELEASE-20261102
+- Created Ready then claimed In Progress before deployment work; owner Luke Ding / Codex.
+- Branch codex/erp-cloud-force-stop-release-20261102; target cloud-agent.
+- Owned paths: docs/AGENT_TASKS.md, PROGRESS.md, WORKLOG.md,
+  docs/ERP_CLOUD_FORCE_STOP_RELEASE_20261102.md; private .artifacts/erp-cloud-force-stop-20261102/.
+- Scope: consume native97463d00, complete canonical ERP adapter, isolated no-model acceptance,
+  prepare immutable release and enable managed execution/independent cleanup without touching Search/MCP.
+- Preserve unrelated dirt, original Runs, high thinking/v2 and authority/quota boundaries.
+- Status: Done; production activated after backups/no-active gate; actual no-model UI stop/reload and PG/executor proof passed; no provider/search requests.
+
 # CLOUD-FORCE-STOP-20261030
 - Status: Done (validated for local cloud-agent integration; production activation remains separate).
 - Created Ready then claimed In Progress before implementation; owner Luke Ding / Codex.

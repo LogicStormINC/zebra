@@ -1,3 +1,25 @@
+## 2026-11-02 ERP-CLOUD-FORCE-STOP-RELEASE-20261102 — activated and accepted
+
+Server reachable; actual production source remained old safetynet images on v117.
+Canonical ERP retained unpublished ordinary-cancel draft; repaired Task grant/force
+payload/progress proof, unknown intent and post-select view race. No native runtime
+source changes beyond already integrated97463d00. Built immutable source overlays on
+exact existing images, kept physical quota/Host/secret mounts and original env files.
+
+Isolated fresh no-model22 tests pass (2795.3ms, escaped child/sibling/lock/deadline
+coverage). Host backend/config checks plus npm test/build pass; real Worker --check
+294.8ms/no Run. Production pg_dump and ERP transactional backups completed; paused
+admissions, both new/legacy running0/activeleases0, replaced only API/Worker/Host, added
+independent cleanup, restored original admission flags after signed HTTP readiness.
+Final images and private evidence path are in release doc. Native model count175 stays
+unchanged. UI canary neso37nvme uses execute=false/real lease and a trusted pre-provider
+hung factory holding real locks. Actual menu POST once; progress twice; private children
+exit0; rawlease revoked/resources released/canonical cancel1; reload+reopen retains state
+and sends0 new force POST. Search/Yahoo container identity/image/env/start/restarts match
+before, no MCP/Search changes or original Run replay. Owned canary container removed.
+Canonical ERP source committed separately; Cloud release docs integrate locally.
+No push, added provider/search requests, migration, original partial rewrite, or SLA claim.
+
 ## 2026-10-30 CLOUD-FORCE-STOP-20261030 — closed loop and local integration
 
 Completed the same claimed slice: immutable independent user-stop signal/receipt;
