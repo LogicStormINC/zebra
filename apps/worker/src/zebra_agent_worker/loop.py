@@ -235,12 +235,22 @@ def build_worker_loop_service(
                 )
 
     child_wakeup_service = None
+    orchestration_hook = None
     if cloud_memory_store is not None and settings.storage_authority == "postgresql":
         from zebra_agent_worker.child_wakeup import ChildCompletionWakeupService as _Wakeup
 
         wakeup_dsn = cloud_bundle.dsn or ""
+        orchestration_hook = None
         if wakeup_dsn and active_namespace is not None:
             child_wakeup_service = _Wakeup(wakeup_dsn, deployment_namespace=active_namespace)
+            # CA-P7-02 assembly: 同一存储上的编排 run 随终态子一并推进。
+            from zebra_agent_worker.orchestration_wakeup_hook import (
+                OrchestrationWakeupHook,
+            )
+
+            orchestration_hook = OrchestrationWakeupHook(
+                wakeup_dsn, deployment_namespace=active_namespace
+            )
             from agent_storage.postgres.host_connectors import (
                 PostgresHostConnectorRegistry,
             )
@@ -449,6 +459,7 @@ def build_worker_loop_service(
         execution_service=execution_service,
         cloud_memory_recovery=cloud_memory_recovery,
         child_wakeup_service=child_wakeup_service,
+        orchestration_hook=orchestration_hook,
         sleep=sleep,
         command_consumer=command_consumer,
         client_effect_recovery=client_effect_recovery,

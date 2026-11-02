@@ -68,6 +68,7 @@ def build_worker_tool_gateway(
     skill_catalog: SkillCatalog | None = None,
     skill_component_names: tuple[str, ...] = (),
     cloud_mcp_transport: CloudMcpTransport | None = None,
+    orchestration_runtime: object | None = None,
     resource_authority_issuer: str | None = None,
     network_cancellation_check: Callable[[], None] | None = None,
 ) -> WorkerToolGateway:
@@ -108,6 +109,7 @@ def build_worker_tool_gateway(
         task.workspace_root,
         model_gateway=model_gateway,
         tool_profile=task.tool_profile,
+        orchestration_runtime=orchestration_runtime,
         web_search_endpoint=settings.web_search_endpoint,
         web_search_private_backend=settings.web_search_private_backend,
         skill_roots=() if skill_catalog is not None else skill_roots,
