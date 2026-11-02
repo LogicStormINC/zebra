@@ -56,7 +56,7 @@ def principal():
     return user
 
 
-def owned(name, *, for_update=False, admission_lock=None):
+def owned(name, *, for_update=False, admission_lock=None, control=False):
     user = principal()
     doc = frappe.get_doc(
         "Zebra Conversation", name, for_update=for_update or admission_lock is not None
@@ -70,7 +70,8 @@ def owned(name, *, for_update=False, admission_lock=None):
         raise LockError("conversation admission ownership expired")
     if doc.user != user or doc.status == "deleted":
         frappe.throw("会话不存在", frappe.PermissionError)
-    frappe.get_doc("Company", doc.company).check_permission("read")
+    if not control:
+        frappe.get_doc("Company", doc.company).check_permission("read")
     return doc
 
 

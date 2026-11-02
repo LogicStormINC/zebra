@@ -1,3 +1,21 @@
+# CLOUD-REPLY-ROBUSTNESS-20261103
+- Status: Done on local cloud-agent integration; fixed117 production and no-model acceptance verified.
+- Ready then claimed; Luke Ding / Codex; codex/cloud-reply-robustness-20261103; target cloud-agent.
+- Owned-path addendum before measured startup correction: apps/worker/src/zebra_agent_worker/{__init__,_public_exports}.py; packages/agent-storage/src/agent_storage/{__init__,_public_exports}.py and postgres/{__init__,_public_exports}.py; tests/worker/test_startup_import_boundary.py; packages/agent-integrations/src/agent_integrations/{__init__,_public_exports}.py for the same measured eager provider-import sibling. Reuse existing lazy-public-export pattern, retain all public identities; no warm helper actor/cache or changed authority.
+- Coherent boundary: current Host-scoped Task admission receipt lookup/reconciliation only if no existing
+  public equivalent; startup no-model measurement and minimal shared correction; exact ERP consumer parity.
+- Owned-path addendum before shared output fix: packages/agent-integrations/src/agent_integrations/host_tools/{gateway,output_preview}.py; apps/worker/src/zebra_agent_worker/tool_gateway_runtime.py; tests/agent_integrations/test_host_output_preview.py. Reuse the existing Cloud output projector and exact terminal Artifact commit; Host preview must be an exact bounded prefix, no ERP names in runtime.
+- Owned paths apps/api/src/zebra_agent_api/{task_routes,task_api,idempotency}.py;
+  new apps/api/src/zebra_agent_api/task_admission_lookup.py if needed; tests/api/test_task_admission_lookup.py;
+  existing runtime workspace resolver/composition only after measured shared defect and ownership addendum.
+  integrations/erpnext focused ERP reply files via reviewed source port; SOURCE.md; focused no-model tests.
+  Fixture addendum: tests/test_chat_checks.py uses valid UUIDs for its four synthetic create receipts,
+  matching the deployed Task ID contract; no weakening of runtime receipt validation.
+  docs/CLOUD_REPLY_ROBUSTNESS_20261103.md, docs/AGENT_TASKS.md, PROGRESS.md, WORKLOG.md.
+- Preserve exact Host principal/workspace scope, unknown receipts, role/lease/cancel and physical quota;
+  no ERP domain import into core. No new model/search, no original replay, no Search/MCP restart.
+- Canonical ERP task owns adapter implementation/deployment; no broad migration/schema/dependency changes.
+
 # CLOUD-EXECUTOR-STARTUP-20261102
 - Status: Done; verified and deployed as exact117 overlay; locally integrated into cloud-agent. No GitHub push in this repair.
 - Created Ready then claimed In Progress before implementation; owner Luke Ding / Codex.

@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import json
+import logging
 import re
 import socket
 import subprocess
+import time
 from pathlib import Path
 from uuid import uuid4
 
@@ -128,6 +130,7 @@ class NativeProof:
         # ponytail: reserve 5s inside the 20s deadline; observed die-to-destroy was 3.798s.
         if available <= 5:
             raise TimeoutError("insufficient helper cleanup budget")
+        started = time.monotonic()
         try:
             output = subprocess.check_output(
                 argv, input=packet, timeout=available - 5, stderr=subprocess.PIPE
@@ -149,6 +152,10 @@ class NativeProof:
             require_fresh(proof["expires_at"])
             return proof["identity"], proof["state"], proof["expires_at"]
         finally:
+            logging.info(
+                "workspace_stage stage=fresh_proof elapsed_ms=%.1f",
+                (time.monotonic() - started) * 1000,
+            )
             # Killing docker's client does not kill its container. Bounded forced cleanup
             # has a unique fixed prefix and never touches Worker or business containers.
             try:

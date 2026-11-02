@@ -1,4 +1,5 @@
 from collections.abc import Callable
+from dataclasses import replace
 
 from agent_core.domain.context_materialization import ContextMaterialization
 from agent_core.domain.identifiers import SessionId
@@ -176,6 +177,8 @@ def build_worker_tool_gateway(
         credential_resolver,
     )
     if pinned is not None:
+        if cloud_artifacts is not None:
+            pinned = replace(pinned, output_projector=cloud_artifacts.output_projector)
         try:
             manifest = frozen_or_discovered_manifest(
                 pinned,
@@ -241,6 +244,7 @@ def build_worker_tool_gateway(
         identity,
         shared_secret=settings.host_tool_shared_secret,
         manifest_binding_policy=settings.host_manifest_binding_policy,
+        output_projector=cloud_artifacts.output_projector if cloud_artifacts else None,
     )
     try:
         manifest = host.discover(task.host_context)

@@ -75,7 +75,12 @@ def submit(
                 # Keep request identity immutable but let a new corrected request
                 # proceed; never clear a pinned AG-UI command on a lost response.
                 doc = cloud.owned(name, for_update=True, admission_lock=admission_lock)
-                if error.status_code in {400, 413, 415, 422} and not doc.pending_command:
+                creation = json.loads(doc.request_options or "{}").get("task_creation", {})
+                if (
+                    error.status_code in {400, 413, 415, 422}
+                    and not doc.pending_command
+                    and creation.get("state") not in {"sending", "unknown"}
+                ):
                     doc.status = "rejected"
                     doc.db_update()
                     frappe.db.commit()
@@ -171,6 +176,10 @@ def _submit(
         return dict(
             task_id=doc.task_id, run_id=doc.active_run_id, status=doc.status, client_surface=surface
         )
+    from zebra_erpnext.submission_recovery import reconcile
+
+    if doc.status == "dispatching" and not doc.task_id:
+        doc = reconcile(doc, admission_lock)
     if doc.status == "dispatching" and doc.request_id != request_id:
         frappe.throw("上一条消息正在提交，请先核对状态")
     if doc.task_id and not doc.pending_command:
@@ -190,11 +199,16 @@ def _submit(
     run_id = doc.active_run_id if doc.request_id == request_id else str(uuid4())
     if doc.request_id != request_id:
         doc.stop_command = None
+    first_creation = doc.request_id != request_id
+    prior_creation = (
+        json.loads(doc.request_options or "{}").get("task_creation") if not first_creation else None
+    )
+    creation_options = {"task_creation": prior_creation} if prior_creation else {}
     doc.update(
         dict(
             request_id=request_id,
             request_options=json.dumps(
-                {**options, "attachments_digest": files_digest, "context": page}
+                {**options, "attachments_digest": files_digest, "context": page, **creation_options}
             ),
             pending_message=message,
             active_run_id=run_id,
@@ -204,13 +218,11 @@ def _submit(
     doc.db_update()
     frappe.db.commit()
     if not doc.task_id:
-        task = cloud.request(
+        from zebra_erpnext.submission_recovery import create_task
+
+        task = create_task(
             doc,
-            "POST",
-            "/tasks",
-            run_id=run_id,
-            key=f"erpnext-task-{doc.name}",
-            body={
+            {
                 "prompt": message,
                 "title": message[:80],
                 "execute": False,
@@ -231,7 +243,8 @@ def _submit(
                     "locator": "erpnext://workspace/" + doc.name,
                 },
             },
-            admission_lock=admission_lock,
+            admission_lock,
+            first_attempt=first_creation,
         )
         doc = cloud.owned(name, for_update=True, admission_lock=admission_lock)
         doc.task_id = task["task_id"]
@@ -343,7 +356,14 @@ def cancel(name):
 
 def _cancel(name, admission_lock):
     doc = cloud.owned(name, for_update=True, admission_lock=admission_lock)
-    if not doc.task_id or not doc.active_run_id:
+    if not doc.task_id:
+        from zebra_erpnext.submission_recovery import stop_uncreated
+
+        result = stop_uncreated(doc, admission_lock)
+        if result is not None:
+            return result
+        doc = cloud.owned(name, for_update=True, admission_lock=admission_lock)
+    if not doc.active_run_id:
         return {"status": "idle"}
     if doc.status == "cancelled":
         return {"status": "cancelled"}

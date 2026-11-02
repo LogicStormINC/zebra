@@ -1,0 +1,905 @@
+diff --git a/cloud-patches/operator/private_workspace_operator.py b/cloud-patches/operator/private_workspace_operator.py
+index e499102..aa3d475 100644
+--- a/cloud-patches/operator/private_workspace_operator.py
++++ b/cloud-patches/operator/private_workspace_operator.py
+@@ -71,7 +71,11 @@ def trusted(path, *, directory=True):
+ 
+ 
+ def run(*args):
+-    return subprocess.check_output(args, text=True, timeout=remaining(), stderr=subprocess.DEVNULL).strip()
++    started=time.monotonic()
++    try:
++        return subprocess.check_output(args, text=True, timeout=remaining(), stderr=subprocess.DEVNULL).strip()
++    finally:
++        logging.info('workspace_stage stage=filesystem_command command=%s elapsed_ms=%.1f', Path(args[0]).name, (time.monotonic()-started)*1000)
+ 
+ 
+ def mount_evidence(path):
+@@ -141,6 +145,7 @@ class NativeProof:
+         # ponytail: reserve 5s inside the 20s deadline; observed die-to-destroy was 3.798s.
+         if available <= 5:
+             raise TimeoutError('insufficient helper cleanup budget')
++        started=time.monotonic()
+         try:
+             output = subprocess.check_output(argv, input=packet, timeout=available - 5, stderr=subprocess.PIPE)
+             if len(output) > 4096: raise ValueError('bounded proof response required')
+@@ -153,6 +158,7 @@ class NativeProof:
+             require_fresh(proof['expires_at'])
+             return proof['identity'], proof['state'], proof['expires_at']
+         finally:
++            logging.info('workspace_stage stage=fresh_proof elapsed_ms=%.1f', (time.monotonic()-started)*1000)
+             # Killing docker's client does not kill its container. Bounded forced cleanup
+             # has a unique fixed prefix and never touches Worker or business containers.
+             try:
+@@ -452,6 +458,7 @@ def serve(allocator, socket_path, key):
+ 
+ 
+ if __name__ == '__main__':
++    logging.basicConfig(level=logging.INFO)
+     parser = argparse.ArgumentParser(); parser.add_argument('config', type=Path)
+     options = parser.parse_args(); trusted(options.config, directory=False)
+     if options.config.stat().st_mode & 0o077: raise ValueError('config must be private')
+diff --git a/deploy/reply_activate.py b/deploy/reply_activate.py
+new file mode 100644
+index 0000000..f47883e
+--- /dev/null
++++ b/deploy/reply_activate.py
+@@ -0,0 +1,150 @@
++"""Idle-gated fixed-image release. Original admissions resume only after checks."""
++import importlib.util
++import json
++import os
++from pathlib import Path
++import subprocess
++import time
++
++ROOT = Path('/home/ubuntu/releases/20261103-erp-reply')
++NATIVE = Path('/opt/erpnext/zebra-agent/full-runtime-20261029-1/compose.json')
++HOST = Path('/opt/erpnext/zebra-agent/erpnext-override.json')
++
++
++def load(name, path):
++    spec = importlib.util.spec_from_file_location(name, path)
++    module = importlib.util.module_from_spec(spec)
++    spec.loader.exec_module(module)
++    return module
++
++
++a = load('previous_native_release', '/home/ubuntu/releases/20261102-executor-interrupted/executor_startup_release.py')
++h = load('previous_host_release', '/home/ubuntu/releases/20261102-erp-autonomous-admin/admin_activate.py')
++
++
++def private(name, value):
++    path = ROOT / name
++    path.write_text(value)
++    path.chmod(0o600)
++
++
++def site_config():
++    return json.loads(h.site_script("from pathlib import Path;print(Path('/home/frappe/frappe-bench/sites/192.168.110.42/site_config.json').read_text())"))
++
++
++def root_exec(code, *, write=False):
++    image = json.loads((ROOT / 'candidate.json').read_text())['base']['worker']
++    args = ['docker', 'run', '--rm', '--network', 'none', '--pid=host', '--user', '0',
++            '--label', 'zebra.owner=erp-reply-robustness-20261103',
++            '--mount', 'type=bind,src=/,dst=/host,readonly',
++            '--mount', 'type=bind,src=' + str(ROOT) + ',dst=/release',
++            '--mount', 'type=bind,src=/etc/zebra/erp-full,dst=/operator' + ('' if write else ',readonly')]
++    return subprocess.check_output([*args, '--entrypoint', 'python', image, '-c', code], text=True)
++
++
++def native_up(*services):
++    subprocess.run(['docker', 'compose', '-p', 'erpnext-full', '-f', str(NATIVE),
++                    'up', '-d', '--no-deps', '--no-build', '--pull', 'never', *services], check=True)
++
++
++def atomic(path, value):
++    temp = path.with_suffix('.reply.pending')
++    temp.write_text(json.dumps(value, indent=2))
++    temp.chmod(path.stat().st_mode & 0o777)
++    os.replace(temp, path)
++
++
++def main():
++    if (ROOT / 'release-before.json').exists():
++        raise RuntimeError('release already started; inspect receipts instead of repeating')
++    assert json.loads((ROOT / 'qa-native.json').read_text())['passed']
++    candidate = json.loads((ROOT / 'candidate.json').read_text())
++    before = a.snapshot()
++    h.no_active()
++    assert not any(before[k] for k in ['running', 'leases', 'eligible_commands'])
++    for name, key in [('erpnext-full-api-1', 'api'), ('erpnext-full-worker-1', 'worker'), ('erpnext-backend-1', 'host')]:
++        assert a.inspect(name)['Image'] == candidate['base'][key]
++    private('release-before.json', json.dumps(before))
++    private('inventory-before.json', json.dumps(a.inventory()))
++    private('native-compose.before.json', NATIVE.read_text())
++    private('host-override.before.json', HOST.read_text())
++    original = site_config()
++    private('site.before.json', json.dumps(original))
++    with (ROOT / 'erp-backup.log').open('x') as log:
++        h.run('docker', 'exec', h.HOST, 'bench', '--site', h.SITE, 'backup', stdout=log, stderr=log)
++    paused = json.loads(json.dumps(original))
++    paused['zebra_agent']['admission_paused'] = True
++    paused['zebra_agent']['runtimes']['cloud114']['admission_paused'] = True
++    h.write_config(paused)
++    h.no_active()
++    assert a.snapshot() == before
++    # Pin this task's root helper to the already verified existing image.
++    a.ROOT = ROOT
++    a.OWNER = 'erp-reply-robustness-20261103'
++    root_exec("""from pathlib import Path
++import shutil,os,hashlib,json
++for src,dst in [('config.json','operator-config.before.json'),('private_workspace_operator.py','operator-code.before.py')]:
++ shutil.copyfile(Path('/operator')/src,Path('/release')/dst);os.chown(Path('/release')/dst,1000,1000);(Path('/release')/dst).chmod(0o600)
++m=json.loads(Path('/host/var/lib/zebra/erpnext-full-volumes/manifest.json').read_text())
++p=Path('/release/volumes.before.sha256');p.write_text(hashlib.sha256(json.dumps(m['volumes'],sort_keys=True).encode()).hexdigest());os.chown(p,1000,1000)
++""")
++    native = json.loads(NATIVE.read_text())
++    native['services']['api']['image'] = candidate['api']
++    for service in ['worker', 'runtime-cleanup']:
++        native['services'][service]['image'] = candidate['worker']
++    atomic(NATIVE, native)
++    native_up('api')
++    # Recycle no executors: there are no leases or active Runs at this boundary.
++    root_exec("""from pathlib import Path
++import json,os,subprocess
++p=Path('/operator');r=Path('/release');cfg=json.loads((p/'config.json').read_text());cfg['helper_image']=""" + repr(candidate['helper']) + """
++for name,content,mode in [('config.json',json.dumps(cfg),0o600),('private_workspace_operator.py',(r/'private_workspace_operator.py').read_text(),0o644)]:
++ t=p/(name+'.pending');t.write_text(content);t.chmod(mode);os.chown(t,0,0);os.replace(t,p/name)
++subprocess.run(['chroot','/host','/usr/bin/env','SYSTEMD_IGNORE_CHROOT=1','/usr/bin/systemctl','restart','zebra-erp-full-workspaces.service'],check=True)
++""", write=True)
++    a.require_allocator_ready()
++    native_up('worker', 'runtime-cleanup')
++    host = json.loads(HOST.read_text())
++    for service in h.SERVICES:
++        host['services'][service]['image'] = candidate['host']
++    atomic(HOST, host)
++    h.compose('up', '-d', '--no-deps', '--no-build', '--pull', 'never', *h.SERVICES)
++    h.clear_cache()
++    time.sleep(5)
++    a.require_allocator_ready()
++    after = a.snapshot()
++    assert after == before
++    old = {x['name']: x for x in json.loads((ROOT / 'inventory-before.json').read_text())}
++    new = {x['name']: x for x in a.inventory()}
++    changed = {'erpnext-full-api-1', 'erpnext-full-worker-1', 'erpnext-full-runtime-cleanup-1'} | {'erpnext-' + x + '-1' for x in h.SERVICES}
++    assert old.keys() == new.keys()
++    assert all(old[n] == new[n] for n in old if n not in changed)
++    for name in changed:
++        d = a.inspect(name)
++        assert d['State']['Running'] and d['RestartCount'] == 0
++        assert old[name]['env_hash'] == new[name]['env_hash']
++    root_exec("""import json,hashlib
++from pathlib import Path
++m=json.loads(Path('/host/var/lib/zebra/erpnext-full-volumes/manifest.json').read_text())
++assert hashlib.sha256(json.dumps(m['volumes'],sort_keys=True).encode()).hexdigest()==Path('/release/volumes.before.sha256').read_text()
++a=json.loads(Path('/release/operator-config.before.json').read_text());b=json.loads(Path('/operator/config.json').read_text());a['helper_image']=b['helper_image'];assert a==b
++""")
++    private('release-after.json', json.dumps(after))
++    private('inventory-after.json', json.dumps(list(new.values())))
++    # Do not restore the whole config over concurrent unrelated settings.
++    current = site_config()
++    for target, saved in [(current['zebra_agent'], original['zebra_agent']),
++                          (current['zebra_agent']['runtimes']['cloud114'], original['zebra_agent']['runtimes']['cloud114'])]:
++        assert target.get('admission_paused') is True
++        if 'admission_paused' in saved:
++            target['admission_paused'] = saved['admission_paused']
++        else:
++            target.pop('admission_paused', None)
++    h.write_config(current)
++    private('deployed.json', json.dumps(dict(images=candidate, model_requests=0, search_requests=0,
++        ledger_unchanged=True, original_events_unchanged=True, search_mcp_unchanged=True)))
++    print('PASS fixed v117 images, ledger/events/volumes/service identities preserved; admission restored')
++
++
++if __name__ == '__main__':
++    main()
+diff --git a/deploy/reply_build_release.py b/deploy/reply_build_release.py
+new file mode 100644
+index 0000000..0a37e9a
+--- /dev/null
++++ b/deploy/reply_build_release.py
+@@ -0,0 +1,102 @@
++"""Overlay only the reviewed changes on the existing, fixed v117 images."""
++import json
++import os
++from pathlib import Path
++import shutil
++import subprocess
++import tarfile
++
++from reply_lazy_exports import make_lazy
++
++ROOT = Path('/home/ubuntu/releases/20261103-erp-reply')
++OWNER = 'erp-reply-robustness-20261103'
++EXPECTED = {
++    'api': 'sha256:e4faff1bfaf7d9d38bd7a60befcb534fedcc1f4faf753eb335cad288a98bf968',
++    'worker': 'sha256:fea846a5ba4c467425874403024031100a1962e04503cce9b9a2b496064860c4',
++    'host': 'sha256:4daac74653465caa60fe356d42c97638b79c74596bf69fbdf87686966e25899c',
++}
++
++
++def out(*args):
++    return subprocess.check_output(args, text=True)
++
++
++def build(name, base, overlays, extra=''):
++    directory = ROOT / ('build-' + name)
++    directory.mkdir()
++    for src, dest in overlays:
++        target = directory / dest.lstrip('/')
++        target.parent.mkdir(parents=True, exist_ok=True)
++        shutil.copyfile(src, target)
++    dockerfile = 'FROM ' + base + '\n'
++    for _, dest in overlays:
++        owner = '1000:1000' if name == 'host' else '65532:65532'
++        dockerfile += f'COPY --chown={owner} {dest.lstrip("/")} {dest}\n'
++    (directory / 'Dockerfile').write_text(dockerfile + extra)
++    with (ROOT / ('build-' + name + '.log')).open('x') as log:
++        subprocess.run(['docker', 'build', '--network=none', '--pull=false', '--label',
++                        'zebra.owner=' + OWNER, '-t', 'erp-reply-' + name + '-20261103',
++                        str(directory)], env={**os.environ, 'DOCKER_BUILDKIT': '0'},
++                       stdout=log, stderr=subprocess.STDOUT, check=True)
++    return json.loads(out('docker', 'image', 'inspect', 'erp-reply-' + name + '-20261103'))[0]['Id']
++
++
++def main():
++    if (ROOT / 'candidate.json').exists():
++        raise RuntimeError('candidate exists; inspect, do not rebuild silently')
++    for name, container in [('api', 'erpnext-full-api-1'), ('worker', 'erpnext-full-worker-1'),
++                            ('host', 'erpnext-backend-1')]:
++        assert json.loads(out('docker', 'inspect', container))[0]['Image'] == EXPECTED[name]
++    frozen = ROOT / 'frozen'
++    frozen.mkdir()
++    patch_paths = json.loads((ROOT / 'patch-paths.json').read_text())
++    for path in patch_paths:
++        p = frozen / path
++        p.parent.mkdir(parents=True, exist_ok=True)
++        container = 'erpnext-full-api-1' if path.startswith('apps/api/') else 'erpnext-full-worker-1'
++        subprocess.run(['docker', 'cp', container + ':/app/' + path, str(p)], check=True)
++    subprocess.run(['git', 'apply', '--check', str(ROOT / 'core.patch')], cwd=frozen, check=True)
++    subprocess.run(['git', 'apply', str(ROOT / 'core.patch')], cwd=frozen, check=True)
++    new_paths = json.loads((ROOT / 'new-paths.json').read_text())
++    for path in new_paths:
++        p = frozen / path
++        p.parent.mkdir(parents=True, exist_ok=True)
++        shutil.copyfile(ROOT / 'source' / path, p)
++    worker = [(frozen / p, '/app/' + p) for p in patch_paths + new_paths if not p.startswith('apps/api/')]
++    api = [(frozen / p, '/app/' + p) for p in patch_paths + new_paths if p.startswith('apps/api/')]
++    for path in ['apps/worker/src/zebra_agent_worker', 'packages/agent-storage/src/agent_storage',
++                 'packages/agent-storage/src/agent_storage/postgres',
++                 'packages/agent-integrations/src/agent_integrations']:
++        p = frozen / path
++        p.mkdir(parents=True, exist_ok=True)
++        subprocess.run(['docker', 'cp', 'erpnext-full-worker-1:/app/' + path + '/__init__.py', str(p / '__init__.py')], check=True)
++        make_lazy(p / '__init__.py', 'unused')
++        worker.extend((p / name, '/app/' + path + '/' + name) for name in ['__init__.py', '_public_exports.py'])
++    worker.append((ROOT / 'full_workspace_client.py', '/deployment/full_workspace_client.py'))
++    result = {'base': EXPECTED, 'api': build('api', EXPECTED['api'], api),
++              'worker': build('worker', EXPECTED['worker'], worker)}
++    result['helper'] = build('helper', result['worker'], [],
++                            'ENV PYTHONPATH=/deployment:${PYTHONPATH}\nENTRYPOINT ["python", "-m", "full_workspace_proof"]\n')
++    host_root = '/home/frappe/frappe-bench/apps/zebra_erpnext/'
++    host = [(p, host_root + str(p.relative_to(ROOT / 'host'))) for p in (ROOT / 'host').rglob('*') if p.is_file()]
++    result['host'] = build('host', EXPECTED['host'], host)
++    # QA has only offline pytest dependencies; production images never install tools.
++    for name in ['worker', 'api']:
++        directory = ROOT / ('build-qa-' + name)
++        directory.mkdir()
++        overlay = directory / 'pytest-overlay'
++        overlay.mkdir()
++        with tarfile.open(ROOT / 'pytest-pure.tar') as archive:
++            archive.extractall(overlay, filter='data')
++        (directory / 'Dockerfile').write_text('FROM ' + result[name] + '\nCOPY pytest-overlay/ /app/.venv/lib/python3.12/site-packages/\n')
++        with (ROOT / ('build-qa-' + name + '.log')).open('x') as log:
++            subprocess.run(['docker', 'build', '--network=none', '--pull=false', '--label', 'zebra.owner=' + OWNER,
++                            '-t', 'erp-reply-qa-' + name + '-20261103', str(directory)],
++                           stdout=log, stderr=subprocess.STDOUT, check=True,
++                           env={**os.environ, 'DOCKER_BUILDKIT': '0'})
++    (ROOT / 'candidate.json').write_text(json.dumps(result, indent=2))
++    print(json.dumps(result))
++
++
++if __name__ == '__main__':
++    main()
+diff --git a/deploy/reply_import_benchmark.py b/deploy/reply_import_benchmark.py
+new file mode 100644
+index 0000000..e821aeb
+--- /dev/null
++++ b/deploy/reply_import_benchmark.py
+@@ -0,0 +1,35 @@
++"""Owned offline frozen-image import pair. Never starts a Worker loop or calls a model."""
++import json
++import os
++from pathlib import Path
++import subprocess
++from reply_lazy_exports import make_lazy
++
++ROOT=Path('/home/ubuntu/releases/20261103-erp-reply')
++PATHS=['apps/worker/src/zebra_agent_worker','packages/agent-storage/src/agent_storage','packages/agent-storage/src/agent_storage/postgres']
++OWNER='erp-reply-robustness-20261103'
++
++def out(*a):return subprocess.check_output(a,text=True)
++def main():
++    image=json.loads(out('docker','inspect','erpnext-full-worker-1'))[0]['Image']
++    b=ROOT/'import-build';b.mkdir(exist_ok=True)
++    for path in PATHS:
++        p=b/path;p.mkdir(parents=True,exist_ok=True)
++        subprocess.run(['docker','cp','erpnext-full-worker-1:/app/'+path+'/__init__.py',str(p/'__init__.py')],check=True)
++        make_lazy(p/'__init__.py','unused')
++    dockerfile='FROM '+image+'\n'
++    for path in PATHS:dockerfile+='COPY --chown=65532:65532 '+path+'/ /app/'+path+'/\n'
++    (b/'Dockerfile').write_text(dockerfile)
++    env={**os.environ,'DOCKER_BUILDKIT':'0'}
++    with (ROOT/'import-build.log').open('w') as log:subprocess.run(['docker','build','--network=none','--pull=false','--label','zebra.owner='+OWNER,'-t','erp-reply-import-20261103',str(b)],stdout=log,stderr=subprocess.STDOUT,check=True,env=env)
++    new=json.loads(out('docker','image','inspect','erp-reply-import-20261103'))[0]['Id']
++    tests={'proof':"from agent_storage.postgres.database import PostgresDatabase;from agent_storage.postgres.host_connectors import PostgresHostConnectorRegistry;from zebra_agent_worker.host_authority_probe import HostAuthorityProbe",'child':"import zebra_agent_worker.session_process_child"}
++    values=[]
++    for kind,stmt in tests.items():
++        for round in range(3):
++            for label,selected in ([('old',image),('new',new)] if round%2==0 else [('new',new),('old',image)]):
++                code='import time,json,signal;signal.alarm(15);s=time.monotonic();'+stmt+";print(json.dumps({'elapsed_s':time.monotonic()-s}))"
++                value=json.loads(out('docker','run','--rm','--network','none','--read-only','--cap-drop','ALL','--security-opt','no-new-privileges','--user','65532:65532','--cpus','1','--memory','256m','--pids-limit','32','--label','zebra.owner='+OWNER,'-e','PYTHONDONTWRITEBYTECODE=1','--entrypoint','python',selected,'-c',code));values.append(dict(kind=kind,round=round,variant=label,**value))
++    (ROOT/'import-pair.json').write_text(json.dumps(dict(old=image,new=new,measurements=values),indent=2))
++    print(json.dumps(dict(old=image,new=new,measurements=values)))
++if __name__=='__main__':main()
+diff --git a/deploy/reply_lazy_exports.py b/deploy/reply_lazy_exports.py
+new file mode 100644
+index 0000000..8b3b0d2
+--- /dev/null
++++ b/deploy/reply_lazy_exports.py
+@@ -0,0 +1,35 @@
++"""Apply the existing lazy-export pattern to an exact frozen version, not future APIs."""
++import ast
++from pathlib import Path
++
++
++def make_lazy(path, module):
++    path=Path(path);source=path.read_text();tree=ast.parse(source)
++    exports={};public=None
++    for node in tree.body:
++        if isinstance(node,ast.ImportFrom):
++            if node.module=='__future__':continue
++            if not node.module or any(a.name=='*' for a in node.names):raise ValueError('explicit exports required')
++            target='.'*node.level+node.module
++            exports.update({a.asname or a.name:(target,a.name) for a in node.names})
++        elif isinstance(node,ast.Assign) and any(isinstance(t,ast.Name) and t.id=='__all__' for t in node.targets):public=ast.literal_eval(node.value)
++        elif not isinstance(node,ast.Expr) or not isinstance(node.value,ast.Constant) or not isinstance(node.value.value,str):raise ValueError('initializer has behavior; inspect instead of rewriting')
++    if public is None or set(public)-set(exports):raise ValueError('public exports do not match explicit imports')
++    original=path.with_name('_public_exports.py')
++    if original.exists():raise ValueError('export source already exists')
++    original.write_text(source)
++    lines=['"""Public identities stay stable; narrow readers avoid full application bootstrap."""',
++        '# ruff: noqa: F405 -- TYPE_CHECKING exports define public types.',
++        'from importlib import import_module as _import_module','from typing import TYPE_CHECKING',
++        'if TYPE_CHECKING:', '    from ._public_exports import *  # noqa: F403',
++        '__all__ = '+repr(public),'_EXPORTS = '+repr(exports),
++        'def __getattr__(name: str) -> object:',
++        '    if name not in _EXPORTS:',
++        '        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")',
++        '    module, symbol = _EXPORTS[name]',
++        '    value = getattr(_import_module(module, __name__), symbol)',
++        '    globals()[name] = value',
++        '    return value',
++        'def __dir__() -> list[str]:',
++        '    return sorted(set(globals()) | set(__all__))','']
++    path.write_text('\n'.join(lines))
+diff --git a/deploy/runtime/full_workspace_client.py b/deploy/runtime/full_workspace_client.py
+index 790daba..0f48db8 100644
+--- a/deploy/runtime/full_workspace_client.py
++++ b/deploy/runtime/full_workspace_client.py
+@@ -6,6 +6,7 @@ import os
+ from pathlib import Path
+ import socket
+ import stat
++import sys
+ import time
+ from uuid import UUID, uuid4, uuid5
+ from agent_runtime.workspace_quota import require_workspace_quota
+@@ -51,6 +52,7 @@ class PrivateWorkspaceClient:
+         if len(self.key) < 32: raise ValueError('insufficient allocator credential')
+ 
+     def require(self, session_id, instance, *, allow_allocate):
++        started=time.monotonic()
+         wid = str(instance.workspace_id)
+         path = ROOT / wid
+         body = dict(session_id=str(session_id), workspace_id=wid,
+@@ -99,4 +101,5 @@ class PrivateWorkspaceClient:
+                 or quota.filesystem != 'ext4' or os.statvfs(path).f_fsid != identity['filesystem_id']
+                 or any(receipt.get(key) != value for key, value in identity.items())):
+             raise ValueError('Worker mount propagation or filesystem identity mismatch')
++        print(json.dumps(dict(event='workspace_stage',stage='verified_receipt',operation=body['operation'],elapsed_ms=round((time.monotonic()-started)*1000,1))),file=sys.stderr,flush=True)
+         return path
+diff --git a/frontend/index.tsx b/frontend/index.tsx
+index 6d5b9a7..bc9c613 100644
+--- a/frontend/index.tsx
++++ b/frontend/index.tsx
+@@ -417,12 +417,12 @@ function Panel() {
+     if (current()) setError('');
+     try {
+       const result = await api(force ? 'force_stop' : 'cancel', {conversation:token.name});
+-      if (result?.status !== 'idle' && (!force || result?.force_stop?.resources_released === true)) {
++      if (result?.status !== 'idle' && (!force || result?.submission_cancelled === true || result?.force_stop?.resources_released === true)) {
+         const saved = drafts.current.get(name); if (saved && saved.pending === retry) saved.pending = null;
+         if (pending.current === retry && retry?.conversation === name) pending.current = null;
+       }
+       if (current()) { await select(name, true); }
+-      window.frappe.show_alert({message:result?.status === 'idle' ? '此会话没有可停止的任务。' : force ? result?.force_stop?.resources_released === true ? '会话已强制停止，资源已释放；已有结果保留。' : '停止请求已提交，正在核对执行退出和资源回收。' : '已提交停止请求，请核对任务状态。',indicator:'blue'});
++      window.frappe.show_alert({message:result?.submission_cancelled === true ? '提交已取消，任务尚未启动；已有记录保留。' : result?.requires_reconciliation === true ? '提交结果尚未确认，未重发任务；请重新连接核对。' : result?.status === 'idle' ? '此会话没有可停止的任务。' : force ? result?.force_stop?.resources_released === true ? '会话已强制停止，资源已释放；已有结果保留。' : '停止请求已提交，正在核对执行退出和资源回收。' : '已提交停止请求，请核对任务状态。',indicator:'blue'});
+     } catch (error) { if (current()) { fail(error); setNotice('停止结果未知；请重新连接核对已有任务。'); } else window.frappe.show_alert({message:'所选会话的停止结果未确认，请打开该会话核对。',indicator:'orange'}); }
+     finally { stopGate.current.delete(name); setStoppingNames([...stopGate.current]); }
+   }
+diff --git a/frontend/workbench-check.mjs b/frontend/workbench-check.mjs
+index 4666d71..131e1e2 100644
+--- a/frontend/workbench-check.mjs
++++ b/frontend/workbench-check.mjs
+@@ -166,6 +166,15 @@ stopScope.api=async()=>({status:'cancelled',force_stop:{resources_released:true,
+ await actualStop(stopScope,'a',true);
+ assert.equal(stopScope.pending.current,null);
+ console.log('PASS independent force-stop route and exact cancellation receipt boundary');
++stopScope.pending.current=retained;
++stopScope.api=async()=>({status:'cancelled',submission_cancelled:true,force_stop:null});
++await actualStop(stopScope,'a',true);
++assert.equal(stopScope.pending.current,null,'a definite pre-Task refusal can cancel local intent without forging resource proof');
++stopScope.pending.current=retained;
++stopScope.api=async()=>({status:'dispatching',submission_cancelled:false,requires_reconciliation:true});
++await actualStop(stopScope,'a',true);
++assert.equal(stopScope.pending.current,retained,'receipt absence never discharges unknown work');
++console.log('PASS truthful pre-Task stop and unknown admission reconciliation');
+ 
+ stopScope.pending.current=retained;
+ stopScope.api=async()=>({status:'running',force_stop:{resources_released:false,state:'stopping'}});
+diff --git a/tests/test_chat_checks.py b/tests/test_chat_checks.py
+index 2811666..110ca41 100644
+--- a/tests/test_chat_checks.py
++++ b/tests/test_chat_checks.py
+@@ -198,7 +198,7 @@ print('Stop acknowledgement loss preserves the pinned command revision')
+ doc.task_id=None;doc.status='idle';doc.pending_command=None;doc.request_id=None;doc.prepared_request=None
+ first_id=str(uuid4());before=len(requests)
+ original_request=cloud.request
+-cloud.request=lambda d,m,p,**kw: (requests.append((m,p,kw)) or {'task_id':'first-task','current_sequence':2}) if p=='/tasks' else original_request(d,m,p,**kw)
++cloud.request=lambda d,m,p,**kw: (requests.append((m,p,kw)) or {'task_id':'11111111-1111-1111-1111-000000000001','current_sequence':2}) if p=='/tasks' else original_request(d,m,p,**kw)
+ client.open_surface=lambda *args:(_ for _ in ()).throw(Rejected('surface ACK unknown'))
+ for _ in range(2):
+     try:chat.submit(doc.name,'first question',first_id)
+@@ -243,7 +243,7 @@ print('Rename validation, shared delete admission, running-task rejection and ap
+ 
+ # Model/effort selection reaches native initial admission and continuation.
+ doc = Doc(); doc.task_id = None; doc.status = 'idle'; doc.request_id = None
+-cloud.request = lambda d,m,p,**kw: (requests.append((m,p,kw)) or {'task_id':'options-task','current_sequence':2}) if p=='/tasks' else request(d,m,p,**kw)
++cloud.request = lambda d,m,p,**kw: (requests.append((m,p,kw)) or {'task_id':'11111111-1111-1111-1111-000000000002','current_sequence':2}) if p=='/tasks' else request(d,m,p,**kw)
+ client.open_surface = lambda *args: None
+ pro = 'deepseek-v4-pro-executor-v1'; flash = 'deepseek-v4-flash-executor-v1'
+ choice_id = str(uuid4()); before = len(requests)
+@@ -309,7 +309,7 @@ print('Conversation preferences restore independently, inherit legacy choices, p
+ doc=Doc();doc.task_id=None;doc.status='idle';doc.request_id=None
+ cloud.owned=lambda name, **kwargs:doc;cloud.config=lambda:{}
+ client.open_surface=lambda *args:None
+-cloud.request=lambda d,m,p,**kw:(requests.append((m,p,kw)) or {'task_id':'context-task','current_sequence':2}) if p=='/tasks' else request(d,m,p,**kw)
++cloud.request=lambda d,m,p,**kw:(requests.append((m,p,kw)) or {'task_id':'11111111-1111-1111-1111-000000000003','current_sequence':2}) if p=='/tasks' else request(d,m,p,**kw)
+ original_page={'route':['Form','Customer','C1'],'doctype':'Customer','name':'C1'}
+ changed_page={'route':['Form','Customer','C2'],'doctype':'Customer','name':'C2'}
+ context_id=str(uuid4());fail_command=True
+@@ -353,7 +353,7 @@ import base64
+ doc=Doc();doc.task_id=None;doc.status='idle';doc.request_id=None
+ cloud.owned=lambda name, **kwargs:doc;cloud.config=lambda:{"attachments_enabled":True};cloud.has_private_workspace=lambda d:True
+ client.open_surface=lambda *args:None
+-cloud.request=lambda d,m,p,**kw:(requests.append((m,p,kw)) or {'task_id':'file-task','current_sequence':2}) if p=='/tasks' else request(d,m,p,**kw)
++cloud.request=lambda d,m,p,**kw:(requests.append((m,p,kw)) or {'task_id':'11111111-1111-1111-1111-000000000004','current_sequence':2}) if p=='/tasks' else request(d,m,p,**kw)
+ files=[{'file_name':'proof.txt','media_type':'text/plain','content_base64':base64.b64encode(b'owned file').decode()}]
+ file_id=str(uuid4());before=len(requests);fail_command=True
+ try:chat.submit(doc.name,'read the file',file_id,attachments=json.dumps(files))
+diff --git a/tests/test_reply_discovery_checks.py b/tests/test_reply_discovery_checks.py
+new file mode 100644
+index 0000000..0ed73ce
+--- /dev/null
++++ b/tests/test_reply_discovery_checks.py
+@@ -0,0 +1,17 @@
++"""python3 tests/test_reply_discovery_checks.py; no Frappe/model/network."""
++import json,sys
++from pathlib import Path
++sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
++from zebra_erpnext.discovery_view import preview
++value={'doctypes':[{'name':'Doc '+str(i),'module':'Manufacturing'} for i in range(100)],
++ 'reports':[{'name':'Report '+str(i),'ref_doctype':'Doc '+str(i),'report_type':'Query Report'} for i in range(100)],
++ 'doctype_availability':[{'name':'Doc '+str(i),'status':'native_permission_checked','reason':'metadata only '*40} for i in range(100)],
++ 'coverage':{'all_details':'keep original '*4000},'limits':{'query_rows':50},'next_start':100,'doctypes_has_more':True,'reports_has_more':True}
++small=preview(value);p=json.loads(small)
++assert len(small.encode())<=8000 and p['metadata_only'] is True and p['document_permissions_checked'] is False
++assert p['next_start']==100 and p['doctypes_has_more'] is True
++assert all(d in value['doctypes'] for d in p['doctypes']) and p['total_in_response']['doctypes']==100
++assert len(small)<len(json.dumps(value))/10
++assert preview({'doctype':'one','fields':[{'fieldname':'name'}]}) is None,'specific schema details must remain readable'
++assert value['coverage']['all_details'].startswith('keep original'),'do not mutate source evidence'
++print('PASS bounded exact-row discovery view, honest metadata coverage and unchanged full evidence')
+diff --git a/tests/test_reply_schema_checks.py b/tests/test_reply_schema_checks.py
+new file mode 100644
+index 0000000..ac4d8d8
+--- /dev/null
++++ b/tests/test_reply_schema_checks.py
+@@ -0,0 +1,29 @@
++"""python3 tests/test_reply_schema_checks.py; actual published manifest, no network."""
++import ast
++import sys
++from pathlib import Path
++from types import ModuleType,SimpleNamespace
++root=Path(__file__).resolve().parents[1]
++namespace={}
++source=ast.parse((root/'zebra_erpnext/business.py').read_text())
++for n in source.body:
++ if isinstance(n,ast.Assign) and any(isinstance(t,ast.Name) and t.id in {'SCHEMAS','READS','WRITES','AGGREGATE_METRICS'} for t in n.targets):exec(compile(ast.Module(body=[n],type_ignores=[]),'business-contract','exec'),namespace)
++business=ModuleType('zebra_erpnext.business')
++for k in ['SCHEMAS','READS','WRITES','AGGREGATE_METRICS']:setattr(business,k,namespace[k])
++runtime=ModuleType('zebra_erpnext.runtime');runtime.LEGACY='native105';runtime.FULL='cloud114';runtime.release=lambda d:d.runtime_ref
++admin=ModuleType('zebra_erpnext.admin_mode');admin.SCOPE='erpnext.admin';admin.granted=lambda *a:False
++sys.modules.update({'zebra_erpnext.business':business,'zebra_erpnext.runtime':runtime,'zebra_erpnext.admin_mode':admin})
++sys.path.insert(0,str(root))
++doc=SimpleNamespace(runtime_ref='cloud114')
++scope={'frappe':SimpleNamespace(get_doc=lambda *a:doc),'raw':lambda x:x,'delegated':lambda:(SimpleNamespace(conversation='owned'),{}),'cloud':SimpleNamespace(config=lambda:{})}
++tree=ast.parse((root/'zebra_erpnext/gateway.py').read_text())
++for name in ['business_arguments_schema','manifest']:
++ node=next(n for n in tree.body if isinstance(n,ast.FunctionDef) and n.name==name);node.decorator_list=[];exec(compile(ast.fix_missing_locations(ast.Module(body=[node],type_ignores=[])),'gateway','exec'),scope)
++scope['CHAT_READS']={'get','query','query_page','aggregate','report_describe','workflow_transitions'}
++result=scope['manifest']();read=next(t for t in result['tools'] if t['name']=='erpnext.read')
++a=read['argumentProperties']['arguments']
++assert a.get('additionalProperties') is False,'full Cloud arguments remain untyped'
++assert 'count' in a['properties']['metric']['enum'] and a['anyOf']
++assert set(read['argumentProperties']['operation']['enum'])==business.READS,'full mode functionality narrowed'
++assert all(t['parallelSafe'] is False for t in result['tools']),'parallel execution requires separate proof'
++print('PASS full read schema reuses validator fields and retains operations and current safety')
+diff --git a/tests/test_reply_submission_checks.py b/tests/test_reply_submission_checks.py
+new file mode 100644
+index 0000000..dae3631
+--- /dev/null
++++ b/tests/test_reply_submission_checks.py
+@@ -0,0 +1,58 @@
++"""python3 tests/test_reply_submission_checks.py; no DB/HTTP/model."""
++import importlib
++import json
++import sys
++from pathlib import Path
++from types import SimpleNamespace, ModuleType
++sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
++class Rejected(Exception):
++    def __init__(self,status):self.status_code=status;self.reason='denied'
++class Unknown(Exception):pass
++class Stop(Exception):pass
++frappe=ModuleType('frappe');frappe.db=SimpleNamespace(commit=lambda:None)
++frappe.throw=lambda m:(_ for _ in ()).throw(Stop(m))
++sys.modules['frappe']=frappe
++cloud=ModuleType('zebra_erpnext.cloud');cloud.CloudRejectedError=Rejected
++sys.modules['zebra_erpnext.cloud']=cloud
++m=importlib.import_module('zebra_erpnext.submission_recovery')
++def fresh():
++ d=SimpleNamespace(name='owned',task_id=None,active_run_id='run',request_id='request',request_options='{"reasoning_effort":"high"}',pending_command=None,pending_message='keep',stop_command=None,status='dispatching',prepared_request=None,prepared_revision=0)
++ d.db_update=lambda:None;cloud.owned=lambda *a,**kw:d;return d
++lock=SimpleNamespace(owned=lambda:True)
++def refused(*a,**kw):raise Rejected(403)
++d=fresh();cloud.request=refused
++try:m.create_task(d,{'execute':False},lock)
++except Rejected:pass
++assert d.status=='rejected' and json.loads(d.request_options)['task_creation']['state']=='rejected'
++assert d.pending_message=='keep'
++result=m.stop_uncreated(d,lock)
++assert result['status']=='cancelled' and result['submission_cancelled'] is True
++assert result.get('force_stop') is None,'never forge a native resource-reclamation proof'
++# A previous unknown ACK cannot be erased by a later403.
++d=fresh();cloud.request=lambda *a,**kw:(_ for _ in ()).throw(Unknown())
++try:m.create_task(d,{'execute':False},lock)
++except Unknown:pass
++cloud.request=refused
++try:m.create_task(d,{'execute':False},lock)
++except Rejected:pass
++assert d.status=='dispatching' and json.loads(d.request_options)['task_creation']['state']=='unknown'
++cloud.request=lambda *a,**kw:{'status':'not_observed','noncommit_proved':False}
++assert m.stop_uncreated(d,lock)['submission_cancelled'] is False
++assert d.status=='dispatching' and d.pending_message=='keep'
++s=m.snapshot(d);assert s['status']!='idle' and s['run_state']['phase']=='reconciling'
++# Observation can recover coordinates, but it can never submit a Run.
++seen=[]
++def recorded(d,method,path,**kw):
++ seen.append((method,path));return {'status':'recorded','task_id':'11111111-1111-1111-1111-111111111111','prepared_revision':2}
++cloud.request=recorded;m.reconcile(d,lock)
++assert d.task_id and d.prepared_request=='request' and d.prepared_revision==2
++assert seen==[('GET','/task-admissions/receipt')]
++# Late responses cannot overwrite a successor request.
++d=fresh()
++def successor(*a,**kw):d.active_run_id='new';return {'task_id':'old'}
++cloud.request=successor
++try:m.create_task(d,{'execute':False},lock)
++except Stop:pass
++else:raise AssertionError('late coordinates overwritten')
++assert d.task_id is None
++print('PASS definite rejection, unknown retention, truthful pre-Task stop, GET-only recovery and successor guard')
+diff --git a/zebra_erpnext/api.py b/zebra_erpnext/api.py
+index eb788ce..eb9242c 100644
+--- a/zebra_erpnext/api.py
++++ b/zebra_erpnext/api.py
+@@ -83,7 +83,8 @@ def snapshot(conversation):
+     doc = cloud.owned(conversation)
+     rejected_request_id = doc.request_id if doc.status == 'rejected' and not doc.pending_command else None
+     if not doc.task_id:
+-        return dict(title=doc.title, messages=[], status="idle", run_id=None, execution_mode=json.loads(doc.preferences_json or "{}").get("execution_mode", "standard"), run_state={"phase": "idle", "availableActions": []}, clarification=None, rejected_request_id=rejected_request_id)
++        from zebra_erpnext.submission_recovery import snapshot as submission_snapshot
++        return submission_snapshot(doc)
+     # The existing Task stream is an authorized, public event projection, not SQL access.
+     from zebra_erpnext.history import load, messages, public_state
+     from zebra_erpnext.presentation import decorate
+diff --git a/zebra_erpnext/chat.py b/zebra_erpnext/chat.py
+index 44c9da2..a62fc75 100644
+--- a/zebra_erpnext/chat.py
++++ b/zebra_erpnext/chat.py
+@@ -52,7 +52,8 @@ def submit(name, message, request_id, page=None, model_profile=None, reasoning_e
+                 # Keep request identity immutable but let a new corrected request
+                 # proceed; never clear a pinned AG-UI command on a lost response.
+                 doc = cloud.owned(name, for_update=True, admission_lock=admission_lock)
+-                if error.status_code in {400, 413, 415, 422} and not doc.pending_command:
++                creation = json.loads(doc.request_options or "{}").get("task_creation", {})
++                if error.status_code in {400, 413, 415, 422} and not doc.pending_command and creation.get("state") not in {"sending", "unknown"}:
+                     doc.status = "rejected"
+                     doc.db_update()
+                     frappe.db.commit()
+@@ -122,6 +123,9 @@ def _submit(name, message, request_id, page=None, model_profile=None, reasoning_
+     if doc.request_id == request_id and doc.status in {"running", "cancelled"}:
+         surface = json.loads(doc.client_surface_json) if doc.client_surface_json else None
+         return dict(task_id=doc.task_id, run_id=doc.active_run_id, status=doc.status, client_surface=surface)
++    from zebra_erpnext.submission_recovery import reconcile
++    if doc.status == 'dispatching' and not doc.task_id:
++        doc = reconcile(doc, admission_lock)
+     if doc.status == "dispatching" and doc.request_id != request_id:
+         frappe.throw("上一条消息正在提交，请先核对状态")
+     if doc.task_id and not doc.pending_command:
+@@ -133,12 +137,16 @@ def _submit(name, message, request_id, page=None, model_profile=None, reasoning_
+     run_id = doc.active_run_id if doc.request_id == request_id else str(uuid4())
+     if doc.request_id != request_id:
+         doc.stop_command = None
+-    doc.update(dict(request_id=request_id, request_options=json.dumps({**options, "attachments_digest": files_digest, "context": page}), pending_message=message,
++    first_creation = doc.request_id != request_id
++    prior_creation = json.loads(doc.request_options or "{}").get("task_creation") if not first_creation else None
++    creation_options = {"task_creation": prior_creation} if prior_creation else {}
++    doc.update(dict(request_id=request_id, request_options=json.dumps({**options, "attachments_digest": files_digest, "context": page, **creation_options}), pending_message=message,
+                     active_run_id=run_id, status="dispatching"))
+     doc.db_update()
+     frappe.db.commit()
+     if not doc.task_id:
+-        task = cloud.request(doc, "POST", "/tasks", run_id=run_id, key=f"erpnext-task-{doc.name}", body={
++        from zebra_erpnext.submission_recovery import create_task
++        task = create_task(doc, {
+             "prompt": message, "title": conversation_title.task_title(doc, message), "execute": False,
+             "interaction_mode": "conversation", "history_session_ids": [],
+             **({"attachments": attachments} if attachments else {}),
+@@ -146,7 +154,7 @@ def _submit(name, message, request_id, page=None, model_profile=None, reasoning_
+             **runtime.profile(doc, cloud.config()),
+             **({"skill_components": extensions.task_skills(doc)} if runtime.release(doc) == runtime.FULL else {}),
+             "workspace_source": {"kind": "host_reference", "locator": "erpnext://workspace/" + doc.name},
+-        }, admission_lock=admission_lock)
++        }, admission_lock, first_attempt=first_creation)
+         doc = cloud.owned(name, for_update=True, admission_lock=admission_lock)
+         doc.task_id = task["task_id"]
+         revision = task.get("active_segment_sequence", task.get("current_sequence", 0))
+@@ -216,7 +224,13 @@ def cancel(name):
+ 
+ def _cancel(name, admission_lock):
+     doc = cloud.owned(name, for_update=True, admission_lock=admission_lock)
+-    if not doc.task_id or not doc.active_run_id:
++    if not doc.task_id:
++        from zebra_erpnext.submission_recovery import stop_uncreated
++        result = stop_uncreated(doc, admission_lock)
++        if result is not None:
++            return result
++        doc = cloud.owned(name, for_update=True, admission_lock=admission_lock)
++    if not doc.active_run_id:
+         return {"status": "idle"}
+     if doc.status == "cancelled":
+         return {"status": "cancelled"}
+diff --git a/zebra_erpnext/cloud.py b/zebra_erpnext/cloud.py
+index d7b4311..3cb1dc0 100644
+--- a/zebra_erpnext/cloud.py
++++ b/zebra_erpnext/cloud.py
+@@ -141,7 +141,7 @@ def request(conversation, method, path, *, body=None, run_id=None, key=None,
+             stream=False, params=None, extra_headers=None, _attempt=0, accepted_problems=(), raw_response=False, admission_lock=None,
+             content_bytes=None, content_type=None, authority_refs=None):
+     from zebra_erpnext import runtime
+-    control = bool(conversation.task_id and path in {
++    control = method.upper() == "GET" and path == "/task-admissions/receipt" or bool(conversation.task_id and path in {
+         f"/tasks/{conversation.task_id}/cancel", f"/tasks/{conversation.task_id}/stop",
+         f"/tasks/{conversation.task_id}/header"})
+     settings = runtime.settings(conversation, config(), control=control)
+diff --git a/zebra_erpnext/discovery_view.py b/zebra_erpnext/discovery_view.py
+new file mode 100644
+index 0000000..6efd064
+--- /dev/null
++++ b/zebra_erpnext/discovery_view.py
+@@ -0,0 +1,22 @@
++"""Small metadata index; the Host response retains full evidence after this prefix."""
++import json
++
++
++def preview(result):
++    if not isinstance(result,dict) or 'doctypes' not in result or 'reports' not in result:
++        return None
++    doctypes=result['doctypes'];reports=result['reports']
++    view={key:result[key] for key in ('next_start','doctypes_has_more','reports_has_more','pagination_scope','limits') if key in result}
++    view.update(metadata_only=True,document_permissions_checked=False,
++        total_in_response={'doctypes':len(doctypes),'reports':len(reports)},
++        doctypes=list(doctypes),reports=list(reports))
++    encode=lambda:json.dumps(view,ensure_ascii=False,separators=(',',':'))
++    while len(encode().encode())>8000 and (view['doctypes'] or view['reports']):
++        key='reports' if len(view['reports'])>=len(view['doctypes']) else 'doctypes'
++        view[key].pop()
++    view['index_incomplete']=len(view['doctypes'])<len(doctypes) or len(view['reports'])<len(reports)
++    view['details']='Full original metadata is retained after this index. Metadata access is not proof of access to every business document.'
++    while len(encode().encode())>8000 and (view['doctypes'] or view['reports']):
++        key='reports' if len(view['reports'])>=len(view['doctypes']) else 'doctypes'
++        view[key].pop();view['index_incomplete']=True
++    return encode()
+diff --git a/zebra_erpnext/gateway.py b/zebra_erpnext/gateway.py
+index 5708415..5a3a9d3 100644
+--- a/zebra_erpnext/gateway.py
++++ b/zebra_erpnext/gateway.py
+@@ -16,7 +16,7 @@ def business_arguments_schema(operations):
+     """Publish the existing validator's exact key sets for the bounded chat tools."""
+     from zebra_erpnext.business import SCHEMAS, AGGREGATE_METRICS
+     text = {'type': 'string', 'minLength': 1, 'maxLength': 140}
+-    fields = {key: text for key in ('doctype', 'name', 'modified', 'company', 'report')}
++    fields = {key: text for key in ('doctype', 'name', 'modified', 'company', 'report', 'file', 'format')}
+     fields.update(fields={'type': 'array', 'minItems': 1, 'maxItems': 30, 'items': {'type': 'string'}},
+         filters={'type': 'object', 'description': 'Readable field names and native filter values; never SQL.'},
+         limit={'type': 'integer', 'minimum': 1, 'maximum': 50},
+@@ -121,10 +121,15 @@ def manifest():
+                 'request_id': {'type': 'string', 'minLength': 1, 'maxLength': 140}}
+             properties['arguments']['properties']['doctype'] = {'type': 'string', 'enum': ['Production Plan']}
+             description = 'Prepare only Production Plan create/update/submit for independent human confirmation. This does not execute a business write. Never confirm your own proposal; the user must click the exact-arguments confirmation in the assistant panel. Only after that confirmation, reuse the returned request_id with identical arguments to read its completed result.'
+-        if readonly_chat and name == 'erpnext.read':
+-            properties = {**properties, 'operation': {'type': 'string', 'enum': sorted(CHAT_READS)},
+-                'arguments': business_arguments_schema(CHAT_READS)}
++        if name == 'erpnext.read':
++            read_operations = CHAT_READS if readonly_chat else READS
++            properties = {**properties, 'operation': {'type': 'string', 'enum': sorted(read_operations)},
++                'arguments': business_arguments_schema(read_operations)}
+             description = 'Read permitted ERP data only. Query/query_page require doctype; get/workflow_transitions require doctype+name; aggregate requires doctype+metric (sum/avg/min/max also require numeric field); report_describe requires report. Query limit is 1..50; aggregate takes no limit or group_by and scans at most 1000 accessible rows. Examples: operation="query", arguments={"doctype":"Company","fields":["name"],"limit":20}; operation="aggregate", arguments={"doctype":"Sales Order","metric":"count"}. For count omit field. No files, exports or business mutation.'
++        if name == 'erpnext.read' and not readonly_chat:
++            description = 'Read native ERP data under current authorization. aggregate requires doctype+metric (count/sum/avg/min/max); count omits field, other metrics require a readable numeric field. Other published operation names and parameters retain their native contracts. Use discover for document fields.'
++        if name == 'erpnext.discover' and not readonly_chat:
++            properties = {**properties, 'limit': {'type':'integer','minimum':1,'maximum':50}}
+         tools.append(dict(name=name, description=description, requiredArguments=required,
+                           argumentProperties=properties, executionLocation="host",
+                           scopes=["erpnext.read", admin_mode.SCOPE] if administrator else ["erpnext.read"], risk="read", parallelSafe=False,
+diff --git a/zebra_erpnext/gateway_dispatch.py b/zebra_erpnext/gateway_dispatch.py
+index a386ed1..9565402 100644
+--- a/zebra_erpnext/gateway_dispatch.py
++++ b/zebra_erpnext/gateway_dispatch.py
+@@ -34,6 +34,8 @@ def dispatch(record, conversation, body, *, readonly_chat, administrator):
+         elif name == "erpnext.discover":
+             if set(args) - {"query", "doctype", "start", "limit"}:
+                 frappe.throw("Unsupported discovery arguments")
++            if not readonly_chat and not args.get('doctype'):
++                args = {**args, 'limit': min(int(args.get('limit', 30)), 50)}
+             result = capabilities.discover(**args)
+         elif name in {"erpnext.read", "erpnext.propose"}:
+             if set(args) - {"operation", "arguments", "request_id"}:
+@@ -64,6 +66,12 @@ def dispatch(record, conversation, body, *, readonly_chat, administrator):
+         else:
+             frappe.throw("Unknown Host tool")
+         output = frappe.as_json(result)
++        if name == 'erpnext.discover' and not readonly_chat:
++            from zebra_erpnext.discovery_view import preview
++            index = preview(result)
++            if index is not None:
++                return {'output': index + '\n\n[Full original discovery metadata]\n' + output,
++                        'model_preview': index}
+         if readonly_chat and len(output.encode()) > 8192:
+             output = frappe.as_json({'status': 'too_large', 'message': '查询结果较大，请缩小字段或条件。'})
+         return {"output": output}
+diff --git a/zebra_erpnext/session_force_stop.py b/zebra_erpnext/session_force_stop.py
+index 81fdcd3..06c4c87 100644
+--- a/zebra_erpnext/session_force_stop.py
++++ b/zebra_erpnext/session_force_stop.py
+@@ -65,7 +65,11 @@ def stop(name):
+         with frappe.cache.lock("zebra:submit:" + name, timeout=180, blocking_timeout=0) as lock:
+             doc = cloud.owned(name, for_update=True, admission_lock=lock, control=True)
+             if not doc.task_id:
+-                return {"status": "idle"}
++                from zebra_erpnext.submission_recovery import stop_uncreated
++                result = stop_uncreated(doc, lock)
++                if result is not None:
++                    return result
++                doc = cloud.owned(name, for_update=True, admission_lock=lock, control=True)
+             if runtime.release(doc) != runtime.FULL:
+                 frappe.throw("旧运行时尚不支持通用强停，请使用普通停止或联系管理员核对")
+             coordinates = doc.task_id, doc.active_run_id
+diff --git a/zebra_erpnext/submission_recovery.py b/zebra_erpnext/submission_recovery.py
+new file mode 100644
+index 0000000..656e217
+--- /dev/null
++++ b/zebra_erpnext/submission_recovery.py
+@@ -0,0 +1,88 @@
++"""Pre-Task intents: definite refusal is terminal; a missing ACK remains unknown."""
++import json
++from uuid import UUID
++import frappe
++from zebra_erpnext import cloud
++
++
++def _state(doc):
++    return json.loads(doc.request_options or '{}').get('task_creation') or {}
++
++
++def _current(doc, lock, coordinates):
++    current=cloud.owned(doc.name,for_update=True,admission_lock=lock,control=True)
++    if (current.request_id,current.active_run_id,current.task_id)!=coordinates:
++        frappe.throw('会话已变化，旧提交回执不会修改后续请求')
++    return current
++
++
++def _save(doc, state):
++    options=json.loads(doc.request_options or '{}');options['task_creation']=state
++    doc.request_options=json.dumps(options,ensure_ascii=False);doc.db_update();frappe.db.commit()
++
++
++def create_task(doc, payload, lock, *, first_attempt=True):
++    coordinates=(doc.request_id,doc.active_run_id,doc.task_id)
++    prior=_state(doc)
++    uncertain=prior.get('state') in {'sending','unknown'} or not first_attempt and not prior
++    payload=prior.get('payload',payload)
++    state={'state':'sending','uncertain_prior':uncertain,'payload':payload}
++    _save(doc,state)
++    try:
++        result=cloud.request(doc,'POST','/tasks',run_id=doc.active_run_id,
++            key='erpnext-task-'+doc.name,body=payload,admission_lock=lock)
++    except Exception as error:
++        current=_current(doc,lock,coordinates)
++        known=isinstance(error,cloud.CloudRejectedError) and error.status_code in {400,401,403,404,405,413,415,422} and not uncertain
++        state.update(state='rejected' if known else 'unknown')
++        if isinstance(error,cloud.CloudRejectedError):state['http_status']=error.status_code
++        if known:current.status='rejected'
++        _save(current,state)
++        raise
++    current=_current(doc,lock,coordinates)
++    task=str(UUID(result['task_id']))
++    revision=result.get('active_segment_sequence',result.get('current_sequence',0))
++    if type(revision) is not int or revision<0:frappe.throw('任务回执版本无效，请核对原提交')
++    current.task_id=task;current.prepared_request=current.request_id;current.prepared_revision=revision
++    _save(current,{'state':'recorded','task_id':task})
++    return result
++
++
++def reconcile(doc, lock):
++    if doc.task_id or doc.status!='dispatching' or _state(doc).get('state')=='rejected':return doc
++    coordinates=(doc.request_id,doc.active_run_id,doc.task_id)
++    result=cloud.request(doc,'GET','/task-admissions/receipt',run_id=doc.active_run_id,
++        key='erpnext-task-'+doc.name,admission_lock=lock)
++    current=_current(doc,lock,coordinates)
++    if result.get('status')=='recorded':
++        task=str(UUID(result['task_id']));revision=result['prepared_revision']
++        if type(revision) is not int or revision<0:frappe.throw('任务回执版本无效')
++        current.task_id=task;current.prepared_request=current.request_id;current.prepared_revision=revision
++        _save(current,{'state':'recorded','task_id':task})
++    # Absence is not a proof of noncommit and never clears the original intent.
++    return current
++
++
++def stop_uncreated(doc, lock):
++    if doc.task_id:return None
++    if doc.status=='dispatching':doc=reconcile(doc,lock)
++    if doc.task_id:return None
++    if doc.status in {'rejected','cancelled'} and not doc.pending_command and _state(doc).get('state')=='rejected':
++        doc.status='cancelled';doc.stop_command=None
++        doc.db_update();frappe.db.commit()
++        return {'status':'cancelled','submission_cancelled':True,'force_stop':None}
++    if doc.status=='dispatching' or doc.pending_command:
++        return {'status':'dispatching','submission_cancelled':False,'force_stop':None,'requires_reconciliation':True}
++    return {'status':'idle','force_stop':None}
++
++
++def snapshot(doc):
++    pending=doc.status=='dispatching' or bool(doc.pending_command);rejected=doc.status=='rejected' and not doc.pending_command
++    state={'phase':'reconciling' if pending else 'terminal' if rejected or doc.status=='cancelled' else 'idle',
++        'availableActions':[],**({'safeMessage':'创建任务的结果尚未确认；未重发原任务，请核对停止或原提交回执。'} if pending else {}),
++        **({'outcome':'blocked','safeMessage':'上次任务创建被明确拒绝；没有启动模型，可以修改后重新提交。'} if rejected else {})}
++    return dict(title=doc.title if hasattr(doc,'title') else '',messages=[{'id':doc.request_id,'role':'user','content':doc.pending_message}] if doc.pending_message else [],
++        status='blocked' if pending else 'failed' if rejected else doc.status or 'idle',
++        run_id=doc.active_run_id,run_state=state,clarification=None,
++        rejected_request_id=doc.request_id if rejected else None,
++        execution_mode=json.loads(doc.preferences_json or '{}').get('execution_mode','standard') if hasattr(doc,'preferences_json') else 'standard')

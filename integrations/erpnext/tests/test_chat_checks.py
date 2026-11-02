@@ -225,7 +225,8 @@ before = len(requests)
 original_request = cloud.request
 cloud.request = (
     lambda d, m, p, **kw: (
-        requests.append((m, p, kw)) or {"task_id": "first-task", "current_sequence": 2}
+        requests.append((m, p, kw))
+        or {"task_id": "00000000-0000-4000-8000-000000000001", "current_sequence": 2}
     )
     if p == "/tasks"
     else original_request(d, m, p, **kw)
@@ -302,7 +303,8 @@ doc.status = "idle"
 doc.request_id = None
 cloud.request = (
     lambda d, m, p, **kw: (
-        requests.append((m, p, kw)) or {"task_id": "options-task", "current_sequence": 2}
+        requests.append((m, p, kw))
+        or {"task_id": "00000000-0000-4000-8000-000000000002", "current_sequence": 2}
     )
     if p == "/tasks"
     else request(d, m, p, **kw)
@@ -431,7 +433,8 @@ cloud.config = lambda: {}
 client.open_surface = lambda *args: None
 cloud.request = (
     lambda d, m, p, **kw: (
-        requests.append((m, p, kw)) or {"task_id": "context-task", "current_sequence": 2}
+        requests.append((m, p, kw))
+        or {"task_id": "00000000-0000-4000-8000-000000000003", "current_sequence": 2}
     )
     if p == "/tasks"
     else request(d, m, p, **kw)
@@ -509,7 +512,8 @@ cloud.has_private_workspace = lambda d: True
 client.open_surface = lambda *args: None
 cloud.request = (
     lambda d, m, p, **kw: (
-        requests.append((m, p, kw)) or {"task_id": "file-task", "current_sequence": 2}
+        requests.append((m, p, kw))
+        or {"task_id": "00000000-0000-4000-8000-000000000004", "current_sequence": 2}
     )
     if p == "/tasks"
     else request(d, m, p, **kw)
