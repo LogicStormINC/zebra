@@ -20,6 +20,7 @@ from agent_core.domain.host_effect_receipts import (
 )
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult, ToolRisk
 from agent_tools.contracts import ToolContract
+from agent_tools.output_projection import ToolOutputProjector
 
 from agent_integrations.host_tools.contracts import (
     HostToolGatewayError,
@@ -32,6 +33,7 @@ from agent_integrations.host_tools.contracts import (
 from agent_integrations.host_tools.effect_metadata import failure_outcomes, host_effect_metadata
 from agent_integrations.host_tools.endpoints import join_endpoint as _join_endpoint
 from agent_integrations.host_tools.http import HttpHostToolTransport
+from agent_integrations.host_tools.output_preview import project_preview
 
 
 @dataclass
@@ -45,6 +47,7 @@ class HostToolGateway:
     manifest_binding_policy: str = "declared"
     manifest_path: str = "/manifest"
     invoke_path: str | None = None
+    output_projector: ToolOutputProjector | None = None
 
     def discover(self, context: HostContextEnvelope) -> HostToolManifest:
         _ensure_context_live(context)
@@ -241,10 +244,14 @@ class HostToolGateway:
                 scopes=effective_scopes,
                 idempotency_key=idempotency_key,
             )
+        projected = project_preview(
+            self.output_projector, output, response.body.get("model_preview"),
+            tool_call=tool_call, contract=contract,
+        )
         return ToolResult(
             tool_call_id=tool_call.tool_call_id,
             status=ToolCallStatus.EXECUTED,
-            output=output,
+            output=projected.model_output if projected is not None else output,
             metadata={
                 "route": "host_tool_gateway",
                 "tool_name": contract.name,
@@ -253,6 +260,7 @@ class HostToolGateway:
                 "scope_intersection": list(effective_scopes),
                 **_safe_metadata(response.body.get("metadata")),
                 **effect_metadata,
+                **(projected.metadata if projected is not None else {}),
             },
             receipt=contract.receipt(
                 status="executed",

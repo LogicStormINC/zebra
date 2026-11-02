@@ -49,6 +49,10 @@ class TaskRouteRequest(Protocol):
 
 def handle_task_route(app: ZebraAgentApi, request: TaskRouteRequest) -> ApiResponse | None:
     method = request.method.upper()
+    if request.path == "/task-admissions/receipt":
+        from zebra_agent_api.task_admission_lookup import read_task_admission
+
+        return read_task_admission(app, request)
     if method == "GET" and request.path == "/tasks":
         return TaskReadApi(app.stores).list(request.query or {})
     if method == "POST" and request.path == "/tasks":

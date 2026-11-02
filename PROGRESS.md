@@ -8869,3 +8869,13 @@ CA-P5-10 final design revision: initial full5 identity/context propagation failu
 CA-P5-09/10 combined final producer gates: make test11240 passed/3080 conditional skips, make check0 file-size violations/ruff/mypy1448/Eval30 passed; source hashes unchanged. Legacy real PG8 and original resource binding7 passed in exact-owned temporary PG (historical fixture replaced for isolation only; assertions unchanged). All owned temporary PG/anonymous volumes removed, no new volumes/networks;4 foreign-owner containers preserved. Source publication required before fresh consumer images; P5 not yet closed.
 
 CA-P5-08 verification resumed on9e91d75f after both producer gates passed and GitHub HTTPS remote verified. No code changes; consumer V22 uses new exact-source images in one environment. After cleanup compare frozen blobs and reuse current-turn full result if unchanged. Prior unknowns/data preserved; final S1 still pending.
+
+## 2026-11-03 — CLOUD-REPLY-ROBUSTNESS-20261103
+
+Current-authority, GET-only Task creation receipt recovery; shared read-only Host
+preview/full Artifact preservation; lazy public exports with stable identities;
+focused ERP canonical/split parity. Production fixed117 no-model gates:52 Worker
+and10 API cases;57 original rejected intent recovered without replay. Proof-import
+median3.455→1.379s; saved inventory79,060→7,964 visible bytes. No model/search,
+no Search/MCP restart; original ledger/events/volumes retained. Not a whole-Run
+latency or production HA/SLO claim. See docs/CLOUD_REPLY_ROBUSTNESS_20261103.md.

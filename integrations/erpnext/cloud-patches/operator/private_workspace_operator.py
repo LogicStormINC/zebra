@@ -166,6 +166,7 @@ def serve(allocator, socket_path, key):
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
     parser = argparse.ArgumentParser()
     parser.add_argument("config", type=Path)
     options = parser.parse_args()

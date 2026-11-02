@@ -93,14 +93,9 @@ def snapshot(conversation):
         doc.request_id if doc.status == "rejected" and not doc.pending_command else None
     )
     if not doc.task_id:
-        return dict(
-            messages=[],
-            status="idle",
-            run_id=None,
-            run_state={"phase": "idle", "availableActions": []},
-            clarification=None,
-            rejected_request_id=rejected_request_id,
-        )
+        from zebra_erpnext.submission_recovery import snapshot as submission_snapshot
+
+        return submission_snapshot(doc)
     # The existing Task stream is an authorized, public event projection, not SQL access.
     from zebra_erpnext.history import load, messages, public_state
     from zebra_erpnext.presentation import decorate

@@ -6,6 +6,7 @@ import json
 import os
 import socket
 import stat
+import sys
 import time
 from pathlib import Path
 from uuid import UUID, uuid4, uuid5
@@ -64,6 +65,7 @@ class PrivateWorkspaceClient:
             raise ValueError("insufficient allocator credential")
 
     def require(self, session_id, instance, *, allow_allocate):
+        started = time.monotonic()
         wid = str(instance.workspace_id)
         path = ROOT / wid
         body = dict(
@@ -134,4 +136,16 @@ class PrivateWorkspaceClient:
             or any(receipt.get(key) != value for key, value in identity.items())
         ):
             raise ValueError("Worker mount propagation or filesystem identity mismatch")
+        print(
+            json.dumps(
+                dict(
+                    event="workspace_stage",
+                    stage="verified_receipt",
+                    operation=body["operation"],
+                    elapsed_ms=round((time.monotonic() - started) * 1000, 1),
+                )
+            ),
+            file=sys.stderr,
+            flush=True,
+        )
         return path

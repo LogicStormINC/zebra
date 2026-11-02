@@ -18797,3 +18797,13 @@ ingress mapping, release-overlay preflight and redacted live proof. Native apps/
 unchanged. Original Task/Run/receipt/unknown/Coverage protected; no new Docker in export stage.
 Compatibility export is not the full current ERP Host build source; SOURCE explicitly
 requires canonical main for normal Host releases. Exact source mapping verified before gates.
+
+## 2026-11-03 — CLOUD-REPLY-ROBUSTNESS-20261103
+
+Current-authority, GET-only Task creation receipt recovery; shared read-only Host
+preview/full Artifact preservation; lazy public exports with stable identities;
+focused ERP canonical/split parity. Production fixed117 no-model gates:52 Worker
+and10 API cases;57 original rejected intent recovered without replay. Proof-import
+median3.455→1.379s; saved inventory79,060→7,964 visible bytes. No model/search,
+no Search/MCP restart; original ledger/events/volumes retained. Not a whole-Run
+latency or production HA/SLO claim. See docs/CLOUD_REPLY_ROBUSTNESS_20261103.md.

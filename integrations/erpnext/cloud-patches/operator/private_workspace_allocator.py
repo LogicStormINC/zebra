@@ -6,6 +6,7 @@ import fcntl
 import hashlib
 import hmac
 import json
+import logging
 import math
 import os
 import stat
@@ -76,9 +77,17 @@ def trusted(path, *, directory=True):
 
 
 def run(*args):
-    return subprocess.check_output(
-        args, text=True, timeout=remaining(), stderr=subprocess.DEVNULL
-    ).strip()
+    started = time.monotonic()
+    try:
+        return subprocess.check_output(
+            args, text=True, timeout=remaining(), stderr=subprocess.DEVNULL
+        ).strip()
+    finally:
+        logging.info(
+            "workspace_stage stage=filesystem_command command=%s elapsed_ms=%.1f",
+            Path(args[0]).name,
+            (time.monotonic() - started) * 1000,
+        )
 
 
 def mount_evidence(path):

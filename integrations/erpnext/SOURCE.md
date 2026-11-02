@@ -39,3 +39,14 @@ into this existing split compatibility tree, not a replacement of its frozen
 originals or an assertion that this entire directory equals canonical main.
 The matching standalone checks are retained; deployed117 acceptance used the
 canonical source overlay recorded in the focused Cloud incident document.
+
+2026-11-03 reply robustness parity: canonical `19ebdf9` based on `878ed20`.
+The focused split port retains existing compatibility profiles and frozen originals.
+Generic receipt recovery, full read parameter schemas, bounded discovery and safe
+startup timing are ported into their current responsibility files. The complete
+canonical delta (including its newer force-stop adapter and frontend acknowledgement)
+is retained in `cloud-patches/reply-robustness-20261103.patch`; it applies to the
+canonical878ed20 tree, not to the split export. Rebuild frontend with its existing
+locked dependencies; generated JS is deliberately not duplicated inside this patch.
+Production117 uses that canonical overlay. This port does not imply that old split
+adapter lifecycle/admin features equal all later canonical capabilities.

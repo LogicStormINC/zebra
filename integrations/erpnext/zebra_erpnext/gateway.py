@@ -18,7 +18,9 @@ def business_arguments_schema(operations):
     from zebra_erpnext.business import AGGREGATE_METRICS, SCHEMAS
 
     text = {"type": "string", "minLength": 1, "maxLength": 140}
-    fields = {key: text for key in ("doctype", "name", "modified", "company", "report")}
+    fields = {
+        key: text for key in ("doctype", "name", "modified", "company", "report", "file", "format")
+    }
     fields.update(
         fields={"type": "array", "minItems": 1, "maxItems": 30, "items": {"type": "string"}},
         filters={
@@ -40,7 +42,7 @@ def business_arguments_schema(operations):
         values={
             "type": "object",
             "minProperties": 1,
-            "description": (
+            ("description"): (
                 "Native writable fields; child tables use native field names learned from discover."
             ),
         },
@@ -236,11 +238,12 @@ def manifest():
                 "completed "
                 "result."
             )
-        if readonly_chat and name == "erpnext.read":
+        if name == "erpnext.read":
+            read_operations = CHAT_READS if readonly_chat else READS
             properties = {
                 **properties,
-                "operation": {"type": "string", "enum": sorted(CHAT_READS)},
-                "arguments": business_arguments_schema(CHAT_READS),
+                "operation": {"type": "string", "enum": sorted(read_operations)},
+                "arguments": business_arguments_schema(read_operations),
             }
             description = (
                 "Read permitted ERP data only. Query/query_page require doctype; "
@@ -254,6 +257,16 @@ def manifest():
                 "field. No files, exports or business "
                 "mutation."
             )
+        if name == "erpnext.read" and not readonly_chat:
+            description = (
+                "Read native ERP data under current authorization. aggregate requires "
+                "doctype+metric (count/sum/avg/min/max); count omits field, other metrics "
+                "require a readable numeric field. Other published operation names and "
+                "parameters retain their native contracts. Use discover for document "
+                "fields."
+            )
+        if name == "erpnext.discover" and not readonly_chat:
+            properties = {**properties, "limit": {"type": "integer", "minimum": 1, "maximum": 50}}
         tools.append(
             dict(
                 name=name,
@@ -325,6 +338,8 @@ def invoke():
         if name == "erpnext.discover":
             if set(args) - {"query", "doctype", "start", "limit"}:
                 frappe.throw("Unsupported discovery arguments")
+            if not readonly_chat and not args.get("doctype"):
+                args = {**args, "limit": min(int(args.get("limit", 30)), 50)}
             result = capabilities.discover(**args)
         elif name in {"erpnext.read", "erpnext.propose"}:
             if set(args) - {"operation", "arguments", "request_id"}:
@@ -371,6 +386,17 @@ def invoke():
         else:
             frappe.throw("Unknown Host tool")
         output = frappe.as_json(result)
+        if name == "erpnext.discover" and not readonly_chat:
+            from zebra_erpnext.discovery_view import preview
+
+            index = preview(result)
+            if index is not None:
+                return raw(
+                    {
+                        "output": index + "\n\n[Full original discovery metadata]\n" + output,
+                        "model_preview": index,
+                    }
+                )
         if readonly_chat and len(output.encode()) > 8192:
             output = frappe.as_json(
                 {"status": "too_large", "message": "查询结果较大，请缩小字段或条件。"}
