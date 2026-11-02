@@ -9,8 +9,9 @@ import secrets
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from urllib.parse import urlsplit
-from uuid import uuid4
+from uuid import UUID, uuid4
 
+from agent_core.domain.agent_definition_drafts import AgentDefinitionDraft
 from agent_core.domain.runtime_assembly import (
     TEXT_OUTPUT_SCHEMA_DIGEST,
     RuntimeAssembly,
@@ -27,10 +28,12 @@ parser = argparse.ArgumentParser()
 parser.add_argument("directory", type=Path)
 parser.add_argument("--image-digest", required=True)
 parser.add_argument("--evidence-digest", required=True)
+parser.add_argument("--trust-revision", type=int, default=1)
 args = parser.parse_args()
 assert all(re.fullmatch(r"sha256:[0-9a-f]{64}", v) for v in (
     args.image_digest, args.evidence_digest
 ))
+assert 1 <= args.trust_revision < 2**53
 settings = load_settings()
 address = urlsplit(settings.database_url)
 assert settings.deployment == "cloud"
@@ -38,7 +41,8 @@ assert (address.hostname, address.port, address.path) == ("127.0.0.1", 25432, "/
 assert os.environ.get("ZEBRA_DEPLOYMENT_NAMESPACE") == "ha-e1-20261102"
 out = args.directory.resolve()
 out.mkdir(mode=0o700, parents=False, exist_ok=False)
-key, token = secrets.token_hex(32), secrets.token_urlsafe(32)
+key, token = secrets.token_hex(32), "rtpub_" + secrets.token_urlsafe(32)
+assert re.fullmatch(r"rtpub_[A-Za-z0-9_-]{43}", token)
 envelope = json.loads(Path(__file__).with_name("example-envelope.json").read_text())
 m = envelope["manifest"]
 scope = dict(authority_issuer="https://127.0.0.1:28444", namespace_id="ha-e1-20261102",
@@ -88,13 +92,11 @@ refs = {name + "_ref": f"e1/{name}@1" for name in (
     "model_policy", "tool_profile", "memory_policy", "security_policy",
     "evaluation_profile", "runtime_profile"
 )}
-# General profile is used by the frozen Definition; actual runtime remains gVisor.
-refs["tool_profile_ref"] = "general"
 skills = hashlib.sha256(b"[]").hexdigest()
 definition = str(uuid4())
 approval = dict(
     schema_version="cloud-agent.publication-approval/1", scope=scope, audience="ha-e1-management",
-    actor="ha-e1-publisher", definition_id=definition, trust_revision=1,
+    actor="ha-e1-publisher", definition_id=definition, trust_revision=args.trust_revision,
     credential_sha256=hashlib.sha256(token.encode()).hexdigest(),
     expires_at=(datetime.now(UTC) + timedelta(days=2)).isoformat(),
     actions=["materialize", "publish", "read"],
@@ -105,6 +107,10 @@ approval = dict(
     policy_version="e1-meter-wire/1",
 )
 PublicationApproval.model_validate_json(json.dumps(approval))
+AgentDefinitionDraft(
+    definition_id=UUID(definition), authority_issuer=scope["authority_issuer"],
+    namespace_id=scope["namespace_id"], updated_at=datetime.now(UTC), **approval["template"],
+)
 for name, value in (("catalog.json", catalog), ("publication.json", approval),
                     ("bundle.json", envelope), ("assembly.json", assembly.model_dump(mode="json"))):
     private(out / name, json.dumps(value, indent=2))

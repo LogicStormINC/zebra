@@ -18840,3 +18840,15 @@ E1容量、实际fleet约束/漂移告警、独立评审及后续旧任务自动
 Registry镜像已拉取，当前新应用仍旧镜像，未进行新Task/发布/eval通过写入或生产切换。
 缺执行配置的初始包不能启动；候选真实image index/source证据后生成UID65532配置并核对两端baseline。
 私有token仅操作员保管；下一步新源镜像构建、真实索引、私有装配、冷切owned staging并验新Task。
+
+
+## 2026-11-03 — E1 native pipeline reaches guarded schema bug
+
+e8实际两架构构建/源哈希/真实私有清单/双端baseline/UID0600/冷切与健康完成。
+生成模板公开mode错误、版本ref和token前缀已纠正，原生发布200；所有发布opIDs先存，
+仅已知预鉴权401在原GET404确认未执行后重发同operation，unknown不重发。
+新Task39d0单次201后cap1024/gVisor/隔离子进程成功进入模型前，TypeError失败，0预留。
+实际present参数schema properties.type是字典，共享_supported_content用set导致unhashable；
+以实际schema红3，改tuple一行，35/5skip及独立19通过，未改模型/预算/策略拒绝。
+原e698与新39d0均失败保留、不重跑；新修复候选须重建镜像和清单/批准新冻结配置再新Task。
+操作状态在ignored .artifacts/cloud-ha-e1/{build-e8f528b2,cold-e8f528b2,publication-e8f528b2,guarded-smoke-e8f528b2}.json。

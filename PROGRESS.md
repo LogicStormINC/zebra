@@ -1,3 +1,15 @@
+## 2026-11-03 — HA03 E1实际组合与schema守卫修复候选
+
+e8f528b2双架构镜像已验证2139文件/3符号链接并冷切入新测试API/Worker；实际多架构清单及
+两端同baseline/private UID65532配置验证通过。原生管理接口materialize/publish200，评估
+仅synthetic wire/accounting兼容子集。配置生成器补公开模板可读性、原生Draft版本引用及rtpub_
+格式校验；原401已用原operation GET404核对后修复凭据，未重发unknown业务操作。
+新Task39d0bc5d-0347-40df-8fef-78dd05d33421仅POST一次201，输出cap已为1024，
+授权/gVisor/隔离执行可达，但工具Schema.type字典触发共享guard集合查询TypeError；
+11事件、0模型预留/0工具，保留原任务不重跑。以真实content.present Schema及union复现，
+共享set改tuple一行，image/continuation拒绝保留；定向35通过/5skip、独立19通过。
+此修复尚待新镜像及全新Task验收；完整E1与后续HA未通过，生产未改变。
+
 ## 2026-11-03 — HA03 E1操作员绑定源码（未切运行镜像）
 
 沿用同卡领取范围；主入口新增可选受信任Python factory，在有效Worker pool作用域内构造

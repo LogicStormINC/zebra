@@ -43,3 +43,14 @@ Mac-owned SSH forwards and a single VM control/data plane; not storage/host-fail
     private catalog/publication with that digest and source receipts; UID65532 mode0600;
     publication token operator-only; verify both effective baselines. Then full preflight and
     idle owned cold promotion. Never run the original failed Task again.
+
+13. E8 live assembly done: immutable multi-arch manifest abfd6add..., matched runtime
+    source2139/3 and both baselines; new owned API/Worker healthy; actual management
+    materialize/publish passed. Native strict credential/ref/template fixes now in generator.
+14. Guarded smoke39d0... admitted once and reached gVisor/isolated model boundary with
+    output cap1024, but shared recursive guard TypeError on real present schema.type dict;
+    no reservations/tools. Preserve failed Task. One-line tuple fix red3/green35+5skip,
+    AI review19passed. Next build this exact new source, real new image index, generate
+    a NEW approval with --trust-revision4 (current exact trust3), exact scoped native
+    CAS3->4, materialize/publish new Definition and NEW Task. No retries of old Tasks.
+    Full E1/HA03/production HA still incomplete.

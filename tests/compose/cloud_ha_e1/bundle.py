@@ -57,7 +57,8 @@ if vm:
     ]
 for name in names:
     shutil.copyfile(source / name, out / name)
-    (out / name).chmod(0o600 if name.endswith((".env", ".json")) else 0o644)
+    private_file = name.endswith((".env", ".json")) and name != "example-envelope.json"
+    (out / name).chmod(0o600 if private_file else 0o644)
 (out / "tls").mkdir(mode=0o700)
 for name in ["ca.crt", "server.crt", "server.key", "model.crt", "model.key"] + (
     ["pg.key", "broker.key"] if vm else []

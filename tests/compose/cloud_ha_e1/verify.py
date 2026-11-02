@@ -33,6 +33,7 @@ result = subprocess.run(
 )
 config = json.loads(result.stdout)
 assert (root / "check_model.py").is_file()
+assert (root / "example-envelope.json").stat().st_mode & 0o004
 for name in (
     ("registry",) if args.registry_only else
     ("api", "worker", "node-tls", "broker", "authority", "model")
