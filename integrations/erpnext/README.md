@@ -75,3 +75,18 @@ python3 tests/test_history_checks.py
 模型和思考强度按会话保存到服务端，修改后立即保存，无需发送消息。切换会话会恢复各自配置；同一浏览器标签页刷新后恢复所选会话。新会话使用默认配置，旧会话优先沿用上次提交的选择。
 
 Agent 界面动效使用本地打包的 GSAP：面板开合、全屏/侧栏布局过渡、消息与提示入场、执行详情展开、按钮反馈、输入焦点、选择反馈及重命名/删除弹窗。遵循系统“减少动态效果”；流式文字不会逐字重播入场动画，ERPNext 业务页面不参与动效。
+
+
+## Authentication after ingress migration
+
+Keep `zebra_agent.origin` as the signed authority Origin pinned by existing Tasks;
+configure `zebra_agent.browser_origin` as the current HTTPS page Origin (and in an
+explicit runtime override when present). Keep issuer, namespace, keys, Task/Run,
+Profile digests and receipt identities stable. Do not replace old IP strings globally.
+
+Before building/releasing, run `python3 deploy/check_auth_release.py`; on the release
+host also supply `--override /opt/erpnext/zebra-agent/erpnext-override.json`. It runs
+no-network regressions and rejects stale source-file/directory mounts that would
+shadow the candidate image. Embed accepted source in the new image and remove the
+matching hotfix mount after validating that image; preserve original Run/unknown facts.
+See [migration audit](docs/ERP_ORIGIN_BINDING_20261102.md).

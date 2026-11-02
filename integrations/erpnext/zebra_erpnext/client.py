@@ -19,7 +19,9 @@ def open_surface(doc, run_id, page, admission_lock):
     settings = runtime.settings(doc, cloud.config())
     cloud.require_admission_open(settings)
     profile = settings.get("frontend_profile")
-    if not profile or frappe.local.request.headers.get("Origin") != settings["origin"]:
+    if not profile or frappe.local.request.headers.get("Origin") != settings.get(
+        "browser_origin", settings["origin"]
+    ):
         return None
     previous = json.loads(doc.client_surface_json or "{}")
     if previous.get("runId") == run_id:

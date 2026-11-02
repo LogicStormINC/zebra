@@ -18741,3 +18741,14 @@ Owned QA containers/network/temp derived image cleaned; no global prune. See foc
 Canonical ERP commit15d171e records the alignment deployment script and acceptance. Final live recheck
 confirmed292 seconds running/restarts0, Worker exact schema set117, model188/session51/firing0 unchanged.
 Integration worklog conflict resolved retaining both historical and new release records before final audit.
+
+
+## ERP-AUTH-CLOUD-EXPORT-20261102
+
+Canonical ERP main publication acdc441 retains current deployed native/admin/Scheduler
+capabilities. Git archive from the separately gate-clean source line integrates the
+Origin/browser fallback, shared legacy metric export, bootstrap HTTPS link and initial
+ingress mapping, release-overlay preflight and redacted live proof. Native apps/packages
+unchanged. Original Task/Run/receipt/unknown/Coverage protected; no new Docker in export stage.
+Compatibility export is not the full current ERP Host build source; SOURCE explicitly
+requires canonical main for normal Host releases. Exact source mapping verified before gates.

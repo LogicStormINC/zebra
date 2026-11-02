@@ -156,7 +156,7 @@ def aggregate(args):
     from zebra_erpnext import business
 
     metric, field = args["metric"], args.get("field")
-    if not isinstance(metric, str) or metric not in {"count", "sum", "avg", "min", "max"}:
+    if not isinstance(metric, str) or metric not in business.AGGREGATE_METRICS:
         business.fail("Unsupported aggregate metric")
     meta = meta_for(args["doctype"])
     if metric == "count":

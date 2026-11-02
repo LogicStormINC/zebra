@@ -28,6 +28,7 @@ from zebra_erpnext.business_queries import report_describe as report_describe
 from zebra_erpnext.capabilities import SETTINGS_FIELDS, authenticated, meta_for, mutable
 
 APPROVAL = "Zebra Business Approval"
+AGGREGATE_METRICS = frozenset({"count", "sum", "avg", "min", "max"})
 READS = {
     "query",
     "get",

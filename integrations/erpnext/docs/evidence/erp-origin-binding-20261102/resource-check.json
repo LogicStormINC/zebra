@@ -1,0 +1,16 @@
+{
+  "changed_container_identity_image_or_environment": [
+    "/erpnext-backend-1"
+  ],
+  "backend_image_preserved": true,
+  "only_compose_change": "backend read-only client.py mount",
+  "backend_environment_hash_changed": true,
+  "backend_env_config_unchanged": true,
+  "other_existing_identity_image_environment_unchanged": true,
+  "other_starttime_changes": [
+    "/erpnext-full-scheduler-1"
+  ],
+  "new_containers": [],
+  "removed_containers": [],
+  "resources_created_by_this_fix": []
+}

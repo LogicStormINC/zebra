@@ -1,3 +1,15 @@
+# ERP-AUTH-CLOUD-EXPORT-20261102
+- Status: Done; exact source export and static gates verified; integrated for cloud-agent/GitHub.
+- Created Ready then claimed In Progress; owner Luke Ding / Codex.
+- Branch codex/erp-auth-cloud-export-20261102, isolated worktree; target cloud-agent.
+- Owned paths integrations/erpnext/** via canonical git archive only, including SOURCE.md;
+  focused docs/evidence/erp-origin-binding-20261102/cloud-export-validation.json;
+  docs/ERP_ORIGIN_BINDING_20261102.md, docs/AGENT_TASKS.md, PROGRESS.md, WORKLOG.md.
+- Canonical ERP owns implementation; preserve Gate02 split/frozen evidence/full Ruff and size rules.
+- Preserve independently verified native-surface and Scheduler release records already on cloud-agent.
+- Verify exact export, serial offline source checks, full static gate; no new Task/model/Controller,
+  production migration or additional Docker resources in this export stage.
+
 # ERP-NATIVE-SCHEDULER-RELEASE-20261102
 - Status: Done; production Scheduler aligned, verified and records locally integrated into cloud-agent.
 - Created Ready then claimed In Progress; Luke Ding / Codex.

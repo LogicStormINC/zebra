@@ -1,0 +1,117 @@
+{
+  "serial": true,
+  "docker_started": false,
+  "results": [
+    {
+      "test": "tests/test_business_checks.py",
+      "exit": 0,
+      "elapsed": 0.066
+    },
+    {
+      "test": "tests/test_business_expansion_checks.py",
+      "exit": 0,
+      "elapsed": 0.05
+    },
+    {
+      "test": "tests/test_chat_checks.py",
+      "exit": 0,
+      "elapsed": 0.047
+    },
+    {
+      "test": "tests/test_client_checks.py",
+      "exit": 0,
+      "elapsed": 0.132
+    },
+    {
+      "test": "tests/test_frontend_profile_checks.py",
+      "exit": 0,
+      "elapsed": 0.041
+    },
+    {
+      "test": "tests/test_full_capability_checks.py",
+      "exit": 0,
+      "elapsed": 0.041
+    },
+    {
+      "test": "tests/test_full_workspace_checks.py",
+      "exit": 0,
+      "elapsed": 0.048
+    },
+    {
+      "test": "tests/test_history_checks.py",
+      "exit": 0,
+      "elapsed": 0.049
+    },
+    {
+      "test": "tests/test_maintenance_checks.py",
+      "exit": 0,
+      "elapsed": 0.211
+    },
+    {
+      "test": "tests/test_manage_checks.py",
+      "exit": 0,
+      "elapsed": 0.03
+    },
+    {
+      "test": "tests/test_presentation_checks.py",
+      "exit": 0,
+      "elapsed": 0.038
+    },
+    {
+      "test": "tests/test_resources_checks.py",
+      "exit": 0,
+      "elapsed": 0.033
+    },
+    {
+      "test": "tests/test_runtime_checks.py",
+      "exit": 0,
+      "elapsed": 0.028
+    },
+    {
+      "test": "tests/test_schedule_authority_checks.py",
+      "exit": 0,
+      "elapsed": 0.031
+    },
+    {
+      "test": "tests/test_workspace_checks.py",
+      "exit": 0,
+      "elapsed": 0.034
+    },
+    {
+      "test": "tests/test_cancel_clears_pending.py",
+      "exit": 0,
+      "elapsed": 0.095
+    },
+    {
+      "test": "cloud-patches/tests/check_private_workspace.py",
+      "exit": 0,
+      "elapsed": 0.073
+    },
+    {
+      "test": "cloud-patches/tests/check_private_workspace_hardening.py",
+      "exit": 0,
+      "elapsed": 0.175
+    },
+    {
+      "test": "tests/test_origin_bootstrap_checks.py",
+      "exit": 0,
+      "elapsed": 0.031
+    },
+    {
+      "test": "tests/test_auth_release_checks.py",
+      "exit": 0,
+      "elapsed": 0.037
+    },
+    {
+      "test": "tests/test_legacy_manifest_checks.py",
+      "exit": 0,
+      "elapsed": 0.033
+    },
+    {
+      "test": "tests/test_ingress_prepare_checks.py",
+      "exit": 0,
+      "elapsed": 0.043
+    }
+  ],
+  "passed": 22
+}

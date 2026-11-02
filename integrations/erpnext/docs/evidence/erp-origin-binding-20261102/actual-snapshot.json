@@ -1,0 +1,22 @@
+{
+  "conversation": "5vdk10lcmu",
+  "snapshot_loaded": true,
+  "message_count": 3,
+  "status": "failed",
+  "runtime": {
+    "status": "available",
+    "contract_version": 1,
+    "network_profiles": [
+      "none",
+      "setup-only",
+      "domain-allowlist",
+      "mcp-proxy-only",
+      "full-gateway",
+      "git-proxy-only",
+      "full-trusted-local"
+    ],
+    "client_surface_contract_version": 1
+  },
+  "commands_submitted": 0,
+  "controller_acquired": false
+}

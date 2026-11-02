@@ -141,6 +141,28 @@ r = client.proxy(
 assert calls[-1][1]["body"] is None and r["status"] == 400
 print("PASS surface reuse, lost credential ACK, expired cleanup and receipt/GET proxy semantics")
 
+# Network migration must not rewrite immutable Task authority or admit foreign pages.
+c.config = lambda: {
+    "frontend_profile": profile,
+    "origin": "https://erp.test",
+    "browser_origin": "https://moved-erp.test",
+}
+f.local.request.headers = {"Origin": "https://moved-erp.test"}
+doc.client_surface_json = None
+doc.active_run_id = "moved"
+calls = []
+c.request = request
+client.open_surface(doc, "moved", {}, admission_lock)
+assert len(calls) == 1 and calls[0][2]["body"]["grant"]["origin"] == "https://erp.test"
+state = (len(calls), doc.client_surface_json)
+for headers in [{"Origin": "https://erp.test"}, {"Origin": "https://foreign.test"}, {}]:
+    f.local.request.headers = headers
+    assert client.open_surface(doc, "foreign", {}, admission_lock) is None
+    assert (len(calls), doc.client_surface_json) == state
+f.local.request.headers = {"Origin": "https://moved-erp.test"}
+print("PASS migrated browser exact Origin, unchanged signed authority, foreign/missing Origin deny")
+
+
 c.require_admission_open = lambda *args: (_ for _ in ()).throw(Rejected("maintenance"))
 before = (len(calls), doc.client_surface_json)
 try:

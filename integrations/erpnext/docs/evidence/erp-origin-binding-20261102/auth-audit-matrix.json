@@ -1,0 +1,59 @@
+{
+  "signed_http_matrix": [
+    {
+      "case": "original_task",
+      "http": 200
+    },
+    {
+      "case": "new_exact_origin",
+      "http": 200
+    },
+    {
+      "case": "foreign_origin",
+      "http": 403
+    },
+    {
+      "case": "foreign_issuer",
+      "http": 403
+    },
+    {
+      "case": "foreign_namespace",
+      "http": 403
+    },
+    {
+      "case": "foreign_principal",
+      "http": 404
+    },
+    {
+      "case": "foreign_workspace",
+      "http": 404
+    },
+    {
+      "case": "foreign_thread",
+      "http": 404
+    },
+    {
+      "case": "missing_run_scope",
+      "http": 403
+    },
+    {
+      "case": "expired_grant",
+      "http": 403
+    },
+    {
+      "case": "first_use",
+      "http": 200
+    },
+    {
+      "case": "same_jti_replay",
+      "http": 403
+    }
+  ],
+  "snapshot_messages": 3,
+  "original_run_status": "failed",
+  "runtime": "available",
+  "task_commands": 0,
+  "controller_acquired": false,
+  "model_requests": 0,
+  "search_requests": 0
+}

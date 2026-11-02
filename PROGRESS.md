@@ -1,3 +1,11 @@
+## 2026-11-02 ERP 迁址认证复核与源码固化
+
+浏览器Origin与签名身份分离，原Task严格绑定保留；补齐旧Manifest共享常量、bootstrap链接与初始传输配置。
+真实签名正反向、防重放、冷JWKS和新旧Host清单通过；124条任务绑定及原事件/回执摘要不变。
+后端镜像固化修复并移除旧源码挂载；Scheduler沿用已对齐v117，仅空闲刷新正确签名Origin。
+源仓库main保留已部署原生能力，Cloud从受检canonical提交精确archive，保留完整尺寸/Ruff门禁。
+无原任务重跑、Controller领取、模型/搜索或迁移；临时资源及时回收，边界见[认证复核](docs/ERP_ORIGIN_BINDING_20261102.md)。
+
 ## 2026-11-02 ERP Native Scheduler v117 对齐完成
 
 旧 Scheduler115 与 API/数据库117错配已解决：仅更新 Scheduler image 到同一 API 固定镜像。

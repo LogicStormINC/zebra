@@ -23,7 +23,7 @@ def bootstrap():
         model_options=chat.MODEL_OPTIONS,
         reasoning_options=chat.REASONING_OPTIONS,
         reasoning_effort="high",
-        https_url="https://192.168.110.42:18443/desk",
+        https_url=settings.get("browser_origin", settings.get("origin", "")).rstrip("/") + "/desk",
     )
 
 

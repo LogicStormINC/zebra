@@ -4,7 +4,9 @@ import json
 import os as os
 import secrets
 import subprocess
+from ipaddress import ip_address
 from pathlib import Path
+from urllib.parse import urlsplit
 
 ROOT = Path("/opt/erpnext/zebra-agent")
 SECRET = ROOT / "secrets"
@@ -90,6 +92,17 @@ def prepare():
             model_profile="deepseek-v4-flash-executor-v1",
         )
     )
+    ingress = urlsplit(settings.get("browser_origin", settings["origin"]))
+    if (
+        ingress.scheme != "https"
+        or ingress.username
+        or ingress.password
+        or ingress.path not in {"", "/"}
+        or ingress.query
+        or ingress.fragment
+    ):
+        raise ValueError("browser_origin must be an exact HTTPS origin")
+    address = str(ip_address(ingress.hostname or ""))
     private(saved, json.dumps(settings))
     services = {}
     for old, role in zip(containers, ("api", "worker"), strict=False):
@@ -127,8 +140,8 @@ def prepare():
             volumes=volumes,
             networks=["zebra-dependencies"],
             extra_hosts={
-                "erpnext.zebra.local": "192.168.110.42",
-                "erpnext-agent.zebra.local": "192.168.110.42",
+                "erpnext.zebra.local": address,
+                "erpnext-agent.zebra.local": address,
             },
         )
         if old["Config"].get("Entrypoint"):
@@ -168,7 +181,7 @@ def prepare():
     }
     override["services"]["backend"].update(
         volumes=[f"{SECRET}:/run/zebra:ro"],
-        extra_hosts={"erpnext-agent.zebra.local": "192.168.110.42"},
+        extra_hosts={"erpnext-agent.zebra.local": address},
     )
     (ROOT / "erpnext-override.json").write_text(json.dumps(override, indent=2))
     print(
