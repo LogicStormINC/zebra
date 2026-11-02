@@ -1,0 +1,33 @@
+{
+  "status": "existing_producer_alignment_source_passed_not_component_deployed",
+  "producer_reused": "9b943baacfa993154327524e146c97b3e53426d9",
+  "HTTP_tests_reused": "8b286b59245de93b1ff691a0854339340e7e39c0",
+  "source_patch_exact": true,
+  "broker_tests_passed": 95,
+  "independent_AI_tests_passed": 95,
+  "critical": 0,
+  "important": 0,
+  "human_review": false,
+  "make_check_exit": 0,
+  "generic_new_coverage": [
+    "exact signed request body forwarded",
+    "RS256 claims only agent.run/thread/principal",
+    "current authority rights denial unchanged"
+  ],
+  "contract": "taskControl:true, no runId, exactly agent.run, no extra resources; ordinary exchange still requires Run; Native guard unchanged",
+  "candidate_component_scope": [
+    "Broker",
+    "synthetic current authority parser"
+  ],
+  "engine_runtime_source_unchanged": "6374181e",
+  "native_assembly_approval_unchanged": 6,
+  "old_unaccepted_stop": "f69 Run-scoped rejected403; omitted run without explicit mode rejected400; no stop receipt accepted, no reconciliation/replay",
+  "source_hashes": {
+    "apps/host_grant_broker/src/zebra_host_grant_broker/grant_minting.py": "da3345a27983c3c728e7b2878bfa029aaaaa8481e5945018d56b8009b07737fb",
+    "tests/host_grant_broker/test_task_control_grant.py": "dca14241668aeeec0bb74f6463f891f5a8717a1414874da34870b5576fbb5ea5",
+    "tests/host_grant_broker/test_task_control_generic.py": "0777580b450faaf40e9d10abd47203dfddd2a0c93bafc9d633ac51677fb7f4e9",
+    "tests/compose/cloud_ha_e1/Dockerfile.delta": "c0a9987e843d4dafe7a33d27d1b7ee4f86d22de93698c601a8733efc94592132"
+  },
+  "production_changed": false,
+  "full_E1_accepted": false
+}

@@ -1,3 +1,15 @@
+## 2026-11-03 — HA03强停Broker依赖补齐候选
+
+复用此前生产producer9b943baa的精确14行diff，补其8b286b59 HTTP入口回归；新generic签名原文/
+当前权限负例通过。Broker全部95通过、独立95通过、make check通过；Native Task-wide拒Run
+守卫不改，普通交换仍要求Run。仅计划单独切Broker和夹具Authority解析器；Engine637和
+原生Assembly审批6冻结不动，不重新执行旧任务。完整签名强停联合验收尚待新组件。
+第二个干净OrbStack节点192.168.139.154已建，4CPU/8GiB/24GiB限额；未clone原机器（含两个
+foreign probes），同Docker/containerd/runsc已核对。原机器实际machine限额同4CPU/8GiB，
+OrbStack全局VM16GiB，不将global16GiB当每节点容量。六个临时systemd loopback代理只在新节点，
+目标本地primary192.168.139.232，保留TLS/SNI，不改全局代理。Engine镜像待导入/校验/新节点
+签证及preflight；两逻辑节点共享物理Mac，不冒充物理HA，完整E1/03仍未完成、04锁定。
+
 ## 2026-11-03 — HA03本地完整续期链通过，双节点仍未验
 
 6374181e运行镜像双端2140文件/3链接及实际OCI清单2dcaf9cb…核验，原生trust6发布完成。

@@ -1,3 +1,14 @@
+## 2026-11-03 CA-HA-03 existing Task-control producer alignment
+
+- Exact9b943baa Broker patch +8b286b59 HTTP tests reused; generic signed-body/current-rights checks added.
+-95 Broker tests and independent95 pass; make check zero. Candidate Broker/Authority only;
+ Engine637/native approval6 kept frozen. Native Run-grant rejection stays, no hand-minted workaround.
+- Clean OrbStack node2 created192.168.139.154, same Docker29.1.3/containerd2.2.1/runsc hash.
+ Primary machine has foreign probes: no clone or interference. Both machines4CPU/8GiB; global VM16GiB.
+ New-node-only transient6 loopback socket proxies bridge local primary, no global network changes.
+- Next component image/source verification, signed expired Task stop and new-node calibrated smoke,
+ followed by genuine E1 capacity/fault/soak; no production change or physical-HA claim.
+
 ## 2026-11-03 CA-HA-03 live renewal completion and topology correction
 
 - Engine637 actual native publication6 and single-node full flow pass:17.25s,33 events,

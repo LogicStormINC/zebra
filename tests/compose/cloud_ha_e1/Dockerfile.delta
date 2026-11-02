@@ -12,5 +12,6 @@ COPY --chown=65532:65532 packages/agent-integrations/src/agent_integrations/boun
 COPY --chown=65532:65532 packages/agent-core/src/agent_core/domain/task_bindings.py /app/packages/agent-core/src/agent_core/domain/task_bindings.py
 COPY --chown=65532:65532 apps/api/src/zebra_agent_api/session_binding.py /app/apps/api/src/zebra_agent_api/session_binding.py
 COPY --chown=65532:65532 packages/agent-storage/src/agent_storage/postgres/task_admission.py /app/packages/agent-storage/src/agent_storage/postgres/task_admission.py
+COPY --chown=65532:65532 apps/host_grant_broker/src/zebra_host_grant_broker/grant_minting.py /app/apps/host_grant_broker/src/zebra_host_grant_broker/grant_minting.py
 ARG E1_SOURCE_COMMIT
 LABEL org.opencontainers.image.revision=${E1_SOURCE_COMMIT}
