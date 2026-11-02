@@ -1,3 +1,15 @@
+## 2026-11-03 — HA03监控容量修复与签名强停验收
+
+仅长驻executor monitor改用既有normal额度；短STOP/exit ACK/register保持control。
+真实PG红2后，原生Linux PG30（含真实child exit7和scope内匹配ACK）、Worker/API19通过，
+make check通过、独立审查无重大问题；新候选尚未切Worker镜像。normal饱和仍可拒绝监控，
+不承诺任意饱和RTO，也不补造历史退出证明。见executor-monitor/validation.json。
+Broker/Authority组件9a已单独切换并验源；Engine637/原生审批6保持。原e08过期测试Task单次
+签名Task-wide stop已验stopped/resources_released=true、execution stopped、lease revoked、
+sandbox cleaned、canonical synchronized。f69因原exit witness缺失保留requires_reconciliation；
+两笔均未恢复模型执行。第二逻辑节点gVisor实际启动揭示strict sidecar依赖，正在补齐校准；
+完整E1/HA03仍未通过、04锁定、生产未变。
+
 ## 2026-11-03 — HA03强停Broker依赖补齐候选
 
 复用此前生产producer9b943baa的精确14行diff，补其8b286b59 HTTP入口回归；新generic签名原文/

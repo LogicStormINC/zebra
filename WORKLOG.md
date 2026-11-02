@@ -18908,3 +18908,13 @@ e8实际两架构构建/源哈希/真实私有清单/双端baseline/UID0600/冷�
 以实际schema红3，改tuple一行，35/5skip及独立19通过，未改模型/预算/策略拒绝。
 原e698与新39d0均失败保留、不重跑；新修复候选须重建镜像和清单/批准新冻结配置再新Task。
 操作状态在ignored .artifacts/cloud-ha-e1/{build-e8f528b2,cold-e8f528b2,publication-e8f528b2,guarded-smoke-e8f528b2}.json。
+
+
+## 2026-11-03 — monitor control capacity and stop receipts
+
+Shared monitor retains a normal query connection; short control paths unchanged.
+Real Linux PG30, worker/API19 and make check passed, independent review clear.
+Broker9a signed old e08 stop confirmed resources released; f69 retains missing
+original exit witness reconciliation. New monitor image/promotion pending.
+Fresh OrbStack node2 needs the primary strict gVisor sidecars as well as runsc;
+first real start failed closed rather than being counted as calibration success.

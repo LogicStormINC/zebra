@@ -211,3 +211,20 @@ E1合成模型与proof共用JSON UTF8字节计量，不冒充DeepSeek tokenizer�
 输出超过实际max_tokens及超限请求拒绝。自检覆盖实际函数/HTTP与反例，源码评审通过。
 回归范围及已修旧测试分别记录，不能拼成全仓重跑通过。显式fixture组合、模型冻结output cap、
 新镜像与新Task未验；完整E1/生产HA未验。见evidence/ca-ha-03-e1/budget-composition/。
+
+
+### Executor monitor preserves emergency control capacity (2026-11-03)
+
+The monitor retains a query connection through the isolated process scope. It
+must use the existing normal lane; holding control prevents its own exit ACK
+under the legal control=1 configuration. Register, STOP and ACK keep control.
+No new role or capacity is added. Execution slots bound monitor concurrency;
+normal exhaustion still rejects monitoring, so arbitrary saturation RTO remains
+unqualified. Real Linux PG30, worker/API19, make check and independent source
+review passed. The candidate is not yet promoted to workers.
+
+The separately promoted existing Broker Task-control protocol now allows the
+signed e08 stop to reach stopped with execution/lease/sandbox/synchronization
+confirmed. f69 lacks its original exact exit witness and remains in
+requires_reconciliation. Neither old Task was replayed; historical ACKs are not
+fabricated. Full E1 capacity/fault qualification remains open.

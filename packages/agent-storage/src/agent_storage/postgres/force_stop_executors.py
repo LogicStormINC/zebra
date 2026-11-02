@@ -11,19 +11,19 @@ from agent_core.domain.leases import LeaseLostError
 from psycopg.conninfo import conninfo_to_dict
 from psycopg.rows import dict_row
 
-from agent_storage.postgres.connection_capacity import connect
+from agent_storage.postgres.connection_capacity import Lane, connect
 from agent_storage.postgres.database import PostgresDatabase
 from agent_storage.postgres.force_stop_signal import STOP_ANCESTRY
 from agent_storage.postgres.leases import assert_current_lease_fence
 
 
 def _connection(
-    database: PostgresDatabase, *, autocommit: bool = False
+    database: PostgresDatabase, *, autocommit: bool = False, lane: Lane = "control"
 ) -> psycopg.Connection[dict[str, Any]]:
     # Emergency control must not inherit a stuck/expired harness I/O work unit.
     options = str(conninfo_to_dict(database._dsn).get("options") or "")
     return connect(
-        database._dsn, budget=database._capacity, lane="control",
+        database._dsn, budget=database._capacity, lane=lane,
         row_factory=dict_row,
         connect_timeout=2,
         autocommit=autocommit,
@@ -38,7 +38,9 @@ def executor_monitor(database: PostgresDatabase, sid: Any) -> Iterator[Callable[
     def cancelled() -> bool:
         nonlocal connection
         if connection is None or connection.closed:
-            connection = _connection(database, autocommit=True)
+            # ponytail: monitors share normal slots, bounded by execution_slots.
+            # Preserve the separate short STOP/exit ACK capacity.
+            connection = _connection(database, autocommit=True, lane="normal")
         try:
             row = connection.execute(
                 "SELECT (SELECT status FROM session_projections WHERE "
