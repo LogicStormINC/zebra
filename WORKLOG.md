@@ -18724,10 +18724,8 @@ Read-only scheduler diagnosis: immutable Scheduler recognizes115, API and databa
 Registered separate Ready alignment task; did not weaken migration guard, edit ledger, restart Native
 or activate pending schedules. Owned QA resources cleaned precisely (3 containers/2 volumes/network/2 images).
 
-<<<<<<< HEAD
 Native-surface ERP implementation committed in canonical repository: ce76610 + 0c94512.
 Release evidence integrated into cloud-agent; source root unrelated dirty paths preserved.
-=======
 
 ## 2026-11-02 ERP-NATIVE-SCHEDULER — aligned and deployed
 
@@ -18739,4 +18737,7 @@ Actual production polling counters advanced, restarts0, model count188 unchanged
 ledger fingerprint unchanged. All non-target services including Search/MCP exactly preserved.
 Initial early-signal137 probe retained and explicitly bounded; no runtime signal behavior changes.
 Owned QA containers/network/temp derived image cleaned; no global prune. See focused acceptance doc.
->>>>>>> codex/erp-native-scheduler-release-20261102
+
+Canonical ERP commit15d171e records the alignment deployment script and acceptance. Final live recheck
+confirmed292 seconds running/restarts0, Worker exact schema set117, model188/session51/firing0 unchanged.
+Integration worklog conflict resolved retaining both historical and new release records before final audit.

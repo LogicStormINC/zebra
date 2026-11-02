@@ -1,5 +1,5 @@
 # ERP-NATIVE-SCHEDULER-RELEASE-20261102
-- Status: Review; production Scheduler aligned, evidence ready for cloud-agent integration.
+- Status: Done; production Scheduler aligned, verified and records locally integrated into cloud-agent.
 - Created Ready then claimed In Progress; Luke Ding / Codex.
 - Branch codex/erp-native-scheduler-release-20261102; target cloud-agent.
 - Owned paths docs/AGENT_TASKS.md, docs/ERP_NATIVE_SCHEDULER_20261102.md, PROGRESS.md, WORKLOG.md;
