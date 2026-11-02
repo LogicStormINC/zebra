@@ -1,3 +1,11 @@
+## 2026-11-03 CA-HA-03 E1 bounded DNS candidate
+
+- Shared ordinary transport now uses owned killable/reaped resolver children; auxiliary loop remains strict.
+- 74 focused and independent AI checks pass, make check zero; both Linux engines pass isolated DNS/cancellation.
+- Old 984 reservation remains unknown, not resent/refunded. No existing application replaced in this slice.
+- Evidence: docs/evidence/ca-ha-03-e1/bounded-dns/. Next: exact image builds, hashes/manifest,
+  new native publication, cold isolated promotion and a brand-new synthetic Task; full E1 still pending.
+
 ## 2026-11-03 CA-HA-03 E1 provisioning candidate
 
 - 用户明确允许服务器/OrbStack创建新环境；复用运行中引擎，新标签/卷/端口/凭据/数据。

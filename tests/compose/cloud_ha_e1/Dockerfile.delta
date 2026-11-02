@@ -8,5 +8,6 @@ COPY --chown=65532:65532 apps/worker/src/zebra_agent_worker/loop.py /app/apps/wo
 COPY --chown=65532:65532 apps/worker/src/zebra_agent_worker/main.py /app/apps/worker/src/zebra_agent_worker/main.py
 COPY --chown=65532:65532 apps/worker/src/zebra_agent_worker/session_process_child.py /app/apps/worker/src/zebra_agent_worker/session_process_child.py
 COPY --chown=65532:65532 packages/agent-integrations/src/agent_integrations/worker_budget.py /app/packages/agent-integrations/src/agent_integrations/worker_budget.py
+COPY --chown=65532:65532 packages/agent-integrations/src/agent_integrations/bounded_model_dns.py /app/packages/agent-integrations/src/agent_integrations/bounded_model_dns.py
 ARG E1_SOURCE_COMMIT
 LABEL org.opencontainers.image.revision=${E1_SOURCE_COMMIT}
