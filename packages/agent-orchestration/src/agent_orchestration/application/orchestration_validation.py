@@ -82,6 +82,8 @@ class PlanValidationContext:
         object.__setattr__(
             self, "write_capabilities", capability_set(self.write_capabilities)
         )
+        object.__setattr__(self, "parent_resource_refs", frozenset(self.parent_resource_refs))
+        object.__setattr__(self, "published_roles", frozenset(self.published_roles))
 
 
 def validate_plan(
@@ -142,8 +144,6 @@ def _validate_resources(
     proposal: OrchestrationPlanProposal,
     context: PlanValidationContext,
 ) -> None:
-    if not context.parent_resource_refs:
-        return
     allowed = set(context.parent_resource_refs)
     for node in proposal.nodes:
         for ref in node.resource_refs:

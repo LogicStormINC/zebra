@@ -1,3 +1,11 @@
+## CA-P7-03A — 可信编排边界修复（2026-11-02，Review）
+
+旧 CA-P7-02 的模块/局部接线交付不代表正常入口闭环。03A 从服务端当前授权 scope
+取得真实父任务、binding、namespace、权限和余额，消除模型隐藏参数的授权来源；
+请求在真实准入/预算未完成前保持关闭。[设计与边界](docs/CA-P7-03A_trusted_orchestration.md)。
+资源空许可不再无限放行，资源/角色集合冻结；request在真实准入前无状态写/随机孩子。
+独立定向回归161通过，变更Ruff/mypy通过；无生产装配/部署/迁移/重型验收环境恢复，历史证据保留。
+
 ## 2026-11-02 ERP Cloud force-stop production acceptance
 
 Native97463d00 generic isolation/independent cleanup is deployed to ERP v117 with the

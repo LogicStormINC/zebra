@@ -16,7 +16,6 @@ from agent_orchestration.application.orchestration_port import (
     OrchestrationRuntimePort,
     OrchestrationToolError,
 )
-from agent_orchestration.domain.orchestration_budget import BudgetReservation
 
 from agent_tools.contracts import ToolContract
 
@@ -145,19 +144,6 @@ class PlanProposeTool:
         try:
             receipt = runtime.propose_plan(
                 _proposal_from_arguments(tool_call.arguments),
-                parent_task_id=str(tool_call.arguments.get("_parent_task_id", "")),
-                parent_binding_digest=str(tool_call.arguments.get("_parent_binding_digest", "")),
-                parent_remaining_budget=BudgetReservation(
-                    model_tokens=int(tool_call.arguments.get("_budget_tokens", 0)),
-                    tool_calls=int(tool_call.arguments.get("_budget_tool_calls", 0)),
-                    runtime_seconds=int(tool_call.arguments.get("_budget_seconds", 0)),
-                ),
-                parent_capabilities=frozenset(
-                    str(item) for item in tool_call.arguments.get("_parent_capabilities", [])
-                ),
-                write_capabilities=frozenset(
-                    str(item) for item in tool_call.arguments.get("_write_capabilities", [])
-                ),
             )
         except OrchestrationToolError as error:
             return _failed(tool_call, error.reason_code, error.detail)

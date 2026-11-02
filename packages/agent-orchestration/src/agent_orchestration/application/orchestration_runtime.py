@@ -10,15 +10,20 @@ never in-memory authority.
 
 from __future__ import annotations
 
+from collections.abc import Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import Protocol
 from uuid import uuid4
 
-from agent_core.domain.identifiers import TaskId
-
 from agent_orchestration.application.completion_gate import (
     GateInput,
     evaluate_gate,
+)
+from agent_orchestration.application.orchestration_authority import (
+    OrchestrationAction,
+    OrchestrationAuthority,
+    OrchestrationAuthorizer,
 )
 from agent_orchestration.application.orchestration_port import (
     OrchestrationToolError,
@@ -33,7 +38,6 @@ from agent_orchestration.application.orchestration_scheduling import (
     select_ready,
 )
 from agent_orchestration.application.orchestration_validation import (
-    PlanValidationContext,
     PlanValidationError,
     validate_plan,
 )
@@ -43,11 +47,13 @@ from agent_orchestration.domain.orchestration import (
     OrchestrationPlanSnapshot,
     OrchestrationRunStatus,
 )
-from agent_orchestration.domain.orchestration_budget import BudgetReservation
 
 
 class OrchestrationStorePort(Protocol):
     """The store surface the runtime depends on (Postgres adapter exists)."""
+
+    @property
+    def deployment_namespace(self) -> str: ...
 
     def create_run(self, snapshot: OrchestrationPlanSnapshot) -> None: ...
 
@@ -118,60 +124,64 @@ def _state_from_snapshot(
 class OrchestrationRuntime:
     """The port implementation plus the worker-side loop driver."""
 
-    def __init__(self, store: OrchestrationStorePort) -> None:
-        self._store = store
-
-    # ------------------------------------------------------- port surface (02A)
-    def propose_plan(
+    def __init__(
         self,
-        proposal: OrchestrationPlanProposal,
+        store: OrchestrationStorePort,
         *,
-        parent_task_id: str,
-        parent_binding_digest: str,
-        parent_remaining_budget: BudgetReservation,
-        parent_capabilities: frozenset[str],
-        write_capabilities: frozenset[str],
-    ) -> PlanProposalReceipt:
-        context = PlanValidationContext(
-            parent_capabilities=frozenset(parent_capabilities),  # type: ignore[arg-type]
-            parent_remaining_budget=parent_remaining_budget,
-            write_capabilities=frozenset(write_capabilities),  # type: ignore[arg-type]
-        )
-        run_ref = f"run-{uuid4().hex[:12]}"
-        try:
-            snapshot = validate_plan(
-                proposal,
-                context,
-                run_ref=run_ref,
-                parent_task_id=TaskId(uuid4()),
-                parent_binding_digest=parent_binding_digest,
+        authorize: OrchestrationAuthorizer | None = None,
+    ) -> None:
+        self._store = store
+        self._authorize = authorize
+
+    @contextmanager
+    def _authorized(self, action: OrchestrationAction) -> Iterator[OrchestrationAuthority]:
+        if self._authorize is None:
+            raise OrchestrationToolError(
+                "orchestration_authority_required", "current server authorization is required"
             )
-        except PlanValidationError as error:
-            raise OrchestrationToolError(error.reason_code, error.detail) from None
-        self._store.create_run(snapshot)
-        return PlanProposalReceipt(
-            run_ref=run_ref,
-            plan_revision=snapshot.plan_revision,
-            node_keys=tuple(node.proposal.node_key for node in snapshot.nodes),
-            reserved_budget=snapshot.reserved_budget,
-        )
+        with self._authorize(action) as authority:
+            if not isinstance(authority, OrchestrationAuthority):
+                raise OrchestrationToolError("invalid_authority", "trusted context is required")
+            if authority.deployment_namespace != self._store.deployment_namespace:
+                raise OrchestrationToolError("orchestration_forbidden", "namespace mismatch")
+            yield authority
+
+    def propose_plan(self, proposal: OrchestrationPlanProposal) -> PlanProposalReceipt:
+        with self._authorized("propose") as authority:
+            run_ref = f"run-{uuid4().hex[:12]}"
+            try:
+                snapshot = validate_plan(
+                    proposal,
+                    authority.validation,
+                    run_ref=run_ref,
+                    parent_task_id=authority.parent_task_id,
+                    parent_binding_digest=authority.parent_binding_digest,
+                )
+            except PlanValidationError as error:
+                raise OrchestrationToolError(error.reason_code, error.detail) from None
+            self._store.create_run(snapshot)
+            return PlanProposalReceipt(
+                run_ref=run_ref,
+                plan_revision=snapshot.plan_revision,
+                node_keys=tuple(node.proposal.node_key for node in snapshot.nodes),
+                reserved_budget=snapshot.reserved_budget,
+            )
 
     def request_task(self, *, run_ref: str, node_key: str) -> TaskRequestReceipt:
-        snapshot = self._require_snapshot(run_ref)
-        if node_key not in {node.proposal.node_key for node in snapshot.nodes}:
-            raise OrchestrationToolError("unknown_node", f"{run_ref} has no node {node_key}")
-        decision = self.evaluate(run_ref)
-        if node_key not in decision.ready_nodes:
+        with self._authorized("request") as authority:
+            snapshot = self._require_snapshot(run_ref)
+            if (
+                snapshot.parent_task_id != authority.parent_task_id
+                or snapshot.parent_binding_digest != authority.parent_binding_digest
+            ):
+                raise OrchestrationToolError("orchestration_forbidden", "run binding mismatch")
+            if node_key not in {node.proposal.node_key for node in snapshot.nodes}:
+                raise OrchestrationToolError("unknown_node", "node does not belong to this run")
+            # ponytail: no admission/budget transaction yet; 03B supplies real
+            # durable dispatch. Never invent a child or mutate a node meanwhile.
             raise OrchestrationToolError(
-                "node_not_ready",
-                f"{node_key} is not dispatchable (dependencies or parallelism cap)",
+                "orchestration_dispatch_unavailable", "durable admission is not configured"
             )
-        self._store.transition_node(run_ref, node_key, "running")
-        return TaskRequestReceipt(
-            run_ref=run_ref,
-            node_key=node_key,
-            child_task_id=str(uuid4()),
-        )
 
     # ---------------------------------------------------- loop driver (02B)
     def materialize(self, run_ref: str) -> None:

@@ -70,18 +70,14 @@ class RecordingRuntime:
             run_ref="run-1",
             plan_revision=1,
             node_keys=("collect",),
-            reserved_budget=BudgetReservation(
-                model_tokens=100, tool_calls=3, runtime_seconds=60
-            ),
+            reserved_budget=BudgetReservation(model_tokens=100, tool_calls=3, runtime_seconds=60),
         )
 
     def request_task(self, *, run_ref: str, node_key: str) -> TaskRequestReceipt:
         self.calls.append(("request", (run_ref, node_key)))
         if self.fail_with:
             raise OrchestrationToolError(self.fail_with, "typed failure")
-        return TaskRequestReceipt(
-            run_ref=run_ref, node_key=node_key, child_task_id=str(uuid4())
-        )
+        return TaskRequestReceipt(run_ref=run_ref, node_key=node_key, child_task_id=str(uuid4()))
 
 
 class TestContracts:
@@ -108,7 +104,7 @@ class TestPlanPropose:
         assert payload["nodeKeys"] == ["collect"]
         assert payload["reservedBudget"]["modelTokens"] == 100
 
-    def test_runtime_receives_domain_proposal_and_budget_context(self) -> None:
+    def test_model_cannot_supply_authority_context(self) -> None:
         runtime = RecordingRuntime()
         PlanProposeTool(runtime).handle(  # type: ignore[arg-type]
             _call("orchestration.plan.propose", dict(VALID_PROPOSAL))
@@ -116,12 +112,7 @@ class TestPlanPropose:
         kind, (proposal, context) = runtime.calls[0]
         assert kind == "propose"
         assert proposal.nodes[0].node_key == "collect"
-        assert context["parent_remaining_budget"] == BudgetReservation(
-            model_tokens=1000, tool_calls=20, runtime_seconds=600
-        )
-        assert context["parent_capabilities"] == frozenset(
-            {"agent.execute", "evidence.read"}
-        )
+        assert context == {}
 
     def test_typed_runtime_failure_maps_to_typed_tool_failure(self) -> None:
         runtime = RecordingRuntime(fail_with="budget_beyond_parent")
@@ -142,9 +133,7 @@ class TestPlanPropose:
         assert runtime.calls == []
 
     def test_without_runtime_fails_closed(self) -> None:
-        result = PlanProposeTool().handle(
-            _call("orchestration.plan.propose", dict(VALID_PROPOSAL))
-        )
+        result = PlanProposeTool().handle(_call("orchestration.plan.propose", dict(VALID_PROPOSAL)))
         assert result.status is ToolCallStatus.FAILED
         assert json.loads(result.output)["reason"] == "orchestration_requires_runtime"
 

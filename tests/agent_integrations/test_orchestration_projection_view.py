@@ -2,16 +2,15 @@
 
 from __future__ import annotations
 
-from uuid import uuid4
+from contextlib import nullcontext
 
 from agent_integrations.ag_ui.orchestration_state import orchestration_projection_view
 from agent_orchestration.domain.orchestration import (
     OrchestrationNodeProposal,
     OrchestrationPlanProposal,
 )
-from agent_orchestration.domain.orchestration_budget import BudgetReservation
 
-from tests.agent_orchestration.test_orchestration_runtime import MemoryStore, _propose  # noqa: F401
+from tests.agent_orchestration.test_orchestration_runtime import MemoryStore, _authority
 
 
 def _snapshot_store() -> MemoryStore:
@@ -20,7 +19,8 @@ def _snapshot_store() -> MemoryStore:
     from agent_orchestration.application.orchestration_runtime import OrchestrationRuntime
 
     store = MemoryStore()
-    runtime = OrchestrationRuntime(store)
+    authority = _authority()
+    runtime = OrchestrationRuntime(store, authorize=lambda action: nullcontext(authority))
     receipt = runtime.propose_plan(
         OrchestrationPlanProposal(
             objective="Analyze",
@@ -40,16 +40,10 @@ def _snapshot_store() -> MemoryStore:
             max_parallelism=1,
             synthesis_instruction="Merge",
         ),
-        parent_task_id=str(uuid4()),
-        parent_binding_digest="a" * 64,
-        parent_remaining_budget=BudgetReservation(
-            model_tokens=1000, tool_calls=20, runtime_seconds=600
-        ),
-        parent_capabilities=frozenset({"agent.execute", "evidence.read"}),
-        write_capabilities=frozenset(),
     )
     runtime.materialize(receipt.run_ref)
-    runtime.request_task(run_ref=receipt.run_ref, node_key="collect")
+    # Projection fixture, not evidence of real child admission.
+    store.transition_node(receipt.run_ref, "collect", "running")
     store.read_run_status = lambda run_ref: store.status[run_ref].value  # type: ignore[method-assign]
     return store
 

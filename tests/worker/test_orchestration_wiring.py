@@ -34,8 +34,9 @@ def _gate_input(**overrides: object) -> GateInput:
 class _MemoryStore:
     """In-memory OrchestrationStorePort double (runtime tests pattern)."""
 
-    def __init__(self) -> None:
+    deployment_namespace = "test-namespace"
 
+    def __init__(self) -> None:
         self.runs: dict[str, object] = {}
         self.status: dict[str, object] = {}
         self.node_status: dict[tuple[str, str], str] = {}
@@ -63,14 +64,18 @@ class _MemoryStore:
 
 
 def _completed_two_node_run() -> tuple[OrchestrationRuntime, str, _MemoryStore]:
+    from contextlib import nullcontext
+
     from agent_orchestration.domain.orchestration import (
         OrchestrationNodeProposal,
         OrchestrationPlanProposal,
     )
-    from agent_orchestration.domain.orchestration_budget import BudgetReservation
+
+    from tests.agent_orchestration.test_orchestration_runtime import _authority
 
     store = _MemoryStore()
-    runtime = OrchestrationRuntime(store)
+    authority = _authority()
+    runtime = OrchestrationRuntime(store, authorize=lambda action: nullcontext(authority))
     proposal = OrchestrationPlanProposal(
         objective="Analyze",
         nodes=(
@@ -99,20 +104,11 @@ def _completed_two_node_run() -> tuple[OrchestrationRuntime, str, _MemoryStore]:
         max_parallelism=1,
         synthesis_instruction="Merge",
     )
-    receipt = runtime.propose_plan(
-        proposal,
-        parent_task_id=str(uuid4()),
-        parent_binding_digest="a" * 64,
-        parent_remaining_budget=BudgetReservation(
-            model_tokens=1000, tool_calls=20, runtime_seconds=600
-        ),
-        parent_capabilities=frozenset({"agent.execute", "evidence.read"}),
-        write_capabilities=frozenset(),
-    )
+    receipt = runtime.propose_plan(proposal)
     runtime.materialize(receipt.run_ref)
-    runtime.request_task(run_ref=receipt.run_ref, node_key="a")
+    store.transition_node(receipt.run_ref, "a", "running")
     runtime.complete_node(receipt.run_ref, "a", NodeOutcome.COMPLETED)
-    runtime.request_task(run_ref=receipt.run_ref, node_key="b")
+    store.transition_node(receipt.run_ref, "b", "running")
     runtime.complete_node(receipt.run_ref, "b", NodeOutcome.COMPLETED)
     return runtime, receipt.run_ref, store
 

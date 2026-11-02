@@ -1,3 +1,12 @@
+## 2026-11-02 CA-P7-03A
+
+- 独立worktree/base1d3c21d3，先登记Owned paths；按计划实现服务端当前授权scope、真实parent、双工具拒绝边界。
+- 模型授权kwargs删除；request先核对ns/parent/binding再dispatch_unavailable，无写/假child。
+- 评审发现资源空集放行，在共享validator最小修复并冻结集合；未扩大到真实准入。
+- TDD两组有效red后green；最终独立161通过，11文件Ruff/5源mypy及diff/link通过，两轮评审无阻断。
+- 不跑完整门禁/真实PG/多副本/部署，不恢复重型环境；生产持久scope/store同事务与预算消费仍属03B/C。
+- 候选分支交付，主线接纳与03B另行推进；ERP脏工作树及历史/Coverage未改。
+
 ## 2026-11-02 CA-P7-01B 脚本桥评估
 
 结论反直觉：脚本桥不是未建而是被两处硬锁关着——域/catalog/API/worker/eval/合同/配置六层全就绪

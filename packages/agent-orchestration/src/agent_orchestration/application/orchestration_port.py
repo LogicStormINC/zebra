@@ -52,12 +52,6 @@ class OrchestrationRuntimePort(Protocol):
     def propose_plan(
         self,
         proposal: OrchestrationPlanProposal,
-        *,
-        parent_task_id: str,
-        parent_binding_digest: str,
-        parent_remaining_budget: BudgetReservation,
-        parent_capabilities: frozenset[str],
-        write_capabilities: frozenset[str],
     ) -> PlanProposalReceipt:
         """Validate and freeze one proposal into a run; typed failures only."""
 

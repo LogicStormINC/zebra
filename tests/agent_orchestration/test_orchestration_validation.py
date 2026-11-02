@@ -304,3 +304,31 @@ class TestRootBudgetFromBundle:
         with pytest.raises(PlanValidationError) as raised:
             _validate(proposal, _context(parent_remaining_budget=root))
         assert raised.value.reason_code == "budget_beyond_parent"
+
+
+@pytest.mark.parametrize("granted", [False, True])
+def test_empty_resource_authority_denies_refs_but_explicit_grant_allows(granted: bool) -> None:
+    ref = HostResourceRef(type="host-a.event", id="evt-9")
+    proposal = OrchestrationPlanProposal(
+        objective="Read authorized source",
+        max_parallelism=1,
+        nodes=(_node("a", resources=(ref,)),),
+        synthesis_instruction="Merge",
+    )
+    context = _context(parent_resource_refs=frozenset({ref}) if granted else frozenset())
+    if granted:
+        assert _validate(proposal, context).nodes[0].proposal.resource_refs == (ref,)
+    else:
+        with pytest.raises(PlanValidationError, match="resource_beyond_parent"):
+            _validate(proposal, context)
+
+
+def test_validation_context_copies_mutable_resource_and_role_sets() -> None:
+    ref = HostResourceRef(type="host-a.event", id="evt-9")
+    resources = {ref}
+    roles = {"researcher"}
+    context = _context(parent_resource_refs=resources, published_roles=roles)
+    resources.clear()
+    roles.add("implementer")
+    assert context.parent_resource_refs == frozenset({ref})
+    assert context.published_roles == frozenset({"researcher"})

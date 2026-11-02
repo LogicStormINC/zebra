@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
+from contextlib import nullcontext
 from uuid import uuid4
 
 import pytest
+from agent_core.domain.identifiers import TaskId
+from agent_orchestration.application.orchestration_authority import OrchestrationAuthority
 from agent_orchestration.application.orchestration_port import OrchestrationToolError
 from agent_orchestration.application.orchestration_runtime import OrchestrationRuntime
 from agent_orchestration.application.orchestration_scheduling import NodeOutcome
+from agent_orchestration.application.orchestration_validation import PlanValidationContext
 from agent_orchestration.domain.orchestration import (
     OrchestrationDependency,
     OrchestrationNodeProposal,
@@ -38,9 +42,7 @@ def _proposal(*, tokens: int = 100, dependency: bool = False) -> OrchestrationPl
     return OrchestrationPlanProposal(
         objective="Analyze",
         nodes=nodes,
-        dependencies=(
-            (OrchestrationDependency(from_node="a", to_node="b"),) if dependency else ()
-        ),
+        dependencies=((OrchestrationDependency(from_node="a", to_node="b"),) if dependency else ()),
         max_parallelism=1,
         synthesis_instruction="Merge",
     )
@@ -48,6 +50,8 @@ def _proposal(*, tokens: int = 100, dependency: bool = False) -> OrchestrationPl
 
 class MemoryStore:
     """In-memory OrchestrationStorePort double with CAS semantics."""
+
+    deployment_namespace = "test-namespace"
 
     def __init__(self) -> None:
         self.runs: dict[str, OrchestrationPlanSnapshot] = {}
@@ -70,31 +74,35 @@ class MemoryStore:
 
     def read_node_statuses(self, run_ref):
         return {
-            node_key: value
-            for (run, node_key), value in self.node_status.items()
-            if run == run_ref
+            node_key: value for (run, node_key), value in self.node_status.items() if run == run_ref
         }
 
     def transition_node(self, run_ref, node_key, target_status):
         self.node_status[(run_ref, node_key)] = target_status
 
 
+def _authority() -> OrchestrationAuthority:
+    return OrchestrationAuthority(
+        parent_task_id=TaskId(uuid4()),
+        parent_binding_digest="a" * 64,
+        deployment_namespace="test-namespace",
+        validation=PlanValidationContext(
+            parent_capabilities=CAPS,
+            parent_remaining_budget=BudgetReservation(
+                model_tokens=1000, tool_calls=20, runtime_seconds=600
+            ),
+        ),
+    )
+
+
 def _runtime() -> tuple[OrchestrationRuntime, MemoryStore]:
     store = MemoryStore()
-    return OrchestrationRuntime(store), store
+    authority = _authority()
+    return OrchestrationRuntime(store, authorize=lambda action: nullcontext(authority)), store
 
 
 def _propose(runtime: OrchestrationRuntime, *, tokens: int = 100, dependency: bool = False):
-    return runtime.propose_plan(
-        _proposal(tokens=tokens, dependency=dependency),
-        parent_task_id=str(uuid4()),
-        parent_binding_digest="a" * 64,
-        parent_remaining_budget=BudgetReservation(
-            model_tokens=1000, tool_calls=20, runtime_seconds=600
-        ),
-        parent_capabilities=CAPS,
-        write_capabilities=frozenset(),
-    )
+    return runtime.propose_plan(_proposal(tokens=tokens, dependency=dependency))
 
 
 class TestProposeLoop:
@@ -108,16 +116,7 @@ class TestProposeLoop:
     def test_budget_over_ceiling_is_a_typed_refusal(self) -> None:
         runtime, _store = _runtime()
         with pytest.raises(OrchestrationToolError) as raised:
-            runtime.propose_plan(
-                _proposal(tokens=600),  # 两节点合计 1200 > 根预算 1000
-                parent_task_id=str(uuid4()),
-                parent_binding_digest="a" * 64,
-                parent_remaining_budget=BudgetReservation(
-                    model_tokens=1000, tool_calls=20, runtime_seconds=600
-                ),
-                parent_capabilities=CAPS,
-                write_capabilities=frozenset(),
-            )
+            runtime.propose_plan(_proposal(tokens=600))
         assert raised.value.reason_code == "budget_beyond_parent"
 
     def test_unknown_run_request_fails_typed(self) -> None:
@@ -139,11 +138,12 @@ class TestSchedulingLoop:
         decision = runtime.evaluate(run_ref)
         assert decision.ready_nodes == ("a",)
 
-        # 工具派发 a；b 仍不可派（依赖未终态）
-        task = runtime.request_task(run_ref=run_ref, node_key="a")
-        assert len(task.child_task_id) == 36
-        with pytest.raises(OrchestrationToolError, match="node_not_ready"):
-            runtime.request_task(run_ref=run_ref, node_key="b")
+        # No real admission exists yet: dispatch refuses without changing state.
+        with pytest.raises(OrchestrationToolError, match="dispatch_unavailable"):
+            runtime.request_task(run_ref=run_ref, node_key="a")
+        assert store.node_status == {}
+        # Explicit stored child state for the loop-only completion fixture.
+        store.transition_node(run_ref, "a", "running")
 
         # child_wakeup：a 完成 → b 就绪
         decision = runtime.complete_node(run_ref, "a", NodeOutcome.COMPLETED)
@@ -180,3 +180,11 @@ class TestSchedulingLoop:
         decision = runtime.evaluate(receipt.run_ref)
         # max_parallelism=1 → 只取排序首个
         assert decision.ready_nodes == ("a",)
+
+
+def test_proposal_preserves_the_real_parent_task_id() -> None:
+    authority = _authority()
+    store = MemoryStore()
+    runtime = OrchestrationRuntime(store, authorize=lambda action: nullcontext(authority))
+    receipt = runtime.propose_plan(_proposal())
+    assert store.runs[receipt.run_ref].parent_task_id == authority.parent_task_id
