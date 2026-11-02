@@ -36,9 +36,12 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 
 {{- define "zebra-agent.cloudEnv" -}}
 {{- if .Values.databaseBudget.enabled }}
+{{- if .Release.IsUpgrade }}
+{{- fail "budget-enabled upgrades await verified rollout lifecycle (CA-HA-08)" }}
+{{- end }}
 {{- $b := .Values.databaseBudget }}
-{{- if or (lt (int $b.fleet.api) (int (add .Values.api.replicas 1))) (lt (int $b.fleet.worker) (int (add .Values.worker.replicas 1))) }}
-{{- fail "database budget omits rollout peaks" }}
+{{- if or (lt (int $b.fleet.api) (int (mul .Values.api.replicas 2))) (lt (int $b.fleet.worker) (int (mul .Values.worker.replicas 2))) }}
+{{- fail "database budget omits rollout peaks including terminating overlap" }}
 {{- end }}
 {{- if or (gt (int .Values.worker.executionSlots) (int $b.execution_slots)) (lt (int $b.fleet.executor) (int (mul $b.fleet.worker $b.execution_slots))) }}
 {{- fail "database budget omits private executors" }}

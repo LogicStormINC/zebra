@@ -2,6 +2,7 @@
 
 import json
 
+import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
@@ -46,6 +47,7 @@ def test_cancelled_normal_calls_keep_slots_and_do_not_starve_control():
     from threading import Event
 
     import pytest
+    from agent_storage.postgres.async_dispatch import async_dispatch_scope, storage_call
     from agent_storage.postgres.capacity_profile import CapacityProfile
     from agent_storage.postgres.connection_capacity import (
         ConnectionBudget,
@@ -65,6 +67,8 @@ def test_cancelled_normal_calls_keep_slots_and_do_not_starve_control():
         assert finish.wait(5)
 
     async def exercise():
+        with capacity_lane("read"), async_dispatch_scope(calls.call):
+            assert await calls.call(lambda: asyncio.run(storage_call(lambda: "nested"))) == "nested"
         normal = [asyncio.create_task(calls.call(blocked, index)) for index in range(len(entered))]
         try:
             assert all(await asyncio.gather(*(asyncio.to_thread(e.wait, 1) for e in entered)))
@@ -133,3 +137,135 @@ def test_real_cached_health_bypasses_full_dispatchers(tmp_path):
     finally:
         finish.set()
         calls.close()
+
+
+@pytest.mark.parametrize("callback", ["preflight", "storage"])
+def test_cancelled_cloud_preflight_keeps_read_thread_slot(callback, monkeypatch):
+    import asyncio
+    from threading import Event
+    from types import SimpleNamespace
+
+    import httpx
+    from agent_storage.postgres.capacity_profile import CapacityProfile
+    from agent_storage.postgres.connection_capacity import ConnectionBudget, capacity_scope
+    from fastapi.responses import JSONResponse
+    from zebra_agent_api.ag_ui_task_view import authorized_task_preflight
+    from zebra_agent_api.database_budget import configure_database_budget
+    from zebra_agent_api.responses import ApiResponse
+
+    budget = ConnectionBudget(
+        "dbname=one", CapacityProfile.parse(json.dumps(profile_data())), "api"
+    )
+    app, started, finish = FastAPI(), Event(), Event()
+    with capacity_scope(budget):
+        configure_database_budget(app, SimpleNamespace(), "dbname=one")
+    live = []
+
+    def blocking_read():
+        live.append(True)
+        started.set()
+        assert finish.wait(5)
+        return ApiResponse(200, {"status": "ok"})
+
+    @app.get("/tasks/one/stop")
+    async def cloud_read():
+        if callback == "storage":
+            from agent_storage.postgres.extensions import PostgresExtensionStore
+
+            store = PostgresExtensionStore("dbname=one", deployment_namespace="test")
+            monkeypatch.setattr(store, "_authorize_frozen_skills", lambda *_: blocking_read())
+            result = await store.authorize_frozen_skills(scope=None, installations=())
+        else:
+            result = await authorized_task_preflight(
+                lambda: None, blocking_read, authorization_expires_at=None,
+            )
+        return JSONResponse(result.body, status_code=result.status_code)
+
+    async def exercise():
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app),
+                                    base_url="http://test") as client:
+            first = asyncio.create_task(client.get("/tasks/one/stop"))
+            try:
+                assert await asyncio.to_thread(started.wait, 1)
+                first.cancel()
+                await asyncio.gather(first, return_exceptions=True)
+                try:
+                    second = await asyncio.wait_for(client.get("/tasks/one/stop"), 0.5)
+                except TimeoutError:
+                    second = None
+                assert len(live) == 1, "cancelled cloud read escaped the configured read pool"
+                assert second is not None and second.status_code == 503
+            finally:
+                finish.set()
+                await asyncio.gather(first, return_exceptions=True)
+    try:
+        asyncio.run(exercise())
+    finally:
+        finish.set()
+        app.state.database_calls.close()
+
+
+def test_cloud_legacy_health_does_not_dispatch_synchronous_preflight(tmp_path, monkeypatch):
+    from zebra_agent_api import http as module
+
+    from tests.api.test_host_auth_http import _cloud_client
+
+    async def must_not_dispatch(*args, **kwargs):
+        raise AssertionError("cached health entered the synchronous read dispatcher")
+
+    monkeypatch.setattr(module, "authorized_task_preflight", must_not_dispatch)
+    client = _cloud_client(tmp_path, None)
+    assert client.get("/health").json()["status"] == "ok"
+
+
+@pytest.mark.parametrize("read_limit", [1, 2])
+def test_extension_list_metadata_fanout_fits_read_budget(read_limit, monkeypatch):
+    from time import sleep
+    from types import SimpleNamespace
+    from unittest.mock import AsyncMock
+
+    from agent_core.ports.extensions import ExtensionStore, SkillInstallationPage
+    from agent_core.ports.skill_publications import SkillPublicationNotFoundError
+    from agent_storage.postgres.capacity_profile import CapacityProfile
+    from agent_storage.postgres.connection_capacity import ConnectionBudget, capacity_scope
+    from agent_storage.postgres.skill_publications import PostgresSkillPublicationStore
+    from agent_tools.skill_publications import SkillPublicationService
+    from fastapi import Request
+    from zebra_agent_api.database_budget import configure_database_budget
+    from zebra_agent_api.extension_reads import extension_read_response
+
+    from tests.api.test_extension_reads import SKILL, VERIFIED
+
+    profile = profile_data() | {"read": read_limit}
+    budget = ConnectionBudget("dbname=one", CapacityProfile.parse(json.dumps(profile)), "api")
+    app, store = FastAPI(), AsyncMock(spec=ExtensionStore)
+    store.list_skills.return_value = SkillInstallationPage(items=tuple(
+        SKILL.model_copy(update={"installation_id": f"installed-{i}"}) for i in range(3)
+    ))
+    publications = PostgresSkillPublicationStore("dbname=one", deployment_namespace="test")
+    completed = []
+
+    def missing_metadata(*_):
+        sleep(0.05)
+        completed.append(True)
+        raise SkillPublicationNotFoundError("legacy record has no publication metadata")
+
+    monkeypatch.setattr(publications, "_get", missing_metadata)
+    with capacity_scope(budget):
+        configure_database_budget(app, SimpleNamespace(), "dbname=one")
+
+    @app.get("/v1/extensions/skill-installations")
+    async def listing(request: Request):
+        request.state.verified_host_grant = VERIFIED
+        return await extension_read_response(
+            request, store=store, deployment="cloud",
+            publications=SkillPublicationService(publications, None, "test"),
+        )
+
+    try:
+        with TestClient(app) as client:
+            response = client.get("/v1/extensions/skill-installations")
+        assert response.status_code == 200
+        assert len(response.json()["items"]) == len(completed) == 3
+    finally:
+        app.state.database_calls.close()

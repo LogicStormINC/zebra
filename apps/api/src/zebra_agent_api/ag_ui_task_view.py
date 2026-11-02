@@ -1,6 +1,6 @@
 """Read-only canonical Task coordinates for initial replay and rollover refresh."""
 
-from asyncio import timeout, to_thread
+from asyncio import timeout
 from collections.abc import AsyncGenerator, AsyncIterator, Awaitable, Callable
 from contextlib import aclosing
 from datetime import UTC, datetime
@@ -16,6 +16,7 @@ from agent_integrations.ag_ui import AgUiProjectionError
 from agent_storage import ControlPlaneStores
 from agent_storage.postgres.task_io import current_task_io_deadline, task_io_deadline
 
+from zebra_agent_api.database_budget import database_call
 from zebra_agent_api.responses import ApiResponse
 
 
@@ -35,7 +36,7 @@ async def authorized_task_preflight[T](
         return denied if denied is not None else prepare()
 
     return await authorized_async_read(
-        lambda: to_thread(operation),
+        lambda: database_call(None, operation),
         authorization_expires_at=authorization_expires_at,
         request_deadline=request_deadline,
     )

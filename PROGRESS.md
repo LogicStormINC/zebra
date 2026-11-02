@@ -1,3 +1,14 @@
+## 2026-11-02 — CA-HA-03 独立AI复审修复（Review）
+
+共享请求dispatcher收口直接/间接PG异步回调，取消保留运行槽；嵌套同步调用不重复计费。
+扩展列表沿用原Semaphore按read容量限流，独立Request无app时保留旧行为；Cloud健康读缓存。
+修正terminating重叠算术，预算模式暂限全新隔离staging安装；HA08前拒绝Helm upgrade，
+rollback/rolling restart/连续发布/节点失联过渡未验。三项Important已闭合，独立AI复审通过。
+最终相关回归1082通过/327条件跳过，定向114/1skip，make check通过（1534类型文件）。
+[机器记录](docs/evidence/ca-ha-03-review/validation.json)保留此前12个测试探针失败及2个兼容失败，
+均修复后完整重跑。03仍In Progress、E1未验。用户随后授权在192.168.101.7/OrbStack
+建立新隔离测试环境；资源只读预检通过，下一步冻结两主机新实例拓扑，不切换既有生产。
+
 ## 2026-11-02 — CA-HA-03B 连接与控制容量候选（Review）
 
 显式可选容量scope覆盖池/直连、API/Worker/child/cleanup/scheduler；控制、只读、探针

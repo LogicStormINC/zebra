@@ -1,7 +1,7 @@
 # CA-HA-03 — 轮询和资源预算收口
 
 2026-11-02；Owner Luke Ding；执行Codex；branch `codex/ca-ha-03-budgets`；基线`56ae352a5`。
-03A是本批可审查切片；03整体仍In Progress，03B和完整E1容量验收尚未完成。
+03A/03B为本地Review候选；03整体仍In Progress，完整E1容量验收尚未完成。
 没有生产部署/迁移、业务Run重放、模型请求或旧环境恢复。
 
 ## 已追踪的实际路径
@@ -27,7 +27,7 @@
 4. 拒绝NaN/Infinity/bool轮询间隔；命令循环原0–30s配置约束保持。
 5. 从已500行的command process抽出后台周期与脱敏trace职责；未扩写为第二调度器。
 
-## 已有上限与03B缺口
+## 03A时点已有上限与03B缺口（历史）
 
 | 路径 | 当前已有约束 | 尚缺证明/实现 |
 | --- | --- | --- |
@@ -58,7 +58,7 @@ context传播，不能把main线程pool scope推断为所有线程/直连都受�
   不把生产读取改成缺列默认放行；最终完整Worker1326通过/759条件跳过，make check全绿；机器记录保留各次边界。
 - 本批未进行生产/多节点故障注入、全仓make test或E1-C/E1-O容量验收；不宣称HA达标。
 
-## 下一切片03B
+## 03A时点的03B目标（实现进度见下文）
 
 1. 在任务卡冻结精确API/Worker/child/config/storage/Helm路径后，统一现有池入口。
 2. 计算API副本、Worker父/子进程、scheduler、cleanup、探针和Task I/O总连接，
@@ -67,7 +67,7 @@ context传播，不能把main线程pool scope推断为所有线程/直连都受�
    flood scope和低负载scope分别测p95/p99，拒绝/超时纳入分母。
 4. 03B完整验收/评审合入后再解锁04；本批不改旧强停证据缺失的人工对账策略。
 
-03A候选已验证，独立/人工评审待完成。生产镜像/schema与当前源码组合需在部署前单独冻结；
+03A候选已验证；独立AI评审与修复见文末，人工评审未完成。生产镜像/schema组合需在部署前单独冻结；
 本批不直接将cloud-agent镜像替换到现有生产，不通过升级自动重跑旧任务。
 
 ## 03B — 连接预算与控制容量候选（2026-11-02，Review）
@@ -84,6 +84,9 @@ context传播，不能把main线程pool scope推断为所有线程/直连都受�
 - 额度耗尽立即拒绝，不新增等待队列；普通池原等待队列仍最多32、借用预算2s。
   不据此推断同一请求此前的业务写入未发生；HTTP503不触发本批任何业务重发。
 - API普通/只读/控制同步调用各有有界线程池；Future实际完成才归还线程槽。
+  请求scope覆盖preflight、Coverage、Artifact、管理回调及PG扩展/插件/MCP异步适配器。
+  同步回调中的嵌套async存储仍由原回调持有槽，不重复计费；取消不提前释放。
+  列表已有元数据并发上限为min(8,read)，关闭预算时仍为8；不新增等待队列。
   请求准入在响应头后释放，SSE后续I/O仍计实际连接；本批不声明SSE总连接数已全面有界。
 - 精确GET健康路径不占业务准入；旧`/health`纯缓存响应不排同步线程。
   探针有独立额度，业务read/control满载不会挤掉真实数据库观测。
@@ -104,10 +107,16 @@ context传播，不能把main线程pool scope推断为所有线程/直连都受�
   Worker峰值乘执行槽数。每个实际启动组件必须在配置中有正数份额。
 - 启动核对实际PG最大连接数、两类服务端预留总额及应用账户非superuser；配置不一致拒绝。
   参数语义见[PostgreSQL官方连接设置](https://www.postgresql.org/docs/17/runtime-config-connection.html)。
-- Helm冻结`maxSurge:1`，验证API/Worker峰值与执行器数量，按预算求和拒绝错误配置；
-  开启时使用已有API包装入口和独立live/ready探针。默认关闭仍保留旧探针配置。
-- 示例为每进程11连接、20个峰值进程，总220；另预留3+4，合计227<=256。
+- `maxSurge:1`不能约束仍存活的terminating Pod；普通单次变更也可能同时保留旧、新各一整组。
+  依据[Kubernetes官方Deployment说明](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#rolling-update-deployment)。
+  Helm示例为这类重叠按API/Worker各2*replicas预留，执行器随Worker峰值相乘；
+  这是声明算术，不是已实施的存活进程准入。开启时使用API包装入口和独立live/ready探针。
+- 示例为每进程11连接、26个声明峰值进程，总286；另预留3+4，合计293<=320。
   这是算术示例，不是当前生产参数或调大生产数据库的建议；没有执行服务端参数修改。
+- **当前只允许全新隔离staging安装**：预算开启时Helm upgrade直接拒绝，关闭时升级行为保持。
+  在HA08验证生命周期前，预算模式不支持Helm rollback（旧清单可绕过模板guard）、
+  kubectl apply/rolling restart、连续发布、节点失联等过渡；不能把2*replicas当作这些路径的上限。
+  staging重建前必须证明旧进程/连接已退出，或另行冻结并证明实际重叠预算；本批不执行重建。
 - **这不是分布式进程准入服务**：手工扩容、额外客户端、数据库切换或参数漂移超出声明时，
   该证明失效。实际部署必须冻结并约束这些上限，后续08/09负责拓扑/漂移告警与验收。
   当前生产未启用，不能把配置算术称为已在线验证的全副本容量。
@@ -126,7 +135,7 @@ context传播，不能把main线程pool scope推断为所有线程/直连都受�
   不恢复旧环境、不操作生产服务/数据库/数据卷；不因错误而自动重发未知操作。
 - Helm实际渲染四类：关闭/开启通过，漏surge和总额不足均拒绝；`make check`通过。
 - 没有专用E1两API/两Worker跨节点环境，没有1m事件基线和30min各档稳态，
-  没有真实IdP/Broker/完整浏览器联合验收、生产切换或独立/人工评审；04不自动解锁。
+  没有真实IdP/Broker/完整浏览器联合验收、生产切换或人工评审；独立AI评审见下，04不自动解锁。
 
 ### 评审与下一步
 
@@ -134,6 +143,22 @@ context传播，不能把main线程pool scope推断为所有线程/直连都受�
 实现与验证保留在同一任务；较多行数来自跨入口回归/机器记录，未增加依赖、UI或业务状态机。
 03A父提交保留，可分别审查两个增量；不自动合并或切生产镜像。
 
-下一步：先独立评审03A/03B；在专用隔离环境冻结E1清单并测每scope排队/拒绝率、
+下一步：收口独立AI复审；在专用隔离环境冻结E1清单并测每scope排队/拒绝率、
 CPU/SQL/线程/连接/队列及p95/p99，明确运行时fleet漂移处置；完成后才作03整体发布判定。
 旧任务退出证据缺口的自动核对/告警仍属后续04/09，本批未以放宽退出证明代替它。
+
+
+## 独立AI评审修复与E1环境核查（2026-11-02）
+
+评审56ae352a..1d5207b4发现两项Important：部分读回调绕过线程额度、发布预算漏掉
+terminating进程。共享dispatcher修复后，复审又发现列表并发8与小read额度冲突；
+沿用原Semaphore按read额度收紧，保留默认关闭行为。先红后绿回归覆盖取消后的真实回调、
+PG异步适配器、嵌套同步回调、三条记录元数据读取及Cloud缓存健康路径；原生授权/期限保留。
+本次机器证据见`docs/evidence/ca-ha-03-review/validation.json`，不覆盖或改写03B原记录。
+
+只读环境核查：本地colima-zebra-gvisor与orbstack上下文均不可达；仓库
+LogicStormINC/zebra的runner API返回0个self-hosted runner，environment列表为空。
+工作流声明的kubernetes/gvisor与trench-staging标签不证明环境已配置。
+192.168.101.7仅确认是既有单台生产主机，未找到kubectl/k3s/microk8s命令；
+这不证明无任何集群，也不足以证明E1的独立节点/故障域。未启动旧环境或调度工作流。
+因此E1仍标记`environment_unverified`，不能用本机微测或该主机替代多节点验收。

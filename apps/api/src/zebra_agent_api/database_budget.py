@@ -5,10 +5,10 @@ import re
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from contextvars import copy_context
-from functools import partial
 from threading import BoundedSemaphore, Lock
 from typing import Any
 
+from agent_storage.postgres.async_dispatch import async_dispatch_scope, storage_call
 from agent_storage.postgres.connection_capacity import (
     ConnectionBudget,
     DatabaseCapacityExceeded,
@@ -27,8 +27,10 @@ _CONTROL = re.compile(r"/(tasks|sessions)/[^/]+/(cancel|stop|suspend)")
 
 
 class DatabaseBudgetMiddleware:
-    def __init__(self, app: ASGIApp, *, budget: ConnectionBudget) -> None:
-        self.app, self.budget = app, budget
+    def __init__(
+        self, app: ASGIApp, *, budget: ConnectionBudget, calls: "ApiDatabaseCalls | None" = None,
+    ) -> None:
+        self.app, self.budget, self.calls = app, budget, calls
         self._admissions = {
             "normal": BoundedSemaphore(budget.profile.normal + budget.profile.pool),
             "read": BoundedSemaphore(budget.profile.read),
@@ -66,7 +68,10 @@ class DatabaseBudgetMiddleware:
                 release_admission()
             await send(message)
 
-        with capacity_scope(self.budget), capacity_lane(lane):
+        with (
+            capacity_scope(self.budget), capacity_lane(lane),
+            async_dispatch_scope(self.calls.call if self.calls is not None else None),
+        ):
             try:
                 await self.app(scope, receive, observed)
             except (DatabaseCapacityExceeded, PoolTimeout, TooManyRequests):
@@ -90,13 +95,17 @@ class ApiDatabaseCalls:
         self._slots = {k: BoundedSemaphore(v) for k, v in limits.items()}
 
     async def call[T](self, action: Callable[..., T], *args: Any, **kwargs: Any) -> T:
+        def invoke() -> T:
+            # Nested async storage remains owned by this running synchronous callback.
+            with async_dispatch_scope(None):
+                return action(*args, **kwargs)
+
         lane = current_lane()
         with self._lock:
             if self._closed or not self._slots[lane].acquire(blocking=False):
                 raise DatabaseCapacityExceeded("API database lane unavailable")
             try:
-                future = self._pools[lane].submit(copy_context().run,
-                                                 partial(action, *args, **kwargs))
+                future = self._pools[lane].submit(copy_context().run, invoke)
             except BaseException:
                 self._slots[lane].release()
                 raise
@@ -115,9 +124,11 @@ class ApiDatabaseCalls:
 async def database_call[T](
     app: FastAPI | None, action: Callable[..., T], *args: Any, **kwargs: Any,
 ) -> T:
-    calls: ApiDatabaseCalls | None = getattr(getattr(app, "state", None), "database_calls", None)
+    calls: ApiDatabaseCalls | None = (
+        getattr(getattr(app, "state", None), "database_calls", None)
+    )
     if calls is None:
-        return await asyncio.to_thread(action, *args, **kwargs)
+        return await storage_call(action, *args, **kwargs)
     return await calls.call(action, *args, **kwargs)
 
 
@@ -128,4 +139,4 @@ def configure_database_budget(app: FastAPI, health: Any, dsn: str) -> None:
     calls = ApiDatabaseCalls(budget)
     app.state.database_budget, app.state.database_calls = budget, calls
     health.capacity_close = calls.close
-    app.add_middleware(DatabaseBudgetMiddleware, budget=budget)
+    app.add_middleware(DatabaseBudgetMiddleware, budget=budget, calls=calls)

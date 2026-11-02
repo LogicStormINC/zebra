@@ -1,3 +1,13 @@
+## 2026-11-02 CA-HA-03 review follow-up
+
+- 同卡同Owner/branch/worktree，修改前补充API/PG async适配器/列表与旧stream探针Owned paths。
+- 独立AI三项Important闭合；取消/嵌套/小read列表回归先红后绿，默认关闭与原授权/期限保持。
+- 预算开启的Helm upgrade拒绝；fresh staging限制及rollback等未验路径写入文档。
+- 最终相关1082pass/327skip（347.77s）、定向114pass/1skip、makecheck全绿；保留中途失败记录。
+- 未做本轮新PG/全仓/E1/生产验收；未重发Run、恢复旧环境、推送/合并/生产切换。
+- 用户授权建立新E1测试环境；只读核实Ubuntu及OrbStack资源/现有runsc，可复用基础设施运行全新测试实例。
+- 下一步：冻结两主机独立API/Worker与新测试依赖、精确资源/所有权及镜像，再逐层验收。
+
 ## 2026-11-02 CA-P7-03C
 
 - 按授权先整合03B：Native7f1f499b、Overdoze e34ecc4；误先推送的3笔既有ERP文档如实记录，无历史重写。

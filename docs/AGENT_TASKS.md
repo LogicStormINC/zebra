@@ -196,7 +196,7 @@
 
 - Actual receipt: docs/evidence/ca-ha-03/validation.json；完整Worker1326通过/759条件跳过；真实PG33通过；make check全绿。这是03A历史记录；03B当前证据见下。独立/人工评审仍待完成，03整体不标Done、不解锁04。
 
-- 03B claim（2026-11-02）：用户“继续下一步”授权；Owner Luke Ding / Codex，沿用本任务branch/worktree，03A359ee6ca作为冻结父提交。03B从Ready领取，现Review（候选已验，未生产部署）；不将独立评审/生产部署视作已授权。
+- 03B claim（2026-11-02）：用户“继续下一步”授权；Owner Luke Ding / Codex，沿用本任务branch/worktree，03A359ee6ca作为冻结父提交。03B从Ready领取，现Review（候选已验，未生产部署）；独立AI复审见Review follow-up；未授权生产部署。
 - 03B Owned paths（实施前冻结）：packages/agent-storage/src/agent_storage/postgres/{connection_capacity,capacity_profile,connection_pool,database,task_io,worker_capability,force_stop_executors,force_stop_recovery}.py；packages/agent-runtime/src/agent_runtime/command_wakeup_consumer.py；apps/api/src/zebra_agent_api/{server,http,http_host_auth,database_budget,health_readiness}.py；apps/worker/src/zebra_agent_worker/{main,session_process_child,command_process,loop,runtime_cleanup_service,worker_loop_service,ag_ui_projection_work,runtime_gates}.py；apps/scheduler/src/zebra_agent_scheduler/main.py；deploy/helm/zebra-agent/{values.yaml,values.schema.json,templates/api-deployment.yaml,templates/worker-deployment.yaml,templates/_helpers.tpl}；docker/Dockerfile、docker/compose.application.yml；tests/agent_storage/test_postgres_connection_capacity.py、tests/api/test_database_budget.py、tests/worker/test_command_process.py、tests/deploy/test_helm_chart.py；docs/CA-HA-03_resource_budgets.md、docs/evidence/ca-ha-03b/、docs/AGENT_TASKS.md、PROGRESS.md、WORKLOG.md、task_plan.md。
 - 03B design：默认关闭的显式进程容量scope，普通池+直连/控制/只读/专属probe分别计数；PostgresDatabase和TaskIo共享同一连接关闭生命周期，额度耗尽立即拒绝、不排新队列。显式fleet上限包含发布surge/执行槽/cleanup/scheduler及外部预留；与真实数据库上限核对，不把单池当全局。无全局DSN注册表、第二调度器、schema或领域状态变化。
 - 03B HTTP addendum（实施前）：共享auth/路由sync dispatch接入有界lane executor；request取消不释放仍运行Future的线程槽；精确GET健康缓存不经过业务准入，SSE响应头后释放请求准入但连接仍计实际关闭。
@@ -204,6 +204,15 @@
 - 03B acceptance：并发开/关、失败/取消及复用不早释放/不超发；跨线程/进程入口覆盖；真实PG普通耗尽时控制/只读仍可用；记录峰值/拒绝/延迟及配置不完整拒绝。微型限额证明不得冒充E1集群/30min容量验收；不得在Mac创建E1全量集群。
 
 - 03B current receipt: docs/evidence/ca-ha-03b/validation.json；广覆盖3102/951skip，最终真实PG113/12skip，后续边界定向通过，make check全绿、Helm实际渲染正反例通过。默认关闭、未部署；预算以冻结fleet与external为前提，运行时漂移/E1容量/独立评审仍未验。
+
+- Review follow-up（2026-11-02）：用户继续授权；独立AI只读审查56ae352a..1d5207b4确认两项Important：部分读路径绕过线程配额、滚动预算漏terminating进程。领取本卡复核修复In Progress，不合并/部署。
+- Review owned-path addendum（实施前）：apps/api/src/zebra_agent_api/{database_budget,ag_ui_task_view,ag_ui_checkpoint_tail,artifact_download,coverage_report_http,runtime_gates,management_transport,runtime_gate_termination,validation_transport,publication_management,runtime_management}.py；tests/api/test_database_budget.py；tests/deploy/test_helm_chart.py；既有03B Helm/任务/证据/进度路径。请求级scope传递现有dispatcher，不改变读授权/期限或业务重发；预算模式暂限fresh staging install，不新增08发布编排。
+- Review stream test owned path（实施前）：tests/api/test_stream_v2_http.py；12个已有case的单dispatch探针由旧to_thread改为共享database_call，保留原授权/游标/降级断言。
+- Review list fanout owned path（实施前）：apps/api/src/zebra_agent_api/extension_reads.py；同一已有Semaphore限为min(8,profile.read)，关闭模式仍8；三条记录实际publication适配器回归写入既有tests/api/test_database_budget.py。
+- Review transitive owned paths（实施前）：packages/agent-storage/src/agent_storage/postgres/{async_dispatch,extensions,plugin_installations,mcp_catalog,mcp_credentials,skill_publications,extension_snapshots,plugin_distribution}.py；复用同一请求dispatcher，未组合时保持asyncio.to_thread；同一取消回归覆盖真实异步存储适配器入口。
+- Review result：最终1082pass/327skip、定向114/1skip、makecheck全绿；独立AI最终复验47/1skip，三项Important闭合。源码仍Review，03不解锁04；本轮新PG/人工/生产/E1未验。
+- E1后续授权：用户明确允许192.168.101.7及本地OrbStack建立全新隔离测试环境；沿用同卡/Owner/branch，先冻结新实例资源及路径，不切换既有生产或恢复旧任务。
+- Review/E1证据：docs/evidence/ca-ha-03-review/；仅只读核查可用context/runner，不启动旧环境或E1集群，不恢复生产/Overdoze。
 
 # CA-HA-01 — HA基线、DDD不变量与验收合同（仅文档）
 - Status: Done（仅设计文档）；2026-10-31 单人文档复核修正9项，revision 2及01文档已合入并推送cloud-agent 1dd88bfd；未运行实现或故障验收；用户授权后登记Ready并领取；Owner Luke Ding，执行Codex；独立评审待安排。

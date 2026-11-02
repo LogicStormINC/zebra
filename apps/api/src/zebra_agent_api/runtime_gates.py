@@ -20,6 +20,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from zebra_agent_config import ZebraAgentSettings
 
+from zebra_agent_api.database_budget import database_call
 from zebra_agent_api.runtime_gates_config import load_runtime_gate_approval
 from zebra_agent_api.runtime_management import _HEADERS, _error
 
@@ -134,7 +135,7 @@ def register_runtime_gates(
             slots.release()
             raise
         task = asyncio.create_task(
-            asyncio.to_thread(perform, settings, namespace, token, headers, raw, request.method)
+            database_call(None, perform, settings, namespace, token, headers, raw, request.method)
         )
 
         def finished(done: asyncio.Task[Any]) -> None:

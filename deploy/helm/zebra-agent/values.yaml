@@ -81,7 +81,8 @@ migration:
 
 podAnnotations: {}
 
-# Opt-in candidate only. Counts include maxSurge:1 and all private executors.
+# Opt-in fresh staging install only; upgrades wait for CA-HA-08 lifecycle acceptance.
+# Declared arithmetic reserves one old/new overlap; maxSurge does not bound live Pods.
 # The actual server max/reserved values and external clients must match at enablement.
 databaseBudget:
   enabled: false
@@ -90,13 +91,13 @@ databaseBudget:
   read: 2
   control: 4
   probe: 1
-  max_connections: 256
+  max_connections: 320
   server_reserved: 3
   external: 4
   execution_slots: 4
   fleet:
-    api: 3
-    worker: 3
-    executor: 12
+    api: 4
+    worker: 4
+    executor: 16
     cleanup: 1
     scheduler: 1

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import json
 from collections.abc import Callable
 from hashlib import sha256
@@ -23,6 +22,7 @@ from agent_core.ports.extensions import (
 )
 from psycopg.types.json import Jsonb
 
+from agent_storage.postgres.async_dispatch import storage_call
 from agent_storage.postgres.database import PostgresDatabase
 from agent_storage.postgres.skill_publications import PostgresSkillPublicationStore
 
@@ -98,7 +98,7 @@ class PostgresExtensionStore(PostgresDatabase):
         scope: ExtensionScope,
         installation_id: str,
     ) -> SkillInstallation:
-        row = await asyncio.to_thread(self._get, scope, "skill", installation_id)
+        row = await storage_call(self._get, scope, "skill", installation_id)
         return self._decode(SkillInstallation, row, scope)
 
     async def authorize_frozen_skills(
@@ -110,7 +110,7 @@ class PostgresExtensionStore(PostgresDatabase):
         validated = tuple(
             SkillInstallation.model_validate(item.model_dump()) for item in installations
         )
-        return await asyncio.to_thread(self._authorize_frozen_skills, scope, validated)
+        return await storage_call(self._authorize_frozen_skills, scope, validated)
 
     def _authorize_frozen_skills(
         self,
@@ -200,7 +200,7 @@ class PostgresExtensionStore(PostgresDatabase):
         scope: ExtensionScope,
         connection_id: str,
     ) -> McpConnection:
-        row = await asyncio.to_thread(self._get, scope, "mcp", connection_id)
+        row = await storage_call(self._get, scope, "mcp", connection_id)
         return self._decode(McpConnection, row, scope)
 
     async def list_skills(
@@ -209,7 +209,7 @@ class PostgresExtensionStore(PostgresDatabase):
         scope: ExtensionScope,
         page: ExtensionPageRequest,
     ) -> SkillInstallationPage:
-        rows = await asyncio.to_thread(self._list, scope, "skill", page)
+        rows = await storage_call(self._list, scope, "skill", page)
         return SkillInstallationPage(
             items=tuple(self._decode(SkillInstallation, row, scope) for row in rows[: page.limit]),
             next_cursor=rows[page.limit - 1]["object_id"] if len(rows) > page.limit else None,
@@ -221,7 +221,7 @@ class PostgresExtensionStore(PostgresDatabase):
         scope: ExtensionScope,
         connection_id: str,
     ) -> McpConnection:
-        row = await asyncio.to_thread(self._get_creation, scope, "mcp", connection_id)
+        row = await storage_call(self._get_creation, scope, "mcp", connection_id)
         return self._decode(McpConnection, row, scope)
 
     def _get_creation(self, scope: ExtensionScope, kind: str, identifier: str) -> dict[str, Any]:
@@ -241,7 +241,7 @@ class PostgresExtensionStore(PostgresDatabase):
         scope: ExtensionScope,
         page: ExtensionPageRequest,
     ) -> McpConnectionPage:
-        rows = await asyncio.to_thread(self._list, scope, "mcp", page)
+        rows = await storage_call(self._list, scope, "mcp", page)
         return McpConnectionPage(
             items=tuple(self._decode(McpConnection, row, scope) for row in rows[: page.limit]),
             next_cursor=rows[page.limit - 1]["object_id"] if len(rows) > page.limit else None,
@@ -255,7 +255,7 @@ class PostgresExtensionStore(PostgresDatabase):
         expected_revision: int | None,
     ) -> None:
         validated = SkillInstallation.model_validate(installation.model_dump())
-        await asyncio.to_thread(self._save, scope, "skill", validated, expected_revision)
+        await storage_call(self._save, scope, "skill", validated, expected_revision)
 
     async def save_mcp(
         self,
@@ -265,7 +265,7 @@ class PostgresExtensionStore(PostgresDatabase):
         expected_revision: int | None,
     ) -> None:
         validated = McpConnection.model_validate(connection.model_dump())
-        await asyncio.to_thread(self._save, scope, "mcp", validated, expected_revision)
+        await storage_call(self._save, scope, "mcp", validated, expected_revision)
 
     def _scope(self, scope: ExtensionScope, kind: str) -> tuple[str, ...]:
         return _scope_key(self.deployment_namespace, scope, kind)
@@ -389,7 +389,7 @@ class PostgresExtensionStore(PostgresDatabase):
         scope: ExtensionScope,
         installation_id: str,
     ) -> SkillInstallation:
-        row = await asyncio.to_thread(self._get_creation, scope, "skill", installation_id)
+        row = await storage_call(self._get_creation, scope, "skill", installation_id)
         return self._decode(SkillInstallation, row, scope)
 
 

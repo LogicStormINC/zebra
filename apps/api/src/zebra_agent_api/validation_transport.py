@@ -11,6 +11,7 @@ from fastapi.responses import JSONResponse
 from starlette.requests import ClientDisconnect
 from starlette.routing import Route
 
+from zebra_agent_api.database_budget import database_call
 from zebra_agent_api.runtime_management import _HEADERS, _error
 
 
@@ -116,7 +117,8 @@ def register_validation_routes(
         }
         action = actions[0] if method == "GET" else actions[1]
         task = asyncio.create_task(
-            asyncio.to_thread(
+            database_call(
+                None,
                 perform,
                 token,
                 headers,

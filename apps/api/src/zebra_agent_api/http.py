@@ -277,7 +277,9 @@ def create_http_app(
         )
         artifact_parts = tuple(part for part in request.url.path.split("/") if part)
         raw_negotiated = False
-        if (
+        if request.method == "GET" and request.url.path == "/health":
+            response = adapter.handle(route_request)
+        elif (
             active_settings.deployment != "local"
             and request.method == "GET"
             and len(artifact_parts) == 5
@@ -330,9 +332,7 @@ def create_http_app(
             )
         else:
             # Observation budgets must not turn an uncertain command into a retry.
-            response = (adapter.handle(route_request) if route_request.path == "/health"
-                        and route_request.method.upper() == "GET" else
-                        await database_call(app, adapter.handle, route_request))
+            response = await database_call(app, adapter.handle, route_request)
         if _is_stream_request(request) and response.status_code == 200:
             from zebra_agent_api.stream_v2_http import raw_response
 

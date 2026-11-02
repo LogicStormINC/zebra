@@ -18,6 +18,8 @@ from agent_core.ports.task_projection_work import ProjectionWorkProblem
 from agent_integrations.ag_ui.checkpoint_observer import AgUiCheckpointObserver
 from agent_storage.postgres.task_io import task_io_deadline
 
+from zebra_agent_api.database_budget import database_call
+
 if TYPE_CHECKING:
     from zebra_agent_api.ag_ui_stream import AgUiStreamContext, _DisconnectableRequest
 
@@ -32,7 +34,7 @@ async def _read_until[**P, R](
         with task_io_deadline(min(deadline, monotonic() + 2.0)):
             return read(*args, **kwargs)
 
-    return await asyncio.to_thread(bounded)
+    return await database_call(None, bounded)
 
 
 def observation_problem(code: str, *, retryable: bool) -> str:

@@ -85,3 +85,40 @@ def test_budget_profiles_cover_rollout_and_private_executors():
     assert "database budget omits rollout peaks" in helper
     for path in ("api-deployment.yaml", "worker-deployment.yaml"):
         assert "maxSurge: 1" in _read(path)
+
+
+def test_budget_mode_is_install_only_and_counts_terminating_overlap(tmp_path):
+    import shutil
+    import subprocess
+
+    import pytest
+
+    if shutil.which("helm") is None:
+        pytest.skip("Helm CLI required for real render acceptance")
+    values = {
+        "image": {"digest": "sha256:" + "a" * 64},
+        "deploymentNamespace": "ha-review", "runtimeImage": "runtime@sha256:" + "b" * 64,
+        "secrets": {name: {"name": "fixture-secret"} for name in
+                    ["databaseUrl", "s3", "liveRedisUrl", "memorySigningKey", "apiAuthToken"]},
+        "config": {"authorityIssuer": "https://issuer.example", "historyScopeNamespace": "history",
+                   "continuationScopeNamespace": "continuation", "s3Endpoint": "https://s3.example"},
+    }
+    for enabled, upgrade, bad_peak, expected in [
+        (True, False, False, 0), (True, True, False, 1),
+        (False, True, False, 0), (True, False, True, 1),
+    ]:
+        values["databaseBudget"] = {"enabled": enabled}
+        if bad_peak:
+            values["databaseBudget"]["fleet"] = {"worker": 3}
+        path = tmp_path / "values.json"
+        path.write_text(json.dumps(values))
+        result = subprocess.run(
+            ["helm", "template", "ha-review", str(CHART), "-f", str(path)]
+            + (["--is-upgrade"] if upgrade else []),
+            capture_output=True, text=True, check=False,
+        )
+        assert (result.returncode == 0) == (expected == 0), result.stderr
+        if enabled and upgrade:
+            assert "budget-enabled upgrades" in result.stderr
+        if bad_peak:
+            assert "terminating overlap" in result.stderr

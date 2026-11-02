@@ -569,11 +569,11 @@ def test_raw_preparation_one_dispatch_keeps_source_cursor_and_fallback(
         assert kwargs[f"{route}_id"] == resource
         yield "data: canonical\n\n"
 
-    original_thread = ag_ui_task_view.to_thread
+    original_dispatch = ag_ui_task_view.database_call
 
-    async def thread(function, *args, **kwargs):
+    async def dispatch(app, function, *args, **kwargs):
         dispatches.append(True)
-        return await original_thread(function, *args, **kwargs)
+        return await original_dispatch(app, function, *args, **kwargs)
 
     api = SimpleNamespace(
         stores=SimpleNamespace(
@@ -595,7 +595,7 @@ def test_raw_preparation_one_dispatch_keeps_source_cursor_and_fallback(
         ),
         is_disconnected=lambda: False,
     )
-    monkeypatch.setattr(ag_ui_task_view, "to_thread", thread)
+    monkeypatch.setattr(ag_ui_task_view, "database_call", dispatch)
     monkeypatch.setattr(stream_v2_http, "prepare_v2", negotiate)
     monkeypatch.setattr(stream_v2_http, f"tail_{route}_events", tail)
 
