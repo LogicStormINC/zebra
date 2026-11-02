@@ -1,3 +1,17 @@
+## 2026-11-03 CA-HA-03 f9 live DNS and renewal boundary
+
+- Two native images each 2140 files/3 symlinks verified; actual OCI manifest27f6b931…;
+  cold isolated app cutover only. Old exact PIDs zero and ha_app connections0 before switch.
+- API/Worker healthy, native fixture wire checks and native publication passed. First new model
+  request settled14414 units; gVisor provisioned. Exact pwd approval passed after correct native
+  Run-target fresh Host Grant. No API guard change needed.
+- Operator evidence script initially syntax-rejected (bad local placeholder replacement), confirmed
+  evidence UUID absent, then corrected/compiled and recorded using original IDs; no management retry.
+- Legitimate approval renewal changed binding digest but left Task budget reference stale. Resume
+  child refused before tool, suspended. Its120s absolute budget is now expired: never resume/replay it.
+- Old three Tasks/events and unknown row hashes unchanged. Source+image DNS accepted only at
+  first-model/settlement level; E1 full task/load/fault/soak pending. Next shared renewal fix owned below.
+
 ## 2026-11-03 CA-HA-03 E1 bounded DNS candidate
 
 - Shared ordinary transport now uses owned killable/reaped resolver children; auxiliary loop remains strict.

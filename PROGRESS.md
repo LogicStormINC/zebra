@@ -1,3 +1,16 @@
+## 2026-11-03 — HA03 E1 DNS双节点实切与续期预算阻塞
+
+f9e9f44e双架构镜像各2140源码文件/3链接核验，真实OCI清单27f6b931…完成；独立测试环境
+精确旧PID退出、旧ha_app连接0后冷切，双API live/ready200、Worker控制新鲜，原生TLS/SSE/
+计量通过。原生管理trust5、materialize/publish200。三个旧Task事件及984未知预留行hash未变。
+新Task f69db4d3仅POST一次，首模型真实请求结算14175+239=14414合成单位，gVisor已provision。
+pwd精确审批200后续期追加binding v2，预算行仍指v1；Worker.start/q.remaining拒绝并暂停，
+无工具执行/第二模型预留。审批前客户端使用了原external Run Grant，读取被拒；应为相同
+thread/principal签发目标native Run的fresh Grant，修正客户端后通过，API无须放宽授权。
+Task绝对120秒预算已超时，不得让后续修复恢复它消费。下一步修共享save_task_binding原子
+续期引用，保留截止时间/费用/未知结果，真实PG正反回归后再做新合成验收。完整E1/03未通过，
+04锁定，生产未变。详见docs/evidence/ca-ha-03-e1/bounded-dns/staging.json。
+
 ## 2026-11-03 — HA03 E1可取消DNS候选（未切镜像）
 
 fff9e463镜像已越过工具Schema守卫，Task984在预留后因普通传输复用辅助禁止线程DNS循环而失败。

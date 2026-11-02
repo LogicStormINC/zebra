@@ -1,0 +1,138 @@
+{
+  "task": "CA-HA-03",
+  "captured_at": "2026-11-02T20:32:31.916069+00:00",
+  "runtime_source": "f9e9f44eb9238e52211d6ac3f21bce3db3c85a6c",
+  "common_manifest": "sha256:27f6b9318fb383256351fdaf188fa65a4d561c33b29ac8d833a6b635a7acc104",
+  "nodes": {
+    "vm": {
+      "image": "sha256:8a29ba17812ffd503778635547601e0096f0d8d7c1b79e4452e68c205c0397d8",
+      "architecture": "arm64",
+      "runtime_files_matched": 2140,
+      "symlinks_matched": 3,
+      "fresh_health": {
+        "worker": {
+          "pid": 6,
+          "instance_id": "0a8d2ef1-2c59-494b-9ff6-9065d1d82d1c",
+          "phase": "command",
+          "observed_at": 52111.55232387,
+          "control_observed_at": 52110.825081122,
+          "ready": true,
+          "valid_until": 52115.825081122,
+          "control_fresh": true
+        },
+        "api": {
+          "/health/live": {
+            "status": 200,
+            "body": {
+              "status": "alive"
+            }
+          },
+          "/health/ready": {
+            "status": 200,
+            "body": {
+              "status": "ready"
+            }
+          }
+        }
+      },
+      "native_wire_preflight": "{\"model\": \"synthetic_native_wire\", \"peer\": \"127.0.0.1\", \"certificate\": \"229085b746c6c89939e4450d23321dfaed55c517e92059040ad0b8b975791b3c\", \"marker\": \"ca-ha-03-e1-20261102\", \"negative_peer_certificate_marker\": \"rejected\", \"real_provider_qualification\": false}\nNative SSE tool decoding and synthetic usage fields verified; no Task created."
+    },
+    "server": {
+      "image": "sha256:bdda1a35345f257e75440e3aa078dc2ab662c7d5d3d08243f1a4032ae5454822",
+      "architecture": "amd64",
+      "runtime_files_matched": 2140,
+      "symlinks_matched": 3,
+      "fresh_health": {
+        "worker": {
+          "pid": 7,
+          "instance_id": "a4a9ebf8-4598-4f58-8dfd-1b6a08a67e3d",
+          "phase": "command",
+          "observed_at": 828515.019826008,
+          "control_observed_at": 828514.325738576,
+          "ready": true,
+          "valid_until": 828519.325738576,
+          "control_fresh": true
+        },
+        "api": {
+          "/health/live": {
+            "status": 200,
+            "body": {
+              "status": "alive"
+            }
+          },
+          "/health/ready": {
+            "status": 200,
+            "body": {
+              "status": "ready"
+            }
+          }
+        }
+      },
+      "native_wire_preflight": "{\"model\": \"synthetic_native_wire\", \"peer\": \"127.0.0.1\", \"certificate\": \"229085b746c6c89939e4450d23321dfaed55c517e92059040ad0b8b975791b3c\", \"marker\": \"ca-ha-03-e1-20261102\", \"negative_peer_certificate_marker\": \"rejected\", \"real_provider_qualification\": false}\nNative SSE tool decoding and synthetic usage fields verified; no Task created."
+    }
+  },
+  "cold_cutover": {
+    "old_pids_zero": true,
+    "old_pg_app_connections": 0,
+    "three_protected_tasks_and_unknown_row_unchanged": true,
+    "no_task_replayed": true
+  },
+  "publication": {
+    "definition_id": "f4b54028-9907-4118-9b9a-f500f58de821",
+    "trust_revision": 5,
+    "materialize_status": 200,
+    "publish_status": 200,
+    "evaluation_scope": "synthetic TLS/peer/SSE byte meter only, no capacity or real-provider quality claim"
+  },
+  "new_synthetic_task": {
+    "task_id": "f69db4d3-1b62-476c-9f7d-ba7ed867f900",
+    "post_count": 1,
+    "http_status": 201,
+    "model_reservations": 1,
+    "settled_usage": {
+      "id": "e1-synthetic-b422682c-7ca4-4259-a6a9-1b83b68d6f59",
+      "total": 14414,
+      "output": 239,
+      "prompt": 14175
+    },
+    "runtime_provisioned": {
+      "image": "python:3.12-slim-bookworm@sha256:d50fb7611f86d04a3b0471b46d7557818d88983fc3136726336b2a4c657aa30b",
+      "engine": "docker",
+      "spec_digest": "3b87aada577559a9ae71faa2c76afbaabbc8837a24d90c9158c89aa016a492ed",
+      "runtime_class": "gvisor",
+      "workspace_writable": true,
+      "network_enforcement": "container-network-none"
+    },
+    "exact_pwd_approval_status": 200,
+    "tool_started": false,
+    "final_event": [
+      20,
+      "session_suspended",
+      {
+        "reason": "executor_process_interrupted",
+        "metadata": {
+          "retryable": false,
+          "error_code": "executor_process_interrupted",
+          "error_type": "WorkerExecutorInterrupted",
+          "stop_reason": "executor_process_interrupted"
+        },
+        "snapshot_id": null,
+        "runtime_name": null,
+        "snapshot_path": null,
+        "child_task_ids": null
+      }
+    ],
+    "budget_binding_matches_first_revision": true,
+    "budget_binding_matches_latest_revision": false,
+    "binding_revisions": [
+      1,
+      2
+    ],
+    "original_budget_deadline": "2026-11-02T20:23:20.900921+00:00",
+    "charged_tokens": 14414,
+    "root_error": "Task budget is missing or bound to another authority"
+  },
+  "next_root_fix": "atomically transfer budget binding reference only for proven adjacent non-expanding renewal; preserve absolute deadline and all charges/unknown receipts; never resume this expired Task",
+  "full_E1_accepted": false,
+  "production_changed": false
+}
