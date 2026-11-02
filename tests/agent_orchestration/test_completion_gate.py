@@ -167,3 +167,27 @@ class TestHappyPath:
         assert result.deciding_receipt.gate_name == "node.completion"
         layers = [receipt.gate_name for receipt in result.receipts]
         assert "node.domain" in layers and "node.policy" in layers
+
+
+def test_durable_policy_requires_explicit_semantics_and_each_child_evidence():
+    from agent_orchestration.application.orchestration_admission import digest
+    from agent_orchestration.application.orchestration_completion_gate import (
+        READONLY_POLICY,
+        evaluate_durable_completion,
+    )
+
+    policy = {"semantics": READONLY_POLICY, "semantic_digest": digest(READONLY_POLICY)}
+    child = {"status": "completed", "effects_confirmed": True, "readonly": True,
+             "tools": [{"successful": True}], "artifacts": [{"id": "fixture"}]}
+    for candidate, children, reason in (
+        (None, [child], "gate_policy_unavailable"),
+        (policy, [child], "all_layers_passed"),
+        (policy, [{**child, "readonly": False}], "readonly_evidence_conflict"),
+        (policy, [{**child, "artifacts": []}], "no_evidence_collected"),
+        (policy, [{**child, "status": "failed"}], "gate_child_not_successful"),
+    ):
+        result = evaluate_durable_completion(
+            "run-real", policy=candidate, completion_strategy="all_success", children=children,
+        )
+        assert result.passed == (reason == "all_layers_passed")
+        assert result.reason_code == reason

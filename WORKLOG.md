@@ -1,3 +1,13 @@
+## 2026-11-02 CA-P7-03D
+
+- 按授权整合03C，Native正常merge56ae352a、Overdoze ff365e843；保留ERP提交与AGENTS原字节，不部署。
+- 按登记路径实现既有evaluation_profile_ref只读政策/v123冻结、实际FileReadTool产物接线、v122不可变观察、原子完成与独立恢复。
+- 两轮审查修补最终STOP/时钟/Artifact到期、父子current proof/revoke/unknown和真实producer；两spawn只完成一次。
+- 真实跨仓发现并根修旧public Bundle digest消费及JSON Schema非string type，保留原Task/绑定，补红绿回归。
+- 最终独立388pass/12 S3条件跳过、Ruff/mypy14；真实Go/NativeHTTPS/Worker/PG/Redis 13受限检查通过，模型POST0。
+- 诊断3轮/首次聚合quota与fixture失败/一次PG minWal初始化错误均保留；全12库状态/原收据unknown/Redis保留后资源精确清理。
+- 无counter严格拒绝；局部对象/计数为fixture，跨仓模型child/synthesis正向未验证；功能候选待整合，未生产迁移/部署。
+
 ## 2026-11-02 CA-P7-03C
 
 - 按授权先整合03B：Native7f1f499b、Overdoze e34ecc4；误先推送的3笔既有ERP文档如实记录，无历史重写。
