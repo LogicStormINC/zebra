@@ -29,6 +29,7 @@ from zebra_agent_worker.execution_events import ExecutionInterrupted
 from zebra_agent_worker.execution_finalization import WorkerExecutionError
 from zebra_agent_worker.lease_heartbeat import LeaseHeartbeatError
 from zebra_agent_worker.memory_delivery_consumer import MemoryDeliveryConsumption
+from zebra_agent_worker.orchestration_wakeup_hook import OrchestrationWakeupHook
 from zebra_agent_worker.recovery import SessionRecoveryError
 from zebra_agent_worker.resume import SessionResumeError
 from zebra_agent_worker.safety_net import WorkerSafetyNet
@@ -78,6 +79,7 @@ class WorkerLoopService:
         *,
         cloud_memory_recovery: CloudMemoryFinalizationRecovery | None = None,
         child_wakeup_service: ChildCompletionWakeupService | None = None,
+        orchestration_hook: OrchestrationWakeupHook | None = None,
         sleep: Callable[[float], None] = time.sleep,
         command_consumer: SessionCommandConsumer | None = None,
         scan_ready_sessions: bool = True,
@@ -97,6 +99,7 @@ class WorkerLoopService:
         self._safety_net = safety_net
         self._cloud_memory_recovery = cloud_memory_recovery
         self._child_wakeup_service = child_wakeup_service
+        self._orchestration_hook = orchestration_hook
         self._sleep = sleep
         self._command_consumer = command_consumer
         self._scan_ready_sessions = scan_ready_sessions
@@ -338,15 +341,28 @@ class WorkerLoopService:
         recovery_thread.start()
 
     def _process_child_wakeups(self) -> None:
-        """Poll terminal children and emit parent resume commands."""
+        """Poll terminal children and emit parent resume commands.
+
+        CA-P7-02B wiring: children bound to orchestration nodes also advance
+        the orchestration run via the wakeup hook before the delegation
+        epoch evaluates.
+        """
 
         if self._child_wakeup_service is None:
             return
         from agent_core.domain.identifiers import TaskId
         from agent_core.domain.parent_continuation import ChildTerminalStatus
 
+        from zebra_agent_worker.orchestration_wakeup_hook import outcome_for_child_status
+
         for terminal in self._child_wakeup_service.poll_terminal_children():
             try:
+                if self._orchestration_hook is not None:
+                    outcome = outcome_for_child_status(str(terminal["status"]))
+                    if outcome is not None:
+                        self._orchestration_hook.on_child_terminal(
+                            TaskId(UUID(str(terminal["child_task_id"]))), outcome
+                        )
                 self._child_wakeup_service.process_child_terminal(
                     TaskId(UUID(str(terminal["child_task_id"]))),
                     status=ChildTerminalStatus(str(terminal["status"])),

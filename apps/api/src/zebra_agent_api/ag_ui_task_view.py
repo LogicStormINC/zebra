@@ -201,3 +201,24 @@ def canonical_task_view(stores: ControlPlaneStores, task_id: TaskId) -> list[Tas
     # Preserve canonical Task arrival order across Segment revisits; the retained
     # originals prove membership, not a new grouping that would change cursors.
     return indexed
+
+
+def task_view_payload(
+    stores: ControlPlaneStores, task_id: TaskId
+) -> dict[str, object]:
+    """CA-P7-02C: canonical task view payload with the orchestration view.
+
+    Events remain the canonical task view; when this task parents an
+    orchestration run the plan-14.2 state object is attached under
+    ``orchestration``. Tasks without a run keep the payload unchanged.
+    """
+
+    from zebra_agent_api.ag_ui_orchestration_view import task_orchestration_view
+
+    payload: dict[str, object] = {
+        "taskId": str(task_id),
+    }
+    orchestration = task_orchestration_view(stores, task_id)
+    if orchestration is not None:
+        payload["orchestration"] = orchestration["orchestration"]
+    return payload

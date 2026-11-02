@@ -16,6 +16,10 @@ from uuid import uuid4
 
 from agent_core.domain.identifiers import TaskId
 
+from agent_orchestration.application.completion_gate import (
+    GateInput,
+    evaluate_gate,
+)
 from agent_orchestration.application.orchestration_port import (
     OrchestrationToolError,
     PlanProposalReceipt,
@@ -220,8 +224,20 @@ class OrchestrationRuntime:
             )
         return self.evaluate(run_ref)
 
-    def synthesize(self, run_ref: str) -> None:
-        """running → synthesizing → completed once every node is terminal."""
+    def synthesize(
+        self,
+        run_ref: str,
+        *,
+        gate_input: GateInput | None = None,
+    ) -> None:
+        """running → synthesizing → completed once every node is terminal.
+
+        CA-P7-02B wiring: a supplied GateInput is evaluated by the
+        completion gate BEFORE the synthesizing transition — a failing or
+        blocking gate refuses synthesis with a typed error and the run
+        stays running. Without a gate input the terminal check alone
+        decides (unit/test surface).
+        """
 
         snapshot = self._require_snapshot(run_ref)
         state = _state_from_snapshot(snapshot, self._store.read_node_statuses(run_ref))
@@ -229,6 +245,16 @@ class OrchestrationRuntime:
             raise OrchestrationToolError(
                 "nodes_still_running", f"{run_ref} still has non-terminal nodes"
             )
+        if gate_input is not None:
+            evaluation = evaluate_gate(f"orchestration:{run_ref}", gate_input)
+            if evaluation.blocked:
+                raise OrchestrationToolError(
+                    "gate_blocked", evaluation.reason_code
+                )
+            if not evaluation.passed:
+                raise OrchestrationToolError(
+                    "gate_refused", evaluation.reason_code
+                )
         self._store.transition_run(
             run_ref, OrchestrationRunStatus.RUNNING, OrchestrationRunStatus.SYNTHESIZING
         )

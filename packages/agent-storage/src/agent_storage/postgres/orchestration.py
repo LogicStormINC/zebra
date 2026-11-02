@@ -304,6 +304,19 @@ class PostgresOrchestrationStore:
             raise OrchestrationStorageError(f"unknown orchestration run {run_ref}")
         return str(row["status"])
 
+    # CA-P7-02C: parent-task → run lookup for the AG-UI task view attachment.
+    def find_run_for_parent(self, parent_task_id: TaskId) -> str | None:
+        with self._database.connect() as connection:
+            row = connection.execute(
+                """
+                SELECT run_id FROM orchestration_runs
+                WHERE deployment_namespace = %s AND parent_task_id = %s
+                ORDER BY created_at DESC LIMIT 1
+                """,
+                (self.deployment_namespace, str(parent_task_id)),
+            ).fetchone()
+        return row["run_id"] if row is not None else None
+
     # CA-P7-02B: node-status surface the runtime loop rebuilds scheduling from.
     def read_node_statuses(self, run_ref: str) -> dict[str, str]:
         with self._database.connect() as connection:
