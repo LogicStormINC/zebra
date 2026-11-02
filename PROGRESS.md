@@ -1,3 +1,12 @@
+## 2026-11-02 ERP Native Scheduler v117 对齐完成
+
+旧 Scheduler115 与 API/数据库117错配已解决：仅更新 Scheduler image 到同一 API 固定镜像。
+无活动/未来计划或待恢复 firing，隔离旧拒绝/新单次与4周期退出、Scheduler10回归通过。
+线上实际计划表扫描推进、重启0；模型计数188/会话51/firing0及账本指纹不变。
+其余 Native/ERP/搜索/MCP实例与环境保持一致；未新增模型/搜索或重跑原Run。
+该记录解决下方历史验收发现的 Scheduler 错配，未认证真实带模型定时任务或生产HA。
+详见 [运行时对齐与验收](docs/ERP_NATIVE_SCHEDULER_20261102.md)。
+
 ## 2026-11-02 ERP 原生控制器与业务验收
 
 原生白名单 controller dispatch、返回草稿、CSV 下载与操作参数清单补齐，ERP 五应用服务已更新。

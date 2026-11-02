@@ -18334,3 +18334,15 @@ No model/search or original replay, Search/MCP unchanged. Existing Native Schedu
 Read-only scheduler diagnosis: immutable Scheduler recognizes115, API and database117 match exactly.
 Registered separate Ready alignment task; did not weaken migration guard, edit ledger, restart Native
 or activate pending schedules. Owned QA resources cleaned precisely (3 containers/2 volumes/network/2 images).
+
+
+## 2026-11-02 ERP-NATIVE-SCHEDULER — aligned and deployed
+
+Root cause confirmed115-only Scheduler versus117 API/database; original checksum guard correctly blocked startup.
+No active/future schedules or pending/materializing firings; no active leases or running session.
+Reused exact immutable APIe4faff1b with existing explicit Scheduler entrypoint; one Compose image field changed.
+Isolated schema+unaltered-ledger old rejection/new once and four-cycle graceful check pass; local Scheduler10 pass.
+Actual production polling counters advanced, restarts0, model count188 unchanged, sessions51 and firings0 unchanged,
+ledger fingerprint unchanged. All non-target services including Search/MCP exactly preserved.
+Initial early-signal137 probe retained and explicitly bounded; no runtime signal behavior changes.
+Owned QA containers/network/temp derived image cleaned; no global prune. See focused acceptance doc.

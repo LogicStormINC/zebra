@@ -1,5 +1,14 @@
+# ERP-NATIVE-SCHEDULER-RELEASE-20261102
+- Status: Review; production Scheduler aligned, evidence ready for cloud-agent integration.
+- Created Ready then claimed In Progress; Luke Ding / Codex.
+- Branch codex/erp-native-scheduler-release-20261102; target cloud-agent.
+- Owned paths docs/AGENT_TASKS.md, docs/ERP_NATIVE_SCHEDULER_20261102.md, PROGRESS.md, WORKLOG.md;
+  private .artifacts/erp-native-scheduler-20261102/.
+- Canonical ERP scheduler alignment work is separate; no native domain changes.
+- Preserve migration ledger/checks, permissions, original Runs, Search/MCP; no model/search requests.
+
 # ERP-NATIVE-SCHEDULER-ALIGN-20261102
-- Status: Ready; unassigned follow-up, not implemented by native-surface task.
+- Status: Done externally; canonical scheduler alignment deployed, recorded by release task.
 - Observed root cause: scheduler application schema115 versus API/database117; API checksum set matches.
 - Scope: align only immutable Native Scheduler runtime with the accepted API/Worker schema;
   inspect enabled/due schedules before activation. Never rewrite migration ledger or disable schema guard.
