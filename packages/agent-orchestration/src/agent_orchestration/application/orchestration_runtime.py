@@ -10,7 +10,7 @@ never in-memory authority.
 
 from __future__ import annotations
 
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import Protocol
@@ -131,10 +131,16 @@ class OrchestrationRuntime:
         *,
         authorize: OrchestrationAuthorizer | None = None,
         admission: OrchestrationAdmissionPort | None = None,
+        require_persisted_gate: bool = False,
+        auto_materialize: bool = False,
+        gate_reader: Callable[[str], GateInput | None] | None = None,
     ) -> None:
         self._store = store
         self._authorize = authorize
         self._admission = admission
+        self._require_persisted_gate = require_persisted_gate
+        self._gate_reader = gate_reader
+        self._auto_materialize = auto_materialize
 
     @contextmanager
     def _authorized(self, action: OrchestrationAction) -> Iterator[OrchestrationAuthority]:
@@ -163,6 +169,8 @@ class OrchestrationRuntime:
             except PlanValidationError as error:
                 raise OrchestrationToolError(error.reason_code, error.detail) from None
             self._store.create_run(snapshot)
+            if self._auto_materialize:
+                self.materialize(run_ref)
             return PlanProposalReceipt(
                 run_ref=run_ref,
                 plan_revision=snapshot.plan_revision,
@@ -207,6 +215,9 @@ class OrchestrationRuntime:
         """
 
         snapshot = self._require_snapshot(run_ref)
+        read_status = getattr(self._store, "read_run_status", None)
+        if read_status is not None and read_status(run_ref) != "running":
+            return LoopDecision(run_ref, (), False, "run_not_running")
         state = _state_from_snapshot(snapshot, self._store.read_node_statuses(run_ref))
         ready = select_ready(state, max_parallelism=_plan_parallelism(snapshot))
         all_terminal = all(node.terminal for node in state.nodes.values())
@@ -222,20 +233,44 @@ class OrchestrationRuntime:
         run_ref: str,
         node_key: str,
         outcome: NodeOutcome,
+        *,
+        revision: int | None = None,
+        child_task_id: str | None = None,
     ) -> LoopDecision:
         """One child terminal report; then re-evaluate (child_wakeup hook)."""
 
+        commit = getattr(self._store, "commit_node_outcome", None)
+        if commit is not None:
+            decision = commit(
+                run_ref, node_key, outcome, revision=revision, child_task_id=child_task_id
+            )
+            if decision.run_failed or decision.run_blocked:
+                return LoopDecision(run_ref, (), False, decision.reason_code)
+            return self.evaluate(run_ref)
         snapshot = self._require_snapshot(run_ref)
+        if revision is not None and snapshot.plan_revision != revision:
+            raise OrchestrationToolError("revision_conflict", "child revision is no longer current")
         state = _state_from_snapshot(snapshot, self._store.read_node_statuses(run_ref))
         decision = on_node_terminal(state, node_key, outcome)
-        terminal_status = "completed" if outcome is NodeOutcome.COMPLETED else outcome.value
+        terminal_status = "failed" if outcome is NodeOutcome.TIMED_OUT else outcome.value
         self._store.transition_node(run_ref, node_key, terminal_status)
-        if decision.run_failed:
+        if not decision.retry_keys:
+            for key, status in decision.node_updates:
+                if key != node_key:
+                    self._store.transition_node(run_ref, key, status.value)
+        if decision.run_failed or decision.run_blocked or decision.retry_keys:
+            self._store.transition_run(
+                run_ref,
+                OrchestrationRunStatus.RUNNING,
+                OrchestrationRunStatus.FAILED
+                if decision.run_failed
+                else OrchestrationRunStatus.BLOCKED,
+            )
             return LoopDecision(
-                run_ref=run_ref,
-                ready_nodes=(),
-                run_complete=False,
-                reason_code="node_failed",
+                run_ref,
+                (),
+                False,
+                "retry_requires_replan" if decision.retry_keys else decision.reason_code,
             )
         return self.evaluate(run_ref)
 
@@ -254,6 +289,12 @@ class OrchestrationRuntime:
         decides (unit/test surface).
         """
 
+        if self._require_persisted_gate:
+            gate_input = self._gate_reader(run_ref) if self._gate_reader is not None else None
+            if gate_input is None:
+                raise OrchestrationToolError(
+                    "gate_evidence_unavailable", "current durable gate facts required"
+                )
         snapshot = self._require_snapshot(run_ref)
         state = _state_from_snapshot(snapshot, self._store.read_node_statuses(run_ref))
         if not all(node.terminal for node in state.nodes.values()):

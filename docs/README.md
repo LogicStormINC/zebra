@@ -1,3 +1,6 @@
+[CA-P7-03C普通Worker累计预算与正常入口候选](CA-P7-03C_worker_budget.md)：
+跨Attempt持久guard/可信usage装配；缺生产counter或持久gate仍拒绝，非部署或完整跨仓验收。
+
 ## Current orchestration admission
 
 [CA-P7-03B original admission and durable budget](CA-P7-03B_orchestration_admission.md):

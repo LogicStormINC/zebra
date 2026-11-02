@@ -50,6 +50,10 @@ RESPONSES_PATH = "/responses"
 class DeepSeekResponsesModelGateway:
     """DeepSeek's stateless Responses adapter, including native image inputs."""
 
+    worker_budget_hook_contract = "worker-budget/1"
+    worker_budget: Any = None
+    model_request_budget: Callable[[bytes], Any] | None = None
+
     def __init__(
         self,
         *,
@@ -92,6 +96,10 @@ class DeepSeekResponsesModelGateway:
             invocation_policy=invocation_policy,
             stream=False,
         )
+        if self.worker_budget is not None:
+            from agent_integrations.worker_budget import guarded_responses
+            return guarded_responses(self, body, tools=tools, tool_names=names,
+                                     resolved=resolved, metadata=metadata)
         started = perf_counter()
         call_id = uuid4().hex
         if deadline_s is not None:
@@ -150,6 +158,10 @@ class DeepSeekResponsesModelGateway:
             invocation_policy=invocation_policy,
             stream=True,
         )
+        if self.worker_budget is not None:
+            from agent_integrations.worker_budget import guarded_responses
+            return guarded_responses(self, body, tools=tools, tool_names=names,
+                                     resolved=resolved, metadata=metadata, sink=on_text_delta)
         client = self._client or httpx.Client(timeout=httpx.Timeout(300.0, connect=10.0))
         should_close = self._client is None
         started = perf_counter()

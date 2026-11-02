@@ -7,6 +7,8 @@ from pathlib import Path
 
 import httpx
 import zebra_agent_config
+from agent_core.application import SessionTitleService
+from agent_core.domain.agent_definition_snapshots import AgentDefinitionSnapshot
 from agent_core.domain.identifiers import SessionId
 from agent_core.ports import EffectDispatchPort, WorkerProjectionTransactionPort
 from agent_core.ports.host_connector_registry import HostConnectorRegistryPort
@@ -67,6 +69,8 @@ class SessionExecutionComposition:
         recorder_factory: WorkerProjectionRecorderFactory | None = None,
         coverage_runtime: CloudCoverageRuntime | None = None,
         transient_output_factory: TransientOutputFactory | None = None,
+        orchestration_factory: execution_gateway.OrchestrationFactory | None = None,
+        model_request_budget_factory: execution_gateway.ModelRequestBudgetFactory | None = None,
     ) -> None:
         runtime_authority.validate_authority_wiring(
             execution_authority_resolver,
@@ -156,3 +160,27 @@ class SessionExecutionComposition:
         )
         self._coverage_runtime = coverage_runtime
         self._transient_output_factory = transient_output_factory
+        self._orchestration_factory = orchestration_factory
+        self._model_request_budget_factory = model_request_budget_factory
+
+
+def compose_recovery_titles(
+    settings: zebra_agent_config.ZebraAgentSettings, client: httpx.Client | None
+) -> tuple[
+    Callable[[AgentDefinitionSnapshot], SessionTitleService | None],
+    Callable[[], SessionTitleService],
+]:
+    """Existing legacy title factories; the caller separately gates paid work."""
+    from agent_integrations import build_model_gateway
+
+    from zebra_agent_worker.bundle_assembly import build_bundle_title_service
+    from zebra_agent_worker.provider_configuration import model_provider_settings
+
+    return (
+        lambda snapshot: build_bundle_title_service(settings, snapshot, client=client),
+        lambda: SessionTitleService(
+            build_model_gateway(model_provider_settings(settings), client=client)
+            if client is not None
+            else build_model_gateway(model_provider_settings(settings))
+        ),
+    )

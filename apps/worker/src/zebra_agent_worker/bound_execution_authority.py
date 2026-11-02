@@ -179,7 +179,12 @@ class BoundHostExecutionAuthorityResolver(ExecutionAuthorityResolverPort):
             subject=self.subject,
             audience=self.audience,
             granted_authorities=self.granted_authorities,
-            limits=self.limits,
+            limits=self.limits.narrowed_by(
+                ExecutionAuthorityLimits(
+                    max_model_tokens=self.binding.host_capability.host_context.limits.max_model_tokens,
+                    max_runtime_seconds=self.binding.host_capability.host_context.limits.max_runtime_seconds,
+                )
+            ) if self.binding.host_capability.host_context is not None else self.limits,
             issued_at=issued_at,
             expires_at=expires_at,
             source_authority_digest=self._source_digest(),

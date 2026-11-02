@@ -171,3 +171,46 @@ def test_task_view_payload_without_orchestration_stays_minimal() -> None:
 
     payload = task_view_payload(_Stores(), TaskId(uuid4()))  # type: ignore[arg-type]
     assert "orchestration" not in payload  # type: ignore[index]
+
+
+def test_pending_usage_scan_survives_consumed_delegation_wakeup() -> None:
+    from zebra_agent_worker.orchestration_wakeup_hook import OrchestrationWakeupHook
+
+    class Connection:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            pass
+
+        def execute(self, query, parameters):
+            assert "wakeup_processed" not in query
+            assert "o.usage IS NULL" in query
+            assert parameters[-1] == 16
+            return self
+
+        def fetchall(self):
+            return [
+                {
+                    "original_key": "original",
+                    "parent_task_id": "parent",
+                    "child_task_id": uuid4(),
+                    "status": "completed",
+                }
+            ]
+
+    class Database:
+        deployment_namespace = "test"
+
+        def connect(self):
+            return Connection()
+
+    hook = OrchestrationWakeupHook.__new__(OrchestrationWakeupHook)
+    hook._database = Database()
+    hook._reconcile_after = ""
+    attempts = []
+    hook._settle_original = lambda key, parent: attempts.append((key, parent)) or False
+    hook.on_child_terminal = lambda child, outcome: None
+    hook.reconcile_pending()
+    hook.reconcile_pending()
+    assert attempts == [("original", "parent"), ("original", "parent")]

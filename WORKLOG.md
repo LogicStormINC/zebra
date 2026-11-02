@@ -1,3 +1,13 @@
+## 2026-11-02 CA-P7-03C
+
+- 按授权先整合03B：Native7f1f499b、Overdoze e34ecc4；误先推送的3笔既有ERP文档如实记录，无历史重写。
+- 注册分支/Owned paths后实现Task级持久预算、exact请求受信检查、严格usage/未知原预约、时间截止与父子共享。
+- 正常入口真实发布角色/child、03B准入与可信usage装配；终态CAS/失败策略和晚到usage恢复。
+- 最终独立333 passed/zero skips、Ruff/mypy24与源码哈希检查通过；非完整进程/外部provider/跨仓验收。
+- 缺可信counter拒绝默认模型执行，缺持久完成gate事实拒绝生产synthesis；不绕过或伪造证明。
+- 保存所有3测试库dump、日志、原收据/unknown后移除唯一owned PG；没有恢复旧环境或部署/生产迁移。
+- 此提交为Review候选，主线仍7f1f499b；推送结果以交付回执为准。
+
 ## 2026-11-02 CA-P7-03B
 
 - 用户授权整合03A并推进03B：两仓fetch后ff并push，保留Overdoze无关AGENTS.md字节及ERP工作树，无部署。

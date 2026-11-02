@@ -1,3 +1,6 @@
+[CA-P7-03C普通Worker累计预算与正常入口候选](docs/CA-P7-03C_worker_budget.md)：
+跨Attempt持久guard/可信usage装配；缺生产counter或持久gate仍拒绝，非部署或完整跨仓验收。
+
 [CA-P7-03B真实子任务准入/持久预算/原收据](docs/CA-P7-03B_orchestration_admission.md)：
 候选路径真实PG验证通过，默认执行预算gate保持关闭；未部署。
 

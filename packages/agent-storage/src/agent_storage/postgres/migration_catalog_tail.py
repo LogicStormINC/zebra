@@ -121,6 +121,7 @@ from agent_storage.postgres.tool_profile_constraint_migration import (
     TOOL_PROFILE_CONSTRAINT_MIGRATION,
 )
 from agent_storage.postgres.user_personalization_migration import USER_PERSONALIZATION_MIGRATION
+from agent_storage.postgres.worker_budget_migration import WORKER_BUDGET_MIGRATION
 from agent_storage.postgres.worker_capability_migration import WORKER_CAPABILITY_MIGRATION
 from agent_storage.postgres.worker_continuation_migration import WORKER_CONTINUATION_MIGRATION
 from agent_storage.postgres.worker_progress_migration import WORKER_PROGRESS_MIGRATION
@@ -206,4 +207,5 @@ LATEST_MIGRATIONS = (
     replace(RUNTIME_GATE_MIGRATION, version=118),
     replace(RUNTIME_GATE_TERMINATION_MIGRATION, version=119),
     ORCHESTRATION_ADMISSION_MIGRATION,
+    WORKER_BUDGET_MIGRATION,
 )

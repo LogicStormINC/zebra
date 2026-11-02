@@ -12,6 +12,7 @@ from typing import Any
 from uuid import uuid4
 
 from agent_core.domain.identifiers import TaskId
+from agent_orchestration.application.orchestration_scheduling import NodeOutcome, SchedulingDecision
 from agent_orchestration.domain.orchestration import (
     OrchestrationPlanSnapshot,
     OrchestrationRunStatus,
@@ -337,31 +338,38 @@ class PostgresOrchestrationStore:
         return {row["node_key"]: row["status"] for row in rows}
 
     def transition_node(
-        self, run_ref: str, node_key: str, target_status: str
+        self,
+        run_ref: str,
+        node_key: str,
+        target_status: str,
+        *,
+        revision: int | None = None,
+        source_status: str | None = None,
+        child_task_id: str | None = None,
     ) -> None:
-        with self._database.connect() as connection:
-            updated = connection.execute(
-                """
-                UPDATE orchestration_nodes
-                SET status = %s, updated_at = transaction_timestamp()
-                WHERE deployment_namespace = %s AND run_id = %s AND node_key = %s
-                    AND plan_revision = (
-                        SELECT current_plan_revision
-                        FROM orchestration_runs
-                        WHERE deployment_namespace = %s AND run_id = %s
-                    )
-                RETURNING node_key
-                """,
-                (
-                    target_status,
-                    self.deployment_namespace,
-                    run_ref,
-                    node_key,
-                    self.deployment_namespace,
-                    run_ref,
-                ),
-            ).fetchone()
-        if updated is None:
-            raise OrchestrationStorageError(
-                f"node transition failed: {run_ref}/{node_key} not found"
-            )
+        from agent_storage.postgres.orchestration_completion import transition_node
+
+        transition_node(
+            self,
+            run_ref,
+            node_key,
+            target_status,
+            revision=revision,
+            source_status=source_status,
+            child_task_id=child_task_id,
+        )
+
+    def commit_node_outcome(
+        self,
+        run_ref: str,
+        node_key: str,
+        outcome: NodeOutcome,
+        *,
+        revision: int | None = None,
+        child_task_id: str | None = None,
+    ) -> SchedulingDecision:
+        from agent_storage.postgres.orchestration_completion import commit_node_outcome
+
+        return commit_node_outcome(
+            self, run_ref, node_key, outcome, revision=revision, child_task_id=child_task_id
+        )

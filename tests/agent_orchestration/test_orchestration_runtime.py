@@ -158,9 +158,8 @@ class TestSchedulingLoop:
         receipt = _propose(runtime)
         runtime.materialize(receipt.run_ref)
         decision = runtime.complete_node(receipt.run_ref, "a", NodeOutcome.FAILED)
-        assert decision.reason_code == "node_failed"
-        with pytest.raises(OrchestrationToolError, match="nodes_still_running"):
-            runtime.synthesize(receipt.run_ref)
+        assert decision.reason_code == "node_failed_run_fails"
+        assert _store.status[receipt.run_ref] is OrchestrationRunStatus.FAILED
 
     def test_evaluate_rebuilds_from_store_every_call(self) -> None:
         """崩溃恢复语义：无内存权威，每次评估从 store 重建。"""
@@ -188,3 +187,48 @@ def test_proposal_preserves_the_real_parent_task_id() -> None:
     runtime = OrchestrationRuntime(store, authorize=lambda action: nullcontext(authority))
     receipt = runtime.propose_plan(_proposal())
     assert store.runs[receipt.run_ref].parent_task_id == authority.parent_task_id
+
+
+def test_production_synthesis_refuses_model_gate_without_durable_reader() -> None:
+    runtime, store = _runtime()
+    receipt = _propose(runtime)
+    production = OrchestrationRuntime(store, require_persisted_gate=True)
+    with pytest.raises(OrchestrationToolError, match="gate_evidence_unavailable"):
+        production.synthesize(receipt.run_ref)
+
+
+@pytest.mark.parametrize(
+    "policy,expected_status,reason",
+    [
+        ("retry_once", "blocked", "retry_requires_replan"),
+        ("require_human", "blocked", "human_approval_required"),
+        ("continue", "running", None),
+    ],
+)
+def test_failure_policy_decisions_are_persisted(policy, expected_status, reason) -> None:
+    runtime, store = _runtime()
+    proposal = _proposal(dependency=True)
+    nodes = (proposal.nodes[0].model_copy(update={"failure_policy": policy}), proposal.nodes[1])
+    receipt = runtime.propose_plan(proposal.model_copy(update={"nodes": nodes}))
+    runtime.materialize(receipt.run_ref)
+    store.transition_node(receipt.run_ref, "a", "running")
+    decision = runtime.complete_node(receipt.run_ref, "a", NodeOutcome.FAILED)
+    assert store.status[receipt.run_ref].value == expected_status
+    assert store.node_status[(receipt.run_ref, "a")] == "failed"
+    if reason is not None:
+        assert decision.reason_code == reason
+    if policy == "continue":
+        assert store.node_status[(receipt.run_ref, "b")] == "skipped"
+
+
+def test_normal_entry_materializes_before_request() -> None:
+    authority = _authority()
+    store = MemoryStore()
+    runtime = OrchestrationRuntime(
+        store,
+        authorize=lambda _: nullcontext(authority),
+        auto_materialize=True,
+        require_persisted_gate=True,
+    )
+    receipt = runtime.propose_plan(_proposal())
+    assert store.status[receipt.run_ref] is OrchestrationRunStatus.RUNNING
