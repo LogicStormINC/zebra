@@ -40,7 +40,7 @@ originals or an assertion that this entire directory equals canonical main.
 The matching standalone checks are retained; deployed117 acceptance used the
 canonical source overlay recorded in the focused Cloud incident document.
 
-2026-11-03 reply robustness parity: canonical `19ebdf9` based on `878ed20`.
+2026-11-03 reply robustness parity: canonical `388131c` based on `878ed20`.
 The focused split port retains existing compatibility profiles and frozen originals.
 Generic receipt recovery, full read parameter schemas, bounded discovery and safe
 startup timing are ported into their current responsibility files. The complete

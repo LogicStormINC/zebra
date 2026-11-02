@@ -9,6 +9,7 @@
   new apps/api/src/zebra_agent_api/task_admission_lookup.py if needed; tests/api/test_task_admission_lookup.py;
   existing runtime workspace resolver/composition only after measured shared defect and ownership addendum.
   integrations/erpnext focused ERP reply files via reviewed source port; SOURCE.md; focused no-model tests.
+  Release addendum: integrations/erpnext/zebra_erpnext/hooks.py JS cache version only.
   Fixture addendum: tests/test_chat_checks.py uses valid UUIDs for its four synthetic create receipts,
   matching the deployed Task ID contract; no weakening of runtime receipt validation.
   docs/CLOUD_REPLY_ROBUSTNESS_20261103.md, docs/AGENT_TASKS.md, PROGRESS.md, WORKLOG.md.

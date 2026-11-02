@@ -792,6 +792,19 @@ index a386ed1..9565402 100644
          if readonly_chat and len(output.encode()) > 8192:
              output = frappe.as_json({'status': 'too_large', 'message': '查询结果较大，请缩小字段或条件。'})
          return {"output": output}
+diff --git a/zebra_erpnext/hooks.py b/zebra_erpnext/hooks.py
+index 0a48e4f..edd7a6a 100644
+--- a/zebra_erpnext/hooks.py
++++ b/zebra_erpnext/hooks.py
+@@ -5,7 +5,7 @@ app_description = "Zebra Cloud Agent for ERPNext"
+ app_email = "admin@example.invalid"
+ app_license = "GPL-3.0-only"
+ required_apps = ["erpnext"]
+-app_include_js = ["/assets/zebra_erpnext/zebra.js?v=20261102-titles-1"]
++app_include_js = ["/assets/zebra_erpnext/zebra.js?v=20261103-reply-1"]
+ app_include_css = ["/assets/zebra_erpnext/zebra.css?v=20261102-titles-1"]
+ after_install = "zebra_erpnext.install.setup"
+ after_migrate = "zebra_erpnext.install.setup"
 diff --git a/zebra_erpnext/session_force_stop.py b/zebra_erpnext/session_force_stop.py
 index 81fdcd3..06c4c87 100644
 --- a/zebra_erpnext/session_force_stop.py

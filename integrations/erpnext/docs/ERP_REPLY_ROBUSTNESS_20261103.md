@@ -60,6 +60,11 @@
 
 ## Evidence and limits
 
+The published JS hook version is bumped for normal refresh/cache invalidation.
+Saved inventory replay:79,060 original bytes→7,964 model-visible prefix bytes (~90% less),
+with complete original unchanged. Final live snapshot/served JS checksum and admission restore passed.
+Owned QA containers/network/images were removed; production/rollback images retained.
+
 Private remote receipts: `/home/ubuntu/releases/20261103-erp-reply/`.
 Only sanitized measurements belong in Git. Preserve originals/rollback images;
 no automatic retry, absent-receipt cancellation, quota bypass or stale authorization.
