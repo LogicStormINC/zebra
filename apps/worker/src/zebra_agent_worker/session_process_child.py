@@ -16,10 +16,11 @@ from pydantic import TypeAdapter
 from zebra_agent_config import load_settings
 
 from zebra_agent_worker.claims import ClaimedSession
+from zebra_agent_worker.execution_errors import WorkerInputPreparationUnavailable
 from zebra_agent_worker.execution_finalization import ExecutedSession
 from zebra_agent_worker.execution_recovery import execute_claimed_with_stale_retry
 from zebra_agent_worker.loop import build_worker_loop_service
-from zebra_agent_worker.session_process import settings_digest
+from zebra_agent_worker.session_process import settings_digest, write_input_failure
 
 
 def main() -> None:
@@ -95,12 +96,18 @@ def main() -> None:
             if current is None or current.fence != lease.fence:
                 raise LeaseLostError("isolated executor fence revoked")
 
-        result = execute_claimed_with_stale_retry(
-            service,
-            claimed,
-            started_at=datetime.fromisoformat(request["executed_at"]),
-            ownership_check=require_owned,
-        )
+        try:
+            result = execute_claimed_with_stale_retry(
+                service,
+                claimed,
+                started_at=datetime.fromisoformat(request["executed_at"]),
+                ownership_check=require_owned,
+            )
+        except WorkerInputPreparationUnavailable:
+            # Only the shared pre-model preparation boundary emits this type.
+            # No exception message, credentials or execution input crosses IPC.
+            write_input_failure(result_path, request)
+            return
         result_path.write_bytes(TypeAdapter(ExecutedSession).dump_json(result))
 
 

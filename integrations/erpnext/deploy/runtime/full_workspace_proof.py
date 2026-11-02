@@ -5,6 +5,8 @@ import json
 import os
 import ssl
 import sys
+import traceback
+from pathlib import Path
 from time import monotonic
 from uuid import UUID
 
@@ -152,6 +154,18 @@ def main():
 if __name__ == "__main__":
     try:
         main()
-    except Exception:
-        print("full_workspace_proof_refused", file=sys.stderr)
+    except Exception as error:
+        print(
+            json.dumps(
+                dict(
+                    code="workspace_native_proof_refused",
+                    type=type(error).__name__,
+                    frames=[
+                        (Path(f.filename).name, f.lineno, f.name)
+                        for f in traceback.extract_tb(error.__traceback__)[-6:]
+                    ],
+                )
+            ),
+            file=sys.stderr,
+        )
         sys.exit(1)

@@ -130,7 +130,7 @@ class NativeProof:
             raise TimeoutError("insufficient helper cleanup budget")
         try:
             output = subprocess.check_output(
-                argv, input=packet, timeout=min(7, available - 5), stderr=subprocess.DEVNULL
+                argv, input=packet, timeout=available - 5, stderr=subprocess.PIPE
             )
             if len(output) > 4096:
                 raise ValueError("bounded proof response required")

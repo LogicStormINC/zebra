@@ -1,3 +1,18 @@
+# CLOUD-EXECUTOR-STARTUP-20261102
+- Status: Done; verified and deployed as exact117 overlay; locally integrated into cloud-agent. No GitHub push in this repair.
+- Created Ready then claimed In Progress before implementation; owner Luke Ding / Codex.
+- Branch codex/cloud-executor-startup-20261102, isolated worktree, target cloud-agent.
+- Owned-path addendum before shared-boundary fix: execution_recovery.py only for typed pre-model input failure; execution.py only for existing committed-completion guard.
+- Scope: identify real ERP pre-model executor exit; preserve known safe startup failure across private process boundary,
+  distinguish authenticated allocation refusal from integrity failure; no replay or relaxing authority/quota.
+- Owned paths apps/worker/src/zebra_agent_worker/{session_process,session_process_child,execution_failure_finalization,execution_errors}.py;
+  focused new apps/worker/src/zebra_agent_worker/session_process_receipt.py if needed;
+  tests/worker/test_session_process*.py; docs/CLOUD_EXECUTOR_STARTUP_20261102.md;
+  docs/AGENT_TASKS.md, PROGRESS.md, WORKLOG.md. No changes to concurrent budget/runtime work.
+- Consumer/operator fix belongs canonical ERP ERP-ALLOCATOR-REFUSAL-20261102; deployment only after no-model regression.
+- Owned-path addendum before consumer parity port: integrations/erpnext/cloud-patches/operator/{private_workspace_operator,private_workspace_native_proof}.py; deploy/runtime/{full_workspace_client,full_workspace_proof}.py; deploy/activate_full_capability_operator.py; tests/test_full_workspace*_checks.py; SOURCE.md and focused incident doc. Port only verified878ed20 fixes into the existing reviewed split tree; never replace frozen originals or re-export unrelated canonical changes.
+- Preserve fences, cancellation, parent completion recovery, all original Runs; no model/search, no Search/MCP change.
+
 # CA-CONCURRENCY-LIFECYCLE-20261102
 - Status: Done; user-authorized local cloud-agent integration on2026-11-02. Candidate129 passed/5 conditional skips, final signal13 passed; merge46 passed/zero skips and make check passed; evidence recorded separately.
 - Owner: Luke Ding; executor Codex; target cloud-agent; branch codex/ca-concurrency-lifecycle-20261102.

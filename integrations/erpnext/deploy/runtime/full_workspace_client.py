@@ -96,15 +96,23 @@ class PrivateWorkspaceClient:
         if len(data) > 4096 or not data.endswith(b"\n"):
             raise ValueError("invalid allocator response")
         result = json.loads(data)
-        mac = result.pop("mac", "")
-        if (
-            result.get("ok") is not True
-            or result.get("nonce") != body["nonce"]
-            or not hmac.compare_digest(
-                hmac.new(self.key, canonical(result), hashlib.sha256).hexdigest(), mac
-            )
+        if not isinstance(result, dict) or not isinstance(result.get("mac"), str):
+            raise ValueError("allocator receipt authentication failed")
+        mac = result.pop("mac")
+        if result.get("nonce") != body["nonce"] or not hmac.compare_digest(
+            hmac.new(self.key, canonical(result), hashlib.sha256).hexdigest(), mac
         ):
             raise ValueError("allocator receipt authentication failed")
+        if result.get("ok") is not True:
+            code = result.get("code")
+            allowed = {
+                "workspace_preparation_timeout",
+                "workspace_not_allocatable",
+                "workspace_capacity_exhausted",
+                "workspace_proof_cleanup_pending",
+                "workspace_preparation_refused",
+            }
+            raise ValueError(code if code in allowed else "workspace_preparation_refused")
         receipt = result["receipt"]
         if (
             receipt["workspace_id"] != wid
