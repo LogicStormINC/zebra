@@ -1,3 +1,9 @@
+## 2026-11-02 CA-P7-02-assembly 生产装配
+
+"谁构造"的答案：wakeup hook 跟随 wakeup 服务（同 dsn/namespace——编排 run 与委派 link 同库
+才成立）；工具运行时从 build_worker_tool_gateway 显式传入（编排器会话才构造真实
+OrchestrationRuntime，普通会话不传=白名单内 fail-closed）。分支 e1345c32 已推 origin。
+
 ## 2026-11-02 wiring 合入 cloud-agent
 
 ff 已推 origin（纯快进）。**CA-P7-02 全链闭合**：服务本体（31a4e9d2）+ 三处生产接线（9239d76d）。
