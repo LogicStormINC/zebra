@@ -1,3 +1,10 @@
+# CA-P7-03D-S3 — 真实对象存储证据补齐
+- Created Ready then claimed before tests; now Review2026-11-02: independent401 pass/zero skips, changed-test Ruff, two source reviews, realPG/MinIO retained+cleaned; owner Luke Ding/Codex; branch codex/ca-p7-03d-s3-evidence; base5acee368。
+- User continuation scope: complete feasible03D evidence; strict missing-counter denial persists, no deployment/production migration/main integration or paused environment restart.
+- Owned paths tests: tests/agent_storage/test_postgres_orchestration_gate.py; tests/agent_storage/test_postgres_orchestration_gate_s3.py. Reuse actualFileRead/projector/coordinator/WorkerMutationAuthority/nativePG gate fixture; select realS3 objects only in explicit opt-in variant, original in-memory tests retain their meaning. No production source edits without scope registration.
+- Owned paths governance: docs/AGENT_TASKS.md; PROGRESS.md; WORKLOG.md; docs/CA-P7-03D_completion_gate.md; docs/evidence/ca-p7-03d-s3/; private.artifacts/ca-p7-03d-s3/。
+- Acceptance: unique run-owned bounded PG+MinIO, fresh owner bucket, all12 prior S3 conditional cases plus actual readonly gate producer→versioned S3 bytes→fenced finalizedmetadata→immutable receipt/CAS/replay. Counter capability/parent admission remain explicit local test fixtures; no normal model success claim. No provider calls or fake object fallback. Source freeze/checks and separate root run; dump original receipts/unknown and retain actual object versions/logs before precise cleanup.
+
 # CA-P7-03D — 持久完成gate与真实跨仓受限验收
 - Created Ready then claimed before implementation; now Review2026-11-02: independent388 pass/12 S3 conditional skips, Ruff/mypy14,13 real restricted cross checks, two reviews and exact owned cleanup; owner Luke Ding/Codex; branch codex/ca-p7-03d-completion-gate; base56ae352a,03C整合后开工。
 - User authorization: integrate03C then03D; no trusted counter exists, strict denial mandatory; no deployment/production migrations/paused-environment restart.

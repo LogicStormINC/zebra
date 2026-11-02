@@ -1,3 +1,13 @@
+## CA-P7-03D-S3 — 真实对象存储补证（2026-11-02 / Review）
+
+在03D候选5acee368上补真实MinIO版本化对象链，生产源码零改动，缺counter继续严格拒绝。
+实际FileReadTool→coordinator/WMA→PG finalized/verified metadata→原VersionId bytes/hash→
+只读gate完成/不可变原收据/replay通过；parent/counter/terminal仍局部fixture，非正常模型成功链。
+本轮独立401通过、零跳过，覆盖此前12项S3未配条件；变更Ruff/diff与两轮只读复核通过。
+原PG收据/unknown与24个剩余对象版本已保留后ownedPG/MinIO资源清零；无主线整合/部署/生产迁移。
+[新增证据](docs/evidence/ca-p7-03d-s3/validation.json)；下方388/12skip和13跨仓均为历史实跑，未覆盖或冒称本轮重跑。
+完整模型驱动child/synthesis仍因无可信counter未验证，P7不关闭。
+
 ## CA-P7-03D — 持久只读完成gate及真实跨仓受限验收（2026-11-02 / Review）
 
 03C已整合Native56ae352a/Overdoze365e843并推主线；ERP历史及无关AGENTS字节保留，无部署。

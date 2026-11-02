@@ -153,7 +153,11 @@ def terminal(native, monkeypatch, tmp_path, request):
         model_call_indexer=ModelCallIndexer(PostgresModelCallProjectionAdapter(indexes)),
         tool_run_indexer=ToolRunIndexer(PostgresToolRunProjectionAdapter(indexes)),
     )
-    objects = FixtureObjectStore()
+    objects = (
+        request.getfixturevalue("gate_s3_objects")
+        if variant == "real_s3"
+        else FixtureObjectStore()
+    )
     coordinator = CloudToolOutputArtifactCoordinator(
         budget.session_id,
         PostgresCloudArtifactPayloadStore(
@@ -225,7 +229,8 @@ def terminal(native, monkeypatch, tmp_path, request):
             },
         )
     )
-    assert list(objects.bytes.values()) == [b"actual FileReadTool evidence"]
+    if variant != "real_s3":
+        assert list(objects.bytes.values()) == [b"actual FileReadTool evidence"]
     runtime.complete_node(
         run.run_ref,
         "inspect",

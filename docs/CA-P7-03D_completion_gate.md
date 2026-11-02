@@ -56,7 +56,7 @@ Native：真实PG原坐标/并发/lease更替/撤销/失败回滚/晚到恢复�
 不是OCI/gVisor或生产HA。没有counter时不能验证模型驱动真实编排child成功或完成合成；
 不以Native局部fixture正例替代这些跨仓未验证项，也不宣布P7整体完成。
 
-## 实跑结果
+## 03D原交付实跑结果（历史）
 
 主代理最终独立388 passed / 0 failed / 12 conditional skipped（76.17s）；12项需未配置S3/MinIO，
 未当作真实对象服务验收。Ruff、14变更源mypy通过；变更Python以及跨仓1542 Native源文件hash前后相同。
@@ -76,3 +76,21 @@ WAL64/32与30s checkpoint；一次minWal16不合约初始化失败无业务数�
 最终另5库及Redis RDB均已保存；owned PG/Redis/进程零残留，清理后磁盘131GiB、memory free67%。
 
 功能分支待整合，03D正向模型驱动孩子/预算触顶/丢回复/成功合成跨仓项仍未验证，P7不关闭。
+
+## 2026-11-02真实S3补证（CA-P7-03D-S3 / Review）
+
+用户继续后，在5acee368功能候选上新增显式real_s3测试variant，生产packages/apps零改动。
+复用原Fixture的FileReadTool/coordinator/WMA/PG链，真实MinIO桶启用versioning：
+读取finalized元数据绑定的原object_version，核验实际bytes/SHA256/size/verified_at与canonical事件；
+只读policy完成后原观察不可修改、同revision重放单收据、异revision不可借用。
+parent admission、counter与terminal驱动仍是明确局部fixture，不冒称正常模型链。
+
+主代理独立**401 passed / 0 failed / 0 skipped（88.20s）**，含此前12项S3条件跳过的真实执行，
+两变更测试Ruff与diff检查通过；规格/质量两轮只读复核无P1/P2。1542份生产源hash与5ace候选不变。
+[本轮机器证据](evidence/ca-p7-03d-s3/validation.json)；旧388/12skip及13跨仓报告保留历史含义，
+本轮未重跑13项Go/Native HTTPS模型拒绝检查，不把旧结果写成新跑。
+
+唯一限额PG+MinIO已精确清理，PG原收据/unknown和24个剩余精确对象版本（912字节）已保留，
+按version/key/hash核验后导出；故障/剪枝用例预期删除的对象由其断言与元数据说明。
+bucket、credential与数据均为本run所有，未删业务/未知资源；清理后disk130GiB、memory free67%。
+无生产counter、未合主线、未部署/生产迁移；模型驱动child/synthesis等完整跨仓正项仍待验。

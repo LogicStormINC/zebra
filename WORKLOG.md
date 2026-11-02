@@ -1,3 +1,12 @@
+## 2026-11-02 CA-P7-03D-S3
+
+- 用户继续，选择不依赖counter的真实S3补证，独立分支/先登记Owned；未默认扩大main整合权限。
+- 只改2个测试文件，复用terminal链显式选择真实S3，部分配置失败/缺全部配置skip，无memory fallback。
+- 实现侧13真PG/MinIO定向通过，root独立401通过/零跳过；生产1542源hash不变，Ruff/diff与两只读复核通过。
+- 正向检查绑定实际版本/bytes/hash/事件/verified metadata、不可变receipt/replay；parent/counter/terminal仍fixture。
+- 导出PG全库和24个剩余精确S3版本后移除唯一ownedPG/MinIO，无业务对象/原Run重写、无暂停环境恢复。
+- 候选待整合，无counter继续拒绝；未重跑旧13跨仓，不称完整模型链/HA/部署完成。
+
 ## 2026-11-02 CA-P7-03D
 
 - 按授权整合03C，Native正常merge56ae352a、Overdoze ff365e843；保留ERP提交与AGENTS原字节，不部署。
