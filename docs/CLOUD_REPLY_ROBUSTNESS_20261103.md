@@ -16,7 +16,7 @@ Public Worker, storage/Postgres and integrations exports reuse the existing lazy
 export pattern. Every original public symbol keeps its defining-module identity.
 No authorization TTL/cache, worker state machine, lease, quota or schema is changed.
 
-ERP canonical19ebdf9 has rejection/unknown admission recovery and truthful no-Task
+ERP canonical388131c has rejection/unknown admission recovery and truthful no-Task
 stop/snapshot, precise read schemas, bounded metadata and safe stage timing. Its
 focused split compatibility port and full canonical delta are retained under
 `integrations/erpnext`; original frozen manifests are unchanged.
