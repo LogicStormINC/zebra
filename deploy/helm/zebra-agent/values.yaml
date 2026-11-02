@@ -59,6 +59,7 @@ api:
       memory: 2Gi
 
 worker:
+  executionSlots: 4
   replicas: 2
   idleSleepSeconds: 1.0
   resources:
@@ -79,3 +80,23 @@ migration:
       memory: 1Gi
 
 podAnnotations: {}
+
+# Opt-in candidate only. Counts include maxSurge:1 and all private executors.
+# The actual server max/reserved values and external clients must match at enablement.
+databaseBudget:
+  enabled: false
+  pool: 2
+  normal: 2
+  read: 2
+  control: 4
+  probe: 1
+  max_connections: 256
+  server_reserved: 3
+  external: 4
+  execution_slots: 4
+  fleet:
+    api: 3
+    worker: 3
+    executor: 12
+    cleanup: 1
+    scheduler: 1

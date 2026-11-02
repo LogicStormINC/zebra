@@ -11,6 +11,7 @@ from uuid import uuid4
 
 from agent_core.domain.bundle_definition import parse_definition_snapshot
 from agent_core.domain.runtime_gates import GateWork
+from agent_storage.postgres.connection_pool import postgres_context
 from agent_storage.postgres.runtime_gate_worker import RuntimeGateWorkerStore
 from zebra_agent_config import ZebraAgentSettings
 from zebra_agent_config.bundle_settings import load_execution_catalog
@@ -100,7 +101,7 @@ class RuntimeGateWorker:
             self.next_tick = time.monotonic() + 2
             # One bounded observational job; never block execution, enqueue business work,
             # or allow a timed-out probe to accumulate behind another probe.
-            self._future = self._executor.submit(self._observe)
+            self._future = self._executor.submit(postgres_context().run, self._observe)
 
     def close(self) -> None:
         if os.getpid() != self.pid:

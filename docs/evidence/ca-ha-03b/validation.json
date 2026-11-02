@@ -1,0 +1,199 @@
+{
+  "task": "CA-HA-03",
+  "slice": "03B",
+  "date": "2026-11-02",
+  "status": "candidate_verified_review_pending_not_deployed",
+  "parent": "359ee6ca",
+  "branch": "codex/ca-ha-03-budgets",
+  "source_sha256": {
+    "apps/api/src/zebra_agent_api/database_budget.py": "4f608c7b0612dd51c75cf3d19f618abc082fcb9f6b5d86cac5eb6b49ad82808d",
+    "apps/api/src/zebra_agent_api/health_readiness.py": "9cc4ea70a91fb6ec9f897b30ca9d4e8ed89df7dd4dc1751cbaf9e7df8fdceeb6",
+    "apps/api/src/zebra_agent_api/http.py": "84bd8c0a7e082b13674469ade0a39f43831719806064aff2a418d6c686c5ea3a",
+    "apps/api/src/zebra_agent_api/http_host_auth.py": "d7519bf3795562b39f2ecb2e7543eab5ab14165bd1ccc2e8da82df53afc3f914",
+    "apps/api/src/zebra_agent_api/server.py": "0c45e0ecf4a407e5b1063e4af75cfc8e56f7a423f148791b5941cbd403f9603c",
+    "apps/scheduler/src/zebra_agent_scheduler/main.py": "5a816ea0d9d280f1feba092af21c06e55f6d3f88216502f806144a0ed74a9890",
+    "apps/worker/src/zebra_agent_worker/ag_ui_projection_work.py": "256f60cafb8b11be184a28188b577033ba719b16d2e2422c23740d07491a207a",
+    "apps/worker/src/zebra_agent_worker/command_process.py": "ae79c804a373e3de2f13c85e22f768d1224743dc7d285482d28064d6a315b1f8",
+    "apps/worker/src/zebra_agent_worker/loop.py": "9f7bc9aec1573d9b2651ed0e5c8ca2461957070117aa5c8fe61a58e450629dfb",
+    "apps/worker/src/zebra_agent_worker/main.py": "17c7f0a485fcb46faa41795b73ba123d283f40cc00233826eb740864521a7a24",
+    "apps/worker/src/zebra_agent_worker/runtime_cleanup_service.py": "32cdde9a8d79851560a5e5f49d31ec4c25afb409cf18ca66b06cf9dd7da02c82",
+    "apps/worker/src/zebra_agent_worker/runtime_gates.py": "e23778f86235e5e4c414980f2ed95fde94c0c9de0920ea2bdfb8f51af0db3c4a",
+    "apps/worker/src/zebra_agent_worker/session_process_child.py": "7fb6e98f4dd4c5f108f9f67636954a1b4dbfd838f33e379d8f708ea5552b2083",
+    "apps/worker/src/zebra_agent_worker/worker_loop_service.py": "362b33361dea6cc147f322a9f56e258776cb5123ab1070a87b27c3cc1ebca172",
+    "deploy/helm/zebra-agent/templates/_helpers.tpl": "b1e84d3820881283f1d3097e8904adfeaa76984a54d686898ced67d43011a6f1",
+    "deploy/helm/zebra-agent/templates/api-deployment.yaml": "9a46b35f32c07cb6b5fef559f1bfa1e481a28713f22b9e8379220749312bf34b",
+    "deploy/helm/zebra-agent/templates/worker-deployment.yaml": "71943d298e54825d684888a176575167c9f6e418b18d9a8c64b9947581f82c77",
+    "deploy/helm/zebra-agent/values.schema.json": "f3939f1096e5ea496402d943141923787c750fbb75ee123683b71569189b33e5",
+    "deploy/helm/zebra-agent/values.yaml": "e81389db824cf322596ddcf71abf593b8c5a7a7a8ef5d99cd029ed435dd6b9a2",
+    "docker/compose.application.yml": "502563bcf99ff2a4f557aa4c8633ab20ddeeee08380a0bb5c60871ed0a83d04e",
+    "packages/agent-runtime/src/agent_runtime/command_wakeup_consumer.py": "b2871dfd826110983f03d01215dc35aa97dd4abfaa18c1bbb63f008ffabc0917",
+    "packages/agent-storage/src/agent_storage/postgres/capacity_profile.py": "30484009824c603499aecc669910dfa26ebf45414e8ffa9b6847bf34eaa9f382",
+    "packages/agent-storage/src/agent_storage/postgres/connection_capacity.py": "e0d5fb5ae64a248d6ca8c1f67a606a728f96665c5c9583d36cdf3649b04d2876",
+    "packages/agent-storage/src/agent_storage/postgres/connection_pool.py": "62b844e25aa412e1db2119c4a99904b476a78349420e2192931928278ab5394d",
+    "packages/agent-storage/src/agent_storage/postgres/database.py": "40eed8732b23c2580e4df6174dab305bcad8515cb6d5a42af60c2a0f270c1e97",
+    "packages/agent-storage/src/agent_storage/postgres/force_stop_executors.py": "fcd9990d78a38984d8bc45b450cc4fdd65ad5782663ee912195218135c4d646c",
+    "packages/agent-storage/src/agent_storage/postgres/force_stop_recovery.py": "39a7fe26a9ba95b3735ac0de966ff390bf3fe915f0eddda71823a85e67e8faa0",
+    "packages/agent-storage/src/agent_storage/postgres/task_io.py": "44846d9d549ae79db7b160c5d096ccd061a1ce04d92592edc4141a99322a53e7",
+    "packages/agent-storage/src/agent_storage/postgres/worker_capability.py": "bd16bd3ccf7a6dc8c645c9df8a57fbd66095eb838a1a9e8d31c60778729f1e7d",
+    "tests/agent_storage/test_postgres_connection_capacity.py": "476c84893336d9d5a68f6c589fc4d78fceb261a055558e3d92bbf4314d144908",
+    "tests/api/test_database_budget.py": "df3082541b57e039daeba1251a29563de31e8345991b385699702bfbdb10edb4",
+    "tests/deploy/test_helm_chart.py": "e0417f98e3dac15f5e92d3b9d0a00798d122be0f4f0985adf6ae218b780015a4",
+    "tests/worker/test_command_process.py": "b19a9957467468f80b36f5a71c5dc25714f11fa9c1de01035f36d699a0b4c539"
+  },
+  "enablement": "explicit opt-in ZEBRA_DATABASE_BUDGET_JSON; absent/empty retains legacy mode",
+  "scope": [
+    "normal pool and direct connections",
+    "read/control/probe independent socket quotas",
+    "API bounded lane executors and admission",
+    "API Worker executor cleanup scheduler process roots",
+    "PG-only legacy thread context propagation",
+    "frozen fleet peak/executor/surge arithmetic and actual server checks"
+  ],
+  "apps_regression": {
+    "passed": 3102,
+    "skipped": 951,
+    "failed": 0,
+    "seconds": 905.75,
+    "command": "uv run --no-sync pytest -q tests/api tests/worker tests/scheduler tests/deploy",
+    "later_deltas": "dedicated probe, child factory scope, nested-root refusal and scheduler help ordering separately checked; this broad run is not relabeled as testing those later deltas"
+  },
+  "postgres_release": {
+    "passed": 113,
+    "skipped": 12,
+    "failed": 0,
+    "seconds": 64.67,
+    "resource": {
+      "container": "c6244e042fb0977714b7030a995bee02d37dc330b3979a0aa5710aade0182cae",
+      "temporary_data": "tmpfs512MiB",
+      "limit": "1CPU/768MiB/PID128",
+      "production": false,
+      "wal": "min/max32MiB",
+      "targets": [
+        "tests/agent_storage/test_postgres_connection_capacity.py",
+        "tests/agent_storage/test_postgres_connection_pool.py",
+        "tests/agent_storage/test_postgres_task_io.py",
+        "tests/agent_storage/test_postgres_task_io_shared.py",
+        "tests/agent_storage/test_postgres_bounded_connection_scope.py",
+        "tests/agent_storage/test_worker_capability.py",
+        "tests/agent_storage/test_postgres_force_stops.py",
+        "tests/agent_storage/test_postgres_force_stop_recovery.py",
+        "tests/agent_storage/test_postgres_command_wakeup_pickup.py"
+      ],
+      "exit": 0,
+      "seconds": 66.576,
+      "owned_container_removed": true,
+      "preexisting_containers_retained": true
+    },
+    "coverage": [
+      "pool/direct saturation and canonical force-stop acceptance/original GET",
+      "two independent spawn processes",
+      "native close failure keeps quota",
+      "callback socket retention and reuse",
+      "probe with all business lanes saturated",
+      "operator child factory --check within executor root",
+      "existing worker capability, stop recovery, fair pickup and transaction reset"
+    ]
+  },
+  "later_boundaries": {
+    "passed": 27,
+    "skipped": 7,
+    "failed": 0,
+    "coverage": [
+      "nested root refused before connecting",
+      "latest probe profile and HTTP lane guards",
+      "scheduler compatibility"
+    ],
+    "note": "PG-gated cases separately exercised by postgres_release; no full E1 claim"
+  },
+  "followup_prior": {
+    "passed": 56,
+    "failed": 0
+  },
+  "make_check": {
+    "exit": 0,
+    "size_violations": 0,
+    "ruff": "pass",
+    "mypy": "pass",
+    "eval": 30,
+    "runtime_boundary_and_progress_checks": "pass"
+  },
+  "helm_render": [
+    {
+      "case": "disabled",
+      "exit": 0,
+      "expected": 0
+    },
+    {
+      "case": "enabled",
+      "exit": 0,
+      "expected": 0
+    },
+    {
+      "case": "insufficient_worker_peak",
+      "exit": 1,
+      "expected": 1
+    },
+    {
+      "case": "insufficient_total",
+      "exit": 1,
+      "expected": 1
+    }
+  ],
+  "micro_metrics": {
+    "kind": "micro_only_not_E1",
+    "control_requests": 1,
+    "original_get_requests": 20,
+    "control_ms": 39.94895901996642,
+    "read_p50_ms": 31.271667103283107,
+    "read_p95_ms": 32.69124997314066,
+    "read_max_ms": 32.745333039201796,
+    "parent_process_cpu_seconds": 0.2956679999999998,
+    "sql_calls_by_lane": {
+      "control": 13,
+      "read": 120
+    },
+    "capacity": {
+      "active": {
+        "normal": 2,
+        "read": 0,
+        "control": 0,
+        "probe": 0
+      },
+      "peak": {
+        "normal": 2,
+        "read": 1,
+        "control": 1,
+        "probe": 0
+      },
+      "rejected": {
+        "normal": 1,
+        "read": 0,
+        "control": 0,
+        "probe": 0
+      }
+    },
+    "normal_and_pool_fully_held": true,
+    "run_replayed": false
+  },
+  "capacity_conditions": [
+    "frozen declared fleet peak and executor counts must remain true",
+    "external client maximum is declared, not dynamically enforced here",
+    "server max/reserved must match profile at startup; application account must not be superuser",
+    "not a distributed process-admission service or runtime drift detector"
+  ],
+  "not_verified": [
+    "dedicated E1 multi-node 2API/2Worker with complete dependency inventory",
+    "1m event baseline and 30min per-load steady-state",
+    "production fleet and runtime drift handling",
+    "real IdP/Broker/browser joint acceptance",
+    "new opt-in profile with Linux OCI executor fault acceptance",
+    "independent/human review",
+    "full repository make test"
+  ],
+  "production_changes": false,
+  "production_migrations": false,
+  "business_run_replayed": false,
+  "real_model_requests": false,
+  "old_environments_restarted": false,
+  "review": "self-reviewed; independent/human review pending"
+}

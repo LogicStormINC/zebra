@@ -18771,3 +18771,13 @@ requires canonical main for normal Host releases. Exact source mapping verified 
 完整Worker首次唯一失败在干净基线复现，只补缺失forced Mock列；最终证据/未验项见
 docs/evidence/ca-ha-03/validation.json及docs/CA-HA-03_resource_budgets.md。
 本批03A候选交付，03B全副本预算/容量及后续HA仍需完成；不生产部署，不声称HA完成。
+
+
+## 2026-11-02 — CA-HA-03B resumed completion
+
+用户继续后核对中断进程与结果，最终PG113通过/12skip，全部owned临时PG已回收。
+冻结入口/线程/预算路径后实施；普通资源全占满仍有控制和原GET额度，探针单独隔离，
+await取消和失败close不早归还；继承PG上下文而非业务授权。禁止嵌套根scope扩大额度。
+广覆盖3102/951skip与后续定向分别留档；Helm正反例与最终check通过。
+见docs/evidence/ca-ha-03b/validation.json；默认关闭、仅本地候选，不合入/推送/生产部署。
+E1容量、实际fleet约束/漂移告警、独立评审及后续旧任务自动核对仍待完成。

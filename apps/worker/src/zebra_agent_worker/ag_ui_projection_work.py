@@ -4,6 +4,7 @@ import logging
 from threading import Event, Lock, Thread
 
 from agent_integrations.ag_ui.checkpoint_consumer import AgUiCheckpointConsumer
+from agent_storage.postgres.connection_pool import postgres_context
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +32,10 @@ class AgUiProjectionWorkService:
             if self._thread is not None and self._thread.is_alive():
                 return
             self._stop.clear()
-            self._thread = Thread(target=self._run, name="ag-ui-projection", daemon=True)
+            self._thread = Thread(
+                target=postgres_context().run, args=(self._run,),
+                name="ag-ui-projection", daemon=True,
+            )
             self._thread.start()
 
     def _run(self) -> None:

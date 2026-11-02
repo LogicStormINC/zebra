@@ -4,12 +4,15 @@ import argparse
 import logging
 import os
 import time
+from contextlib import nullcontext
 from uuid import uuid4
 
 from agent_runtime.command_runtime_cleanup import cleanup_runtime_batch
 from agent_runtime.force_stop_cleanup import recover_force_stops
+from agent_storage.postgres.connection_capacity import PROFILE_ENV, capacity_lane
+from agent_storage.postgres.connection_pool import postgres_pool_scope
 from agent_storage.postgres.database import PostgresDatabase
-from zebra_agent_config import load_settings
+from zebra_agent_config import ZebraAgentSettings, load_settings
 
 from zebra_agent_worker.runtime_factory import pin_cloud_engine
 
@@ -21,6 +24,12 @@ def main() -> None:
     settings = load_settings()
     if settings.deployment != "cloud" or settings.storage_authority != "postgresql":
         raise ValueError("cleanup service requires Cloud PostgreSQL composition")
+    with (postgres_pool_scope(settings.database_url, component="cleanup")
+          if os.environ.get(PROFILE_ENV) else nullcontext()), capacity_lane("control"):
+        _consume(settings, once=args.once)
+
+
+def _consume(settings: ZebraAgentSettings, *, once: bool) -> None:
     database = PostgresDatabase(
         settings.database_url, deployment_namespace=os.environ.get("ZEBRA_DEPLOYMENT_NAMESPACE", "")
     )
@@ -35,7 +44,7 @@ def main() -> None:
                 database._dsn, deployment_namespace=database.deployment_namespace, engine=engine
             )
             if engine is None:
-                if args.once:
+                if once:
                     return
                 time.sleep(2)
                 continue
@@ -50,9 +59,9 @@ def main() -> None:
                 logging.warning("runtime_cleanup_settled count=%s", settled + forced)
         except Exception as error:
             logging.warning("runtime_cleanup_deferred error_type=%s", type(error).__name__)
-            if args.once:
+            if once:
                 raise
-        if args.once:
+        if once:
             return
         time.sleep(2)
 

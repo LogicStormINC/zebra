@@ -28,6 +28,8 @@ from agent_storage.postgres.command_wakeup_pickup import (
     resolve_command_pickup,
 )
 from agent_storage.postgres.command_wakeup_recovery_proof import CoverageRecoveryCheck
+from agent_storage.postgres.connection_capacity import capacity_lane
+from agent_storage.postgres.connection_pool import postgres_context
 from agent_storage.postgres.coverage_recovery_preparation import CoverageRecoveryDeferred
 from agent_storage.postgres.worker_capability import (
     WorkerCapabilityLease,
@@ -129,7 +131,8 @@ class CommandWakeupConsumer:
             if self._closed or not self._db_slots[pool].acquire(blocking=False):
                 raise _Busy
             try:
-                future = pool.submit(function)
+                with capacity_lane("control" if pool is self._control else "normal"):
+                    future = pool.submit(postgres_context().run, function)
             except BaseException:
                 self._db_slots[pool].release()
                 raise
@@ -174,7 +177,7 @@ class CommandWakeupConsumer:
                 return PickupOutcome.DEFERRED
             assert result.lease is not None
             try:
-                future = self._execution.submit(self._execute, result.lease)
+                future = self._execution.submit(postgres_context().run, self._execute, result.lease)
             except Exception:
                 raise _SchedulingFailed("committed command scheduling failed") from None
             scheduled = True

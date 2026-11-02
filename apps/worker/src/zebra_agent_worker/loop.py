@@ -441,9 +441,9 @@ def build_worker_loop_service(
         from zebra_agent_worker.safety_net import WorkerSafetyNet
 
         def _safety_connect() -> Connection:
-            import psycopg
+            from agent_storage.postgres.connection_capacity import connect
 
-            return psycopg.connect(cloud_bundle.dsn or settings.database_url)
+            return connect(cloud_bundle.dsn or settings.database_url, lane="control")
 
         safety_net = WorkerSafetyNet(
             namespace=active_namespace,

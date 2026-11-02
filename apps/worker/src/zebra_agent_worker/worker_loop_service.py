@@ -16,6 +16,7 @@ from agent_runtime.stream_hint_relay import StreamHintRelay
 from agent_storage import (
     LeaseConflictError,
 )
+from agent_storage.postgres.connection_pool import postgres_context
 
 from zebra_agent_worker.ag_ui_projection_work import AgUiProjectionWorkService
 from zebra_agent_worker.child_wakeup import ChildCompletionWakeupService
@@ -302,7 +303,7 @@ class WorkerLoopService:
                 print("worker Memory delivery failed", file=sys.stderr, flush=True)
 
         thread = Thread(
-            target=deliver,
+            target=postgres_context().run, args=(deliver,),
             name=f"{worker_id}-memory-delivery",
             daemon=True,
         )
@@ -337,7 +338,7 @@ class WorkerLoopService:
                 print("worker memory recovery failed", file=sys.stderr, flush=True)
 
         recovery_thread = Thread(
-            target=recover,
+            target=postgres_context().run, args=(recover,),
             name=f"{worker_id}-cloud-memory-recovery",
             daemon=True,
         )

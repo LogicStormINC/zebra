@@ -1,3 +1,12 @@
+## 2026-11-02 — CA-HA-03B 连接与控制容量候选（Review）
+
+显式可选容量scope覆盖池/直连、API/Worker/child/cleanup/scheduler；控制、只读、探针
+独立预算和有界HTTP线程，实际关闭/完成才归还额度；无新队列/依赖/schema/业务重发。
+广覆盖3102通过/951条件跳过，最终真实PG113/12skip，新增边界定向复验、Helm正反渲染及
+make check通过。[实现与成立条件](docs/CA-HA-03_resource_budgets.md) ·
+[机器记录](docs/evidence/ca-ha-03b/validation.json)。03仍In Progress，E1/运行时fleet漂移/
+独立评审/生产验收未完成；默认关闭，不自动解锁04，不部署或恢复旧环境。
+
 ## 2026-11-02 — CA-HA-03 / 03A候选（非生产HA完成）
 
 Cloud新旧轮询按空/阻塞/错误退避，控制lane独立；共享命令发现/解析复用原Task I/O

@@ -1,0 +1,36 @@
+{
+  "kind": "micro_only_not_E1",
+  "control_requests": 1,
+  "original_get_requests": 20,
+  "control_ms": 39.94895901996642,
+  "read_p50_ms": 31.271667103283107,
+  "read_p95_ms": 32.69124997314066,
+  "read_max_ms": 32.745333039201796,
+  "parent_process_cpu_seconds": 0.2956679999999998,
+  "sql_calls_by_lane": {
+    "control": 13,
+    "read": 120
+  },
+  "capacity": {
+    "active": {
+      "normal": 2,
+      "read": 0,
+      "control": 0,
+      "probe": 0
+    },
+    "peak": {
+      "normal": 2,
+      "read": 1,
+      "control": 1,
+      "probe": 0
+    },
+    "rejected": {
+      "normal": 1,
+      "read": 0,
+      "control": 0,
+      "probe": 0
+    }
+  },
+  "normal_and_pool_fully_held": true,
+  "run_replayed": false
+}

@@ -30,6 +30,14 @@ from psycopg.conninfo import conninfo_to_dict, make_conninfo
 from psycopg.rows import dict_row
 from psycopg_pool import ConnectionPool
 
+from agent_storage.postgres.connection_capacity import (
+    CapacityConnection,
+    ConnectionBudget,
+    capacity_for,
+    current_lane,
+    reserve,
+)
+
 _TASK_IO_DEADLINE: ContextVar[float | None] = ContextVar("task_io_deadline", default=None)
 
 
@@ -111,7 +119,7 @@ def _budgeted[Y, S, R](
                 gen.close()
 
 
-class TaskIoConnection(psycopg.Connection[dict[str, Any]]):
+class TaskIoConnection(CapacityConnection):
     deadline: float
     operation_deadline: float
 
@@ -180,8 +188,9 @@ class TaskIoConnection(psycopg.Connection[dict[str, Any]]):
 class TaskIoConnections:
     """Shared addresses; optional existing callback scope owns short-lived sockets."""
 
-    def __init__(self, dsn: str) -> None:
+    def __init__(self, dsn: str, *, budget: ConnectionBudget | None = None) -> None:
         self._params = conninfo_to_dict(dsn)
+        self._capacity = budget if budget is not None else capacity_for(dsn, strict=False)
         self._attempts: tuple[ConnDict, ...] = ()
         self._resolved_at = 0.0
         self._environment: tuple[tuple[str, str], ...] = ()
@@ -313,6 +322,7 @@ class TaskIoConnections:
             type(deadline) not in (int, float) or not math.isfinite(deadline)
         ):
             raise ValueError("Task storage deadline must be finite")
+        capacity = self._capacity or capacity_for(make_conninfo("", **self._params))
         now = monotonic()
         deadline = (
             min(deadline, now + timeout_seconds) if deadline is not None else now + timeout_seconds
@@ -335,10 +345,12 @@ class TaskIoConnections:
             # ponytail: reuse the existing synchronous scope, never a global pool.
             # Native libpq cancellation bounds later borrows' shorter remaining budget.
             # Older clients keep fresh server timeouts; ordinary sockets never share keys.
-            key = (
+            key: tuple[object, ...] = (
                 "task-io", make_conninfo("", **self._params), client_cursor, environment,
                 None if scope.task_io_only else scoped,
             )
+            if capacity is not None:
+                key += (current_lane(),)
             connection = scope.borrow(
                 key, lambda: self._open(deadline, operation_deadline, client_cursor)
             )
@@ -360,6 +372,13 @@ class TaskIoConnections:
 
     def _open(
         self, deadline: float, operation_deadline: float, client_cursor: bool
+    ) -> TaskIoConnection:
+        capacity = self._capacity or capacity_for(make_conninfo("", **self._params))
+        with reserve(capacity) as permit:
+            return self._connect_attempts(deadline, operation_deadline, client_cursor, permit)
+
+    def _connect_attempts(
+        self, deadline: float, operation_deadline: float, client_cursor: bool, permit: Any
     ) -> TaskIoConnection:
         attempts = self._resolve(operation_deadline)
         failure: psycopg.Error | None = None
@@ -384,11 +403,18 @@ class TaskIoConnections:
             except TimeoutError:
                 self._attempts = ()
                 raise
-            connection.deadline, connection.operation_deadline = deadline, operation_deadline
-            connection.row_factory = dict_row
-            if client_cursor:
-                connection.cursor_factory = ClientCursor
-            return connection
+            if permit is not None:
+                permit.attach(connection)
+            try:
+                connection.deadline, connection.operation_deadline = deadline, operation_deadline
+                connection.row_factory = dict_row
+                if client_cursor:
+                    connection.cursor_factory = ClientCursor
+                return connection
+            except BaseException:
+                with suppress(Exception):
+                    connection.close()
+                raise
         self._attempts = ()
         if failure is not None:
             raise failure

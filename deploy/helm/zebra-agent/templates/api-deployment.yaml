@@ -7,6 +7,13 @@ metadata:
     app.kubernetes.io/component: api
 spec:
   replicas: {{ .Values.api.replicas }}
+  {{- if .Values.databaseBudget.enabled }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  {{- end }}
   revisionHistoryLimit: 3
   selector:
     matchLabels:
@@ -35,8 +42,7 @@ spec:
         - name: api
           image: {{ include "zebra-agent.image" . | quote }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          command: [uvicorn]
-          args: [zebra_agent_api.http:create_http_app, --factory, --host, 0.0.0.0, --port, "8000"]
+          command: [python, -m, zebra_agent_api.server]
           env:
             {{- include "zebra-agent.cloudEnv" . | nindent 12 }}
           ports:
@@ -45,14 +51,14 @@ spec:
               protocol: TCP
           readinessProbe:
             httpGet:
-              path: /health
+              path: {{ ternary "/health/ready" "/health" .Values.databaseBudget.enabled }}
               port: http
             periodSeconds: 10
             timeoutSeconds: 3
             failureThreshold: 6
           livenessProbe:
             httpGet:
-              path: /health
+              path: {{ ternary "/health/live" "/health" .Values.databaseBudget.enabled }}
               port: http
             initialDelaySeconds: 20
             periodSeconds: 20
@@ -60,7 +66,7 @@ spec:
             failureThreshold: 3
           startupProbe:
             httpGet:
-              path: /health
+              path: {{ ternary "/health/live" "/health" .Values.databaseBudget.enabled }}
               port: http
             periodSeconds: 5
             timeoutSeconds: 3

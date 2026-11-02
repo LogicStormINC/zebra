@@ -22,6 +22,7 @@ from agent_runtime.command_wakeup_consumer import (
 from agent_runtime.command_wakeup_quarantine import CommandWakeupQuarantine
 from agent_runtime.command_wakeup_relay import relay_command_batch
 from agent_storage.postgres.command_wakeup_recovery_proof import CoverageRecoveryCheck
+from agent_storage.postgres.connection_pool import postgres_context
 from zebra_agent_config import ZebraAgentSettings
 
 from zebra_agent_worker.command_background import background, outcome_state, safe_trace
@@ -307,7 +308,7 @@ class CommandWorkerProcess:
         async def maintenance() -> None:
             nonlocal recovery_generation, recovery_completed_at
             await loop.run_in_executor(
-                maintenance_pool,
+                maintenance_pool, postgres_context().run,
                 partial(
                     self._maintenance,
                     worker_id=owner,
@@ -316,7 +317,7 @@ class CommandWorkerProcess:
                 ),
             )
             if not stop.is_set():
-                await loop.run_in_executor(maintenance_pool, recovery.tick)
+                await loop.run_in_executor(maintenance_pool, postgres_context().run, recovery.tick)
                 recovery_generation += 1
                 recovery_completed_at = monotonic()
 
@@ -332,7 +333,7 @@ class CommandWorkerProcess:
         jobs = [
             asyncio.create_task(lane_background(maintenance)),
             asyncio.create_task(lane_background(
-                lambda: loop.run_in_executor(cleanup_pool, cleanup)
+                lambda: loop.run_in_executor(cleanup_pool, postgres_context().run, cleanup)
             )),
         ]
         # Canonical controls always have a separate DB lane, even with broker-only execution.
@@ -458,7 +459,7 @@ class CommandWorkerProcess:
                 await (
                     consumer.close()
                 )  # real handoff/execute Future drain, never cancellation-as-drain
-                await loop.run_in_executor(maintenance_pool, self._drain)
+                await loop.run_in_executor(maintenance_pool, postgres_context().run, self._drain)
                 maintenance_pool.shutdown(wait=True)
                 cleanup_pool.shutdown(wait=True)
                 for transport in (subscriber, shadow_subscriber, publisher):

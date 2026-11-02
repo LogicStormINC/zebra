@@ -9,7 +9,6 @@ from time import monotonic
 from typing import Any
 from uuid import NAMESPACE_URL, UUID, uuid5
 
-import psycopg
 from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.task_bindings import require_task_host_context
@@ -17,6 +16,7 @@ from psycopg.rows import dict_row
 
 from agent_storage.postgres.command_read_state import finish_command_read_state
 from agent_storage.postgres.command_runtime_cleanup import CleanupTarget, _target
+from agent_storage.postgres.connection_capacity import connect
 from agent_storage.postgres.database import PostgresDatabase, postgres_deadline
 from agent_storage.postgres.force_stop_executors import executors_exited
 from agent_storage.postgres.force_stop_signal import STOP_REASON, stop_requested
@@ -55,8 +55,9 @@ class PostgresForceStopRecovery:
     def claim(self, sid: UUID) -> Iterator[dict[str, Any] | None]:
         # Session-level advisory lock on a PRIVATE autocommit connection: no open
         # transaction during engine I/O, auto-release on process/connection loss.
-        with psycopg.connect(
-            self.database._dsn, autocommit=True, row_factory=dict_row, connect_timeout=3
+        with connect(
+            self.database._dsn, budget=self.database._capacity, lane="control",
+            autocommit=True, row_factory=dict_row, connect_timeout=3
         ) as connection:
             connection.execute("SET statement_timeout='1500ms'")
             key = f"force-recovery:{self.namespace}:{sid}"

@@ -7,6 +7,8 @@ from time import monotonic
 from typing import Any
 
 from agent_storage import PostgresControlPlaneStores
+from agent_storage.postgres.connection_capacity import capacity_lane
+from agent_storage.postgres.connection_pool import postgres_context
 from agent_storage.postgres.epoch import read_control_plane_epoch
 from agent_storage.postgres.task_io import task_io_deadline
 from fastapi import FastAPI
@@ -23,6 +25,7 @@ class ApiHealth:
         clock: Callable[[], float] = monotonic,
     ) -> None:
         self.api, self.authorizer = api, authorizer
+        self.capacity_close: Callable[[], None] | None = None
         self.check = check if check is not None else self._control_plane_available
         self.clock = clock
         self.thread: Thread | None = None
@@ -39,7 +42,7 @@ class ApiHealth:
         stores = self.api.stores
         if not isinstance(stores, PostgresControlPlaneStores):
             return False
-        with task_io_deadline(monotonic() + 0.75):
+        with capacity_lane("probe"), task_io_deadline(monotonic() + 0.75):
             read_control_plane_epoch(
                 self.api.settings.database_url, deployment_namespace=stores.deployment_namespace
             )
@@ -75,7 +78,9 @@ class ApiHealth:
         with self._lock:
             if self.thread is not None or self._stop.is_set():
                 raise RuntimeError("health observation lifecycle already started or closed")
-            self.thread = Thread(target=self._run, name="api-health", daemon=True)
+            self.thread = Thread(
+                target=postgres_context().run, args=(self._run,), name="api-health", daemon=True
+            )
             self.thread.start()
 
     def _run(self) -> None:
@@ -112,6 +117,8 @@ class ApiHealth:
     @asynccontextmanager
     async def lifespan(self, _app: FastAPI) -> AsyncIterator[None]:
         async with AsyncExitStack() as cleanup:
+            if self.capacity_close is not None:
+                cleanup.callback(self.capacity_close)
             if self.api.stream_notifications is not None:
                 cleanup.push_async_callback(self.api.stream_notifications.close)
             if self.api.stream_v2_reader is not None:

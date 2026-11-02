@@ -60,7 +60,7 @@ def test_migration_api_worker_and_service_boundaries_are_explicit() -> None:
     assert "backoffLimit: 0" in migration
     assert "command: [python, docker/migrate.py]" in migration
     assert "readinessProbe:" in api and "livenessProbe:" in api and "startupProbe:" in api
-    assert "command: [uvicorn]" in api
+    assert "command: [python, -m, zebra_agent_api.server]" in api
     assert "command: [zebra-agent-worker]" in worker
     assert "containerPort: 8000" in api
     assert "targetPort: http" in service
@@ -76,3 +76,12 @@ def test_pdbs_and_templates_never_embed_secret_values() -> None:
     assert "POSTGRES_PASSWORD" not in template_text
     assert "stringData:" not in template_text
     assert "secretKeyRef:" in template_text
+
+
+def test_budget_profiles_cover_rollout_and_private_executors():
+    helper = _read("_helpers.tpl")
+    assert "ZEBRA_DATABASE_BUDGET_JSON" in helper
+    assert 'omit .Values.databaseBudget "enabled"' in helper
+    assert "database budget omits rollout peaks" in helper
+    for path in ("api-deployment.yaml", "worker-deployment.yaml"):
+        assert "maxSurge: 1" in _read(path)

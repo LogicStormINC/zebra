@@ -238,7 +238,7 @@ def test_worker_main_closes_model_client_after_real_process_drain_and_hides_dsn(
     pool_dsns = []
     monkeypatch.setattr(
         main_module, "postgres_pool_scope",
-        lambda dsn: pool_dsns.append(dsn) or nullcontext(),
+        lambda dsn, **options: pool_dsns.append(dsn) or nullcontext(),
     )
     monkeypatch.setattr(main_module, "load_settings", lambda: settings)
     monkeypatch.setattr(main_module.httpx, "Client", Client)

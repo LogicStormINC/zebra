@@ -55,13 +55,13 @@ def main() -> None:
         raise ValueError("isolated execution namespace mismatch")
     factory = request["factory"]
     bundle = None
-    if factory != "default":
-        module, name = factory.split(":")
-        bundle = getattr(importlib.import_module(module), name)(settings, cloud)
     with (
-        postgres_pool_scope(settings.database_url),
+        postgres_pool_scope(settings.database_url, component="executor"),
         httpx.Client(timeout=httpx.Timeout(60, connect=10), trust_env=False) as client,
     ):
+        if factory != "default":
+            module, name = factory.split(":")
+            bundle = getattr(importlib.import_module(module), name)(settings, cloud)
         service = build_worker_loop_service(
             database_path=Path(settings.database_url),
             settings=settings,

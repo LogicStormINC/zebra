@@ -1,15 +1,18 @@
-# CA-HA-03 / 03A — Cloud polling and resource-boundary audit
+# CA-HA-03B — connection capacity
 
-Owner Luke Ding / executor Codex; branch codex/ca-ha-03-budgets; base56ae352a5.
+Owner Luke Ding / Codex; same task, branch and worktree; parent359ee6ca.
 
-1. Trace both Worker compositions, storage pools and independent control lanes.
-2. Claim exact paths and reproduce no-progress polling before code.
-3. Reuse bounded lanes; introduce bounded jittered scheduling delay only.
-4. Verify both real run paths, cancellation and existing admission/fairness behavior.
-5. Record per-process vs aggregate limits, remaining03B requirements and evidence.
+1. Trace all ordinary/direct/Task I/O callers and process/thread entrypoints. Done.
+2. Freeze exact paths; reuse pool, native connection close and ContextVar scope. Done.
+3. Reproduce missing bulkheads; implement explicit opt-in process budgets and fleet arithmetic.
+4. Compose API/Worker/child/cleanup/scheduler and fix Helm/API entrypoint.
+5. Exercise real PG saturation, retained borrows, fail/close behavior and API control/read routing.
+6. Run relevant checks; record remaining dedicated E1 load/independent review; commit candidate.
 
-No production deployment/migration, model calls, old-environment restart or unknown operation replay.
+No production deployment/migration, old-environment restart, business replay, model calls or E1 cluster on Mac.
 
-03A steps1–5 completed: Worker1326/759skip, PG33, make check pass. Candidate Review; no production rollout.
-
-Next: claim03B exact files from docs/CA-HA-03_resource_budgets.md; freeze fleet connection inventory and reserve-control design before implementation. Do not unlock04 or label03Done.
+03B steps1–6 complete as a locally verified candidate; commit recorded by Git history.
+Evidence: docs/evidence/ca-ha-03b/validation.json. No merge/push/deployment.
+Parent03 stays In Progress: dedicated E1 and independent review remain.
+Next: review03A/03B; freeze dedicated test topology/external clients/DB parameters and measure E1.
+Do not run the E1 cluster on this Mac, auto-enable the sample profile, or unlock04 from microtests.

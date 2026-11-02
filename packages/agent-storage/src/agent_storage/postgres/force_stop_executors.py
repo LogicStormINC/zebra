@@ -11,6 +11,7 @@ from agent_core.domain.leases import LeaseLostError
 from psycopg.conninfo import conninfo_to_dict
 from psycopg.rows import dict_row
 
+from agent_storage.postgres.connection_capacity import connect
 from agent_storage.postgres.database import PostgresDatabase
 from agent_storage.postgres.force_stop_signal import STOP_ANCESTRY
 from agent_storage.postgres.leases import assert_current_lease_fence
@@ -21,8 +22,8 @@ def _connection(
 ) -> psycopg.Connection[dict[str, Any]]:
     # Emergency control must not inherit a stuck/expired harness I/O work unit.
     options = str(conninfo_to_dict(database._dsn).get("options") or "")
-    return psycopg.connect(
-        database._dsn,
+    return connect(
+        database._dsn, budget=database._capacity, lane="control",
         row_factory=dict_row,
         connect_timeout=2,
         autocommit=autocommit,

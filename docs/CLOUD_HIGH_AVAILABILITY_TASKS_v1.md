@@ -2,7 +2,7 @@
 
 # Cloud Agent 高可用分阶段任务清单 v1
 
-当前实施：02组合完整门禁和真实PG5已通过并合入cloud-agent；03A轮询/DB读取有界化候选验证通过（Review），03B连接总预算/容量未完成；不代表生产HA或性能达标。
+当前实施：02组合完整门禁和真实PG5已通过并合入cloud-agent；03A/03B候选验证通过（Review），完整E1容量/部署约束仍未验；不代表生产HA或性能达标。
 
 日期2026-10-31；配套[正式方案](CLOUD_HIGH_AVAILABILITY_PLAN_v1.md)。
 本文件是执行拆解，不是已实现能力列表；00已合入并推送cloud-agent，UX文档补充已完成；用户“继续”已授权领取03；其他HA阶段未由本批自动解锁。
@@ -17,7 +17,7 @@
 | CA-HA-00 | 正式方案、任务和文档索引 | Done：已集成推送d782039c | 当前用户授权 | TL/文档 |
 | CA-HA-01 | 固定基线、DDD不变量、SLO与故障合同 | Done：revision 2文档已集成1dd88bfd，非实现 | 00评审并集成，且用户另行授权后续工作 | TL/CORE/QA |
 | CA-HA-02 | API/Worker真实就绪与健康合同 | Done：完整组合门禁/实际PG5通过，代码已入本地cloud-agent | 01 | APP/RUNTIME |
-| CA-HA-03 | 资源预算、空转退避与租户技术隔离 | In Progress：03A候选，03B未完成 | 01、02（共享Worker接线须串行） | RUNTIME/CORE |
+| CA-HA-03 | 资源预算、空转退避与租户技术隔离 | In Progress：03A/03B Review，E1未验 | 01、02（共享Worker接线须串行） | RUNTIME/CORE |
 | CA-HA-04 | 排空、进程隔离、强停与资源回收 | Locked | 02、03；强停候选须独立合入/验收 | RUNTIME/SRE |
 | CA-HA-05 | Worker跨副本接管与旧执行者隔离 | Locked | 03、04 | CORE/存储 |
 | CA-HA-06 | PostgreSQL/对象/Redis/身份依赖容错 | Locked | 02、05 | SRE/存储/安全 |

@@ -12,6 +12,117 @@
     "config"
   ],
   "properties": {
+    "databaseBudget": {
+      "type": "object",
+      "required": [
+        "pool",
+        "normal",
+        "read",
+        "control",
+        "probe",
+        "execution_slots",
+        "enabled",
+        "max_connections",
+        "server_reserved",
+        "external",
+        "fleet"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "pool": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 32
+        },
+        "normal": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 32
+        },
+        "read": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 32
+        },
+        "probe": {"type": "integer", "minimum": 1, "maximum": 32},
+        "control": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 32
+        },
+        "execution_slots": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 32
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "max_connections": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 262143
+        },
+        "server_reserved": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 262143
+        },
+        "external": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 262143
+        },
+        "fleet": {
+          "type": "object",
+          "required": [
+            "api",
+            "worker",
+            "executor",
+            "cleanup",
+            "scheduler"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "api": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 32768
+            },
+            "worker": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 32768
+            },
+            "executor": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 32768
+            },
+            "cleanup": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 32768
+            },
+            "scheduler": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 32768
+            }
+          }
+        }
+      }
+    },
+    "worker": {
+      "$ref": "#/$defs/workload",
+      "properties": {
+        "executionSlots": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 32
+        }
+      }
+    },
     "image": {
       "type": "object",
       "required": ["repository", "digest"],

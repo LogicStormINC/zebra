@@ -34,7 +34,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     # providers use public TLS. Keep their client independent of SSL_CERT_FILE.
     with (
         worker_stop_signals() as stop_requested,
-        (postgres_pool_scope(settings.database_url)
+        (postgres_pool_scope(
+            settings.database_url, component="worker",
+            execution_slots=settings.command_delivery.execution_slots,
+        )
          if settings.storage_authority == "postgresql" else nullcontext()),
         httpx.Client(
             timeout=httpx.Timeout(60.0, connect=10.0),

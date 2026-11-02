@@ -35,6 +35,24 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end -}}
 
 {{- define "zebra-agent.cloudEnv" -}}
+{{- if .Values.databaseBudget.enabled }}
+{{- $b := .Values.databaseBudget }}
+{{- if or (lt (int $b.fleet.api) (int (add .Values.api.replicas 1))) (lt (int $b.fleet.worker) (int (add .Values.worker.replicas 1))) }}
+{{- fail "database budget omits rollout peaks" }}
+{{- end }}
+{{- if or (gt (int .Values.worker.executionSlots) (int $b.execution_slots)) (lt (int $b.fleet.executor) (int (mul $b.fleet.worker $b.execution_slots))) }}
+{{- fail "database budget omits private executors" }}
+{{- end }}
+{{- $processes := add $b.fleet.api $b.fleet.worker $b.fleet.executor $b.fleet.cleanup $b.fleet.scheduler }}
+{{- $sockets := mul $processes (add $b.pool $b.normal $b.read $b.control $b.probe) }}
+{{- if gt (int (add $sockets $b.server_reserved $b.external)) (int $b.max_connections) }}
+{{- fail "database fleet exceeds server connection budget" }}
+{{- end }}
+- name: ZEBRA_DATABASE_BUDGET_JSON
+  value: {{ omit .Values.databaseBudget "enabled" | toJson | quote }}
+{{- end }}
+- name: ZEBRA_COMMAND_EXECUTION_SLOTS
+  value: {{ .Values.worker.executionSlots | quote }}
 - name: ZEBRA_PROFILE
   value: {{ required "profile must be cloud or production" .Values.profile | quote }}
 - name: ZEBRA_DATABASE_URL
