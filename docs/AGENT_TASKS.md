@@ -1,3 +1,16 @@
+# ERP-AUTONOMOUS-ADMIN-RELEASE-20261102
+- Follow-up: only prepared/read ingress; stopped stale candidate when concurrent address migration was detected.
+- Follow-up owned remote paths before ingress migration: only ERP block in /opt/caddy/Caddyfile and frontend ports in /opt/erpnext/zebra-agent/erpnext-override.json; preserve logical site/Grant identities and other ingress routes. User supplied the new server address 192.168.101.7.
+- Status: Done; release evidence integrated into cloud-agent, no-model isolated, real HTTP manifest and browser acceptance passed.
+- Created Ready then claimed In Progress; owner Luke Ding / Codex.
+- Branch codex/erp-autonomous-admin-release-20261102; target cloud-agent.
+- Owned paths: docs/AGENT_TASKS.md, PROGRESS.md, WORKLOG.md,
+  docs/ERP_AUTONOMOUS_ADMIN_20261102.md; private .artifacts/erp-autonomous-admin-20261102/.
+- Scope: ERP consumer administrator mode via existing generic Host grants/manifest policies;
+  no ERP branches in cloud-agent runtime. Isolated no-model acceptance before production activation.
+- Explicit authorization: site-wide cross-user/company/system management, autonomous execution;
+  preserve initiating identity, operation receipts, revocation and original Runs/Search/MCP.
+
 # CA-P7-03A — 可信编排上下文、真实父任务与双工具授权
 - Created Ready then claimed before code; now Review 2026-11-02; human owner Luke Ding / executor Codex. Candidate/source/docs complete; independent161 regressions, changed-file Ruff/mypy and two read-only reviews passed. No real PG/multi-replica/production proof.
 - Branch codex/ca-p7-03a-trusted-context; base cloud-agent 1d3c21d3; isolated worktree /Users/lukeding/.codex/worktrees/ca-p7-03a-trusted-context/zebra-agent.

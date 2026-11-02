@@ -18692,3 +18692,9 @@ Third complete make test11672pass/0fail/3161conditional skips1331.53s (superviso
 FetchedGitHubcloud-agentstill e8a4f10b; clean mainline worktree fast-forwarded to2b908448 afterallrequiredgatespass, no sourceconflicts/unrelatedwork touched. Finaldocs/tasks mark01/02/HA02Done and03Readyunclaimed, preserve old processrecords. Finaldocs/evidence-onlycommit pendingpush withcloud-agent; no deployment/productionmigration/actualERP105orcapacityclaim. Sourcecanonicalfeature92b308bpublished; canonicalmainnotchanged.
 
 Final additional whitespace audit:5 legacy raw test-output files fromnative01/HA02 retainexact published bytes (6ac3d008/d16645aa); their traceback whitespace is not normalized or used toexclude code fromgates. New audit records exactSHA andallotherchangedpaths passdiff whitespace. Finalmakecheck/fulltest/PG remainpassing; no source/config/gate changes.
+
+## 2026-11-02 ERP-AUTONOMOUS-ADMIN-RELEASE-20261102
+按用户显式授权交付站点管理员自主模式；实现位于 canonical zebra-erpnext 的独立任务分支，
+不覆盖 integrations/erpnext 同步导出，不引入 ERP 业务依赖到 Native。源与部署隔离验证、
+174模型计数不变、原Run/搜索/MCP保留，见 docs/ERP_AUTONOMOUS_ADMIN_20261102.md。
+本仓库仅跟踪该授权/兼容决策和发布证据；Native WRITE/Scope策略已有支持，无需新通用抽象。
