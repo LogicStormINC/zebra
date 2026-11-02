@@ -12,6 +12,7 @@ parser.add_argument("node", choices=("vm", "server"))
 parser.add_argument("prepared", type=Path)
 parser.add_argument("output", type=Path)
 parser.add_argument("--image", required=True)
+parser.add_argument("--release")
 args = parser.parse_args()
 assert re.fullmatch(r"sha256:[a-f0-9]{64}", args.image)
 source = args.prepared.resolve()
@@ -19,6 +20,9 @@ out = args.output.resolve()
 out.mkdir(mode=0o700, parents=True, exist_ok=False)
 vm = args.node == "vm"
 root = "/root/zebra-ha-e1-20261102/runtime" if vm else ("/home/ubuntu/zebra-ha-e1-20261102/runtime")
+if args.release is not None:
+    assert re.fullmatch(r"[0-9a-f]{40}", args.release)
+    root = str(Path(root).parent / "releases" / args.release)
 settings = json.loads((source / "credentials.json").read_text())
 rabbit = dict(line.split("=", 1) for line in (source / "rabbit.env").read_text().splitlines())
 names = [
@@ -29,6 +33,12 @@ names = [
     "check_model.py",
     "check_wire.py",
     "metering.py",
+    "worker.py",
+    "e1_composition.py",
+    "prepare_execution.py",
+    "prepare.py",
+    "example-envelope.json",
+    "check_composition.py",
     "app.env",
 ]
 if vm:
@@ -66,6 +76,9 @@ env = {
     "E1_WORKSPACE_VOLUME": "zebra-ha-e1-20261102-workspaces",
     "E1_WORKSPACE_PATH": "/var/lib/docker/volumes/zebra-ha-e1-20261102-workspaces/_data",
     "E1_DATA": "/root/zebra-ha-e1-20261102/data",
+    "E1_REGISTRY_IMAGE": (
+        "registry@sha256:a3d8aaa63ed8681a604f1dea0aa03f100d5895b6a58ace528858a7b332415373"
+    ),
     "E1_CADDY_IMAGE": (
         "caddy@sha256:e70b164da81ef698b3ad19af799ea6086ce6d9e48ed4079eb9fe26f6fbf14ee5"
     ),

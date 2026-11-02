@@ -18829,3 +18829,14 @@ E1容量、实际fleet约束/漂移告警、独立评审及后续旧任务自动
 保留旧Task与旧历史，不生产/测试镜像切换，不声称已供应真实counter或通过E1。
 下一步实现显式操作员fixture组合，用冻结模型max_output_tokens（建议1024，仅测试配置）
 约束实际wire，然后构建两端精确源镜像、小样本新Task，再进入E1包络。
+
+
+## 2026-11-03 — E1 operator source preparation
+
+继续目标回合；新增main受信任factory参数，必须在活pool内构造（PGDatabase捕获pool/capacity）。
+使用既有SessionProcess factory、RuntimeBundle/catalog及管理发布配置，不改业务授权/核心预算。
+默认和本地入口保持；41定向通过及make check、真实Bundle离线counter/模型计量自检通过。
+准备私有mode0600配置生成器、不可覆盖release目录、仅限额loopback registry及独立preflight。
+Registry镜像已拉取，当前新应用仍旧镜像，未进行新Task/发布/eval通过写入或生产切换。
+缺执行配置的初始包不能启动；候选真实image index/source证据后生成UID65532配置并核对两端baseline。
+私有token仅操作员保管；下一步新源镜像构建、真实索引、私有装配、冷切owned staging并验新Task。

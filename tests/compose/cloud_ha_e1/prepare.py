@@ -131,6 +131,8 @@ def main() -> None:
         "ZEBRA_DEEPSEEK_REVIEWER_PROFILE": "deepseek-v4-pro-reviewer-v1",
         "NO_PROXY": "127.0.0.1,localhost,api.deepseek.com",
         "ZEBRA_MODEL_MAX_RETRIES": "0",
+        "ZEBRA_RUNTIME_BUNDLE_CONFIG": "/e1/catalog.json",
+        "ZEBRA_PUBLICATION_MANAGEMENT_CONFIG": "/e1/publication.json",
         "ZEBRA_E2E_MODEL_API_KEY": "synthetic-only",
         "ZEBRA_RABBIT_PUBLISH_ENABLED": "true",
         "ZEBRA_RABBIT_CONSUME_ENABLED": "true",
@@ -176,6 +178,11 @@ def main() -> None:
         "check_model.py",
         "check_wire.py",
         "metering.py",
+        "worker.py",
+        "e1_composition.py",
+        "prepare_execution.py",
+        "check_composition.py",
+        "prepare.py",
         "authority.py",
         "model.py",
         "initialize.py",
@@ -186,6 +193,10 @@ def main() -> None:
         Path(__file__).parents[1] / "cloud_effect_composition/fake_model.py", root / "fake_model.py"
     )
     repository = Path(__file__).resolve().parents[3]
+    shutil.copyfile(
+        repository / "docs/contracts/runtime-bundle-v1/example-envelope.json",
+        root / "example-envelope.json",
+    )
     shutil.copyfile(repository / "docker/rabbitmq/enabled_plugins", root / "enabled_plugins")
     shutil.copyfile(repository / "scripts/provision_rabbitmq.py", root / "provision_rabbitmq.py")
     print("Private synthetic E1 files prepared; no services started.")

@@ -1,0 +1,31 @@
+.....F                                                                   [100%]
+=================================== FAILURES ===================================
+_________________ test_cli_uses_explicit_operator_cloud_bundle _________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10be09040>
+
+    def test_cli_uses_explicit_operator_cloud_bundle(monkeypatch):
+        entry = importlib.import_module("zebra_agent_worker.main")
+        settings = SimpleNamespace(
+            deployment="cloud", web_egress_socks_endpoint=None,
+            storage_authority="postgresql", database_url="unused",
+            command_delivery=SimpleNamespace(execution_slots=1),
+        )
+        service = Mock()
+        service.run.return_value = SimpleNamespace(
+            cycles_completed=1, idle_cycles=1, stop_reason="idle",
+            executed_session_ids=(), skipped_session_ids=(),
+        )
+        builder = Mock(return_value=service)
+        bundle = object()
+        monkeypatch.setattr(entry, "load_settings", lambda: settings)
+        monkeypatch.setattr(entry, "postgres_pool_scope", lambda *a, **kw: nullcontext())
+        monkeypatch.setattr(entry, "build_worker_loop_service", builder)
+>       assert entry.main(["--max-cycles", "1"], cloud_worker_composition=bundle) == 0
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: main() got an unexpected keyword argument 'cloud_worker_composition'
+
+tests/worker/test_cloud_budget_composition.py:120: TypeError
+=========================== short test summary info ============================
+FAILED tests/worker/test_cloud_budget_composition.py::test_cli_uses_explicit_operator_cloud_bundle
+1 failed, 5 passed in 1.46s

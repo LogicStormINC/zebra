@@ -21,6 +21,8 @@ x-app: &app
   volumes:
     - ${E1_ROOT}/tls/ca.crt:/e1/ca.crt:ro
     - ${E1_ROOT}/tls/model.crt:/e1/model.crt:ro
+    - ${E1_ROOT}/execution/catalog.json:/e1/catalog.json:ro
+    - ${E1_ROOT}/execution/publication.json:/e1/publication.json:ro
     - ${E1_ROOT}/tls/ca.crt:/app/.venv/lib/python3.12/site-packages/certifi/cacert.pem:ro
     - workspaces:${E1_WORKSPACE_PATH:?same path on engine and Worker required}
 services:
@@ -29,11 +31,20 @@ services:
     entrypoint: [python, -m, zebra_agent_api.server, --port, '28080']
   worker:
     <<: *app
-    entrypoint: [zebra-agent-worker, --worker-id, '${E1_WORKER_ID:?}', --idle-sleep-seconds, '.1', --health-file, /tmp/worker-health.json]
+    entrypoint: [python, /fixtures/worker.py, --worker-id, '${E1_WORKER_ID:?}', --idle-sleep-seconds, '.1', --health-file, /tmp/worker-health.json]
     group_add: ['${E1_DOCKER_GID:?}']
+    environment:
+      PYTHONPATH: /fixtures
+      ZEBRA_SESSION_PROCESS_FACTORY: e1_composition:compose
     volumes:
       - ${E1_ROOT}/tls/ca.crt:/e1/ca.crt:ro
       - ${E1_ROOT}/tls/model.crt:/e1/model.crt:ro
+      - ${E1_ROOT}/execution/catalog.json:/e1/catalog.json:ro
+      - ${E1_ROOT}/execution/publication.json:/e1/publication.json:ro
+      - ${E1_ROOT}/worker.py:/fixtures/worker.py:ro
+      - ${E1_ROOT}/e1_composition.py:/fixtures/e1_composition.py:ro
+      - ${E1_ROOT}/metering.py:/fixtures/metering.py:ro
+      - ${E1_ROOT}/check_model.py:/fixtures/check_model.py:ro
       - ${E1_ROOT}/tls/ca.crt:/app/.venv/lib/python3.12/site-packages/certifi/cacert.pem:ro
       - workspaces:${E1_WORKSPACE_PATH}
       - /var/run/docker.sock:/var/run/docker.sock
@@ -57,6 +68,24 @@ services:
       - ${E1_ROOT}/tls/server.key:/certs/server.key:ro
       - ${E1_ROOT}/tls/model.crt:/certs/model.crt:ro
       - ${E1_ROOT}/tls/model.key:/certs/model.key:ro
+  registry:
+    logging: *logs
+    profiles: [control]
+    image: ${E1_REGISTRY_IMAGE:?}
+    network_mode: host
+    restart: "no"
+    cpus: .25
+    mem_limit: 384m
+    pids_limit: 128
+    read_only: true
+    cap_drop: [ALL]
+    tmpfs: [/tmp:size=16m]
+    environment:
+      REGISTRY_HTTP_ADDR: 127.0.0.1:28081
+      REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY: /data
+    labels: {zebra.ha.owner: ca-ha-03-e1-20261102}
+    volumes:
+      - ${E1_DATA}/registry:/data
   postgres:
     logging: *logs
     profiles: [control]

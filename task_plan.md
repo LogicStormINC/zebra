@@ -34,3 +34,12 @@ Mac-owned SSH forwards and a single VM control/data plane; not storage/host-fail
     test definitions through existing validated operator services. Update exact image delta
     COPY and source pins, cold promote idle owned staging only, then POST a NEW Task once.
     Full E1 and production HA remain unverified; keep03 In Progress and04 Locked.
+
+11. Operator source prepared: main factory is invoked within its live pool; E1 parent and
+    isolated child share strict counter selection.41 targeted tests, offline real Bundle
+    counter and actual model meter checks pass. Full make check passed.
+12. Before new apps: freeze reviewed source; native delta builds; start only registry after
+    registry-only preflight; publish/verify a real multi-arch image manifest; generate actual
+    private catalog/publication with that digest and source receipts; UID65532 mode0600;
+    publication token operator-only; verify both effective baselines. Then full preflight and
+    idle owned cold promotion. Never run the original failed Task again.

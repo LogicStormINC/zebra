@@ -141,3 +141,44 @@ probe against the old constant-usage service and call it accepted. Use an existi
 RuntimeAssembly/ModelInvocationPolicy cap (e.g.1024 for this fixture), not a proof
 that changes wire or understates its output ceiling. Preserve reservations,
 settlement, single-use grants and the original failed Task.
+
+## Frozen Bundle operator assembly (source candidate)
+
+The initial private node bundle intentionally is not launchable as an app until
+execution approvals are generated. `prepare.py` sets `/e1/catalog.json` and
+`/e1/publication.json`; both must exist before full `verify.py`. Use `--release`
+with a full source SHA to give new scripts/configs their own immutable directory.
+Never overwrite the running model scripts or old private release directory.
+
+1. Build reviewed delta images natively. In the dedicated VM start only the new
+   loopback registry via `verify.py RELEASE --registry-only` then Compose `up -d
+   --no-deps registry`. It is bounded by the existing24GiB data mount and has
+   .25CPU/384MiB, no restart,127.0.0.1:28081 only. Forward only this loopback port
+   over a separately recorded SSH tunnel. Do not modify daemon registry settings.
+2. Push both exact platform images into that private registry; create and inspect
+   their immutable multi-architecture manifest. Record manifest/config/source
+   hashes before using its digest as the engine image pin. This is test registry
+   infrastructure, not registry/storage HA certification.
+3. In the exact candidate image, UID65532, load the final effective app env and
+   run `prepare_execution.py NEW_PRIVATE_OUTPUT --image-digest sha256:...
+   --evidence-digest sha256:...`. Both arguments must come from actual receipts,
+   not offline unit-vector placeholders. Catalog baseline uses the real settings;
+   its two configuration URI fields are excluded by the existing baseline contract.
+4. Keep the raw publication-token in an operator-only private directory, never
+   mount it into API/Worker. Install only catalog.json/publication.json as regular
+   mode0600 files owned65532 at RELEASE/execution/. Check both nodes' effective
+   baseline against the catalog without printing key/config/env contents. Run
+   check_composition.py against the generated assembly; all its checks are offline.
+5. After exact old app processes exit and app PG connections are zero, verify
+   full new release and start only its owned apps/model. Verify source/fixture
+   hashes, native TLS binding/wire probes and fresh readiness. Register the new
+   scoped management trust, materialize through the native management HTTP API,
+   record only actual passed fixture evaluation evidence, then publish through
+   the same gated API. Save operation IDs before requests; reconcile unknowns.
+6. Only then exchange a fresh business grant and POST a NEW Task with the exact
+   published definition_id and definition_environment=test. Each readonly request
+   also needs its own fresh grant. Retain the original failed Task untouched.
+
+The approved model output cap1024 and cumulative budget200000 are synthetic test
+configuration. Runtime uses the existing frozen Bundle, reservation and settlement
+contracts. This does not configure a trusted real-provider tokenizer.

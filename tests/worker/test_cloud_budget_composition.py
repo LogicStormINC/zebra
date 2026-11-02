@@ -1,7 +1,7 @@
 """Operator counters must reach the actual Cloud execution and delegation roots."""
 
 import importlib
-from contextlib import nullcontext
+from contextlib import contextmanager, nullcontext
 from dataclasses import replace
 from types import SimpleNamespace
 from unittest.mock import Mock
@@ -96,5 +96,43 @@ def test_isolated_executor_keeps_native_transport_and_operator_bundle(monkeypatc
     monkeypatch.setattr(entry, "build_worker_loop_service", builder)
     entry.main()
     factory.assert_called_once_with(settings, "cloud")
+    assert builder.call_args.kwargs["cloud_worker_composition"] is bundle
+    assert builder.call_args.kwargs["model_http_client"] is None
+
+
+def test_cli_constructs_operator_bundle_inside_live_pool_scope(monkeypatch):
+    entry = importlib.import_module("zebra_agent_worker.main")
+    settings = SimpleNamespace(
+        deployment="cloud", web_egress_socks_endpoint=None,
+        storage_authority="postgresql", database_url="unused",
+        command_delivery=SimpleNamespace(execution_slots=1),
+    )
+    service = Mock()
+    service.run.return_value = SimpleNamespace(
+        cycles_completed=1, idle_cycles=1, stop_reason="idle",
+        executed_session_ids=(), skipped_session_ids=(),
+    )
+    builder = Mock(return_value=service)
+    bundle = object()
+    monkeypatch.setattr(entry, "load_settings", lambda: settings)
+    monkeypatch.setattr(entry, "postgres_pool_scope", lambda *a, **kw: nullcontext())
+    monkeypatch.setattr(entry, "build_worker_loop_service", builder)
+    active = []
+
+    @contextmanager
+    def pool(*args, **kw):
+        active.append(True)
+        try:
+            yield
+        finally:
+            active.pop()
+
+    def factory(actual):
+        assert actual is settings and active == [True]
+        return bundle
+
+    monkeypatch.setattr(entry, "postgres_pool_scope", pool)
+    assert entry.main(["--max-cycles", "1"], cloud_worker_composition_factory=factory) == 0
+    assert active == []
     assert builder.call_args.kwargs["cloud_worker_composition"] is bundle
     assert builder.call_args.kwargs["model_http_client"] is None

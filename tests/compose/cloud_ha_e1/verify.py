@@ -10,6 +10,7 @@ from urllib.parse import urlsplit
 parser = argparse.ArgumentParser()
 parser.add_argument("root", type=Path)
 parser.add_argument("--control", action="store_true")
+parser.add_argument("--registry-only", action="store_true")
 args = parser.parse_args()
 root = args.root.resolve()
 result = subprocess.run(
@@ -33,6 +34,7 @@ result = subprocess.run(
 config = json.loads(result.stdout)
 assert (root / "check_model.py").is_file()
 for name in (
+    ("registry",) if args.registry_only else
     ("api", "worker", "node-tls", "broker", "authority", "model")
     if args.control
     else ("api", "worker", "node-tls")
@@ -41,7 +43,7 @@ for name in (
         if mount["type"] == "bind":
             path = Path(mount["source"])
             assert path.exists(), "required owned bind source missing"
-            if path.suffix in {".crt", ".key", ".py"} or path.name.endswith("Caddyfile"):
+            if path.suffix in {".crt", ".key", ".py", ".json"} or path.name.endswith("Caddyfile"):
                 assert path.is_file(), "refusing a directory in place of fixture file"
 assert config["name"] == "zebra-ha-e1-20261102"
 for service in config["services"].values():
@@ -63,11 +65,16 @@ assert set(volume["Options"]["o"].split(",")) == {
     "gid=65532",
     "mode=0770",
 }
-for name in ("api", "worker"):
+for name in (() if args.registry_only else ("api", "worker")):
     service = config["services"][name]
     assert float(service["cpus"]) == 2 and int(service["mem_limit"]) == 2 * 1024**3
     assert service["image"].startswith("sha256:")
     env = service["environment"]
+    assert env["ZEBRA_RUNTIME_BUNDLE_CONFIG"] == "/e1/catalog.json"
+    assert env["ZEBRA_PUBLICATION_MANAGEMENT_CONFIG"] == "/e1/publication.json"
+    for filename in ("catalog.json", "publication.json"):
+        info = (root / "execution" / filename).stat()
+        assert info.st_uid == 65532 and info.st_mode & 0o777 in (0o400, 0o600)
     database = urlsplit(env["ZEBRA_DATABASE_URL"])
     assert (database.hostname, database.port, database.path) == ("127.0.0.1", 25432, "/ha_e1")
     assert env["ZEBRA_DEPLOYMENT_NAMESPACE"] == "ha-e1-20261102"
@@ -113,7 +120,16 @@ for name in ("api", "worker"):
     assert total + budget["external"] + budget["server_reserved"] <= budget["max_connections"]
     assert budget["fleet"]["api"] == budget["fleet"]["worker"] == 2
     assert budget["execution_slots"] == 4
-if args.control:
+if args.registry_only:
+    registry = config["services"]["registry"]
+    assert registry["environment"]["REGISTRY_HTTP_ADDR"] == "127.0.0.1:28081"
+    assert registry["image"] == (
+        "registry@sha256:a3d8aaa63ed8681a604f1dea0aa03f100d5895b6a58ace528858a7b332415373"
+    )
+    assert Path(registry["volumes"][0]["source"]) == (
+        Path("/root/zebra-ha-e1-20261102/data/registry")
+    )
+if args.control or args.registry_only:
     data = Path(config["services"]["postgres"]["volumes"][0]["source"]).parent
     assert data == Path("/root/zebra-ha-e1-20261102/data")
     label = subprocess.check_output(["/usr/bin/findmnt", "-n", "-o", "LABEL", str(data)], text=True)

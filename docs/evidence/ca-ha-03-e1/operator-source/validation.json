@@ -1,0 +1,42 @@
+{
+  "task": "CA-HA-03",
+  "parent": "4527de85bc1e71a1204a107c5007b70883bad606",
+  "status": "reviewed_source_only_not_launchable_until_private_assembly",
+  "focused": {
+    "passed": 41,
+    "skipped": 0,
+    "log": "focused.log"
+  },
+  "make_check": {
+    "exit": 0,
+    "typed_sources": 1534,
+    "eval_cases": 30,
+    "log": "make-check.log"
+  },
+  "offline_checks": [
+    "actual Bundle gateway budget ready with synthetic-only key and fixed namespace",
+    "wrong key/client/namespace/database refused",
+    "approval generator RuntimeAssembly and catalog resolve validated using explicit dummy image/evidence unit vectors, never published",
+    "actual synthetic model byte accounting and HTTP cap/body negatives"
+  ],
+  "independent_AI_review": {
+    "critical": 0,
+    "important": 0,
+    "focused_passed": 6,
+    "human_review": false,
+    "scope": "current source and local tests; no host/private artifact access"
+  },
+  "hard_preconditions": [
+    "real exact platform images and common immutable manifest digest",
+    "generate approval from final effective settings inside candidate UID65532",
+    "catalog/publication regular mode0600 UID65532 on both nodes",
+    "verify matching HMAC baseline on both nodes without disclosure",
+    "raw publication token never mounted into API/Worker",
+    "full preflight before new app startup; unknown requests reconciled from original operation IDs"
+  ],
+  "staging_apps_changed": false,
+  "production_changed": false,
+  "new_task_posted": false,
+  "eval_passed_written": false,
+  "HA_complete": false
+}

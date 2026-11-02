@@ -1,7 +1,11 @@
-# Only the two reviewed integration fixes atop the frozen native Rabbit image.
+# Reviewed integration fixes atop the frozen native Rabbit image.
 ARG E1_BASE_IMAGE=zebra-ha-e1-rabbit:9e3cef3b
 FROM ${E1_BASE_IMAGE}
 COPY --chown=65532:65532 docker/migrate.py /app/docker/migrate.py
 COPY --chown=65532:65532 packages/agent-storage/src/agent_storage/postgres/client_effect_recovery.py /app/packages/agent-storage/src/agent_storage/postgres/client_effect_recovery.py
+COPY --chown=65532:65532 apps/worker/src/zebra_agent_worker/cloud_composition.py /app/apps/worker/src/zebra_agent_worker/cloud_composition.py
+COPY --chown=65532:65532 apps/worker/src/zebra_agent_worker/loop.py /app/apps/worker/src/zebra_agent_worker/loop.py
+COPY --chown=65532:65532 apps/worker/src/zebra_agent_worker/main.py /app/apps/worker/src/zebra_agent_worker/main.py
+COPY --chown=65532:65532 apps/worker/src/zebra_agent_worker/session_process_child.py /app/apps/worker/src/zebra_agent_worker/session_process_child.py
 ARG E1_SOURCE_COMMIT
 LABEL org.opencontainers.image.revision=${E1_SOURCE_COMMIT}
