@@ -111,7 +111,7 @@ context传播，不能把main线程pool scope推断为所有线程/直连都受�
   依据[Kubernetes官方Deployment说明](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#rolling-update-deployment)。
   Helm示例为这类重叠按API/Worker各2*replicas预留，执行器随Worker峰值相乘；
   这是声明算术，不是已实施的存活进程准入。开启时使用API包装入口和独立live/ready探针。
-- 示例为每进程11连接、26个声明峰值进程，总286；另预留3+4，合计293<=320。
+- 示例为每进程17连接、26个声明峰值进程，总442；另预留3+4，合计449<=512。
   这是算术示例，不是当前生产参数或调大生产数据库的建议；没有执行服务端参数修改。
 - **当前只允许全新隔离staging安装**：预算开启时Helm upgrade直接拒绝，关闭时升级行为保持。
   在HA08验证生命周期前，预算模式不支持Helm rollback（旧清单可绕过模板guard）、
@@ -162,3 +162,25 @@ LogicStormINC/zebra的runner API返回0个self-hosted runner，environment列表
 192.168.101.7仅确认是既有单台生产主机，未找到kubectl/k3s/microk8s命令；
 这不证明无任何集群，也不足以证明E1的独立节点/故障域。未启动旧环境或调度工作流。
 因此E1仍标记`environment_unverified`，不能用本机微测或该主机替代多节点验收。
+
+
+## E1新环境集成增量（2026-11-03）
+
+用户明确授权服务器/OrbStack创建新测试环境；现有运行中的runsc基础设施只复用引擎，
+不恢复旧工作负载。实际两主机Compose替代不必要的新Kubernetes控制面；各1API+1Worker，
+每角色2CPU/2GiB，slot4。VM独立24GiB数据文件系统、各节点512MiB工作卷；新实例/端口/
+凭据/命名空间均有独立所有权，既有生产未替换。操作步骤见tests/compose/cloud_ha_e1/README.md。
+
+实际校准发现normal直连2不足以容纳空闲维护并发；E1采用pool4/normal8/read2/control2/
+probe1，峰值fleet14，总238+external4+server_reserved3=245<=256。Helm算术示例同步为
+normal8及512声明上限，以覆盖其不同的26进程重叠预算；依旧默认关闭且不是生产参数建议。
+
+另修复两个真实组合问题：独立迁移校验profile后使用已预留external份额；ClientEffectRecovery
+保留原DSN并复用Task I/O，不再用options改写DSN而触发跨身份拒绝。原预算身份比较不放宽。
+定向/真实PG及基线失败边界写入E1证据；现有原生HTTP测试的ScriptedModel缺预算hook，
+用原恢复模块同样复现，不能将其冒充本轮完整原生HTTP验收通过。
+
+能力代表可执行组合，非供应商健康或单Task授权。E1保留原生模型适配器/评审配置，
+仅在自有容器用不可写hosts+只含测试CA的certifi挂载固定到本地TLS替身；无真实模型密钥。
+启动前实查分辨率/对端/证书/标记及反例，所有能力/模型/Coverage结果标记synthetic。
+模型质量、真实Provider、IdP/浏览器及E1完整容量/故障矩阵尚未验收。

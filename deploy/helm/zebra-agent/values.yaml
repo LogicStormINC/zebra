@@ -87,11 +87,11 @@ podAnnotations: {}
 databaseBudget:
   enabled: false
   pool: 2
-  normal: 2
+  normal: 8
   read: 2
   control: 4
   probe: 1
-  max_connections: 320
+  max_connections: 512
   server_reserved: 3
   external: 4
   execution_slots: 4

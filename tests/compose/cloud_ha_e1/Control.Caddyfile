@@ -1,0 +1,22 @@
+{
+ admin off
+ auto_https off
+}
+:28444 {
+ tls /certs/server.crt /certs/server.key
+ handle /authority {
+  reverse_proxy 127.0.0.1:28084
+ }
+ handle {
+  reverse_proxy 127.0.0.1:28083
+ }
+}
+:28443 {
+ tls /certs/server.crt /certs/server.key
+ reverse_proxy https://127.0.0.1:28445 https://192.168.101.7:28445 {
+  lb_policy round_robin
+  transport http {
+   tls_trusted_ca_certs /certs/ca.crt
+  }
+ }
+}

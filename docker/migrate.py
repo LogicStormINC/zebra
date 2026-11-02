@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import time
 
 _MAX_ATTEMPTS = 30
@@ -9,6 +10,15 @@ _RETRY_DELAY_SECONDS = 2
 
 
 def main() -> None:
+    from agent_storage.postgres.capacity_profile import CapacityProfile
+    from agent_storage.postgres.connection_capacity import PROFILE_ENV
+
+    if profile := os.environ.get(PROFILE_ENV):
+        CapacityProfile.parse(profile)
+        # ponytail: this serial operator process uses external capacity; concurrent
+        # operator processes must remain within the declared external reserve.
+        os.environ.pop(PROFILE_ENV)
+
     from zebra_agent_config import load_settings
 
     settings = load_settings()

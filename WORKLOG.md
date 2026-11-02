@@ -1,3 +1,16 @@
+## 2026-11-03 CA-HA-03 E1 provisioning candidate
+
+- 用户明确允许服务器/OrbStack创建新环境；复用运行中引擎，新标签/卷/端口/凭据/数据。
+- 两架构本地镜像+runsc实测，新24GiB文件系统、新库121/NOSUPERUSER/命令切换/对象版本化。
+- 初次门禁失败后启动未中止，立即停本轮实例并修正set-e依赖链；Compose类型、TLS文件owner/
+  Caddy文件能力/tmpfs权限按真实运行修正；原始业务未动。
+- Rabbit身份与原生模型配置要求在实际组合显露；补已有Rabbit extra/拓扑；原生协议替身只在
+  自有容器锁定127对端/测试CA与合成凭据，双节点正反检查及真实SSE解码通过。
+- 发现并修复迁移预算上下文、效果恢复DSN改写两共享入口；恢复真实PG12通过；NativeHTTP
+  ScriptedModel预算hook失败用原模块复现。保留失败记录，不将整组冒充全绿。
+- 当前双API/Worker就绪；维护修复需要新镜像层，后续精确promotion/源hash核验和合成Task。
+- 不执行E1完整负载/生产部署或原Run重放；所有模型/能力/Coverage结果为synthetic。
+
 ## 2026-11-02 CA-HA-03 review follow-up
 
 - 同卡同Owner/branch/worktree，修改前补充API/PG async适配器/列表与旧stream探针Owned paths。

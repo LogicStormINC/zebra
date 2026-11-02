@@ -1,0 +1,94 @@
+FF                                                                       [100%]
+=================================== FAILURES ===================================
+___ test_budgeted_operator_migration_can_read_epoch_without_application_root ___
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10c4efd40>
+
+    def test_budgeted_operator_migration_can_read_epoch_without_application_root(monkeypatch):
+        import zebra_agent_config
+        from agent_storage import runtime_composition
+
+        calls = []
+        monkeypatch.setenv(PROFILE_ENV, json.dumps(profile_data()))
+        monkeypatch.setattr(zebra_agent_config, "load_settings", lambda: SimpleNamespace(
+            storage_authority="postgresql", database_url="dbname=one",
+        ))
+        monkeypatch.setattr(runtime_composition, "cloud_composition_from_environment",
+                            lambda: SimpleNamespace(deployment_namespace="operator-test"))
+        monkeypatch.setattr(migration_runner, "apply_postgres_migrations",
+                            lambda dsn: calls.append("migration"))
+
+        def read_epoch(dsn, **kwargs):
+            assert capacity_for(dsn) is None
+            calls.append("epoch")
+
+        monkeypatch.setattr(epoch, "read_control_plane_epoch", read_epoch)
+>       runpy.run_path("docker/migrate.py", run_name="__main__")
+
+tests/deploy/test_migration_budget.py:34:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+<frozen runpy>:287: in run_path
+    ???
+<frozen runpy>:98: in _run_module_code
+    ???
+<frozen runpy>:88: in _run_code
+    ???
+docker/migrate.py:50: in <module>
+    main()
+docker/migrate.py:35: in main
+    read_control_plane_epoch(
+tests/deploy/test_migration_budget.py:30: in read_epoch
+    assert capacity_for(dsn) is None
+           ^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+dsn = 'dbname=one'
+
+    def capacity_for(dsn: str, *, strict: bool = True) -> ConnectionBudget | None:
+        budget = _budget.get()
+        if budget is not None:
+            if budget.params != conninfo_to_dict(dsn):
+                if strict:
+                    raise ValueError("database connection is outside the composed budget")
+                return None
+        elif strict and os.environ.get(PROFILE_ENV):
+>           raise RuntimeError("database capacity profile has no process composition")
+E           RuntimeError: database capacity profile has no process composition
+
+packages/agent-storage/src/agent_storage/postgres/connection_capacity.py:105: RuntimeError
+_____________ test_operator_does_not_ignore_invalid_budget_profile _____________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10c52eab0>
+
+    def test_operator_does_not_ignore_invalid_budget_profile(monkeypatch):
+        monkeypatch.setenv(PROFILE_ENV, "{")
+        with pytest.raises(ValueError):
+>           runpy.run_path("docker/migrate.py", run_name="__main__")
+
+tests/deploy/test_migration_budget.py:41:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+<frozen runpy>:287: in run_path
+    ???
+<frozen runpy>:98: in _run_module_code
+    ???
+<frozen runpy>:88: in _run_code
+    ???
+docker/migrate.py:50: in <module>
+    main()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def main() -> None:
+        from zebra_agent_config import load_settings
+
+        settings = load_settings()
+        if settings.storage_authority != "postgresql":
+>           raise SystemExit(
+                f"{settings.profile} profile cannot run PostgreSQL migrations"
+            )
+E           SystemExit: local profile cannot run PostgreSQL migrations
+
+docker/migrate.py:16: SystemExit
+=========================== short test summary info ============================
+FAILED tests/deploy/test_migration_budget.py::test_budgeted_operator_migration_can_read_epoch_without_application_root
+FAILED tests/deploy/test_migration_budget.py::test_operator_does_not_ignore_invalid_budget_profile
+2 failed in 1.30s

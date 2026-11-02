@@ -1,0 +1,65 @@
+............F                                                            [100%]
+=================================== FAILURES ===================================
+_ test_native_expiry_has_one_recovery_and_public_result_without_browser_receipt _
+
+metadata_dsn = 'user=ha_qa password=<redacted> dbname=zebra_projection_metadata_2043c1b406544305b785...ll sslrootcert=/Users/lukeding/.codex/worktrees/ca-ha-03-budgets/zebra-agent/.artifacts/cloud-ha-e1/runtime/tls/ca.crt'
+tmp_path = PosixPath('/private/var/folders/qx/n_v9dpmd12dgb9m1s75tjgtm0000gn/T/pytest-of-lukeding/pytest-1111/test_native_expiry_has_one_rec0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10be654f0>
+
+    def test_native_expiry_has_one_recovery_and_public_result_without_browser_receipt(
+        metadata_dsn, tmp_path, monkeypatch
+    ):
+        import zebra_agent_worker.client_tool_gateway as client_gateway
+
+        real_build = client_gateway.build_client_effect_request
+        monkeypatch.setattr(
+            client_gateway,
+            "build_client_effect_request",
+            lambda **kw: real_build(**{**kw, "effect_ttl": timedelta(milliseconds=50)}),
+        )
+        tool = call("app.ui.item.open", {"itemId": "expiry-owned"})
+        profile_id = "zebra-reliable-v2-agui-1.0"
+        app, task, run, initial, original, headers, forwarded, gateway, consumer, request = (
+            native_fixture(
+                metadata_dsn,
+                tmp_path,
+                monkeypatch,
+                [
+                    ScriptedModelResponse(completion=completion(tool)),
+                    _final_response("Deadline observed"),
+                ],
+                profile_id=profile_id,
+            )
+        )
+        assert (
+            consumer().consume_once(worker_id="expiry-first", lease_ttl_seconds=30).status == "executed"
+        )
+>       state = public_state(app, task, run, profile_id)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/api/test_agui_native_recovery_http.py:55:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests/api/agui_native_interaction_fixture.py:369: in public_state
+    os.environ["ZEBRA_STREAM_TEST_REDIS_URL"],
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = environ({'ANTHROPIC_AUTH_TOKEN': '807286282e944c5c8e4e1aa3ae9f7611.HglirQfpAHGypb9A', 'ANTHROPIC_BASE_URL': 'https://o...t_agui_native_recovery_http.py::test_native_expiry_has_one_recovery_and_public_result_without_browser_receipt (call)'})
+key = 'ZEBRA_STREAM_TEST_REDIS_URL'
+
+>   ???
+E   KeyError: 'ZEBRA_STREAM_TEST_REDIS_URL'
+
+<frozen os>:714: KeyError
+------------------------------ Captured log call -------------------------------
+ERROR    zebra_agent_worker.execution_errors:execution_errors.py:70 worker_setup_failed stage=context_prepare session=19b2d41a-bfbf-4e97-a938-0f16fb29167b error_type=WorkerBudgetError
+Traceback (most recent call last):
+  File "/Users/lukeding/.codex/worktrees/ca-ha-03-budgets/zebra-agent/apps/worker/src/zebra_agent_worker/execution.py", line 198, in _execute_claimed_session_once
+    task_budget = prepare_task_budget(
+                  ^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lukeding/.codex/worktrees/ca-ha-03-budgets/zebra-agent/apps/worker/src/zebra_agent_worker/worker_budget.py", line 89, in prepare_task_budget
+    raise WorkerBudgetError("ordinary model transport has no Task budget hook")
+agent_core.ports.worker_budget.WorkerBudgetError: ordinary model transport has no Task budget hook
+=========================== short test summary info ============================
+FAILED tests/api/test_agui_native_recovery_http.py::test_native_expiry_has_one_recovery_and_public_result_without_browser_receipt
+1 failed, 12 passed in 6.47s
