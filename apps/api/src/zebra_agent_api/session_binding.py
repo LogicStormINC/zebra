@@ -26,6 +26,9 @@ from agent_core.domain.task_bindings import (
     host_context_digest,
     require_task_host_context,
 )
+from agent_core.domain.task_bindings import (
+    renew_task_binding_snapshot as renew_task_binding_snapshot,
+)
 from agent_security.host_grant import VerifiedHostGrant
 from agent_storage.postgres.task_admission import load_task_binding, save_task_binding
 
@@ -44,58 +47,6 @@ NO_CONNECTOR_DIGEST = "0" * 64
 
 def envelope_grant_digest(envelope: HostContextEnvelope) -> str:
     return host_context_digest(envelope)
-
-
-def renew_task_binding_snapshot(
-    binding: TaskBindingSnapshot,
-    host_context: HostContextEnvelope,
-    *,
-    authority_issuer: str | None = None,
-    bound_at: datetime | None = None,
-) -> TaskBindingSnapshot:
-    """Create the next immutable revision from one freshly verified Grant."""
-
-    host = binding.host_capability
-    previous = host.host_context
-    if previous is None:
-        raise ValueError("Task binding has no renewable Host context")
-    renewed_at = bound_at or datetime.now(UTC)
-    require_task_host_context(
-        binding,
-        host_context,
-        task_id=binding.task_id,
-        now=renewed_at,
-        authority_issuer=authority_issuer,
-    )
-    if (
-        not set(host_context.scopes).issubset(previous.scopes)
-        # ponytail: Run is a verified request coordinate, not a business ceiling.
-        # Its exact target is checked at the command/observer boundary.
-        or not {
-            ref.key for ref in host_context.resource_refs if ref.resource_type != "run"
-        }.issubset(ref.key for ref in previous.resource_refs if ref.resource_type != "run")
-        or host_context.policy_version != previous.policy_version
-        or any(
-            value > previous.limits.model_dump()[name]
-            for name, value in host_context.limits.model_dump().items()
-        )
-    ):
-        raise ValueError("Host Grant renewal changed frozen authority ceilings")
-    renewed_host = host.model_copy(
-        update={
-            "grant_digest": host_context_digest(host_context),
-            "grant_expires_at": host_context.expires_at,
-            "bound_at": renewed_at,
-            "host_context": host_context,
-        }
-    )
-    return binding.model_copy(
-        update={
-            "host_capability": renewed_host,
-            "binding_revision": binding.binding_revision + 1,
-            "bound_at": renewed_at,
-        }
-    )
 
 
 def renew_host_binding_for_command(

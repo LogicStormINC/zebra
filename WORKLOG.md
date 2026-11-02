@@ -1,3 +1,13 @@
+## 2026-11-03 CA-HA-03 budget renewal source candidate
+
+- Root fix shared at Task-binding persistence: reuse moved Core pure renewal policy, keep API alias.
+- Adjacent CAS, full snapshot and prior SQL/body/ledger agreement required; atomic reference-only move.
+-17 new real-PG pass;46 same-node combined pass;21 unit pass/3 skip; make check pass; AI no major issue.
+- Cross-VM approval had repeated50ms lock timeout, retained as unresolved cross-node acceptance evidence.
+  Native nonroot/read-only QA runner uses existing pure test dependencies and onlyha_qa credentials.
+- Source candidate only. Next dual image/runtime hashes/manifest/native approval and fresh synthetic case.
+  No stale-history migration, old Task resume, quota reset, unknown replay, production cutover or HA04 unlock.
+
 ## 2026-11-03 CA-HA-03 f9 live DNS and renewal boundary
 
 - Two native images each 2140 files/3 symlinks verified; actual OCI manifest27f6b931…;
