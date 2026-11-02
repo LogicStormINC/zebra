@@ -1,0 +1,94 @@
+{
+  "contractVersion": "cloud-force-stop/1",
+  "status": "native-opt-in-accepted",
+  "producerTask": "CLOUD-FORCE-STOP-20261030",
+  "routes": {
+    "request": "POST /tasks/{task_id}/cancel",
+    "progress": "GET /tasks/{task_id}/stop"
+  },
+  "request": {
+    "body": {
+      "force": true
+    },
+    "idempotencyKey": {
+      "required": true,
+      "maxLength": 240,
+      "printableASCII": true
+    }
+  },
+  "authority": {
+    "verifiedHostGrant": true,
+    "freshOnEveryRequest": true,
+    "scope": "agent.run",
+    "frozenTaskBinding": [
+      "issuer",
+      "host_app_id",
+      "namespace",
+      "principal",
+      "thread",
+      "workspace"
+    ],
+    "businessConversationIdAccepted": false,
+    "taskScopedGrantRequired": true,
+    "runNarrowedGrantRejected": true
+  },
+  "response": {
+    "initialStatusCode": 202,
+    "readStatusCode": 200,
+    "fields": [
+      "task_id",
+      "stop_id",
+      "request_accepted",
+      "state",
+      "resources_released",
+      "execution",
+      "lease",
+      "sandbox",
+      "synchronization",
+      "error_code"
+    ],
+    "states": [
+      "not_requested",
+      "requested",
+      "stopping",
+      "stopped",
+      "requires_reconciliation"
+    ],
+    "releaseRequires": {
+      "phase": "done",
+      "execution": "stopped",
+      "lease": "revoked",
+      "sandbox": [
+        "cleaned",
+        "not_required"
+      ],
+      "synchronization": "synchronized"
+    },
+    "privateFieldsExcluded": [
+      "context",
+      "accepted_at",
+      "binding_digest",
+      "authority_issuer",
+      "executor_acks"
+    ]
+  },
+  "boundaries": {
+    "owner": "cloud-agent",
+    "adapters": [
+      "any authorized business host"
+    ],
+    "requiresAGUI": false,
+    "requiresBrowser": false,
+    "requiresModel": false,
+    "stopScope": "authorized Task and proven delegated descendants; no shared Worker kill",
+    "canonicalEventWriteRequiredForAcceptance": false,
+    "uncertainExit": "requires reconciliation; never retry the model",
+    "completedOutputs": "retained; no rollback of already completed external effects"
+  },
+  "releaseGates": {
+    "nativeNoModelAcceptance": "passed",
+    "productionDeployment": "not_performed",
+    "businessAdapterPageAcceptance": "not_performed",
+    "multiHostHA": "not_certified"
+  }
+}

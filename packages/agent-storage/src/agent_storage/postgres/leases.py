@@ -18,6 +18,7 @@ from psycopg import sql
 
 from agent_storage.postgres.database import PostgresDatabase
 from agent_storage.postgres.epoch import PostgresControlPlaneEpochError
+from agent_storage.postgres.force_stop_signal import STOP_ANCESTRY, stop_requested
 
 
 class PostgresLeaseStore(LeaseStorePort):
@@ -106,10 +107,11 @@ def read_current_lease(
     row = connection.execute(
         """SELECT lease.* FROM worker_leases AS lease
         JOIN control_plane_epochs AS authority USING (deployment_namespace)
-        WHERE lease.deployment_namespace = %s AND lease.session_id = %s
+        WHERE lease.deployment_namespace = %(namespace)s AND lease.session_id = %(sid)s
           AND lease.control_plane_epoch = authority.epoch
-          AND lease.released_at IS NULL AND lease.expires_at > clock_timestamp()""",
-        (namespace, session_id),
+          AND lease.released_at IS NULL AND lease.expires_at > clock_timestamp()
+        AND NOT EXISTS(""" + STOP_ANCESTRY + ")",
+        {"namespace": namespace, "sid": session_id},
     ).fetchone()
     return None if row is None else _lease_from_row(row)
 
@@ -133,7 +135,11 @@ def acquire_lease_in_transaction(
     validated_ttl = _validate_ttl(ttl, maximum_ttl)
     owner = PostgresLeaseStore._owner_instance_id(owner_instance_id)
     requested = None if checkpoint is None else PostgresLeaseStore._checkpoint(checkpoint)
+    if stop_requested(connection, deployment_namespace, session_id):
+        raise LeaseConflictError("Task explicitly force-stopped")
     lock_session_lease_boundary(connection, deployment_namespace, session_id)
+    if stop_requested(connection, deployment_namespace, session_id):
+        raise LeaseConflictError("Task explicitly force-stopped")
     epoch = _lock_epoch(connection, deployment_namespace)
     if epoch is None:
         raise PostgresControlPlaneEpochError("control-plane epoch is not bootstrapped")
@@ -233,6 +239,8 @@ def assert_current_lease_fence(
 
     This is a point-in-time check, not a guarantee across later business-row waits.
     """
+    if stop_requested(connection, deployment_namespace, session_id):
+        raise LeaseLostError("Task explicitly force-stopped")
     epoch = _lock_epoch(connection, deployment_namespace)
     if epoch is None or epoch != fence.control_plane_epoch:
         raise LeaseLostError("mutation rejected by the current lease fence")

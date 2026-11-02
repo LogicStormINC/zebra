@@ -1,3 +1,15 @@
+# ERP-CLOUD-FORCE-STOP-RELEASE-20261102
+- Created Ready then claimed In Progress before deployment work; owner Luke Ding / Codex.
+- Branch codex/erp-cloud-force-stop-release-20261102; target cloud-agent.
+- Owned-path addendum before shared-header merge repair: packages/agent-storage/src/agent_storage/postgres/task_replay_headers.py and tests/agent_storage/test_postgres_force_stops.py; re-export one force-aware reader through every existing public entry point and cover terminal mapping.
+- Owned-path addendum before integration conflict resolution: packages/agent-storage/src/agent_storage/postgres/agent_tasks.py (whitespace only); merge Native97463d00 with current orchestration line, preserve both.
+- Owned paths: docs/AGENT_TASKS.md, PROGRESS.md, WORKLOG.md,
+  docs/ERP_CLOUD_FORCE_STOP_RELEASE_20261102.md; private .artifacts/erp-cloud-force-stop-20261102/.
+- Scope: consume native97463d00, complete canonical ERP adapter, isolated no-model acceptance,
+  prepare immutable release and enable managed execution/independent cleanup without touching Search/MCP.
+- Preserve unrelated dirt, original Runs, high thinking/v2 and authority/quota boundaries.
+- Status: Done; production activated after backups/no-active gate; actual no-model UI stop/reload and PG/executor proof passed; no provider/search requests.
+
 # CA-P7-02-assembly — 生产装配：hook 与工具运行时可达（Done / 已推送）
 - Done; 2026-11-02 分支 codex/ca-p7-02-assembly tip e1345c32 已推 origin（基 cloud-agent d417078e）。前序三处接线（9239d76d）的"最后一厘米"：①worker loop.py 在 ChildCompletionWakeupService 构造处同步构造 OrchestrationWakeupHook（同 dsn/namespace）传入 WorkerLoopService——编排 run 推进在生产轮询路径真实可达；wakeup 未配置部署 hook=None 零行为变化。②tool_gateway_runtime 的 build_worker_tool_gateway 增 orchestration_runtime 参数（默认 None）传入 LocalToolGateway——编排器会话工具获得真实端口；普通会话 fail-closed。验证：tests/worker 1296/746 + make check 全绿。**CA-P7-02 自设计→服务→接线→装配全部完成。**
 

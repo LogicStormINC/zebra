@@ -62,12 +62,17 @@ class PostgresProjectionStore(ProjectionStorePort):
             session = self.get_session(session_id)
             return session.status if session is not None else None
         with self._database.connect_task_io() as connection:
+            from agent_storage.postgres.force_stop_signal import STOP_ANCESTRY
+
             row = connection.execute(
-                "SELECT status FROM session_projections "
-                "WHERE deployment_namespace=%s AND session_id=%s",
-                (self._database.deployment_namespace, session_id),
+                "SELECT (SELECT status FROM session_projections WHERE "
+                "deployment_namespace=%(namespace)s AND session_id=%(sid)s) AS status, "
+                "EXISTS(" + STOP_ANCESTRY + ") AS forced",
+                {"namespace": self._database.deployment_namespace, "sid": session_id},
             ).fetchone()
-        return SessionStatus(row["status"]) if row is not None else None
+        if row is not None and row["forced"]:
+            return SessionStatus.CANCELLED
+        return SessionStatus(row["status"]) if row is not None and row["status"] else None
 
     def get_session_namespace(self, session_id: SessionId) -> tuple[bool, str | None]:
         with self._database.connect_task_io(join_work_unit=True) as connection:

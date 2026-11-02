@@ -1,3 +1,43 @@
+Final integration verification: 65 passed /2 optional header_scratch skips before
+shared-reader correction, public-entry12 passed, then final real PG/Linux/OCI/API41
+passed /0skip. Scoped Ruff, mypy15 plus all3 header modules and runtime boundary pass.
+Production fixed97463d00 already had the correct single-reader behavior. No additional
+production change/model/search request during branch integration.
+
+Integration static review found two public Task-header readers after independent
+extractions merged: agent_tasks imported both, silently choosing the stale failure-only
+mapping. Reuse the force-aware reader through task_replay_headers re-export, delete the
+parallel body, and cover all3 public imports for force cancellation, retained complete/
+failed outcomes and ordinary watchdog failure. Production97463d00 was unaffected.
+
+## 2026-11-02 ERP-CLOUD-FORCE-STOP-RELEASE-20261102 — activated and accepted
+
+Server reachable; actual production source remained old safetynet images on v117.
+Canonical ERP retained unpublished ordinary-cancel draft; repaired Task grant/force
+payload/progress proof, unknown intent and post-select view race. No native runtime
+source changes beyond already integrated97463d00. Built immutable source overlays on
+exact existing images, kept physical quota/Host/secret mounts and original env files.
+
+Isolated fresh no-model22 tests pass (2795.3ms, escaped child/sibling/lock/deadline
+coverage). Host backend/config checks plus npm test/build pass; real Worker --check
+294.8ms/no Run. Production pg_dump and ERP transactional backups completed; paused
+admissions, both new/legacy running0/activeleases0, replaced only API/Worker/Host, added
+independent cleanup, restored original admission flags after signed HTTP readiness.
+Final images and private evidence path are in release doc. Native model count175 stays
+unchanged. UI canary neso37nvme uses execute=false/real lease and a trusted pre-provider
+hung factory holding real locks. Actual menu POST once; progress twice; private children
+exit0; rawlease revoked/resources released/canonical cancel1; reload+reopen retains state
+and sends0 new force POST. Search/Yahoo container identity/image/env/start/restarts match
+before, no MCP/Search changes or original Run replay. Owned canary container removed.
+Canonical ERP source committed separately; Cloud release docs integrate locally.
+No push, added provider/search requests, migration, original partial rewrite, or SLA claim.
+
+Integration audit: latest cloud-agent forked from ac8473b3 and did not contain97463d00;
+merge the completed native force-stop slice as well as release docs, retaining current
+orchestration changes. Only code conflict is an empty line in agent_tasks.py. Production
+stays pinned97463d00; latest orchestration is not implicitly deployed. Rerun focused
+no-model regression against the merged checkout before fast-forwarding target.
+
 ## 2026-11-02 CA-P7-02-assembly 生产装配
 
 "谁构造"的答案：wakeup hook 跟随 wakeup 服务（同 dsn/namespace——编排 run 与委派 link 同库

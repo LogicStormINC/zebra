@@ -36,7 +36,8 @@ pytestmark = pytest.mark.skipif(
 @pytest.fixture
 def engine(dsn):
     # captured rechecks the approved local Docker context before resolving an image.
-    image = captured(["docker", "image", "inspect", "--format", "{{.Id}}", "alpine:3.20"]).strip()
+    image_ref = os.environ.get("ZEBRA_RUNTIME_CLEANUP_TEST_IMAGE", "alpine:3.20")
+    image = captured(["docker", "image", "inspect", "--format", "{{.Id}}", image_ref]).strip()
     assert re.fullmatch(r"sha256:[0-9a-f]{64}", image)
     application = f"cleanup-live-{uuid4()}"
     worker_dsn = make_conninfo(dsn, application_name=application)

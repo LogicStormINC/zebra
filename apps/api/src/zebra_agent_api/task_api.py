@@ -249,7 +249,8 @@ def create_task(
     # Missing/legacy indexes still use the existing preparation path.
     task = (
         app.stores.tasks.get_task(TaskId(UUID(session_id)))
-        if isinstance(app.stores, PostgresControlPlaneStores) else None
+        if isinstance(app.stores, PostgresControlPlaneStores)
+        else None
     )
     if task is None:
         task = app.stores.tasks.ensure_for_session(SessionId(UUID(session_id)))
@@ -275,6 +276,14 @@ def mutate_task(
     host_context: HostContextEnvelope | None = None,
     idempotency_key: str | None = None,
 ) -> ApiResponse:
+    if action == "cancel" and "force" in payload:
+        if type(payload["force"]) is not bool:
+            return ApiResponse(400, {"status": "invalid_force_stop"})
+        if payload["force"]:
+            from zebra_agent_api.task_force_stop import force_stop_task
+
+            return force_stop_task(app, task_id, host_context, idempotency_key, payload=payload)
+        payload = {key: value for key, value in payload.items() if key != "force"}
     active = TaskReadApi(app.stores).active_segment(task_id)
     if isinstance(active, ApiResponse):
         return active

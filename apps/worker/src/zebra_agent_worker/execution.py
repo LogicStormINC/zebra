@@ -49,6 +49,7 @@ from zebra_agent_worker.execution_recovery import (
 from zebra_agent_worker.gateway_release import GatewayRelease
 from zebra_agent_worker.host_authority_probe import HostAuthorityUnavailable
 from zebra_agent_worker.host_execution_authority import HostExecutionAuthority
+from zebra_agent_worker.session_process import execute_isolated, process_factory
 from zebra_agent_worker.task_recovery import apply_bound_host_context
 
 
@@ -63,6 +64,23 @@ class SessionExecutionService(SessionExecutionComposition, SessionExecutionEntry
         session_id = claimed.lease.session_id
         if completed := recover_committed_completion(self, claimed, ownership_check, started_at):
             return completed
+        if process_factory(self._settings):
+            try:
+                return execute_isolated(
+                    self,
+                    {
+                        "session_id": str(session_id),
+                        "lease": claimed.lease.model_dump(mode="json"),
+                        "executed_at": started_at.isoformat(),
+                    },
+                )
+            except errors.WorkerExecutorInterrupted:
+                # Result may have committed before IPC failed; never reverse confirmed completion.
+                if completed := recover_committed_completion(
+                    self, claimed, ownership_check, started_at
+                ):
+                    return completed
+                raise
         fresh_authority = None
         if self._settings.host_execution_authority.enabled:
             control_recorder = self._projection_recorder_factory.build(

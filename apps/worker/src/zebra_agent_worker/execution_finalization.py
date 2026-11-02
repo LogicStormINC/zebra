@@ -12,7 +12,6 @@ from agent_core.application import (
 )
 from agent_core.application.execution_authority_replay import current_turn_authority_start
 from agent_core.domain.events import EventActor, EventType, SessionEvent
-from agent_core.domain.plugin_authority import PLUGIN_UNAVAILABLE
 from agent_core.domain.sessions import Session, SessionStatus
 from agent_core.domain.turns import InteractionMode
 from agent_core.harness.models import HarnessAttemptOutcome, HarnessAttemptResult
@@ -26,8 +25,6 @@ from agent_core.ports import (
 from zebra_agent_worker.cloud_memory_finalization import finalize_cloud_memory
 from zebra_agent_worker.execution_errors import (
     CompletionRecoveryPending,
-    WorkerAuthoritySetupUnavailable,
-    WorkerPluginSetupUnavailable,
     is_sequence_race,
     sequence_race_guard,
 )
@@ -38,6 +35,9 @@ from zebra_agent_worker.execution_errors import WorkerExecutionError as WorkerEx
 from zebra_agent_worker.execution_events import (
     DurableHarnessEventRecorder,
     ExecutionInterrupted,
+)
+from zebra_agent_worker.execution_failure_finalization import (
+    finalize_worker_setup_failure as finalize_worker_setup_failure,
 )
 from zebra_agent_worker.execution_turn_close import append_turn_close
 
@@ -375,66 +375,6 @@ def _finalize_execution(
             raise
         print(f"title generation deferred after sequence race: {exc}", file=sys.stderr)
     return recorder.events
-
-
-def finalize_worker_setup_failure(
-    *,
-    recorder: DurableHarnessEventRecorder,
-    event_store: EventStorePort,
-    error: WorkerExecutionError,
-    attempt_number: int = 1,
-) -> ExecutedSession:
-    """Durably close a deterministic setup failure before model execution."""
-
-    plugin_stop = isinstance(error, WorkerPluginSetupUnavailable)
-    suspended_stop = plugin_stop or isinstance(error, WorkerAuthoritySetupUnavailable)
-    stop_reason = (
-        error.reason_code
-        if isinstance(error, WorkerAuthoritySetupUnavailable)
-        else (PLUGIN_UNAVAILABLE if plugin_stop else "worker_setup_failed")
-    )
-    result = HarnessAttemptResult(
-        outcome=HarnessAttemptOutcome.SUSPENDED if suspended_stop else HarnessAttemptOutcome.FAILED,
-        summary=(
-            "沙箱执行环境不可用，任务尚未开始。请检查沙箱运行时配置后重试。"
-            if isinstance(error, RuntimeStartupError)
-            else "Worker execution could not start."
-        ),
-        metadata={
-            "stop_reason": stop_reason,
-            **({"retryable": False} if suspended_stop else {}),
-            "error_type": type(error).__name__,
-            "error_code": "runtime_unavailable"
-            if isinstance(error, RuntimeStartupError)
-            else "worker_setup_failed",
-            **(
-                {"coverage_refusal_reason": error.coverage_refusal_reason.value}
-                if error.coverage_refusal_reason is not None
-                else {}
-            ),
-        },
-    )
-    if recorder.session.status is SessionStatus.READY:
-        recorder.append(
-            EventType.HARNESS_ATTEMPT_STARTED,
-            EventActor.HARNESS,
-            {"attempt_number": attempt_number},
-        )
-    if suspended_stop:
-        recorder.append(
-            EventType.SESSION_SUSPENDED,
-            EventActor.HARNESS,
-            {"reason": stop_reason, "metadata": result.metadata},
-        )
-        return ExecutedSession(recorder.session, recorder.events, result)
-    append_turn_close(
-        recorder=recorder,
-        attempt_result=result,
-        event_store=event_store,
-        interaction_mode=InteractionMode.CONVERSATION,
-        attempt_number=attempt_number,
-    )
-    return ExecutedSession(recorder.session, recorder.events, result)
 
 
 def _child_task_ids(metadata: dict[str, object]) -> list[str] | None:

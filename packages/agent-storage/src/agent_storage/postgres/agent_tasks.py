@@ -430,7 +430,6 @@ class PostgresAgentTaskStore(
         return True
 
 
-
 __all__ = [
     "FencedAgentTaskStorePort",
     "PostgresAgentTaskConflictError",

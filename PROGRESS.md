@@ -1,3 +1,16 @@
+## 2026-11-02 ERP Cloud force-stop production acceptance
+
+Native97463d00 generic isolation/independent cleanup is deployed to ERP v117 with the
+original physical-quota/workspace composition. ERP only signs whole-Task control and
+renders verified progress; new submit is blocked after whole-Task stop. Independent
+snapshot fallback, durable unknown intent, exact release and reload are implemented.
+Fresh Native22 PG/Linux/OCI/API tests and ERP deterministic/npm gates pass. Actual UI
+canary holds native locks and hangs before any provider; one menu force POST terminates
+it and escaped child, revokes raw lease, settles cleanup and canonical cancellation.
+Reload restores release proof with zero new force POST. Global model requests175 stayed
+unchanged; Search/MCP process inventory and original Runs preserved. No full ERP/model/
+HA claim or unrelated size-gate cleanup. [Release evidence](docs/ERP_CLOUD_FORCE_STOP_RELEASE_20261102.md).
+
 # CA-BRIDGE-01A — 管理面任务观察端点（2026-11-01）
 
 overdoze 控制台桥接第一片（跨仓设计稿 task-observations-bridge-design）：新增只读
