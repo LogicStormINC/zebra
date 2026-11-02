@@ -6,8 +6,12 @@
 双节点对端/证书/标记反例和原生SSE/tool/合成usage解码通过，不能证明真实模型质量。
 修复迁移external入口及恢复服务DSN身份；9定向通过、真实PG12通过，1个原生HTTP旧夹具
 在原恢复模块同样因缺预算hook失败，单独记录。[源码回执](docs/evidence/ca-ha-03-e1/source-candidate.json)。
-维护修复尚待构建进长运行测试镜像。E1完整数据/容量/故障矩阵未跑，03不标Done、不解锁04；
-未替换现有生产、迁移生产库或重放原业务Run。
+维护修复已构建并切入两端新测试镜像，四个运行容器2139文件/3符号链接逐项匹配0fd9f0c1；
+双节点TLS live/ready及Worker新鲜控制健康通过。一笔新合成Task获201、完成授权及gVisor创建，
+但原生CLI未配置可信exact-request counter，WorkerBudgetError在发送前拒绝；11事件/1尝试/
+0模型预留/0工具执行，不重跑、不绕过。详见[实际回执](docs/evidence/ca-ha-03-e1/validation.json)。
+E1端到端、完整数据/容量/故障矩阵仍未通过，03不标Done、不解锁04；现有生产未替换、
+未迁移生产库或重放原业务Run；原页面只读200不等同业务流验收。
 
 ## 2026-11-02 — CA-HA-03 独立AI复审修复（Review）
 

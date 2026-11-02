@@ -18804,3 +18804,16 @@ await取消和失败close不早归还；继承PG上下文而非业务授权。�
 广覆盖3102/951skip与后续定向分别留档；Helm正反例与最终check通过。
 见docs/evidence/ca-ha-03b/validation.json；默认关闭、仅本地候选，不合入/推送/生产部署。
 E1容量、实际fleet约束/漂移告警、独立评审及后续旧任务自动核对仍待完成。
+
+
+## 2026-11-03 — E1 exact-image promotion and failed-closed smoke
+
+用户授权新环境；仅冷切换本轮owned测试应用。旧API/Worker均退出、ha_app连接归零后，
+启动0fd9f0c1 delta镜像。四容器2139文件/3符号链接匹配；双端API TLS200及Worker
+控制新鲜度通过，当前维护stdout尾无原DSN拒绝，不构成长时稳定性证明。
+新Task e698a4d3-e12a-4d37-9fd9-1af491aaff10只POST一次201，1尝试到gVisor；
+模型阶段WorkerBudgetError，原生CLI未接可信request counter，模型预留0/工具0。
+保留11事件及失败任务；未重跑或放宽guard。Host Grant本身一次性，后续GET用新grant；
+复用准入grant的两次GET正确403。原生产页面只读200、既有容器保持运行，未替换生产。
+机器回执docs/evidence/ca-ha-03-e1/validation.json；完整E1/真实Provider/存储HA未验。
+下一步通过既有ModelRequestBudgetFactory补齐可信counter组合及其边界检查，再新任务小样本。

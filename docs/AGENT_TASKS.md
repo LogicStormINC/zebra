@@ -215,6 +215,7 @@
 - E1 provisioning slice（2026-11-02实施前）：按用户明确授权从Ready领取In Progress；Owner Luke Ding/Codex，同卡同branch/worktree；候选冻结9e3cef3b。Owned paths新增tests/compose/cloud_ha_e1/、docs/evidence/ca-ha-03-e1/及既有03进度/任务文档；临时源包/密钥仅.artifacts/cloud-ha-e1/（不提交）。允许192.168.101.7和正在运行的OrbStack zebra-gvisor基础设施上创建全新隔离测试实例；不修改/重启旧业务/集群，所有变更以本轮唯一名称/精确ID为界。
 - E1 migration root follow-up（实施前）：集成发现docker/migrate.py继承预算JSON但未进入应用进程scope，epoch bootstrap因此拒绝。新增Owned paths docker/migrate.py、tests/deploy/test_migration_budget.py；仅此操作员组合入口校验完整profile后明确使用已声明external份额，普通应用/Worker guard保持。先红后绿并在新测试库复验，不新增schema或业务重发。
 - E1 recovery DSN owned-path addendum（实施前）：packages/agent-storage/src/agent_storage/postgres/client_effect_recovery.py、tests/agent_storage/test_client_effect_capacity.py。实际新环境发现该共享服务重写DSN options导致被相同数据库预算拒绝；保留原DSN，复用原生Task I/O期限，不放宽authority身份比较；回归及新PG作用域检查。
+- E1运行回执（2026-11-03）：新双主机镜像已切换，源码四容器匹配及双端新鲜健康通过；新Task单次201到gVisor后因原生CLI缺可信request counter在发送前失败关闭。原任务保留不重跑，完整E1未验/03 In Progress/04 Locked。下一片先明确counter组合归属及Owned paths后再实施；不得以估算替换可信计数。见docs/evidence/ca-ha-03-e1/validation.json。
 - E1 plan：复用现有Compose/镜像构建/真实PG/Redis/对象/Broker及确定性模型fixture；服务器与Mac VM各1API+1Worker，角色2CPU/2GiB，slots4；依赖新实例及独立硬磁盘/内存/CPU上限，根连接预算显式完整；先环境就绪再迁移新测试库/小样本，再按E1包络。现有mTLS/runsc仅作为基础设施复用，不恢复旧Workload。
 - Review/E1证据：docs/evidence/ca-ha-03-review/；仅只读核查可用context/runner，不启动旧环境或E1集群，不恢复生产/Overdoze。
 

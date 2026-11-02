@@ -184,3 +184,18 @@ normal8及512声明上限，以覆盖其不同的26进程重叠预算；依旧�
 仅在自有容器用不可写hosts+只含测试CA的certifi挂载固定到本地TLS替身；无真实模型密钥。
 启动前实查分辨率/对端/证书/标记及反例，所有能力/模型/Coverage结果标记synthetic。
 模型质量、真实Provider、IdP/浏览器及E1完整容量/故障矩阵尚未验收。
+
+
+### E1实际镜像与单次Task回执（2026-11-03）
+
+新两端API/Worker已用0fd9f0c1镜像，2139运行文件及3符号链接在四容器匹配；
+API TLS live/ready与Worker控制新鲜度分别验证。旧测试进程退出及ha_app连接归零
+后才冷切换，非滚动发布/重启证明。实际记录见evidence/ca-ha-03-e1/validation.json。
+
+新合成Task仅POST一次201，到授权/gVisor后WorkerBudgetError关闭；原生CLI根组合
+没有可信exact-request counter。model_request_started是意图事件，不代表Provider发送；
+模型预留0、工具0、1尝试、11事件保留。正确修复入口为既有ModelRequestBudgetFactory，
+需另外冻结实施边界并证明计数/输出上界；本片未绕过guard或重跑失败Task。
+
+新环境已建立，但端到端模型执行及完整E1容量/故障矩阵未通过。SSH转发依赖Mac在线，
+控制/数据面单VM，各节点tmpfs工作卷不跨节点持久，不能声称存储或物理主机HA。

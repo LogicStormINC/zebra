@@ -1,3 +1,5 @@
+当前E1回执（2026-11-03）：新Ubuntu/OrbStack双节点建立，四应用源码/双端新鲜健康通过；单次新Task到gVisor后被缺可信counter的预算guard拒绝。完整E1未通过，03仍In Progress、04不解锁；见evidence/ca-ha-03-e1/validation.json。
+
 当前状态（2026-11-02）：HA02组合验收通过并已合入cloud-agent；03用户授权后领取，03A/03B候选Review，独立AI复审问题已修复；完整E1容量/生命周期约束尚未验。生产HA仍未达标。
 
 # Cloud Agent 高可用分阶段任务清单 v1

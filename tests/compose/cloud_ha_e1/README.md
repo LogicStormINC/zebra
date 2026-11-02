@@ -105,3 +105,21 @@ fixture injects ScriptedModel without worker-budget/1. It fails before recovery
 on both the original9e3 recovery module and this candidate. The unchanged recovery
 regressions pass against the separate owned QA database; this fixture failure is
 recorded separately and is not represented as full native HTTP acceptance.
+
+## Actual acceptance boundary (2026-11-03)
+
+See `docs/evidence/ca-ha-03-e1/validation.json`: four running apps match source
+0fd9f0c1; both node TLS probes and fresh Worker control health pass. One NEW Task
+was POSTed once, admitted201 and provisioned gVisor, then failed closed with
+WorkerBudgetError before transport: native CLI composition has no trusted exact
+request counter. Zero model reservations/tool calls; retain the original failure.
+`check_wire.py` proves decoding only, not successful guarded Task execution.
+
+Before another new Task, compose a trusted counter through the existing
+ModelRequestBudgetFactory and verify exact bytes/output bounds. Do not inject a
+heuristic, spoof capabilities, disable budgets or replay the failed Task. Each
+Host Grant is single-use, including GET: exchange a fresh grant per readonly
+request with the same original external bindings. An admission grant replay403
+is expected. E1 full dataset/load/fault/soak remains not run. SSH tunnels depend
+on the Mac; the VM control/data plane is single-node, and tmpfs workspaces are
+not cross-node durable. This environment is not production HA acceptance.
