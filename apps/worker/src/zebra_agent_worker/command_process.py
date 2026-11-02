@@ -29,6 +29,7 @@ from zebra_agent_worker.runtime_factory import pin_cloud_engine
 from zebra_agent_worker.worker_health import WorkerHealth
 from zebra_agent_worker.worker_loop_service import WorkerLoopRunResult
 from zebra_agent_worker.worker_polling import validate_command_cadence, validate_loop_inputs
+from zebra_agent_worker.worker_shutdown import begin_worker_drain
 
 logger = logging.getLogger(__name__)
 QUEUE = "zebra.session.command.ready.q"
@@ -131,6 +132,7 @@ class CommandWorkerProcess:
         consumer: CommandWakeupConsumer | None = None
 
         def stop_new_work() -> None:
+            begin_worker_drain()
             if self._health is not None:
                 self._health.close()
             stop.set()
@@ -470,9 +472,7 @@ class CommandWorkerProcess:
                 await asyncio.gather(*jobs)
                 if callbacks:
                     await asyncio.gather(*tuple(callbacks), return_exceptions=True)
-                await (
-                    consumer.close()
-                )  # real handoff/execute Future drain, never cancellation-as-drain
+                await consumer.close()  # Drain real Futures, never cancellation-as-drain.
                 await loop.run_in_executor(maintenance_pool, self._drain)
                 maintenance_pool.shutdown(wait=True)
                 cleanup_pool.shutdown(wait=True)

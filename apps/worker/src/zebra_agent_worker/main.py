@@ -17,6 +17,7 @@ from zebra_agent_worker.claims import SessionClaimService
 from zebra_agent_worker.loop import WorkerLoopService, build_worker_loop_service
 from zebra_agent_worker.recovery import SessionRecoveryService
 from zebra_agent_worker.resume import SessionResumeService
+from zebra_agent_worker.worker_shutdown import worker_shutdown_deadline
 from zebra_agent_worker.worker_signals import worker_stop_signals
 
 
@@ -33,6 +34,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     # The process may need an internal CA for Host Grant traffic, but model
     # providers use public TLS. Keep their client independent of SSL_CERT_FILE.
     with (
+        worker_shutdown_deadline(enabled=settings.deployment == "cloud"),
         worker_stop_signals() as stop_requested,
         (postgres_pool_scope(settings.database_url)
          if settings.storage_authority == "postgresql" else nullcontext()),

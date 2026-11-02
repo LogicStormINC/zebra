@@ -1,3 +1,17 @@
+# CA-CONCURRENCY-LIFECYCLE-20261102
+
+1. Reproduce queued cancellation publication races with real Future callbacks.
+2. Remove duplicate terminal state; synchronize coordinator fields; preserve callback reentrancy.
+3. Prove cloud graceful drain cannot outlive one process-owned deadline, including dependencies.
+4. Keep real joins/resource ownership until exit; exercise synthetic subprocess deadline failure.
+5. Run affected suites/static gates; record exact evidence and remaining production boundaries.
+
+Completed locally: affected129 passed/5 conditional skips; final signal13 passed; make check passed.
+Owner Luke Ding / Codex; user-authorized local cloud-agent integration.
+Next: reconcile the separate HA03 branch during its future integration; publication/rollout remain separate.
+
+---
+
 # CA-BASELINE-GATE-02 完成；CA-HA-03 Ready
 
 1. canonical规则/所有权/源修复、职责与装配复核、源验证及GitHub候选92b308b已完成。

@@ -4,7 +4,7 @@ import sys
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from threading import Lock, Thread
+from threading import Event, Lock, Thread
 from typing import TYPE_CHECKING
 from uuid import UUID
 
@@ -36,6 +36,7 @@ from zebra_agent_worker.safety_net import WorkerSafetyNet
 from zebra_agent_worker.transient_capacity_maintenance import TransientCapacityMaintenance
 from zebra_agent_worker.worker_health import WorkerHealth
 from zebra_agent_worker.worker_polling import has_remaining_cycles, validate_loop_inputs
+from zebra_agent_worker.worker_shutdown import begin_worker_drain
 
 if TYPE_CHECKING:
     from zebra_agent_worker.runtime_gates import RuntimeGateWorker
@@ -116,6 +117,8 @@ class WorkerLoopService:
         self._stream_hint_relay = stream_hint_relay
         self._relay_at = 0.0
         self._relay_lock = Lock()
+        self._background_lock = Lock()
+        self._stopping = Event()
 
     def _relay_stream_hints(self) -> None:
         if self._stream_hint_relay is None or not self._relay_lock.acquire(blocking=False):
@@ -151,6 +154,8 @@ class WorkerLoopService:
         batch_size: int,
         lease_ttl_seconds: int,
     ) -> None:
+        if self._stopping.is_set():
+            return
         if self._runtime_gates is not None:
             self._runtime_gates.tick()
         if self._transient_capacity is not None:
@@ -165,18 +170,25 @@ class WorkerLoopService:
         )
 
     def drain(self) -> None:
-        if self._runtime_gates is not None:
-            self._runtime_gates.close()
-        if self._transient_capacity is not None:
-            self._transient_capacity.close()
-        if self._stream_hint_relay is not None:
-            self._stream_hint_relay.close()
-        if self._projection_work is not None:
-            self._projection_work.close()
-        if self._cloud_memory_recovery_thread is not None:
-            self._cloud_memory_recovery_thread.join()
-        if self._memory_delivery_thread is not None:
-            self._memory_delivery_thread.join()
+        begin_worker_drain()
+        with self._background_lock:
+            self._stopping.set()
+        failure: Exception | None = None
+        for service in (self._runtime_gates, self._transient_capacity,
+                        self._stream_hint_relay, self._projection_work):
+            try:
+                if service is not None:
+                    service.close()
+            except Exception as error:
+                if failure is None:
+                    failure = error
+                else:
+                    failure.add_note(f"additional worker cleanup failure: {type(error).__name__}")
+        for thread in (self._cloud_memory_recovery_thread, self._memory_delivery_thread):
+            if thread is not None:
+                thread.join()
+        if failure is not None:
+            raise failure
 
     def poll_once(
         self,
@@ -186,6 +198,8 @@ class WorkerLoopService:
         lease_ttl_seconds: int = 30,
         stop_requested: Callable[[], bool] = lambda: False,
     ) -> WorkerLoopCycleResult:
+        if self._stopping.is_set():
+            raise RuntimeError("Worker is stopping")
         if self._runtime_gates is not None:
             self._runtime_gates.tick()
         if self._transient_capacity is not None:
@@ -279,29 +293,34 @@ class WorkerLoopService:
         )
 
     def _start_memory_delivery(self, *, worker_id: str, batch_size: int) -> None:
-        delivery = self._memory_delivery
-        if delivery is None:
-            return
-        active = self._memory_delivery_thread
-        if active is not None and active.is_alive():
-            return
+        with self._background_lock:
+            if self._stopping.is_set():
+                return
+            delivery = self._memory_delivery
+            if delivery is None:
+                return
+            active = self._memory_delivery_thread
+            if active is not None and active.is_alive():
+                return
 
-        def deliver() -> None:
-            try:
-                for _ in range(batch_size):
-                    result = delivery(f"{worker_id}:memory")
-                    if result.status != "completed":
-                        break
-            except Exception:
-                print("worker Memory delivery failed", file=sys.stderr, flush=True)
+            def deliver() -> None:
+                try:
+                    for _ in range(batch_size):
+                        if self._stopping.is_set():
+                            break
+                        result = delivery(f"{worker_id}:memory")
+                        if result.status != "completed":
+                            break
+                except Exception:
+                    print("worker Memory delivery failed", file=sys.stderr, flush=True)
 
-        thread = Thread(
-            target=deliver,
-            name=f"{worker_id}-memory-delivery",
-            daemon=True,
-        )
-        self._memory_delivery_thread = thread
-        thread.start()
+            thread = Thread(
+                target=deliver,
+                name=f"{worker_id}-memory-delivery",
+                daemon=True,
+            )
+            self._memory_delivery_thread = thread
+            thread.start()
 
     def _start_cloud_memory_recovery(
         self,
@@ -310,33 +329,36 @@ class WorkerLoopService:
         batch_size: int,
         lease_ttl_seconds: int,
     ) -> None:
-        if self._cloud_memory_recovery is None:
-            return
-        active = self._cloud_memory_recovery_thread
-        if active is not None and active.is_alive():
-            return
+        with self._background_lock:
+            if self._stopping.is_set():
+                return
+            if self._cloud_memory_recovery is None:
+                return
+            active = self._cloud_memory_recovery_thread
+            if active is not None and active.is_alive():
+                return
 
-        # ponytail: finalization recovery is best-effort background work until
-        # it has its own durable queue; it must never block RUN command polling.
-        def recover() -> None:
-            try:
-                recover_completed_cloud_memory(
-                    worker_id=worker_id,
-                    batch_size=batch_size,
-                    lease_ttl_seconds=lease_ttl_seconds,
-                    recovery=self._cloud_memory_recovery,
-                    projection_store=self._projection_store,
-                )
-            except Exception:
-                print("worker memory recovery failed", file=sys.stderr, flush=True)
+            # ponytail: finalization recovery is best-effort background work until
+            # it has its own durable queue; it must never block RUN command polling.
+            def recover() -> None:
+                try:
+                    recover_completed_cloud_memory(
+                        worker_id=worker_id,
+                        batch_size=batch_size,
+                        lease_ttl_seconds=lease_ttl_seconds,
+                        recovery=self._cloud_memory_recovery,
+                        projection_store=self._projection_store,
+                    )
+                except Exception:
+                    print("worker memory recovery failed", file=sys.stderr, flush=True)
 
-        recovery_thread = Thread(
-            target=recover,
-            name=f"{worker_id}-cloud-memory-recovery",
-            daemon=True,
-        )
-        self._cloud_memory_recovery_thread = recovery_thread
-        recovery_thread.start()
+            recovery_thread = Thread(
+                target=recover,
+                name=f"{worker_id}-cloud-memory-recovery",
+                daemon=True,
+            )
+            self._cloud_memory_recovery_thread = recovery_thread
+            recovery_thread.start()
 
     def _process_child_wakeups(self) -> None:
         """Poll terminal children and emit parent resume commands.
@@ -456,5 +478,12 @@ class WorkerLoopService:
                 skipped_session_ids=tuple(accumulator.skipped_session_ids),
             )
         finally:
+            begin_worker_drain()
             self.health.close()
-            self.drain()
+            primary = sys.exception()
+            try:
+                self.drain()
+            except Exception as error:
+                if primary is None:
+                    raise
+                primary.add_note(f"worker drain failed: {type(error).__name__}")
