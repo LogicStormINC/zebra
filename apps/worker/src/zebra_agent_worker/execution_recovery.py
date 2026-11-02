@@ -28,6 +28,7 @@ from zebra_agent_worker.claims import ClaimedSession
 from zebra_agent_worker.continuation_lifecycle import restore_suspended_session_claim
 from zebra_agent_worker.execution_errors import (
     WorkerAuthoritySetupUnavailable,
+    WorkerInputPreparationUnavailable,
     WorkerPluginSetupUnavailable,
     log_worker_failure,
 )
@@ -259,7 +260,7 @@ def recover_execution_inputs(
             f"strict coverage refused: {exc.reason.value}", coverage_refusal_reason=exc.reason
         ) from None
     except (OSError, ValueError) as exc:
-        raise WorkerExecutionError(str(exc)) from exc
+        raise WorkerInputPreparationUnavailable("execution_input_unavailable") from exc
     return RecoveredExecutionInputs(
         claimed=claimed,
         session_events=session_events,

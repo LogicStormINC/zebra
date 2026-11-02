@@ -1,3 +1,14 @@
+## 2026-11-02 CLOUD-EXECUTOR-STARTUP-20261102
+
+Known execution-input failures now retain a bounded session/fence-bound private IPC receipt
+and suspend as execution_input_unavailable without model dispatch/replay. Unknown exits and
+committed-completion protection retained. Local40 passed/2 conditional skips; exact117 Linux
+and real PostgreSQL44 passed. ERP consumer repair878ed20 deployed with quota/authorization
+intact; corrected bind restart loop, all eight original filesystem identities verified and
+admission restored. Original Run/events/ledger/model count unchanged; no Search/MCP restart.
+Historical inner allocator exception was discarded, so its exact original trigger remains
+unproven. Fresh production model success and HA/SLO not certified. See focused incident doc.
+
 ## 2026-11-02 CA-P7-03C
 
 - 按授权先整合03B：Native7f1f499b、Overdoze e34ecc4；误先推送的3笔既有ERP文档如实记录，无历史重写。

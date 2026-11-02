@@ -77,7 +77,7 @@ class SessionExecutionService(SessionExecutionComposition, SessionExecutionEntry
                         "executed_at": started_at.isoformat(),
                     },
                 )
-            except errors.WorkerExecutorInterrupted:
+            except (errors.WorkerExecutorInterrupted, errors.WorkerInputPreparationUnavailable):
                 # Result may have committed before IPC failed; never reverse confirmed completion.
                 if completed := recover_committed_completion(
                     self, claimed, ownership_check, started_at

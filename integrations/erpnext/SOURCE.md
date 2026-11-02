@@ -31,3 +31,11 @@ legacy manifest shares the aggregate metric contract, bootstrap transport uses c
 ingress, and the no-network release preflight rejects stale source overlays. The exact
 source export keeps Gate02 size/Ruff rules and original frozen manifests. No Runtime
 execution code or historical data was changed by synchronization.
+
+2026-11-02 focused allocator parity port: canonical878ed20
+(`codex/erp-allocator-refusal-20261102`) supplies the signed refusal, bounded helper
+budget, safe diagnostic and exact bind-detection repair. These changes are ported
+into this existing split compatibility tree, not a replacement of its frozen
+originals or an assertion that this entire directory equals canonical main.
+The matching standalone checks are retained; deployed117 acceptance used the
+canonical source overlay recorded in the focused Cloud incident document.

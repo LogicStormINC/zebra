@@ -15,7 +15,10 @@ from agent_runtime.process_supervision import supervise_process
 from agent_runtime.process_supervision import terminate_group as terminate_group
 from pydantic import TypeAdapter
 
-from zebra_agent_worker.execution_errors import WorkerExecutorInterrupted
+from zebra_agent_worker.execution_errors import (
+    WorkerExecutorInterrupted,
+    WorkerInputPreparationUnavailable,
+)
 from zebra_agent_worker.execution_events import ExecutionInterrupted
 from zebra_agent_worker.execution_finalization import ExecutedSession
 
@@ -41,6 +44,44 @@ def supervise(
 ) -> None:
     if supervise_process(process, cancelled, interval=interval, on_exit=on_exit):
         raise ExecutionInterrupted("session cancelled; isolated executor stopped")
+
+
+def input_failure_receipt(request: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "version": 1,
+        "kind": "execution_input_unavailable",
+        "session_id": request["session_id"],
+        "fence": request["lease"]["fence"],
+    }
+
+
+def write_input_failure(result: Path, request: dict[str, Any]) -> None:
+    temporary = result.with_suffix(".error.tmp")
+    temporary.write_text(json.dumps(input_failure_receipt(request)))
+    temporary.replace(result.with_suffix(".error.json"))
+
+
+def require_input_failure(result: Path, request: dict[str, Any]) -> None:
+    receipt = result.with_suffix(".error.json")
+    if not receipt.exists():
+        return
+    try:
+        if receipt.is_symlink() or receipt.stat().st_size > 2048:
+            raise ValueError("invalid failure receipt")
+        with receipt.open("rb") as stream:
+            raw = stream.read(2049)
+        if len(raw) > 2048:
+            raise ValueError("oversize failure receipt")
+        value = json.loads(raw)
+        if (
+            json.dumps(value, sort_keys=True)
+            != json.dumps(input_failure_receipt(request), sort_keys=True)
+            or result.exists()
+        ):
+            raise ValueError("failure receipt conflicts")
+    except (ValueError, OSError) as error:
+        raise WorkerExecutorInterrupted("executor failure proof unavailable") from error
+    raise WorkerInputPreparationUnavailable("execution_input_unavailable")
 
 
 def execute_isolated(service: Any, request: dict[str, Any]) -> ExecutedSession:
@@ -110,6 +151,8 @@ def execute_isolated(service: Any, request: dict[str, Any]) -> ExecutedSession:
 
         with executor_monitor(database, sid) as cancelled:
             supervise(process, cancelled, on_exit=acknowledge)
+        if process.returncode == 0:
+            require_input_failure(result, request)
         if process.returncode != 0 or not result.exists():
             raise WorkerExecutorInterrupted("isolated executor outcome unknown")
         try:

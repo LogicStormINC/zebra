@@ -44,6 +44,10 @@ class WorkerExecutorInterrupted(WorkerExecutionError):
     """Executor outcome is uncertain; retain output and require explicit recovery."""
 
 
+class WorkerInputPreparationUnavailable(WorkerExecutionError):
+    """Input preparation failed before any model/tool dispatch; never auto-replay."""
+
+
 class WorkerPluginSetupUnavailable(WorkerExecutionError):
     """Frozen plugin setup failed; suspend without closing or automatic retry."""
 
