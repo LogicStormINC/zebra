@@ -1,3 +1,13 @@
+## 2026-11-02 CA-P7-03B
+
+- 用户授权整合03A并推进03B：两仓fetch后ff并push，保留Overdoze无关AGENTS.md字节及ERP工作树，无部署。
+- 按登记路径完成两写阶段原准入、持久共享父预算和只读原收据；真实delegate/Task/RUN复用，无新执行状态机。
+- 评审修复full snapshot摘要、子资源双subset、reserved/free双扣、child结算前后复核、STOP祖先和unknown边界。
+- 纯接口回归先red（缺admission参数）后green；最终主代理独立211 passed/14.47s，7源mypy/变更Ruff通过。
+- 暂停/中断后先核状态；独立复验后保存PG全dump和日志再删除唯一ownedPG，未自动恢复旧环境。
+- 默认executor_budget_ready关闭；C必须提供实际累计预算guard/可信usage，B不称生产执行预算完成。
+- 候选交付到独立分支，未合cloud-agent、未部署/迁移生产，后续03C另推进。
+
 ## 2026-11-02 CA-P7-03A
 
 - 独立worktree/base1d3c21d3，先登记Owned paths；按计划实现服务端当前授权scope、真实parent、双工具拒绝边界。

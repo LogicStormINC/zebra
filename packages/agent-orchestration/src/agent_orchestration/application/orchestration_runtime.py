@@ -20,6 +20,7 @@ from agent_orchestration.application.completion_gate import (
     GateInput,
     evaluate_gate,
 )
+from agent_orchestration.application.orchestration_admission import OrchestrationAdmissionPort
 from agent_orchestration.application.orchestration_authority import (
     OrchestrationAction,
     OrchestrationAuthority,
@@ -129,9 +130,11 @@ class OrchestrationRuntime:
         store: OrchestrationStorePort,
         *,
         authorize: OrchestrationAuthorizer | None = None,
+        admission: OrchestrationAdmissionPort | None = None,
     ) -> None:
         self._store = store
         self._authorize = authorize
+        self._admission = admission
 
     @contextmanager
     def _authorized(self, action: OrchestrationAction) -> Iterator[OrchestrationAuthority]:
@@ -177,11 +180,13 @@ class OrchestrationRuntime:
                 raise OrchestrationToolError("orchestration_forbidden", "run binding mismatch")
             if node_key not in {node.proposal.node_key for node in snapshot.nodes}:
                 raise OrchestrationToolError("unknown_node", "node does not belong to this run")
-            # ponytail: no admission/budget transaction yet; 03B supplies real
-            # durable dispatch. Never invent a child or mutate a node meanwhile.
-            raise OrchestrationToolError(
-                "orchestration_dispatch_unavailable", "durable admission is not configured"
-            )
+        # The admission service owns two committed phases. Never wrap it in the
+        # outer authorization work unit; it rechecks authority in both phases.
+        if self._admission is not None:
+            return self._admission.request_task(run_ref=run_ref, node_key=node_key)
+        raise OrchestrationToolError(
+            "orchestration_dispatch_unavailable", "durable admission is not configured"
+        )
 
     # ---------------------------------------------------- loop driver (02B)
     def materialize(self, run_ref: str) -> None:
@@ -258,13 +263,9 @@ class OrchestrationRuntime:
         if gate_input is not None:
             evaluation = evaluate_gate(f"orchestration:{run_ref}", gate_input)
             if evaluation.blocked:
-                raise OrchestrationToolError(
-                    "gate_blocked", evaluation.reason_code
-                )
+                raise OrchestrationToolError("gate_blocked", evaluation.reason_code)
             if not evaluation.passed:
-                raise OrchestrationToolError(
-                    "gate_refused", evaluation.reason_code
-                )
+                raise OrchestrationToolError("gate_refused", evaluation.reason_code)
         self._store.transition_run(
             run_ref, OrchestrationRunStatus.RUNNING, OrchestrationRunStatus.SYNTHESIZING
         )

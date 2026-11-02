@@ -6,6 +6,19 @@
 Native/搜索/MCP不变、模型请求174不变、原Run不迁移。不是全模块业务链/真实模型认证。
 详见 [设计与验收](docs/ERP_AUTONOMOUS_ADMIN_20261102.md)。
 
+## CA-P7-03B — 原准入、持久父预算与只读对账（2026-11-02 / Review）
+
+03A已按用户授权ff整合cloud-agent f7f74302；Overdoze同步main be0851f已推。
+03B新增v120父预算/节点原意图存储，复用现有work_unit和atomic delegation admission：
+真实Task/binding/初始RUN/lineage/node/receipt原子提交；prepared/unknown仅观察，不重派发或释放。
+预算区分批准总额和free；跨run共享、phase2使用原预约，结算原child/link/终态前后核验。
+child资源收窄为父principal+node声明集，完整scope和STOP祖先验证；不改强停独立锁合同。
+独立211项（含真实PG/两个spawn进程/旧委派与强停）通过，变更Ruff/mypy7通过，两轮评审无阻断。
+[正式边界](docs/CA-P7-03B_orchestration_admission.md) / [机器证据](docs/evidence/ca-p7-03b/validation.json)。
+默认executor_budget_ready拒绝；普通Worker累计token/time执行guard及可信usage接线留03C，
+不把冻结限额/fixture就绪检查当实际Worker执行证明。无部署/生产迁移/完整门禁/生产HA。
+本轮ownedPG dump/日志/原收据unknown已保存后移除，未恢复旧环境或触碰业务容器。
+
 ## CA-P7-03A — 可信编排边界修复（2026-11-02，Review）
 
 旧 CA-P7-02 的模块/局部接线交付不代表正常入口闭环。03A 从服务端当前授权 scope
