@@ -1,3 +1,9 @@
+## 2026-11-02 wiring 合入 cloud-agent
+
+ff 已推 origin（纯快进）。**CA-P7-02 全链闭合**：服务本体（31a4e9d2）+ 三处生产接线（9239d76d）。
+worker loop 装配点（谁构造 OrchestrationWakeupHook 传入）是运行集成的最后一厘米——服务与
+钩子已就绪，装配值来自部署配置（dsn+namespace），属部署接线非代码缺口。
+
 ## 2026-11-02 CA-P7-02-wiring 三处生产接线
 
 child_wakeup→complete_node：hook 按 child_task_id 反查 orchestration_nodes（legacy 无绑定=
