@@ -51,6 +51,7 @@ from zebra_agent_worker.host_authority_probe import HostAuthorityUnavailable
 from zebra_agent_worker.host_execution_authority import HostExecutionAuthority
 from zebra_agent_worker.session_process import execute_isolated, process_factory
 from zebra_agent_worker.task_recovery import apply_bound_host_context
+from zebra_agent_worker.worker_budget import BudgetExecutionCheck, prepare_task_budget
 
 
 class SessionExecutionService(SessionExecutionComposition, SessionExecutionEntrypoints):
@@ -61,6 +62,8 @@ class SessionExecutionService(SessionExecutionComposition, SessionExecutionEntry
         started_at: datetime,
         ownership_check: Callable[[], None],
     ) -> ExecutedSession:
+        budget_check = BudgetExecutionCheck(ownership_check)
+        ownership_check = budget_check
         session_id = claimed.lease.session_id
         if completed := recover_committed_completion(self, claimed, ownership_check, started_at):
             return completed
@@ -192,6 +195,9 @@ class SessionExecutionService(SessionExecutionComposition, SessionExecutionEntry
             task_binding = prepared_context.binding
             task = apply_bound_host_context(task, task_binding)
             materialized_context = prepared_context.materialization
+            task_budget = prepare_task_budget(
+                self, claimed, task_binding, attempt_number, model_gateway, task)
+            budget_check.gate = task_budget
         except ExecutionInterrupted:
             return execution_preflight._superseded_by_control_event(authority_recorder)
         except PluginAuthorityUnavailable as exc:
@@ -268,6 +274,7 @@ class SessionExecutionService(SessionExecutionComposition, SessionExecutionEntry
                 instance_factory=bound_instance_factory,
                 binding_loader=self._task_binding_loader,
             )
+            local_tool_gateway.worker_budget = task_budget
             if fresh_authority is not None:
                 local_tool_gateway.authority_check = fresh_authority.check
             tool_gateway = guard_worker_effects(
@@ -393,6 +400,8 @@ class SessionExecutionService(SessionExecutionComposition, SessionExecutionEntry
                 client_effect=client_wakeup,
                 release_gateway=release_gateway,
             )
+            if task_budget is not None:
+                task_budget.check()
             return finish_execution(
                 recorder=recorder,
                 attempt_result=attempt_result,

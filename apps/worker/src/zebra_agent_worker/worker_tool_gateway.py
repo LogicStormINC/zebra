@@ -2,6 +2,7 @@
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from typing import Any
 
 from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.host_effect_receipts import HostEffectReceipt
@@ -67,10 +68,16 @@ class WorkerToolGateway:
     host_media_importer: HostMediaArtifactImporter | None = None
     native_scripts: NativeScriptTools | None = None
     authority_check: Callable[[str, str], None] | None = None
+    worker_budget: Any = None
+    orchestration_enabled: bool = True
 
     @property
     def model_tools(self) -> tuple[ModelToolDefinition, ...]:
         tools = self.local.model_tools
+        if self.worker_budget is not None:
+            tools = tuple(tool for tool in tools if tool.name != "agent.research")
+        if not self.orchestration_enabled:
+            tools = tuple(tool for tool in tools if not tool.name.startswith("orchestration."))
         if not self.web_egress_enabled:
             tools = tuple(tool for tool in tools if tool.name not in NETWORKED_WEB_TOOLS)
         if self.native_scripts is not None:
@@ -202,9 +209,22 @@ class WorkerToolGateway:
         return self.client.reconcile_deferred_result(call, original)
 
     def execute(self, toolCall: ToolCall) -> ToolResult:
+        if self.worker_budget is not None and toolCall.name == "agent.research":
+            self.worker_budget.check()
+            return ToolResult(
+                tool_call_id=toolCall.tool_call_id,
+                status=ToolCallStatus.FAILED,
+                output="Research delegation requires a durable parent budget reservation.",
+                metadata={"reason_code": "worker_budget_delegation_unsupported"},
+            )
+        if self.worker_budget is not None:
+            self.worker_budget.tool_call(str(toolCall.tool_call_id))
         if self.authority_check is not None:
             self.authority_check("tool:" + toolCall.name, str(toolCall.tool_call_id))
-        return self._execute(toolCall)
+        result = self._execute(toolCall)
+        if self.worker_budget is not None:
+            self.worker_budget.check()
+        return result
 
     def _execute(self, tool_call: ToolCall) -> ToolResult:
         if self.native_scripts is not None and tool_call.name in self.native_scripts.names:

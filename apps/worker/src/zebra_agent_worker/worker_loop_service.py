@@ -256,9 +256,7 @@ class WorkerLoopService:
             ) as skip_error:
                 skipped_ids.append(session_id)
                 if self._safety_net is not None:
-                    self._safety_net.note_recovery_failure(
-                        session_id, "session_scan", skip_error
-                    )
+                    self._safety_net.note_recovery_failure(session_id, "session_scan", skip_error)
                 print(
                     f"worker session skipped: session={session_id} "
                     f"reason={type(skip_error).__name__}",
@@ -348,6 +346,11 @@ class WorkerLoopService:
         epoch evaluates.
         """
 
+        if self._orchestration_hook is not None:
+            try:
+                self._orchestration_hook.reconcile_pending()
+            except Exception:
+                print("worker orchestration reconciliation failed", file=sys.stderr, flush=True)
         if self._child_wakeup_service is None:
             return
         from agent_core.domain.identifiers import TaskId

@@ -5,14 +5,12 @@ from collections.abc import Callable, Mapping
 from pathlib import Path
 
 import httpx
-from agent_core.application import SessionTitleService
 from agent_core.domain.identifiers import SessionId
 from agent_core.ports import (
     EffectDispatchPort,
     GovernedMemoryStorePort,
     WorkerProjectionTransactionPort,
 )
-from agent_integrations import build_model_gateway
 from agent_storage import (
     CloudCompositionSettings,
     ControlPlaneStores,
@@ -26,7 +24,6 @@ from psycopg import Connection
 from zebra_agent_config import ZebraAgentSettings
 
 from zebra_agent_worker.ag_ui_composition import configure_agui_projection_work
-from zebra_agent_worker.bundle_assembly import build_bundle_title_service
 from zebra_agent_worker.claims import SessionClaimService
 from zebra_agent_worker.client_effect_runtime import compose_client_runtime
 from zebra_agent_worker.cloud_composition import CloudWorkerComposition, compose_cloud_worker
@@ -36,6 +33,8 @@ from zebra_agent_worker.cloud_memory_recovery import (
 from zebra_agent_worker.command_consumer import SessionCommandConsumer
 from zebra_agent_worker.control import SessionControlService
 from zebra_agent_worker.execution import SessionExecutionService
+from zebra_agent_worker.execution_composition import compose_recovery_titles
+from zebra_agent_worker.execution_tool_gateway import ModelRequestBudgetFactory
 from zebra_agent_worker.live_event_runtime import (
     configure_live_event_delivery,
     configure_stream_hint_relay,
@@ -43,7 +42,6 @@ from zebra_agent_worker.live_event_runtime import (
 from zebra_agent_worker.mcp_composition import compose_worker_mcp
 from zebra_agent_worker.model_call_index import ModelCallIndexer
 from zebra_agent_worker.plugin_composition import compose_worker_plugins
-from zebra_agent_worker.provider_configuration import model_provider_settings
 from zebra_agent_worker.provider_continuation_commit import (
     CloudProviderContinuationCoordinator,
 )
@@ -80,6 +78,7 @@ def build_worker_loop_service(
     model_http_client: httpx.Client | None = None,
     memory_http_client: httpx.Client | None = None,
     memory_environ: Mapping[str, str] | None = None,
+    model_request_budget_factory: ModelRequestBudgetFactory | None = None,
 ) -> WorkerLoopService:
     client_runtime = None
     if settings.mcp_credentials.worker_enabled and settings.storage_authority != "postgresql":
@@ -162,6 +161,7 @@ def build_worker_loop_service(
         )
     else:
         from agent_storage import sqlite_control_plane_stores
+
         active_stores = stores or sqlite_control_plane_stores(database_path)
         cloud_memory_store = None
         active_transaction = worker_projection_transaction
@@ -206,6 +206,7 @@ def build_worker_loop_service(
     delegation_store = None
     if settings.storage_authority == "postgresql":
         from agent_storage.postgres.task_admission import load_session_task_binding as _load_binding
+
         binding_dsn = cloud_bundle.dsn or ""
         if binding_dsn:
 
@@ -235,22 +236,19 @@ def build_worker_loop_service(
                 )
 
     child_wakeup_service = None
-    orchestration_hook = None
+    from zebra_agent_worker.orchestration_wakeup_hook import compose_orchestration
+
+    orchestration_factory, orchestration_hook = compose_orchestration(
+        cloud_bundle.dsn if settings.storage_authority == "postgresql" else None,
+        active_namespace,
+        model_request_budget_factory=model_request_budget_factory,
+    )
     if cloud_memory_store is not None and settings.storage_authority == "postgresql":
         from zebra_agent_worker.child_wakeup import ChildCompletionWakeupService as _Wakeup
 
         wakeup_dsn = cloud_bundle.dsn or ""
-        orchestration_hook = None
         if wakeup_dsn and active_namespace is not None:
             child_wakeup_service = _Wakeup(wakeup_dsn, deployment_namespace=active_namespace)
-            # CA-P7-02 assembly: 同一存储上的编排 run 随终态子一并推进。
-            from zebra_agent_worker.orchestration_wakeup_hook import (
-                OrchestrationWakeupHook,
-            )
-
-            orchestration_hook = OrchestrationWakeupHook(
-                wakeup_dsn, deployment_namespace=active_namespace
-            )
             from agent_storage.postgres.host_connectors import (
                 PostgresHostConnectorRegistry,
             )
@@ -314,6 +312,8 @@ def build_worker_loop_service(
         deployment_namespace=active_namespace,
         task_binding_loader=task_binding_loader,
         transient_output_factory=transient_factory,
+        orchestration_factory=orchestration_factory,
+        model_request_budget_factory=model_request_budget_factory,
         egress_registry=egress_registry,
         delegation_store=delegation_store,
         frozen_manifest_loader=frozen_manifest_loader,
@@ -402,6 +402,7 @@ def build_worker_loop_service(
     if cloud_memory_store is not None:
         assert active_namespace is not None
         assert active_transaction is not None
+        bound_titles, legacy_titles = compose_recovery_titles(settings, model_http_client)
         cloud_memory_recovery = CloudMemoryFinalizationRecovery(
             claim_service=claim_service,
             recorder_factory=recorder_factory,
@@ -412,14 +413,11 @@ def build_worker_loop_service(
             projection_store=execution_stores.sessions,
             workspace_store=execution_stores.workspaces,
             replay_reader=replay_reader,
-            bound_title_service_factory=lambda snapshot: build_bundle_title_service(
-                settings, snapshot, client=model_http_client
-            ),
-            title_service_factory=lambda: SessionTitleService(
-                build_model_gateway(model_provider_settings(settings), client=model_http_client)
-                if model_http_client is not None
-                else build_model_gateway(model_provider_settings(settings))
-            ),
+            bound_title_service_factory=bound_titles,
+            title_service_factory=legacy_titles,
+            paid_title_allowed=orchestration_factory.budgets.paid_title_allowed
+            if orchestration_factory
+            else None,
         )
     client_effect_recovery = None
     if settings.storage_authority == "postgresql":

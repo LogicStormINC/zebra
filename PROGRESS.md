@@ -1,3 +1,14 @@
+## CA-P7-03C — 普通Worker累计预算与正常入口候选（2026-11-02 / Review）
+
+03B已授权整合cloud-agent7f1f499b，Overdoze main e34ecc4；附带ERP文档推送情况见正式记录。
+03C新增v121 Task级持久模型/工具预算，跨Attempt/重启不重置；原预约先落库、unknown不退款/重发，
+严格provider usage、父子共享支出、绝对DB deadline及实际I/O取消。正常入口验证真实发布角色、
+接入03B准入/可信终态usage；原revision终态CAS/失败传播、晚到usage有界恢复，普通角色不获编排工具。
+独立333通过/零跳过，Ruff及24源mypy通过，源码hash无漂移；原PG dump/收据unknown保留后资源已清零。
+[正式边界](docs/CA-P7-03C_worker_budget.md) / [机器证据](docs/evidence/ca-p7-03c/validation.json)。
+默认外部模型仍缺可信输入计数，生产完成仍缺持久gate producer/reader，因此分别失败关闭；
+fixture wire/计数不构成默认DeepSeek或完整Worker进程/跨仓验收。功能候选未整合、未部署/迁移，P7不关闭。
+
 ## 2026-11-02 ERP 站点管理员自主模式
 
 当前明确授权账号的新会话可使用跨用户、跨公司和系统管理能力；复用通用 Cloud Grant/WRITE

@@ -146,6 +146,7 @@ class CloudMemoryFinalizationRecovery:
         workspace_store: WorkspaceProjectionStorePort,
         title_service_factory: Callable[[], SessionTitleService],
         replay_reader: PostgresWorkerReplayReader | None = None,
+        paid_title_allowed: Callable[[SessionId], bool] | None = None,
         bound_title_service_factory: Callable[
             [BundleDefinitionSnapshot], SessionTitleService | None
         ] | None = None,
@@ -162,6 +163,7 @@ class CloudMemoryFinalizationRecovery:
         self._title_service_factory = title_service_factory
         self._bound_title_service_factory = bound_title_service_factory
         self._replay_reader = replay_reader
+        self._paid_title_allowed = paid_title_allowed or (lambda _: True)
 
     def recover(
         self,
@@ -224,6 +226,8 @@ class CloudMemoryFinalizationRecovery:
                 events,
             )
             if any(event.event_type is EventType.SESSION_TITLE_UPDATED for event in events):
+                return True
+            if not self._paid_title_allowed(session_id):
                 return True
             title_service = None
             snapshot = recorder.workspace.definition_snapshot
