@@ -18817,3 +18817,15 @@ E1容量、实际fleet约束/漂移告警、独立评审及后续旧任务自动
 复用准入grant的两次GET正确403。原生产页面只读200、既有容器保持运行，未替换生产。
 机器回执docs/evidence/ca-ha-03-e1/validation.json；完整E1/真实Provider/存储HA未验。
 下一步通过既有ModelRequestBudgetFactory补齐可信counter组合及其边界检查，再新任务小样本。
+
+
+## 2026-11-03 — HA03 trusted budget composition follow-up
+
+上一目标回合属于progress：创建并验明新环境，单次Task失败改变后续动作；目标保持active。
+本轮追踪四个入口及普通/委派counter调用，确认旧同步client首先被guard拒绝，缺counter也是
+独立阻塞。复用现有Cloud组合字段及参数优先级，Cloud根不创建同步client，本地关闭语义保留。
+先红4/绿5；广回归3054/856skip/1旧assert，替换生命周期断言后47/2skip；无源行为再修改，
+未复跑全范围；最终check/AI复审通过。合成meter实际模型函数/HTTP反例通过，见budget-composition证据。
+保留旧Task与旧历史，不生产/测试镜像切换，不声称已供应真实counter或通过E1。
+下一步实现显式操作员fixture组合，用冻结模型max_output_tokens（建议1024，仅测试配置）
+约束实际wire，然后构建两端精确源镜像、小样本新Task，再进入E1包络。

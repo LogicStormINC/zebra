@@ -175,6 +175,7 @@ def main() -> None:
         "verify.py",
         "check_model.py",
         "check_wire.py",
+        "metering.py",
         "authority.py",
         "model.py",
         "initialize.py",

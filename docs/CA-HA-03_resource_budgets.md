@@ -199,3 +199,15 @@ API TLS live/ready与Worker控制新鲜度分别验证。旧测试进程退出�
 
 新环境已建立，但端到端模型执行及完整E1容量/故障矩阵未通过。SSH转发依赖Mac在线，
 控制/数据面单VM，各节点tmpfs工作卷不跨节点持久，不能声称存储或物理主机HA。
+
+
+### 预算组合源修复（2026-11-03，未切镜像）
+
+旧入口还注入普通同步HTTP客户端，先于缺counter被WorkerBudgetError拒绝；原历史回执
+保留，补充原因不表示模型已发送。CloudWorkerComposition新增可选既有factory，默认None，
+显式库调用参数保持优先；普通/委派根继承。CLI及隔离子进程使用原生可取消HTTP，本地不变。
+E1合成模型与proof共用JSON UTF8字节计量，不冒充DeepSeek tokenizer；HTTP解析后重新
+编码计量，guarded调用者另行证明exact wire等于该编码。不是任意HTTP原字节计量承诺。
+输出超过实际max_tokens及超限请求拒绝。自检覆盖实际函数/HTTP与反例，源码评审通过。
+回归范围及已修旧测试分别记录，不能拼成全仓重跑通过。显式fixture组合、模型冻结output cap、
+新镜像与新Task未验；完整E1/生产HA未验。见evidence/ca-ha-03-e1/budget-composition/。

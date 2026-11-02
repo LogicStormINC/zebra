@@ -22,3 +22,15 @@ Do not change existing production, restore old workloads, use real provider keys
 
 Receipts: docs/evidence/ca-ha-03-e1/validation.json. Current environment uses restart=no,
 Mac-owned SSH forwards and a single VM control/data plane; not storage/host-failure HA.
+
+9. Budget composition source candidate completed: optional Cloud bundle counter propagation,
+   cancellable Cloud roots; actual synthetic model byte meter and cap/body checks verified.
+   Broad run3054 pass/856 skip/one obsolete lifecycle assertion; test-only fix followed by
+   47 pass/2 skip and final make check. No source image promotion or Task replay.
+10. Next exact files/actions: add operator composition under tests/compose/cloud_ha_e1/ using
+    compose_cloud_worker+dataclasses.replace(model_request_budget_factory=...), retaining TLS
+    peer/CA/namespace guards. Select model invocation max_output_tokens through an existing
+    frozen RuntimeAssembly/bundle (not a counter-side wire rewrite). Register only synthetic
+    test definitions through existing validated operator services. Update exact image delta
+    COPY and source pins, cold promote idle owned staging only, then POST a NEW Task once.
+    Full E1 and production HA remain unverified; keep03 In Progress and04 Locked.

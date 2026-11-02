@@ -114,6 +114,8 @@ def build_worker_loop_service(
                 cloud_bundle = compose_cloud_worker(cloud_settings)
         else:
             cloud_bundle = cloud_worker_composition
+        if model_request_budget_factory is None:
+            model_request_budget_factory = cloud_bundle.model_request_budget_factory
         if settings.cloud_skill_worker_enabled and (
             cloud_bundle.extensions is None or cloud_bundle.skill_objects is None
         ):

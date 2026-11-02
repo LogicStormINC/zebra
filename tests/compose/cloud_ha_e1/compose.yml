@@ -129,6 +129,7 @@ services:
     volumes:
       - ${E1_ROOT}/fake_model.py:/fixtures/fake_model.py:ro
       - ${E1_ROOT}/model.py:/fixtures/model.py:ro
+      - ${E1_ROOT}/metering.py:/fixtures/metering.py:ro
   authority:
     <<: *app
     profiles: [control]

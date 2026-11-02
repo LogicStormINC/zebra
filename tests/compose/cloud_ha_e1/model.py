@@ -2,10 +2,14 @@
 
 import json
 import runpy
+from http import HTTPStatus
 from http.server import ThreadingHTTPServer
+from pathlib import Path
 from uuid import uuid4
 
-fixture = runpy.run_path("/fixtures/fake_model.py")
+from metering import measured_usage
+
+fixture = runpy.run_path(str(Path(__file__).with_name("fake_model.py")))
 base = fixture["_Handler"]
 original_completion = fixture["_completion"]
 original_completion.__globals__["_TOOL_CALL"]["function"]["arguments"] = json.dumps(
@@ -17,8 +21,8 @@ def completion(request):
     result = original_completion(request)
     result["id"] = f"e1-synthetic-{uuid4()}"
     result["model"] = request.get("model", "deepseek-v4-pro")
-    result["usage"] = {"prompt_tokens": 1, "completion_tokens": 1, "total_tokens": 2}
     result["choices"][0]["message"]["reasoning_content"] = ""
+    result["usage"] = measured_usage(request, result["choices"][0]["message"])
     return result
 
 
@@ -26,6 +30,16 @@ base.do_POST.__globals__["_completion"] = completion
 
 
 class Handler(base):
+    def do_POST(self):  # noqa: N802
+        try:
+            length = int(self.headers.get("Content-Length", "0"))
+            if not 0 < length <= 4 * 1024 * 1024 or self.headers.get("Transfer-Encoding"):
+                raise ValueError("fixture wire outside supported bound")
+            super().do_POST()
+        except ValueError:
+            self.close_connection = True
+            self._write_json(HTTPStatus.BAD_REQUEST, {"error": "fixture_meter_contract_rejected"})
+
     def _write_stream(self, response):
         choice = response["choices"][0]
         delta = dict(choice["message"])

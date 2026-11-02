@@ -28,6 +28,7 @@ names = [
     "verify.py",
     "check_model.py",
     "check_wire.py",
+    "metering.py",
     "app.env",
 ]
 if vm:

@@ -30,8 +30,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     if settings.deployment == "cloud" and settings.web_egress_socks_endpoint is not None:
         probe_egress(settings.web_egress_socks_endpoint)
     database_path = Path(namespace.database or settings.database_url)
-    # The process may need an internal CA for Host Grant traffic, but model
-    # providers use public TLS. Keep their client independent of SSL_CERT_FILE.
+    # Cloud gateways own cancellable native HTTP; a shared synchronous client
+    # cannot satisfy the Task deadline. Preserve the local client and public TLS.
     with (
         worker_stop_signals() as stop_requested,
         (postgres_pool_scope(
@@ -39,10 +39,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             execution_slots=settings.command_delivery.execution_slots,
         )
          if settings.storage_authority == "postgresql" else nullcontext()),
-        httpx.Client(
-            timeout=httpx.Timeout(60.0, connect=10.0),
-            trust_env=False,
-        ) as model_http_client,
+        (httpx.Client(timeout=httpx.Timeout(60.0, connect=10.0), trust_env=False)
+         if settings.deployment != "cloud" else nullcontext()) as model_http_client,
     ):
         loop_service = build_worker_loop_service(
             database_path=database_path,

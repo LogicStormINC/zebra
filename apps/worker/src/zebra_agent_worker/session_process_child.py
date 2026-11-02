@@ -8,7 +8,6 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-import httpx
 from agent_core.domain.leases import LeaseLostError, WorkerLease
 from agent_storage import cloud_composition_from_environment
 from agent_storage.postgres.connection_pool import postgres_pool_scope
@@ -55,10 +54,7 @@ def main() -> None:
         raise ValueError("isolated execution namespace mismatch")
     factory = request["factory"]
     bundle = None
-    with (
-        postgres_pool_scope(settings.database_url, component="executor"),
-        httpx.Client(timeout=httpx.Timeout(60, connect=10), trust_env=False) as client,
-    ):
+    with postgres_pool_scope(settings.database_url, component="executor"):
         if factory != "default":
             module, name = factory.split(":")
             bundle = getattr(importlib.import_module(module), name)(settings, cloud)
@@ -67,7 +63,7 @@ def main() -> None:
             settings=settings,
             cloud_worker_composition=bundle,
             cloud_composition=cloud,
-            model_http_client=client,
+            model_http_client=None,
         )._execution_service
         if check:
             print(

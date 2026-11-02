@@ -1,3 +1,16 @@
+## 2026-11-03 — HA03 E1预算组合续修（源码候选）
+
+进一步追踪0fd旧入口：同步HTTP客户端先触发不可取消传输拒绝，可信counter也未配置；
+上笔WorkerBudgetError的诊断补全，原Task/11事件及历史回执不改、不重跑。
+复用CloudWorkerComposition携带既有计数factory，普通/委派执行根接线，Cloud CLI/子进程
+使用原生可取消I/O，本地保留原客户端。E1模型改为共享规范JSON UTF8字节计量，实际响应
+与预算证明同规则，输出超实际cap/输入超限拒绝；合成单位不代表真实Provider token。
+完整相关回归初次3054通过/856跳过/1条旧生命周期断言失败；更新该断言后定向47通过/2跳过，
+保留排空后关闭DB及DSN脱敏证明，未重跑全范围。最终make check通过，独立AI复核无阻断项。
+[新源码证据](docs/evidence/ca-ha-03-e1/budget-composition/validation.json)。
+未构建/切换本片镜像；显式操作员fixture counter与冻结模型output cap、新Task端到端仍待完成。
+E1完整容量/故障及后续HA阶段未验，03仍In Progress，生产未变。
+
 ## 2026-11-03 — CA-HA-03 E1新环境与组合修复（In Progress）
 
 按用户授权在Ubuntu与现有运行的OrbStack引擎创建新限额实例，双API/双Worker均有就绪证据；

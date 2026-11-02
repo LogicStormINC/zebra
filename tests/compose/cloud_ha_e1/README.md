@@ -123,3 +123,21 @@ request with the same original external bindings. An admission grant replay403
 is expected. E1 full dataset/load/fault/soak remains not run. SSH tunnels depend
 on the Mac; the VM control/data plane is single-node, and tmpfs workspaces are
 not cross-node durable. This environment is not production HA acceptance.
+
+## Meter v2 source candidate (not deployed)
+
+`uv run python tests/compose/cloud_ha_e1/check_metering.py` checks exact request
+bytes/hash, multibyte input, cap/body negatives, the actual provider function and
+HTTP handler. The synthetic unit is compact JSON UTF-8 bytes: normalized request
+and structured message bytes, excluding transport/SSE framing. `prompt_tokens`
+and `completion_tokens` carry these explicitly synthetic units. HTTP re-encodes
+parsed JSON; the guarded caller additionally rejects wire differing from that
+encoding. This is not a DeepSeek tokenizer or arbitrary raw-HTTP byte accounting.
+
+Source wiring now permits the trusted operator Cloud bundle to carry the existing
+ModelRequestBudgetFactory. Defaults still provide none. Explicit fixture factory,
+frozen model output cap and new image/Task checks remain next; do not run this
+probe against the old constant-usage service and call it accepted. Use an existing
+RuntimeAssembly/ModelInvocationPolicy cap (e.g.1024 for this fixture), not a proof
+that changes wire or understates its output ceiling. Preserve reservations,
+settlement, single-use grants and the original failed Task.
