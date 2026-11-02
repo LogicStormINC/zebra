@@ -55,8 +55,13 @@ def _config(path: str | None, namespace: str | None) -> dict[str, Any]:
     if len(raw) > 16384:
         raise ValueError("configuration too large")
     value = json.loads(raw, object_pairs_hook=_unique_object)
-    if not isinstance(value, dict) or set(value) != _FIELDS:
+    if not isinstance(value, dict) or not _FIELDS <= set(value) <= _FIELDS | {
+        "nativeScriptAbi"
+    }:
         raise ValueError("invalid configuration fields")
+    abi = value.get("nativeScriptAbi", "unsupported")
+    if abi not in ("unsupported", "cloud-agent.native-script/1"):
+        raise ValueError("invalid nativeScriptAbi capability")
     for field in ("deploymentId", "deploymentNamespace", "audience", "productId", "environment"):
         if (
             not isinstance(value[field], str)
@@ -172,7 +177,7 @@ def register_runtime_management(
                 "checks": {"database": "not_checked", "worker": "not_checked"},
                 "capabilities": {
                     "bundleManagement": "unsupported",
-                    "nativeScriptAbi": "unsupported",
+                    "nativeScriptAbi": config.get("nativeScriptAbi", "unsupported"),
                 },
             },
             headers={"Cache-Control": "no-store"},
