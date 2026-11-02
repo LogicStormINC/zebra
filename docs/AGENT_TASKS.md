@@ -1,3 +1,7 @@
+# CA-P7-01B — 脚本桥启用路径评估（Done / 评估完成，拆 z1+o1）
+- Done (评估); 2026-11-02 worktree ~/Documents/Codex/2026-11-01/ca-p7-01b（基 cloud-agent a260e87e），设计稿 [script-bridge-enablement-recon](../superpowers/specs/2026-11-02-script-bridge-enablement-recon.md)。核心发现：**脚本桥已建约 95%**——域（ScriptBundle/ScriptRuntimeAssembly）/catalog（ScriptExecutionCatalog /2 含私有源批准）/API（script-validation+script-bundle-validation+script-publication 已在 host_registry 链注册**可调用**）/worker 执行（prepare_native_scripts+ScopedNativeScriptRunner）/eval CLI/6 套合同/ZEBRA_SCRIPT_VALIDATION_CONFIG 配置门全就绪。**仅有两处硬锁**：①zebra 描述符 runtime_management.py:175 硬编码 nativeScriptAbi=unsupported；②overdoze runtime.go:190 身份检查 d.Capabilities.Script != "unsupported" 即拒。关键事实：端点本身无能力门（与 bundle 端点同链可调用），"unsupported"是描述符声明面非执行开关；capabilities.Bundle 同为 unsupported 而 bundle 链一直工作佐证。**启用=协调翻转（z1 描述符翻转+o1 检查放宽两态兼容），比 o1 的 digest 重导出简单——无向量连锁，一处常量+一处检查**。envelope script_abi=Literal["unsupported"] 保持不动（ScriptBundle 层叠其上，base 诚实声明）。拆卡：z1（zebra 翻转，Ready）/o1（overdoze 放宽，Ready 依赖 z1 定值）——可同窗交付。生产风险：production 模式强制 gvisor。
+- 风险：描述符 capabilities 块若被独立合同 pin 则翻转换合同 digest（勘察未发现此 pin）；生产部署须有 gVisor（ERPNext 已验证）。
+
 # ERP-CLOUD-FORCE-STOP-RELEASE-20261102
 - Created Ready then claimed In Progress before deployment work; owner Luke Ding / Codex.
 - Branch codex/erp-cloud-force-stop-release-20261102; target cloud-agent.

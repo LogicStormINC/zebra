@@ -1,3 +1,12 @@
+## 2026-11-02 CA-P7-01B 脚本桥评估
+
+结论反直觉：脚本桥不是未建而是被两处硬锁关着——域/catalog/API/worker/eval/合同/配置六层全就绪
+且端点已可调用（script-validation 批准文件即凭证）。"unsupported"是描述符声明面（overdoze
+verify 身份检查的锚），capabilities.Bundle 同为 unsupported 而 bundle 一直在工作是最强佐证。
+启用=两卡协调翻转（值先约定：真实 ABI 标识从域代码取）。z1 翻转+o1 放宽可同窗——无 o1 那种
+向量/工件连锁。注：基于 a260e87e 评估在新 tip 53faa5f6 重放（force-stop+ERP release 已合入，
+硬锁位置经核实未变）。
+
 Final integration verification: 65 passed /2 optional header_scratch skips before
 shared-reader correction, public-entry12 passed, then final real PG/Linux/OCI/API41
 passed /0skip. Scoped Ruff, mypy15 plus all3 header modules and runtime boundary pass.
