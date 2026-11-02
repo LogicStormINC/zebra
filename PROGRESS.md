@@ -1,3 +1,16 @@
+## 2026-11-03 — HA03双引擎清理路由候选与node2预检
+
+复审发现错误节点可耗尽其他engine清理重试；真实PG原4红后修共享领取，不按Session猜归属：
+ordinary复用已记录revoked fence选择本engine，未获本地义务不延后/扣他方次数；settlement
+仍检查全引擎剩余。force pending按已记frontier路由，但撤租/同步未证实、frontier推进和绝对
+10min到期仍可跨节点推进控制/对账；None engine不消耗已知foreign实例次数。原证据/精确
+删除/最后frontier/绝对期限不变，旧f69不补ACK。Linux同节点PG46（新10）及make check通过，
+独立源码复审无重大问题；engine删除与退出ACK是声明的unit注入，不冒充真实双节点删除。
+Node2完整strict runsc sidecars与Compose插件复用校验后，真实nonroot/readonly/networknone
+校准及2140源码/3链接通过。两个local247静态预检通过，pool3+cleanup2完整预算247<=256，
+原基线HMAC不变。新Worker/cleanup镜像尚未重建、原生新审批/真实双节点流程待验。
+两个逻辑节点共一台Mac，完整E1/HA03未通过、04锁定、生产未改变。证据engine-affinity/。
+
 ## 2026-11-03 — HA03监控容量修复与签名强停验收
 
 仅长驻executor monitor改用既有normal额度；短STOP/exit ACK/register保持control。

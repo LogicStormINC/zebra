@@ -228,3 +228,19 @@ signed e08 stop to reach stopped with execution/lease/sandbox/synchronization
 confirmed. f69 lacks its original exact exit witness and remains in
 requires_reconciliation. Neither old Task was replayed; historical ACKs are not
 fabricated. Full E1 capacity/fault qualification remains open.
+
+
+### Dual-engine cleanup candidate (2026-11-03)
+
+The current local pair needs cleanup2. Pool3/normal8/read2/control2/probe1 and
+fleet2+2+8+2+1 total247 including external4/reserved3, below PG256. Both node
+preflights and unchanged baseline HMAC passed; do not overlap old/new roles.
+Ordinary cleanup routes by the recorded revoked fence, prioritizes its engine,
+and retains all-engine remaining checks. Foreign-only work cannot spend another
+owner's retry/delay budget. Force-stop routing retains shared revocation/sync,
+frontier and absolute10min control even without an engine. Deadline quarantine
+still remains available on any cleaner. Real Linux PG46 and make check passed;
+independent source review found no important issues. The10 new cases fake engine
+removal and inject unit ACK facts; real two-node deletion is still unverified.
+See evidence/ca-ha-03-e1/engine-affinity/validation.json. New images/publication,
+E1 capacity/fault gates, physical/storage HA and production activation are pending.

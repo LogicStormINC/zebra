@@ -48,6 +48,21 @@ services:
       - ${E1_ROOT}/tls/ca.crt:/app/.venv/lib/python3.12/site-packages/certifi/cacert.pem:ro
       - workspaces:${E1_WORKSPACE_PATH}
       - /var/run/docker.sock:/var/run/docker.sock
+  runtime-cleanup:
+    <<: *app
+    entrypoint: [python, -m, zebra_agent_worker.runtime_cleanup_service]
+    cpus: .5
+    mem_limit: 512m
+    pids_limit: 128
+    group_add: ['${E1_DOCKER_GID:?}']
+    volumes:
+      - ${E1_ROOT}/tls/ca.crt:/e1/ca.crt:ro
+      - ${E1_ROOT}/tls/model.crt:/e1/model.crt:ro
+      - ${E1_ROOT}/execution/catalog.json:/e1/catalog.json:ro
+      - ${E1_ROOT}/execution/publication.json:/e1/publication.json:ro
+      - ${E1_ROOT}/tls/ca.crt:/app/.venv/lib/python3.12/site-packages/certifi/cacert.pem:ro
+      - workspaces:${E1_WORKSPACE_PATH}
+      - /var/run/docker.sock:/var/run/docker.sock
   node-tls:
     user: "${E1_CERT_UID:?}:${E1_CERT_GID:?}"
     cap_add: [NET_BIND_SERVICE]

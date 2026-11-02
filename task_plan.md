@@ -1,3 +1,15 @@
+# Current checkpoint — 2026-11-03
+
+CA-HA-03 stays In Progress on the claimed worktree/branch. Monitor capacity2079
+and dual-engine routing source regression are verified (native PG46, make check,
+independent review). Primary still runs engine637; Broker/Authority9a; Ubuntu WAN
+API/Worker held. Fresh OrbStack node2 calibration/source and both local247 static
+preflights pass; no node2 app has started. Source must be frozen and rebuilt into
+exact arch images/common index, then new native approval/publication and cold
+matching-profile apps/cleanup on both local nodes. Preserve original tasks,
+unknown receipts and f69 reconciliation. Full E1 load/fault/soak not_run,04locked,
+no physical/storage HA or production rollout claimed.
+
 # CA-HA-03 — E1 provisioning and integration
 
 Owner Luke Ding / Codex; same task/branch/worktree. Source parent9e3cef3b.

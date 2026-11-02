@@ -13,7 +13,7 @@
 }
 :28443 {
  tls /certs/server.crt /certs/server.key
- reverse_proxy https://127.0.0.1:28445 https://192.168.101.7:28445 {
+ reverse_proxy https://127.0.0.1:28445 https://192.168.139.154:28445 {
   lb_policy round_robin
   transport http {
    tls_trusted_ca_certs /certs/ca.crt

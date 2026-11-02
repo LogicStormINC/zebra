@@ -8,7 +8,7 @@ import tarfile
 from pathlib import Path
 
 parser = argparse.ArgumentParser()
-parser.add_argument("node", choices=("vm", "server"))
+parser.add_argument("node", choices=("vm", "server", "orb2"))
 parser.add_argument("prepared", type=Path)
 parser.add_argument("output", type=Path)
 parser.add_argument("--image", required=True)
@@ -19,7 +19,11 @@ source = args.prepared.resolve()
 out = args.output.resolve()
 out.mkdir(mode=0o700, parents=True, exist_ok=False)
 vm = args.node == "vm"
-root = "/root/zebra-ha-e1-20261102/runtime" if vm else ("/home/ubuntu/zebra-ha-e1-20261102/runtime")
+local = args.node != "server"
+root = (
+    "/root/zebra-ha-e1-20261102/runtime"
+    if local else "/home/ubuntu/zebra-ha-e1-20261102/runtime"
+)
 if args.release is not None:
     assert re.fullmatch(r"[0-9a-f]{40}", args.release)
     root = str(Path(root).parent / "releases" / args.release)
@@ -71,9 +75,9 @@ env = {
     "E1_ROOT": root,
     "E1_IMAGE": args.image,
     "E1_WORKER_ID": f"ha-e1-{args.node}",
-    "E1_DOCKER_GID": "104" if vm else "984",
-    "E1_CERT_UID": "0" if vm else "1000",
-    "E1_CERT_GID": "0" if vm else "1000",
+    "E1_DOCKER_GID": "104" if local else "984",
+    "E1_CERT_UID": "0" if local else "1000",
+    "E1_CERT_GID": "0" if local else "1000",
     "E1_WORKSPACE_VOLUME": "zebra-ha-e1-20261102-workspaces",
     "E1_WORKSPACE_PATH": "/var/lib/docker/volumes/zebra-ha-e1-20261102-workspaces/_data",
     "E1_DATA": "/root/zebra-ha-e1-20261102/data",
@@ -116,7 +120,7 @@ with tarfile.open(archive, "w:gz") as bundle:
             else 65532
             if path.name == "broker.key"
             else 0
-            if vm
+            if local
             else 1000
         )
         info.uid = info.gid = owner

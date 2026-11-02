@@ -36,7 +36,9 @@ def recover_force_stops(
         raise ValueError("invalid force-stop engine timeout")
     store = PostgresForceStopRecovery(dsn, deployment_namespace=deployment_namespace)
     settled = 0
-    for sid in store.pending(batch_size):
+    for sid in store.pending(
+        batch_size, engine_identity=None if engine is None else engine.identity
+    ):
         with store.claim(sid) as data:
             if data is None:
                 continue

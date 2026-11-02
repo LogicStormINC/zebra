@@ -40,7 +40,7 @@ def main() -> None:
         "subjectAltName=DNS:api.deepseek.com\nextendedKeyUsage=serverAuth\n"
     )
     (tls / "extensions.cnf").write_text(
-        "subjectAltName=IP:127.0.0.1,IP:192.168.101.7,IP:192.168.139.232\n"
+        "subjectAltName=IP:127.0.0.1,IP:192.168.101.7,IP:192.168.139.232,IP:192.168.139.154\n"
         "extendedKeyUsage=serverAuth\n"
     )
     with (root / "openssl.log").open("w") as log:
@@ -85,7 +85,7 @@ def main() -> None:
     )
     namespace = "ha-e1-20261102"
     budget = dict(
-        pool=4,
+        pool=3,
         normal=8,
         read=2,
         control=2,
@@ -94,7 +94,7 @@ def main() -> None:
         server_reserved=3,
         external=4,
         execution_slots=4,
-        fleet=dict(api=2, worker=2, executor=8, cleanup=1, scheduler=1),
+        fleet=dict(api=2, worker=2, executor=8, cleanup=2, scheduler=1),
     )
     env = {
         "ZEBRA_PROFILE": "cloud",

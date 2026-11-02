@@ -35,19 +35,42 @@ class PostgresForceStopRecovery:
         self.database = PostgresDatabase(dsn, deployment_namespace=deployment_namespace)
         self.namespace = deployment_namespace
 
-    def pending(self, limit: int = 4) -> list[UUID]:
+    def pending(self, limit: int = 4, *, engine_identity: str | None = None) -> list[UUID]:
+        if engine_identity is not None and (
+            len(engine_identity) != 64 or any(c not in "0123456789abcdef" for c in engine_identity)
+        ):
+            raise ValueError("invalid cleanup engine identity")
+        # Leave foreign-only frontiers to their owner; empty/unremembered frontiers
+        # still get lease revocation and canonical synchronization on any cleaner.
+        affinity = """
+            AND ((CASE WHEN reason='user_force_stop' THEN diagnostics::jsonb END
+                    ->>'lease') IS DISTINCT FROM 'revoked'
+              OR (CASE WHEN reason='user_force_stop' THEN diagnostics::jsonb END
+                    ->>'synchronization') IS DISTINCT FROM 'synchronized'
+              OR (CASE WHEN reason='user_force_stop' THEN diagnostics::jsonb END
+                    ->>'error_code')='stop_frontier_advanced'
+              OR (CASE WHEN reason='user_force_stop' THEN diagnostics::jsonb END
+                    ->>'accepted_at')::timestamptz<clock_timestamp()-interval '10 minutes'
+              OR NOT EXISTS (
+                SELECT 1 FROM runtime_instances i
+                WHERE i.deployment_namespace=agent_safety_overrides.deployment_namespace
+                AND i.status<>'removed'
+                AND (CASE WHEN reason='user_force_stop' THEN diagnostics::jsonb END)
+                    ->'target_sessions' ? i.session_id::text
+                HAVING bool_and(i.engine_identity IS DISTINCT FROM %s)
+            ))"""
         # ponytail: rare emergency stops share the safety channel. At fleet stop
         # volume, add a partial pending-phase index instead of retaining scan cost.
         with self.database.connect_task_io() as connection:
             rows = connection.execute(
-                """SELECT session_id FROM agent_safety_overrides
+                f"""SELECT session_id FROM agent_safety_overrides
                 WHERE deployment_namespace=%s AND reason=%s AND NOT shadow AND kind='watchdog'
                 AND (CASE WHEN reason='user_force_stop' THEN diagnostics::jsonb END)->>'phase'
                     IN ('requested','stopping')
                 AND COALESCE((CASE WHEN reason='user_force_stop' THEN diagnostics::jsonb
                     END->>'next_attempt_at')::timestamptz,created_at)
-                    <=clock_timestamp() ORDER BY created_at,session_id LIMIT %s""",
-                (self.namespace, STOP_REASON, limit),
+                    <=clock_timestamp() {affinity} ORDER BY created_at,session_id LIMIT %s""",
+                (self.namespace, STOP_REASON, engine_identity, limit),
             ).fetchall()
         return [r["session_id"] for r in rows]
 

@@ -18918,3 +18918,15 @@ Broker9a signed old e08 stop confirmed resources released; f69 retains missing
 original exit witness reconciliation. New monitor image/promotion pending.
 Fresh OrbStack node2 needs the primary strict gVisor sidecars as well as runsc;
 first real start failed closed rather than being counted as calibration success.
+
+
+## 2026-11-03 — dual-engine cleanup ownership
+
+Real PG red4 confirmed foreign retry consumption and local-work starvation.
+Shared routing now uses existing exact fence/engine facts, with common control,
+frontier and absolute expiry preserved. Native Linux PG46 and make check passed;
+source review clear. New10 cases declare fake engine removal/unit ACKs.
+Two local247 static preflights/baseline match and node2 real runsc/hash checks pass.
+Initial native preview path/auth failures retained; isolated QA credential was
+rotated after a log parameter expansion and active env synchronized. New images,
+publication and actual dual-node task/cleanup gates remain next; no production.

@@ -1,8 +1,10 @@
-# CA-HA-03: isolated two-host E1 preparation
+# CA-HA-03: isolated two-node E1 preparation
 
-This fixture uses the existing running OrbStack `zebra-gvisor` Docker engine and
-Ubuntu `192.168.101.7` as two compute hosts. It creates only labelled, newly named
-resources. It does not replace production services or resume an old cluster.
+Current compute nodes are OrbStack `zebra-gvisor` (192.168.139.232) and fresh
+`zebra-ha-e1-node2` (192.168.139.154), sharing one physical Mac. Ubuntu192.168.101.7
+is retained as an unqualified WAN candidate with its API/Worker held; strict
+deadlines were not relaxed. Only labelled, newly named resources are created.
+Production services and old workloads are preserved.
 All runtime evidence here is **synthetic**. No real IdP/provider/Coverage quality,
 physical-host power-loss, storage-HA or production acceptance is implied.
 
@@ -79,12 +81,15 @@ Example dependent launch (inside the intended host; no private config output):
 set -e
 python3 "$E1_ROOT/verify.py" "$E1_ROOT" # add --control on VM
 # Run model preflight inside the pinned image before first Task.
-docker compose --env-file "$E1_ROOT/compose.env" -f "$E1_ROOT/compose.yml" up -d api worker
+docker compose --env-file "$E1_ROOT/compose.env" -f "$E1_ROOT/compose.yml" up -d api worker runtime-cleanup
 ```
 
 The initial small normal-direct budget2 rejected competing idle maintenance.
-E1 preparation uses pool4/normal8/read2/control2/probe1 and peak fleet2+2+8+1+1:
-238+external4+server_reserved3=245<=256. This is a frozen staging budget, not a
+Two local engines need one independent cleanup process each. E1 preparation uses
+pool3/normal8/read2/control2/probe1 and peak fleet2+2+8+2+1:
+240+external4+server_reserved3=247<=256. The earlier cleanup1/pool4 profile was245;
+never run cleanup2 under that old profile (262 exceeds256). Cold-switch all app
+roles to the matching profile before adding the second cleaner. This is a frozen staging budget, not a
 production database recommendation. Actual load/fairness/queue-age proof is pending.
 
 All services use restart=no. Stop/remove only exact receipt-owned resources;
@@ -182,3 +187,14 @@ Never overwrite the running model scripts or old private release directory.
 The approved model output cap1024 and cumulative budget200000 are synthetic test
 configuration. Runtime uses the existing frozen Bundle, reservation and settlement
 contracts. This does not configure a trusted real-provider tokenizer.
+
+
+The fresh `orb2` node uses root-owned bundles, Docker GID104, the same pinned
+engine image and CA, and its own512MiB tmpfs workspace volume. It has no control
+data services. Six transient loopback socket proxies target primary192.168.139.232;
+no TLS/SNI rewriting or global proxy changes. Node leaf SAN includes192.168.139.154.
+The control gateway targets primary+orb2; keep the unqualified WAN worker held.
+Copy the complete installed strict gVisor runtime, including gvisor-bin sidecars,
+and verify hashes and real nonroot/read-only/network-none execution. A rootfs
+write probe must target a directory writable to the test UID before checking EROFS.
+Both logical nodes share one Mac; this is not physical-host or durable-storage HA.

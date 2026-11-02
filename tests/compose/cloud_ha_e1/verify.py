@@ -36,9 +36,9 @@ assert (root / "check_model.py").is_file()
 assert (root / "example-envelope.json").stat().st_mode & 0o004
 for name in (
     ("registry",) if args.registry_only else
-    ("api", "worker", "node-tls", "broker", "authority", "model")
+    ("api", "worker", "runtime-cleanup", "node-tls", "broker", "authority", "model")
     if args.control
-    else ("api", "worker", "node-tls")
+    else ("api", "worker", "runtime-cleanup", "node-tls")
 ):
     for mount in config["services"][name].get("volumes", []):
         if mount["type"] == "bind":
@@ -66,9 +66,11 @@ assert set(volume["Options"]["o"].split(",")) == {
     "gid=65532",
     "mode=0770",
 }
-for name in (() if args.registry_only else ("api", "worker")):
+for name in (() if args.registry_only else ("api", "worker", "runtime-cleanup")):
     service = config["services"][name]
-    assert float(service["cpus"]) == 2 and int(service["mem_limit"]) == 2 * 1024**3
+    cleanup = name == "runtime-cleanup"
+    assert float(service["cpus"]) == (.5 if cleanup else 2)
+    assert int(service["mem_limit"]) == (512 * 1024**2 if cleanup else 2 * 1024**3)
     assert service["image"].startswith("sha256:")
     env = service["environment"]
     assert env["ZEBRA_RUNTIME_BUNDLE_CONFIG"] == "/e1/catalog.json"
@@ -121,6 +123,8 @@ for name in (() if args.registry_only else ("api", "worker")):
     assert total + budget["external"] + budget["server_reserved"] <= budget["max_connections"]
     assert budget["fleet"]["api"] == budget["fleet"]["worker"] == 2
     assert budget["execution_slots"] == 4
+    assert budget["fleet"]["cleanup"] == 2
+    assert budget["normal"] >= budget["execution_slots"]
 if args.registry_only:
     registry = config["services"]["registry"]
     assert registry["environment"]["REGISTRY_HTTP_ADDR"] == "127.0.0.1:28081"

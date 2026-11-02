@@ -53,11 +53,31 @@ def claim_runtime_cleanup(
         connection.execute("SET LOCAL lock_timeout='5s'")
         selected_at = _now(connection)
         candidate = connection.execute(
-            """SELECT * FROM command_runtime_cleanup WHERE deployment_namespace=%s AND
-               ((status='pending' AND available_at<=%s) OR
-                (status='cleaning' AND lease_expires_at<=%s AND available_at<=%s))
-               ORDER BY available_at,cleanup_id LIMIT 1""",
-            (namespace, selected_at, selected_at, selected_at),
+            """SELECT cleanup.* FROM command_runtime_cleanup AS cleanup
+               LEFT JOIN command_control_receipts receipt
+                 ON receipt.deployment_namespace=cleanup.deployment_namespace
+                 AND receipt.accepted_event_id=cleanup.accepted_event_id
+               LEFT JOIN direct_control_operations direct
+                 ON direct.deployment_namespace=cleanup.deployment_namespace
+                 AND direct.operation_id=cleanup.direct_operation_id
+               WHERE cleanup.deployment_namespace=%s AND
+               ((cleanup.status='pending' AND cleanup.available_at<=%s) OR
+                (cleanup.status='cleaning' AND cleanup.lease_expires_at<=%s
+                 AND cleanup.available_at<=%s))
+               AND (cleanup.attempts>=32 OR cleanup.created_at<=%s-interval '1 day'
+                 OR NOT EXISTS (
+                   SELECT 1 FROM runtime_instances i
+                   WHERE i.deployment_namespace=cleanup.deployment_namespace
+                   AND i.session_id=cleanup.session_id AND i.status<>'removed'
+                   AND i.control_plane_epoch=CASE WHEN cleanup.accepted_event_id IS NULL
+                       THEN direct.revoked_epoch ELSE receipt.revoked_epoch END
+                   AND i.fencing_token=CASE WHEN cleanup.accepted_event_id IS NULL
+                       THEN direct.revoked_token ELSE receipt.revoked_token END
+                   AND i.owner_instance_id=CASE WHEN cleanup.accepted_event_id IS NULL
+                       THEN direct.revoked_owner ELSE receipt.revoked_owner END
+                   HAVING bool_and(i.engine_identity<>%s)
+               )) ORDER BY cleanup.available_at,cleanup.cleanup_id LIMIT 1""",
+            (namespace, selected_at, selected_at, selected_at, selected_at, engine_identity),
         ).fetchone()
         if candidate is None:
             return None
@@ -111,7 +131,7 @@ def claim_runtime_cleanup(
             if row["attempts"] >= 32 or now - row["created_at"] >= timedelta(days=1):
                 raise ValueError("retry_budget_exhausted")
             proof = cleanup_proof(connection, namespace, row)
-            instance = _next_instance(connection, namespace, proof)
+            instance = _next_instance(connection, namespace, proof, engine_identity)
             target = None if instance is None else _target(instance, proof)
         except ValueError as error:
             code = (
@@ -139,25 +159,8 @@ def claim_runtime_cleanup(
                 candidate["direct_operation_id"],
             )
         if instance is not None and instance["engine_identity"] != engine_identity:
-            connection.execute(
-                """UPDATE command_runtime_cleanup SET status='pending',
-                   error_code='engine_unavailable',
-                   available_at=%s,attempts=attempts+1
-                   WHERE deployment_namespace=%s AND cleanup_id=%s""",
-                (now + timedelta(seconds=30), namespace, row["cleanup_id"]),
-            )
-            return CleanupClaim(
-                namespace,
-                row["accepted_event_id"],
-                row["session_id"],
-                owner,
-                row["claim_fence"],
-                engine_identity,
-                None,
-                False,
-                candidate["cleanup_id"],
-                candidate["direct_operation_id"],
-            )
+            # Another engine's exact fence must retain its retry and scheduling budget.
+            return None
         claimed = connection.execute(
             """UPDATE command_runtime_cleanup SET status='cleaning',claim_owner=%s,
                claim_fence=claim_fence+1,lease_expires_at=%s,attempts=attempts+1,error_code=NULL
@@ -287,17 +290,21 @@ def _lock_stream(connection: Any, namespace: str, session_id: UUID) -> None:
     ).fetchone()
 
 
-def _next_instance(connection: Any, namespace: str, proof: dict[str, Any]) -> Any:
+def _next_instance(
+    connection: Any, namespace: str, proof: dict[str, Any], engine_identity: str | None = None
+) -> Any:
     return connection.execute(
         """SELECT * FROM runtime_instances WHERE deployment_namespace=%s AND session_id=%s
            AND control_plane_epoch=%s AND fencing_token=%s AND owner_instance_id=%s
-           AND status<>'removed' ORDER BY created_at,instance_id LIMIT 1""",
+           AND status<>'removed'
+           ORDER BY (engine_identity=%s) DESC,created_at,instance_id LIMIT 1""",
         (
             namespace,
             proof["session_id"],
             proof["revoked_epoch"],
             proof["revoked_token"],
             proof["revoked_owner"],
+            engine_identity,
         ),
     ).fetchone()
 

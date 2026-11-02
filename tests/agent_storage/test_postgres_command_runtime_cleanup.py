@@ -125,9 +125,8 @@ def test_scope_conflict_does_not_remove_or_falsely_complete(dsn, column, value):
 def test_other_engine_stays_pending_not_done(dsn):
     _prepare_cleanup(dsn)
     claim = _claim(dsn, engine_identity="c" * 64)
-    assert claim.target is None
-    assert _rows(dsn)[0] == [("pending", "engine_unavailable")]
-    assert not settle_runtime_cleanup(dsn, claim)
+    assert claim is None
+    assert _rows(dsn)[0] == [("pending", None)]
 
 
 def test_missing_revoked_fence_requires_reconciliation(dsn):
