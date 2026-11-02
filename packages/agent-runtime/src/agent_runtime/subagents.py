@@ -1,5 +1,5 @@
 from collections.abc import Callable
-from concurrent.futures import Future, ThreadPoolExecutor
+from concurrent.futures import CancelledError, Future, ThreadPoolExecutor
 from dataclasses import dataclass
 from threading import Event, Lock
 
@@ -41,7 +41,6 @@ class UnknownSubagentError(KeyError):
 class _ChildRecord:
     cancel_requested: Event
     future: Future[ResearchSubagentResult]
-    cancelled_result: ResearchSubagentResult | None = None
 
 
 class LocalResearchSubagentCoordinator(SubagentPort):
@@ -81,13 +80,14 @@ class LocalResearchSubagentCoordinator(SubagentPort):
 
     @property
     def delegation_attempted(self) -> bool:
-        return self._delegation_attempted
+        with self._lock:
+            return self._delegation_attempted
 
     def _active_count_locked(self) -> int:
         return sum(
             1
             for record in self._records.values()
-            if not record.future.done() and record.cancelled_result is None
+            if not record.future.done()
         )
 
     def spawn(self, task: ResearchSubagentTask) -> SubagentId:
@@ -127,10 +127,12 @@ class LocalResearchSubagentCoordinator(SubagentPort):
     ) -> ResearchSubagentResult:
         # SUBAGENT-COORD-FIX-01: bounded join with a typed timeout failure.
         record = self._record(subagent_id)
-        if record.cancelled_result is not None:
-            return record.cancelled_result
         try:
             return record.future.result(timeout=timeout_seconds)
+        except CancelledError:
+            if not record.future.cancelled():
+                raise
+            return cancelled_result(subagent_id)
         except TimeoutError as exc:
             raise SubagentStageError(
                 "stage=join",
@@ -139,18 +141,16 @@ class LocalResearchSubagentCoordinator(SubagentPort):
 
     def cancel(self, subagent_id: SubagentId) -> bool:
         record = self._record(subagent_id)
-        if record.cancelled_result is not None or record.future.done():
+        if record.future.done():
             return False
         record.cancel_requested.set()
-        if record.future.cancel():
-            record.cancelled_result = cancelled_result(subagent_id)
+        # Future.cancel can run callbacks synchronously: never hold our lock here.
+        record.future.cancel()
         return True
 
     def collect(self, subagent_id: SubagentId) -> ResearchSubagentResult | None:
         record = self._record(subagent_id)
-        if record.cancelled_result is not None:
-            return record.cancelled_result
-        return record.future.result() if record.future.done() else None
+        return self.join(subagent_id) if record.future.done() else None
 
     def close(self) -> None:
         with self._lock:
@@ -161,10 +161,11 @@ class LocalResearchSubagentCoordinator(SubagentPort):
         self._executor.shutdown(wait=True, cancel_futures=True)
 
     def _record(self, subagent_id: SubagentId) -> _ChildRecord:
-        try:
-            return self._records[subagent_id]
-        except KeyError as exc:
-            raise UnknownSubagentError(str(subagent_id)) from exc
+        with self._lock:
+            try:
+                return self._records[subagent_id]
+            except KeyError as exc:
+                raise UnknownSubagentError(str(subagent_id)) from exc
 
     def _run(
         self,

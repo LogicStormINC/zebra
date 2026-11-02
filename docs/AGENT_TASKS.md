@@ -1,3 +1,18 @@
+# CA-CONCURRENCY-LIFECYCLE-20261102
+- Status: Review; created Ready and claimed before implementation; verified2026-11-02: 129 passed/5 conditional skips, final signal13 passed, make check passed. Local candidate only.
+- Owner: Luke Ding; executor Codex; target cloud-agent; branch codex/ca-concurrency-lifecycle-20261102.
+- Independent worktree: /Users/lukeding/.codex/worktrees/ca-concurrency-lifecycle-20261102/zebra-agent; base56ae352a5.
+- Owned paths: packages/agent-runtime/src/agent_runtime/subagents.py;
+  apps/worker/src/zebra_agent_worker/{worker_shutdown.py,worker_signals.py,worker_loop_service.py,command_process.py,main.py};
+  tests/agent_runtime/test_subagent_concurrency.py; tests/worker/test_worker_shutdown.py;
+  docs/CA_CONCURRENCY_LIFECYCLE_20261102.md; docs/evidence/ca-concurrency-lifecycle-20261102/**; docs/AGENT_TASKS.md; PROGRESS.md; WORKLOG.md; task_plan.md.
+- A: Future is the only child terminal authority; synchronized coordinator fields, callbacks outside locks.
+- B: cloud process owns one cumulative shutdown deadline through real drain and dependency close;
+  deadline failure must exit nonzero without falsely releasing resources or completing business tasks.
+- Preserve local behavior, native leases/receipts/recovery and all concurrent HA03/P7 work.
+- Validation: deterministic real-Future races, shared-deadline subprocess failure/cleanup, affected tests and make check.
+- No production deployment/migration, model requests, original task replay, push or merge.
+
 # ERP-AUTH-CLOUD-EXPORT-20261102
 - Status: Done; exact source export and static gates verified; integrated for cloud-agent/GitHub.
 - Created Ready then claimed In Progress; owner Luke Ding / Codex.

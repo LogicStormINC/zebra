@@ -1,3 +1,14 @@
+## 2026-11-02 CA-CONCURRENCY-LIFECYCLE-20261102
+
+User approved the reviewed repair plan. Claimed an isolated task/worktree from56ae352a5.
+Observed RED for queued cancellation collect/join; removed duplicate terminal state.
+Observed RED for memory batch continuation/restart, masked primary failure, skipped joins
+on cleanup error, and maintenance restarting projection after drain. Added root-owned
+cloud shutdown deadline with real subprocess checks; kept real ownership until completion
+or process failure. No production/DB/model actions. Final affected129 passed/5 conditional skips; final signal13 passed and make check green.
+Candidate retained for independent review. Final evidence and handoff are in
+docs/CA_CONCURRENCY_LIFECYCLE_20261102.md and its machine evidence.
+
 ## 2026-11-02 CA-P7-03C
 
 - 按授权先整合03B：Native7f1f499b、Overdoze e34ecc4；误先推送的3笔既有ERP文档如实记录，无历史重写。

@@ -1,3 +1,12 @@
+## 2026-11-02 Cloud cancellation and shutdown lifecycle candidate
+
+CA-CONCURRENCY-LIFECYCLE-20261102: Future cancellation/result publication race repaired;
+cloud Worker receives one process-owned shutdown deadline through actual drain and dependency cleanup.
+Background memory producers cannot restart after drain; cleanup errors retain original execution failure.
+No production changes, replay or model requests. Standalone/local cleanup still waits for real exit.
+Verification and supervisor/recovery boundaries: [repair record](docs/CA_CONCURRENCY_LIFECYCLE_20261102.md).
+Candidate only; does not close HA03/04 or claim production HA.
+
 ## 2026-11-02 ERP 迁址认证复核与源码固化
 
 浏览器Origin与签名身份分离，原Task严格绑定保留；补齐旧Manifest共享常量、bootstrap链接与初始传输配置。
