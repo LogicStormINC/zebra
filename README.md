@@ -1,3 +1,6 @@
+[CA-P7-03B真实子任务准入/持久预算/原收据](docs/CA-P7-03B_orchestration_admission.md)：
+候选路径真实PG验证通过，默认执行预算gate保持关闭；未部署。
+
 [可信编排上下文与双工具授权（CA-P7-03A）](docs/CA-P7-03A_trusted_orchestration.md)：
 03A 修复信任边界，真实派发保持关闭；03B/C/D 负责准入、装配与执行验收。
 

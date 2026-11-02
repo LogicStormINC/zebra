@@ -61,6 +61,9 @@ from agent_storage.postgres.host_manifest_revision_migration import HOST_MANIFES
 from agent_storage.postgres.memory_delivery_migration import MEMORY_DELIVERY_MIGRATION
 from agent_storage.postgres.migration_recovery_migration import MIGRATION_RECOVERY_MIGRATION
 from agent_storage.postgres.native_memory_migration import NATIVE_MEMORY_MIGRATION
+from agent_storage.postgres.orchestration_admission_migration import (
+    ORCHESTRATION_ADMISSION_MIGRATION,
+)
 from agent_storage.postgres.plugin_distribution_migration import PLUGIN_DISTRIBUTION_MIGRATION
 from agent_storage.postgres.plugin_installations_migration import PLUGIN_INSTALLATIONS_MIGRATION
 from agent_storage.postgres.projection_source_metadata_migration import (
@@ -202,4 +205,5 @@ LATEST_MIGRATIONS = (
     STANDARD_PROJECTION_CELLS_MIGRATION,
     replace(RUNTIME_GATE_MIGRATION, version=118),
     replace(RUNTIME_GATE_TERMINATION_MIGRATION, version=119),
+    ORCHESTRATION_ADMISSION_MIGRATION,
 )

@@ -10,6 +10,7 @@ from uuid import UUID
 from agent_core.domain.identifiers import TaskId
 
 from agent_orchestration.application.orchestration_validation import PlanValidationContext
+from agent_orchestration.domain.orchestration_budget import BudgetReservation
 
 OrchestrationAction = Literal["propose", "request"]
 
@@ -26,6 +27,7 @@ class OrchestrationAuthority:
     parent_binding_digest: str
     deployment_namespace: str
     validation: PlanValidationContext
+    approved_budget: BudgetReservation | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.parent_task_id, UUID) or not self.parent_task_id.int:
@@ -41,6 +43,11 @@ class OrchestrationAuthority:
             raise ValueError("deployment_namespace must be nonempty")
         if not isinstance(self.validation, PlanValidationContext):
             raise ValueError("validation must be a trusted PlanValidationContext")
+        if self.approved_budget is not None and (
+            not isinstance(self.approved_budget, BudgetReservation)
+            or not self.approved_budget.covers(self.validation.parent_remaining_budget)
+        ):
+            raise ValueError("approved budget must cover the current free budget")
 
 
 class OrchestrationAuthorizer(Protocol):

@@ -1,3 +1,8 @@
+## Current orchestration admission
+
+[CA-P7-03B original admission and durable budget](CA-P7-03B_orchestration_admission.md):
+explicit composition only; normal Worker budget enforcement remains a03C prerequisite.
+
 # Zebra Agent Docs Guide
 
 ## Product Plugin admission
