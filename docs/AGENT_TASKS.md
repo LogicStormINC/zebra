@@ -1,4 +1,6 @@
 # ERP-AUTONOMOUS-ADMIN-RELEASE-20261102
+- Follow-up: only prepared/read ingress; stopped stale candidate when concurrent address migration was detected.
+- Follow-up owned remote paths before ingress migration: only ERP block in /opt/caddy/Caddyfile and frontend ports in /opt/erpnext/zebra-agent/erpnext-override.json; preserve logical site/Grant identities and other ingress routes. User supplied the new server address 192.168.101.7.
 - Status: Review; deployed and no-model isolated, real HTTP manifest and browser acceptance passed.
 - Created Ready then claimed In Progress; owner Luke Ding / Codex.
 - Branch codex/erp-autonomous-admin-release-20261102; target cloud-agent.

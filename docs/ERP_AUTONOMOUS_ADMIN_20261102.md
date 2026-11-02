@@ -55,3 +55,8 @@
 后续 SSH 使用新地址；Frappe既有站点目录、JWT issuer、namespace及资源绑定不是网络地址配置，
 不能全局字符串替换。旧发布记录保留实际执行时坐标。
 线上真实本地WSGI HTTP清单验收200，返回5个已绑定管理员/读取工具，真实principal保持，未启动Run。
+
+外部地址同步后复核：新入口 `/login` HTTPS证书按同机Caddy CA验证通过、HTTP200，
+`zebra.js` 与本轮构建 SHA256 均为 d2d76bed5f86d1369ede245513e751a3b1e54695980eca95090010d596e1718b。
+检查期间检测到线上入口已被同步：frontend绑定192.168.101.7、镜像37649d4cad28不变；
+本任务未应用已过期的入口候选，不覆盖该并发配置。搜索与Native Worker未重启，管理员allowlist仍有效。
