@@ -1,3 +1,16 @@
+## 2026-11-03 CA-HA-03 live renewal completion and topology correction
+
+- Engine637 actual native publication6 and single-node full flow pass:17.25s,33 events,
+ 2 model receipts29308 synthetic units, one pwd completion/charge exit0, original120s and charges retained.
+- Prior four Tasks and unknown hashes unchanged. Operator WAN503 / early-approval409 cases retained,
+ not replaced/replayed. Successful case explicitly waits original Worker lease handoff.
+- Actual Mac→server route is159ms VPN; shell relay ended, rebuilt6 runtime forwards as constrained
+ transient VM systemd service using existing mounted identity (no key copy). Registry existing relay untouched.
+ Server API/Worker exact IDs held, no false cross-node qualification. Clean logical OrbStack node2 provisioning.
+- Force-stop Run-grant403 and malformed no-Run400 retained. Existing production producer9b943baa and
+ HTTP test8b286b59 absent from HA source. Owned alignment declared before coding; reuse, no bypass.
+- Full E1/HA03 still pending; source/engine proof is one-node. Production unchanged;04 locked.
+
 ## 2026-11-03 CA-HA-03 budget renewal source candidate
 
 - Root fix shared at Task-binding persistence: reuse moved Core pure renewal policy, keep API alias.

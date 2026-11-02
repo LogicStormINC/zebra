@@ -1,3 +1,16 @@
+## 2026-11-03 — HA03本地完整续期链通过，双节点仍未验
+
+6374181e运行镜像双端2140文件/3链接及实际OCI清单2dcaf9cb…核验，原生trust6发布完成。
+本地原生API Task a1a039d4仅POST一次，租约交接后精确pwd审批，17.25s完成；33事件、2模型
+usage结算29308合成单位、1工具完成/扣次exit0、gVisor；binding1→2预算指针一致、绝对120s
+未重置，lease/pending0。四旧Task/984未知hash不变。两笔操作员案例未隐藏：WAN503导致未
+审批；本地立即审批409未等租约交接，已续期但无decision。均未重跑、原预算已到期。
+跨物理实际经utun100 RTT159ms；恢复受限VM transient systemd转发后握手/多轮查询仍不适配
+严格期限，远程API/Worker精确停止留未验WAN，期限不放宽。用用户允许的干净OrbStack第二
+逻辑节点继续，单节点成果不代表容量/物理HA。Task-wide stop拒Run授权符合设计；当前分支
+缺已有Broker producer9b943baa/8b286b59，下一步复用并做generic联合强停验收，不手工伪造
+JWT/能力、不弱化Native守卫。完整E1/HA03未通过，04锁定，生产未变。
+
 ## 2026-11-03 — HA03 E1授权续期预算引用修复候选
 
 既有纯续期规则移Core复用，API导入兼容；共同save_task_binding在原Task锁/CAS事务中验证
