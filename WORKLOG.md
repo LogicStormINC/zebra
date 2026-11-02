@@ -1,3 +1,15 @@
+## 2026-11-02 CA-P7-02-wiring 三处生产接线
+
+child_wakeup→complete_node：hook 按 child_task_id 反查 orchestration_nodes（legacy 无绑定=
+None 不扰动委派唤醒）；worker loop 在委派 epoch 评估前先推进编排 run。completion_gate：
+synthesize 增 gate_input，evaluate_gate blocked/refused 类型化拒付，run 停 running——测试用
+model_claimed_complete=False 证拒付、evidence_count=1+successful_tool_calls=1 证放行
+（gate 语义：无证据不放行，非 z1 引入但 z1 后首次在 synthesize 路径消费）。AG-UI：
+task_view_payload 在父任务有 run 时附带 orchestration 块，find_run_for_parent 按 created_at
+DESC 取最新 run；投影异常静默降级。z1 遗留三处修：assembly digest 期望补 budget_profile、
+语义负向量补 name/status、负向量 namespace 统一 local 基重封（tenant/example 会走 403
+scope 通道而非 422 assembly 通道——向量必须建在消费侧夹具 scope 上）。
+
 ## 2026-11-01 P7-02 合入 cloud-agent
 
 ff 已推 origin（纯快进，树与已验证 tip 一致）。**编排消费方链闭合**：工具集/运行时循环/投影

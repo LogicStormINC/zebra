@@ -1,3 +1,6 @@
+# CA-P7-02-wiring — 编排链三处生产接线（Done / 已推送）
+- Done; 2026-11-02 分支 codex/ca-p7-02-wiring tip 9239d76d 已推 origin，worktree ~/Documents/Codex/2026-11-01/ca-p7-02w（基 cloud-agent a768f6ae）。02A/B/C 服务本体之上的三处生产接线：①child_wakeup 接线——OrchestrationWakeupHook（child_task_id 反查 orchestration_nodes→complete_node；legacy 无绑定返回 None）+ outcome_for_child_status 状态映射 + worker_loop_service._process_child_wakeups 接线（orchestration_hook 参数）；②completion_gate 进 synthesize——gate_input 经 evaluate_gate，blocked/refused 类型化拒付（run 停 running），无 gate 时终态独裁；③AG-UI 真实消费点——task_view_payload 附带 plan-14.2 状态（stores.orchestration.find_run_for_parent 新增；投影失败静默降级）。顺带修复 z1 遗留：bundle-management 真实进程套件的 assembly digest 期望补 budget_profile + 语义负向量 name/status（namespace=local 重封）。验证：tests/worker+orchestration 1413/746、tests/api 1744/192（含修复后真实进程套件）、接线单测 5、make check 全绿（mypy 1500）。
+
 # CA-P7-02A/B/C — 编排消费方三切片（Done / 已推送待合入）
 - 合入 cloud-agent：2026-11-01 用户"按照设计方案全部做完"授权，ff 已推 origin。
 - Done; 2026-11-01 分支 codex/ca-p7-02-orchestration tip 31a4e9d2 已推 origin，worktree ~/Documents/Codex/2026-11-01/ca-p7-02（基 cloud-agent 74444850）。设计稿四断层全部闭合：
