@@ -18762,3 +18762,12 @@ ingress mapping, release-overlay preflight and redacted live proof. Native apps/
 unchanged. Original Task/Run/receipt/unknown/Coverage protected; no new Docker in export stage.
 Compatibility export is not the full current ERP Host build source; SOURCE explicitly
 requires canonical main for normal Host releases. Exact source mapping verified before gates.
+
+
+## 2026-11-02 — CA-HA-03 / 03A
+
+用户“继续”后从Ready领取独立branch/worktree；先追踪控制/执行/恢复/池与Task I/O，
+再复现空转和真实PG表锁占槽。复用有界I/O和控制lane；无新队列、依赖、schema或unknown重发。
+完整Worker首次唯一失败在干净基线复现，只补缺失forced Mock列；最终证据/未验项见
+docs/evidence/ca-ha-03/validation.json及docs/CA-HA-03_resource_budgets.md。
+本批03A候选交付，03B全副本预算/容量及后续HA仍需完成；不生产部署，不声称HA完成。

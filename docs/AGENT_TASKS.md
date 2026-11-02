@@ -183,12 +183,18 @@
 - Current receipt: docs/evidence/ca-baseline-gate-02/validation.json；最终完整test11672/0/3161skip、check全绿、真实PG5通过；本卡先前验证为当时历史记录，不覆盖旧证据。
 
 # CA-HA-03 — 资源预算、退避与技术namespace隔离
-- Status: Ready（未领取/未实施）；01已合入，02已完成组合完整验收并快进至本地cloud-agent；不自动开工。
+- Status: In Progress（2026-11-02）；用户“继续”授权后从Ready领取；人类Owner Luke Ding，执行Codex；branch codex/ca-ha-03-budgets；独立worktree ca-ha-03-budgets/zebra-agent；基线56ae352a5。
+- Baseline test-only scope (before edit): 干净56ae352a5已复现test_cloud_factory_composes_bounded_scalar_read的forced缺列；补齐该Mock已存在的SQL列，不更改生产停止判定。
+- Current slice 03A（Review：候选已验收，未生产部署）: 修复Cloud新旧Worker空/blocked/error轮询空转，复用独立控制lane；完成可运行回归和资源边界核算。03全副本连接预算/隔离容量验收仍须后续03B，不能由03A代替。
+- Owned paths（03A实施前冻结）: apps/worker/src/zebra_agent_worker/{worker_polling,worker_loop_service,loop,command_process,command_background}.py；packages/agent-storage/src/agent_storage/postgres/command_wakeup_pickup.py；tests/worker/{test_cloud_ha_polling,test_execution_control_status}.py、tests/agent_storage/test_postgres_command_wakeup_pickup.py；docs/CA-HA-03_resource_budgets.md、docs/evidence/ca-ha-03/；docs/{AGENT_TASKS,CLOUD_HIGH_AVAILABILITY_TASKS_v1}.md、PROGRESS.md、WORKLOG.md、task_plan.md。
+- Validation: 确定性状态/延迟边界，新旧实际run接线，持续deferred下独立控制与停止响应；现有consumer槽/公平性回归；不创建或重试业务操作，不部署/迁移/恢复旧环境。
 - Scope: 复用现有Worker control/maintenance lane、TaskIoConnections和连接池；细化前先复核真实cutover/组合入口，不新增第二执行队列或商业租户聚合。
 - Required claim: 单一人类Owner/独立功能分支/worktree及精确Owned paths；候选Worker轮询/配置、storage postgres/{connection_pool,task_io}.py及专职回归；入口/Helm超出范围先更新任务，不提前混入08。
 - Invariants: 凭据留BFF；unknown不自动重发/重领Controller；保留原历史、收据、Coverage和前端mock。
 - Acceptance: 区分空/blocked/error退避与抖动，SQL/CPU/线程/连接/队列硬预算，跨namespace公平，控制/原GET独立预算；E1-C/E1-O分层统计p95/p99/拒绝率，不以单池或单角色上限冒充全副本预算。
 - Dependencies/boundaries: docs/CA-HA-02_readiness_preflight.md 第8、9节；仅设计目标/后续待验，不部署/生产迁移。
+
+- Actual receipt: docs/evidence/ca-ha-03/validation.json；完整Worker1326通过/759条件跳过；真实PG33通过；make check全绿。独立/人工评审待完成；03B仍未实现，03整体不标Done、不解锁04。
 
 # CA-HA-01 — HA基线、DDD不变量与验收合同（仅文档）
 - Status: Done（仅设计文档）；2026-10-31 单人文档复核修正9项，revision 2及01文档已合入并推送cloud-agent 1dd88bfd；未运行实现或故障验收；用户授权后登记Ready并领取；Owner Luke Ding，执行Codex；独立评审待安排。

@@ -1,3 +1,11 @@
+## 2026-11-02 — CA-HA-03 / 03A候选（非生产HA完成）
+
+Cloud新旧轮询按空/阻塞/错误退避，控制lane独立；共享命令发现/解析复用原Task I/O
+2s期限及50ms锁等待，真实PG锁负例先红后绿。原收据/unknown/业务执行路径不变。
+[资源上限和剩余03B](docs/CA-HA-03_resource_budgets.md)；[验证](docs/evidence/ca-ha-03/validation.json)。
+03整体仍In Progress：全副本连接总预算/实际入口/namespace容量尚未完成；04未解锁。
+不部署/迁移生产，不恢复旧环境，不声明多节点接管或生产SLO通过。
+
 ## 2026-11-02 ERP 迁址认证复核与源码固化
 
 浏览器Origin与签名身份分离，原Task严格绑定保留；补齐旧Manifest共享常量、bootstrap链接与初始传输配置。

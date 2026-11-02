@@ -389,3 +389,31 @@ def test_durable_reconciliation_and_duplicate_are_acknowledged_without_execution
 def test_discovery_rejects_unbounded_limits_without_database(limit):
     with pytest.raises(ValueError):
         _discover("unused", "control", batch_size=limit)
+
+
+@pytest.mark.parametrize("read", ["discover", "resolve"])
+def test_pickup_reads_release_db_lane_on_table_lock(dsn, read):
+    from concurrent.futures import ThreadPoolExecutor
+
+    command = _prepare(dsn)
+    finished = Event()
+
+    def lookup():
+        try:
+            if read == "discover":
+                return _discover(dsn, "execution")
+            return resolve_command_pickup(
+                dsn, deployment_namespace=NAMESPACE, accepted_event_id=command.event_id
+            )
+        finally:
+            finished.set()
+
+    with psycopg.connect(dsn) as locker, ThreadPoolExecutor(1) as pool:
+        locker.execute("LOCK TABLE session_command_pending IN ACCESS EXCLUSIVE MODE")
+        try:
+            future = pool.submit(lookup)
+            assert finished.wait(1.5), "pickup read stranded its database lane on a lock"
+        finally:
+            locker.rollback()  # Always unblock the pre-fix thread before joining it.
+        with pytest.raises(psycopg.errors.LockNotAvailable):
+            future.result()

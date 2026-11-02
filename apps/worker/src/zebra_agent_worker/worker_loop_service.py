@@ -35,7 +35,11 @@ from zebra_agent_worker.resume import SessionResumeError
 from zebra_agent_worker.safety_net import WorkerSafetyNet
 from zebra_agent_worker.transient_capacity_maintenance import TransientCapacityMaintenance
 from zebra_agent_worker.worker_health import WorkerHealth
-from zebra_agent_worker.worker_polling import has_remaining_cycles, validate_loop_inputs
+from zebra_agent_worker.worker_polling import (
+    PollingDelay,
+    has_remaining_cycles,
+    validate_loop_inputs,
+)
 
 if TYPE_CHECKING:
     from zebra_agent_worker.runtime_gates import RuntimeGateWorker
@@ -92,6 +96,7 @@ class WorkerLoopService:
         transient_capacity: TransientCapacityMaintenance | None = None,
         safety_net: WorkerSafetyNet | None = None,
         runtime_gates: RuntimeGateWorker | None = None,
+        cloud_polling: bool = False,
     ) -> None:
         self.health = WorkerHealth()
         self._projection_store = projection_store
@@ -103,6 +108,7 @@ class WorkerLoopService:
         self._sleep = sleep
         self._command_consumer = command_consumer
         self._scan_ready_sessions = scan_ready_sessions
+        self._cloud_polling = cloud_polling
         self._cloud_memory_recovery_thread: Thread | None = None
         self._memory_delivery = memory_delivery
         self._memory_delivery_thread: Thread | None = None
@@ -407,6 +413,7 @@ class WorkerLoopService:
                 max_cycles=max_cycles,
                 idle_sleep_seconds=idle_sleep_seconds,
             )
+            delay = PollingDelay(idle_sleep_seconds) if self._cloud_polling else None
             accumulator = _LoopAccumulator()
             stop_reason = "max_cycles"
             while max_cycles is None or accumulator.cycles_completed < max_cycles:
@@ -437,7 +444,9 @@ class WorkerLoopService:
                         break
                     if not has_remaining_cycles(accumulator, max_cycles):
                         break
-                    self._sleep(idle_sleep_seconds)
+                    self._sleep(delay.next("progress" if cycle.executed_session_ids else
+                                           "blocked" if cycle.skipped_session_ids else "idle")
+                                if delay else idle_sleep_seconds)
                     continue
                 if (
                     stop_when_idle
@@ -448,6 +457,9 @@ class WorkerLoopService:
                     break
                 if not has_remaining_cycles(accumulator, max_cycles):
                     break
+                if delay is not None:
+                    self._sleep(delay.next("progress" if cycle.executed_session_ids
+                                           else "blocked"))
             return WorkerLoopRunResult(
                 cycles_completed=accumulator.cycles_completed,
                 idle_cycles=accumulator.idle_cycles,

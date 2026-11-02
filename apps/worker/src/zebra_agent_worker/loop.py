@@ -450,6 +450,7 @@ def build_worker_loop_service(
             connect=_safety_connect,
         )
     service = WorkerLoopService(
+        cloud_polling=settings.deployment == "cloud",
         safety_net=safety_net,
         runtime_gates=configure_runtime_gates(settings, active_namespace),
         transient_capacity=configure_transient_capacity_maintenance(active_namespace, settings),
