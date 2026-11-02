@@ -18313,3 +18313,9 @@ ERP candidate/browser/cutover acceptance remains a separate repository task.
   scoped remote integration from reviewed7c382 to origin/cloud-agent, leaving that
   unrelated primary branch/dirty work untouched. G3 uses the reviewed remote base.
   Default profile registry remains empty.
+
+## 2026-11-02 ERP-AUTONOMOUS-ADMIN-RELEASE-20261102
+按用户显式授权交付站点管理员自主模式；实现位于 canonical zebra-erpnext 的独立任务分支，
+不覆盖 integrations/erpnext 同步导出，不引入 ERP 业务依赖到 Native。源与部署隔离验证、
+174模型计数不变、原Run/搜索/MCP保留，见 docs/ERP_AUTONOMOUS_ADMIN_20261102.md。
+本仓库仅跟踪该授权/兼容决策和发布证据；Native WRITE/Scope策略已有支持，无需新通用抽象。

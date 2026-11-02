@@ -1,3 +1,11 @@
+## 2026-11-02 ERP 站点管理员自主模式
+
+当前明确授权账号的新会话可使用跨用户、跨公司和系统管理能力；复用通用 Cloud Grant/WRITE
+与 ERP 原生 Administrator/白名单接口，不在 Cloud core 加入 ERP 权限规则。
+无模型隔离数据库/签名工具、14项 Host 回归和真实页面刷新通过；线上 ERP 五应用服务统一镜像，
+Native/搜索/MCP不变、模型请求174不变、原Run不迁移。不是全模块业务链/真实模型认证。
+详见 [设计与验收](docs/ERP_AUTONOMOUS_ADMIN_20261102.md)。
+
 ## 2026-11-02 ERP Cloud force-stop production acceptance
 
 Native97463d00 generic isolation/independent cleanup is deployed to ERP v117 with the

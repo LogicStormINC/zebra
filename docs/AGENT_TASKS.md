@@ -1,3 +1,14 @@
+# ERP-AUTONOMOUS-ADMIN-RELEASE-20261102
+- Status: Review; deployed and no-model isolated, real HTTP manifest and browser acceptance passed.
+- Created Ready then claimed In Progress; owner Luke Ding / Codex.
+- Branch codex/erp-autonomous-admin-release-20261102; target cloud-agent.
+- Owned paths: docs/AGENT_TASKS.md, PROGRESS.md, WORKLOG.md,
+  docs/ERP_AUTONOMOUS_ADMIN_20261102.md; private .artifacts/erp-autonomous-admin-20261102/.
+- Scope: ERP consumer administrator mode via existing generic Host grants/manifest policies;
+  no ERP branches in cloud-agent runtime. Isolated no-model acceptance before production activation.
+- Explicit authorization: site-wide cross-user/company/system management, autonomous execution;
+  preserve initiating identity, operation receipts, revocation and original Runs/Search/MCP.
+
 # ERP-CLOUD-FORCE-STOP-RELEASE-20261102
 - Created Ready then claimed In Progress before deployment work; owner Luke Ding / Codex.
 - Branch codex/erp-cloud-force-stop-release-20261102; target cloud-agent.
