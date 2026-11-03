@@ -21026,3 +21026,14 @@ without a receipt; rollback and termination fall back to original
 lookup. Final authorization and opt-in standby proof still execute.
 32 focused API and two actual PG17.5 receipt/native tests passed.
 Capacity effect remains unmeasured.
+
+CA-HA-03 exact frozen 9a1857a2 committed-receipt candidate did
+not improve the isolated 5rps/3s no-SSE diagnostic: 8/15 POSTs
+accepted, seven submit TimeoutErrors, and original GET confirmed
+the same eight. Median offer time 2083ms. Private run
+no-sse-committed-receipt-9e054733a1344e6f93831c0616536db2.
+Both original APIs restored and TLS ready. The three incremental
+SQL reductions have not established a capacity improvement.
+Next qualify independent compute placement and collect per-process
+CPU throttling plus end-to-end admission statement counts before
+another change to the write transaction.
