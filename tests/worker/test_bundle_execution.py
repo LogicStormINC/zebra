@@ -111,12 +111,47 @@ def reply(request, bodies):
     )
 
 
+@pytest.mark.parametrize("registered", [False, True])
 def test_actual_worker_recovers_original_snapshot_after_current_profile_change(
-    tmp_path, monkeypatch
+    tmp_path, monkeypatch, registered
 ):
     database = tmp_path / "worker.db"
     base = replace(settings(), database_url=str(database))
     assembly, configured, catalog = write_catalog(tmp_path, base)
+    if registered:
+        from agent_core.domain.runtime_assembly import (
+            RuntimeProviderProfile,
+            canonical_provider_profile_digest,
+        )
+        from agent_core.domain.runtime_bundle import parse_runtime_bundle
+        from agent_core.domain.runtime_bundle_json import json_digest
+        from zebra_agent_config.bundle_settings import load_execution_catalog
+
+        payload = assembly.provider_profile.model_dump(mode="json", exclude={"pin"})
+        payload["models"] = ["alpha"]
+        pin = {
+            "kind": "provider-profile",
+            "id": "registered-" + "a" * 64,
+            "version": "1.0.1",
+            "digest": canonical_provider_profile_digest(payload),
+        }
+        registered_profile = RuntimeProviderProfile.model_validate({**payload, "pin": pin})
+        envelope = assembly.bundle.model_dump(mode="json")
+        manifest = envelope["manifest"]
+        params = manifest["domains"]["model"]["parameters"]
+        previous_pin = params["provider_profile"]
+        params["provider_profile"] = pin
+        manifest["lock"] = sorted(
+            (pin if item == previous_pin else item for item in manifest["lock"]),
+            key=lambda item: (item["kind"], item["id"], item["version"]),
+        )
+        envelope["bundle_digest"] = json_digest(manifest)
+        assembly = load_execution_catalog(configured.runtime_bundle_config).resolve(
+            parse_runtime_bundle(json.dumps(envelope).encode()),
+            registered_profile=lambda scope, requested: (
+                registered_profile if requested == registered_profile.pin else None
+            ),
+        )
     sid, snapshot = seed(tmp_path, assembly)
     # A new catalog/provider/default model is not the task's configuration authority.
     from agent_core.domain.runtime_assembly import canonical_provider_profile_digest

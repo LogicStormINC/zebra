@@ -8,6 +8,8 @@
 - Owned publication paths are `apps/api/src/zebra_agent_api/{bundle_assembly,publication_service,publication_management}.py`.
 - Owned management paths are `apps/api/src/zebra_agent_api/{bundle_management,bundle_management_config,validation_transport,model_profile_management,host_registry_management}.py`.
 - Owned API verification path is `tests/api/test_model_profile_management.py`.
+- Owned Worker verification path is `tests/worker/test_bundle_execution.py`.
+
 
 
 
