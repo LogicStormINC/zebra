@@ -34,7 +34,8 @@ def backfill_task_event_positions(
         raise ValueError("Task position backfill limit must be between 1 and 256")
     _lock_task(connection, namespace, task_id)
     task = connection.execute(
-        """SELECT next_event_sequence,event_position_state,event_position_cursor
+        """SELECT next_event_sequence,event_position_state,event_position_cursor,
+                  event_index_repair_cursor,event_index_repair_highwater
            FROM agent_tasks WHERE deployment_namespace=%s AND task_id=%s""",
         (namespace, task_id),
     ).fetchone()
@@ -45,6 +46,7 @@ def backfill_task_event_positions(
         int(task["event_position_cursor"]),
         int(task["next_event_sequence"]),
     )
+    empty_index = False
     if phase == "legacy":
         row = connection.execute(
             """SELECT GREATEST(
@@ -57,6 +59,10 @@ def backfill_task_event_positions(
             (namespace, task_id, namespace, task_id),
         ).fetchone()
         next_sequence, phase = row["next_sequence"], "validating"
+        empty_index = (
+            next_sequence == 0
+            and task["event_index_repair_cursor"] == task["event_index_repair_highwater"] == -1
+        )
     # Freeze reservations before adoption. New Segment prefixes must not use the
     # ordinary ready-state allocator's next-counter assignment guard.
     connection.execute(
@@ -130,7 +136,8 @@ def backfill_task_event_positions(
                   event_position_cursor=%s WHERE deployment_namespace=%s AND task_id=%s""",
         (next_sequence, phase, cursor, namespace, task_id),
     )
-    if phase == "ready" and limit:
+    # Every mapping for a previously empty index was verified by _assign above.
+    if phase == "ready" and limit and not empty_index:
         repair_task_event_index(connection, namespace, task_id, limit=limit)
     return phase == "ready"
 

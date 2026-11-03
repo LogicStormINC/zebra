@@ -116,6 +116,16 @@ def test_committed_run_has_exact_persisted_identity_never_noncommit(isolated_mig
             (store._database.deployment_namespace,),
         ).fetchone()
         assert event["payload"]["payload"]["run_id"] == "run:exact-owned"
+        task = c.execute(
+            "SELECT event_position_state,event_index_repair_cursor,event_index_repair_highwater "
+            "FROM agent_tasks WHERE deployment_namespace=%s",
+            (store._database.deployment_namespace,),
+        ).fetchone()
+        assert task == {
+            "event_position_state": "ready",
+            "event_index_repair_cursor": -1,
+            "event_index_repair_highwater": -1,
+        }
     assert observe(store, op, True)["state"] == "committed"
     assert (
         observe_atomic_termination(store, op, "a" * 64, write=True, protocol="atomic-task/1")[

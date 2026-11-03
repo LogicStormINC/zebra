@@ -20075,3 +20075,12 @@ and derived insert (2), subsequent repair (1), and wakeup shadow (1).
 Next inspect synchronous legacy repair on a just-created Task.
 Evidence preflight5-position28-ebc292cd*, position28-original-receipts.json,
 position28-zebra*.log and position28-with-sse-c709ada9*.
+
+CA-HA-03 skip synchronous repair when legacy initialization found
+zero source reservations and zero derived mappings, repair cursors
+were untouched, and the same call finished assigning every position.
+Existing repair and resumed batches keep their validation. Regression
+checks initial Run becomes ready with untouched repair cursors.
+51 focused PostgreSQL 17 tests passed, and all three atomic Run tests
+passed with the new assertion. Scale fixtures were excluded from this
+run. Next package and repeat the isolated mixed workload.
