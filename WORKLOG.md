@@ -19711,3 +19711,18 @@ This drill targets the first page, using the same shared retry as refresh.
 Shell assertion used rg -h in error; corrected read of the retained log
 confirmed the marker. Both APIs ready and Worker overlays removed.
 Evidence outage-input-lock-exact19.json and input-lock-exact-zebra*.log.
+
+CA-HA-03 Native20 source 2c566457, ARM manifest
+sha256:0afea4da8d4ea83c00d8ce900df790aa5fb4eb8cd3db56913a60da9a1abf5165.
+Verified 2142 files, 3 links, two-node cold hash preservation, readiness
+and TLS/SSE. Trust 19, published definition cf241811-f519-4a2b-82fc-52362d0e6d1f.
+Combined diagnostic held 32 SSE observers of one idle ready Task
+(16 TCP additions each) and offered new tasks at 5 Hz. 31 accepted once,
+30 completed, 30 model receipts settled, one pre-model executor
+interruption eb9acb11-3eea-46e7-a763-c452fa81c41f, no unknown POSTs.
+Max admission 3.1957s. The 31 reservation guard left one place for
+the observed ready Task. All 32 observers received keepalives without
+client errors. Runner initially shadowed its Task ID variable and
+failed before writes; corrected and retained barrier evidence.
+Next read the exact child traceback and run live multi-Task observation.
+Evidence preflight5-input20-d047879b* and input20-with-sse-647293b6*.
