@@ -20980,3 +20980,14 @@ checks are unchanged. Direct callers keep their existing lookup.
 The rollback/retry regression verifies no redundant claim lookup
 and final authorization uses the saved metadata. 32 API tests passed.
 A frozen live capacity comparison is still needed.
+
+CA-HA-03 frozen 62f495dc claim-reuse candidate did not improve the
+matched no-SSE capacity diagnostic. Both the previous and updated
+3s/5rps runs returned 10/15 immediate acceptance and 11/15 confirmed
+originals; the other four remained unknown on the sampled GET.
+Offer latency median 1883ms old vs 2139ms new, one sample each,
+which establishes no performance gain or regression. Both images
+verified source hashes, ran by exact ID, and both isolated APIs
+were restored. Private run no-sse-claim-reuse-58960f0d33bc443994fc08d7c00d4405.
+The next meaningful target is first-Run source/index assignment
+round trips; preserve the legacy source-adoption and cursor checks.
