@@ -37559,3 +37559,6 @@ CA-HA-03 E1 corpus factory addendum, same owner and branch. Own tests/compose/cl
 CA-HA-03 E1 continuation lock follow-up, same owner and branch.
 Own execution_preparation.py, session_process_child.py and the existing continuation
 recovery test. Reuse the one same-fence lock retry for the post-start recovery read.
+
+CA-HA-03 E1 node boot addendum, same owner and branch. Own the isolated
+cloud_ha_e1 node2 relay and systemd units plus their fixture README instructions.

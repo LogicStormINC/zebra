@@ -286,3 +286,20 @@ and checks source/index identity. The default is 10,000 Tasks. This is
 the synthetic structural corpus only. Preserved legacy/Coverage/receipt
 samples and application composition into the generated namespace are
 separate prerequisites for the full E1 baseline.
+
+## OrbStack node2 boot recovery
+
+The boot units are specific to the disposable `zebra-ha-e1-node2` VM and
+the named corpus containers. Verify the first node is `192.168.139.232`, the
+five container names in the unit are owned by the rehearsal, and the relay
+ports are unbound before activation. On node2, install
+`node2_dependency_relay.py` as `/usr/local/lib/zebra-e1-node2-dependency-relay.py`
+with mode 0700, and install the two service files under `/etc/systemd/system`
+with mode 0644. Stop any previous test-owned transient relay first.
+
+Run `systemd-analyze verify` on the two files, then `systemctl daemon-reload`
+and `systemctl enable --now zebra-e1-node2-relay zebra-e1-node2-corpus`.
+After a named VM stop/start, check both units, all five container states and
+the node2 TLS `/health/ready` endpoint. To retire this fixture, disable and
+stop the corpus unit, then the relay unit, and remove the installed files.
+The relay uses loopback listeners and a fixed first-node dependency address.
