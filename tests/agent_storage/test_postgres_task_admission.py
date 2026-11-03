@@ -213,6 +213,12 @@ def test_task_binding_renewal_appends_one_locked_revision(
         task_id=task_id,
     )
     assert latest is not None and latest.binding_revision == 2
+    assert load_task_binding(
+        postgres_dsn, deployment_namespace=namespace, task_id=task_id, binding_revision=1
+    ) == current
+    assert load_task_binding(
+        postgres_dsn, deployment_namespace=namespace, task_id=task_id, binding_revision=3
+    ) is None
     with pytest.raises(ValueError, match="advanced concurrently"):
         save_task_binding(
             postgres_dsn,

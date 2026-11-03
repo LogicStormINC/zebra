@@ -347,9 +347,10 @@ def load_task_binding(
     *,
     deployment_namespace: str,
     task_id: TaskId,
+    binding_revision: int | None = None,
     task_io_connections: TaskIoConnections | None = None,
 ) -> TaskBindingSnapshot | None:
-    """Reconstruct the latest immutable binding snapshot for one Task."""
+    """Read a historical binding by revision, or the latest when omitted."""
 
     database = PostgresDatabase(
         dsn, deployment_namespace=deployment_namespace, task_io_connections=task_io_connections
@@ -359,10 +360,10 @@ def load_task_binding(
     unit = borrow_work_unit((dsn, deployment_namespace))
     if unit is not None:
         with unit as connection:
-            return _read_task_binding(connection, deployment_namespace, task_id)
+            return _read_task_binding(connection, deployment_namespace, task_id, binding_revision)
     with database.connect_task_io() as connection:
         connection.execute("SET TRANSACTION READ ONLY")
-        return _read_task_binding(connection, deployment_namespace, task_id)
+        return _read_task_binding(connection, deployment_namespace, task_id, binding_revision)
 
 
 def load_session_task_binding(
@@ -428,14 +429,23 @@ def _read_session_root_binding(
 
 
 def _read_task_binding(
-    connection: Any, deployment_namespace: str, task_id: TaskId
+    connection: Any,
+    deployment_namespace: str,
+    task_id: TaskId,
+    binding_revision: int | None = None,
 ) -> TaskBindingSnapshot | None:
-    row = connection.execute(
-        """SELECT snapshot_json FROM task_binding_snapshots
-           WHERE deployment_namespace=%s AND task_id=%s
-           ORDER BY binding_revision DESC LIMIT 1""",
-        (deployment_namespace, str(task_id)),
-    ).fetchone()
+    query = """SELECT snapshot_json FROM task_binding_snapshots
+               WHERE deployment_namespace=%s AND task_id=%s"""
+    if binding_revision is None:
+        row = connection.execute(
+            query + " ORDER BY binding_revision DESC LIMIT 1",
+            (deployment_namespace, str(task_id)),
+        ).fetchone()
+    else:
+        row = connection.execute(
+            query + " AND binding_revision=%s",
+            (deployment_namespace, str(task_id), binding_revision),
+        ).fetchone()
     if row is None:
         return None
     return _binding_from_snapshot(row["snapshot_json"], task_id)
