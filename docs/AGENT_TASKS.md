@@ -37515,3 +37515,6 @@ tests/worker/test_model_call_index.py.
 
 CA-HA-03 artifact HTTP fault fixture addendum: own the native media
 fixture setup in tests/api/test_artifact_download_deadline.py.
+
+CA-HA-03 Cloud input object receipt addendum: own the unknown PUT
+reconciliation seam in cloud_attachment_ingress.py and its regression.

@@ -20431,3 +20431,11 @@ All 46 HTTP artifact and PostgreSQL lifecycle regressions passed
 on disposable PostgreSQL 17, including both real audit COMMIT reply
 loss variants with one durable row and no replay. Production code
 unchanged. This is delivery audit, separate from object publication.
+
+CA-HA-03 Cloud input admission now handles a lost S3 PUT reply by
+verifying the same immutable expectation once, without another
+PUT. Continues only for a verified version receipt; missing or
+mismatched objects leave admission failed. Shared path covers initial
+and follow-up inputs. Five ingress tests passed, including verified
+and absent original outcomes. Next run the real S3/PG publication
+boundary against the isolated candidate.
