@@ -20507,3 +20507,11 @@ without write replay. This injects an unresponsive database behind
 an open transport and exercises the bounded connection path; it
 does not inject a half-open in-flight COMMIT or HTTP route.
 Evidence pg-sync-half-open-two-hosts.json.
+
+CA-HA-03 first Run original COMMIT reply loss regression. Reused the
+PostgreSQL wire fault proxy to drop the actual CommandComplete
+after durable COMMIT of Task, command, wakeup and result. Caller saw
+OperationalError; original read-only observation returned committed.
+Exactly one pending command and one outbox row persisted. Four
+atomic first Run tests passed on disposable PG17. This is the
+atomic transaction path, not a loaded HTTP or cross-host fault.

@@ -163,3 +163,25 @@ def test_atomic_initial_run_indexes_before_wakeup_and_rolls_back_on_rejection(
         with atomic_surface_transaction(store, op, "a" * 64):
             effects(store)
     assert counts(store) == [0] * 5 and command_counts(store) == [0, 0]
+
+
+def test_atomic_first_run_recovers_original_after_lost_commit_reply(isolated_migration_dsn):
+    from agent_storage.postgres.idempotency import PostgresIdempotencyStore
+    from psycopg import OperationalError
+
+    from tests.api.test_artifact_download_deadline import lost_commit_reply
+
+    store, op = setup(isolated_migration_dsn, PROTOCOL)
+    enable(store)
+    assert start_atomic_surface(store, op, "a" * 64, protocol=PROTOCOL)
+    with lost_commit_reply(isolated_migration_dsn) as (proxy_dsn, committed, _):
+        through_proxy = PostgresIdempotencyStore(
+            proxy_dsn, deployment_namespace=store._database.deployment_namespace
+        )
+        with pytest.raises(OperationalError):
+            with atomic_surface_transaction(through_proxy, op, "a" * 64):
+                effects(through_proxy)
+                result(through_proxy, op)
+        assert committed.is_set()
+    assert observe(store, op, False)["state"] == "committed"
+    assert command_counts(store) == [1, 1]

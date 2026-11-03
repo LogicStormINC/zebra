@@ -37520,3 +37520,6 @@ CA-HA-03 Cloud input object receipt addendum: own the unknown PUT
 reconciliation seam in cloud_attachment_ingress.py and its regression.
 The Cloud input object receipt addendum also owns the signed HTTP
 regression in tests/api/test_artifact_download_deadline.py.
+
+CA-HA-03 first Run lost COMMIT addendum: own the native atomic Run
+regression in tests/agent_storage/test_admission_atomic_task_run.py.
