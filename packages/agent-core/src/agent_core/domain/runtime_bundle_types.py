@@ -3,7 +3,7 @@
 from typing import Annotated, Literal, Self
 from urllib.parse import urlsplit
 
-from pydantic import AfterValidator, BaseModel, ConfigDict, Field, model_validator
+from pydantic import AfterValidator, BeforeValidator, BaseModel, ConfigDict, Field, model_validator
 
 
 def _unicode(value: str) -> str:
@@ -92,7 +92,14 @@ class BundleScope(BundleValue):
     deployment_id: Identifier
 
 
-class ModelParameters(BundleValue):
+class SelectableModel(BundleValue):
+    provider_profile: ArtifactPin
+    model: Identifier
+
+
+class SingleModelParameters(BundleValue):
+    model_config = ConfigDict(title="ModelParameters")
+
     provider_profile: ArtifactPin
     model: Identifier
     context_window_tokens: Annotated[int, Field(ge=1, le=1_048_576)]
@@ -107,6 +114,26 @@ class ModelParameters(BundleValue):
             raise ValueError("provider profile pin required")
         if self.max_output_tokens > self.context_window_tokens:
             raise ValueError("output exceeds context window")
+        return self
+
+
+class ModelParameters(SingleModelParameters):
+    selectable_models: Annotated[
+        tuple[SelectableModel, ...],
+        BeforeValidator(lambda value: tuple(value) if type(value) is list else value),
+        Field(max_length=16),
+    ] = Field(default=(), exclude_if=lambda value: not value)
+
+    @model_validator(mode="after")
+    def valid_choices(self) -> Self:
+        profiles = [
+            self.provider_profile,
+            *(item.provider_profile for item in self.selectable_models),
+        ]
+        if any(pin.kind != "provider-profile" for pin in profiles):
+            raise ValueError("selectable model requires a provider profile pin")
+        if len({pin.id for pin in profiles}) != len(profiles):
+            raise ValueError("duplicate selectable provider profile")
         return self
 
 
@@ -168,9 +195,7 @@ class ConfigurableBudgetDomain(BundleValue):
 
 
 # budget 保持 pinned 兼容（既有 envelope 合法），可配形态经判别联合引入。
-BudgetDomain = Annotated[
-    PinnedDomain | ConfigurableBudgetDomain, Field(discriminator="mode")
-]
+BudgetDomain = Annotated[PinnedDomain | ConfigurableBudgetDomain, Field(discriminator="mode")]
 
 
 class RuntimeDomains(BundleValue):

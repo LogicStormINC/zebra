@@ -8872,3 +8872,5 @@ CA-P5-09/10 combined final producer gates: make test11240 passed/3080 conditiona
 CA-P5-08 verification resumed on9e91d75f after both producer gates passed and GitHub HTTPS remote verified. No code changes; consumer V22 uses new exact-source images in one environment. After cleanup compare frozen blobs and reuse current-turn full result if unchanged. Prior unknowns/data preserved; final S1 still pending.
 
 CA-P7-MODEL-01 注册支持核对连接摘要。真实 PostgreSQL 定向测试覆盖 Base URL 和凭据引用不匹配时拒绝且不落原操作，以及正常重放和重启恢复。
+
+多模型 Bundle 装配候选新增 1.1.0 模型组件，保留旧目录摘要。额外模型 pin 进入 lock 并逐一校验供应商批准。装配测试 11 项通过，公开合同发布和发送选模待接入。

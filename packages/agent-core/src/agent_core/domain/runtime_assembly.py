@@ -91,9 +91,8 @@ class BudgetProfile(BundleValue):
 
     @model_validator(mode="after")
     def approval_digest(self) -> Self:
-        if (
-            self.pin.kind != "budget-profile"
-            or self.pin.digest != canonical_budget_profile_digest(self)
+        if self.pin.kind != "budget-profile" or self.pin.digest != canonical_budget_profile_digest(
+            self
         ):
             raise ValueError("budget profile pin digest mismatch")
         return self
@@ -108,6 +107,11 @@ class RuntimeAssembly(BundleValue):
     bundle: RuntimeBundleEnvelope
     provider_profile: RuntimeProviderProfile
     budget_profile: BudgetProfile
+    selectable_profiles: Annotated[
+        tuple[RuntimeProviderProfile, ...],
+        BeforeValidator(lambda value: tuple(value) if type(value) is list else value),
+        Field(max_length=16),
+    ] = Field(default=(), exclude_if=lambda value: not value)
 
     @model_validator(mode="after")
     def require_approved_native_parameters(self) -> Self:
@@ -124,6 +128,16 @@ class RuntimeAssembly(BundleValue):
             or model.max_output_tokens > profile.max_output_tokens
         ):
             raise ValueError("Bundle model exceeds exact provider approval")
+        if len(model.selectable_models) != len(self.selectable_profiles):
+            raise ValueError("selectable model approval set differs from Bundle")
+        for choice, approval in zip(model.selectable_models, self.selectable_profiles, strict=True):
+            if (
+                choice.provider_profile != approval.pin
+                or choice.model not in approval.models
+                or model.context_window_tokens > approval.max_context_window_tokens
+                or model.max_output_tokens > approval.max_output_tokens
+            ):
+                raise ValueError("selectable model exceeds exact provider approval")
         if model.thinking != "auto":
             raise ValueError("native Bundle assembly requires thinking=auto")
         budget = self.bundle.manifest.domains.budget

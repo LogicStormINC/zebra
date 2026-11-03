@@ -98,12 +98,16 @@ class RuntimeExecutionCatalog(BundleValue):
             or any(pin not in self.build_evidence for pin in manifest.build_evidence)
         ):
             raise ValueError("BUNDLE_ASSETS_NOT_APPROVED")
-        pin = manifest.domains.model.parameters.provider_profile
-        profile = next((item for item in self.providers if item.pin == pin), None)
-        if profile is None and registered_profile is not None:
-            profile = registered_profile(self.scope, pin)
-        if profile is None or profile.pin != pin:
-            raise ValueError("BUNDLE_PROVIDER_NOT_APPROVED")
+
+        def approved_provider(pin: ArtifactPin) -> RuntimeProviderProfile:
+            profile = next((item for item in self.providers if item.pin == pin), None)
+            if profile is None and registered_profile is not None:
+                profile = registered_profile(self.scope, pin)
+            if profile is None or profile.pin != pin:
+                raise ValueError("BUNDLE_PROVIDER_NOT_APPROVED")
+            return profile
+
+        model = manifest.domains.model.parameters
         budget = manifest.domains.budget
         if (
             isinstance(budget, ConfigurableBudgetDomain)
@@ -111,7 +115,12 @@ class RuntimeExecutionCatalog(BundleValue):
         ):
             raise ValueError("BUNDLE_BUDGET_NOT_APPROVED")
         return RuntimeAssembly(
-            bundle=bundle, provider_profile=profile, budget_profile=self.budget
+            bundle=bundle,
+            provider_profile=approved_provider(model.provider_profile),
+            budget_profile=self.budget,
+            selectable_profiles=tuple(
+                approved_provider(choice.provider_profile) for choice in model.selectable_models
+            ),
         )
 
 
