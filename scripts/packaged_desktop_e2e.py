@@ -167,7 +167,12 @@ class PackagedApp:
         deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:
             try:
-                return self._element(using, selector)
+                element = self._element(using, selector)
+                displayed = request_json(
+                    "GET", f"{DRIVER_URL}/session/{self.session_id}/element/{element}/displayed"
+                )
+                if displayed.get("value") is True:
+                    return element
             except AssertionError:
                 pass
             time.sleep(0.25)
