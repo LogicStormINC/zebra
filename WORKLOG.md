@@ -20631,3 +20631,11 @@ Executed the exact file against the disposable cross-host pair,
 including non-login owner privileges, pause/cancel/replay behavior,
 and wrong digest rejection. Fixture only, no deployment or migration.
 Evidence pg-sync-proof-fixture-two-hosts.json.
+
+CA-HA-03 bounded standby proof transport validated. The existing
+TaskIoConnections under a 500 ms scoped deadline queried the
+least-privilege receipt function. With the exact standby process
+paused, the proof failed closed after 456 ms. On resume the same
+original receipt verified without a new write. Single serial proof
+connection, no fleet concurrency or HTTP wiring. Evidence
+pg-sync-proof-deadline-two-hosts.json.
