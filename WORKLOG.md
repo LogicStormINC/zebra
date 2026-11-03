@@ -19771,3 +19771,16 @@ in-flight at 5 Hz before the active reservation cap. Maximum admission
 E1 capacity pass. Next attribute API preflight and Worker throughput
 with per-component measurements and test multi-Task live cursors.
 Evidence preflight5-commit21-39a54ca8* and commit21-with-sse-86a617ac*.
+
+CA-HA-03 Native21 mixed admission attribution: matched all 20 original
+POST timestamps and durations to canonical bootstrap and accepted
+command events by Task ID. Median POST-to-bootstrap 1.1252s, bootstrap
+to-command 1.0371s, command-to-response 0.5629s, end-to-end 2.6827s.
+Max 3.8818s. These are cross-clock stage estimates from event construction
+timestamps, not commit timings. The load generator measures POST after
+grant exchange, so exchange latency is outside these numbers. Source
+shows generic execute=true commits bootstrap before queue_cloud_run;
+the existing native atomic Task+Run path provides a comparison candidate.
+Next measure exact authorization, admission transaction and post-commit
+response timings or compare the signed atomic path before changing
+the generic path. Evidence split-admission21.json.
