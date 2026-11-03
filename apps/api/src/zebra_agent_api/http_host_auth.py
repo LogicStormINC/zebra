@@ -32,6 +32,7 @@ from zebra_agent_api.database_budget import database_call
 from zebra_agent_api.extension_reads import is_extension_path
 from zebra_agent_api.extension_request_body import _unique_object
 from zebra_agent_api.http_origins import _normalize_exact_origin
+from zebra_agent_api.idempotency import TASK_CREATE_RECEIPT_PATH
 from zebra_agent_api.responses import ApiResponse, bad_request
 from zebra_agent_api.session_binding import _build_binding_snapshot
 from zebra_agent_api.session_identity_read import _parse_session_id
@@ -102,6 +103,9 @@ def validate_host_target(
             definition_snapshot_digest=None,
         )
         return
+
+    if method == "GET" and path == TASK_CREATE_RECEIPT_PATH:
+        return  # The receipt route resolves and fences the stored Task identity.
 
     task_id: TaskId | ApiResponse | None = None
     run_id: str | None = None

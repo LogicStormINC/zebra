@@ -37451,3 +37451,7 @@ session_streaming.py and PostgreSQL worker_budget.py in the E1 delta.
 
 CA-HA-03 isolated load balancer addendum: own E1 Control.Caddyfile for
 active readiness-based backend selection.
+
+CA-HA-03 original create receipt addendum: own task_routes.py, idempotency.py,
+http_host_auth.py, tenant_guard.py and tests/api/test_task_create_receipt.py for
+a scoped GET of an existing Cloud creation receipt.

@@ -19612,3 +19612,12 @@ after COMMIT. It does not prove network loss timing or authorized public
 GET receipt recovery. Next check the public receipt surface and persist
 the exchange binding coordinates before sending the next fresh intent.
 Private evidence lost-create-combined18.json.
+
+CA-HA-03 creation receipt candidate adds GET /tasks/create-receipt with
+the original Idempotency-Key. It derives the same scoped storage key
+as creation, checks current verified Host scope, resolves the immutable
+receipt's session_id and checks exact Task authority before returning a
+minimal accepted identity. A miss returns not_observed and says nothing
+about whether an in-flight original can commit. Focused route suite:
+15 passed and Ruff/diff clean. Next validate real Host grant authorization
+and cross-node lookup after client response loss on the isolated pair.
