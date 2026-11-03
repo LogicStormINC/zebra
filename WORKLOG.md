@@ -20859,3 +20859,13 @@ and the existing auth log records the precise rejecting gate without
 logging exception payloads. Targeted suites 17 passed, 7 skipped.
 The isolated running image predates the diagnostic; a fresh candidate
 must be used before interpreting another 256-stream run.
+
+CA-HA-03 live 256-SSE attribution with a single temporary source
+overlay on the isolated second API: 22 authorization rejections
+logged ApiDatabaseExecutorSaturated, with no database permit
+rejections logged. The readiness gate did not send admission POSTs.
+Private evidence sse-executor-bbf53c03ebba4e17a341635a1ea9addc.
+Restored the exact original image and source on the second API and
+verified TLS readiness. Next isolate or fairly queue stream polling
+and authorization in the bounded read executor without enlarging
+the declared fleet connection budget.
