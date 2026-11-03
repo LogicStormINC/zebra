@@ -20172,3 +20172,13 @@ This is a separate Worker post-model storage fault, not an admission
 timeout or provider failure. No replay or resume was sent.
 Next locate the post-response storage call that raised the lock error,
 then test retry/reconciliation of the exact write without model replay.
+
+CA-HA-03 correlated suspended Session's committed model response
+(09:38:21.647801 UTC) and suspension (09:38:22.036666 UTC) with E1
+PostgreSQL logs. The sole lock timeout in that interval at
+09:38:21.803 UTC was a tuple lock in session_streams on SELECT
+current_version ... FOR SHARE. Logs omit bind values and Worker
+logs had no matching Session entry. Four storage adapters use the
+same SQL shape, so the precise caller and blocking transaction remain
+unproven. Model/tool projection is a candidate to check against the
+actual Worker composition. No task writes or replay performed.
