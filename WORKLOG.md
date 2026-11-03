@@ -19666,3 +19666,16 @@ create receipt. Tenth group finished at 10.771s from confirmed stop.
 Both APIs restored and ready. Private evidence lb-receipt19-combined.json.
 The read drill uses one prior stream and one prior receipt. Independent
 write availability during outage and E1 workload gates remain open.
+
+CA-HA-03 Native19 one-API-out write drill: verified primary API stopped,
+then issued one fresh POST through the LB. Its 201 receipt committed,
+and a fresh authorized GET through the LB recovered Task
+29699b28-9109-4c21-bf47-5785c5f68c94. Exactly one accepted command.
+The completion assertion failed because the Worker suspended before
+any model reservation. Node2 child traceback locates LockNotAvailable
+at execution_inputs.advance -> lock_session_lease_boundary during
+context materialization refresh, after attempt start. Executor start
+and exit receipts are present. Restored both APIs and checked readiness.
+Preserve original. Next reproduce and retry only the failed fenced
+input page transaction, not the started attempt. Private evidence
+outage-write19.json and outage-write19-zebra*.log.
