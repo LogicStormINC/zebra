@@ -8894,3 +8894,5 @@ Worker 已从本次发送的持久消息恢复选定 pin，并交给 Bundle 模�
 Cloud Agent candidate adds authenticated `GET /model-options?definition_id=<uuid>&definition_environment=<environment>` for the effective published Bundle. It returns only the Definition/version, default model ID and available model IDs with provider model names as display labels. Targeted route checks pass. Public HTTPS and administrator-configured labels remain to be verified or wired.
 
 Explicit selection of a model available only in the effective release adopts the full release even when the remembered model is retained. Unchanged selection retains the previous release.
+
+Cloud command read-state preparation now pins the Worker lease with a shared row lock while advancing a derived checkpoint. Actual handoff and lease changes retain exclusive locks. A two-connection PostgreSQL regression reproduced the original contention and the command handoff suite passed after the change.

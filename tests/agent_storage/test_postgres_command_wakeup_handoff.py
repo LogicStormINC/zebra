@@ -343,3 +343,18 @@ def test_transaction_lease_helper_obeys_outer_rollback(dsn):
             )
             raise RuntimeError("rollback")
     assert _counts(dsn) == (0, 0, 0)
+
+
+def test_command_checkpoint_preparation_shares_worker_lease_lock(dsn):
+    from agent_storage.postgres.command_read_state import lock_command_source
+
+    event = _prepare(dsn)
+    database = PostgresDatabase(dsn, deployment_namespace=NAMESPACE)
+    lease = PostgresLeaseStore(dsn, deployment_namespace=NAMESPACE).acquire(
+        event.session_id, owner_instance_id="worker", ttl=timedelta(seconds=30)
+    )
+    with database.connect() as writer:
+        assert_current_lease_fence(writer, NAMESPACE, event.session_id, lease.fence)
+        with database.connect_task_io() as reader:
+            reader.execute("SET LOCAL lock_timeout='200ms'")
+            assert lock_command_source(reader, NAMESPACE, event.session_id) == event.sequence
