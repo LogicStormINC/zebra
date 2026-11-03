@@ -19099,3 +19099,23 @@ bootstrap before queue_cloud_run reads the stream and submits the run command.
 Measure binding freeze, bootstrap commit and the queue's event read separately
 before changing response header reads. Preserve the persisted-command lookup
 for duplicate and interrupted admission recovery.
+
+## Native12 sampled advisory-lock queue
+
+Ran fresh synthetic intents with a read-only pg_stat_activity/pg_blocking_pids
+sampler, using the existing 5Hz diagnostic envelope. 31 accepted once,
+30 completed, 16-inflight ceiling reached, longest admission 5.2977s.
+The sampler captured 104 advisory-wait backend observations (repeated
+samples, not unique waits). The dominant waiting statement shape was the
+INSERT referencing agent_tasks and session_projections. Its blockers
+included other such INSERTs and transactions updating session_events.
+Private artifacts: admission-waits-native12.jsonl and
+preflight5-hint12-f76500fe-1fc6-4a34-bc07-3eeaa5847b6c.
+
+The live agent_tasks wake trigger uses the namespace-wide exclusive advisory
+lock family 68. The projector enable path takes the same exclusive lock.
+Next reproduce the collision with two independent Task inserts and verify
+whether shared trigger locking can preserve exclusion against configuration
+changes. The sampler did not capture lock keys, so it cannot attribute
+every observed wait to family 68. Keep the failed original sample and
+inspect its receipt without replay.
