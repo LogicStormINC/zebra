@@ -21096,3 +21096,13 @@ No reuse across requests. Original GET regression on real PG
 verified one physical open for claim plus result reads on libpq17+.
 42 API/atomic PG tests and the focused socket-count assertion passed.
 Next compare actual direct opens and admission outcomes on AMD64.
+
+CA-HA-03 paired AMD64 5rps/3s control vs bounded-scope candidate:
+normal TaskIo physical opens fell 93 to 37; normal execute calls
+rose 591 to 693 (aggregate including resets and failures). Both
+had four 8/8 normal permit rejections and no CPU throttling.
+Sealed POST and later exact original GET completed 2/15 control
+and 3/15 candidate; candidate remaining eight unknown and four
+not_observed. Each operation was sent once. One paired sample
+confirms reduced opens, not a capacity improvement or a resolved
+bottleneck. Evidence amd64-scope-pair-6b292705dcf8 and 8f9ca3159c44.
