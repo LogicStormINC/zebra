@@ -136,6 +136,7 @@ def prepare_worker_context(
     execution_input_reader: Callable[[WorkerLease], list[SessionEvent]] | None = None,
     ownership_check: Callable[[], None] | None = None,
     authority_check: Callable[[list[SessionEvent]], None] | None = None,
+    mark: Callable[[str], None] | None = None,
 ) -> PreparedWorkerContext:
     session_id = claimed.lease.session_id
     binding = load_bound_binding(task_binding_loader, session_id)
@@ -155,6 +156,8 @@ def prepare_worker_context(
         allow_mcp=allow_mcp,
         allow_plugins=allow_plugins,
     )
+    if mark is not None:
+        mark("context_binding")
     claimed, events = AttemptAuthorityEvidence(
         *authority,
         recovery_service,
@@ -169,6 +172,8 @@ def prepare_worker_context(
         started_at=as_of,
         attempt_number=attempt_number,
     )
+    if mark is not None:
+        mark("context_authority_evidence")
     if authority_check is not None:
         authority_check(events)
         claimed = _refresh_claim(
@@ -177,6 +182,8 @@ def prepare_worker_context(
         events = _refresh_inputs(
             event_store, execution_input_reader, claimed.lease, recorder, ownership_check
         )
+    if mark is not None:
+        mark("context_authority_refresh")
     materialization = materialize_worker_context(
         store,
         scope=attempt_authority_scope(authority[1], authority[2], claimed.recovery.session),
@@ -187,6 +194,8 @@ def prepare_worker_context(
         events=events,
         as_of=as_of,
     )
+    if mark is not None:
+        mark("context_selection")
     if materialization is not None:
         recorder.append(
             EventType.MEMORY_CONTEXT_SELECTED,

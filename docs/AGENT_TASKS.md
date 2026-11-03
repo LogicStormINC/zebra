@@ -37597,3 +37597,6 @@ own process_supervision.py exit waiting and the Worker supervision regression.
 CA-HA-03 E1 input head reuse follow-up (Luke Ding/Codex, existing branch/worktree):
 own the first preparation boundary in execution_input_preparation.py and
 execution_recovery.py. Keep the post-restoration/handoff refresh unchanged.
+
+CA-HA-03 E1 Context timing follow-up (Luke Ding/Codex, existing branch/worktree):
+own timing seams in Worker context_materialization.py and execution.py.

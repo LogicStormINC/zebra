@@ -209,6 +209,7 @@ class SessionExecutionService(SessionExecutionComposition, SessionExecutionEntry
                 authority_check=(lambda events: fresh_authority.bind(current_recorder, events))
                 if fresh_authority is not None
                 else None,
+                mark=mark if timing_enabled else None,
             )
             claimed, session_events = prepared_context.claimed, prepared_context.events
             task_binding = prepared_context.binding
