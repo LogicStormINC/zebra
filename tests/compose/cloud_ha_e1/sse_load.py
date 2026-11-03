@@ -52,23 +52,25 @@ async def _problem_code(response: httpx.Response) -> str | None:
     return None
 
 
-async def _event_ids(lines: AsyncIterator[str], row: Stream) -> AsyncIterator[int]:
+async def _event_frames(
+    lines: AsyncIterator[str], row: Stream
+) -> AsyncIterator[tuple[int, tuple[str, ...]]]:
     event_id = None
-    data = False
+    data: list[str] = []
     async for line in lines:
         if line.startswith(": keepalive"):
             row.keepalives += 1
         elif line.startswith("id:"):
             event_id = int(line[3:].strip())
         elif line.startswith("data:"):
-            data = True
+            data.append(line[5:].removeprefix(" "))
         elif not line:
             if event_id is not None and data:
                 if event_id < 0 or (row.last_id is not None and event_id <= row.last_id):
                     raise ValueError("SSE cursor did not advance")
                 row.last_id = event_id
-                yield event_id
-            event_id, data = None, False
+                yield event_id, tuple(data)
+            event_id, data = None, []
 
 
 @asynccontextmanager
@@ -111,12 +113,13 @@ async def hold_streams(
                     if response.headers.get("content-type", "").startswith("application/json"):
                         row.reason = await _problem_code(response)
                     return
-                ids = _event_ids(response.aiter_lines(), row)
-                row.first_id = await anext(ids, None)
-                if row.first_id is not None:
+                frames = _event_frames(response.aiter_lines(), row)
+                first = await anext(frames, None)
+                if first is not None:
+                    row.first_id = first[0]
                     row.opened = loop.time()
                     signal.set()
-            async for _ in ids:
+            async for _ in frames:
                 pass
             row.failure = "unexpected_eof"
         except Exception as exc:
@@ -145,6 +148,41 @@ async def hold_streams(
         await asyncio.gather(*tasks, return_exceptions=True)
 
 
+async def verify_cross_node_resume(
+    client: httpx.AsyncClient,
+    *,
+    task_id: str,
+    binding: dict,
+    principal_token: str,
+) -> tuple[int, int]:
+    path = f"/tasks/{UUID(task_id)}/stream"
+
+    @asynccontextmanager
+    async def frames_at(node: int, cursor: int | None = None):
+        signed = await _exchange(client, principal_token, binding)
+        if signed is None:
+            raise RuntimeError("stream recovery grant unavailable")
+        async with client.stream(
+            "GET",
+            _NODES[node] + path,
+            headers={"Authorization": "Bearer " + signed, "Origin": _ORIGIN},
+            params={"after_sequence": cursor} if cursor is not None else None,
+            follow_redirects=False,
+        ) as response:
+            response.raise_for_status()
+            if not response.headers.get("content-type", "").startswith("text/event-stream"):
+                raise RuntimeError("expected a raw SSE stream")
+            yield _event_frames(response.aiter_lines(), Stream(node, last_id=cursor))
+
+    async with asyncio.timeout(15):
+        async with frames_at(0) as original:
+            first, successor = await anext(original), await anext(original)
+        async with frames_at(1, first[0]) as resumed:
+            if await anext(resumed) != successor:
+                raise RuntimeError("cross-node resume did not return the exact successor frame")
+    return first[0], successor[0]
+
+
 async def _check() -> None:
     from uuid import uuid4
 
@@ -154,7 +192,7 @@ async def _check() -> None:
         yield "id: 1"
         yield "data: {}"
 
-    assert [value async for value in _event_ids(truncated(), Stream(0))] == []
+    assert [value async for value in _event_frames(truncated(), Stream(0))] == []
     release = asyncio.Event()
     grants = []
 

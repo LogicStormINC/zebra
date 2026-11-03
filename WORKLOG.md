@@ -21167,3 +21167,11 @@ This supplies a safe cursor for future planned stream renewal.
 The current raw API caps a stream at 1800s (or earlier grant
 expiry), so a 30-minute window plus staggered setup needs renewal.
 Full corpus generator still live at 600 Tasks / 60k Events.
+
+CA-HA-03 raw cursor adapter live check used an existing synthetic
+Task only. Node 0 delivered cursor 0 and successor 1; closed that
+stream and exchanged a fresh grant for node 1 with after_sequence=0.
+Node 1 delivered exact cursor 1 with identical data lines. The
+helper rejects duplicate/nonmonotonic IDs and truncated frames.
+This is planned reconnect of one stream, not the 256-stream rotation
+or node-loss fault case. Corpus generation remains live.
