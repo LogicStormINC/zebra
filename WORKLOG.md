@@ -21236,3 +21236,13 @@ the same bounded executor wait. Initial unit run exposed old
 request doubles without ASGI scope; updated the existing dispatch
 regression to supply scope and assert the wait option. Both isolated
 APIs were restored. Corpus reached 4000 Tasks.
+
+CA-HA-03 frozen d5ca057b passed the isolated read-only 256-SSE
+renewal diagnostic. Both nodes opened 128 streams and all 256
+renewed with fresh grants and original cursors. Median 16.078s,
+max 21.112s to first resumed observation, including heartbeat
+cadence. No admission POST. Private evidence
+sse-renew256-negotiation-b4e6912f5a3f463a8f34f5c31316c675.
+Restored both original staging APIs and verified TLS readiness.
+This is one planned renewal cycle, separate from 30m E1 load,
+node-loss recovery and production.
