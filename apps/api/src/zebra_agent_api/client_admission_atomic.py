@@ -2,6 +2,7 @@
 
 import logging
 from time import monotonic
+from traceback import walk_tb
 from typing import Any
 
 from agent_core.ports.idempotency_store import IdempotencyRecord
@@ -146,6 +147,7 @@ def execute_atomic_surface(
         mark("transaction_committed")
         return result
 
+    failure: Exception | None = None
     try:
         try:
             return dispatch_transaction()
@@ -156,14 +158,24 @@ def execute_atomic_surface(
             # The first transaction rolled back. Reenter the original fence so
             # a concurrent termination still wins before any admission write.
             return dispatch_transaction()
-    except AtomicSurfaceAborted:
+    except AtomicSurfaceAborted as exc:
+        failure = exc
         return None
+    except Exception as exc:
+        failure = exc
+        raise
     finally:
         if stages:
             log = logger.info if stages[-1][0] == "transaction_committed" else logger.warning
+            frames = [
+                (frame.f_code.co_name, line)
+                for frame, line in walk_tb(failure.__traceback__)
+            ][-12:] if failure is not None else []
             log(
-                "Atomic first Run milestones operation_id=%s elapsed_ms=%s",
+                "Atomic first Run milestones operation_id=%s error_type=%s frames=%s elapsed_ms=%s",
                 operation,
+                type(failure).__name__ if failure is not None else None,
+                frames,
                 [
                     ("prepared", int((prepared_at - started) * 1000)),
                     ("fenced", int((fenced_at - started) * 1000)),
