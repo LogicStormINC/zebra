@@ -20617,3 +20617,11 @@ digest returned false. Disposable prototype used the migration admin
 as function owner; production needs a dedicated non-login owner
 with column-only SELECT and guarded topology configuration.
 Evidence pg-sync-boolean-proof-two-hosts.json.
+
+CA-HA-03 verified the boolean standby proof with a dedicated
+non-login, non-superuser function owner. Owner received only exact
+receipt column reads and pg_control_system execute, no receipt DML
+or Session Event reads. Caller still had function execute only.
+Cross-host paused/replayed cases and wrong digest behaved as before.
+Disposable SQL proof; deployment role provisioning and API composition
+are pending. Evidence pg-sync-proof-owner-two-hosts.json.
