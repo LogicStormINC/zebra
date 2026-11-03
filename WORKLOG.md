@@ -19447,3 +19447,17 @@ required identifier shape, not every resumability condition. 25 focused
 tests passed after fixing the test proxy to supply its Session store.
 Next verify fresh first-run and explicit resume with the isolated API and
 leave original pending receipts available for read-only reconciliation.
+
+CA-HA-03 Native16 three-module isolated API overlay: fresh Task
+1eae4323-5c1f-49c3-8d03-b4f054ac8c9a, 32 authorized observers, 16 added
+TCP sockets per node. Missing run_id request returned 400. A distinct
+explicit Run identity resume returned 202 and completed. PostgreSQL
+shows exactly one accepted command, answer, completion and settled model
+reservation; command done. This is first execution from READY via explicit
+resume, not restoration of a previously interrupted Run. Twenty clients
+observed terminal cursor 13. Twelve have no terminal frame in the bounded
+capture. The harness did not distinguish EOF from cancellation at 15s.
+The temporary APIs were restored. Next measure full per-client frame and
+termination timing, then verify resume of an existing interrupted Run.
+Private artifacts sse19-missing-run.json, sse19-live-resume-original.json,
+sse19-live-event-b5935eef*.
