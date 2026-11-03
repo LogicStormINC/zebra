@@ -19816,3 +19816,17 @@ verified readiness. Private evidence stage785-summary.json,
 preflight5-stage785-533dd486*, stage785-with-sse-79cdb7c9*.
 Next compare atomic versus generic at identical open-loop load and
 observe active Task streams with per-client cursor accounting.
+
+CA-HA-03 Native21 signed atomic 5Hz diagnostic with 32 idle SSE observers
+stopped after 10 original POSTs when two HTTP 500s and one 503 made
+outcomes unknown to the client. Seven immediate accepted originals
+completed and settled. Read-only GET using original keys recovered
+the 503's sealed 201, then verified completion/settlement. The other
+two GETs remain unknown with claim recorded and no result. No repeat
+POST. API traces locate both 500s at command_wakeup.py's advisory
+lock inside the atomic Task+Run write. The atomic path failed this
+load comparison despite the small serial advantage. All 32 observers
+received heartbeats. Next reproduce lock contention around atomic
+admission and preserve original-only reconciliation semantics.
+Private evidence preflight5-atomic21-685ca250*, atomic21-original-*,
+atomic21-recovered-outcome.json, atomic21-errors-zebra*.log.
