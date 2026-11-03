@@ -20826,3 +20826,10 @@ could not claim it for dispatch again. No terminal result was
 invented. Evidence pg-sync-tool-effect-promotion.json. The harness
 used native effect storage and a file-backed synthetic side effect,
 without an actual production connector.
+
+CA-HA-03 live adapter diagnostic: existing isolated OrbStack
+endpoints held four signed SSE streams during a one-second 5rps
+window. Five planned offers accepted and five signed original GETs
+returned authenticated completed receipts. Private evidence
+adapter-91cf6605895646d6b310468637b2974b. This used the existing
+runtime and no baseline dataset; it is not E1 capacity evidence.

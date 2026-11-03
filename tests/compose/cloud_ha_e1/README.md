@@ -269,3 +269,11 @@ opens. An early closure invalidates the steady window. Supply a dedicated
 TLS client with at least 256 stream connections plus grant-exchange
 headroom. The standalone check simulates early EOF; live capacity and
 cursor-resume fault measurement are separate.
+
+Run `run_load_diagnostic.py --help` for the short live adapter check.
+It requires the private original SSE fixture, a fresh synthetic task
+template/workspace, principal file and fixture CA. It caps the window
+at three seconds and never overwrites an evidence directory. The first
+live run held four streams, accepted all five planned offers, and
+verified all five original GET receipts. It used the existing staging
+runtime and no baseline dataset. See WORKLOG for the private run ID.
