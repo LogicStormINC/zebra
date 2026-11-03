@@ -140,10 +140,18 @@ def reconcile_in_cleanup(container: str, witness: dict[str, str], *, namespace: 
         "from agent_storage.postgres import force_stop_executors as storage\n"
         f"exec(compile({storage.read_bytes()!r}, 'executor_storage', 'exec'), vars(storage))\n"
         + Path(__file__).read_text().rsplit('if __name__ == "__main__":', 1)[0]
-        + "\nfrom agent_storage.postgres.connection_pool import postgres_pool_scope\n"
+        + "\nfrom agent_storage.postgres.connection_capacity import (\n"
+        + "    PROFILE_ENV, ConnectionBudget, capacity_scope,\n"
+        + ")\n"
+        + "from agent_storage.postgres.capacity_profile import CapacityProfile\n"
         + "dsn = os.environ['ZEBRA_DATABASE_URL']\n"
-        + "with postgres_pool_scope(dsn, component='cleanup'):\n"
-        + f"    print(reconcile_exits({witness!r}, dsn, namespace={namespace!r}))\n"
+        + "profile = CapacityProfile.parse(os.environ[PROFILE_ENV])\n"
+        + "budget = ConnectionBudget(dsn, profile, 'cleanup')\n"
+        + "with capacity_scope(budget):\n"
+        + f"    count = reconcile_exits({witness!r}, dsn, namespace={namespace!r})\n"
+        + "assert budget.stats()['peak']['control'] == 1\n"
+        + "assert not any(budget.stats()['active'].values())\n"
+        + "print(count)\n"
     )
     result = subprocess.check_output(
         ["docker", "exec", "-i", spec["Id"], "python", "-"],
