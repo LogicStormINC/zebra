@@ -20944,3 +20944,16 @@ These are sampled backend observations across the shared database,
 not elapsed milliseconds or attribution to individual POSTs.
 Next correlate statement classes and blockers for admission itself.
 Both original isolated APIs restored and TLS readiness verified.
+
+CA-HA-03 classified pg_stat_activity without storing raw SQL on
+another frozen 256-SSE diagnostic. All streams held; 8/15 POSTs
+completed immediately, and original GET confirmed 9/15 total.
+In 49 overlapping snapshots, COMMIT showed 18 WalSync and six
+WALWrite observations. Advisory waits numbered six, with blocker
+statement classes other (4), idempotency (1), and COMMIT (1).
+Event and task-index queries frequently had no reported wait.
+These shared-db samples identify contributing work but do not
+support a single dominant lock. Next compare a matched no-SSE run
+and log atomic milestones before changing a write-path invariant.
+Private run sse-blockers-5b053d365232408bb1c9c40b92740e83.
+Both original staging APIs restored; no POST replay.
