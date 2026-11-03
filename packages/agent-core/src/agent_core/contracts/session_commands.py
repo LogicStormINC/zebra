@@ -69,6 +69,8 @@ class SessionCommand(BaseModel):
         server_owned = {"stream_admission", "capacity_policy", "capacity_digest", "capacity_epoch"}
         if server_owned & value.keys():
             raise ValueError("stream_admission is server-owned metadata")
+        if {"definition_snapshot", "selected_model_pin", "binding_revision"} & value.keys():
+            raise ValueError("release binding is server-owned metadata")
         if "stream_capabilities" in value:
             caps = StreamCapabilities.model_validate(value["stream_capabilities"])
             value = {**value, "stream_capabilities": caps.model_dump(mode="json")}
