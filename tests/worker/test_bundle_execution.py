@@ -81,7 +81,7 @@ def worker(database, configured, client=None):
     )
 
 
-def reply(request, bodies):
+def reply(request, bodies, usage=None):
     body = json.loads(request.content)
     bodies.append(body)
     if body["stream"]:
@@ -93,6 +93,8 @@ def reply(request, bodies):
             },
             {"choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}]},
         ]
+        if usage is not None:
+            events.append({"choices": [], "usage": usage})
         return httpx.Response(
             200,
             headers={"content-type": "text/event-stream"},
@@ -101,12 +103,13 @@ def reply(request, bodies):
     return httpx.Response(
         200,
         json={
+            **({"usage": usage} if usage is not None else {}),
             "choices": [
                 {
                     "message": {"role": "assistant", "content": "Bound reply."},
                     "finish_reason": "stop",
                 }
-            ]
+            ],
         },
     )
 
@@ -475,7 +478,10 @@ def test_task_root_budget_follows_configurable_bundle_domain(tmp_path, monkeypat
     )
 
 
-def test_worker_sends_model_request_using_message_release_snapshot(tmp_path, monkeypatch):
+@pytest.mark.parametrize("with_usage", [False, True])
+def test_worker_sends_model_request_using_message_release_snapshot(
+    tmp_path, monkeypatch, with_usage
+):
     from agent_core.application import SessionMessageAppendCommand, SessionMessageAppendService
     from agent_core.application.session_projection import rebuild_session
     from agent_core.application.workspace_projection import rebuild_workspace
@@ -511,8 +517,20 @@ def test_worker_sends_model_request_using_message_release_snapshot(tmp_path, mon
     SQLiteWorkspaceProjectionStore(database).save_workspace(rebuild_workspace(history))
     monkeypatch.setenv("BUNDLE_MODEL_KEY", "fixture-key")
     bodies = []
+    usage = (
+        {
+            "prompt_tokens": 8,
+            "completion_tokens": 3,
+            "total_tokens": 11,
+            "prompt_cache_hit_tokens": 2,
+            "prompt_cache_miss_tokens": 6,
+            "completion_tokens_details": {"reasoning_tokens": 1},
+        }
+        if with_usage
+        else None
+    )
     with httpx.Client(
-        transport=httpx.MockTransport(lambda request: reply(request, bodies))
+        transport=httpx.MockTransport(lambda request: reply(request, bodies, usage))
     ) as client:
         result = worker(database, configured, client).execute_session(
             sid, worker_id="bundle-worker"
@@ -521,7 +539,8 @@ def test_worker_sends_model_request_using_message_release_snapshot(tmp_path, mon
     assert bodies and all(body["model"] == "beta" for body in bodies)
     assert any("Frozen business beta." in json.dumps(body["messages"]) for body in bodies)
     observed = [
-        event.payload for event in events.list_for_session(sid)
+        event.payload
+        for event in events.list_for_session(sid)
         if event.event_type.value == "provider_usage_observed"
     ]
     assert len(observed) == 2 * len(bodies)
@@ -529,9 +548,15 @@ def test_worker_sends_model_request_using_message_release_snapshot(tmp_path, mon
         assert started["attempt_id"] == finished["attempt_id"]
         assert (started["phase"], finished["phase"]) == ("started", "finished")
         assert finished["definition_id"] == str(snapshot.definition_id)
-        assert finished["bundle_scope"] == replacement.bundle.manifest.scope.model_dump(
-            mode="json"
-        )
+        assert finished["bundle_scope"] == replacement.bundle.manifest.scope.model_dump(mode="json")
         assert "task_id" not in finished
         assert finished["model_pin"] == replacement.provider_profile.pin.model_dump(mode="json")
-        assert finished["usage"]["total_tokens"] is None
+        expected = {
+            "input_tokens": 8,
+            "output_tokens": 3,
+            "total_tokens": 11,
+            "prompt_cache_hit_tokens": 2,
+            "prompt_cache_miss_tokens": 6,
+            "reasoning_tokens": 1,
+        }
+        assert finished["usage"] == (expected if with_usage else dict.fromkeys(expected))
