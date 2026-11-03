@@ -19236,3 +19236,25 @@ association is suggestive. Preserve this original and do not resend.
 Next capture holder and waiter on the same stream transaction and isolate
 the contention before changing retry or lock policy. Private artifacts:
 preflight5-close14-cpu6-*/readonly-originals.json and cpu6-postgres-window.log.
+
+### CA-HA-03 Native14 lock holder and executor startup evidence
+
+Two fresh guarded 5 Hz runs, each 32 accepted once and capped at 32
+reservations. First completed 32 (max admission 3.300s); second completed
+31 (max 1.904s) with one pre-model interruption. Both retained originals.
+In the second capture a session_streams UPDATE waited on a transaction
+executing a WITH on the same table, matching the hint claim shape. The holder
+was 3.7ms old at sampling. This proves overlap, not that it caused the earlier
+timeout. The first run sampled no session_streams waiter.
+
+Second run's suspended original b5e826de-0216-4d93-824b-0114dbd42b0d
+has real executor start/exit, no model reservation or answer, and no pending
+command. The isolated child traceback at the suspension window shows
+LockNotAvailable inside recover_cloud_session -> read_session_recovery_head
+-> lock_session_recovery_source -> lock_session_lease_boundary. This is a
+different failure from the prior post-model stream UPDATE timeout. Next trace
+the startup read's lease contenders and evaluate bounded pre-execution
+recovery without replaying any effect. Do not resend either original.
+Private evidence: stream-holders-native14.jsonl,
+stream-lock-keys-native14.jsonl, stream-key-worker-*.log and
+preflight5-close14-393a5670-*/readonly-originals.json.
