@@ -19287,3 +19287,18 @@ command or runtime instance. Both Workers restored to clean image imports.
 Private evidence: fault-start15-*/readonly-original.json and start15-marker-*.
 The drill releases the lock before retry by design. Sustained load, 256
 SSE streams and multi-host failover acceptance are still open.
+
+CA-HA-03 Native15 SSE read-only diagnostic used the completed synthetic
+startup-drill Task. Raw stream uses after_sequence for this numeric cursor.
+Four concurrent clients opened across both nodes and got the exact next
+frame after reconnecting to the opposite node. Initial same-grant reuse
+and Last-Event-ID probes were invalid for this fixture and retained.
+With fresh prefetched grants and 32 simultaneous opens, 4 opened and 28
+received 503 capacity_unavailable. The four hit the test barrier, so the
+cohort has no resume result. With staggered opens, 15 opened, 3 got the
+same 503, and 14 got 503 host_grant_authorization_unavailable. The fixture
+sets read=2 per API. The request semaphore releases at response start,
+so these samples do not establish a cap on established streams.
+Next separate per-node preflight admission from grant verification and
+measure established-stream occupancy with the same connection budget.
+Artifacts: sse15-pair-c985ee86*, sse15-pair-d73da4c7*, sse15-pair-ea368d42*.
