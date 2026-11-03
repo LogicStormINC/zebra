@@ -11,6 +11,7 @@ from agent_core.application.session_bootstrap import (
 )
 from agent_core.application.session_projection import apply_event, rebuild_session
 from agent_core.application.workspace_projection import rebuild_workspace
+from agent_core.domain.bundle_definition import BundleDefinitionSnapshot
 from agent_core.domain.context_capsule import ContextSourceEventRange
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId
@@ -93,6 +94,20 @@ def test_commit_atomically_creates_child_events_lineage_envelope_and_outbox(
     assert dispatch.child_session_id == operation.target_session_id
     store.acknowledge_dispatch(dispatch.delivery_id, worker_id="worker-1")
     assert store.claim_dispatch(worker_id="worker-2", claimed_at=NOW) is None
+
+
+def test_handoff_preserves_bundle_snapshot_for_older_messages_without_model_pin(tmp_path: Path):
+    from tests.agent_core.test_bundle_definition import bundle_version
+
+    database_path = tmp_path / "handoff.db"
+    snapshot = BundleDefinitionSnapshot.from_version(version=bundle_version(), resolved_at=NOW)
+    source_id = _seed_completed_source(database_path, tmp_path, definition_snapshot=snapshot)
+    store = SQLiteSessionHandoffStore(database_path)
+    operation, commit = _prepared_commit(store, source_id)
+    store.commit(commit)
+
+    child_events = SQLiteEventStore(database_path).list_for_session(operation.target_session_id)
+    assert rebuild_workspace(child_events).definition_snapshot == snapshot
 
 
 def test_handoff_persists_selected_model_for_the_child(tmp_path: Path) -> None:
@@ -605,12 +620,14 @@ def _seed_completed_source(
     workspace_root: Path,
     *,
     selected_model_pin: ArtifactPin | None = None,
+    definition_snapshot: BundleDefinitionSnapshot | None = None,
 ) -> SessionId:
     bootstrap = SessionBootstrapService().build(
         SessionBootstrapCommand(
             title="Source stage",
             user_input="Complete source",
             selected_model_pin=selected_model_pin,
+            definition_snapshot=definition_snapshot,
             workspace_root=workspace_root,
             policy_profile="local-safe",
             created_at=NOW,

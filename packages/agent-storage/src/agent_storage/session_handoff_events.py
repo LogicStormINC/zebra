@@ -35,7 +35,9 @@ def build_handoff_events(
     selected_model_pin: object = None,
 ) -> tuple[SessionEvent, ...]:
     envelope = request.envelope
-    snapshot = workspace["definition_snapshot"] if selected_model_pin is not None else None
+    snapshot = (
+        workspace["definition_snapshot"] if "definition_snapshot" in workspace.keys() else None
+    )
     parent = SessionEvent.create(
         session_id=operation.source_session_id,
         sequence=operation.expected_source_stream_version + 1,
