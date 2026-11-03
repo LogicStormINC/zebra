@@ -277,3 +277,12 @@ at three seconds and never overwrites an evidence directory. The first
 live run held four streams, accepted all five planned offers, and
 verified all five original GET receipts. It used the existing staging
 runtime and no baseline dataset. See WORKLOG for the private run ID.
+
+`native_corpus.py` generates 100 canonical synthetic events per Task using
+the migrated PostgreSQL schema and native deferred position allocator.
+Supply `ZEBRA_E1_CORPUS_DSN` for a dedicated loopback database named
+`zebra_e1_corpus_*`. It writes a new namespace in 50-Task transactions
+and checks source/index identity. The default is 10,000 Tasks. This is
+the synthetic structural corpus only. Preserved legacy/Coverage/receipt
+samples and application composition into the generated namespace are
+separate prerequisites for the full E1 baseline.
