@@ -98,11 +98,11 @@ def acknowledge_exit(
 
 
 def reconcile_exits(witness: dict[str, str], dsn: str, *, namespace: str) -> int:
-    import psycopg
+    from agent_storage.postgres.connection_capacity import connect
 
     fields = ("engine", "container", "started_at", "pid_namespace")
     incarnation = {key: witness[key] for key in fields}
-    with psycopg.connect(dsn, connect_timeout=2) as connection:
+    with connect(dsn, lane="control", connect_timeout=2) as connection:
         connection.execute("SET LOCAL statement_timeout='1500ms'")
         rows = connection.execute(
             """SELECT s.response_body
