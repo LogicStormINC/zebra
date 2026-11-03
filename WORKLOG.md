@@ -19074,3 +19074,16 @@ under .artifacts/cloud-ha-e1. Correlate the two original interrupted fences
 with exact lock holders/child exit boundary and trace API admission stages.
 Preserve original outcomes, no retry of unknown work. Keep the unchanged
 2vCPU/2GiB and rate/deadline envelope. Full corpus/SSE/steady/fault/soak pending.
+
+## Native12 admission timing follow-up
+
+Recomputed timings from the 29 original POST receipts and canonical events.
+Median POST-to-`session_created.created_at` was 0.687s (0.078–2.287s).
+Median from that timestamp to HTTP response was 2.798s (0.205–4.922s).
+These are cross-clock estimates. The bootstrap assigns the event timestamp
+before persistence, so the second interval includes admission work and does
+not measure database commit latency. Prioritize timing the atomic write and
+the two post-admission Task header reads separately. Both remaining PostgreSQL
+timeouts were on the durable stream-version UPDATE. Neither log contains the
+Task ID, so the child exits cannot yet be attributed to those statements.
+Original Tasks were inspected read-only.
