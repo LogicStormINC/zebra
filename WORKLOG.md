@@ -19587,3 +19587,14 @@ Restored the exact stopped container and verified both readiness endpoints.
 This used direct node URLs and a single historical read, with no mutation.
 Load-balancer recovery, in-flight write receipts, 256 observers and the
 contract's ten-probe RTO gate remain open. Evidence api-failover-combined18.json.
+
+CA-HA-03 Native18 isolated LB outage: baseline round robin had 8 HTTP 502s
+alternating with 8 exact reads during one API stop. Added active readiness
+checks at 1s with 750ms timeout, without configuring proxy retries.
+Validated with the running Caddy binary and applied to the isolated
+control proxy only. On the next stop the first cursor read returned in
+0.545s and the tenth consecutive exact cursor read in 9.508s after
+confirmed stop. Both APIs restored and ready. This is a single historical
+data path through the LB; write receipts, other read paths and independent
+failure domains remain open. Private baseline and after evidence:
+lb-failover-combined18.json and lb-health-failover-combined18.json.

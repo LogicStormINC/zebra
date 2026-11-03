@@ -37448,3 +37448,6 @@ transaction retry on an explicit lock timeout during the read-only check.
 
 CA-HA-03 combined HA candidate packaging addendum: include the owned raw
 session_streaming.py and PostgreSQL worker_budget.py in the E1 delta.
+
+CA-HA-03 isolated load balancer addendum: own E1 Control.Caddyfile for
+active readiness-based backend selection.
