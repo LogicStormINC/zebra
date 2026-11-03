@@ -20536,3 +20536,15 @@ does not prove remote apply under explicit cancellation. Next test
 the native driver notice path and fail closed on this condition
 before treating synchronous PG configuration as receipt RPO=0.
 Evidence pg-sync-stall-two-hosts.json. Temporary resources removed.
+
+CA-HA-03 native psycopg SyncRep cancellation confirmed on two
+physical test hosts. COMMIT returned successfully through the
+connection context despite notice SQLSTATE 01000, nonlocalized
+severity WARNING, primary message "canceling wait for synchronous
+replication due to user request". The row was visible on the old
+primary and later reached the standby after unpause. A write-side
+notice check alone is insufficient for RPO=0: an original GET on
+the old primary could see a locally committed but unreplicated row.
+Next qualify admission and receipt visibility against the same
+durability watermark or close ingress until sync authority is proven.
+No deployed code changes. Evidence pg-sync-driver-notice-two-hosts.json.
