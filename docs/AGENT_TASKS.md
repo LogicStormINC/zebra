@@ -37532,3 +37532,5 @@ fixture tests/compose/cloud_ha_e1/standby_receipt_proof.sql.
 CA-HA-03 E1 receipt response gate addendum: own the isolated proof
 adapter and signed response seams in client_admission_operations.py
 and client_admission_termination.py plus their existing API tests.
+The E1 receipt response gate addendum also owns the native admission
+route regression in tests/api/test_agui_initial_native.py.

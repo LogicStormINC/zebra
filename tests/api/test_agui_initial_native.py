@@ -489,3 +489,38 @@ def test_standard_post_reports_native_delivery_outcome_without_domain_terminal(
         assert "RUN_FINISHED" not in response.text
         assert "zebra.observation.problem" not in response.text
         assert app.stores.events.list_for_session(task) == before
+
+
+def test_original_admission_result_waits_for_standby_proof(metadata_dsn, tmp_path, monkeypatch):
+    app, request, receipt, original, _ = initial_native(metadata_dsn, tmp_path)
+    task = TaskId(UUID(original["task_id"]))
+    before = app.stores.tasks.read_task_header(task).current_sequence
+    monkeypatch.setenv("ZEBRA_HA_E1_RECEIPT_PROOF_SYSTEM_ID", "1")
+    seen = []
+
+    def confirm(namespace, record):
+        assert namespace == app.stores.deployment_namespace
+        assert record.request_hash == receipt.body["request_hash"]
+        assert record.response_body == receipt.body
+        seen.append(record.idempotency_key)
+        return len(seen) > 3
+
+    monkeypatch.setattr("zebra_agent_api.client_admission_operations.confirmed", confirm)
+    monkeypatch.setattr("zebra_agent_api.client_admission_termination.confirmed", confirm)
+    adapter = RouteAdapter(app)
+    read = replace(
+        request,
+        method="GET",
+        body=None,
+        headers={**request.headers, "X-Zebra-Admission-Hash": receipt.body["request_hash"]},
+    )
+    pending = adapter.handle(read)
+    assert pending.status_code == 200 and pending.body["status"] == "unknown"
+    assert "sealed_response" not in pending.body
+    observation = adapter.handle(replace(read, path=read.path + "/observation"))
+    assert observation.body["claim_recorded"] and not observation.body["result_recorded"]
+    termination = adapter.handle(replace(read, path=read.path + "/task-surface-termination"))
+    assert termination.body["state"] == "unresolved" and not termination.body["non_commit_proven"]
+    assert adapter.handle(read).body == receipt.body
+    assert len(seen) == 4 and len(set(seen)) == 1
+    assert app.stores.tasks.read_task_header(task).current_sequence == before

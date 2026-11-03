@@ -20676,3 +20676,11 @@ mismatched or unavailable proof withholds the result/stop proof.
 Default single-node path unchanged. Ruff and 32 API tests passed.
 This candidate is not deployed; enabled signed HTTP against the
 actual cross-host fixture, TLS and topology admission fencing remain.
+
+CA-HA-03 native RouteAdapter regression with verified Host context
+and real PG17 atomic result. Injected false proof withheld sealed
+original GET, result_recorded and termination committed state.
+Turning proof true recovered the exact original; four checks shared
+one scoped key and canonical sequence did not change. One targeted
+test passed. This injects the proof at the route boundary and uses
+already verified authority, not a live signed HTTP/TLS standby run.
