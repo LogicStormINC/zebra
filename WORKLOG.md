@@ -20410,3 +20410,15 @@ using the original expectation. Exactly one PUT, no retry; retained
 the synthetic proof object. This does not exercise TCP packet loss
 or API/PG publication receipt handling.
 Evidence objects-lost-response-routing31.json.
+
+CA-HA-03 attempted API delivery/PG fault regression on disposable
+PostgreSQL 17: 37 passed, nine native HTTP cases failed. Focused
+rerun reproduced both lost audit-COMMIT cases; the fault proxy
+never received a connection. A normal signed download from the
+same fixture returns 409 coverage_identity_unavailable /
+canonical_task_incomplete before object delivery. Fixture appends
+a raw tool event and replays only model/tool projections; audit its
+canonical stream/projection prerequisites before touching policy or
+interpreting this as a commit fault. This does not verify API-level
+object publication response loss. Private logs artifact-audit-regression.log
+and artifact-download-regression.log.
