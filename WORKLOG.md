@@ -20313,3 +20313,14 @@ OrbStack API after the probe; remote API and forwards exited.
 One sample with 147 ms headroom is not a capacity result. Next
 qualify remote Worker execution and the cross-host failure matrix.
 Private evidence amd64-signed-*.log.
+
+CA-HA-03 AMD64 Worker boot preflight on the second physical host.
+Pinned AMD64 sandbox ran under runsc with UID65532, loopback-only
+network and read-only owned workspace. Temporarily replaced the
+second OrbStack Worker within the two-Worker budget. Remote native
+Worker reached control_fresh=true and ran three idle cycles, then
+exited on signal. Startup used a TLS fixture health stub; no Task
+was executed and real model SSE was verified separately. Restored
+the OrbStack Worker. Next use the actual model proxy in the isolated
+namespace and verify a fresh Task is leased and completed by AMD64.
+Evidence amd64-worker-boot-*.log.
