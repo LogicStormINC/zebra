@@ -89,6 +89,7 @@ databaseBudget:
   pool: 2
   normal: 8
   read: 2
+  receipt: 0
   control: 4
   probe: 1
   max_connections: 512

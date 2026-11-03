@@ -48,7 +48,7 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 {{- $processes := add $b.fleet.api $b.fleet.worker $b.fleet.executor $b.fleet.cleanup $b.fleet.scheduler }}
 {{- $sockets := mul $processes (add $b.pool $b.normal $b.read $b.control $b.probe) }}
-{{- if gt (int (add $sockets $b.server_reserved $b.external)) (int $b.max_connections) }}
+{{- if gt (int (add $sockets (mul $b.fleet.api $b.receipt) $b.server_reserved $b.external)) (int $b.max_connections) }}
 {{- fail "database fleet exceeds server connection budget" }}
 {{- end }}
 - name: ZEBRA_DATABASE_BUDGET_JSON
