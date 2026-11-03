@@ -37347,3 +37347,5 @@ AGUI-CLOUD-INTEGRATION accepted: make test11216passed/3082conditional skips;
 make check and SDK typecheck passed; standalone152native+32SDK zero skips,
 SDK full174passed. Prior Zebra repair branches are integrated by ancestry;
 paired Trench UI/ORM history remains external, not imported into Runtime.
+
+CA-P7-MODEL-01 connection binding owns the optional approved connection digest in model-profile registration and its transport regression.

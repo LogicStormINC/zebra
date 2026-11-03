@@ -1,6 +1,8 @@
 """Scoped management transport backed by real PostgreSQL."""
 
+import json
 from dataclasses import replace
+from pathlib import Path
 from uuid import uuid4
 
 from agent_core.domain.runtime_bundle_json import json_digest
@@ -44,11 +46,24 @@ def test_register_replay_and_validate_after_api_recreation(tmp_path, dsn):
         "model": model["model"],
         "approvedProviderProfile": model["provider_profile"],
     }
+    catalog = json.loads(Path(configured.runtime_bundle_config).read_text())
+    approved = next(
+        p for p in catalog["providers"] if p["pin"] == request["approvedProviderProfile"]
+    )
+    request["expectedConnectionDigest"] = json_digest(
+        [approved["base_url"], approved["api_key_env"]]
+    )
     write_headers = {**headers, "X-Runtime-Model-Profile-Contract": CONTRACT}
     with TestClient(app()) as client:
         denied = {**write_headers, "X-Runtime-Product": "other"}
         assert client.put(path, headers=denied, json=request).status_code == 403
         assert client.get(path, headers=headers).status_code == 404
+        for field in ("base_url", "api_key_env"):
+            mismatch = {**approved, field: "different"}
+            wrong_digest = json_digest([mismatch["base_url"], mismatch["api_key_env"]])
+            wrong_request = {**request, "expectedConnectionDigest": wrong_digest}
+            assert client.put(path, headers=write_headers, json=wrong_request).status_code == 409
+            assert client.get(path, headers=headers).status_code == 404
         response = client.put(path, headers=write_headers, json=request)
         assert response.status_code == 200, response.text
         receipt = response.json()
@@ -62,8 +77,10 @@ def test_register_replay_and_validate_after_api_recreation(tmp_path, dsn):
         model["provider_profile"] = receipt["profilePin"]
         manifest = bundle["manifest"]
         manifest["lock"] = sorted(
-            (receipt["profilePin"] if pin == request["approvedProviderProfile"] else pin
-             for pin in manifest["lock"]),
+            (
+                receipt["profilePin"] if pin == request["approvedProviderProfile"] else pin
+                for pin in manifest["lock"]
+            ),
             key=lambda pin: (pin["kind"], pin["id"], pin["version"]),
         )
         bundle["bundle_digest"] = json_digest(manifest)

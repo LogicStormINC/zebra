@@ -38,6 +38,7 @@ class RegistrationRequest(BundleValue):
     revision: Annotated[int, Field(ge=1, le=2**53 - 1)]
     model: Identifier
     approvedProviderProfile: ArtifactPin
+    expectedConnectionDigest: Annotated[str, Field(pattern=r"^sha256:[0-9a-f]{64}$")] | None = None
 
 
 def perform(settings, namespace, token, headers, action, contract_header, raw):
@@ -61,7 +62,7 @@ def perform(settings, namespace, token, headers, action, contract_header, raw):
     )
     try:
         if request is not None:
-            request_digest = json_digest(request.model_dump(mode="json"))
+            request_digest = json_digest(request.model_dump(mode="json", exclude_none=True))
             existing = store.lookup_operation(approval.scope, operation_id)
             if existing is not None:
                 if existing["request_digest"] != request_digest:
@@ -75,20 +76,28 @@ def perform(settings, namespace, token, headers, action, contract_header, raw):
                 )
                 if approved is None or request.model not in approved.models:
                     return _error(403, "PERMISSION_DENIED")
+                if (
+                    request.expectedConnectionDigest is not None
+                    and request.expectedConnectionDigest
+                    != json_digest([approved.base_url, approved.api_key_env])
+                ):
+                    return _error(409, "CONNECTION_MISMATCH")
                 profile_data = approved.model_dump(mode="json", exclude={"pin"})
                 profile_data["models"] = [request.model]
-                identity = json_digest([
-                    approval.scope.model_dump(mode="json"), request.modelConfigId
-                ]).removeprefix("sha256:")
-                profile = RuntimeProviderProfile.model_validate({
-                    **profile_data,
-                    "pin": {
-                        "kind": "provider-profile",
-                        "id": "registered-" + identity,
-                        "version": f"1.0.{request.revision}",
-                        "digest": canonical_provider_profile_digest(profile_data),
-                    },
-                })
+                identity = json_digest(
+                    [approval.scope.model_dump(mode="json"), request.modelConfigId]
+                ).removeprefix("sha256:")
+                profile = RuntimeProviderProfile.model_validate(
+                    {
+                        **profile_data,
+                        "pin": {
+                            "kind": "provider-profile",
+                            "id": "registered-" + identity,
+                            "version": f"1.0.{request.revision}",
+                            "digest": canonical_provider_profile_digest(profile_data),
+                        },
+                    }
+                )
                 if (
                     load_bundle_management_approval(settings.bundle_management_config, namespace)
                     != approval
@@ -96,8 +105,12 @@ def perform(settings, namespace, token, headers, action, contract_header, raw):
                 ):
                     return _error(403, "PERMISSION_DENIED")
                 store.register(
-                    approval.scope, operation_id, request.modelConfigId, request.revision,
-                    request_digest, profile,
+                    approval.scope,
+                    operation_id,
+                    request.modelConfigId,
+                    request.revision,
+                    request_digest,
+                    profile,
                 )
         result = store.lookup_operation(approval.scope, operation_id)
     except ModelProfileRegistrationConflict:
