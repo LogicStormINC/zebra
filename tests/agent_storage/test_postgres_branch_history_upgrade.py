@@ -90,6 +90,7 @@ def test_upgrade_keeps_original_ledger_and_gate_proof(postgres_dsn, p5_history):
         with psycopg.connect(postgres_dsn) as connection:
             connection.execute(sql.SQL("DROP SCHEMA {} CASCADE").format(sql.Identifier(schema)))
 
+
 @pytest.mark.parametrize("history", ["host-manifest", "03d-partial", "03d-complete"])
 def test_03d_upgrade_keeps_published_migration_rows(postgres_dsn, history):
     schema = f"test_03d_branch_merge_{uuid4().hex}"

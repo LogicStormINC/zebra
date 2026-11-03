@@ -1,3 +1,11 @@
+# CA-P7-03D-HISTORY (2026-11-03)
+
+Candidate merge ec2b4f8d combines f4d81740 and d61232a3. The canonical tail keeps Host manifest at 122 and appends orchestration observations and policy at 123/124. An exact legacy observation row at 122 selects the candidate history, which preserves 122/123 and adds Host manifest at 124. Unknown checksum stays rejected. No migration statement or previously applied ledger row is rewritten.
+
+Ten history tests passed against isolated PostgreSQL on 192.168.101.7 through an SSH tunnel. Coverage included the P5 histories, Host manifest history, partial and complete 03D histories, exact row preservation, schema checks and unknown checksum refusal. The owned container and volume were removed. Private dump and manifest remain at /home/ubuntu/od-accept-zN3T5m/run-history-001. Manifest SHA256 08cd5674c6c272c57432b7ac82d485287bc350b68662940a82470a87d7a2e6a8.
+
+After formatting, nine focused history and fail-closed Worker tests passed. Positive cross-repo orchestration still requires a trusted exact-request counter.
+
 ## 2026-11-03 Cloud 首次回复修复上线
 
 独立发布 Host 工具清单，旧任务保留原 digest；授权失败增加有界脱敏分类。

@@ -43,6 +43,7 @@ def test_historical_prefix_catalog_remains_supported():
     prefix = tuple(m for m in MIGRATIONS if m.version <= 109)
     assert migration_history_plan({}, prefix) == prefix
 
+
 def test_03d_history_preserves_partial_and_complete_candidate_tails():
     gate = ORCHESTRATION_GATE_MIGRATION
     policy = ORCHESTRATION_GATE_POLICY_MIGRATION

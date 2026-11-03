@@ -21,7 +21,10 @@ def migration_history_plan(
     slots: dict[int, int] = {}
     if applied.get(115) == (RUNTIME_GATE_MIGRATION.name, RUNTIME_GATE_MIGRATION.checksum):
         slots.update({115: 118, 116: 119, 118: 115, 119: 116})
-    if applied.get(122) == (ORCHESTRATION_GATE_MIGRATION.name, ORCHESTRATION_GATE_MIGRATION.checksum):
+    if applied.get(122) == (
+        ORCHESTRATION_GATE_MIGRATION.name,
+        ORCHESTRATION_GATE_MIGRATION.checksum,
+    ):
         # The candidate published observations at 122 and policy at 123.
         # Its missing Host manifest migration uses the free slot 124.
         slots.update({122: 124, 123: 122, 124: 123})

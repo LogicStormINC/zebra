@@ -1,5 +1,5 @@
 # CA-P7-03D-HISTORY — Published migration history compatibility
-- Owner: Luke Ding / Codex. Status: In progress. Branch: codex/ca-p7-03d-history.
+- Owner: Luke Ding / Codex. Status: Review. Branch: codex/ca-p7-03d-history.
 - Merge inputs: f4d81740 and d61232a3. Owned conflict paths: PROGRESS.md, WORKLOG.md, docs/AGENT_TASKS.md, migration_catalog_tail.py. Additional owned paths: migration_history_plan.py, test_migration_history_plan.py, test_postgres_branch_history_upgrade.py.
 - Acceptance: preserve both exact version/name/checksum histories. Apply only missing migrations in an isolated database. Check startup and Worker admission schema verification, reject unknown checksum, retain strict counter prerequisite.
 
