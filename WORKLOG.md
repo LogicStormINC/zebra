@@ -20776,3 +20776,11 @@ role and system identity, then promoted and verified the original
 receipt and a new write. Evidence pg-sync-owned-fence-two-hosts.json.
 The script is a disposable fixture probe. It supplies no independent
 witness or production fencing authority.
+
+CA-HA-03 cross-host fence drill held an open client transaction
+with an actual receipt-table insert before stopping the old writer.
+After promotion, COMMIT on that same connection failed and the
+promoted database had zero rows for the uncommitted insert. The
+previously committed STOP receipt survived and new writes succeeded.
+Evidence pg-sync-inflight-fence-two-hosts.json. This exercised a
+database transaction, not a live Worker or signed HTTP request.
