@@ -37445,3 +37445,6 @@ to reject new Cloud Run/Resume intents missing an explicit Run identifier.
 CA-HA-03 fenced budget check retry addendum: reuse owned PostgreSQL
 worker_budget.py and tests/worker/test_worker_budget.py for one independent
 transaction retry on an explicit lock timeout during the read-only check.
+
+CA-HA-03 combined HA candidate packaging addendum: include the owned raw
+session_streaming.py and PostgreSQL worker_budget.py in the E1 delta.
