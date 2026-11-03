@@ -155,18 +155,21 @@ def record_command_wakeup_in_transaction(
                 max_pending_control_per_scope=rollout["max_pending_control_per_scope"],
                 kind=kind,
             )
-    outbox_exists = connection.execute(
-        """SELECT 1 FROM broker_outbox WHERE deployment_namespace=%s AND scope_key=%s
-           AND message_type=%s AND operation_id=%s AND wake_generation=%s""",
-        (
-            deployment_namespace,
-            scope_key,
-            envelope.message_type,
-            envelope.operation_id,
-            envelope.wake_generation,
-        ),
-    ).fetchone()
-    if existing is not None and outbox_exists is None:
+    if (
+        existing is not None
+        and connection.execute(
+            """SELECT 1 FROM broker_outbox WHERE deployment_namespace=%s AND scope_key=%s
+               AND message_type=%s AND operation_id=%s AND wake_generation=%s""",
+            (
+                deployment_namespace,
+                scope_key,
+                envelope.message_type,
+                envelope.operation_id,
+                envelope.wake_generation,
+            ),
+        ).fetchone()
+        is None
+    ):
         _check_outbox_capacity(
             connection,
             deployment_namespace,
@@ -215,12 +218,7 @@ def _check_scope_capacity(
     max_pending_control_per_scope: int,
     kind: SessionCommandKind,
 ) -> None:
-    # Global Outbox capacity is locked first by the caller. A scope lock then
-    # makes queued + handed-off-but-unfinished rows one durable admission budget.
-    connection.execute(
-        "SELECT pg_advisory_xact_lock(hashtextextended(%s, 49))",
-        (f"{namespace}:command-scope:{scope_key}",),
-    )
+    # The caller holds the global and scope locks in that order.
     control = kind in {
         SessionCommandKind.CANCEL,
         SessionCommandKind.STOP,

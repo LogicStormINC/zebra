@@ -19934,3 +19934,12 @@ COMMIT remain. Sampling is not a full lock duration measurement.
 Next measure those remaining statements and the durable COMMIT tail.
 Evidence global-lock-defer23.jsonl, preflight5-defer23-8ecac8d2*,
 defer23-original-receipts.json and defer23-recovered-facts.txt.
+
+CA-HA-03 E1 command wakeup follow-up. Fresh pending inserts skip the
+outbox existence probe, which only affects existing pending records.
+The scope capacity count reuses the transaction's scope lock. Global
+capacity still acquires its own lock for recovery callers.
+Ruff and git diff --check passed. Disposable PostgreSQL 17 passed
+118 command wakeup, handoff, recovery and discovery tests.
+Next package the candidate and rerun the paired 5 Hz and 32 SSE
+preflight before increasing load. No new live capacity result yet.

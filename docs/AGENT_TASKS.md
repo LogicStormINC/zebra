@@ -37492,3 +37492,6 @@ tests/agent_storage/test_admission_atomic_task_run.py.
 
 CA-HA-03 deferred wakeup packaging addendum: include the owned events.py
 and task_admission.py PostgreSQL modules in E1 Dockerfile.delta.
+
+CA-HA-03 command wakeup lock duration addendum: own the fresh admission
+outbox lookup and scope capacity lock seams in PostgreSQL command_wakeup.py.
