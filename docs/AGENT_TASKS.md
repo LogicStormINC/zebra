@@ -1,3 +1,9 @@
+# CA-P7-CI-FIXTURES
+
+- Owner Luke Ding / Codex. Base 56ae352a. Branch codex/ca-p7-ci-fixtures. Status: in progress.
+- Owned paths: scripts/benchmark_command_scan.py and tests/agent_storage/test_postgres_leases.py.
+- Acceptance: reproduce both inherited failures, then verify the real command scan and lease suite on an isolated PostgreSQL.
+
 # ERP-AUTH-CLOUD-EXPORT-20261102
 - Status: Done; exact source export and static gates verified; integrated for cloud-agent/GitHub.
 - Created Ready then claimed In Progress; owner Luke Ding / Codex.

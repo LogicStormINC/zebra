@@ -505,6 +505,10 @@ def _delete_namespace(dsn: str, namespace: str) -> None:
             (namespace,),
         )
         connection.execute(
+            "DELETE FROM runtime_namespace_gates WHERE deployment_namespace = %s",
+            (namespace,),
+        )
+        connection.execute(
             "DELETE FROM control_plane_epochs WHERE deployment_namespace = %s",
             (namespace,),
         )
