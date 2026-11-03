@@ -37406,3 +37406,8 @@ exclusive locking. Preserve historical migration bytes and routing semantics.
 
 CA-HA-03 migration 122 packaging addendum: include E1 Dockerfile.delta to
 carry the forward migration and catalog in the isolated ARM candidate.
+
+CA-HA-03 isolated completion recovery claim (Luke Ding/Codex): own the
+Worker execution.py interruption branch and test_close_recovery_guard.py.
+Refresh canonical recovery under the same fence before completion-only
+reconciliation after child interruption.

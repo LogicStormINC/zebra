@@ -78,9 +78,13 @@ class SessionExecutionService(SessionExecutionComposition, SessionExecutionEntry
                     },
                 )
             except errors.WorkerExecutorInterrupted:
-                # Result may have committed before IPC failed; never reverse confirmed completion.
+                # The child may have advanced the canonical head before IPC failed.
+                ownership_check()
+                recovery = self._recovery_service.recover_session(
+                    session_id, worker_lease=claimed.lease
+                )
                 if completed := recover_committed_completion(
-                    self, claimed, ownership_check, started_at
+                    self, replace(claimed, recovery=recovery), ownership_check, started_at
                 ):
                     return completed
                 raise

@@ -19155,3 +19155,17 @@ Private evidence: admission-waits-native13.jsonl and
 preflight5-lock13-80ea6834-5825-47d3-a39f-afded09248ac/readonly-originals.json.
 Next inspect the remaining advisory wait families and the post-answer
 suspension. Preserve the original answer and settlement.
+
+## Native13 post-answer interruption recovery
+
+Original 411426de has a settled model receipt, answer commit and recorded
+executor exit followed by suspension. The PG window contains a worker_leases
+lock timeout, but the log does not bind that timeout to the Task.
+Found a deterministic recovery gap: the isolated IPC-failure branch read
+completion evidence only through the pre-child revision. It now refreshes
+canonical recovery under the original fence and invokes the existing
+completion-only guard. The regression reproduces lost IPC at the normal
+Worker entry point and verifies exactly one child launch. First probe lacked
+a lease serialization stub, corrected before confirming the intended red.
+Focused tests 34 passed, 2 skipped, make check passed. Candidate source only.
+Original session and receipt were inspected read-only.
