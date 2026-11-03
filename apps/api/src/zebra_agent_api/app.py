@@ -365,23 +365,26 @@ class ZebraAgentApi(
                     else str(exc)
                 ),
             )
-        if self.settings.storage_authority == "postgresql" and parsed["attachments"]:
-            if self.input_artifact_objects is None:
-                return ApiResponse(503, {"status": "artifact_ingress_unavailable"})
+        if self.settings.storage_authority == "postgresql":
             from agent_storage.event_rows import SessionEventSequenceConflictError
             from agent_storage.postgres.input_artifact_admission import append_input_message
 
-            from zebra_agent_api.cloud_attachment_ingress import prepare_cloud_inputs
-
             namespace = getattr(self.stores, "deployment_namespace", None)
             if not isinstance(namespace, str):
-                return ApiResponse(503, {"status": "artifact_ingress_unavailable"})
-            events, attachment_refs, artifacts = prepare_cloud_inputs(
-                self.input_artifact_objects,
-                namespace,
-                (event,),
-                parsed["attachments"],
-            )
+                return ApiResponse(503, {"status": "message_storage_unavailable"})
+            events = (event,)
+            artifacts = ()
+            if parsed["attachments"]:
+                if self.input_artifact_objects is None:
+                    return ApiResponse(503, {"status": "artifact_ingress_unavailable"})
+                from zebra_agent_api.cloud_attachment_ingress import prepare_cloud_inputs
+
+                events, _, artifacts = prepare_cloud_inputs(
+                    self.input_artifact_objects,
+                    namespace,
+                    events,
+                    parsed["attachments"],
+                )
             try:
                 updated_session = append_input_message(
                     self.settings.database_url,

@@ -115,7 +115,6 @@ def append_input_message(
     records: tuple[CloudArtifactPayloadRecord, ...],
 ) -> Session:
     with PostgresDatabase(dsn, deployment_namespace=namespace).connect() as connection:
-        workspace = get_workspace_in_transaction(connection, namespace, session.session_id)
         stream = connection.execute(
             "SELECT current_version FROM session_streams "
             "WHERE deployment_namespace=%s AND session_id=%s FOR UPDATE",
@@ -123,6 +122,7 @@ def append_input_message(
         ).fetchone()
         if stream is None or stream["current_version"] != session.current_sequence:
             raise SessionEventSequenceConflictError("input message lost its stream CAS")
+        workspace = get_workspace_in_transaction(connection, namespace, session.session_id)
         for event in events:
             append_event_in_transaction(connection, namespace, event)
             session = apply_event(session, event)

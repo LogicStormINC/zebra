@@ -239,6 +239,34 @@ def test_task_binding_renewal_appends_one_locked_revision(
         )
 
 
+def test_text_message_commits_event_and_projection_together(namespace, postgres_dsn):
+    from agent_core.application import SessionMessageAppendCommand, SessionMessageAppendService
+    from agent_storage.event_rows import SessionEventSequenceConflictError
+    from agent_storage.postgres.input_artifact_admission import append_input_message
+
+    request = _request()
+    PostgresTaskAdmissionTransaction(postgres_dsn, deployment_namespace=namespace).admit(request)
+    session = request.session
+    event = SessionMessageAppendService().build_event(
+        session=session,
+        next_sequence=session.current_sequence + 1,
+        command=SessionMessageAppendCommand(content="follow up", prior_human_turns=1),
+    )
+    updated = append_input_message(postgres_dsn, namespace, session, (event,), ())
+    assert updated.current_sequence == event.sequence
+    with pytest.raises(SessionEventSequenceConflictError):
+        append_input_message(postgres_dsn, namespace, session, (event,), ())
+
+    with connect(postgres_dsn) as connection:
+        for table in ("session_projections", "workspace_projections"):
+            result = connection.execute(
+                f"SELECT current_sequence FROM {table} "
+                "WHERE deployment_namespace=%s AND session_id=%s",
+                (namespace, session.session_id),
+            ).fetchone()
+            assert result == (event.sequence,)
+
+
 def test_idempotent_replay_short_circuits(namespace: str, postgres_dsn: str) -> None:
     transaction = PostgresTaskAdmissionTransaction(postgres_dsn, deployment_namespace=namespace)
     key = f"key-{uuid4()}"
