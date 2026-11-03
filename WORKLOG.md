@@ -19887,3 +19887,18 @@ The single-lock retry is insufficient at mixed load. Next measure
 global lock holders and the SQL budget consumption without replaying
 originals. Private evidence preflight5-atomic22-e8170374*,
 atomic22-with-sse-4544de88* and atomic22-original-receipts.json.
+
+CA-HA-03 Native22 exact advisory-key sampling under mixed 5Hz: 15 POSTs,
+five completed with settled models, ten 503 unknowns. Original-only GETs
+remain unknown. All 32 idle observers received heartbeats. The sampler
+matched both halves of the namespace command-global key in pg_locks.
+18 granted observations, none waiting at sample times. One holder was
+visible over a 400ms span; oldest sampled transaction age 1.30s
+(age is not lock duration). While held, samples include pending/outbox
+checks, session_events and agent_tasks updates, claim read and COMMIT.
+Source confirms atomic bootstrap rebuilds the Task again after it takes
+the global lock, then seals the result before COMMIT. Next test moving
+the wakeup recording after post-append Task projection inside the same
+transaction. Preserve global admission caps and same-transaction
+event/pending/outbox/receipt invariants. Evidence global-lock792.jsonl,
+preflight5-lock792-37be19f5*, lock792-original-receipts.json.
