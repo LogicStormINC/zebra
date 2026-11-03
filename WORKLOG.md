@@ -21119,3 +21119,12 @@ backfill; the others spanned events, Task index, binding and
 wake-up. This identifies the transaction body as the larger
 measured cost, with no single proven locking cause. Private
 evidence amd64-phase-90f646767d48.log. No originals replayed.
+
+CA-HA-03 streamlined position initialization under the existing
+Task advisory lock. When both durable position sources prove empty
+and repair cursors are pristine, move directly to source assignment;
+skip two empty legacy scans and one intermediate state write.
+Nonempty history still validates before assignment, and already
+persisted states avoid a redundant state write. Real PG17.5
+position/repair/byte-bound/native tests: 84 passed, three large
+benchmark variants deselected. Live capacity impact pending.

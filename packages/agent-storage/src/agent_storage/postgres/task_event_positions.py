@@ -46,6 +46,7 @@ def backfill_task_event_positions(
         int(task["event_position_cursor"]),
         int(task["next_event_sequence"]),
     )
+    stored_phase = phase
     empty_index = False
     if phase == "legacy":
         row = connection.execute(
@@ -63,14 +64,18 @@ def backfill_task_event_positions(
             next_sequence == 0
             and task["event_index_repair_cursor"] == task["event_index_repair_highwater"] == -1
         )
-    # Freeze reservations before adoption. New Segment prefixes must not use the
-    # ordinary ready-state allocator's next-counter assignment guard.
-    connection.execute(
-        """UPDATE agent_tasks SET event_position_state=%s
-           WHERE deployment_namespace=%s AND task_id=%s""",
-        (phase, namespace, task_id),
-    )
+        if empty_index:
+            # Under the Task lock both position sources proved empty. No
+            # legacy reservations exist to validate before source assignment.
+            phase = "assigning"
     if phase == "validating":
+        if stored_phase != phase:
+            connection.execute(
+                """UPDATE agent_tasks SET event_position_state=%s
+                   WHERE deployment_namespace=%s AND task_id=%s""",
+                (phase, namespace, task_id),
+            )
+            stored_phase = phase
         rows = _position_rows(connection, namespace, task_id, cursor, limit)
         for row in rows:
             if row["task_sequence"] != cursor + 1 or (
@@ -86,11 +91,14 @@ def backfill_task_event_positions(
             phase = "assigning"
     if phase == "ready" and _pending_segment(connection, namespace, task_id) is not None:
         phase = "assigning"
-    connection.execute(
-        """UPDATE agent_tasks SET event_position_state=%s
-           WHERE deployment_namespace=%s AND task_id=%s""",
-        (phase, namespace, task_id),
-    )
+    # Freeze reservations before assigning a new source prefix. A Task
+    # already in this phase needs no second state write.
+    if phase != stored_phase:
+        connection.execute(
+            """UPDATE agent_tasks SET event_position_state=%s
+               WHERE deployment_namespace=%s AND task_id=%s""",
+            (phase, namespace, task_id),
+        )
     while phase == "assigning" and limit:
         member = _pending_segment(connection, namespace, task_id)
         if member is None:
