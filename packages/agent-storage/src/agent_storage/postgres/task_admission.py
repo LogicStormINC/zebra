@@ -404,13 +404,13 @@ def _read_session_root_binding(
     rows = connection.execute(
         """SELECT coalesce(nullif(received.payload ->> 'root_session_id', ''),
                            projection.session_id::text) AS root_session_id,
-                  binding.snapshot_json
+                  binding.snapshot_json, binding.binding_digest, binding.binding_revision
            FROM session_projections projection
            LEFT JOIN session_events received
              ON received.deployment_namespace=projection.deployment_namespace
             AND received.session_id=projection.session_id AND received.event_type=%s
            LEFT JOIN LATERAL (
-               SELECT snapshot_json FROM task_binding_snapshots
+               SELECT snapshot_json, binding_digest, binding_revision FROM task_binding_snapshots
                WHERE deployment_namespace=projection.deployment_namespace
                  AND task_id=coalesce(nullif(received.payload ->> 'root_session_id', ''),
                                       projection.session_id::text)::uuid
@@ -425,7 +425,7 @@ def _read_session_root_binding(
         raise PostgresAgentTaskConflictError("Session has ambiguous received Handoff lineage")
     root = SessionId(UUID(rows[0]["root_session_id"]))
     snapshot = rows[0]["snapshot_json"]
-    return root, None if snapshot is None else _binding_from_snapshot(snapshot, TaskId(root))
+    return root, None if snapshot is None else _binding_from_row(rows[0], TaskId(root))
 
 
 def _read_task_binding(
@@ -434,7 +434,7 @@ def _read_task_binding(
     task_id: TaskId,
     binding_revision: int | None = None,
 ) -> TaskBindingSnapshot | None:
-    query = """SELECT snapshot_json FROM task_binding_snapshots
+    query = """SELECT snapshot_json, binding_digest, binding_revision FROM task_binding_snapshots
                WHERE deployment_namespace=%s AND task_id=%s"""
     if binding_revision is None:
         row = connection.execute(
@@ -448,15 +448,15 @@ def _read_task_binding(
         ).fetchone()
     if row is None:
         return None
-    return _binding_from_snapshot(row["snapshot_json"], task_id)
+    return _binding_from_row(row, task_id)
 
 
-def _binding_from_snapshot(snapshot: Any, task_id: TaskId) -> TaskBindingSnapshot:
-    binding = TaskBindingSnapshot.model_validate(snapshot)
-    if binding.task_id != str(task_id) or binding.binding_digest != _binding_digest_of(binding):
-        raise ValueError("stored task binding digest does not match its snapshot")
+def _binding_from_row(row: Any, task_id: TaskId) -> TaskBindingSnapshot:
+    binding = TaskBindingSnapshot.model_validate(row["snapshot_json"])
+    if (
+        binding.task_id != str(task_id)
+        or binding.binding_revision != row["binding_revision"]
+        or binding.binding_digest != row["binding_digest"]
+    ):
+        raise ValueError("stored task binding metadata does not match its snapshot")
     return binding
-
-
-def _binding_digest_of(binding: TaskBindingSnapshot) -> str:
-    return binding.binding_digest
