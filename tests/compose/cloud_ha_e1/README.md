@@ -249,3 +249,10 @@ for its saturation self-check. The scheduler preserves every planned offer,
 including missed ones, and never retries submissions. Signed HTTP, SSE, dataset
 preparation, and repeated fault cases still need to be wired into the runner. Keep CA-HA-03 in progress until those gates run against one frozen
 candidate. Keep subsequent HA stages locked per the task registry.
+
+The signed-admission adapter in `signed_load.py` exchanges one fresh grant
+per offer and writes a private original-operation intent before issuing POST.
+A missing response record alongside an intent requires original-operation
+reconciliation. Use a new private evidence directory and the fixture CA
+with a direct, non-retrying HTTP client. Its standalone check uses a
+simulated lost HTTP response and verifies the scheduler issues no replay.
