@@ -227,12 +227,16 @@ def insert_command_outbox(connection: Any, envelope: ZebraCommandEnvelope) -> No
     scope_key = command_scope_key(envelope.scope)
     inserted = connection.execute(
         """
-        INSERT INTO broker_outbox (
+        INSERT INTO broker_outbox AS outbox (
             deployment_namespace, message_id, scope_key, message_type, schema_version,
             aggregate_id, operation_id, wake_generation, envelope_json, envelope_digest
         ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         ON CONFLICT DO NOTHING
-        RETURNING message_id
+        RETURNING EXISTS (
+            SELECT 1 FROM command_delivery_scope_rollouts AS rollout
+            WHERE rollout.deployment_namespace = outbox.deployment_namespace
+              AND rollout.scope_key = outbox.scope_key AND rollout.mode = 'shadow'
+        ) AS shadow_candidate
         """,
         (
             deployment_namespace,
@@ -265,8 +269,10 @@ def insert_command_outbox(connection: Any, envelope: ZebraCommandEnvelope) -> No
             digest,
         ):
             raise ValueError("Broker Outbox identity or digest conflicts with canonical Event")
-    # Shadow evidence is deliberately best-effort and isolated by a savepoint;
-    # it can never roll back canonical Event/Outbox admission.
+    # The insert snapshot is only a negative hint for best-effort evidence.
+    # Positive hints and duplicate inserts still recheck mode under the rollout lock.
+    if inserted is not None and not inserted["shadow_candidate"]:
+        return
     try:
         with connection.transaction():
             from agent_storage.postgres.command_rollout_shadow import record_command_shadow
