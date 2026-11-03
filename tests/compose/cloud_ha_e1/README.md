@@ -220,3 +220,31 @@ remains separately frozen. Verify a NEW no-tool Task creates no OCI object, then
 a NEW pwd Task still provisions/cleans at first approved tool, retains the original
 budget deadline and exact exit proof. Never mix Native7 eager and new deferred
 measurements into one capacity claim. Native8 runtime acceptance is pending.
+
+## Cross-host PostgreSQL fault evidence
+
+The disposable PostgreSQL pair used OrbStack and 192.168.101.7. These
+runs are individual correctness drills under F-04. The numbered F1 cases
+require separate repeats at the load and observability envelope in
+`docs/contracts/cloud-ha-v1/README.md`.
+
+| Boundary | Evidence in WORKLOG history | Observed result |
+| --- | --- | --- |
+| Receipt visibility | `60e2f001` | One signed POST withheld while replay was paused; original GET recovered the exact sealed response. |
+| Fencing | `dd22b6ff`, `f233af86` | Owner mismatch refused promotion; after explicit fence, a preexisting old-writer connection could not commit. |
+| Replica rebuild | `7d404a9a` | New cross-host standby restored remote_apply and confirmed the original STOP receipt over verified TLS. |
+| API handover | `2a213987`, `fc7d0337` | Fresh writer composition accepted new admissions; original signed GET recovered the in-flight POST receipt without resubmission. |
+| Worker recovery | `4a0ad909`, `27d1269a`, `d51599fe` | Pending Run consumed once; unresolved model reservation and uncertain tool dispatch preserved without a second invocation. |
+
+The fence used an operator-controlled container stop. The signed HTTP
+fixtures used a fixed test verification key. Model and tool side effects
+were synthetic, and the individual drills used different candidates and
+workloads. The E1 control plane has no continuously deployed automatic
+writer election, independent fencing authority, or qualified cross-host
+workspace backend. Production promotion is outside this fixture.
+
+The tracked fixture provides environment preparation and correctness
+probes. It has no reusable open-loop load driver or end-to-end acceptance
+runner for the declared E1 dataset, steady windows, and repeated fault
+cases. Keep CA-HA-03 in progress until those gates run against one frozen
+candidate. Keep subsequent HA stages locked per the task registry.
