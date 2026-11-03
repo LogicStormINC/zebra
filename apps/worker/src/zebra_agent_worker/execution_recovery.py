@@ -159,13 +159,22 @@ def recover_execution_inputs(
 ) -> RecoveredExecutionInputs:
     if ownership_check is not None:
         ownership_check()
-    if execution_input_reader is None and execution_input_store is not None:
+    prepare_native_head = execution_input_reader is None and execution_input_store is not None
+    if prepare_native_head:
         from zebra_agent_worker.execution_input_preparation import recover_execution_input_events
 
         if tasks is None or namespace is None:
             raise ValueError("execution input preparation requires explicit tasks and namespace")
         if execution_input_store.namespace != namespace:
             raise ValueError("execution input namespace disagrees with explicit composition")
+
+        recover_execution_input_events(
+            store=execution_input_store,
+            tasks=tasks,
+            lease=claimed.lease,
+            expected_session_revision=claimed.recovery.session.current_sequence,
+            ownership_check=ownership_check,
+        )
 
         def execution_input_reader(lease: WorkerLease) -> list[SessionEvent]:
             return recover_execution_input_events(
@@ -183,12 +192,15 @@ def recover_execution_inputs(
         event_store = ExecutionInputEventView(event_store, execution_input_reader, claimed.lease)
         # Finish all preparation before suspended-session restoration can append
         # SESSION_RESUMED. The main loop retries only this input phase.
-        event_store.list_for_session(session_id)
-        if execution_input_store is not None and (
-            execution_input_store.read(claimed.lease).state.session_revision
-            != claimed.recovery.session.current_sequence
-        ):
-            raise StaleExecutionSnapshot("execution inputs disagree with claimed Session revision")
+        if not prepare_native_head:
+            event_store.list_for_session(session_id)
+            if execution_input_store is not None and (
+                execution_input_store.read(claimed.lease).state.session_revision
+                != claimed.recovery.session.current_sequence
+            ):
+                raise StaleExecutionSnapshot(
+                    "execution inputs disagree with claimed Session revision"
+                )
     cloud_continuation = provider_runtime.cloud_for_session(
         cloud_provider_continuation_factory, session_id
     )

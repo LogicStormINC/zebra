@@ -37593,3 +37593,7 @@ own the suspended restoration guard and focused Worker reliability boundary chec
 
 CA-HA-03 E1 supervisor exit wakeup follow-up (Luke Ding/Codex, existing branch/worktree):
 own process_supervision.py exit waiting and the Worker supervision regression.
+
+CA-HA-03 E1 input head reuse follow-up (Luke Ding/Codex, existing branch/worktree):
+own the first preparation boundary in execution_input_preparation.py and
+execution_recovery.py. Keep the post-restoration/handoff refresh unchanged.
