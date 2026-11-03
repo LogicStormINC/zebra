@@ -4,6 +4,13 @@ const delay = (milliseconds) => new Promise((resolve) => setTimeout(resolve, mil
 
 function responsePlan(messages) {
   const prompt = [...messages].reverse().find((message) => message.role === "user")?.content ?? "";
+  if (messages.some((message) => message.role === "user" && String(message.content ?? "").includes("E2E_FAILURE"))) {
+    return {
+      chunks: [],
+      delayMs: 0,
+      toolCall: { id: "call-rejected-arguments", name: "command__run", arguments: "{" },
+    };
+  }
   const approvalRequested = messages.some(
     (message) => message.role === "user" && String(message.content ?? "").includes("E2E_APPROVAL"),
   );
@@ -20,9 +27,6 @@ function responsePlan(messages) {
         arguments: JSON.stringify({ command: ["/usr/bin/true"] }),
       },
     };
-  }
-  if (messages.some((message) => message.role === "user" && String(message.content ?? "").includes("E2E_FAILURE"))) {
-    return { chunks: ["provider-rejected"], delayMs: 0, finishReason: "content_filter" };
   }
   if (prompt.includes("E2E_STOP_STREAM")) {
     return { chunks: Array.from({ length: 120 }, (_, index) => `stop-${String(index).padStart(3, "0")}|`), delayMs: 40 };
