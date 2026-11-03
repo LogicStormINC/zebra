@@ -37587,3 +37587,6 @@ Keep parent projection composition and execution-side durable writes intact.
 
 CA-HA-03 E1 execution-only child follow-up (Luke Ding/Codex, existing branch/worktree):
 use the owned loop/child composition paths and own the focused test_loop regression.
+
+CA-HA-03 E1 fresh execution input follow-up (Luke Ding/Codex, existing branch/worktree):
+own the suspended restoration guard and focused Worker reliability boundary check.

@@ -167,3 +167,19 @@ def test_post_answer_storage_fault_preserves_later_control_and_attempt_identity(
     marker = answer.model_copy(update={"sequence": answer.sequence + 1,
         "event_type": boundary, "payload": {}})
     assert preserve_committed_result([answer, marker], prior, attempt_number=1) is prior
+
+
+def test_ready_claim_does_not_reread_events_for_suspension_restoration():
+    claim = SimpleNamespace(
+        recovery=SimpleNamespace(session=SimpleNamespace(status=SessionStatus.READY))
+    )
+    store = Mock()
+    assert restore_suspended_session_claim(
+        claim,
+        cloud_deployment=True,
+        control_service=None,
+        recovery_service=Mock(),
+        started_at=NOW,
+        event_store=store,
+    ) is claim
+    store.list_for_session.assert_not_called()
