@@ -214,21 +214,22 @@ def admit_strict_command(
         return None
     if not native_enabled:
         raise WorkerCapabilityLostError("strict command requires native admission rollout")
-    existing = connection.execute(
-        """SELECT configuration_digest,contract FROM command_coverage_requirements
-        WHERE deployment_namespace=%s AND task_id=%s ORDER BY accepted_event_id LIMIT 1""",
+    requirements = connection.execute(
+        """SELECT current_setting('zebra.coverage_configuration',true) AS supplied,
+                  existing.configuration_digest, existing.contract
+        FROM (VALUES (1)) AS anchor(value)
+        LEFT JOIN LATERAL (
+            SELECT configuration_digest,contract FROM command_coverage_requirements
+            WHERE deployment_namespace=%s AND task_id=%s ORDER BY accepted_event_id LIMIT 1
+        ) AS existing ON TRUE""",
         (namespace, identity["task_id"]),
     ).fetchone()
-    configured = connection.execute(
-        "SELECT current_setting('zebra.coverage_configuration',true) AS digest"
-    ).fetchone()
-    supplied = None if configured is None else configured["digest"] or None
-    if existing is None:
+    supplied = requirements["supplied"] or None
+    digest = requirements["configuration_digest"]
+    if digest is None:
         digest = supplied
-    else:
-        digest = existing["configuration_digest"]
-        if existing["contract"] != identity["contract"] or supplied not in (None, digest):
-            raise WorkerCapabilityLostError("strict command deployment requirement changed")
+    elif requirements["contract"] != identity["contract"] or supplied not in (None, digest):
+        raise WorkerCapabilityLostError("strict command deployment requirement changed")
     if digest is None:
         raise WorkerCapabilityLostError("trusted strict deployment configuration is unavailable")
     lease = pin_worker_capability(
