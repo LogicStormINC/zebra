@@ -37,6 +37,20 @@ from zebra_agent_api.responses import ApiResponse, bad_request, conflict
 _COMMAND_FIELDS = frozenset({"command_id", "kind", "expected_revision", "payload"})
 
 
+def cloud_command_payload(kind: str, payload: dict[str, object]) -> dict[str, object] | ApiResponse:
+    expected_revision = payload.get("expected_revision")
+    if not isinstance(expected_revision, int) or isinstance(expected_revision, bool):
+        return bad_request("expected_revision is required for cloud commands")
+    command_payload = {key: value for key, value in payload.items() if key != "expected_revision"}
+    if kind == "message" and command_payload.get("attachments"):
+        return bad_request("cloud message commands require durable attachment references")
+    return {
+        "kind": kind,
+        "expected_revision": expected_revision,
+        "payload": command_payload,
+    }
+
+
 def submit_session_command(
     stores: ControlPlaneStores,
     session_id: str,

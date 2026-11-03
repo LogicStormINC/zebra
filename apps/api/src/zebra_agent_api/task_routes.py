@@ -7,6 +7,7 @@ from agent_security.host_grant import VerifiedHostGrant
 from agent_storage import PostgresControlPlaneStores
 
 from zebra_agent_api.app import ZebraAgentApi
+from zebra_agent_api.command_submission import cloud_command_payload
 from zebra_agent_api.responses import ApiResponse
 from zebra_agent_api.subagent_read import SubagentReadApi
 from zebra_agent_api.task_api import (
@@ -111,6 +112,22 @@ def handle_task_route(app: ZebraAgentApi, request: TaskRouteRequest) -> ApiRespo
             request.body or {},
             idempotency_key=_idempotency_key(request),
             message_receipt_version=version,
+        )
+    if (
+        app.settings.deployment == "cloud"
+        and method == "POST"
+        and len(parts) == 2
+        and parts[1] in {"resume", "suspend"}
+    ):
+        command = cloud_command_payload(parts[1], request.body or {})
+        if isinstance(command, ApiResponse):
+            return command
+        return route_active_task(
+            app.stores,
+            parts[0],
+            lambda active: app.submit_command(
+                active, command, idempotency_key=_idempotency_key(request)
+            ),
         )
     if (
         method == "POST"

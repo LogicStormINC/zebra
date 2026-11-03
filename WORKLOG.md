@@ -19347,3 +19347,13 @@ route calls submit_command. The planned event wake could not be measured.
 Next align the Cloud Task alias to the durable command route, checking
 suspend and failed Task rollover behavior, and verify with a fresh intent.
 Private receipt: sse15-live-resume-original.json.
+
+CA-HA-03 Cloud Task routing candidate: resume and suspend resolve the
+active Segment and submit a durable command with the caller's original
+idempotency key and explicit expected_revision. Session and Task routes
+share the parser. Cloud Task actions no longer invoke local failed-Task
+rollover; canonical command policy determines whether the current state
+permits the action. Local rollover and force-stop dispatch are unchanged.
+Focused Task route and local Turn lifecycle suite: 11 passed; Ruff and
+diff check passed. Next add the three API modules to the isolated delta
+image, then exercise a fresh Task against real PostgreSQL with SSE held.

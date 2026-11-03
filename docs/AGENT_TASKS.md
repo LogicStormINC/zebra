@@ -37418,3 +37418,8 @@ E1 Dockerfile.delta for the isolated ARM candidate.
 CA-HA-03 isolated startup recovery addendum (Luke Ding/Codex, existing branch):
 own session_process_child.py and tests/worker/test_session_process.py for one
 fenced retry of initial recovery after PostgreSQL lock timeout.
+
+CA-HA-03 Cloud Task command routing addendum (Luke Ding/Codex, existing branch):
+own routes.py, task_routes.py, command_submission.py, and the focused Task
+command route regression. Route Cloud Task resume/suspend through durable
+Session commands with the same revision parser and idempotency key.
