@@ -19687,3 +19687,15 @@ canonical page and frontier CAS. Existing stale-page recovery still
 applies. Focused tests 28 passed, 8 native skips. Corrected the first
 test's injected-call count to exclude ownership callbacks. Next inject a
 real advisory lock at the pre-model context refresh under API outage.
+
+CA-HA-03 Native19 outage write green with the input candidate overlay:
+new Task aefe136b-cdea-4993-a009-108dbbfdf0b2 was created once via the LB
+with the primary API stopped. Original receipt GET 200 and database
+completion, one accepted command and one settled model all verified
+before primary restart at 7.486s. The intended advisory lock injection
+did not emit its marker. This validates the one-API write path in this
+sample, but does not validate the input retry under a real held lock.
+Both API readiness probes passed and temporary Worker overlay restored.
+Next bind the fault to the exact input advance call under test and
+require marker evidence. Private artifacts outage-input-lock19.json
+and input-lock-zebra*.log.
