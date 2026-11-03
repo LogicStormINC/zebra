@@ -20887,3 +20887,15 @@ authenticated. Private evidence sse-read-wait-6a32202786014156a045492619e3ce81.
 Restored both original API containers and verified TLS ready.
 This is a one-second measurement with an existing synthetic stream
 fixture, not a frozen-image E1 steady run or production deployment.
+
+CA-HA-03 baseline and immutable image preflight. The isolated
+namespace has 692 agent_tasks and 10,364 session_events by direct
+read-only SQL. The Coverage history generator uses a scratch table
+with a reduced schema and cannot qualify this corpus. Attempted to
+freeze all six runtime changes since 837defbe as an offline image
+delta. The OrbStack legacy builder hit "mount options is too long"
+with individual layers; one COPY built, but starting it hit the same
+overlay mount limit. The derivative is unqualified and was not
+deployed. Original APIs remain on the verified base. Next rebuild
+from a lower-depth source image or flatten a disposable base with
+config and source parity checks; use a native-schema corpus loader.
