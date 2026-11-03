@@ -19193,3 +19193,25 @@ Original session and receipt were inspected read-only.
 - Next: sample remaining admission bottleneck with concurrent DB wait
   attribution on Native14. Full corpus, 256 SSE, sustained 5 Hz, failover,
   soak and independent physical host acceptance remain open.
+
+### CA-HA-03 Native14 admission wait attribution
+
+Repeated the guarded 5 Hz diagnostic with PostgreSQL wait sampling on the
+isolated pair. Run e21c450a-ffda-4b0f-91fa-b0aef80e4e0a: 32 issued once,
+accepted and completed; 32 settled model reservations; no unknown result.
+The active reservation cap stopped offers. Admission median 1.392s, max
+2.1963s, 4 above 2s. The previous Native14 run had 14 above 2s; neither
+run qualifies as sustained capacity acceptance.
+
+The 45-second sampler recorded zero advisory wait observations on the Task
+INSERT (97 on Native12, zero on Native13). COMMIT accounted for 49 WalSync
+and 29 WALWrite backend observations. These are repeated samples across
+components, not unique waits or attribution to individual HTTP requests.
+Do not relax durable commit to improve this metric. Worker cgroup CPU was
+2.5878 CPU-seconds per completion at 4 aggregate quota cores; if replicated
+at steady state, 5 completions/s would need roughly 13 Worker cores before
+other components. This is a sizing hypothesis, not measured throughput.
+Next measure per-component CPU and admission stages, then compare a
+resource-isolated Worker capacity step while retaining the database budget
+and durable settings. Evidence: admission-waits-native14.jsonl and
+preflight5-close14-e21c450a-ffda-4b0f-91fa-b0aef80e4e0a/summary.json.
