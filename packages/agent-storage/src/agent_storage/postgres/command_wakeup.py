@@ -122,12 +122,25 @@ def record_command_wakeup_in_transaction(
             reserved_control_outbox=rollout["reserved_control_outbox"],
             global_lock_held=True,
         )
-        connection.execute(
+        control = kind in {
+            SessionCommandKind.CANCEL,
+            SessionCommandKind.STOP,
+            SessionCommandKind.SUSPEND,
+        }
+        kinds = ["cancel", "stop", "suspend"] if control else ["run", "resume", "message"]
+        ceiling = rollout[
+            "max_pending_control_per_scope" if control else "max_pending_per_scope"
+        ]
+        inserted = connection.execute(
             """INSERT INTO session_command_pending (
                deployment_namespace, scope_key, scope_sequence, command_id, session_id,
                accepted_event_id, accepted_sequence, tenant_id, workspace_id, origin, command_kind
                ) SELECT %s,%s,COALESCE(MAX(scope_sequence),0)+1,%s,%s,%s,%s,%s,%s,%s,%s
-                 FROM session_command_pending WHERE deployment_namespace=%s AND scope_key=%s""",
+                 FROM session_command_pending WHERE deployment_namespace=%s AND scope_key=%s
+                 HAVING NOT %s OR count(*) FILTER (
+                     WHERE status='pending' AND command_kind = ANY(%s)
+                 ) < %s
+                 RETURNING command_id""",
             (
                 deployment_namespace,
                 scope_key,
@@ -141,17 +154,13 @@ def record_command_wakeup_in_transaction(
                 event.payload["kind"],
                 deployment_namespace,
                 scope_key,
+                is_new_admission,
+                kinds,
+                ceiling,
             ),
-        )
-        if is_new_admission:
-            _check_scope_capacity(
-                connection,
-                deployment_namespace,
-                scope_key,
-                max_pending_per_scope=rollout["max_pending_per_scope"],
-                max_pending_control_per_scope=rollout["max_pending_control_per_scope"],
-                kind=kind,
-            )
+        ).fetchone()
+        if inserted is None:
+            raise CommandAdmissionCapacityError("command_scope_capacity")
     if (
         existing is not None
         and connection.execute(
@@ -207,33 +216,6 @@ def _check_outbox_capacity(
     execution_ceiling = max_unpublished_outbox - reserved_control_outbox
     if outbox_count >= (max_unpublished_outbox if control else execution_ceiling):
         raise CommandAdmissionCapacityError("command_outbox_capacity")
-
-
-def _check_scope_capacity(
-    connection: Any,
-    namespace: str,
-    scope_key: str,
-    *,
-    max_pending_per_scope: int,
-    max_pending_control_per_scope: int,
-    kind: SessionCommandKind,
-) -> None:
-    # The caller holds the global and scope locks in that order.
-    control = kind in {
-        SessionCommandKind.CANCEL,
-        SessionCommandKind.STOP,
-        SessionCommandKind.SUSPEND,
-    }
-    kinds = ("cancel", "stop", "suspend") if control else ("run", "resume", "message")
-    scope_count = connection.execute(
-        """SELECT count(*) AS total FROM session_command_pending
-           WHERE deployment_namespace=%s AND scope_key=%s AND status='pending'
-             AND command_kind = ANY(%s)""",
-        (namespace, scope_key, list(kinds)),
-    ).fetchone()["total"]
-    ceiling = max_pending_control_per_scope if control else max_pending_per_scope
-    if scope_count > ceiling:
-        raise CommandAdmissionCapacityError("command_scope_capacity")
 
 
 def insert_command_outbox(connection: Any, envelope: ZebraCommandEnvelope) -> None:
