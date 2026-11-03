@@ -20290,3 +20290,14 @@ signed ingress was not attempted because the configured issuer still
 uses the original stale authority loopback port. Next preserve that
 issuer identity while replacing its transport, then run one bounded
 signed admission. Evidence amd64-api-ready-837defbe.txt.
+
+CA-HA-03 tested an issuer-preserving transport on AMD64. SSH remote
+Unix socket reached the isolated authority. A TCP-to-Unix relay inside
+a Docker network-none namespace served the original 127.0.0.1:28444
+JWKS URI with the same TLS verification and one expected key.
+The first relay could not access the private socket with container
+root after dropping capabilities. Matching the SSH account UID/GID
+worked without widening socket permissions. No registry mutation,
+API activation or Task submission. Next reuse the isolated namespace
+for all required forwards and run bounded signed API acceptance.
+Evidence amd64-issuer-loopback-837defbe.txt.
