@@ -25,6 +25,7 @@ from agent_core.domain.artifact_objects import (
     ArtifactObjectExpectation,
     ArtifactObjectPutRequest,
     ArtifactObjectReceipt,
+    ArtifactObjectUnavailableError,
     ArtifactObjectVerificationStatus,
 )
 from agent_core.domain.cloud_artifact_requests import (
@@ -485,6 +486,56 @@ def native_media(native_media_dsn, tmp_path, native_objects):
         )
         api.stores.model_tool_projections.replay_session(session_id)
         yield client, headers, task_id, str(reservation.artifact_id), event.sequence, objects
+
+
+def test_signed_http_attachment_reconciles_original_put(
+    native_media, native_media_dsn, monkeypatch
+):
+    client, headers, _, _, _, objects = native_media
+    writes = []
+    original_verify = objects.verify
+
+    def lost_reply(request):
+        writes.append(request.expectation)
+        raise ArtifactObjectUnavailableError("simulated lost object reply")
+
+    def verify(expectation):
+        assert writes == [expectation]
+        return original_verify(expectation)
+
+    monkeypatch.setattr(objects, "put_if_absent", lost_reply, raising=False)
+    monkeypatch.setattr(objects, "verify", verify)
+    response = client.post(
+        "/tasks",
+        headers=headers(),
+        json={
+            "title": "Input receipt recovery",
+            "prompt": "Read the attached test note",
+            "workspace": "/isolated",
+            "execute": False,
+            "attachments": [
+                {
+                    "file_name": "proof.txt",
+                    "media_type": "text/plain",
+                    "content_base64": base64.b64encode(b"isolated input").decode(),
+                }
+            ],
+        },
+    )
+    assert response.status_code == 201, response.text
+    assert len(writes) == 1
+    task_id = response.json()["task_id"]
+    with psycopg.connect(native_media_dsn) as connection:
+        assert connection.execute(
+            "SELECT lifecycle_status FROM artifact_payload_metadata "
+            "WHERE deployment_namespace=%s AND session_id=%s AND artifact_id=%s",
+            ("native-media-forwarding", task_id, writes[0].artifact_id),
+        ).fetchall() == [("finalized",)]
+        assert connection.execute(
+            "SELECT count(*) FROM session_events WHERE deployment_namespace=%s "
+            "AND session_id=%s AND event_type='input_artifact_stored'",
+            ("native-media-forwarding", task_id),
+        ).fetchone() == (1,)
 
 
 @pytest.mark.parametrize("mode", ["download", "preview", "head"])

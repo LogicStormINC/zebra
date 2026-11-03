@@ -37518,3 +37518,5 @@ fixture setup in tests/api/test_artifact_download_deadline.py.
 
 CA-HA-03 Cloud input object receipt addendum: own the unknown PUT
 reconciliation seam in cloud_attachment_ingress.py and its regression.
+The Cloud input object receipt addendum also owns the signed HTTP
+regression in tests/api/test_artifact_download_deadline.py.

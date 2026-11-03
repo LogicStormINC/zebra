@@ -20452,3 +20452,11 @@ First attempt refused before mutation due to missing process budget
 composition; used one declared external operator connection on retry.
 Running API image unchanged; actual HTTP entry point remains untested.
 Evidence cloud-input-receipt-e1.json.
+
+CA-HA-03 signed HTTP initial attachment regression passed with
+disposable PostgreSQL 17. Real RS256 and /tasks returned 201 after
+the object port reported a lost reply. The stub observed exactly one
+PUT and original verification; SQL found one finalized artifact and
+one canonical materialization Event. This is complementary to the
+previous real MinIO/PG test, which injected the fault without HTTP.
+Ruff and diff check passed; no running image was changed.
