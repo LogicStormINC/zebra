@@ -214,7 +214,9 @@ def recover_task(
         )
     except (FileNotFoundError, ValueError) as exc:
         raise ValueError(f"queued session attachment recovery failed: {exc}") from exc
-    definition_snapshot = _definition_snapshot(task_payload.get("definition_snapshot"))
+    definition_snapshot = _definition_snapshot(
+        user_event.payload.get("definition_snapshot", task_payload.get("definition_snapshot"))
+    )
     raw_pin = user_event.payload.get("selected_model_pin")
     selected_model_pin = ArtifactPin.model_validate(raw_pin) if raw_pin is not None else None
     invocation_policy = _model_invocation_policy(user_event.payload, task_payload)
