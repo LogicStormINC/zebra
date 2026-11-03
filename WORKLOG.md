@@ -20713,3 +20713,14 @@ The fixture seeded the original via the native route using a
 session-local synchronous_commit override to simulate primary-only
 visibility. JWKS resolution used a static public key. Signed submit
 during the fault, topology fencing, and deployment remain pending.
+
+CA-HA-03 cross-host TLS signed-submit fault probe passed. Exactly
+one RS256 signed POST created one completed receipt on the primary
+while replay was paused. POST returned unknown without a sealed
+response; signed original GET, observation and termination withheld
+completion. Resuming replay returned the identical sealed receipt via
+GET only. The disposable API primary connections used a local commit
+override to produce the primary-only visibility window. RS256 key
+resolution used a static test key. Evidence
+pg-sync-tls-signed-submit-two-hosts.json. Primary role fencing and
+production deployment remain pending.
