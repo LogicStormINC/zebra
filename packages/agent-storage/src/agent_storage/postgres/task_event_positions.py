@@ -112,8 +112,27 @@ def backfill_task_event_positions(
             (namespace, member["session_id"], member["event_position_source_cursor"], limit),
         ).fetchall()
         source_cursor = member["event_position_source_cursor"]
+        if (
+            empty_index
+            and next_sequence == 0
+            and member["session_id"] == task_id
+            and source_cursor == -1
+            and rows
+            and all(
+                row["sequence"] == position
+                and row["source_task"] is None
+                and row["source_position"] is None
+                for position, row in enumerate(rows)
+            )
+        ):
+            _assign_fresh_root(connection, namespace, task_id, [row["event_id"] for row in rows])
+            next_sequence = len(rows)
+            source_cursor = next_sequence - 1
+            pending_rows = ()
+        else:
+            pending_rows = rows
         previous_position: int | None = None
-        for row in rows:
+        for row in pending_rows:
             if row["sequence"] != source_cursor + 1:
                 raise PostgresAgentTaskConflictError("canonical Task source coverage is incomplete")
             position = next_sequence if row["source_task"] is None else row["source_position"]
@@ -148,6 +167,32 @@ def backfill_task_event_positions(
     if phase == "ready" and limit and not empty_index:
         repair_task_event_index(connection, namespace, task_id, limit=limit)
     return phase == "ready"
+
+
+def _assign_fresh_root(
+    connection: Any, namespace: str, task_id: TaskId, event_ids: list[Any]
+) -> None:
+    try:
+        result = connection.execute(
+            f"""WITH assigned AS (
+                UPDATE session_events
+                SET task_id=%s,task_sequence=sequence,event_bytes_bound={BYTE_BOUND}
+                WHERE deployment_namespace=%s AND session_id=%s AND event_id=ANY(%s)
+                  AND task_id IS NULL AND task_sequence IS NULL
+                RETURNING deployment_namespace,task_id,task_sequence,event_id,session_id,sequence
+            ), indexed AS (
+                INSERT INTO task_event_index
+                    (deployment_namespace,task_id,task_sequence,event_id,segment_id,segment_sequence)
+                SELECT deployment_namespace,task_id,task_sequence,event_id,session_id,sequence
+                FROM assigned RETURNING event_id
+            )
+            SELECT count(*) AS count FROM indexed""",
+            (task_id, namespace, task_id, event_ids),
+        ).fetchone()
+    except errors.UniqueViolation as exc:
+        raise PostgresAgentTaskConflictError("fresh Task position already exists") from exc
+    if result["count"] != len(event_ids):
+        raise PostgresAgentTaskConflictError("source Event changed during position assignment")
 
 
 def _pending_segment(connection: Any, namespace: str, task_id: TaskId) -> Any:

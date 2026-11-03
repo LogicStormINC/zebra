@@ -37562,3 +37562,7 @@ recovery test. Reuse the one same-fence lock retry for the post-start recovery r
 
 CA-HA-03 E1 node boot addendum, same owner and branch. Own the isolated
 cloud_ha_e1 node2 relay and systemd units plus their fixture README instructions.
+
+CA-HA-03 fresh position batching addendum, same owner and branch. Own
+task_event_positions.py and existing PostgreSQL Agent Task position tests.
+Batch only the contiguous unassigned root prefix after proving both indexes empty.
