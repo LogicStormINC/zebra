@@ -20909,3 +20909,14 @@ hashes, imported the API and proof gate, and matched base image
 configuration except the revision label. Private manifest
 frozen-read-wait.json. This is staged image qualification only;
 the active APIs still use the original image and the corpus is short.
+
+CA-HA-03 frozen image cold-switch diagnostic: both isolated APIs
+ran their exact immutable candidates, passed TLS readiness and
+held 128 SSE streams each. At 5rps for three seconds all 15 POSTs
+were issued once, 2 returned sealed acceptance and 13 returned
+503 unknown with submit TimeoutError. Original-only GET reconciled
+6 completed total; 9 remained unknown at that observation, and no
+POST was repeated. Private run sse-frozen-3bc7d228ee4a43cc8a35fd4d73dfb9c3.
+Both original APIs restored and TLS readiness verified. This is
+a failed admission capacity diagnostic despite the SSE inventory
+passing. Investigate original receipts and phase timing before load.
