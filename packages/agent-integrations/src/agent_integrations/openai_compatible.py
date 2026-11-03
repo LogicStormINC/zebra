@@ -4,8 +4,8 @@ import hashlib
 import json
 from collections.abc import Callable, Mapping
 from time import perf_counter
-from typing import Any, Literal
-from uuid import UUID, uuid4
+from typing import Any
+from uuid import uuid4
 
 import httpx
 from agent_core.domain.messages import SessionMessage
@@ -16,7 +16,6 @@ from agent_core.domain.modeling import (
     ModelTextDelta,
     ModelThinkingMode,
     ModelToolDefinition,
-    ModelUsage,
 )
 from agent_core.ports.model_gateway import ModelResponseRejectedError
 
@@ -47,6 +46,7 @@ from agent_integrations.openai_payloads import (
 )
 from agent_integrations.openai_streaming import read_openai_stream
 from agent_integrations.provider_settings import ModelProviderSettings
+from agent_integrations.provider_usage import ProviderUsageObserver, observe_provider_attempt
 from agent_integrations.request_metadata import (
     ModelRequestMetadata,
     build_request_metadata,
@@ -85,9 +85,7 @@ class OpenAICompatibleModelGateway:
             )
         self._client = client
         self._prepared_requests = PreparedChatRequests()
-        self.usage_observer: (
-            Callable[[UUID, Literal["started", "finished"], ModelUsage | None], None] | None
-        ) = None
+        self.usage_observer: ProviderUsageObserver | None = None
         self.authority_check: Callable[[str], None] | None = None
 
     def prepare_text_request(
@@ -408,21 +406,7 @@ class OpenAICompatibleModelGateway:
     def _observe_usage_attempt(
         self, send: Callable[[], dict[str, Any]]
     ) -> dict[str, Any]:
-        observer = self.usage_observer
-        if observer is None:
-            return send()
-        attempt = uuid4()
-        observer(attempt, "started", None)
-        usage = None
-        try:
-            payload = send()
-            try:
-                usage = parse_usage(payload.get("usage"))
-            except ValueError:
-                pass
-            return payload
-        finally:
-            observer(attempt, "finished", usage)
+        return observe_provider_attempt(self.usage_observer, send, parse_usage)
 
     def _send_chat_completion(
         self, body: dict[str, Any] | bytes, *, endpoint: str | None = None,

@@ -82,7 +82,7 @@ def guarded_completion(
         def send() -> dict[str, Any]:
             return runner.run(_wire(gateway, request.exact_body, remaining, stream_sink, responses))
 
-        payload = send() if responses else gateway._observe_usage_attempt(send)
+        payload = gateway._observe_usage_attempt(send)
     if monotonic() - started >= remaining:
         raise WorkerBudgetError("model Task deadline exceeded")
     gate.check()
