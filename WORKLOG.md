@@ -20932,3 +20932,15 @@ position assignment and outbox capacity. They expired around the
 existing two-second boundary. This localizes the failed phase, but
 does not identify one blocking statement or prove non-commit for an
 unknown operation. Evidence saved alongside the original frozen run.
+
+CA-HA-03 frozen 256-stream failure reproduced with an isolated
+PostgreSQL wait sampler at ~100ms. All 256 streams opened; of
+15 single POSTs, 5 completed and 10 remained unknown on original
+GET. Private run sse-wait-samples-edee74dc67044da8a20f9ce4c23c9246.
+In 51 snapshots overlapping the POST window, backend observations
+included 180 idle-in-transaction ClientRead, 160 active with no
+reported wait, 19 LockManager, 15 WalSync and 7 advisory locks.
+These are sampled backend observations across the shared database,
+not elapsed milliseconds or attribution to individual POSTs.
+Next correlate statement classes and blockers for admission itself.
+Both original isolated APIs restored and TLS readiness verified.
