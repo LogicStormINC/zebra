@@ -20084,3 +20084,17 @@ checks initial Run becomes ready with untouched repair cursors.
 51 focused PostgreSQL 17 tests passed, and all three atomic Run tests
 passed with the new assertion. Scale fixtures were excluded from this
 run. Next package and repeat the isolated mixed workload.
+
+CA-HA-03 Native29 source d27ee354, ARM manifest
+sha256:107d11aed8c82bc63bab33584f248ce762e8d50953d087e4f5709d4bde2cf144.
+Both isolated nodes passed cold preservation, readiness and wire checks.
+Trust revision 28, definition 8a36daa2-8dc9-4e21-aa3a-0e4a338b8cbb.
+5 Hz/32 idle SSE: 12 POSTs, seven initially completed, one confirmed
+completed via original GET and four unresolved, no resubmission.
+All 32 SSE received heartbeats. Four TimeoutErrors and one
+LockNotAvailable; no timeout stack ended in legacy index repair.
+Worker CPU per completed run rose to 7.07 s from 2.72 s; these short
+runs do not establish comparative capacity. Next measure per-stage
+latency and VM scheduling pressure before more admission tuning.
+Evidence preflight5-repair29-bd7be55d*, repair29-original-receipts.json,
+repair29-zebra*.log and repair29-with-sse-d6ff6b5c*.
