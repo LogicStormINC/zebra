@@ -283,6 +283,19 @@ def test_text_message_commits_event_and_projection_together(namespace, postgres_
             selected_model_pin=version.runtime_assembly.provider_profile.pin,
         ),
     )
+    with pytest.raises(SessionEventSequenceConflictError, match="effective release changed"):
+        append_input_message(
+            postgres_dsn,
+            namespace,
+            session,
+            (event,),
+            (),
+            release_binding=switched,
+            effective_release=snapshot,
+        )
+    assert (
+        load_task_binding(postgres_dsn, deployment_namespace=namespace, task_id=task_id) == binding
+    )
     updated = append_input_message(
         postgres_dsn, namespace, session, (event,), (), release_binding=switched
     )

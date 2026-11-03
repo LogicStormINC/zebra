@@ -6,6 +6,8 @@ from uuid import UUID
 from agent_core.application.session_attachments import attachment_refs_from_event
 from agent_core.application.session_projection import apply_event
 from agent_core.application.workspace_projection import apply_event as apply_workspace
+from agent_core.domain.agent_definitions import AgentDefinitionScope
+from agent_core.domain.bundle_definition import BundleDefinitionSnapshot
 from agent_core.domain.cloud_artifact_payloads import CloudArtifactPayloadRecord
 from agent_core.domain.cloud_artifact_requests import canonical_artifact_reserve_hash
 from agent_core.domain.events import EventType, SessionEvent
@@ -14,12 +16,15 @@ from agent_core.domain.sessions import Session
 from agent_core.domain.task_bindings import TaskBindingSnapshot
 
 from agent_storage.event_rows import SessionEventSequenceConflictError
+from agent_storage.postgres.agent_registry import PostgresAgentRegistry
 from agent_storage.postgres.artifact_payload_transaction_support import hash_text
 from agent_storage.postgres.database import PostgresDatabase
 from agent_storage.postgres.events import append_event_in_transaction
 from agent_storage.postgres.projections import save_session_in_transaction
+from agent_storage.postgres.publication import lock_definition
 from agent_storage.postgres.task_admission import save_task_binding_in_transaction
 from agent_storage.postgres.task_control_target import require_task_control_target
+from agent_storage.postgres.work_unit import postgres_transaction_work_unit
 from agent_storage.postgres.workspaces import (
     get_workspace_in_transaction,
     save_workspace_in_transaction,
@@ -120,8 +125,36 @@ def append_input_message(
     records: tuple[CloudArtifactPayloadRecord, ...],
     *,
     release_binding: TaskBindingSnapshot | None = None,
+    effective_release: BundleDefinitionSnapshot | None = None,
 ) -> Session:
-    with PostgresDatabase(dsn, deployment_namespace=namespace).connect() as connection:
+    database = PostgresDatabase(dsn, deployment_namespace=namespace)
+    with database.connect() as connection:
+        if effective_release is not None:
+            scope = AgentDefinitionScope(
+                authority_issuer=effective_release.authority_issuer,
+                namespace_id=effective_release.namespace_id,
+                definition_id=effective_release.definition_id,
+            )
+            environment = (
+                effective_release.bound_version.runtime_assembly.bundle.manifest.scope.environment
+            )
+            lock_definition(connection, scope.scope_key)
+            with postgres_transaction_work_unit(database, connection):
+                current = PostgresAgentRegistry(
+                    dsn, deployment_namespace=namespace
+                ).resolve_published(scope, environment=environment)
+            if current is None or (
+                current.release_id,
+                current.revision,
+                current.definition_digest,
+            ) != (
+                effective_release.release_id,
+                effective_release.release_revision,
+                effective_release.bound_version.definition_digest,
+            ):
+                raise SessionEventSequenceConflictError(
+                    "effective release changed before message commit"
+                )
         stream = connection.execute(
             "SELECT current_version FROM session_streams "
             "WHERE deployment_namespace=%s AND session_id=%s FOR UPDATE",

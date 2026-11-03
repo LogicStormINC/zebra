@@ -444,6 +444,7 @@ class ZebraAgentApi(
                     events,
                     artifacts,
                     release_binding=release_binding,
+                    effective_release=effective,
                 )
             except SessionEventSequenceConflictError:
                 return message_sequence_conflict(session_id)
