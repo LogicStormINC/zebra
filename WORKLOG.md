@@ -19726,3 +19726,15 @@ client errors. Runner initially shadowed its Task ID variable and
 failed before writes; corrected and retained barrier evidence.
 Next read the exact child traceback and run live multi-Task observation.
 Evidence preflight5-input20-d047879b* and input20-with-sse-647293b6*.
+
+CA-HA-03 Native20 interrupted cohort original
+eb9acb11-3eea-46e7-a763-c452fa81c41f: correlated exact Session ID in
+Worker logs. Child failed at continuation_recorder while appending
+HARNESS_ATTEMPT_STARTED: commit_worker_event -> append_event_in_transaction
+-> _advance_stream UPDATE raised LockNotAvailable at 07:41:21.589Z.
+Executor exit ACK at 07:41:22.009Z, suspension at 07:41:23.710Z.
+No model reservation. This is a canonical append fault, distinct from
+input-page and startup faults already exercised. Preserve the original.
+Next reproduce the exact UPDATE contention and handle explicit statement
+rollback separately from ambiguous COMMIT, which retains read confirmation.
+Private evidence input20-interrupted-zebra*.log.
