@@ -20149,3 +20149,15 @@ was recovered from its original receipt. Next break down dispatch
 and compare the low-rate controls with timing enabled.
 Evidence preflight5-timing30-handler-9cf30318*, timing30-handler-zebra*.log,
 timing30-handler-original-receipts.json and timing30-handler-with-sse-1d996a6d*.
+
+CA-HA-03 Native30 timed 1 Hz controls, 12 signed POSTs each.
+Without observers: 11 accepted, ten completed, one suspended, one
+unresolved original. With 32 idle SSE: ten completed, two originals
+unresolved, all 32 heartbeats. No resubmissions. Each window emitted
+12 timing rows. Dispatch median/range: 608 ms/81–728 without observers,
+552 ms/104–1016 with observers. Receipt-to-commit median 10 ms both,
+range 4–90 and 5–92 ms. One sequential pair with host variability
+does not isolate SSE causality. Focus on dispatch and investigate the
+separate accepted-then-suspended outcome before qualification.
+Evidence preflight1-idle-timing30-9b68049e*, preflight1-sse-timing30-68754547*,
+timing30-low-*-zebra*.log, timing30-low-*-original-receipts.json.
