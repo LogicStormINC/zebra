@@ -1,0 +1,13 @@
+{
+  "real_PG_red": "32 claimed rows plus controlled 20ms round trips blocked canonical append at unchanged 250ms lock timeout",
+  "real_PG_green": "same fixture append succeeded, busy hint settlement did not acknowledge, old frontier advanced only after exact settlement, newer frontier retained",
+  "real_PG_Redis_final": "15 passed, 1 S3 Coverage case intentionally deselected",
+  "initial_plan_harness_failure": "14 passed; observer recaptured its EXPLAIN. Test guard corrected and full selected suite rerun.",
+  "unit": "29 passed, 2 conditional skips",
+  "make_check": "passed",
+  "ruff": "passed",
+  "independent_review": "no Critical/Important, readonly source review",
+  "schema_or_deadline_changed": false,
+  "candidate_deployed": false,
+  "E1_capacity": "not passed; fresh diagnostic required"
+}

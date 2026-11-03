@@ -19041,3 +19041,18 @@ without active lease/pending work. Both originals preserved. 14 real PG lock
 timeouts span hint settlement, stream append and lease/advisory locks. Worker
 CPU throttles0/1 through responses; insufficient evidence to blame CPU cap.
 Next isolate the hint batch lock hold before changing it. No full E1 claim.
+
+
+## 2026-11-03 — bounded hint claim and original control verification
+
+Real PG red held32 selected rows across per-row20ms trips and blocked the
+canonical append at250ms; set-based ordered claim/DB clock and busy-settle
+skip green. Same ownership/TTL, no migration or timeout change. Selected real
+PG/Redis15 passed (S3 Coverage excluded), unit29/2 conditional skips and make
+check/Ruff passed, independent source review clear. Initial plan-test capture
+error retained; corrected EXPLAIN rollback/observer, then reran. Native12
+candidate not yet live; does not explain every admission/lease failure.
+Original0fdb Task received one signed STOP202, stopped/resources released in
+1.199s with preserved answer/Event prefix/budget/model counts/exit ACK. Its
+old rate sample still failed. Original39aac remains suspended and unknown;
+no model resend or refund. Both original diagnostic records retained.

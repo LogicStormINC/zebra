@@ -47,5 +47,16 @@
     "orb2": 1
   },
   "operator_boundary": "Final summary serialization failed on numeric sum Decimal; retained raw samples, reconciled original Task IDs by readonly PG. No repeat or fabricated full drain CPU sample.",
-  "next": "prove batched hint claim lock contention in real PG; shorten observation transaction without changing durable commit/lease rules"
+  "next": "prove batched hint claim lock contention in real PG; shorten observation transaction without changing durable commit/lease rules",
+  "later_control_only": {
+    "task": "0fdb377b-db02-4eed-9d2a-7f8aa9d7329e",
+    "single_stop_POST_202": true,
+    "state": "stopped",
+    "resources_released": true,
+    "observed_seconds": 1.199,
+    "canonical_projection": "cancelled",
+    "original_event_prefix_budget_model_counts_exit_acks_preserved": true,
+    "unknown_model_case": "original 39aacfa5 remains suspended; original reservation unknown, no resend/refund",
+    "classification": "control-only on idle fixture; original rate diagnosis remains failed"
+  }
 }
