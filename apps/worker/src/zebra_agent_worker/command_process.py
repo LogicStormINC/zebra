@@ -393,8 +393,12 @@ class CommandWorkerProcess:
                             "execution",
                             scope_mode="fallback" if config.scoped_rollout_enabled else "all",
                         )
-                    except Exception:
-                        logger.warning("command_execution_pickup_failed")
+                    except Exception as exc:
+                        logger.warning(
+                            "command_execution_pickup_failed error_type=%s trace=%s",
+                            type(exc).__name__,
+                            safe_trace(exc),
+                        )
                         outcomes = (PickupOutcome.DEFERRED,)
                         state = "error"
                     else:
