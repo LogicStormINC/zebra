@@ -1,3 +1,18 @@
+## 2026-11-03 — HA03双逻辑节点原生联验完成，容量矩阵待验
+
+冻结9b4f9ad3双架构2140源码/3链接及真实OCI f69a2e50…已核验；两本地ARM节点新镜像
+冷切前旧PID/ha_app连接归零，完整pool3+cleanup2预算247<=256，无滚动重叠。原生trust7
+CAS6、materialize/publish200；网关改本地232/154，两API/Worker与独立清理器均健康。
+两笔新Task各POST一次，分别18.99s/18.73s完成，33事件、2模型合成结算29308、1次pwd、
+binding1→2预算指针一致、原120s不重置、2组真实start/exit配对、lease/pending0。
+两笔主动冻结原Worker的强停均202：执行未证实前不报释放，原进程恢复后内核退出配对、
+精确OCI对象消失、canonical cancelled；5.821s/6.59s含人为冻结。主节点清理器在Worker仍
+冻结时已删除对象。对象当时created尚未started，不冒充运行中工具强杀；另笔等待审批
+强停1.854s时对象已正常移除。所有原Task不重跑，七旧事件/预算和984原unknown哈希保持。
+两Worker已恢复并核对TLS live/ready200/control_fresh。AMD镜像在远端构建验证后经primary
+入库；远端应用仍hold。共享Mac不代表物理HA；1m基线/各档30min/故障矩阵/24h仍待验，
+03不标Done/04锁定，生产未改。证据native-9b4f9ad3/validation.json。
+
 ## 2026-11-03 — HA03双引擎清理路由候选与node2预检
 
 复审发现错误节点可耗尽其他engine清理重试；真实PG原4红后修共享领取，不按Session猜归属：

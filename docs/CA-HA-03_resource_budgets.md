@@ -244,3 +244,17 @@ independent source review found no important issues. The10 new cases fake engine
 removal and inject unit ACK facts; real two-node deletion is still unverified.
 See evidence/ca-ha-03-e1/engine-affinity/validation.json. New images/publication,
 E1 capacity/fault gates, physical/storage HA and production activation are pending.
+
+
+### Frozen9b runtime acceptance on two local nodes (2026-11-03)
+
+Both logical nodes now run9b4f9ad3, Native approval7 and the matching247 profile.
+Native full-flow Tasks completed18.99s/18.73s with one pwd, two settled synthetic
+model calls, matching budget renewal and two real kernel exit ACK pairs each.
+Active-executor freeze probes returned accepted STOP, retained unconfirmed exit
+until the original process resumed, then exact ACK/resource absence/cancellation.
+Primary cleanup removed the registered OCI object while its Worker was still
+frozen. The object existed but had not started; running-tool kill is not claimed.
+Both Workers are restored, old7 event/budget/unknown hashes unchanged. Full E1
+corpus/load/fault/soak, physical/storage HA and production remain unqualified.
+See evidence/ca-ha-03-e1/native-9b4f9ad3/validation.json for every case and boundary.

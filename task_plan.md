@@ -1,3 +1,14 @@
+# Live checkpoint — frozen9b4f9ad3 / Native7
+
+Two local arm64 logical nodes now run2API/2Worker/2cleanup on profile247; both
+healthy/restored. Exact two-arch images/index/source proof and Native7 publication
+passed. Two fresh full native pwd Tasks and two active-executor freeze STOPs are
+verified with real exit pairs/resource absence; primary independent cleanup ran
+while Worker frozen. OCI objects were not started tools. Original7 tasks/budgets/
+unknown preserved. Shared physical Mac, WAN apps held, production untouched.
+Next: E1 deterministic short-task/corpus/load harness, measured stages and fault/
+soak gates; keep03 In Progress and04 locked. Do not replay any existing task.
+
 # Current checkpoint — 2026-11-03
 
 CA-HA-03 stays In Progress on the claimed worktree/branch. Monitor capacity2079

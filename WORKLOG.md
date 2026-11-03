@@ -18930,3 +18930,14 @@ Two local247 static preflights/baseline match and node2 real runsc/hash checks p
 Initial native preview path/auth failures retained; isolated QA credential was
 rotated after a log parameter expansion and active env synchronized. New images,
 publication and actual dual-node task/cleanup gates remain next; no production.
+
+
+## 2026-11-03 — frozen9b two-local-node live acceptance
+
+Exact source/images/index, Native7 CAS/publication, matching247 cold/no-overlap,
+both live/ready/control freshness verified. Full native Tasks completed once on
+each node; active Worker freeze probes retained unknown exit until real ACK and
+exact OCI deletion. Primary cleanup removed a created/not-started OCI object while
+its Worker was still frozen. Old7 event/budget/unknown hashes unchanged. All five
+new cases and operator preview boundaries retained in native-9b evidence. Both
+Workers restored; no production. Full E1 load/corpus/fault/soak remains next.

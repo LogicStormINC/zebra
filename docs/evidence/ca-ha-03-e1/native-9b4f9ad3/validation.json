@@ -1,0 +1,126 @@
+{
+  "source": "9b4f9ad34887b31bde00fd3c07938bd9b024ef8d",
+  "images": {
+    "vm": "sha256:2cbbb14b896367f1ceb3d8bf93b76a85ac4ff32b5fec653c547ac22a51692183",
+    "server": "sha256:b9003b968987fbd8f51a4b94e8f8f0fd7de9db84d5b5096005e7c30676992610"
+  },
+  "common_OCI_manifest": "sha256:f69a2e50cb97efa653a99485254a9b3bffb92d404e40f8b02fce7c7bb3200a44",
+  "runtime_source_files_verified_per_arch": 2140,
+  "symlinks_verified_per_arch": 3,
+  "node2_same_arm64_image_source_verified": true,
+  "native_publication": {
+    "trust_revision": 7,
+    "definition_id": "423bb668-6375-4f34-9984-0df0288de071",
+    "materialize": 200,
+    "publish": 200,
+    "scope": "synthetic TLS/SSE/byte-meter; not capacity/provider quality"
+  },
+  "topology": {
+    "runtime_nodes": [
+      "zebra-gvisor 192.168.139.232",
+      "zebra-ha-e1-node2 192.168.139.154"
+    ],
+    "runtime_architecture": "arm64 both",
+    "shared_physical_host": true,
+    "api": 2,
+    "worker": 2,
+    "independent_cleanup": 2,
+    "PG_fleet_including_external_reserved": 247,
+    "PG_max": 256,
+    "WAN_api_worker": "held; remote amd64 built/verified only"
+  },
+  "cases": [
+    {
+      "node": "orb2",
+      "task": "f2587437-c062-4f98-b163-3d7458553e0e",
+      "kind": "full_native_pwd",
+      "elapsed_seconds": 18.99,
+      "post_count": 1,
+      "events": 33,
+      "models_settled": 2,
+      "synthetic_units": 29308,
+      "tool_calls": 1,
+      "binding_revisions": [
+        1,
+        2
+      ],
+      "original_deadline_seconds": 120,
+      "exact_start_exit_pairs": 2,
+      "leases_pending": 0
+    },
+    {
+      "node": "vm",
+      "task": "9be6dcc9-80a3-4ce5-aa68-c3536e641ced",
+      "kind": "full_native_pwd",
+      "elapsed_seconds": 18.73,
+      "post_count": 1,
+      "events": 33,
+      "models_settled": 2,
+      "synthetic_units": 29308,
+      "tool_calls": 1,
+      "binding_revisions": [
+        1,
+        2
+      ],
+      "original_deadline_seconds": 120,
+      "exact_start_exit_pairs": 2,
+      "leases_pending": 0
+    },
+    {
+      "node": "orb2",
+      "task": "81edf2fb-755d-4596-9f06-1fca0b322a49",
+      "kind": "signed_Task_stop_after_handoff",
+      "elapsed_seconds": 1.854,
+      "result": "stopped/resources_released",
+      "scope": "OCI resource was already removed, not live deletion evidence",
+      "operator_preview": "incorrect live-instance expectation failed; only original STOP continued; Task not replayed"
+    },
+    {
+      "node": "orb2",
+      "task": "ba607d1c-c86e-4367-be89-861ddce90201",
+      "kind": "native_active_executor_frozen",
+      "OCI_object_existed": true,
+      "OCI_object_started": false,
+      "while_paused_execution_unconfirmed": true,
+      "while_paused_not_released": true,
+      "exact_OCI_ID_absent_after": true,
+      "exact_start_exit_pairs": 1,
+      "resource_deleted_before_worker_unpause": false,
+      "elapsed_seconds_including_intentional_pause": 5.821,
+      "models_reserved": 0,
+      "task_post_count": 1,
+      "stop_post_count": 1,
+      "projection": "cancelled",
+      "scope": "real registered OCI container existed but had not started; not a running-tool kill claim"
+    },
+    {
+      "node": "vm",
+      "task": "1e526d5d-d1b3-4b28-bcec-5aa030d21913",
+      "kind": "native_active_executor_frozen",
+      "OCI_object_existed": true,
+      "OCI_object_started": false,
+      "while_paused_execution_unconfirmed": true,
+      "while_paused_not_released": true,
+      "exact_OCI_ID_absent_after": true,
+      "exact_start_exit_pairs": 1,
+      "resource_deleted_before_worker_unpause": true,
+      "elapsed_seconds_including_intentional_pause": 6.59,
+      "models_reserved": 0,
+      "task_post_count": 1,
+      "stop_post_count": 1,
+      "projection": "cancelled",
+      "scope": "real registered OCI container existed but had not started; not a running-tool kill claim"
+    }
+  ],
+  "original_seven_events_budgets_unknown_hashes_unchanged": true,
+  "both_workers_restored_and_health_verified": true,
+  "E1_capacity_fault_matrix": "not_run",
+  "physical_storage_HA": "unverified",
+  "production_changed": false,
+  "operator_boundaries": [
+    "remote registry relay refused; exact native AMD image transferred/pushed via primary, no remote app restart",
+    "one-off Caddy validator needs binary NET_BIND_SERVICE capability as configured in runtime",
+    "initial gateway/Worker-health probes preceded startup; final readiness is separate, not an RTO claim",
+    "orb2 absent-container matcher was case-sensitive; read-only exact ID recheck corrected interpretation, no mutation retry"
+  ]
+}
