@@ -19784,3 +19784,13 @@ the existing native atomic Task+Run path provides a comparison candidate.
 Next measure exact authorization, admission transaction and post-commit
 response timings or compare the signed atomic path before changing
 the generic path. Evidence split-admission21.json.
+
+CA-HA-03 Native21 atomic admission comparison: one calibration plus
+three alternating pairs through the isolated LB. Exact signed Run
+authority, atomic-task-run/1 encrypted receipts decrypted to 201.
+Generic POST timings 0.552/1.254/1.066s, atomic 0.620/1.316/1.057s.
+Medians 1.066/1.057s, exchange excluded. All seven originals completed
+with one settled model reservation each. Small serial samples overlap
+and provide no reliable latency advantage. Keep both paths and measure
+stage timings under controlled load before changing generic admission.
+Private receipts atomic-run21-*.json and generic-run21-*.json.
