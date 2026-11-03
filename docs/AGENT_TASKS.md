@@ -37458,3 +37458,7 @@ a scoped GET of an existing Cloud creation receipt.
 
 CA-HA-03 create receipt packaging addendum: include all four owned API
 modules in the E1 Dockerfile.delta for the isolated failover candidate.
+
+CA-HA-03 input page retry addendum: own execution_input_preparation.py
+and tests/worker/test_execution_input_frontier.py for the bounded
+fenced page retry during pre-model context refresh.

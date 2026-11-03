@@ -19679,3 +19679,11 @@ and exit receipts are present. Restored both APIs and checked readiness.
 Preserve original. Next reproduce and retry only the failed fenced
 input page transaction, not the started attempt. Private evidence
 outage-write19.json and outage-write19-zebra*.log.
+
+CA-HA-03 input page candidate retries one LockNotAvailable on the same
+page within the original two-second slice. The first transaction exits
+before the retry, which checks ownership and repeats the storage fence,
+canonical page and frontier CAS. Existing stale-page recovery still
+applies. Focused tests 28 passed, 8 native skips. Corrected the first
+test's injected-call count to exclude ownership callbacks. Next inject a
+real advisory lock at the pre-model context refresh under API outage.
