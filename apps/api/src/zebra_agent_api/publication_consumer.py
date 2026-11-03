@@ -41,7 +41,8 @@ def resolve_consumer_binding(
         return ApiResponse(403, {"status": "forbidden"})
     try:
         approval = load_publication_approval(
-            settings.publication_management_config, context.namespace_id
+            settings.publication_management_config, context.namespace_id,
+            definition_id=str(parsed.get("definition_id")),
         )
         if (
             context.host_app_id not in approval.consumer_hosts
@@ -89,7 +90,8 @@ def resolve_consumer_binding(
                 return ApiResponse(403, {"status": "forbidden"})
             if (
                 load_publication_approval(
-                    settings.publication_management_config, context.namespace_id
+                    settings.publication_management_config, context.namespace_id,
+                    definition_id=str(approval.definition_id),
                 )
                 != approval
             ):

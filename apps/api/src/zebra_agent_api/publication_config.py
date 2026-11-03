@@ -84,7 +84,11 @@ class PublicationApproval(BundleValue):
 
 
 def load_publication_approval(
-    path: str | None, namespace: str | None, *, credential_digest: str | None = None
+    path: str | None,
+    namespace: str | None,
+    *,
+    credential_digest: str | None = None,
+    definition_id: str | None = None,
 ) -> PublicationApproval:
     if path is None or not Path(path).is_absolute():
         raise ValueError("PRIVATE_CONFIGURATION_REQUIRED")
@@ -106,14 +110,17 @@ def load_publication_approval(
             or any(entry.scope != approvals[0].scope for entry in approvals)
         ):
             raise ValueError("INVALID_PUBLICATION_APPROVAL")
-        if credential_digest is None:
+        if credential_digest is not None:
+            matching = [
+                entry for entry in approvals
+                if compare_digest(entry.credential_sha256, credential_digest)
+            ]
+        elif definition_id is not None:
+            matching = [entry for entry in approvals if str(entry.definition_id) == definition_id]
+        else:
             raise ValueError("PUBLICATION_APPROVAL_SELECTOR_REQUIRED")
-        matching = [
-            entry for entry in approvals
-            if compare_digest(entry.credential_sha256, credential_digest)
-        ]
         if not matching:
-            raise PermissionError("UNAUTHENTICATED")
+            raise PermissionError("PUBLICATION_APPROVAL_NOT_FOUND")
         approval = matching[0]
     else:
         approval = PublicationApproval.model_validate(value)
