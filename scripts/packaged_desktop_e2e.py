@@ -247,6 +247,8 @@ class PackagedApp:
               apiBaseUrl: arguments[0], authToken: 'e2e-token', sessionId: '',
               userId: '', tenantId: ''
             }));
+            // This fixture writes current configuration, after the legacy migration.
+            localStorage.setItem('zebra-agent-desktop.trusted-local-default-v1', '1');
             localStorage.setItem('zebra-agent-desktop.task-launch-config', JSON.stringify({
               workspace: arguments[1], policyProfile: 'workspace_write',
               toolProfile: 'coding', networkProfile: 'none', networkAllowlist: [],
