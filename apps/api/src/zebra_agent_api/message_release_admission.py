@@ -61,16 +61,16 @@ def prepare_message_release(
             old_assembly.provider_profile.pin.id,
         )
         adopted = old.snapshot_for_removed_model(effective=effective, selected_model_id=remembered)
-        if adopted is old:
-            return None
         requested = command.payload.get("selected_model_id")
         if requested is not None and not isinstance(requested, str):
             return bad_request("selected_model_id must be a string")
         adopted.bound_version.runtime_assembly.resolve_session_model(
-            requested_id=requested, remembered_id=None
+            requested_id=requested, remembered_id=remembered if adopted is old else None
         )
     except ValueError as exc:
         return bad_request(str(exc))
+    if adopted is old:
+        return None
     namespace = getattr(stores, "deployment_namespace", None)
     if not isinstance(namespace, str):
         return ApiResponse(503, {"status": "message_storage_unavailable"})
