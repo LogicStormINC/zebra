@@ -161,17 +161,20 @@ def test_initial_surface_rejects_invalid_envelope_without_ports(payload):
 
 
 @pytest.mark.parametrize("terminate", [False, True])
-def test_atomic_first_run_rechecks_original_fence_after_lock_timeout(monkeypatch, terminate):
+@pytest.mark.parametrize("capacity", [None, "command_scope_capacity", "command_outbox_capacity"])
+def test_atomic_first_run_rechecks_original_fence_after_rollback(monkeypatch, terminate, capacity):
     from contextlib import contextmanager
     from time import monotonic
     from unittest.mock import Mock
 
+    from agent_storage.postgres.command_wakeup import CommandAdmissionCapacityError
     from psycopg.errors import LockNotAvailable
     from zebra_agent_api import client_admission_atomic as atomic
     from zebra_agent_api import client_admission_task as task
 
     store = Mock()
-    prepared = Mock(side_effect=[LockNotAvailable(), api.ApiResponse(201, {})])
+    failure = LockNotAvailable() if capacity is None else CommandAdmissionCapacityError(capacity)
+    prepared = Mock(side_effect=[failure, api.ApiResponse(201, {})])
     monkeypatch.setattr(task, "prepare_atomic_task", Mock(return_value=prepared))
     monkeypatch.setattr(atomic, "start_atomic_surface", Mock(return_value=True))
     monkeypatch.setattr(atomic, "current_task_io_deadline", lambda: monotonic() + 1)
@@ -206,11 +209,15 @@ def test_atomic_first_run_rechecks_original_fence_after_lock_timeout(monkeypatch
     )
     assert result is (None if terminate else receipt)
     assert visits == ["enter", "exit", "enter", "exit"]
-    assert prepared.call_count == (1 if terminate else 2)
+    assert prepared.call_count == (1 if terminate or capacity is not None else 2)
     assert persist.call_count == (0 if terminate else 1)
     store.get.assert_not_called()
     if not terminate:
         assert authorize.call_args.args[-1] == {"kind": "task_create"}
+        if capacity is not None:
+            response = persist.call_args.args[1]
+            assert response.status_code == (429 if capacity == "command_scope_capacity" else 503)
+            assert response.body == {"status": "capacity_limited", "reason": capacity}
 
 
 def test_e1_receipt_proof_fails_closed_with_incomplete_configuration(monkeypatch):

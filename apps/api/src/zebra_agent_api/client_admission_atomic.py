@@ -14,8 +14,11 @@ from agent_storage.postgres.admission_atomic_surface import (
 from agent_storage.postgres.client_capabilities import PostgresClientCapabilityRegistry
 from agent_storage.postgres.client_control_leases import PostgresClientControlLeaseStore
 from agent_storage.postgres.client_sessions import PostgresClientSessionRegistry
+from agent_storage.postgres.command_wakeup import CommandAdmissionCapacityError
 from agent_storage.postgres.task_io import current_task_io_deadline
 from psycopg.errors import LockNotAvailable
+
+from zebra_agent_api.responses import ApiResponse
 
 logger = logging.getLogger(__name__)
 
@@ -82,20 +85,20 @@ def execute_atomic_surface(
         if protocol == "atomic-task-run/1":
             stages.append((stage, int((monotonic() - started) * 1000)))
 
-    def dispatch_transaction() -> IdempotencyRecord:
+    def dispatch_transaction(rejection: ApiResponse | None = None) -> IdempotencyRecord:
         mark("transaction_begin")
         with atomic_surface_transaction(store, scoped, digest):
             mark("transaction_entered")
-            rejected = False
-            if protocol == "atomic-message-surface/1":
+            rejected = rejection is not None
+            if rejection is not None:
+                response = rejection
+            elif protocol == "atomic-message-surface/1":
                 from agent_storage.postgres.message_surface_anchor import lock_message_anchor
 
                 reason = lock_message_anchor(
                     store, task=body.task, run_id=body.run, **body.original_message.model_dump()
                 )
                 if reason is not None:
-                    from zebra_agent_api.responses import ApiResponse
-
                     rejected = True
                     response = ApiResponse(
                         409,
@@ -113,8 +116,6 @@ def execute_atomic_surface(
                 )
                 if protocol == "atomic-message-surface/1" and response.status_code == 201:
                     from agent_storage.postgres.message_surface_anchor import consume_message_anchor
-
-                    from zebra_agent_api.responses import ApiResponse
 
                     consume_message_anchor(
                         store,
@@ -147,8 +148,7 @@ def execute_atomic_surface(
         mark("transaction_committed")
         return result
 
-    failure: Exception | None = None
-    try:
+    def dispatch_with_retry() -> IdempotencyRecord:
         try:
             return dispatch_transaction()
         except LockNotAvailable:
@@ -158,6 +158,22 @@ def execute_atomic_surface(
             # The first transaction rolled back. Reenter the original fence so
             # a concurrent termination still wins before any admission write.
             return dispatch_transaction()
+
+    failure: Exception | None = None
+    try:
+        try:
+            return dispatch_with_retry()
+        except CommandAdmissionCapacityError as exc:
+            if protocol != "atomic-task-run/1" or exc.code not in {
+                "command_scope_capacity", "command_outbox_capacity",
+            }:
+                raise
+            # Business writes have rolled back. Reenter the same fence solely
+            # to seal the refusal; a concurrent STOP can still win.
+            return dispatch_transaction(ApiResponse(
+                429 if exc.code == "command_scope_capacity" else 503,
+                {"status": "capacity_limited", "reason": exc.code},
+            ))
     except AtomicSurfaceAborted as exc:
         failure = exc
         return None
