@@ -21106,3 +21106,16 @@ and 3/15 candidate; candidate remaining eight unknown and four
 not_observed. Each operation was sent once. One paired sample
 confirms reduced opens, not a capacity improvement or a resolved
 bottleneck. Evidence amd64-scope-pair-6b292705dcf8 and 8f9ca3159c44.
+
+CA-HA-03 timed AMD64 bounded-scope phases with test-only wrappers.
+15 offers, 2 sealed POSTs, 4 normal permit rejects and 9 transaction
+body TimeoutErrors. Of the 11 requests that entered the atomic
+path, preparation median 290ms and dispatch-fence write 137ms.
+Two successful transaction bodies took about 1.08s each and
+transaction exit about 129ms median. Two lock-timeout bodies
+were retried under the original fence; nine bodies ultimately
+timed out. Four of nine final stacks were in event-position
+backfill; the others spanned events, Task index, binding and
+wake-up. This identifies the transaction body as the larger
+measured cost, with no single proven locking cause. Private
+evidence amd64-phase-90f646767d48.log. No originals replayed.
