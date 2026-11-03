@@ -1,6 +1,7 @@
 """Private, exact publisher ceilings. No business HostGrant privileges."""
 
 from datetime import UTC, datetime
+from hmac import compare_digest
 from pathlib import Path
 from typing import Annotated, Literal
 from uuid import UUID
@@ -82,11 +83,40 @@ class PublicationApproval(BundleValue):
         )
 
 
-def load_publication_approval(path: str | None, namespace: str | None) -> PublicationApproval:
+def load_publication_approval(
+    path: str | None, namespace: str | None, *, credential_digest: str | None = None
+) -> PublicationApproval:
     if path is None or not Path(path).is_absolute():
         raise ValueError("PRIVATE_CONFIGURATION_REQUIRED")
     value = load_bundle_json(read_private_configuration(path, max_bytes=32768))
-    approval = PublicationApproval.model_validate(value)
+    if (
+        isinstance(value, dict)
+        and value.get("schema_version") == "cloud-agent.publication-approvals/1"
+    ):
+        if set(value) != {"schema_version", "approvals"}:
+            raise ValueError("INVALID_PUBLICATION_APPROVAL")
+        entries = value["approvals"]
+        if type(entries) is not list or not 1 <= len(entries) <= 16:
+            raise ValueError("INVALID_PUBLICATION_APPROVAL")
+        approvals = tuple(PublicationApproval.model_validate(entry) for entry in entries)
+        if (
+            len({entry.actor for entry in approvals}) != len(approvals)
+            or len({entry.credential_sha256 for entry in approvals}) != len(approvals)
+            or len({entry.definition_id for entry in approvals}) != len(approvals)
+            or any(entry.scope != approvals[0].scope for entry in approvals)
+        ):
+            raise ValueError("INVALID_PUBLICATION_APPROVAL")
+        if credential_digest is None:
+            raise ValueError("PUBLICATION_APPROVAL_SELECTOR_REQUIRED")
+        matching = [
+            entry for entry in approvals
+            if compare_digest(entry.credential_sha256, credential_digest)
+        ]
+        if not matching:
+            raise PermissionError("UNAUTHENTICATED")
+        approval = matching[0]
+    else:
+        approval = PublicationApproval.model_validate(value)
     required = {
         "name",
         "description",

@@ -16,3 +16,5 @@ PUT 正文包含 `modelConfigId`、正整数 `revision`、`model` 和 `approvedP
 在一个短事务中保存原生不可变 profile 与原操作回执。profile 沿用既有规范摘要，限制为所注册的模型，原生 ID 由作用域与模型配置身份派生，版本由修订派生。存储以作用域和完整 pin 查询。Bundle 校验、发布及正常 Worker 从共享持久存储解析该 pin。既有部署目录 pin 保持兼容。凭据仍由 Worker 按原生 profile 中的批准引用解析。查询结果、Bundle 和回执只携带安全元数据。
 
 验收依次覆盖同操作重放、同修订竞争、跨作用域拒绝、未知原操作、提交后丢响应及重启查询。再验证 API 和 Worker 都能解析同一固定修订，替换修订和伪造摘要均拒绝。最后经 Overdoze 目录和草稿 CAS 发布两个 Agent，验证两个 Release 绑定同一 pin，并保留旧 Release 对原修订的解析。
+
+发布管理入口支持 `cloud-agent.publication-approvals/1` 私有配置，包含最多 16 份既有单 Definition 批准。各批准共享同一 scope，凭据摘要、actor 和 Definition ID 分别唯一。HTTP 入口按凭据选择批准。原操作按 actor 隔离。旧单条配置仍兼容。脚本评估及其他无凭据选择器的入口继续使用单条配置。真实 PostgreSQL 回归验证同一 Target 物化两个 Definition，A 查询 B 原操作返回 404。

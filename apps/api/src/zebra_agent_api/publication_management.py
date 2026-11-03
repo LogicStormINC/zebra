@@ -15,8 +15,8 @@ from agent_core.domain.runtime_bundle_json import load_bundle_json
 from agent_storage import CloudCompositionSettings
 from agent_storage.postgres.agent_registry import PostgresAgentRegistry
 from agent_storage.postgres.database import PostgresDatabase
-from agent_storage.postgres.model_profile_registration import PostgresModelProfileRegistrations
 from agent_storage.postgres.host_management import HostManagementConflict, HostManagementUnavailable
+from agent_storage.postgres.model_profile_registration import PostgresModelProfileRegistrations
 from agent_storage.postgres.publication import PublicationStore
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
@@ -56,12 +56,17 @@ def perform(
     *,
     scripts: bool = False,
 ) -> JSONResponse:
+    credential_digest = hashlib.sha256(token.encode()).hexdigest()
     try:
-        approval = load_publication_approval(settings.publication_management_config, namespace)
+        approval = load_publication_approval(
+            settings.publication_management_config, namespace, credential_digest=credential_digest
+        )
+    except PermissionError:
+        return _error(401, "UNAUTHENTICATED")
     except (OSError, ValueError, TypeError):
         raise RuntimeError("PUBLICATION_CONFIGURATION_UNAVAILABLE") from None
     if not hmac.compare_digest(
-        hashlib.sha256(token.encode()).hexdigest(), approval.credential_sha256
+        credential_digest, approval.credential_sha256
     ):
         return _error(401, "UNAUTHENTICATED")
     expected = {
@@ -107,8 +112,10 @@ def perform(
 
         def recheck() -> None:
             if (
-                load_publication_approval(settings.publication_management_config, namespace)
-                != approval
+                load_publication_approval(
+                    settings.publication_management_config, namespace,
+                    credential_digest=credential_digest,
+                ) != approval
             ):
                 raise PermissionError("PERMISSION_DENIED")
 
