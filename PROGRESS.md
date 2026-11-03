@@ -8874,3 +8874,5 @@ CA-P5-08 verification resumed on9e91d75f after both producer gates passed and Gi
 CA-P7-MODEL-01 注册支持核对连接摘要。真实 PostgreSQL 定向测试覆盖 Base URL 和凭据引用不匹配时拒绝且不落原操作，以及正常重放和重启恢复。
 
 多模型 Bundle 装配候选新增 1.1.0 模型组件，保留旧目录摘要。额外模型 pin 进入 lock 并逐一校验供应商批准。装配测试 11 项通过，公开合同发布和发送选模待接入。
+
+多模型组件目录和独立摘要已加入 Cloud Agent 公开 Bundle 校验合同。公开合同与装配定向测试 15 项通过。新版公开合同摘要需要 Overdoze 更新对应信任 pin。
