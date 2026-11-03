@@ -8,9 +8,11 @@ from uuid import UUID, uuid4
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from agent_core.contracts.turn_events import validate_turn_identity
+from agent_core.domain.bundle_definition import BundleDefinitionSnapshot
 from agent_core.domain.events import EventType
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.stream_admission import RunStreamAdmission, StreamCapabilities
+from agent_core.domain.task_bindings import TaskBindingSnapshot
 
 MAX_COMMAND_PAYLOAD_BYTES = 64 * 1024
 MAX_IDEMPOTENCY_KEY_LENGTH = 256
@@ -30,6 +32,24 @@ class SessionCommandStatus(StrEnum):
     DUPLICATE = "duplicate"
     IDEMPOTENCY_CONFLICT = "idempotency_conflict"
     REVISION_CONFLICT = "revision_conflict"
+
+
+class MessageReleaseBinding(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    previous_snapshot_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    snapshot: BundleDefinitionSnapshot
+    binding: TaskBindingSnapshot
+
+    @model_validator(mode="after")
+    def validate_binding(self) -> MessageReleaseBinding:
+        if (
+            self.binding.binding_revision < 2
+            or self.binding.agent_capability_ceiling.definition_snapshot_digest
+            != self.snapshot.snapshot_digest
+        ):
+            raise ValueError("message release binding does not match the snapshot")
+        return self
 
 
 class SessionCommand(BaseModel):
@@ -69,7 +89,12 @@ class SessionCommand(BaseModel):
         server_owned = {"stream_admission", "capacity_policy", "capacity_digest", "capacity_epoch"}
         if server_owned & value.keys():
             raise ValueError("stream_admission is server-owned metadata")
-        if {"definition_snapshot", "selected_model_pin", "binding_revision"} & value.keys():
+        if {
+            "definition_snapshot",
+            "selected_model_pin",
+            "binding_revision",
+            "message_release_binding",
+        } & value.keys():
             raise ValueError("release binding is server-owned metadata")
         if "stream_capabilities" in value:
             caps = StreamCapabilities.model_validate(value["stream_capabilities"])
@@ -110,6 +135,7 @@ class SessionCommand(BaseModel):
         extension_snapshot_digest: str | None = None,
         extension_turn_id: str | None = None,
         stream_admission: RunStreamAdmission | None = None,
+        message_release_binding: MessageReleaseBinding | None = None,
     ) -> dict[str, object]:
         return SessionCommandAcceptedPayload(
             command_id=str(self.command_id),
@@ -122,6 +148,7 @@ class SessionCommand(BaseModel):
             extension_snapshot_digest=extension_snapshot_digest,
             extension_turn_id=extension_turn_id,
             stream_admission=stream_admission,
+            message_release_binding=message_release_binding,
         ).model_dump(mode="json", exclude_none=True)
 
 
@@ -141,8 +168,17 @@ class SessionCommandAcceptedPayload(BaseModel):
         default=None, exclude_if=lambda value: value is None
     )
 
+    message_release_binding: MessageReleaseBinding | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+
     @model_validator(mode="after")
     def require_complete_extension_binding(self) -> SessionCommandAcceptedPayload:
+        if self.message_release_binding is not None and (
+            self.kind is not SessionCommandKind.MESSAGE
+            or self.payload.get("clarification_id") is not None
+        ):
+            raise ValueError("release binding requires a new message")
         values = (self.extension_snapshot_digest, self.extension_turn_id)
         if (values[0] is None) != (values[1] is None):
             raise ValueError("extension snapshot binding must be complete")

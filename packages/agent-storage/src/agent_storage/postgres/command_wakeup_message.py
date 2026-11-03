@@ -17,7 +17,7 @@ from agent_core.contracts import (
 )
 from agent_core.domain.bundle_definition import BundleDefinitionSnapshot
 from agent_core.domain.events import EventActor, EventType, SessionEvent
-from agent_core.domain.identifiers import EventId
+from agent_core.domain.identifiers import EventId, TaskId
 from agent_core.domain.runtime_bundle_types import ArtifactPin
 
 from agent_storage.postgres.command_read_state import (
@@ -27,6 +27,8 @@ from agent_storage.postgres.command_read_state import (
 )
 from agent_storage.postgres.events import append_event_in_transaction, latest_selected_model_pin
 from agent_storage.postgres.projections import save_session_in_transaction
+from agent_storage.postgres.task_admission import save_task_binding_in_transaction
+from agent_storage.postgres.task_control_target import require_task_control_target
 from agent_storage.postgres.workspaces import save_workspace_in_transaction
 
 
@@ -57,6 +59,7 @@ def append_command_message(
         raise MessageInputRejected("invalid canonical message input") from None
     if command.kind is not SessionCommandKind.MESSAGE:
         raise MessageInputRejected("invalid canonical message input")
+    release = command.message_release_binding
     payload = command.payload
     if not isinstance(payload, dict):
         raise MessageInputRejected("invalid canonical message input")
@@ -104,6 +107,11 @@ def append_command_message(
             or existing.payload.get("content") != content.strip()
             or existing.payload.get("clarification_id") != clarification_id
             or (
+                release is not None
+                and existing.payload.get("definition_snapshot")
+                != release.snapshot.model_dump(mode="json")
+            )
+            or (
                 clarification_id is None
                 and command.extension_turn_id is not None
                 and existing.payload.get("turn_id") != command.extension_turn_id
@@ -128,12 +136,21 @@ def append_command_message(
     try:
         model_pin = None
         snapshot = state.workspace.definition_snapshot
+        if release is not None:
+            if (
+                not isinstance(snapshot, BundleDefinitionSnapshot)
+                or snapshot.snapshot_digest != release.previous_snapshot_digest
+            ):
+                raise ValueError("message release source has changed")
+            snapshot = release.snapshot
         if clarification_id is None and isinstance(snapshot, BundleDefinitionSnapshot):
             remembered = latest_selected_model_pin(connection, namespace, accepted.session_id)
             _, profile = snapshot.bound_version.runtime_assembly.resolve_session_model(
                 requested_id=requested_model,
                 remembered_id=(
-                    ArtifactPin.model_validate(remembered).id if remembered is not None else None
+                    ArtifactPin.model_validate(remembered).id
+                    if remembered is not None and release is None
+                    else None
                 ),
             )
             model_pin = profile.pin
@@ -145,6 +162,7 @@ def append_command_message(
             command=SessionMessageAppendCommand(
                 content=content,
                 selected_model_pin=model_pin,
+                definition_snapshot=release.snapshot if release is not None else None,
                 clarification_id=clarification_id,
                 appended_at=now,
                 prior_human_turns=state.turns.human_turn_count,
@@ -152,6 +170,21 @@ def append_command_message(
                 open_turn_exists=state.turns.current_turn() is not None,
             ),
         )
+        if release is not None:
+            binding = release.binding
+            require_task_control_target(
+                connection,
+                namespace,
+                TaskId(UUID(binding.task_id)),
+                accepted.session_id,
+                replay=False,
+            )
+            save_task_binding_in_transaction(
+                connection,
+                namespace,
+                binding,
+                expected_previous_revision=binding.binding_revision - 1,
+            )
     except ValueError:
         raise MessageInputRejected("canonical message requires reconciliation") from None
     event = event.model_copy(
