@@ -39,7 +39,8 @@ def eligible_atomic_surface(app: Any) -> bool:
 
 
 def execute_atomic_surface(
-    app: Any, request: Any, body: Any, scoped: str, key: bytes, digest: str, operation: str
+    app: Any, request: Any, body: Any, scoped: str, key: bytes, digest: str, operation: str,
+    *, original_claim: dict[str, Any] | None = None,
 ) -> None:
     from zebra_agent_api.client_admission_operations import _authorize, _dispatch, _persist_result
 
@@ -128,9 +129,11 @@ def execute_atomic_surface(
             # Any partial error, budget/receipt failure or final denial rolls back every
             # surface write. No external I/O/Worker execution is admitted by this protocol.
             mark("dispatch_finished")
-            meta = store.get(
-                action="client-admission-v1-claim", idempotency_key=scoped
-            ).response_body
+            meta = original_claim
+            if meta is None:
+                meta = store.get(
+                    action="client-admission-v1-claim", idempotency_key=scoped
+                ).response_body
             if (response.status_code != 201 and not rejected) or _authorize(
                 app, request, meta
             ) is not None:

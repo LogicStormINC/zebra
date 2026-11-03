@@ -20971,3 +20971,12 @@ denominators and do not imply additive phase durations. This
 shows SSE is not necessary for the deadline failure. Both original
 isolated APIs restored. Private runs no-sse-frozen-6902c3080aa24f6387c91e102eb15b10
 and no-sse-milestones-22ed6e5c81554afdb0d51731c23ac12d.
+
+CA-HA-03 removed one point read from the atomic admission write
+transaction. The normal route supplies the immutable claim returned
+by its successful first-winner save. Final authorization still
+runs inside the transaction; commit fence claim locking and STOP
+checks are unchanged. Direct callers keep their existing lookup.
+The rollback/retry regression verifies no redundant claim lookup
+and final authorization uses the saved metadata. 32 API tests passed.
+A frozen live capacity comparison is still needed.

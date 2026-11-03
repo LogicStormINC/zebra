@@ -410,7 +410,10 @@ def _handle(
             }:
                 from zebra_agent_api.client_admission_atomic import execute_atomic_surface
 
-                execute_atomic_surface(app, request, body, scoped, key, digest, operation)
+                execute_atomic_surface(
+                    app, request, body, scoped, key, digest, operation,
+                    original_claim=claim.response_body,
+                )
             else:
                 # Legacy partial commits and their original receipts remain unchanged.
                 response = _dispatch(app, request, body, scoped)

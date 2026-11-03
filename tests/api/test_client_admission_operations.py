@@ -175,7 +175,8 @@ def test_atomic_first_run_rechecks_original_fence_after_lock_timeout(monkeypatch
     monkeypatch.setattr(task, "prepare_atomic_task", Mock(return_value=prepared))
     monkeypatch.setattr(atomic, "start_atomic_surface", Mock(return_value=True))
     monkeypatch.setattr(atomic, "current_task_io_deadline", lambda: monotonic() + 1)
-    monkeypatch.setattr(api, "_authorize", Mock(return_value=None))
+    authorize = Mock(return_value=None)
+    monkeypatch.setattr(api, "_authorize", authorize)
     persist = Mock(return_value=True)
     monkeypatch.setattr(api, "_persist_result", persist)
     visits = []
@@ -200,10 +201,14 @@ def test_atomic_first_run_rechecks_original_fence_after_lock_timeout(monkeypatch
         b"key",
         "digest",
         "operation",
+        original_claim={"kind": "task_create"},
     )
     assert visits == ["enter", "exit", "enter", "exit"]
     assert prepared.call_count == (1 if terminate else 2)
     assert persist.call_count == (0 if terminate else 1)
+    store.get.assert_not_called()
+    if not terminate:
+        assert authorize.call_args.args[-1] == {"kind": "task_create"}
 
 
 def test_e1_receipt_proof_fails_closed_with_incomplete_configuration(monkeypatch):
