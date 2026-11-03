@@ -7,6 +7,7 @@ from uuid import UUID
 from agent_core.domain.client_preparation import ClientPreparationContext
 from agent_core.domain.events import EventType, SessionEvent
 from agent_core.domain.identifiers import ClientSessionId, SessionId
+from agent_core.ports.agent_registry import AgentRegistryPort
 from agent_security.host_grant import VerifiedHostGrant
 from agent_storage import ControlPlaneStores
 from zebra_agent_config.settings import ZebraAgentSettings
@@ -18,6 +19,7 @@ from zebra_agent_api.responses import ApiResponse, conflict
 
 class _CommandApp(Protocol):
     stores: ControlPlaneStores
+    agent_registry: AgentRegistryPort | None
 
     @property
     def settings(self) -> ZebraAgentSettings: ...
@@ -114,6 +116,8 @@ class ApiCommandMixin:
             native_preparation=native_preparation,
             native_input_owner=native_input_owner,
             validated_client_admission=validated_client_admission,
+            settings=self.settings,
+            agent_registry=self.agent_registry,
             transient_admission_enabled=(
                 self.settings.storage_authority == "postgresql"
                 and self.settings.stream.new_admission_enabled

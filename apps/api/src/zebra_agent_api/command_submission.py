@@ -20,12 +20,14 @@ from agent_core.domain.stream_admission import (
     TransientCapacityPolicy,
     negotiate_stream_mode,
 )
+from agent_core.ports.agent_registry import AgentRegistryPort
 from agent_core.ports.extensions import ExtensionSkillConflictError
 from agent_security.host_grant import HostGrantBindingError, VerifiedHostGrant
 from agent_storage import ControlPlaneStores
 from agent_storage.postgres.command_wakeup import CommandAdmissionCapacityError
 from agent_storage.postgres.extensions import ExtensionSnapshotAdmissionConflictError
 from pydantic import ValidationError
+from zebra_agent_config.settings import ZebraAgentSettings
 
 from zebra_agent_api.extension_turn_admission import (
     ClientExtensionBindingError,
@@ -51,6 +53,8 @@ def submit_session_command(
     native_preparation: ClientPreparationContext | None = None,
     native_input_owner: ClientSessionId | None = None,
     validated_client_admission: dict[str, object] | None = None,
+    settings: ZebraAgentSettings | None = None,
+    agent_registry: AgentRegistryPort | None = None,
 ) -> ApiResponse:
     try:
         session_key = SessionId(UUID(session_id))
@@ -151,6 +155,15 @@ def submit_session_command(
     if decision.status is not SessionCommandStatus.ACCEPTED:
         return _decision_response(session_id, command, decision, existing)
     assert decision.event_type is EventType.SESSION_COMMAND_ACCEPTED
+    release_binding = None
+    if command.kind is SessionCommandKind.MESSAGE and settings is not None:
+        from zebra_agent_api.message_release_admission import prepare_message_release
+
+        release_binding = prepare_message_release(
+            stores, settings, agent_registry, command, events, verified_host_grant
+        )
+        if isinstance(release_binding, ApiResponse):
+            return release_binding
     scope = snapshot = task_ceiling = None
     if needs_extensions and extension_admission is not None:
         assert isinstance(verified_host_grant, VerifiedHostGrant)
@@ -213,6 +226,7 @@ def submit_session_command(
             extension_snapshot_digest=snapshot.digest if snapshot is not None else None,
             extension_turn_id=snapshot.turn_id if snapshot is not None else None,
             stream_admission=stream_admission,
+            message_release_binding=release_binding,
         ),
         idempotency_key=command.idempotency_key,
     )
