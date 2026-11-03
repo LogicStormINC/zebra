@@ -21303,3 +21303,5 @@ used here; non-superuser role was proven in a separate rehearsal.
 No Worker or real broker on this run. Full corpus continued.
 
 - E1 corpus rehearsal: seed the canonical empty SessionPlan and check projection deserialization alongside strict header and event replay. On a separate OrbStack PostgreSQL database, a non-superuser Native Worker consumed one new synthetic request, called the synthetic provider once, and persisted one answer while the three historical Tasks and 300 events were preserved. The full corpus generator was already running with the earlier seed and requires a namespace-scoped backfill after completion.
+
+- E1 signed HTTP and Worker now run together in the isolated corpus rehearsal. One RS256 POST over a live socket admitted the executable synthetic Task, and a separately signed GET returned the identical sealed receipt. The non-superuser Worker consumed that Task with one synthetic provider call and one answer. The full corpus wait job will use this same path after the generator emits verified counts. JWKS uses the static test resolver and this test exercises the direct PostgreSQL command consumer.
