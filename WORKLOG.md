@@ -20270,3 +20270,12 @@ Temporary listener/container and forward exited with the probe.
 No Task or real provider call. Next verify signed authority and
 stage the cross-host API/Worker with independently owned forwards.
 Evidence amd64-model-wire-837defbe.txt.
+
+CA-HA-03 AMD64 signed authority exchange preflight. Through a temporary
+loopback TLS forward, the candidate presented an isolated synthetic
+principal and received an issued grant for fresh test thread/run IDs
+in 194.97 ms. The same endpoint rejected an invalid credential with
+401. No grant or credential was printed; no Task was submitted.
+The remote API still needs to validate an issued grant in its own
+live composition and pass bounded admission before joining ingress.
+Evidence amd64-authority-837defbe.txt.
