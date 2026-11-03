@@ -21278,3 +21278,16 @@ now reads and preserves the existing epoch. Two consecutive calls
 returned identical evidence, with 3 Tasks/300 Events/300 indexes
 preserved. Runtime role, isolated dependencies and signed API/Worker
 composition are still separate. Full corpus generation untouched.
+
+CA-HA-03 rehearsed the corpus application role on a disposable
+PostgreSQL 17.5 database started with max_connections=256.
+The existing E1 profile admitted a 238-connection fleet using a
+non-superuser/non-createdb/non-createrole DML role. Strict Task
+replay for three samples and an exact fixture receipt round trip
+passed via the same composed runtime DSN. The first rehearsal
+used the read-only verifier's modified DSN inside the runtime
+budget and correctly failed its DSN binding check; the repeat
+used the exact composed DSN. Grants were broad public-schema
+DML for the fixture, not an audited production least-privilege
+policy. The full generator remains live on its original 100-slot
+server; transition only after it completes and evidence is frozen.
