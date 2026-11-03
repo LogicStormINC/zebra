@@ -37465,3 +37465,7 @@ fenced page retry during pre-model context refresh.
 
 CA-HA-03 input retry packaging addendum: include the owned
 execution_input_preparation.py module in the isolated E1 Dockerfile.delta.
+
+CA-HA-03 canonical Worker append lock addendum: own worker_commit_confirmation.py
+and its focused Worker regression for one exact retry after explicit PostgreSQL
+lock rejection outside a borrowed transaction.

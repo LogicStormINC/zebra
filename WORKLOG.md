@@ -19738,3 +19738,12 @@ input-page and startup faults already exercised. Preserve the original.
 Next reproduce the exact UPDATE contention and handle explicit statement
 rollback separately from ambiguous COMMIT, which retains read confirmation.
 Private evidence input20-interrupted-zebra*.log.
+
+CA-HA-03 canonical event candidate: shared Worker commit wrapper retries
+one exact event write after PostgreSQL LockNotAvailable and write-context
+exit, provided no outer work unit owns the transaction. The repeated
+write revalidates the original fence and revision. TimeoutError on
+either attempt still uses the existing read confirmation and never
+reissues an uncertain write. Focused 2 passed, 19 native DSN skips and
+Ruff clean. Next inject a real stream row lock against the first
+HARNESS_ATTEMPT_STARTED append on the isolated candidate.

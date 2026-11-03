@@ -1,4 +1,4 @@
-"""One bounded confirmation of a timed-out Worker write; never repeat the write."""
+"""Recover Worker writes after a known rollback or an uncertain commit."""
 
 from collections.abc import Callable
 from functools import wraps
@@ -13,11 +13,13 @@ from agent_core.ports.workspace_projection_store import (
     WorkerProjectionCommitResult,
 )
 from psycopg import Error
+from psycopg.errors import LockNotAvailable
 
 from agent_storage.postgres.command_wakeup_receipts import HANDLED_EVENTS
 from agent_storage.postgres.events import read_event_in_transaction
 from agent_storage.postgres.leases import assert_current_lease_fence
 from agent_storage.postgres.projections import get_session_in_transaction
+from agent_storage.postgres.work_unit import borrow_work_unit
 
 
 def confirm_on_timeout(
@@ -33,7 +35,15 @@ def confirm_on_timeout(
         authority: WorkerMutationAuthority,
     ) -> WorkerProjectionCommitResult:
         try:
-            return method(store, event, session, workspace, authority=authority)
+            try:
+                return method(store, event, session, workspace, authority=authority)
+            except LockNotAvailable:
+                database = store._database
+                if borrow_work_unit((database._dsn, database.deployment_namespace)) is not None:
+                    raise
+                # PostgreSQL rejected the statement and the write context exited.
+                # Re-run the original event and revision under the same fence.
+                return method(store, event, session, workspace, authority=authority)
         except TimeoutError as original:
             # ponytail: one 1s read within the remaining parent deadline, no write retry.
             # Uncertain/advanced state stays paused; a durable recovery protocol owns later work.
