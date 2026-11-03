@@ -84,7 +84,7 @@ test("continues a completed task through an invisible internal Segment", async (
   const secondSessionId = await activeSessionId(page);
 
   expect(secondSessionId).toBe(firstSessionId);
-  expect((await session(request, firstSessionId)).status).toBe("completed");
+  await expect.poll(async () => (await session(request, firstSessionId)).status).toBe("completed");
   const internal = await request.get(`${API_URL}/internal/tasks/${firstSessionId}/segments`, { headers: AUTH_HEADERS });
   expect(internal.ok()).toBeTruthy();
   expect((await internal.json()).segments).toHaveLength(2);
