@@ -304,3 +304,35 @@ def test_schema_union_and_type_field_do_not_crash_inspection(schema_type):
     gateway.model_request_budget = _proof
     body = {"max_tokens": 5, "tools": [{"type": schema_type}]}
     assert inspect_request(gateway, body).output_cap == 5
+
+
+@pytest.mark.parametrize("failed_check, wire_count", [(1, 0), (2, 1)])
+def test_lease_lock_timeout_can_leave_same_unsettled_state_on_either_side_of_wire(
+    failed_check, wire_count
+):
+    import httpx
+    from agent_integrations.worker_budget import guarded_completion
+    from psycopg.errors import LockNotAvailable
+
+    sent = []
+    checks = 0
+
+    def handler(request):
+        sent.append(request)
+        return httpx.Response(200, json={"id": "original-provider-receipt"})
+
+    def check():
+        nonlocal checks
+        checks += 1
+        if checks == failed_check:
+            raise LockNotAvailable("fixture lease lock timeout")
+        return 10
+
+    gateway = _gateway(handler)
+    gateway.model_request_budget = _proof
+    gateway.worker_budget.check = check
+    with pytest.raises(LockNotAvailable):
+        guarded_completion(gateway, {"max_tokens": 5}, lambda payload: payload)
+    assert len(sent) == wire_count
+    assert len(gateway.worker_budget.reserved) == 1
+    assert gateway.worker_budget.settled == []

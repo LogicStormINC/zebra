@@ -19504,3 +19504,13 @@ Retain the unknown reservation and original command. Next instrument
 a fresh synthetic request with correlated pre-dispatch/provider receipt
 and lock-holder evidence to distinguish fencing before dispatch from
 receipt settlement after dispatch. Private evidence sse21-original-*.
+
+CA-HA-03 guarded model transport phase regression: injected
+LockNotAvailable into the fenced check after reservation and before the
+wire, then separately into the check immediately after a synthetic
+provider response. Both cases leave one reservation and no settlement;
+wire calls are zero and one respectively. The shared transport does not
+repeat the wire request within either invocation. This isolates why the
+original database state cannot establish dispatch. 21 transport tests and
+Ruff passed. Next use phase-specific correlation in the isolated live
+fixture before attributing the original lock to either check.
