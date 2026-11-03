@@ -37539,3 +37539,8 @@ CA-HA-03 E1 load driver slice: same In Progress card, owner Luke Ding/Codex,
 branch and worktree. Reuse the existing owned tests/compose/cloud_ha_e1/
 boundary for an open-loop clock and its executable saturation check.
 The driver records missed offers and never resends original submissions.
+
+CA-HA-03 event-position write round-trip follow-up: same owner and
+branch, existing task_event_positions.py and native source-position tests.
+Combine the guarded source update and index insert for unassigned events.
+Preserve historical adoption, conflict checks, and transaction rollback.

@@ -20991,3 +20991,12 @@ verified source hashes, ran by exact ID, and both isolated APIs
 were restored. Private run no-sse-claim-reuse-58960f0d33bc443994fc08d7c00d4405.
 The next meaningful target is first-Run source/index assignment
 round trips; preserve the legacy source-adoption and cursor checks.
+
+CA-HA-03 combined fresh Event position assignment and derived index
+insert in one PostgreSQL statement. It checks the guarded source
+update and retains the existing point-read validation on an index
+collision. Already assigned legacy events retain their previous
+path. Two real PG17.5 native API checks passed and Ruff is clean.
+The broader real-PG suite is running (session 50843); its first
+seven tests passed, then it entered the 100k-event repair case.
+No capacity effect claimed until frozen live comparison.
