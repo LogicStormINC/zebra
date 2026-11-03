@@ -169,6 +169,19 @@ def restart_reconciled(
         return count
 
 
+def recover_crash(
+    container: str, binding_path: Path, destination: Path, dsn: str, *, namespace: str
+) -> int:
+    """One periodic recovery tick for a single explicitly managed E1 Worker."""
+    spec = json.loads(docker("inspect", "--type", "container", container))[0]
+    state = spec["State"]
+    if state["Status"] == "running" or (
+        state["Status"] == "exited" and state["ExitCode"] not in {0, 143}
+    ):
+        return restart_reconciled(spec["Id"], binding_path, destination, dsn, namespace=namespace)
+    return 0
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("container")
@@ -178,7 +191,24 @@ if __name__ == "__main__":
     parser.add_argument("--ack-fence")
     parser.add_argument("--reconcile", action="store_true")
     parser.add_argument("--restart", action="store_true")
+    parser.add_argument("--recover-crash", action="store_true")
     arguments = parser.parse_args()
+    if arguments.recover_crash:
+        if (
+            arguments.exit_binding is None
+            or arguments.reconcile
+            or arguments.restart
+            or arguments.ack_session
+            or arguments.ack_fence
+        ):
+            parser.error("--recover-crash requires --exit-binding and no other recovery mode")
+        count = recover_crash(
+            arguments.container, arguments.exit_binding, arguments.destination,
+            os.environ["ZEBRA_DATABASE_URL"], namespace="ha-e1-20261102",
+        )
+        if count:
+            print(count)
+        raise SystemExit(0)
     if arguments.restart and not arguments.reconcile:
         parser.error("--restart requires --reconcile")
     if arguments.reconcile and (arguments.exit_binding is None or arguments.ack_session):
