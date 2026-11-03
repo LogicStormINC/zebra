@@ -85,6 +85,7 @@ def prepare_message_release(
             verified.context,
             authority_issuer=verified.authority_issuer,
             release_change=(old.snapshot_digest, adopted.snapshot_digest),
+            previous_definition_digest=old.definition_digest,
         )
     except ValueError:
         return ApiResponse(409, {"status": "host_binding_revision_conflict"})
