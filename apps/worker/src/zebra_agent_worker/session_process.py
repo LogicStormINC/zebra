@@ -35,6 +35,25 @@ def process_factory(settings: Any) -> str | None:
     return factory
 
 
+def executor_incarnation() -> dict[str, str] | None:
+    """Read the trusted node's per-start identity from an operator-mounted file."""
+    path = os.environ.get("ZEBRA_EXECUTOR_INCARNATION_FILE")
+    if path is None:
+        return None
+    try:
+        identity = json.loads(Path(path).read_bytes())
+        if (
+            not isinstance(identity, dict)
+            or identity.keys() != {"engine", "container", "started_at", "pid_namespace"}
+            or not all(isinstance(value, str) and value.strip() for value in identity.values())
+            or identity["pid_namespace"] != os.readlink("/proc/self/ns/pid")
+        ):
+            raise ValueError("executor incarnation does not match this PID namespace")
+        return identity
+    except (OSError, ValueError) as error:
+        raise WorkerExecutorInterrupted("trusted executor incarnation unavailable") from error
+
+
 def settings_digest(settings: Any) -> str:
     raw = json.dumps(asdict(settings), sort_keys=True, default=str).encode()
     return hashlib.sha256(raw).hexdigest()
@@ -87,7 +106,7 @@ def execute_isolated(service: Any, request: dict[str, Any]) -> ExecutedSession:
         }
         source.write_text(json.dumps(request))
         registration_started = monotonic_ns()
-        register_executor(store.database, sid, lease.fence)
+        register_executor(store.database, sid, lease.fence, incarnation=executor_incarnation())
         launch_started = monotonic_ns()
         try:
             process = subprocess.Popen(

@@ -266,3 +266,23 @@ with tempfile.TemporaryDirectory() as directory:
         if process.poll() is None:
             os.killpg(process.pid, signal.SIGKILL)
             process.wait()
+
+
+def test_executor_incarnation_rejects_stale_node_binding(tmp_path, monkeypatch):
+    from zebra_agent_worker.execution_errors import WorkerExecutorInterrupted
+    from zebra_agent_worker.session_process import executor_incarnation
+
+    monkeypatch.delenv("ZEBRA_EXECUTOR_INCARNATION_FILE", raising=False)
+    assert executor_incarnation() is None
+    path = tmp_path / "identity.json"
+    monkeypatch.setenv("ZEBRA_EXECUTOR_INCARNATION_FILE", str(path))
+    monkeypatch.setattr(os, "readlink", lambda _: "pid:[123]")
+    identity = {
+        "engine": "node", "container": "container", "started_at": "original",
+        "pid_namespace": "pid:[123]",
+    }
+    path.write_text(json.dumps(identity))
+    assert executor_incarnation() == identity
+    path.write_text(json.dumps({**identity, "pid_namespace": "pid:[456]"}))
+    with pytest.raises(WorkerExecutorInterrupted, match="trusted executor incarnation unavailable"):
+        executor_incarnation()
