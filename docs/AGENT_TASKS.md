@@ -37455,3 +37455,6 @@ active readiness-based backend selection.
 CA-HA-03 original create receipt addendum: own task_routes.py, idempotency.py,
 http_host_auth.py, tenant_guard.py and tests/api/test_task_create_receipt.py for
 a scoped GET of an existing Cloud creation receipt.
+
+CA-HA-03 create receipt packaging addendum: include all four owned API
+modules in the E1 Dockerfile.delta for the isolated failover candidate.
