@@ -19265,3 +19265,13 @@ is passed to both attempts and the database revalidates the fence. Retry
 ends before entering execution. Focused tests: 10 passed, 16 conditional
 skips. Next package the child module into the isolated ARM image and
 verify with a bounded lease-lock injection against a new synthetic task.
+
+CA-HA-03 Native15 isolated cutover: source bbe849f9, ARM image
+sha256:37d07ab03af1ebb0538df46100d545a78723d86a0dbf03f1564aa2abf67f534d.
+Verified 2142 runtime files, 3 symlinks, both node readiness and TLS/SSE,
+and identical existing session, budget, model and executor receipt hashes.
+First materialization got 403 because the client sent old trust revision 14.
+Archived that receipt and used revision 15 with the same operation identity.
+Materialize/publish returned 200, definition 46bae679-ecd1-45e7-8424-ae5e32409c64.
+Next inject a PostgreSQL lease-boundary lock timeout before the initial
+child recovery returns and reconcile the new synthetic task.
