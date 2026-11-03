@@ -21158,3 +21158,12 @@ Private evidence amd64-wakeup-629062641aa4.log and originals.
 No capacity gain established. Repeated small SQL cuts have not
 closed the WAN gap; prioritize qualified database placement and
 the native baseline corpus before more isolated micro-tuning.
+
+CA-HA-03 SSE evidence now advances the raw Task cursor only after
+a complete blank-line-terminated frame with data. It records first
+and last numeric IDs and rejects non-increasing IDs. The standalone
+check proves a truncated frame never marks a connection ready.
+This supplies a safe cursor for future planned stream renewal.
+The current raw API caps a stream at 1800s (or earlier grant
+expiry), so a 30-minute window plus staggered setup needs renewal.
+Full corpus generator still live at 600 Tasks / 60k Events.

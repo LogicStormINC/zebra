@@ -17,7 +17,8 @@ _NODES = ("https://192.168.139.232:28445", "https://192.168.139.154:28445")
 @dataclass
 class Stream:
     node: int
-    first_id: str | None = None
+    first_id: int | None = None
+    last_id: int | None = None
     opened: float | None = None
     closed: float | None = None
     status: int | None = None
@@ -49,6 +50,25 @@ async def _problem_code(response: httpx.Response) -> str | None:
             if isinstance(value, str) and re.fullmatch(r"[a-z][a-z0-9_]{1,63}", value):
                 return value
     return None
+
+
+async def _event_ids(lines: AsyncIterator[str], row: Stream) -> AsyncIterator[int]:
+    event_id = None
+    data = False
+    async for line in lines:
+        if line.startswith(": keepalive"):
+            row.keepalives += 1
+        elif line.startswith("id:"):
+            event_id = int(line[3:].strip())
+        elif line.startswith("data:"):
+            data = True
+        elif not line:
+            if event_id is not None and data:
+                if event_id < 0 or (row.last_id is not None and event_id <= row.last_id):
+                    raise ValueError("SSE cursor did not advance")
+                row.last_id = event_id
+                yield event_id
+            event_id, data = None, False
 
 
 @asynccontextmanager
@@ -91,16 +111,13 @@ async def hold_streams(
                     if response.headers.get("content-type", "").startswith("application/json"):
                         row.reason = await _problem_code(response)
                     return
-                lines = response.aiter_lines()
-                async for line in lines:
-                    if line.startswith("id:") and line[3:].strip():
-                        row.first_id = line[3:].strip()
-                        row.opened = loop.time()
-                        signal.set()
-                        break
-            async for line in lines:
-                if line.startswith(": keepalive"):
-                    row.keepalives += 1
+                ids = _event_ids(response.aiter_lines(), row)
+                row.first_id = await anext(ids, None)
+                if row.first_id is not None:
+                    row.opened = loop.time()
+                    signal.set()
+            async for _ in ids:
+                pass
             row.failure = "unexpected_eof"
         except Exception as exc:
             row.failure = type(exc).__name__
@@ -133,12 +150,17 @@ async def _check() -> None:
 
     from signed_load import _BROKER
 
+    async def truncated():
+        yield "id: 1"
+        yield "data: {}"
+
+    assert [value async for value in _event_ids(truncated(), Stream(0))] == []
     release = asyncio.Event()
     grants = []
 
     class Body(httpx.AsyncByteStream):
         async def __aiter__(self):
-            yield b"id: original\ndata: {}\n\n"
+            yield b"id: 0\ndata: {}\n\n"
             await release.wait()
 
     async def handler(request: httpx.Request) -> httpx.Response:
@@ -154,7 +176,7 @@ async def _check() -> None:
                 client, task_id=str(uuid4()), binding={}, principal_token="test", count=4
             ) as rows:
                 assert len(grants) == len(set(grants)) == len(rows) == 4
-                assert all(row.first_id == "original" for row in rows)
+                assert all(row.first_id == row.last_id == 0 for row in rows)
                 release.set()
                 while any(row.closed is None for row in rows):
                     await asyncio.sleep(0)
