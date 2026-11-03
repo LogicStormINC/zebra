@@ -76,6 +76,12 @@ class PostgresEventStore(EventStorePort):
     def append(self, event: SessionEvent) -> SessionEvent:
         try:
             with self._database.connect() as connection:
+                if (
+                    event.event_type is EventType.SESSION_COMMAND_ACCEPTED
+                    and "message_release_binding" in event.payload
+                ):
+                    accepted = SessionCommandAcceptedPayload.model_validate(event.payload)
+                    self._fence_message_release(connection, accepted)
                 return append_event_in_transaction(
                     connection,
                     self._database.deployment_namespace,
@@ -86,6 +92,16 @@ class PostgresEventStore(EventStorePort):
             if existing is not None:
                 return ensure_idempotent_event_retry(existing, event)
             raise ValueError("duplicate or conflicting session event") from exc
+
+    def _fence_message_release(
+        self, connection: Any, accepted: SessionCommandAcceptedPayload
+    ) -> None:
+        if accepted.message_release_binding is not None:
+            from agent_storage.postgres.agent_registry import require_effective_message_release
+
+            require_effective_message_release(
+                self._database, connection, accepted.message_release_binding.snapshot
+            )
 
     def append_with_extension_snapshot(
         self,
@@ -113,6 +129,7 @@ class PostgresEventStore(EventStorePort):
             raise ValueError("extension snapshot does not match execution command binding")
         try:
             with self._database.connect() as connection:
+                self._fence_message_release(connection, accepted)
                 # Freeze the stream before authority rows, matching Handoff and
                 # ordinary append. Keep the revision CAS in the shared appender.
                 connection.execute(
