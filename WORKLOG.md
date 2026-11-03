@@ -20568,3 +20568,11 @@ rewriting. This avoids unrelated global WAL in a candidate receipt
 proof, but requires a separately budgeted, authenticated standby
 read and trusted promotion topology. Tested a synthetic marker, not
 the application route. Evidence pg-sync-exact-visibility-two-hosts.json.
+
+CA-HA-03 exact standby receipt visibility reproduced with migrated
+control_plane_idempotency_records on disposable cross-host PG17.5.
+Paused WAL replay, cancelled the writer's SyncRep wait, and observed
+the original receipt on the primary but absent on the designated
+standby. Resumed replay and matched exact key, request hash, status
+and response status without a second write. This is an SQL proof,
+not yet an API gate. Evidence pg-sync-exact-receipt-two-hosts.json.
