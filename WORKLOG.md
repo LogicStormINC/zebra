@@ -21381,3 +21381,5 @@ No Worker or real broker on this run. Full corpus continued.
 - Classified E1 mixed rerun passed 128/128 exact resumes, all 128 survivor buffered successors and 145/145 original receipts (max 0.748s) in the 145.293s collection window. The fresh fixture signed approval returned 200 but no live runtime instance was observed within its 25s sampling window, so no STOP was sent and the combined runner failed. This run independently preserves all read-side results even when STOP fails.
 
 - Original classified-run Task later completed normally. Its single runtime instance was created 71.197s after approval and was removed. The 25s STOP probe timeout therefore missed a delayed launch, not a continuation failure.
+
+- Started the E1 mixed gate with sandbox observation bounded by the Task persisted execution deadline instead of 25s. The probe measures observed launch latency and selects the Worker node only after matching the exact sandbox ID and namespace/Task/engine labels. It retains one signed STOP, cleanup proof and independent survivor results.
