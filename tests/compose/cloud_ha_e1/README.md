@@ -243,8 +243,9 @@ workloads. The E1 control plane has no continuously deployed automatic
 writer election, independent fencing authority, or qualified cross-host
 workspace backend. Production promotion is outside this fixture.
 
-The tracked fixture provides environment preparation and correctness
-probes. It has no reusable open-loop load driver or end-to-end acceptance
-runner for the declared E1 dataset, steady windows, and repeated fault
-cases. Keep CA-HA-03 in progress until those gates run against one frozen
+The tracked fixture provides environment preparation, correctness probes,
+and an open-loop scheduler. Run `python3 tests/compose/cloud_ha_e1/open_loop.py`
+for its saturation self-check. The scheduler preserves every planned offer,
+including missed ones, and never retries submissions. Signed HTTP, SSE, dataset
+preparation, and repeated fault cases still need to be wired into the runner. Keep CA-HA-03 in progress until those gates run against one frozen
 candidate. Keep subsequent HA stages locked per the task registry.
