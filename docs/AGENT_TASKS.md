@@ -37462,3 +37462,6 @@ modules in the E1 Dockerfile.delta for the isolated failover candidate.
 CA-HA-03 input page retry addendum: own execution_input_preparation.py
 and tests/worker/test_execution_input_frontier.py for the bounded
 fenced page retry during pre-model context refresh.
+
+CA-HA-03 input retry packaging addendum: include the owned
+execution_input_preparation.py module in the isolated E1 Dockerfile.delta.

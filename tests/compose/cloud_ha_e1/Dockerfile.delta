@@ -33,6 +33,7 @@ COPY --chown=65532:65532 packages/agent-storage/src/agent_storage/postgres/worke
 COPY --chown=65532:65532 apps/api/src/zebra_agent_api/idempotency.py /app/apps/api/src/zebra_agent_api/idempotency.py
 COPY --chown=65532:65532 apps/api/src/zebra_agent_api/http_host_auth.py /app/apps/api/src/zebra_agent_api/http_host_auth.py
 COPY --chown=65532:65532 apps/api/src/zebra_agent_api/tenant_guard.py /app/apps/api/src/zebra_agent_api/tenant_guard.py
+COPY --chown=65532:65532 apps/worker/src/zebra_agent_worker/execution_input_preparation.py /app/apps/worker/src/zebra_agent_worker/execution_input_preparation.py
 ARG E1_SOURCE_COMMIT
 LABEL org.opencontainers.image.revision=${E1_SOURCE_COMMIT}
 
