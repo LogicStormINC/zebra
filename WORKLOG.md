@@ -20920,3 +20920,15 @@ POST was repeated. Private run sse-frozen-3bc7d228ee4a43cc8a35fd4d73dfb9c3.
 Both original APIs restored and TLS readiness verified. This is
 a failed admission capacity diagnostic despite the SSE inventory
 passing. Investigate original receipts and phase timing before load.
+
+CA-HA-03 reconciled the nine unresolved frozen-image admissions
+through fresh signed original GET and observation. All nine still
+reported unknown; observation confirmed the claim, no result, and
+retry disallowed. Read-only SQL matched nine claims and nine started
+dispatch fences, with no sealed result rows for those exact digests.
+The original 13 timeout stacks span PostgreSQL COMMIT and several
+statements inside the first-Run atomic transaction, including event
+position assignment and outbox capacity. They expired around the
+existing two-second boundary. This localizes the failed phase, but
+does not identify one blocking statement or prove non-commit for an
+unknown operation. Evidence saved alongside the original frozen run.
