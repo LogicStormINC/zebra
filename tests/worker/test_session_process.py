@@ -1,5 +1,6 @@
 """No model: real hung executor process, signal escalation and sibling isolation."""
 
+import json
 import os
 import signal
 import subprocess
@@ -8,6 +9,7 @@ import time
 from types import SimpleNamespace
 
 import pytest
+from agent_runtime import executor_supervisor
 from zebra_agent_worker.execution_events import ExecutionInterrupted
 from zebra_agent_worker.session_process import process_factory, supervise, terminate_group
 
@@ -159,3 +161,33 @@ def test_initial_recovery_retries_one_lock_timeout_under_same_lease(repeated):
     assert (
         service.recover_session.call_args_list == [call(lease.session_id, worker_lease=lease)] * 2
     )
+
+
+def test_supervisor_parent_death_before_spawn_writes_only_exit_receipt(tmp_path, monkeypatch):
+    request = tmp_path / "request.json"
+    result = tmp_path / "result.json"
+    receipt = {"session_id": "original", "fence": {"fencing_token": 7}}
+    request.write_text(json.dumps({"parent_pid": 123, "exit_receipt": receipt}))
+    handlers = {}
+    monkeypatch.setattr(os, "waitid", None, raising=False)
+    monkeypatch.setattr(
+        executor_supervisor.ctypes,
+        "CDLL",
+        lambda *a, **kw: SimpleNamespace(
+            prctl=lambda *args: 0,
+        ),
+    )
+    monkeypatch.setattr(
+        signal, "signal", lambda signum, handler: handlers.update({signum: handler})
+    )
+
+    def parent_died(parent_pid, *, death_signal):
+        assert parent_pid == 123
+        assert death_signal == signal.SIGTERM
+        handlers[death_signal](death_signal, None)
+
+    monkeypatch.setattr(executor_supervisor, "parent_fence", parent_died)
+    with pytest.raises(SystemExit, match="1"):
+        executor_supervisor.run(request, result)
+    assert json.loads(result.with_suffix(".exit.json").read_text()) == receipt
+    assert not result.exists()
