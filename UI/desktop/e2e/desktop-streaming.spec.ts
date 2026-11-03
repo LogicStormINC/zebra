@@ -97,8 +97,10 @@ test("executes a local command without an approval interruption", async ({ page 
   await expect(page.getByText("Agent 需要人工确认")).not.toBeVisible();
 });
 
-test("renders a provider failure as a recoverable suspended operator state", async ({ page }) => {
+test("renders a provider failure as a recoverable suspended operator state", async ({ page, request }) => {
   await submit(page, "E2E_FAILURE browser failure");
+  const sessionId = await activeSessionId(page);
+  await expect.poll(async () => (await session(request, sessionId)).status).toBe("suspended");
   await expect(page.getByText("任务已暂停", { exact: true })).toBeVisible();
   await expect(page.getByText("已暂停", { exact: true }).first()).toBeVisible();
 });

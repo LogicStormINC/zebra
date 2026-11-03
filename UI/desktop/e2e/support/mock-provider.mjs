@@ -57,17 +57,12 @@ const server = createServer(async (request, response) => {
   for await (const buffer of request) buffers.push(buffer);
   const body = JSON.parse(Buffer.concat(buffers).toString("utf8"));
   const plan = responsePlan(Array.isArray(body.messages) ? body.messages : []);
-  if (plan.finishReason === "content_filter") {
-    response.writeHead(500, { "content-type": "application/json" });
-    response.end(JSON.stringify({ error: { message: "packaged provider failure" } }));
-    return;
-  }
   if (!body.stream) {
     response.writeHead(200, { "content-type": "application/json" });
     response.end(JSON.stringify({
       id: "e2e-completion",
       model: "e2e-stream",
-      choices: [{ index: 0, message: { role: "assistant", content: plan.chunks.join("") }, finish_reason: "stop" }],
+      choices: [{ index: 0, message: { role: "assistant", content: plan.chunks.join("") }, finish_reason: plan.finishReason ?? "stop" }],
       usage: { prompt_tokens: 8, completion_tokens: plan.chunks.length, total_tokens: 8 + plan.chunks.length },
     }));
     return;
