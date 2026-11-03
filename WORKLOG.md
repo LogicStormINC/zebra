@@ -20379,3 +20379,13 @@ temporary container, corrected the harness and repeated read-only.
 No Task mutation. Restored second OrbStack API and verified readiness.
 This isolates the API link, not shared dependency loss or loaded E1-R.
 Evidence amd64-ingress-link-*.log.
+
+CA-HA-03 F-05 Redis read-only fault smoke. Stopped the exact
+owned Redis container and verified PID zero. Both API replicas
+returned the exact next canonical SSE frame from the original
+cursor while Redis was stopped (234 and 533 ms). Redis restarted
+and authenticated TLS PING returned PONG. First probe used a
+nonexistent Docker healthcheck in cleanup; repeated with explicit
+readback and protocol verification. No Task mutation. Active stream
+and loaded recovery, object loss, and PG failover remain open.
+Evidence redis-outage-routing31.json.
