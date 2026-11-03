@@ -4,8 +4,8 @@ import hashlib
 import json
 from collections.abc import Callable, Mapping
 from time import perf_counter
-from typing import Any
-from uuid import uuid4
+from typing import Any, Literal
+from uuid import UUID, uuid4
 
 import httpx
 from agent_core.domain.messages import SessionMessage
@@ -16,6 +16,7 @@ from agent_core.domain.modeling import (
     ModelTextDelta,
     ModelThinkingMode,
     ModelToolDefinition,
+    ModelUsage,
 )
 from agent_core.ports.model_gateway import ModelResponseRejectedError
 
@@ -39,6 +40,7 @@ from agent_integrations.model_errors import (
 from agent_integrations.openai_payloads import (
     internal_tool_names,
     parse_completion,
+    parse_usage,
     provider_tool_names,
     serialize_message,
     serialize_tool,
@@ -83,6 +85,9 @@ class OpenAICompatibleModelGateway:
             )
         self._client = client
         self._prepared_requests = PreparedChatRequests()
+        self.usage_observer: (
+            Callable[[UUID, Literal["started", "finished"], ModelUsage | None], None] | None
+        ) = None
         self.authority_check: Callable[[str], None] | None = None
 
     def prepare_text_request(
@@ -391,6 +396,26 @@ class OpenAICompatibleModelGateway:
         return httpx.Timeout(120.0, connect=10.0)
 
     def _post_chat_completion(
+        self, body: dict[str, Any] | bytes, *, endpoint: str | None = None,
+        deadline_s: float | None = None,
+    ) -> dict[str, Any]:
+        observer = self.usage_observer
+        if observer is None:
+            return self._send_chat_completion(body, endpoint=endpoint, deadline_s=deadline_s)
+        attempt = uuid4()
+        observer(attempt, "started", None)
+        usage = None
+        try:
+            payload = self._send_chat_completion(body, endpoint=endpoint, deadline_s=deadline_s)
+            try:
+                usage = parse_usage(payload.get("usage"))
+            except ValueError:
+                pass
+            return payload
+        finally:
+            observer(attempt, "finished", usage)
+
+    def _send_chat_completion(
         self, body: dict[str, Any] | bytes, *, endpoint: str | None = None,
         deadline_s: float | None = None,
     ) -> dict[str, Any]:

@@ -320,11 +320,7 @@ def test_openai_compatible_gateway_rejects_unadvertised_tool_call() -> None:
     [
         {"choices": []},
         {"choices": [{"message": {"role": "assistant", "content": ""}}]},
-        {
-            "choices": [
-                {"message": {"role": "assistant", "content": None, "tool_calls": "bad"}}
-            ]
-        },
+        {"choices": [{"message": {"role": "assistant", "content": None, "tool_calls": "bad"}}]},
     ],
 )
 def test_openai_compatible_gateway_rejects_invalid_provider_shapes(
@@ -335,9 +331,7 @@ def test_openai_compatible_gateway_rejects_invalid_provider_shapes(
         base_url="https://api.deepseek.com",
         api_key="secret",
         model_name="deepseek-v4-flash",
-        client=httpx.Client(
-            transport=httpx.MockTransport(lambda request: _json_response(payload))
-        ),
+        client=httpx.Client(transport=httpx.MockTransport(lambda request: _json_response(payload))),
     )
 
     with pytest.raises(ModelResponseRejectedError) as caught:
@@ -400,9 +394,9 @@ def test_openai_compatible_gateway_serializes_tool_result_conversation() -> None
     )
 
     assert requests[1]["messages"][-2:] == [
-            {
-                "role": "assistant",
-                "content": "",
+        {
+            "role": "assistant",
+            "content": "",
             "tool_calls": [
                 {
                     "id": "call_1",
@@ -674,3 +668,39 @@ def _user_message(content: str) -> SessionMessage:
         content=content,
         created_at=_created_at(),
     )
+
+
+def test_usage_observer_records_failed_and_successful_provider_attempts():
+    observed = []
+    captured = {}
+
+    def handle(request):
+        if len(observed) == 1:
+            return httpx.Response(503, json={"error": {"message": "unavailable"}})
+        return _handle_basic_completion(request, captured)
+
+    with httpx.Client(transport=httpx.MockTransport(handle)) as client:
+        gateway = OpenAICompatibleModelGateway(
+            provider_name="deepseek",
+            base_url="https://models.example",
+            api_key="synthetic",
+            model_name="deepseek-v4-flash",
+            client=client,
+        )
+        gateway.usage_observer = lambda *entry: observed.append(entry)
+        gateway.complete(
+            [
+                SessionMessage(
+                    message_id=_message_id(),
+                    role=MessageRole.USER,
+                    content="hello",
+                    created_at=_created_at(),
+                )
+            ]
+        )
+    first, failed, second, finished = observed
+    assert first[0] != second[0]
+    assert first[1:] == second[1:] == ("started", None)
+    assert failed == (first[0], "finished", None)
+    assert finished[:2] == (second[0], "finished")
+    assert finished[2].total_tokens == 12
