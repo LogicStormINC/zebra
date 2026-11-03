@@ -20336,3 +20336,15 @@ preserved without replay; local Workers restored. This proves remote
 pickup but does not qualify remote execution. Next run a fresh case
 with the corrected observer and retain it until a terminal outcome.
 Private evidence amd64-worker-run-e2fc77229b80.log.
+
+CA-HA-03 AMD64 Worker full synthetic Run confirmed. Corrected
+observer found earlier fresh Task suspended before model dispatch;
+child log showed INCOMPATIBLE_RUNTIME_BUNDLE. The staged server
+environment was from the old release. Used the current E1 environment
+and added exact catalog baseline assertion before any POST.
+A fresh signed POST returned outer 200/sealed 201 in 2017 ms client
+wall time. Read-only state confirmed completed, sole lease owner
+e1-amd64-run, exactly one model response. The synthetic POST flowed
+through the live fixture relay. Prior originals were not replayed.
+Temporary remote containers/forwards exited; OrbStack replicas restored.
+This is cross-host execution smoke; workload and fault qualification remain.
