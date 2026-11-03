@@ -30,7 +30,7 @@ from agent_storage.task_read_summary_rows import encoded
 
 
 def lock_command_source(connection: Any, namespace: str, session_id: SessionId) -> int:
-    lock_session_lease_boundary(connection, namespace, session_id)
+    lock_session_lease_boundary(connection, namespace, session_id, shared=True)
     _lock_epoch(connection, namespace)
     # Preparation pins the lease while advancing a derived read head.
     _lock_lease_and_clock(connection, namespace, session_id, update=False)

@@ -358,3 +358,22 @@ def test_command_checkpoint_preparation_shares_worker_lease_lock(dsn):
         with database.connect_task_io() as reader:
             reader.execute("SET LOCAL lock_timeout='200ms'")
             assert lock_command_source(reader, NAMESPACE, event.session_id) == event.sequence
+
+
+def test_command_checkpoint_shares_boundary_but_excludes_lease_acquisition(dsn):
+    from agent_storage.postgres.command_read_state import lock_command_source
+    from agent_storage.postgres.leases import lock_session_lease_boundary
+
+    event = _prepare(dsn)
+    database = PostgresDatabase(dsn, deployment_namespace=NAMESPACE)
+    with database.connect() as inputs:
+        lock_session_lease_boundary(inputs, NAMESPACE, event.session_id, shared=True)
+        with database.connect_task_io() as reader:
+            reader.execute("SET LOCAL lock_timeout='200ms'")
+            assert lock_command_source(reader, NAMESPACE, event.session_id) == event.sequence
+        with pytest.raises(psycopg.errors.LockNotAvailable), database.connect_task_io() as claimant:
+            claimant.execute("SET LOCAL lock_timeout='200ms'")
+            acquire_lease_in_transaction(
+                claimant, NAMESPACE, event.session_id,
+                owner_instance_id="contender", ttl=timedelta(seconds=30),
+            )
