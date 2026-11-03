@@ -131,6 +131,7 @@ def reconcile_in_cleanup(container: str, witness: dict[str, str], *, namespace: 
         not spec["State"]["Running"]
         or spec["Config"]["Labels"].get("zebra.ha.owner") != "ca-ha-03-e1-20261102"
         or spec["Name"] != "/zebra-ha-e1-20261102-runtime-cleanup-1-corpus"
+        or f"ZEBRA_DEPLOYMENT_NAMESPACE={namespace}" not in spec["Config"]["Env"]
     ):
         raise ValueError("expected the owned E1 cleanup container")
     root = Path(__file__).resolve().parents[3]
@@ -251,12 +252,13 @@ if __name__ == "__main__":
     parser.add_argument("--restart", action="store_true")
     parser.add_argument("--recover-crash", action="store_true")
     parser.add_argument("--cleanup-container")
+    parser.add_argument("--namespace", default="ha-e1-20261102")
     arguments = parser.parse_args()
     reconcile = None
     if arguments.cleanup_container:
         def reconcile(witness: dict[str, str]) -> int:
             return reconcile_in_cleanup(
-                arguments.cleanup_container, witness, namespace="ha-e1-20261102"
+                arguments.cleanup_container, witness, namespace=arguments.namespace
             )
 
     if arguments.recover_crash:
@@ -270,7 +272,7 @@ if __name__ == "__main__":
             parser.error("--recover-crash requires --exit-binding and no other recovery mode")
         count = recover_crash(
             arguments.container, arguments.exit_binding, arguments.destination,
-            os.environ.get("ZEBRA_DATABASE_URL", ""), namespace="ha-e1-20261102",
+            os.environ.get("ZEBRA_DATABASE_URL", ""), namespace=arguments.namespace,
             reconcile=reconcile,
         )
         if count:
@@ -289,7 +291,7 @@ if __name__ == "__main__":
             parser.error("exit witness must have a separate destination")
         print(restart_reconciled(
             arguments.container, arguments.exit_binding, arguments.destination,
-            os.environ.get("ZEBRA_DATABASE_URL", ""), namespace="ha-e1-20261102",
+            os.environ.get("ZEBRA_DATABASE_URL", ""), namespace=arguments.namespace,
             reconcile=reconcile,
         ))
         raise SystemExit(0)
@@ -303,8 +305,8 @@ if __name__ == "__main__":
     if arguments.ack_session:
         acknowledge_exit(
             binding, arguments.ack_session, arguments.ack_fence,
-            os.environ["ZEBRA_DATABASE_URL"], namespace="ha-e1-20261102",
+            os.environ["ZEBRA_DATABASE_URL"], namespace=arguments.namespace,
         )
     if arguments.reconcile:
         dsn = os.environ["ZEBRA_DATABASE_URL"]
-        print(reconcile_exits(binding, dsn, namespace="ha-e1-20261102"))
+        print(reconcile_exits(binding, dsn, namespace=arguments.namespace))
