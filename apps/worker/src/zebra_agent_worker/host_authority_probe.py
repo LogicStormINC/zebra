@@ -1,25 +1,28 @@
 """Private Host control probe over the existing pinned, authenticated tool transport."""
 
 import json
+import logging
 from datetime import UTC, datetime
 from hashlib import sha256
 from time import monotonic
+from typing import NoReturn
 from uuid import UUID
 
 import httpx
 from agent_core.domain.execution_authority import ExecutionAuthorityResolutionError
 from agent_core.domain.identifiers import ToolCallId
 from agent_core.domain.task_bindings import TaskBindingSnapshot, require_task_host_context
-from agent_core.domain.tools import ToolCall, ToolCallStatus
+from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
 from agent_core.ports.host_connector_registry import HostConnectorRegistryPort
 from agent_core.ports.host_credential_resolver import HostWorkloadCredentialResolverPort
 from agent_integrations.host_tools import HostToolManifest
-from agent_integrations.host_tools.http import HttpHostToolTransport
+from agent_integrations.host_tools.http import HttpHostToolTransport, safe_host_request_id
 from pydantic import BaseModel, ConfigDict, Field
 from zebra_agent_config.host_authority_settings import HostExecutionAuthoritySettings
 
 from zebra_agent_worker.host_gateway_resolution import resolve_pinned_gateway
 
+_LOGGER = logging.getLogger(__name__)
 _ARGUMENTS = ("task_id", "thread_id", "run_id", "principal", "workspace_ref", "expires_at")
 
 
@@ -89,14 +92,35 @@ class HostAuthorityProbe:
 
     def check(self) -> datetime:
         """No positive cache. Every call rechecks the current connector and Host identity."""
+        started = monotonic()
         try:
-            return self._check()
+            return self._check(started)
         except ExecutionAuthorityResolutionError:
             raise
-        except Exception:
+        except Exception as exc:
+            _log_failure("probe", "dependency_error", started, error_type=type(exc).__name__)
             raise HostAuthorityUnavailable("host_authority_unavailable") from None
 
-    def _check(self) -> datetime:
+    def _refuse(self, result: ToolResult, *, started: float) -> NoReturn:
+        status = result.metadata.get("http_status")
+        status = status if type(status) is int and 100 <= status <= 599 else None
+        reason = result.metadata.get("reason")
+        denied = status in {401, 403}
+        if status is not None:
+            category = "http_denied" if denied else "http_error"
+        elif reason in ("timeout", "transport_error", "ssrf_blocked", "response_too_large"):
+            category = str(reason)
+        else:
+            category = "invalid_response"
+        _log_failure(
+            "transport", category, started, status=status,
+            request_id=safe_host_request_id(result.metadata.get("request_id")),
+        )
+        if denied:
+            raise ExecutionAuthorityResolutionError("Host control refused")
+        raise HostAuthorityUnavailable("host_authority_unavailable")
+
+    def _check(self, started: float) -> datetime:
         now = datetime.now(UTC)
         host = self.binding.host_capability
         if now >= self.expires_at or host.grant_expires_at != self.expires_at:
@@ -164,11 +188,12 @@ class HostAuthorityProbe:
             if owned:
                 client.close()
         if result.status is not ToolCallStatus.EXECUTED:
-            status = result.metadata.get("http_status")
-            if status in {401, 403}:
-                raise ExecutionAuthorityResolutionError("Host control refused")
-            raise HostAuthorityUnavailable("host_authority_unavailable")
-        response = HostAuthorityResponse.model_validate_json(result.output)
+            self._refuse(result, started=started)
+        try:
+            response = HostAuthorityResponse.model_validate_json(result.output)
+        except ValueError:
+            _log_failure("response", "invalid_response", started)
+            raise HostAuthorityUnavailable("host_authority_unavailable") from None
         identity = response.identity
         if any(
             not key or len(key) > 128 or not value or len(value) > 512
@@ -197,3 +222,14 @@ class HostAuthorityProbe:
             raise ExecutionAuthorityResolutionError("Host control expiry is invalid")
         self.metadata_digest = digest
         return response.expires_at
+
+
+def _log_failure(
+    stage: str, reason: str, started: float, *, status: int | None = None,
+    request_id: str | None = None, error_type: str | None = None,
+) -> None:
+    _LOGGER.warning(
+        "host_authority_failure stage=%s reason=%s http_status=%s duration_ms=%.1f "
+        "request_id=%s error_type=%s",
+        stage, reason, status, (monotonic() - started) * 1000, request_id, error_type,
+    )

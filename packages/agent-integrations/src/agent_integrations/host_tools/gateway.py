@@ -197,6 +197,7 @@ class HostToolGateway:
                 idempotency_key=idempotency_key,
                 metadata={
                     "http_status": response.status_code,
+                    **({"request_id": response.request_id} if response.request_id else {}),
                     **({"http_error_code": error_code} if error_code else {}),
                 },
             )

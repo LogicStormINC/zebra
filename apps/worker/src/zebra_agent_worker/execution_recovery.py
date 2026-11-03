@@ -54,7 +54,7 @@ from zebra_agent_worker.task_recovery import (
     recover_client_state_evidence,
     recover_task,
 )
-from zebra_agent_worker.workspace_resolution import apply_workspace_resolver
+from zebra_agent_worker.workspace_resolution import apply_workspace_resolver, plan_host_workspace
 
 
 @dataclass(frozen=True)
@@ -67,6 +67,8 @@ class RecoveredExecutionInputs:
     active_capsule: Any
     recovered_handoff: Any
     execution_input_reader: Callable[[WorkerLease], list[SessionEvent]] | None = None
+
+    deferred_workspace_ref: str | None = None
 
     @property
     def reader(self) -> Callable[[WorkerLease], list[SessionEvent]] | None:
@@ -157,6 +159,7 @@ def recover_execution_inputs(
     namespace: str | None = None,
     ownership_check: Callable[[], None] | None = None,
     strict_dispatch_configured: bool = False,
+    defer_host_workspace: bool = False,
 ) -> RecoveredExecutionInputs:
     if ownership_check is not None:
         ownership_check()
@@ -221,6 +224,7 @@ def recover_execution_inputs(
         session_events,
         provider_continuation_store,
     )
+    deferred_workspace_ref = None
     try:
         task = recover_task(
             session_events,
@@ -254,7 +258,12 @@ def recover_execution_inputs(
             and task.coverage_admission is None
             and not isinstance(task.definition_snapshot, BundleDefinitionSnapshot)
         ):
-            task = apply_workspace_resolver(task, workspace_resolver, session_id)
+            if defer_host_workspace and active_context is None and recovered_handoff is None:
+                task, deferred_workspace_ref = plan_host_workspace(
+                    task, workspace_resolver, session_id
+                )
+            else:
+                task = apply_workspace_resolver(task, workspace_resolver, session_id)
     except CoverageRefusedError as exc:
         raise WorkerExecutionError(
             f"strict coverage refused: {exc.reason.value}", coverage_refusal_reason=exc.reason
@@ -270,6 +279,7 @@ def recover_execution_inputs(
         active_capsule=active_context.capsule if active_context else None,
         recovered_handoff=recovered_handoff,
         execution_input_reader=execution_input_reader,
+        deferred_workspace_ref=deferred_workspace_ref,
     )
 
 

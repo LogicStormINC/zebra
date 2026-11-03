@@ -192,6 +192,7 @@ class HostToolTransportResponse:
     status_code: int
     body: object
     content_type: str = "application/json"
+    request_id: str | None = None
 
     def __post_init__(self) -> None:
         if not 100 <= self.status_code <= 599:

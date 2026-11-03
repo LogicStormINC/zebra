@@ -22,8 +22,11 @@ def load_frozen_manifest_by_digest(
             """SELECT manifest_json FROM host_manifest_freezes
                WHERE deployment_namespace=%s AND manifest_digest=%s
                UNION SELECT manifest_json FROM host_manifest_revisions
+               WHERE deployment_namespace=%s AND manifest_digest=%s
+               UNION SELECT manifest_json FROM host_manifest_publications
                WHERE deployment_namespace=%s AND manifest_digest=%s""",
-            (deployment_namespace, manifest_digest, deployment_namespace, manifest_digest),
+            (deployment_namespace, manifest_digest, deployment_namespace, manifest_digest,
+             deployment_namespace, manifest_digest),
         ).fetchall()
     if len(rows) > 1:
         raise ValueError("frozen manifest digest has conflicting contents; failing closed")
@@ -57,19 +60,37 @@ def load_frozen_manifest(
     connector_id: str,
     profile_revision: int,
     host_app_id: str | None = None,
+    prefer_publication: bool = False,
 ) -> dict[str, Any] | None:
     database = PostgresDatabase(dsn, deployment_namespace=deployment_namespace)
     with database.connect() as connection:
-        rows = connection.execute(
-            """SELECT manifest_json FROM host_manifest_revisions
-               WHERE deployment_namespace=%s AND connector_id=%s AND profile_revision=%s
-                 AND (%s::text IS NULL OR host_app_id=%s)""",
-            (deployment_namespace, connector_id, profile_revision, host_app_id, host_app_id),
-        ).fetchall()
-        if len(rows) > 1:
-            raise ValueError("frozen manifest requires explicit Host identity; failing closed")
-        if rows:
-            return dict(rows[0]["manifest_json"])
+        if prefer_publication:
+            if host_app_id is None:
+                raise ValueError("manifest publication requires explicit Host identity")
+            selected = connection.execute(
+                """SELECT COALESCE(
+                     (SELECT manifest_json FROM host_manifest_publications
+                      WHERE deployment_namespace=%s AND host_app_id=%s AND connector_id=%s
+                        AND profile_revision=%s ORDER BY release_id DESC LIMIT 1),
+                     (SELECT manifest_json FROM host_manifest_revisions
+                      WHERE deployment_namespace=%s AND host_app_id=%s AND connector_id=%s
+                        AND profile_revision=%s)
+                   ) AS manifest_json""",
+                (deployment_namespace, host_app_id, connector_id, profile_revision) * 2,
+            ).fetchone()
+            if selected is not None and selected["manifest_json"] is not None:
+                return dict(selected["manifest_json"])
+        else:
+            rows = connection.execute(
+                """SELECT manifest_json FROM host_manifest_revisions
+                   WHERE deployment_namespace=%s AND connector_id=%s AND profile_revision=%s
+                     AND (%s::text IS NULL OR host_app_id=%s)""",
+                (deployment_namespace, connector_id, profile_revision, host_app_id, host_app_id),
+            ).fetchall()
+            if len(rows) > 1:
+                raise ValueError("frozen manifest requires explicit Host identity; failing closed")
+            if rows:
+                return dict(rows[0]["manifest_json"])
         row = _legacy_revision(
             connection, deployment_namespace, connector_id, profile_revision, host_app_id,
         )

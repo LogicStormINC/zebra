@@ -232,7 +232,8 @@ class LocalToolGateway(ToolGatewayPort):
         if skill_component_names and skill_catalog is None:
             raise ValueError("skill_component_names require an injected skill_catalog")
         self._workspace = LocalWorkspace(workspace_root)
-        self._workspace.ensure()
+        if not isinstance(runtime, DeferredRuntime):
+            self._workspace.ensure()
         self._runtime = runtime or LocalRuntime()
         self._runtime_handle = runtime_handle
         if artifact_payload_store is not None and output_projector is not None:

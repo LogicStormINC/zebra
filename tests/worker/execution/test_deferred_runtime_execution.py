@@ -240,3 +240,26 @@ def test_shared_harness_reply_and_denied_tool_do_not_provision(
     assert result.metadata["model_calls_used"] == 1
     gateway.close()
     assert calls == []
+
+
+def test_deferred_gateway_never_creates_unverified_workspace(tmp_path):
+    root = tmp_path / "not-mounted-yet"
+    runtime = LocalRuntime()
+    checks = []
+    calls = []
+
+    def prepare():
+        calls.append("quota-verified")
+        root.mkdir()
+        return runtime, runtime.provision(workspace_root=str(root))
+
+    deferred = DeferredRuntime(prepare, check=lambda: checks.append("current-lease"))
+    gateway = LocalToolGateway(root, runtime=deferred)
+    assert gateway.model_tools
+    assert not root.exists() and calls == []
+    call = ToolCall(tool_call_id=new_tool_call_id(), name="files.list", arguments={},
+                    created_at=datetime.now(UTC))
+    assert gateway.execute(call).status is ToolCallStatus.EXECUTED
+    assert gateway.execute(call).status is ToolCallStatus.EXECUTED
+    assert calls == ["quota-verified"] and checks
+    deferred.close()

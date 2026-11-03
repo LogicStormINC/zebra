@@ -12,7 +12,12 @@ from collections.abc import Callable
 from pathlib import Path
 from uuid import UUID
 
-from agent_core.domain.workspace_control import WorkspaceId, WorkspaceLifecycleState
+from agent_core.domain.workspace_control import (
+    WorkspaceId,
+    WorkspaceInstance,
+    WorkspaceLifecycleState,
+    WorkspaceSourceKind,
+)
 
 from agent_runtime.workspace_provisioner import PostgresWorkspaceProvisioner
 
@@ -34,20 +39,67 @@ class WorkspaceRuntimeResolver:
         self._provisioner = provisioner
         self._prepare_volume, self._verify_volume = prepare_volume, verify_volume
 
-    def resolve(self, workspace_ref: str, *, session_id: UUID) -> Path:
+    def planned_host_root(self, workspace_ref: str, *, session_id: UUID) -> Path | None:
+        """Read the exact mount target, never create or assert readiness."""
         if not _is_workspace_reference(workspace_ref):
+            return None
+        instance = self._provisioner.store.get(_workspace_id(workspace_ref))
+        if instance is None:
+            raise WorkspaceRuntimeResolutionError("workspace is unknown to the control plane")
+        return self._host_root(instance, session_id)
+
+    def _host_root(self, instance: WorkspaceInstance, session_id: UUID) -> Path | None:
+        if instance.source.kind is not WorkspaceSourceKind.HOST_REFERENCE:
+            return None
+        if instance.owner_session_id != session_id:
+            raise WorkspaceRuntimeResolutionError("workspace belongs to a different Session")
+        if instance.state is WorkspaceLifecycleState.PENDING:
+            root = self._provisioner._volume_path(instance.workspace_id)
+        elif instance.state is WorkspaceLifecycleState.READY and instance.volume_ref:
+            root = Path(instance.volume_ref)
+        else:
+            return None
+        if not root.is_absolute() or root.resolve(strict=False) != root:
+            raise WorkspaceRuntimeResolutionError("workspace volume path must be canonical")
+        return root
+
+    def resolve(
+        self, workspace_ref: str, *, session_id: UUID, expected_host_root: Path | None = None,
+        check: Callable[[], None] | None = None,
+    ) -> Path:
+        if not _is_workspace_reference(workspace_ref):
+            if expected_host_root is not None:
+                raise WorkspaceRuntimeResolutionError("deferred workspace lost its reference")
             return Path(workspace_ref)
         workspace_id = _workspace_id(workspace_ref)
-        if self._provisioner.store.get(workspace_id) is None:
+        instance = self._provisioner.store.get(workspace_id)
+        if instance is None:
             raise WorkspaceRuntimeResolutionError(
                 f"workspace {workspace_ref} is unknown to the control plane"
             )
+        if expected_host_root is not None and (
+            check is None or self._host_root(instance, session_id) != expected_host_root
+        ):
+            raise WorkspaceRuntimeResolutionError("deferred workspace target or fence changed")
+        if check is not None:
+            check()
         if self._prepare_volume is not None:
             self._prepare_volume(workspace_id, session_id)
+        if check is not None:
+            check()
         instance = self._provisioner.provision_existing(workspace_id)
         root = self._require_materialized(workspace_ref, instance)
+        if (
+            expected_host_root is not None
+            and self._host_root(instance, session_id) != expected_host_root
+        ):
+            raise WorkspaceRuntimeResolutionError("workspace mount target changed")
+        if check is not None:
+            check()
         if self._verify_volume is not None:
             self._verify_volume(workspace_id, session_id, root)
+        if check is not None:
+            check()
         return root
 
     def resolve_ready(self, workspace_ref: str, *, session_id: UUID) -> Path:

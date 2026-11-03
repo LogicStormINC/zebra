@@ -85,7 +85,11 @@ def test_cached_manifest_must_match_declared_profile(
         },
         binding_policy=cached_policy,
     )
-    monkeypatch.setattr(PostgresHostConnectorRegistry, "resolve_binding", lambda *_: profile)
+    binding = SimpleNamespace(
+        active=True, host_app_id=profile.host_app_id, connector_id=profile.connector_id,
+        profile_revision=profile.profile_revision,
+    )
+    monkeypatch.setattr(PostgresHostConnectorRegistry, "resolve_binding", lambda *_: binding)
     monkeypatch.setattr(PostgresHostConnectorRegistry, "get_profile", lambda *_: profile)
     monkeypatch.setattr(storage, "load_frozen_manifest", lambda *a, **k: manifest.to_payload())
     settings = SimpleNamespace(

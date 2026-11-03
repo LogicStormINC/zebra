@@ -1,8 +1,11 @@
 """Compose eager or attempt-owned deferred runtime from trusted Worker state."""
 
+from __future__ import annotations
+
 from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from agent_core.domain.context_materialization import ContextMaterialization
 from agent_core.domain.task_bindings import TaskBindingSnapshot
@@ -16,6 +19,19 @@ from zebra_agent_worker.claims import ClaimedSession
 from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
 from zebra_agent_worker.runtime_instances import BoundInstanceFactory
 from zebra_agent_worker.task_recovery import RecoveredTask
+
+if TYPE_CHECKING:
+    from agent_runtime.workspace_runtime_resolver import WorkspaceRuntimeResolver
+
+
+def can_plan_host_workspace(settings: ZebraAgentSettings) -> bool:
+    return (
+        settings.deployment == "cloud"
+        and settings.runtime.defer_provision
+        and settings.runtime.runtime_class in {"gvisor", "oci-rootless"}
+        # Native web v2 stores its resources in the workspace at composition time.
+        and not settings.web_pipeline_v2
+    )
 
 
 def can_defer_runtime(
@@ -69,6 +85,8 @@ def compose_execution_runtime(
     compatible_session_ids: tuple[str, ...],
     recorder: Callable[[], DurableHarnessEventRecorder],
     trusted_local: bool,
+    workspace_resolver: WorkspaceRuntimeResolver | None = None,
+    deferred_workspace_ref: str | None = None,
 ) -> tuple[RuntimePort, RuntimeHandle | None, bool]:
     def check() -> None:
         recorder().require_active_execution()
@@ -87,6 +105,13 @@ def compose_execution_runtime(
     def prepare() -> tuple[RuntimePort, RuntimeHandle]:
         nonlocal prepared
         check()
+        if deferred_workspace_ref is not None:
+            if workspace_resolver is None:
+                raise ValueError("deferred workspace requires a composed resolver")
+            workspace_resolver.resolve(
+                deferred_workspace_ref, session_id=claimed.lease.session_id,
+                expected_host_root=task.workspace_root, check=check,
+            )
         runtime, prepared = runtime_setup.build_prepared_runtime(
             settings,
             database_path,

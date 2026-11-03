@@ -116,7 +116,9 @@ class SessionExecutionService(SessionExecutionComposition, SessionExecutionEntry
                 started_at,
                 ownership_check,
                 lambda **kwargs: recover_execution_inputs(
-                    **kwargs, strict_dispatch_configured=self._coverage_runtime is not None
+                    **kwargs,
+                    strict_dispatch_configured=self._coverage_runtime is not None,
+                    defer_host_workspace=execution_runtime.can_plan_host_workspace(self._settings),
                 ),
             )
         claimed = inputs.claimed
@@ -240,6 +242,8 @@ class SessionExecutionService(SessionExecutionComposition, SessionExecutionEntry
                 compatible_session_ids=compatible_ids,
                 recorder=lambda: effect_recorder[-1] if effect_recorder else authority_recorder,
                 trusted_local=trusted_local,
+                workspace_resolver=self._workspace_resolver,
+                deferred_workspace_ref=inputs.deferred_workspace_ref,
             )
             runtime, runtime_handle, authority_persisted = runtime_preparation
             if authority_persisted:
