@@ -26,7 +26,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 test("migrates the legacy no-network default to trusted read-only Web access", async ({ page }) => {
-  await expect(page.getByRole("button", { name: "网络: 本地可信网络" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /^任务配置：.*本地可信网络$/ })).toBeVisible();
 });
 
 test("shows the resolved Runtime class and no-silent-fallback policy", async ({ page }) => {
@@ -61,9 +61,8 @@ test("stops a running stream without a late completion", async ({ page, request 
   await submit(page, "E2E_STOP_STREAM cancel before the provider finishes");
   const sessionId = await activeSessionId(page);
   await expect.poll(async () => (await session(request, sessionId)).current_sequence).toBeGreaterThanOrEqual(4);
-  await expect(page.locator('[aria-label="停止任务"] button')).toBeVisible();
-
-  await page.locator('[aria-label="停止任务"] button').click();
+  await page.getByRole("button", { name: "会话操作" }).click();
+  await page.getByRole("menuitem", { name: "取消会话" }).click();
   await expect.poll(async () => (await session(request, sessionId)).status).toBe("cancelled");
   await expect(page.getByText("已停止", { exact: true })).toBeVisible();
 

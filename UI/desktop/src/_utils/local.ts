@@ -106,6 +106,7 @@ export default {
   statusStopped: "已停止",
   suspendSession: "暂停会话",
   resumeSession: "恢复会话",
+  sessionActions: "会话操作",
   cancelSession: "取消会话",
   modelLabel: "Zebra Agent · DeepSeek",
 };
