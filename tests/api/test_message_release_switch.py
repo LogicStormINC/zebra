@@ -1,8 +1,11 @@
 from unittest.mock import Mock
 
 import pytest
+from agent_core.domain.identifiers import TaskId
 from agent_core.domain.sessions import Session
+from agent_core.ports.agent_tasks import TaskEvent
 from zebra_agent_api.session_message_submission import build_session_message_event
+from zebra_agent_api.task_responses import serialize_task_event
 
 from tests.agent_core.test_bundle_definition import removed_model_release_snapshots
 
@@ -29,6 +32,12 @@ def test_follow_up_pins_new_release_and_rejects_removed_explicit_choice():
         )
         assert event.payload["definition_snapshot"] == effective.model_dump(mode="json")
         assert event.payload["selected_model_pin"] == expected.model_dump(mode="json")
+        task_event = TaskEvent(
+            TaskId(session.session_id), event.sequence, session.session_id, event.sequence, event
+        )
+        public_payload = serialize_task_event(task_event)["payload"]
+        assert public_payload["content"] == "continue"
+        assert "definition_snapshot" not in public_payload
 
     with pytest.raises(ValueError, match="requested model is not selectable"):
         build_session_message_event(
