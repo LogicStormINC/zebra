@@ -20206,3 +20206,12 @@ model rows. No admitted run suspended in this sample. Fixture uses
 no tools so live tool projection parity remains untested.
 Evidence preflight5-routing31-72a56b0e*, routing31-original-receipts.json,
 and routing31-with-sse-389b8efc*.
+
+CA-HA-03 Native31 live tool parity. On the isolated deployment,
+submitted one synthetic read-only pwd task and approved the exact
+command once through the normal API. Completed at sequence 31 in
+16.99 s. Read-only SQL matched every model response and the single
+tool completion to exactly one projection, with no extra rows.
+The projected tool was command.run. Evidence guarded-pwd-routing31.json.
+This verifies the real tool path at smoke scope; E1 sustained load
+and cross-physical-host failover are still open.
