@@ -21048,3 +21048,15 @@ A fresh isolated signed admission on AMD64 returned sealed 201 in
 existing private Unix relays to OrbStack dependencies, then exited.
 No production service changed. This qualifies a single cross-host
 API operation, not comparative capacity or the AMD64 Worker.
+
+CA-HA-03 AMD64 physical-host admission burst on immutable 9a1857a2
+issued 15/15 offers at 5rps for three seconds, no SSE. One sealed
+201, fourteen HTTP 503. Original-only signed GET via the shared
+namespace returned one completed, ten unknown and four not_observed;
+no resubmission or absence inference. The 2CPU/2GiB transient
+container (API plus Unix relays and probe) consumed 2.325 CPU
+seconds and had zero throttled periods in 53 periods. Private
+evidence amd64-load-d437a0a5d3e2.log and matching originals JSON.
+Local API CPU quota saturation does not explain this run. The
+cross-host DB and authority transports differ from the ARM run;
+next instrument those paths before attributing the gap.
