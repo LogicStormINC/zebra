@@ -13,6 +13,7 @@ from typing import Any, Literal
 from uuid import UUID, uuid4
 
 from agent_core.domain.client_capabilities import ProfileLifecycle
+from agent_core.ports.idempotency_store import IdempotencyRecord
 from agent_storage import PostgresControlPlaneStores, new_idempotency_record
 from agent_storage.idempotency import IdempotencyConflictError
 from agent_storage.postgres.task_io import task_io_deadline
@@ -382,6 +383,7 @@ def _handle(
         ):
             result = None
         return _observation(operation, digest, meta, result)
+    result = None
     if claim is None:
         assert body is not None
         nonce = str(uuid4())
@@ -410,7 +412,7 @@ def _handle(
             }:
                 from zebra_agent_api.client_admission_atomic import execute_atomic_surface
 
-                execute_atomic_surface(
+                result = execute_atomic_surface(
                     app, request, body, scoped, key, digest, operation,
                     original_claim=claim.response_body,
                 )
@@ -419,7 +421,8 @@ def _handle(
                 response = _dispatch(app, request, body, scoped)
                 if not _persist_result(store, response, operation, scoped, key, digest):
                     return ApiResponse(503, {"status": "unknown", "operation": operation})
-    result = store.get(action=_RESULT, idempotency_key=scoped)
+    if result is None:
+        result = store.get(action=_RESULT, idempotency_key=scoped)
     denied = _authorize(app, request, meta)
     if denied is not None:
         return denied
@@ -443,13 +446,13 @@ def _handle(
 
 def _persist_result(
     store: Any, response: ApiResponse, operation: str, scoped: str, key: bytes, digest: str
-) -> bool:
+) -> IdempotencyRecord | None:
     raw = json.dumps(response.body, sort_keys=True, separators=(",", ":")).encode()
     if len(raw) > 131072:
-        return False
+        return None
     iv = os.urandom(12)
     sealed = base64.b64encode(iv + AESGCM(key).encrypt(iv, raw, digest.encode())).decode()
-    store.save(
+    return store.save(
         new_idempotency_record(
             action=_RESULT,
             idempotency_key=scoped,
@@ -464,7 +467,6 @@ def _persist_result(
             },
         )
     )
-    return True
 
 
 def _request_hash(value: dict[str, Any]) -> str:

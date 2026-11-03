@@ -4,6 +4,7 @@ import logging
 from time import monotonic
 from typing import Any
 
+from agent_core.ports.idempotency_store import IdempotencyRecord
 from agent_storage.postgres.admission_atomic_surface import (
     AtomicSurfaceAborted,
     atomic_surface_transaction,
@@ -41,7 +42,7 @@ def eligible_atomic_surface(app: Any) -> bool:
 def execute_atomic_surface(
     app: Any, request: Any, body: Any, scoped: str, key: bytes, digest: str, operation: str,
     *, original_claim: dict[str, Any] | None = None,
-) -> None:
+) -> IdempotencyRecord | None:
     from zebra_agent_api.client_admission_operations import _authorize, _dispatch, _persist_result
 
     started = monotonic()
@@ -63,16 +64,16 @@ def execute_atomic_surface(
             app, request, body, scoped, initial_run=protocol == "atomic-task-run/1"
         )
         if prepared is None:
-            return
+            return None
     if protocol == "atomic-task-run-surface/1":
         from zebra_agent_api.client_admission_task_surface import prepare_initial_surface
 
         prepared = prepare_initial_surface(app, request, body, scoped)
         if prepared is None:
-            return
+            return None
     prepared_at = monotonic()
     if not start_atomic_surface(store, scoped, digest, protocol=protocol):
-        return
+        return None
     fenced_at = monotonic()
     stages: list[tuple[str, int]] = []
 
@@ -80,7 +81,7 @@ def execute_atomic_surface(
         if protocol == "atomic-task-run/1":
             stages.append((stage, int((monotonic() - started) * 1000)))
 
-    def dispatch_transaction() -> None:
+    def dispatch_transaction() -> IdempotencyRecord:
         mark("transaction_begin")
         with atomic_surface_transaction(store, scoped, digest):
             mark("transaction_entered")
@@ -138,23 +139,25 @@ def execute_atomic_surface(
                 app, request, meta
             ) is not None:
                 raise AtomicSurfaceAborted("surface not admitted")
-            if not _persist_result(store, response, operation, scoped, key, digest):
+            result = _persist_result(store, response, operation, scoped, key, digest)
+            if result is None:
                 raise AtomicSurfaceAborted("atomic receipt unavailable")
             mark("receipt_written")
         mark("transaction_committed")
+        return result
 
     try:
         try:
-            dispatch_transaction()
+            return dispatch_transaction()
         except LockNotAvailable:
             deadline = current_task_io_deadline()
             if protocol != "atomic-task-run/1" or deadline is None or monotonic() >= deadline:
                 raise
             # The first transaction rolled back. Reenter the original fence so
             # a concurrent termination still wins before any admission write.
-            dispatch_transaction()
+            return dispatch_transaction()
     except AtomicSurfaceAborted:
-        return
+        return None
     finally:
         if stages:
             logger.info(

@@ -21018,3 +21018,11 @@ original GET confirmed 10 with five still unknown. Prior matched
 claim-reuse run accepted 10/15 and recovered 11. No capacity gain
 established. Private run no-sse-position-cte-cf71c885e9a14f1cbe8c57491ff87582.
 Restored both isolated APIs; verified TLS readiness on each.
+
+CA-HA-03 atomic POST now carries the exact saved receipt across
+successful transaction exit to response handling, avoiding the
+post-commit point read. Failed/unknown commit still propagates
+without a receipt; rollback and termination fall back to original
+lookup. Final authorization and opt-in standby proof still execute.
+32 focused API and two actual PG17.5 receipt/native tests passed.
+Capacity effect remains unmeasured.

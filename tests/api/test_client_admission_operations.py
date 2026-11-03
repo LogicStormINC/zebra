@@ -177,7 +177,8 @@ def test_atomic_first_run_rechecks_original_fence_after_lock_timeout(monkeypatch
     monkeypatch.setattr(atomic, "current_task_io_deadline", lambda: monotonic() + 1)
     authorize = Mock(return_value=None)
     monkeypatch.setattr(api, "_authorize", authorize)
-    persist = Mock(return_value=True)
+    receipt = object()
+    persist = Mock(return_value=receipt)
     monkeypatch.setattr(api, "_persist_result", persist)
     visits = []
 
@@ -193,7 +194,7 @@ def test_atomic_first_run_rechecks_original_fence_after_lock_timeout(monkeypatch
             visits.append("exit")
 
     monkeypatch.setattr(atomic, "atomic_surface_transaction", transaction)
-    atomic.execute_atomic_surface(
+    result = atomic.execute_atomic_surface(
         SimpleNamespace(stores=SimpleNamespace(idempotency=store)),
         SimpleNamespace(headers={"X-Zebra-Admission-Protocol": "atomic-task-run/1"}),
         SimpleNamespace(kind="task_create"),
@@ -203,6 +204,7 @@ def test_atomic_first_run_rechecks_original_fence_after_lock_timeout(monkeypatch
         "operation",
         original_claim={"kind": "task_create"},
     )
+    assert result is (None if terminate else receipt)
     assert visits == ["enter", "exit", "enter", "exit"]
     assert prepared.call_count == (1 if terminate else 2)
     assert persist.call_count == (0 if terminate else 1)
