@@ -22,6 +22,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from zebra_agent_api.client_grant_auth import SessionBackedClientGrantAuthorizer
 from zebra_agent_api.client_surface import mount_client_surface, open_client_surface
+from zebra_agent_api.e1_receipt_proof import confirmed, enabled
 from zebra_agent_api.idempotency import scoped_idempotency_key
 from zebra_agent_api.responses import ApiResponse
 from zebra_agent_api.task_api import create_task
@@ -374,6 +375,12 @@ def _handle(
             return denied
         if result is not None and result.request_hash != digest:
             return ApiResponse(503, {"status": "observation_unavailable"})
+        if (
+            enabled()
+            and result is not None
+            and not confirmed(store._database.deployment_namespace, result)
+        ):
+            result = None
         return _observation(operation, digest, meta, result)
     if claim is None:
         assert body is not None
@@ -413,6 +420,12 @@ def _handle(
     denied = _authorize(app, request, meta)
     if denied is not None:
         return denied
+    if (
+        enabled()
+        and result is not None
+        and not confirmed(store._database.deployment_namespace, result)
+    ):
+        result = None
     return ApiResponse(
         200,
         result.response_body

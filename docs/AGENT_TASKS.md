@@ -37528,3 +37528,7 @@ switch in the existing native artifact wire test proxy.
 
 CA-HA-03 standby receipt proof addendum: own the isolated operator
 fixture tests/compose/cloud_ha_e1/standby_receipt_proof.sql.
+
+CA-HA-03 E1 receipt response gate addendum: own the isolated proof
+adapter and signed response seams in client_admission_operations.py
+and client_admission_termination.py plus their existing API tests.

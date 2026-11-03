@@ -20666,3 +20666,13 @@ on standby until replay resumed. This demonstrates a false durability
 confirmation risk in the current ungated route composition. No
 production change; API must withhold non_commit_proven until proof.
 Evidence pg-sync-native-stop-two-hosts.json.
+
+CA-HA-03 opt-in E1 receipt response gate wired for signed submit,
+original observation and committed/terminated status. Requires
+explicit verify-full reader DSN, expected system ID, and a parsed
+capacity profile. Separate native connector uses one normal slot
+and at most 500 ms of the existing request deadline. Missing,
+mismatched or unavailable proof withholds the result/stop proof.
+Default single-node path unchanged. Ruff and 32 API tests passed.
+This candidate is not deployed; enabled signed HTTP against the
+actual cross-host fixture, TLS and topology admission fencing remain.

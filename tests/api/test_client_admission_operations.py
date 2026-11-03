@@ -204,3 +204,15 @@ def test_atomic_first_run_rechecks_original_fence_after_lock_timeout(monkeypatch
     assert visits == ["enter", "exit", "enter", "exit"]
     assert prepared.call_count == (1 if terminate else 2)
     assert persist.call_count == (0 if terminate else 1)
+
+
+def test_e1_receipt_proof_fails_closed_with_incomplete_configuration(monkeypatch):
+    from zebra_agent_api.e1_receipt_proof import confirmed, enabled
+
+    monkeypatch.delenv("ZEBRA_HA_E1_RECEIPT_PROOF_DSN", raising=False)
+    monkeypatch.delenv("ZEBRA_HA_E1_RECEIPT_PROOF_SYSTEM_ID", raising=False)
+    assert not enabled()
+    assert confirmed("isolated", None)
+    monkeypatch.setenv("ZEBRA_HA_E1_RECEIPT_PROOF_SYSTEM_ID", "1")
+    assert enabled()
+    assert not confirmed("isolated", None)
