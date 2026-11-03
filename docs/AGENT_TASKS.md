@@ -37574,3 +37574,6 @@ PostgreSQL regression. Keep the scope rollout lock around the mode proof.
 CA-HA-03 E1 strict command admission follow-up (Luke Ding/Codex, existing branch/worktree):
 own the deployment requirement read in postgres/command_coverage_admission.py.
 Reuse the existing strict Coverage and command admission PostgreSQL tests.
+
+CA-HA-03 E1 execution preparation timing follow-up (Luke Ding/Codex, existing
+branch/worktree): own diagnostic phase boundaries in Worker execution.py.
