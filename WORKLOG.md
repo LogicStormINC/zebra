@@ -20766,3 +20766,13 @@ observation recorded the result. Evidence pg-sync-tls-api-handover.json.
 The fresh API used a static verification key and fixture composition.
 This validates manual API reconfiguration, not automatic fencing,
 in-flight writer handoff, Worker recovery or production cutover.
+
+CA-HA-03 isolated fence negative path exercised against both live
+databases. A mismatched fixture owner refused the stop and left the
+original primary active and the standby in recovery. With the exact
+fixture owner, the probe stopped the original container, required
+explicit TCP refusal (a timeout does not qualify), checked standby
+role and system identity, then promoted and verified the original
+receipt and a new write. Evidence pg-sync-owned-fence-two-hosts.json.
+The script is a disposable fixture probe. It supplies no independent
+witness or production fencing authority.
