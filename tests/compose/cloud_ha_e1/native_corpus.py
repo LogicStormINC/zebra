@@ -7,9 +7,12 @@ import sys
 from uuid import uuid4
 
 import psycopg
-from agent_core.domain.identifiers import TaskId
+from agent_core.domain.identifiers import SessionId, TaskId
+from agent_core.domain.plans import SessionPlan
 from agent_storage.postgres.agent_tasks import PostgresAgentTaskStore
+from agent_storage.postgres.projections import PostgresProjectionStore
 from psycopg.conninfo import conninfo_to_dict, make_conninfo
+from psycopg.types.json import Jsonb
 
 
 def _validate_target(dsn: str, task_count: int) -> None:
@@ -28,6 +31,7 @@ def populate(dsn: str, task_count: int) -> dict[str, str | int]:
     _validate_target(dsn, task_count)
     namespace = f"e1-corpus-{uuid4().hex}"
     print(f"seeding {namespace}", file=sys.stderr, flush=True)
+    empty_plan = Jsonb(SessionPlan().model_dump(mode="json"))
     with psycopg.connect(dsn, options="-c statement_timeout=60000") as connection:
         for offset in range(0, task_count, 50):
             task_ids = [uuid4() for _ in range(min(50, task_count - offset))]
@@ -41,10 +45,10 @@ def populate(dsn: str, task_count: int) -> dict[str, str | int]:
                 connection.execute(
                     """INSERT INTO session_projections
                        (deployment_namespace,session_id,title,status,created_at,updated_at,
-                        current_sequence)
-                       SELECT %s,id,'E1 synthetic Task','created',now(),now(),99
+                        current_sequence,task_plan_json)
+                       SELECT %s,id,'E1 synthetic Task','created',now(),now(),99,%s
                        FROM unnest(%s::uuid[]) id""",
-                    (namespace, task_ids),
+                    (namespace, empty_plan, task_ids),
                 )
                 connection.execute(
                     """INSERT INTO agent_tasks
@@ -117,12 +121,16 @@ def verify_replay(dsn: str, namespace: str) -> int:
     if not samples:
         raise RuntimeError("no corpus Tasks to verify")
     store = PostgresAgentTaskStore(readonly, deployment_namespace=namespace)
+    projections = PostgresProjectionStore(readonly, deployment_namespace=namespace)
     for (task_id,) in samples:
         task = TaskId(task_id)
+        session = projections.get_session(SessionId(task_id))
         header = store.read_task_header(task, require_source_coverage=True)
         page = store.read_event_page(task, -1, limit=100)
         if (
-            header is None
+            session is None
+            or session.current_sequence != 99
+            or header is None
             or header.current_sequence != 99
             or [event.task_sequence for event in page.events] != list(range(100))
         ):

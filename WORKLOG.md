@@ -21301,3 +21301,5 @@ the new Task; SQL verified the three original Tasks and 300 Events
 were preserved. Static test JWKS resolver and operator DB role
 used here; non-superuser role was proven in a separate rehearsal.
 No Worker or real broker on this run. Full corpus continued.
+
+- E1 corpus rehearsal: seed the canonical empty SessionPlan and check projection deserialization alongside strict header and event replay. On a separate OrbStack PostgreSQL database, a non-superuser Native Worker consumed one new synthetic request, called the synthetic provider once, and persisted one answer while the three historical Tasks and 300 events were preserved. The full corpus generator was already running with the earlier seed and requires a namespace-scoped backfill after completion.
