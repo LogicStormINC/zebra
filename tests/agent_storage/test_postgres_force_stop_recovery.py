@@ -261,3 +261,10 @@ def test_executor_exit_requires_registered_incarnation(dsn):
         assert acknowledge_executor_incarnation(database, sid, fence, incarnation=incarnation)
     rows = _rows(dsn, "control_plane_idempotency_records")
     assert sum(row["action"] == "executor_exit" for row in rows) == 1
+
+    with psycopg.connect(dsn) as connection:
+        connection.execute(
+            """UPDATE control_plane_idempotency_records SET response_body='{}'::jsonb
+            WHERE action='executor_exit'"""
+        )
+    assert not acknowledge_executor_incarnation(database, sid, fence, incarnation=incarnation)

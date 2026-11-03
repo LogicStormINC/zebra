@@ -99,8 +99,9 @@ def acknowledge_executor_incarnation(
             or not _receipt(connection, namespace, "executor_started", sid, fence)
         ):
             return False
-        _save(connection, namespace, "executor_exit", sid, fence)
-        return True
+        return _save(connection, namespace, "executor_exit", sid, fence) or _receipt(
+            connection, namespace, "executor_exit", sid, fence
+        )
 
 
 
