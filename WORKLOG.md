@@ -20702,3 +20702,14 @@ standby. It returned false for the primary-only STOP receipt, true
 after replay, and false for a mismatched digest. Both databases and
 tunnels were temporary. Evidence pg-sync-tls-api-proof-two-hosts.json.
 This covers the live connector, with signed HTTP composition pending.
+
+CA-HA-03 live Uvicorn socket exercised real RS256 verification and
+PostgreSQL authority registry plus the candidate TLS standby gate.
+An invalid signature was rejected. With replay paused, signed GET,
+observation, and termination reads withheld an atomic admission
+result. After resume, the signed original GET recovered the exact
+sealed response. Evidence pg-sync-tls-signed-http-two-hosts.json.
+The fixture seeded the original via the native route using a
+session-local synchronous_commit override to simulate primary-only
+visibility. JWKS resolution used a static public key. Signed submit
+during the fault, topology fencing, and deployment remain pending.
