@@ -36,12 +36,19 @@ def build_session_message_event(
     selected_model_pin = None
     if clarification_id is None:
         prepared = next(
-            (event for event in reversed(events) if event.event_type is EventType.TASK_PREPARED),
+            (
+                event
+                for event in reversed(events)
+                if event.event_type in {EventType.TASK_PREPARED, EventType.USER_MESSAGE_RECEIVED}
+                and event.payload.get("definition_snapshot") is not None
+            ),
             None,
         )
         raw_snapshot = prepared.payload.get("definition_snapshot") if prepared is not None else None
         snapshot = (
-            parse_definition_snapshot(raw_snapshot) if raw_snapshot is not None else inherited_snapshot
+            parse_definition_snapshot(raw_snapshot)
+            if raw_snapshot is not None
+            else inherited_snapshot
         )
         if isinstance(snapshot, BundleDefinitionSnapshot):
             remembered = next(

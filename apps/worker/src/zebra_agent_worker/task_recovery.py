@@ -168,6 +168,7 @@ def recover_task(
     user_input: str | None = None
     task_payload: dict[str, object] | None = None
     user_event: SessionEvent | None = None
+    message_snapshot: object = None
     strict_identity: CoverageTaskAdmission | None = None
     for event in events:
         if event.event_type is EventType.USER_MESSAGE_RECEIVED:
@@ -175,6 +176,8 @@ def recover_task(
             if isinstance(content, str) and content.strip():
                 user_input = content.strip()
                 user_event = event
+                if event.payload.get("definition_snapshot") is not None:
+                    message_snapshot = event.payload["definition_snapshot"]
         if event.event_type is EventType.TASK_PREPARED:
             raw_admission = event.payload.get("coverage_admission")
             candidate = (
@@ -215,7 +218,9 @@ def recover_task(
     except (FileNotFoundError, ValueError) as exc:
         raise ValueError(f"queued session attachment recovery failed: {exc}") from exc
     definition_snapshot = _definition_snapshot(
-        user_event.payload.get("definition_snapshot", task_payload.get("definition_snapshot"))
+        message_snapshot
+        if message_snapshot is not None
+        else task_payload.get("definition_snapshot")
     )
     raw_pin = user_event.payload.get("selected_model_pin")
     selected_model_pin = ArtifactPin.model_validate(raw_pin) if raw_pin is not None else None

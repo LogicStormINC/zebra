@@ -76,20 +76,28 @@ def test_recovery_reads_the_full_snapshot_pinned_to_the_message(tmp_path):
     version = bundle_version()
     snapshot = BundleDefinitionSnapshot.from_version(version=version, resolved_at=NOW)
     pin = version.runtime_assembly.provider_profile.pin
-    pinned = [
-        event.model_copy(
-            update={
-                "payload": {
-                    **event.payload,
-                    "definition_snapshot": snapshot.model_dump(mode="json"),
-                    "selected_model_pin": pin.model_dump(mode="json"),
-                }
-            }
-        )
-        if event.event_type is EventType.USER_MESSAGE_RECEIVED
-        else event
-        for event in events
-    ]
+    message = next(event for event in events if event.event_type is EventType.USER_MESSAGE_RECEIVED)
+    switched = message.model_copy(
+        update={
+            "sequence": events[-1].sequence + 1,
+            "payload": {
+                **message.payload,
+                "definition_snapshot": snapshot.model_dump(mode="json"),
+                "selected_model_pin": pin.model_dump(mode="json"),
+            },
+        }
+    )
+    later = switched.model_copy(
+        update={
+            "sequence": switched.sequence + 1,
+            "payload": {
+                "content": "Next message",
+                "selected_model_pin": pin.model_dump(mode="json"),
+            },
+        }
+    )
+    pinned = [*events, switched, later]
+    assert rebuild_workspace(pinned).definition_snapshot == snapshot
     task = recover_task(
         pinned,
         workspace=rebuild_workspace(events),
