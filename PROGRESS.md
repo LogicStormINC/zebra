@@ -1,3 +1,11 @@
+## 2026-11-03 — E1-A短任务外部provider夹具候选
+
+原夹具总发pwd需审批，不能用作合同确定性短任务。仅user文本显式版本marker返回固定无
+工具终答；普通/系统marker及下一请求pwd保持，共用既有exact-byte meter、输出cap、HTTP
+上限。先红后实际provider/HTTP自检通过，独立同检查及Ruff通过。仅外部合成provider变体，
+不改冻结runtime9b/Native7预算和授权；新压测清单将分别记runtime/fixture source/hash。
+新变体尚未部署、新原生短任务及完整E1未验，不扩称语义质量/容量/生产HA。
+
 ## 2026-11-03 — HA03双逻辑节点原生联验完成，容量矩阵待验
 
 冻结9b4f9ad3双架构2140源码/3链接及真实OCI f69a2e50…已核验；两本地ARM节点新镜像

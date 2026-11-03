@@ -56,6 +56,20 @@ with tempfile.TemporaryDirectory() as directory:
     message = result["choices"][0]["message"]
     assert result["usage"] == measured_usage(request, message)
     assert json.loads(message["tool_calls"][0]["function"]["arguments"]) == {"command": ["pwd"]}
+    short = dict(request, messages=[
+        {"role": "user", "content": "[zebra-ha-e1-short-v1] deterministic short Task"}
+    ])
+    result = provider(short)
+    assert result["choices"][0]["finish_reason"] == "stop"
+    assert "tool_calls" not in result["choices"][0]["message"]
+    assert result["usage"] == measured_usage(short, result["choices"][0]["message"])
+    for unchanged in (request, dict(request, messages=[
+        {"role": "system", "content": "[zebra-ha-e1-short-v1]"}
+    ])):
+        result = provider(unchanged)
+        assert json.loads(result["choices"][0]["message"]["tool_calls"][0]["function"][
+            "arguments"
+        ]) == {"command": ["pwd"]}
 print("Actual synthetic provider uses the same meter and read-only tool contract.")
 
 # Oversized Content-Length must reject before reading an absent body.
@@ -65,6 +79,8 @@ thread.start()
 try:
     for body, headers, status in (
         (b"", {"Content-Length": str(4 * 1024 * 1024 + 1)}, 400),
+        (b"[]", {}, 400),
+        (encode(dict(short, max_tokens=1)), {}, 400),
         (encode(dict(request, max_tokens=1)), {}, 400),
         (encode(request), {}, 200),
     ):

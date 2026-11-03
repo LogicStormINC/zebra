@@ -198,3 +198,14 @@ Copy the complete installed strict gVisor runtime, including gvisor-bin sidecars
 and verify hashes and real nonroot/read-only/network-none execution. A rootfs
 write probe must target a directory writable to the test UID before checking EROFS.
 Both logical nodes share one Mac; this is not physical-host or durable-storage HA.
+
+
+For E1-A deterministic short tasks, the separately frozen provider variant
+recognizes `[zebra-ha-e1-short-v1]` only in user text and emits a fixed final
+response without tools. Ordinary/system-marker requests retain pwd; no policy,
+Runtime9b budget or Native7 approval changes. Both branches use the same exact
+byte meter, output cap and HTTP limits. Run `check_metering.py` before any variant
+promotion. Freeze the external fixture source/hash separately from the runtime
+image source/hash in the load manifest; Native7 TLS/SSE/meter qualification is not
+provider semantic quality, capacity or full E1 acceptance. First validate a NEW
+native short Task once, retain its receipt, then prepare load/corpus tests.

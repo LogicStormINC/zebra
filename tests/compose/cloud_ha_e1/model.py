@@ -18,7 +18,19 @@ original_completion.__globals__["_TOOL_CALL"]["function"]["arguments"] = json.du
 
 
 def completion(request):
+    if not isinstance(request, dict):
+        raise ValueError("fixture request must be an object")
     result = original_completion(request)
+    messages = request.get("messages", [])
+    # ponytail: an explicit user marker selects the fixed E1-A no-tool workload.
+    if isinstance(messages, list) and any(
+        isinstance(message, dict) and message.get("role") == "user"
+        and isinstance(message.get("content"), str)
+        and "[zebra-ha-e1-short-v1]" in message["content"]
+        for message in messages
+    ):
+        result["choices"][0]["message"] = {"role": "assistant", "content": "E1 short completed."}
+        result["choices"][0]["finish_reason"] = "stop"
     result["id"] = f"e1-synthetic-{uuid4()}"
     result["model"] = request.get("model", "deepseek-v4-pro")
     result["choices"][0]["message"]["reasoning_content"] = ""

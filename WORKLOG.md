@@ -18941,3 +18941,12 @@ exact OCI deletion. Primary cleanup removed a created/not-started OCI object whi
 its Worker was still frozen. Old7 event/budget/unknown hashes unchanged. All five
 new cases and operator preview boundaries retained in native-9b evidence. Both
 Workers restored; no production. Full E1 load/corpus/fault/soak remains next.
+
+
+## 2026-11-03 — E1-A external short provider variant
+
+A user-only version marker now selects deterministic no-tool completion using
+the unchanged meter/caps/HTTP. Original pwd/system marker and shared-template
+isolation verified red/green; independent runnable+Ruff passed. Runtime9b/Native7
+unchanged; external fixture must be frozen separately before a NEW short Task.
+No variant promotion or load result yet.
