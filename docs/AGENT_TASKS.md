@@ -37523,3 +37523,5 @@ regression in tests/api/test_artifact_download_deadline.py.
 
 CA-HA-03 first Run lost COMMIT addendum: own the native atomic Run
 regression in tests/agent_storage/test_admission_atomic_task_run.py.
+The first Run lost COMMIT addendum also owns the pre-COMMIT fault
+switch in the existing native artifact wire test proxy.

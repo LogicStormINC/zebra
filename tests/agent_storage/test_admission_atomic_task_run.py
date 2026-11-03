@@ -165,7 +165,10 @@ def test_atomic_initial_run_indexes_before_wakeup_and_rolls_back_on_rejection(
     assert counts(store) == [0] * 5 and command_counts(store) == [0, 0]
 
 
-def test_atomic_first_run_recovers_original_after_lost_commit_reply(isolated_migration_dsn):
+@pytest.mark.parametrize("before_commit", [True, False])
+def test_atomic_first_run_reconciles_original_on_commit_disconnect(
+    isolated_migration_dsn, before_commit
+):
     from agent_storage.postgres.idempotency import PostgresIdempotencyStore
     from psycopg import OperationalError
 
@@ -174,7 +177,11 @@ def test_atomic_first_run_recovers_original_after_lost_commit_reply(isolated_mig
     store, op = setup(isolated_migration_dsn, PROTOCOL)
     enable(store)
     assert start_atomic_surface(store, op, "a" * 64, protocol=PROTOCOL)
-    with lost_commit_reply(isolated_migration_dsn) as (proxy_dsn, committed, _):
+    with lost_commit_reply(isolated_migration_dsn, before_commit=before_commit) as (
+        proxy_dsn,
+        interrupted,
+        _,
+    ):
         through_proxy = PostgresIdempotencyStore(
             proxy_dsn, deployment_namespace=store._database.deployment_namespace
         )
@@ -182,6 +189,11 @@ def test_atomic_first_run_recovers_original_after_lost_commit_reply(isolated_mig
             with atomic_surface_transaction(through_proxy, op, "a" * 64):
                 effects(through_proxy)
                 result(through_proxy, op)
-        assert committed.is_set()
-    assert observe(store, op, False)["state"] == "committed"
-    assert command_counts(store) == [1, 1]
+        assert interrupted.is_set()
+    if before_commit:
+        assert observe(store, op, False)["state"] == "unresolved"
+        assert counts(store) == [0] * 5 and command_counts(store) == [0, 0]
+        assert observe(store, op, True)["state"] == "terminated"
+    else:
+        assert observe(store, op, False)["state"] == "committed"
+        assert command_counts(store) == [1, 1]

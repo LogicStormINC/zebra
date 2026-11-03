@@ -641,8 +641,10 @@ def test_native_http_deferred_audit_commit_is_bounded_and_not_replayed(
 
 
 @contextmanager
-def lost_commit_reply(dsn: str) -> Iterator[tuple[str, Event, list[Thread]]]:
-    """Real libpq/PG: drop CommandComplete only after server confirms COMMIT."""
+def lost_commit_reply(
+    dsn: str, *, before_commit: bool = False
+) -> Iterator[tuple[str, Event, list[Thread]]]:
+    """Interrupt real libpq/PG before COMMIT or after its CommandComplete."""
     settings = conninfo_to_dict(dsn)
     committed, stop = Event(), Event()
     with socket.socket() as listener:
@@ -669,6 +671,9 @@ def lost_commit_reply(dsn: str) -> Iterator[tuple[str, Event, list[Thread]]]:
                             return
                         if peer is front:
                             client_bytes = (client_bytes + data)[-65_536:]
+                            if before_commit and b"COMMIT\x00" in client_bytes:
+                                committed.set()
+                                return
                             back.sendall(data)
                             continue
                         server_bytes += data

@@ -20515,3 +20515,12 @@ OperationalError; original read-only observation returned committed.
 Exactly one pending command and one outbox row persisted. Four
 atomic first Run tests passed on disposable PG17. This is the
 atomic transaction path, not a loaded HTTP or cross-host fault.
+
+CA-HA-03 pre-COMMIT disconnect complement. Native wire proxy
+interrupts the first Run transaction before forwarding COMMIT.
+Original read-only observation stays unresolved, with zero Task
+effects, pending commands or outbox rows. Explicit termination then
+certifies the original stopped. Existing post-COMMIT branch still
+finds exactly one durable command/outbox. Seven PG17 cases passed
+including both artifact audit COMMIT-loss consumers of the proxy.
+No production code change.
