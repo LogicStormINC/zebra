@@ -123,7 +123,6 @@ class PostgresTaskAdmissionTransaction:
                 "WHERE deployment_namespace=%s AND workspace_id=%s AND owner_session_id IS NULL",
                 (root_session_id, namespace, workspace_id),
             )
-        task = rebuild_task_in_transaction(connection, namespace, root_session_id)
         binding_digest: str | None = None
         if request.binding is not None:
             binding_digest = _insert_binding_snapshot(
@@ -138,8 +137,7 @@ class PostgresTaskAdmissionTransaction:
             )
             for event in command_events
         )
-        if command_events:
-            task = rebuild_task_in_transaction(connection, namespace, root_session_id)
+        task = rebuild_task_in_transaction(connection, namespace, root_session_id)
         from agent_storage.postgres.input_artifact_admission import persist_input_artifacts
 
         persist_input_artifacts(connection, namespace, request.events, request.input_artifacts)

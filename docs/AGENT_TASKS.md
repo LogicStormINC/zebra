@@ -37498,3 +37498,6 @@ outbox lookup and scope capacity lock seams in PostgreSQL command_wakeup.py.
 
 CA-HA-03 admission diagnostics addendum: own the bounded failure logging
 seam in client_admission_operations.py and its E1 delta image entry.
+
+CA-HA-03 initial admission index addendum: own the Task rebuild ordering
+in PostgreSQL task_admission.py and its existing atomic rollback regression.

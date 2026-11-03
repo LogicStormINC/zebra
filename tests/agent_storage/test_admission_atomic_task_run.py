@@ -143,7 +143,7 @@ def test_atomic_initial_run_indexes_before_wakeup_and_rolls_back_on_rejection(
         return task
 
     def reject(connection, namespace, event, *, is_new_admission):
-        assert indexed == [event.session_id, event.session_id]
+        assert indexed == [event.session_id]
         wake(connection, namespace, event, is_new_admission=is_new_admission)
         raise AtomicSurfaceAborted("controlled wakeup rollback")
 

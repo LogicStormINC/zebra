@@ -20026,3 +20026,11 @@ the first rebuild and whether fresh inserts can reuse index work
 without losing stable event positions or atomic rollback.
 Evidence preflight5-stage26-21794baf*, stage26-original-receipts.json,
 stage26-zebra*.log and stage26-with-sse-bbbda170*.
+
+CA-HA-03 atomic initial Task admission now rebuilds its event index
+once after appending the initial command. The immutable binding table
+does not depend on the Task row, and native command wakeup is deferred
+until after indexing in the same transaction. Updated the existing
+rollback check to require exactly one rebuild before wakeup. Ten
+isolated PostgreSQL 17 atomic initial Run and Task admission tests,
+Ruff, and diff check passed. Next package and repeat 5 Hz/32 SSE.
