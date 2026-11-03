@@ -517,3 +517,32 @@ def test_nested_root_cannot_multiply_process_budget(monkeypatch):
     with capacity_scope(budget), pytest.raises(ValueError, match="already composed"):
         with connection_pool.postgres_pool_scope("dbname=one", component="worker"):
             pytest.fail("nested process budget admitted")
+
+
+def test_real_executor_limits_cap_pool_and_direct_sockets(budget_dsn, monkeypatch):
+    from contextlib import ExitStack
+
+    from agent_storage.postgres.connection_capacity import (
+        PROFILE_ENV,
+        DatabaseCapacityExceeded,
+        connect,
+    )
+    from agent_storage.postgres.connection_pool import composition_pool, postgres_pool_scope
+    from psycopg_pool import PoolTimeout
+
+    dsn, value = budget_dsn
+    value["executor_limits"] = dict(pool=1, normal=2, read=1, control=1, probe=1)
+    monkeypatch.setenv(PROFILE_ENV, json.dumps(value))
+    with postgres_pool_scope(dsn, component="executor") as budget, ExitStack() as sockets:
+        pool = composition_pool(dsn)
+        assert pool is not None and budget is not None
+        pooled = sockets.enter_context(pool.connection())
+        normal = [sockets.enter_context(connect(dsn, lane="normal")) for _ in range(2)]
+        control = sockets.enter_context(connect(dsn, lane="control"))
+        assert len({connection.info.backend_pid for connection in [pooled, *normal, control]}) == 4
+        assert control.execute("SELECT 1").fetchone() == (1,)
+        with pytest.raises(PoolTimeout), pool.connection(timeout=0.05):
+            pytest.fail("executor pool exceeded its limit")
+        with pytest.raises(DatabaseCapacityExceeded), connect(dsn, lane="normal"):
+            pytest.fail("executor normal lane exceeded its limit")
+        assert budget.stats()["peak"]["normal"] == 2
