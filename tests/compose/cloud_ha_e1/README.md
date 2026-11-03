@@ -303,3 +303,25 @@ After a named VM stop/start, check both units, all five container states and
 the node2 TLS `/health/ready` endpoint. To retire this fixture, disable and
 stop the corpus unit, then the relay unit, and remove the installed files.
 The relay uses loopback listeners and a fixed first-node dependency address.
+
+### Worker incarnation recovery and VM restart
+
+The active incarnation-enabled Workers use host identity directories under
+`/run`. The transient recovery timers and these directories are lost on VM
+restart. The node2 corpus boot unit above predates incarnation registration.
+Its container start alone does not make an incarnation-enabled Worker ready.
+
+For a persistent candidate, mount a root-owned state directory from
+`/var/lib` read-only into the Worker. Keep the identity, exit witness and
+restart lock in that same host directory. Stop the recovery timer before
+planned shutdown. On boot, start Docker and the scoped cleanup dependency
+before reconciling the previous Worker incarnation. Inspect and persist the
+old exit proof before starting the Worker. Publish the new identity after
+start, check it from inside the Worker, then enable periodic recovery.
+Missing or mismatched old exit evidence requires explicit reconciliation.
+The periodic crash filter deliberately skips clean and SIGTERM exits, so
+planned boot startup requires its own entry point.
+
+Accept this configuration with a named isolated VM restart, both node
+timers, an old exact exit receipt and a new synthetic command on the
+restarted node. A healthy Docker process alone is insufficient evidence.
