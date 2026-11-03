@@ -21291,3 +21291,13 @@ used the exact composed DSN. Grants were broad public-schema
 DML for the fixture, not an audited production least-privilege
 policy. The full generator remains live on its original 100-slot
 server; transition only after it completes and evidence is frozen.
+
+CA-HA-03 signed HTTP composition rehearsal against the populated
+synthetic namespace passed on a small disposable PostgreSQL DB.
+Live Uvicorn socket and real RS256 verifier accepted one
+atomic-task/1 non-executing Task and a fresh signed original GET
+returned the identical sealed response. AES-GCM unseal resolved
+the new Task; SQL verified the three original Tasks and 300 Events
+were preserved. Static test JWKS resolver and operator DB role
+used here; non-superuser role was proven in a separate rehearsal.
+No Worker or real broker on this run. Full corpus continued.
