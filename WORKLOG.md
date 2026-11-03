@@ -20695,3 +20695,10 @@ TLS on the proof connection. Both disposable databases were stopped.
 Evidence pg-sync-tls-stop-two-hosts.json. This probe uses psycopg
 directly; signed HTTP and the enabled API gate remain to be exercised
 against this fixture.
+
+CA-HA-03 exercised the candidate's actual e1_receipt_proof.confirmed
+and native connection budget against the cross-host TLS verify-full
+standby. It returned false for the primary-only STOP receipt, true
+after replay, and false for a mismatched digest. Both databases and
+tunnels were temporary. Evidence pg-sync-tls-api-proof-two-hosts.json.
+This covers the live connector, with signed HTTP composition pending.
