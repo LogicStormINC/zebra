@@ -133,16 +133,39 @@ def restart_reconciled(
         raise ValueError("exit witness must have a separate destination")
     with lock_path.open("a") as lock:
         fcntl.flock(lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-        witness = exit_witness(container, binding_path)
-        publish(witness, destination)
+        running = json.loads(docker("inspect", "--type", "container", container))[0]["State"][
+            "Running"
+        ]
+        if running:
+            current = identity(container)
+            previous = json.loads(binding_path.read_bytes())
+            if current == previous:
+                return 0
+            witness = json.loads(destination.read_bytes())
+            original = {key: value for key, value in witness.items() if key != "finished_at"}
+            if (
+                original != previous
+                or any(current[key] != previous[key] for key in ("engine", "container"))
+                or not datetime.fromisoformat(previous["started_at"])
+                < datetime.fromisoformat(witness["finished_at"])
+                <= datetime.fromisoformat(current["started_at"])
+            ):
+                raise ValueError("saved exit witness does not match the restarted Worker")
+        else:
+            witness = exit_witness(container, binding_path)
+            publish(witness, destination)
         count = reconcile_exits(witness, dsn, namespace=namespace)
         if reconcile_exits(witness, dsn, namespace=namespace):
             raise RuntimeError("executor exits are still being reconciled; retry before restarting")
         container = witness["container"]
-        if exit_witness(container, binding_path) != witness:
-            raise ValueError("Worker exit witness changed before restart")
-        docker("start", container)
-        publish(identity(container), binding_path)
+        if not running:
+            if exit_witness(container, binding_path) != witness:
+                raise ValueError("Worker exit witness changed before restart")
+            docker("start", container)
+            current = identity(container)
+        elif identity(container) != current:
+            raise ValueError("Worker changed during restart recovery")
+        publish(current, binding_path)
         return count
 
 
