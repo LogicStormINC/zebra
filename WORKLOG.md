@@ -19392,3 +19392,18 @@ no recovery code or scoped broker rollout. The all-service cutover guard
 requires no pending commands. For the next SSE wake test, use the verified
 tail module as an API-only isolated overlay, keeping the Worker processes
 running while independently tracing the original fallback pickup.
+
+CA-HA-03 Native17 API-only overlay wake drill: first overlay path failed
+the source hash check due to zsh modifier expansion. After correcting
+the path, an initial cohort hit node2 startup 502s and sent zero commands.
+Added direct per-node readiness gating. The next cohort held 32 streams
+(16 added TCP connections per node) and submitted one Task resume for
+3791b2c3-1e68-4b88-9cb3-ceb3f7379601. It returned 202. Eleven observers
+received exactly acceptance cursor 3; 21 saw RemoteProtocolError. Saved
+API traces show CheckpointNotReady (observation header behind canonical
+source) during source-head reads, with no capacity exception in those
+captured traces. Restore completed and both direct readiness checks passed.
+Next handle lag at the raw tail source-head boundary within the current
+deadline. Preserve AG-UI's separate checkpoint handling and any existing
+pending commands. Evidence: sse17-live-event-7fa1856a*, wake-tail17-*.log,
+sse17-live-resume-original.json.
