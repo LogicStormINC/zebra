@@ -1,12 +1,13 @@
 """Frozen native Bundle binding, independent of legacy Definition hashes."""
 
+from copy import deepcopy
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 import pytest
 from agent_core.contracts.task_prepared import TaskPreparedPayload
 from agent_core.domain.agent_definition_snapshots import AgentDefinitionSnapshot, BindingPurpose
-from agent_core.domain.agent_definitions import AgentDefinitionVersion
+from agent_core.domain.agent_definitions import AgentDefinitionVersion, AgentRelease
 from agent_core.domain.bundle_definition import (
     BundleDefinitionSnapshot,
     BundleDefinitionVersion,
@@ -105,6 +106,52 @@ def bundle_version(**changes):
         runtime_assembly=RuntimeAssembly.model_validate(assembly_payload()),
     )
     return BundleDefinitionVersion(**{**payload, **changes})
+
+
+def test_removed_model_selects_whole_effective_release():
+    previous = bundle_version()
+    payload = assembly_payload()
+    manifest = payload["bundle"]["manifest"]
+    pin = payload["provider_profile"]["pin"]
+    original = deepcopy(pin)
+    pin["id"] = "providers/replacement"
+    model = manifest["domains"]["model"]["parameters"]
+    model["provider_profile"] = pin
+    manifest["lock"] = sorted(
+        [pin if entry == original else entry for entry in manifest["lock"]],
+        key=lambda entry: (entry["kind"], entry["id"], entry["version"]),
+    )
+    manifest["domains"]["instructions"]["parameters"]["system_text"] = "new instructions"
+    payload["bundle"]["bundle_digest"] = json_digest(manifest)
+    updated = bundle_version(
+        definition_id=previous.definition_id,
+        version=2,
+        runtime_assembly=RuntimeAssembly.model_validate(payload),
+    )
+
+    def published(version):
+        release = AgentRelease.from_version(
+            version,
+            release_id=uuid4(),
+            environment=version.runtime_assembly.bundle.manifest.scope.environment,
+            actor_ref="test-publisher",
+            effective_at=NOW,
+        )
+        return BundleDefinitionSnapshot.from_release(
+            release=release, version=version, resolved_at=NOW
+        )
+
+    old, effective = published(previous), published(updated)
+    selected = previous.runtime_assembly.provider_profile.pin.id
+    assert old.snapshot_for_removed_model(effective=old, selected_model_id=selected) is old
+    adopted = old.snapshot_for_removed_model(effective=effective, selected_model_id=selected)
+    assert adopted is effective
+    assert adopted.bound_version.runtime_assembly.provider_profile.pin.id == "providers/replacement"
+    assert adopted.snapshot_digest != old.snapshot_digest
+    with pytest.raises(ValueError, match="production scope"):
+        old.snapshot_for_removed_model(
+            effective=published(bundle_version()), selected_model_id=selected
+        )
 
 
 def test_version_snapshot_task_recovery_retains_whole_assembly():
