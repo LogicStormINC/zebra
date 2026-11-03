@@ -19576,3 +19576,14 @@ runtime label; the authoritative build, cutover and publication records
 give the full SHA above. Preserve original sample file. Next combine
 the live stream workload with the bounded admission run and exercise
 isolated API failover with reconnect evidence.
+
+CA-HA-03 Native18 isolated single API outage: captured cursor 0 and its
+next frame from completed synthetic Task 980c7cd0-c6ce-413d-91b4-5b212604dd42.
+Stopped only the verified isolated primary API, confirmed PID 0 and direct
+502, then issued a newly authorized read with after_sequence=0 to the
+surviving API. It returned exactly the reference frame at cursor 1 in
+0.687s from the stopped-state probe (includes the failed-node probe).
+Restored the exact stopped container and verified both readiness endpoints.
+This used direct node URLs and a single historical read, with no mutation.
+Load-balancer recovery, in-flight write receipts, 256 observers and the
+contract's ten-probe RTO gate remain open. Evidence api-failover-combined18.json.
