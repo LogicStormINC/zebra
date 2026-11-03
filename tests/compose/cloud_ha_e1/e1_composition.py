@@ -35,7 +35,8 @@ def compose(settings, cloud=None):
         settings.deployment != "cloud"
         or settings.storage_authority != "postgresql"
         or cloud.deployment_namespace != "ha-e1-20261102"
-        or (address.hostname, address.port, address.path) != ("127.0.0.1", 25432, "/ha_e1")
+        or (address.hostname, address.port) != ("127.0.0.1", 25432)
+        or address.path not in {"/ha_e1", "/zebra_e1_corpus_fleet"}
     ):
         raise ValueError("E1 operator factory refuses another deployment")
     runpy.run_path(str(Path(__file__).with_name("check_model.py")))

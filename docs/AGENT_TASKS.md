@@ -37553,3 +37553,5 @@ CA-HA-03 continuation recovery addendum, same In Progress owner and branch.
 Own Worker continuation_lifecycle.py and tests/worker/test_approved_continuation_recovery.py.
 After a continuation start is committed, finish advancing fenced recovery slices
 without replaying start events or running the tool before recovery completes.
+
+CA-HA-03 E1 corpus factory addendum, same owner and branch. Own tests/compose/cloud_ha_e1/e1_composition.py for the exact isolated fleet database allowlist.
