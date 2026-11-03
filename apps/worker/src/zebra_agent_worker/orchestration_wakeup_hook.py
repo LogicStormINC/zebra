@@ -33,12 +33,14 @@ class OrchestrationWakeupHook:
         *,
         deployment_namespace: str,
         settle_original: Callable[[str, str], bool] | None = None,
+        gate_store: Any = None,
     ) -> None:
         self._settle_original = settle_original
         self._reconcile_after = ""
         self._database = PostgresDatabase(dsn, deployment_namespace=deployment_namespace)
         self._runtime = OrchestrationRuntime(
-            _RuntimeStoreAdapter(self._database), require_persisted_gate=True
+            gate_store if gate_store is not None else _RuntimeStoreAdapter(self._database),
+            require_persisted_gate=True,
         )
 
     @property
@@ -99,7 +101,13 @@ class OrchestrationWakeupHook:
                 "ON t.deployment_namespace=o.deployment_namespace AND t.task_id=o.child_task_id "
                 "JOIN session_projections p ON p.deployment_namespace=t.deployment_namespace "
                 "AND p.session_id=t.active_segment_id "
-                "WHERE o.deployment_namespace=%s AND o.state='admitted' AND o.usage IS NULL "
+                "JOIN orchestration_runs r ON r.deployment_namespace=o.deployment_namespace "
+                "AND r.run_id=o.run_id JOIN orchestration_nodes n "
+                "ON n.deployment_namespace=o.deployment_namespace AND n.run_id=o.run_id "
+                "AND n.plan_revision=o.plan_revision AND n.node_key=o.node_key "
+                "WHERE o.deployment_namespace=%s AND o.state='admitted' "
+                "AND (o.usage IS NULL OR (r.status='running' "
+                "AND r.current_plan_revision=o.plan_revision)) "
                 "AND p.status IN ('completed','failed','cancelled') AND o.original_key>%s "
                 "ORDER BY o.original_key LIMIT %s",
                 (self.deployment_namespace, self._reconcile_after, limit),
@@ -154,6 +162,7 @@ class _BoundStore:
 
         self._inner = PostgresOrchestrationStore.__new__(PostgresOrchestrationStore)
         self._inner._database = database
+        self._inner._gate_authorize = None
 
     def __getattr__(self, name: str) -> Any:
         return getattr(self._inner, name)
@@ -174,6 +183,9 @@ def compose_orchestration(
         dsn, namespace, model_request_budget_factory=model_request_budget_factory
     )
     hook = OrchestrationWakeupHook(
-        dsn, deployment_namespace=namespace, settle_original=factory.settle_original
+        dsn,
+        deployment_namespace=namespace,
+        settle_original=factory.settle_original,
+        gate_store=factory.store,
     )
     return factory, hook

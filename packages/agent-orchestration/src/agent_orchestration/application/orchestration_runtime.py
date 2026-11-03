@@ -139,7 +139,6 @@ class OrchestrationRuntime:
         self._authorize = authorize
         self._admission = admission
         self._require_persisted_gate = require_persisted_gate
-        self._gate_reader = gate_reader
         self._auto_materialize = auto_materialize
 
     @contextmanager
@@ -280,21 +279,24 @@ class OrchestrationRuntime:
         *,
         gate_input: GateInput | None = None,
     ) -> None:
-        """running → synthesizing → completed once every node is terminal.
+        """Complete through the atomic durable producer in production.
 
-        CA-P7-02B wiring: a supplied GateInput is evaluated by the
-        completion gate BEFORE the synthesizing transition — a failing or
-        blocking gate refuses synthesis with a typed error and the run
-        stays running. Without a gate input the terminal check alone
-        decides (unit/test surface).
+        The optional GateInput/reader compatibility surface grants no production
+        authority. The unguarded evaluator remains for isolated local tests.
         """
 
         if self._require_persisted_gate:
-            gate_input = self._gate_reader(run_ref) if self._gate_reader is not None else None
-            if gate_input is None:
+            complete = getattr(self._store, "complete_run", None)
+            if complete is None:
                 raise OrchestrationToolError(
-                    "gate_evidence_unavailable", "current durable gate facts required"
+                    "gate_evidence_unavailable", "atomic durable completion producer required"
                 )
+            evaluation = complete(run_ref)
+            if not evaluation.passed:
+                raise OrchestrationToolError(
+                    "gate_blocked" if evaluation.blocked else "gate_refused", evaluation.reason_code
+                )
+            return
         snapshot = self._require_snapshot(run_ref)
         state = _state_from_snapshot(snapshot, self._store.read_node_statuses(run_ref))
         if not all(node.terminal for node in state.nodes.values()):

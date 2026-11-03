@@ -99,6 +99,30 @@ def test_missing_real_counter_refuses_before_any_wire():
     assert not sent and not gateway.worker_budget.reserved
 
 
+@pytest.mark.parametrize("with_counter", [False, True])
+def test_tool_schema_type_properties_keep_exact_inspection_and_strict_refusal(with_counter):
+    import json
+
+    sent = []
+    gateway = _gateway(lambda request: sent.append(request))
+    body = {
+        "max_tokens": 5,
+        "tools": [{"type": "function", "function": {
+            "name": "fixture",
+            "parameters": {"type": "object", "properties": {
+                "type": {"type": "string"}, "value": {"type": ["string", "null"]},
+            }},
+        }}],
+    }
+    if with_counter:
+        gateway.model_request_budget = _proof
+        assert json.loads(inspect_request(gateway, body).exact_body) == body
+    else:
+        with pytest.raises(WorkerBudgetError, match="counter"):
+            inspect_request(gateway, body)
+    assert not sent and not gateway.worker_budget.reserved
+
+
 def test_normal_guarded_chat_commits_exact_bytes_before_wire():
     import httpx
     from agent_integrations.worker_budget import guarded_chat

@@ -18,11 +18,6 @@ from agent_core.application.workspace_projection import rebuild_workspace
 from agent_core.contracts.session_commands import SessionCommand, SessionCommandKind
 from agent_core.domain.bundle_definition import BundleDefinitionSnapshot, parse_definition_snapshot
 from agent_core.domain.events import EventActor, EventType, SessionEvent
-from agent_core.domain.execution_authority import (
-    ExecutionAuthorityDecision,
-    ExecutionAuthorityRevalidation,
-    ExecutionAuthoritySnapshot,
-)
 from agent_core.domain.identifiers import TaskId
 from agent_core.domain.leases import LeaseFence
 from agent_core.domain.subagent_delegation import SubagentDelegationRequest
@@ -36,6 +31,11 @@ from agent_orchestration.application.orchestration_admission import (
     original_key,
 )
 from agent_orchestration.application.orchestration_authority import OrchestrationAuthority
+from agent_orchestration.application.orchestration_completion_gate import (
+    definition_binding_matches,
+    published_completion_policy,
+)
+from agent_orchestration.application.orchestration_port import OrchestrationToolError
 from agent_orchestration.application.orchestration_runtime import (
     OrchestrationRuntime,
     OrchestrationStorePort,
@@ -47,6 +47,7 @@ from agent_storage.postgres.agent_registry import PostgresAgentRegistry
 from agent_storage.postgres.database import PostgresDatabase
 from agent_storage.postgres.orchestration import PostgresOrchestrationStore
 from agent_storage.postgres.orchestration_admission import PostgresOrchestrationAdmission
+from agent_storage.postgres.orchestration_gate_queries import current_execution_authority
 from agent_storage.postgres.work_unit import postgres_work_unit
 from agent_storage.postgres.worker_budget import PostgresWorkerBudgetStore
 
@@ -83,7 +84,9 @@ class PostgresOrchestrationFactory:
             PostgresAgentRegistry(dsn, deployment_namespace=namespace)
         )
         self.budgets = PostgresWorkerBudgetStore(dsn, deployment_namespace=namespace)
-        self.store = PostgresOrchestrationStore(dsn, deployment_namespace=namespace)
+        self.store = PostgresOrchestrationStore(
+            dsn, deployment_namespace=namespace, gate_authorize=self._gate_parent
+        )
 
     def __call__(
         self,
@@ -102,10 +105,8 @@ class PostgresOrchestrationFactory:
             if definition is None or definition.name != "system/orchestrator":
                 return None
             self.roles.current(c, snapshot, frozen=True)
-        if (
-            binding is None
-            or binding.agent_capability_ceiling.definition_snapshot_digest
-            != snapshot.snapshot_digest
+        if binding is None or not definition_binding_matches(
+            binding.agent_capability_ceiling.definition_snapshot_digest, snapshot
         ):
             refuse("orchestrator binding must name the real Task Definition snapshot")
         gate = getattr(model_gateway, "worker_budget", None)
@@ -197,51 +198,14 @@ class PostgresOrchestrationFactory:
             or context.expires_at is None
             or context.expires_at <= now
             or host_context_digest(context) != host.grant_digest
-            or current.agent_capability_ceiling.definition_snapshot_digest
-            != snapshot.snapshot_digest
+            or not definition_binding_matches(
+                current.agent_capability_ceiling.definition_snapshot_digest, snapshot
+            )
         ):
             refuse("current capability, grant expiry or Definition binding refuses orchestration")
-        row = c.execute(
-            "SELECT e.event_type,e.payload FROM session_events e JOIN agent_tasks t "
-            "ON t.deployment_namespace=e.deployment_namespace AND t.task_id=e.task_id "
-            "AND t.active_segment_id=e.session_id WHERE e.deployment_namespace=%s "
-            "AND e.task_id=%s AND e.event_type IN (%s,%s) "
-            "ORDER BY e.task_sequence DESC LIMIT 1",
-            (
-                self.namespace,
-                binding.task_id,
-                EventType.EXECUTION_AUTHORITY_RESOLVED.value,
-                EventType.EXECUTION_AUTHORITY_REVALIDATED.value,
-            ),
-        ).fetchone()
-        if row is None:
-            refuse("current durable execution authority is unavailable")
-        proof: ExecutionAuthoritySnapshot | None
-        if row["event_type"] == EventType.EXECUTION_AUTHORITY_RESOLVED.value:
-            proof = ExecutionAuthoritySnapshot.model_validate(row["payload"])
-        else:
-            revalidated = ExecutionAuthorityRevalidation.model_validate(row["payload"])
-            if revalidated.decision not in {
-                ExecutionAuthorityDecision.ALLOWED,
-                ExecutionAuthorityDecision.NARROWED,
-            }:
-                refuse("current execution authority denies orchestration")
-            proof = revalidated.effective_snapshot
-        if (
-            proof is None
-            or proof.resolution
-            not in {ExecutionAuthorityDecision.ALLOWED, ExecutionAuthorityDecision.NARROWED}
-            or proof.expires_at <= now
-            or proof.validated_at > now
-            or (attempt_number is not None and proof.attempt_number != attempt_number)
-            or proof.agent_definition_snapshot_digest != snapshot.snapshot_digest
-            or proof.authority_issuer != host.authority_issuer
-            or proof.source_authority_digest != binding.binding_digest
-            or proof.policy_effective_digest != binding.zebra_policy_digest
-            or proof.namespace_id != host.namespace_id
-            or "agent.execute" not in proof.granted_authorities
-        ):
-            refuse("durable execution authority is stale or belongs to another Task")
+        proof = current_execution_authority(
+            c, self.namespace, binding, snapshot, attempt_number, now
+        )
         if budget is not None:
             for amount, ceiling in (
                 (budget.model_tokens, proof.effective_limits.max_model_tokens),
@@ -251,6 +215,64 @@ class PostgresOrchestrationFactory:
                 if ceiling is not None and amount > ceiling:
                     refuse("current execution authority narrowed the approved budget")
         return current
+
+    def _gate_parent(self, c: Any, plan: Any) -> dict[str, Any] | None:
+        """Current published Definition/authority; called inside completion's work unit."""
+        row = c.execute(
+            "SELECT b.snapshot_json,e.payload FROM agent_tasks t "
+            "JOIN LATERAL (SELECT snapshot_json FROM task_binding_snapshots "
+            "WHERE deployment_namespace=t.deployment_namespace AND task_id=t.task_id "
+            "ORDER BY binding_revision DESC LIMIT 1) b ON true "
+            "JOIN LATERAL (SELECT payload FROM session_events "
+            "WHERE deployment_namespace=t.deployment_namespace AND task_id=t.task_id "
+            "AND event_type=%s ORDER BY task_sequence LIMIT 1) e ON true "
+            "WHERE t.deployment_namespace=%s AND t.task_id=%s",
+            (EventType.TASK_PREPARED.value, self.namespace, str(plan.parent_task_id)),
+        ).fetchone()
+        if row is None:
+            refuse("completion parent identity is unavailable")
+        binding = TaskBindingSnapshot.model_validate(row["snapshot_json"])
+        definition = parse_definition_snapshot(row["payload"].get("definition_snapshot"))
+        if not isinstance(definition, BundleDefinitionSnapshot):
+            refuse("completion parent Definition is unavailable")
+        if binding.binding_digest != plan.parent_binding_digest:
+            refuse("completion parent binding changed")
+        budget = self.budgets.inactive_authority(c, binding.task_id, binding.binding_digest)
+        if budget is None:
+            refuse("completion parent budget is unavailable")
+        journal = c.execute(
+            "SELECT last_attempt FROM worker_task_budgets "
+            "WHERE deployment_namespace=%s AND task_id=%s",
+            (self.namespace, binding.task_id),
+        ).fetchone()
+        self._current(
+            c,
+            binding,
+            definition,
+            "request",
+            budget=budget[0],
+            attempt_number=int(journal["last_attempt"]),
+        )
+        children = c.execute(
+            "SELECT payload,child_task_id FROM orchestration_admission_originals "
+            "WHERE deployment_namespace=%s AND run_id=%s AND plan_revision=%s ORDER BY node_key",
+            (self.namespace, plan.run_ref, plan.plan_revision),
+        ).fetchall()
+        for child in children:
+            if self.budgets.usage_reader(c, child["child_task_id"]) is None:
+                raise OrchestrationToolError(
+                    "gate_usage_unavailable", "confirmed child usage required"
+                )
+            prepared = next(
+                e for e in child["payload"]["events"] if e["event_type"] == "task_prepared"
+            )
+            child_definition = parse_definition_snapshot(
+                prepared["payload"].get("definition_snapshot")
+            )
+            if not isinstance(child_definition, BundleDefinitionSnapshot):
+                refuse("completion child Definition is unavailable")
+            self.roles.current(c, child_definition, frozen=True)
+        return published_completion_policy(definition)
 
     def settle_original(self, key: str, parent_task_id: Any) -> bool:
         """Observe and settle one durable original; never dispatch or need a live lease."""

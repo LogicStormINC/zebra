@@ -67,7 +67,7 @@ def test_unexpected_source_status_cannot_complete(running):
 def test_production_synthesis_requires_persisted_gate(running):
     store, _, snap = running
     runtime = OrchestrationRuntime(store, require_persisted_gate=True)
-    with pytest.raises(OrchestrationToolError, match="gate_evidence_unavailable"):
+    with pytest.raises(OrchestrationToolError, match="gate_authority_unavailable"):
         runtime.synthesize(snap.run_ref)
 
 

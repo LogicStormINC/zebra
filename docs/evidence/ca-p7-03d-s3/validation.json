@@ -1,0 +1,294 @@
+{
+  "task": "CA-P7-03D-S3",
+  "status": "Review; real object evidence followup, full model orchestration open",
+  "baseCommit": "5acee368a7284f55845f2121d88db17b80bc9c63",
+  "tests": {
+    "command": [
+      "/Users/lukeding/.codex/worktrees/ca-p5-main-integration/zebra-agent/.venv/bin/python",
+      "-m",
+      "pytest",
+      "-q",
+      "tests/agent_orchestration",
+      "tests/agent_tools/test_orchestration_tools.py",
+      "tests/agent_integrations/test_worker_budget_transport.py",
+      "tests/agent_integrations/test_openai_compatible.py",
+      "tests/agent_integrations/test_deepseek_responses.py",
+      "tests/agent_integrations/test_bundle_model.py",
+      "tests/worker/test_worker_budget.py",
+      "tests/worker/test_orchestration_composition.py",
+      "tests/worker/test_orchestration_factory.py",
+      "tests/worker/test_orchestration_wiring.py",
+      "tests/worker/test_cloud_memory_recovery.py",
+      "tests/worker/test_loop.py",
+      "tests/worker/test_bound_execution_authority.py",
+      "tests/agent_storage/test_postgres_worker_budget.py",
+      "tests/agent_storage/test_postgres_orchestration_completion.py",
+      "tests/agent_storage/test_postgres_orchestration_admission.py",
+      "tests/agent_storage/test_postgres_orchestration.py",
+      "tests/agent_storage/test_postgres_subagent_delegation.py",
+      "tests/agent_storage/test_postgres_force_stops.py",
+      "tests/agent_integrations/test_orchestration_projection_view.py",
+      "tests/architecture/test_orchestration_boundaries.py",
+      "tests/architecture/test_core_boundaries.py",
+      "tests/agent_storage/test_postgres_orchestration_gate.py",
+      "tests/agent_tools/test_file_read_tool.py",
+      "tests/agent_tools/test_output_projection.py",
+      "tests/agent_runtime/test_harness_runner.py",
+      "tests/worker/test_tool_output_artifacts_postgres.py",
+      "tests/agent_storage/test_postgres_orchestration_gate_s3.py"
+    ],
+    "exitCode": 0,
+    "testSha256Before": {
+      "tests/agent_storage/test_postgres_orchestration_gate.py": "e4d1641876577e7745e56065783e8b9e4756dd4aaa4e06ea2084aba51a1a267d",
+      "tests/agent_storage/test_postgres_orchestration_gate_s3.py": "63f99a5dece644919a412ea6bd2865b5f704dcc523f6a6b9ac0183f53a849822"
+    },
+    "testSourceUnchangedDuringRun": true,
+    "productionUnchangedFrom03D": true,
+    "realServices": [
+      "PostgreSQL17",
+      "versioned MinIO S3"
+    ],
+    "counterAndParentAdmission": "explicit local fixture; production counter absent and model execution strictly denied",
+    "result": "401 passed/0 failed/0 skipped in88.20s"
+  },
+  "static": {
+    "command": [
+      "/Users/lukeding/.codex/worktrees/ca-p5-main-integration/zebra-agent/.venv/bin/python",
+      "-m",
+      "ruff",
+      "check",
+      "tests/agent_storage/test_postgres_orchestration_gate.py",
+      "tests/agent_storage/test_postgres_orchestration_gate_s3.py"
+    ],
+    "exitCode": 0,
+    "output": "All checks passed!\n"
+  },
+  "production": {
+    "unchanged": true,
+    "frozenFiles": 1542,
+    "sha256ManifestDigest": "968208bbc9c2255ea66cac79fc3d4bc476f460b033e2363a2679428a40ba54de",
+    "previousReference": "Overdoze cd467b407e3af32a265b02bc0dcb11d8b8db87e8 docs/evidence/p7-03/restricted-public-chain.json; earlier13 restricted checks are historical, not rerun"
+  },
+  "boundary": [
+    "Actual native FileReadTool/projector/artifact coordinator/WorkerMutationAuthority/PG metadata/MinIO versioned put+head+exact-version read+readonly completion receipt and replay.",
+    "Parent admission, trusted counter and terminal driving remain local test fixtures; no normal model Worker positive proof.",
+    "No production source edit or counter installed; missingcounter stays strict. No deployment/production migration/main integration/full make gate/HA claim."
+  ],
+  "resources": {
+    "owner": "CA-P7-03D-S3",
+    "run": "ca-p7-03d-s3-20261102132550",
+    "limits": {
+      "postgres": {
+        "cpu": 1,
+        "memoryMiB": 768,
+        "tmpfsMiB": 512,
+        "walMiB": "64/32"
+      },
+      "minio": {
+        "cpu": 0.5,
+        "memoryMiB": 384,
+        "tmpfsMiB": 128,
+        "requestsMax": 8
+      }
+    },
+    "cleanup": {
+      "utc": "2026-11-02T13:33:31.346306+00:00",
+      "ownedContainerRemnants": 0,
+      "ownedTestSupervisorsRemaining": 0,
+      "activePgClientsBeforeDump": 0,
+      "dumpAllSha256": "3959ab540eeabbddb7283be0523319ecbedb5740c826fe75f38557f02b418e79",
+      "retainedObjectVersions": 24,
+      "retainedObjectBytes": 912,
+      "deleteMarkers": 0,
+      "objectsManifestSha256": "17a03c1252bcf91ed2b304e822edd830814bfecef5c2d899ec1cc3c53886af62",
+      "removed": [
+        {
+          "name": "ca-p7-03d-s3-20261102132550-pg",
+          "id": "e216354670d94b3030100c29ca588b5c47561aa02276aec23c2fae04b8f748e1",
+          "imageId": "sha256:ff80089083d7365046af7f03d949a2defa14e0b09e14bd5b8f08a242291be8b2"
+        },
+        {
+          "name": "ca-p7-03d-s3-20261102132550-minio",
+          "id": "75b55cbabb82b6a3b77d18f551f2219a73f8bf9e661f721a89505179b8374c3a",
+          "imageId": "sha256:6c83c74c8028019d82d3f20d65cc6645fd5694b82a25dc38733df5227ffa4e8d"
+        }
+      ],
+      "retained": "original PG receipts/unknown and remaining exact S3 versions retained privately; expected versions deleted by fault/prune tests remain represented by test assertions/metadata"
+    }
+  },
+  "objects": [
+    {
+      "key": "zebra/artifacts/v1/1b878bea09c0499ceaa1ee176381a88489f3c1e91145ece0dcfe14fff299a1d3/304802df-1dad-4e34-a31d-5c2919a42184",
+      "versionId": "f04e7fb6-d6fc-4ae9-8df6-d7deeb2b4af5",
+      "size": 20,
+      "sha256": "b1736aa28f093978016f8772025973e8b6a7afa3c8a8aa7f74830f18671b83e6",
+      "isLatest": true
+    },
+    {
+      "key": "zebra/artifacts/v1/3240dc494288d2338329e5ed1f9af7f401b95a39350b7435556db10ec3b7e8c5/e068fdac-5482-4899-9658-cdfe8a494d00",
+      "versionId": "fb7aafae-b50f-4541-a165-5654648df341",
+      "size": 23,
+      "sha256": "9e8a7b86de1d563d6c8245fde85f8e06726af199c90aa8e62a1b2e9818dc7616",
+      "isLatest": true
+    },
+    {
+      "key": "zebra/artifacts/v1/3da86cb7b16f3e9da9a5a8c86dc8041c84a239690a4466a2d928bda3d4dbf383/dd61a024-c3da-4d0e-ac35-695d8c9bb22e",
+      "versionId": "b5fe6b11-1a9a-453c-90d0-4be14304e1fc",
+      "size": 20,
+      "sha256": "3aeee3ddf61dd1a04e1072f29e63ca57450b7843761896f24155d95dc9a4cacd",
+      "isLatest": true
+    },
+    {
+      "key": "zebra/artifacts/v1/49ff702acd26499e3dc4a56e86a3f69c0830916bebaebee298711f6291c31ac5/c12bf81b-82dd-4b5d-8a2c-838f1744c0f3",
+      "versionId": "88bb87c5-8f45-4899-b4e8-5dc395c05b7a",
+      "size": 26,
+      "sha256": "0bdf390587cdc9509e1f4597883d87d0e5b72aa0ae2c72cebd06beeaaf73fc9b",
+      "isLatest": true
+    },
+    {
+      "key": "zebra/artifacts/v1/4f39c036401586745366a080bc36c5f164e32567a81cc352e96f9abafae05392/ae39ee60-9665-4531-bc25-fdf867b5b863",
+      "versionId": "707d8aa6-09a8-4f0e-9889-706678221851",
+      "size": 23,
+      "sha256": "9e8a7b86de1d563d6c8245fde85f8e06726af199c90aa8e62a1b2e9818dc7616",
+      "isLatest": true
+    },
+    {
+      "key": "zebra/artifacts/v1/4fab2cee4bd6fde64dda68acf5ffff4bdd533109c2cdb67bbcdb3aa579e8080a/246745f3-b8c4-5497-8ab5-94f6872387da",
+      "versionId": "0d3a7df8-724a-427a-9748-248be428e4de",
+      "size": 228,
+      "sha256": "e3c039347e2eb9575bf454d93d87361e0e08d082cd58dfd34c9f325c9ac60aa6",
+      "isLatest": true
+    },
+    {
+      "key": "zebra/artifacts/v1/4fab2cee4bd6fde64dda68acf5ffff4bdd533109c2cdb67bbcdb3aa579e8080a/396547f3-1209-41cf-a7e9-7fb0682caa79",
+      "versionId": "acfb423f-4ebf-4316-8fc8-0c7fe0eb808e",
+      "size": 22,
+      "sha256": "11e508c65e8d7951de9ef1011bbe6cef3d0c73181b85126f4452ff1f17c454e5",
+      "isLatest": true
+    },
+    {
+      "key": "zebra/artifacts/v1/4fab2cee4bd6fde64dda68acf5ffff4bdd533109c2cdb67bbcdb3aa579e8080a/48c4b56f-774e-43f2-852c-4af68f96177a",
+      "versionId": "6367b040-696c-43c7-a5bb-434cad876bab",
+      "size": 17,
+      "sha256": "f9375980fdca5224484f09fb7efc89f10c8a104c2e1d993d87a9b39d156015e3",
+      "isLatest": true
+    },
+    {
+      "key": "zebra/artifacts/v1/55e38578aaeeba33e5ac6a6a97a2761c88584d61c1dad46c95fa01d244c72593/b07c7f61-ce8c-4c18-a683-56b9876619ae",
+      "versionId": "2901d8d0-a53e-44b9-bf09-a11cecba5d29",
+      "size": 19,
+      "sha256": "8c7ea6508cf71f42c88f355a5f9a76a6cf97d2f33a7a61f349d9255e6212a85b",
+      "isLatest": true
+    },
+    {
+      "key": "zebra/artifacts/v1/57cc67e29f9f1a2901dc467559c98ca4ed877d626a1c17ac879f6fd2504a27bc/87c8970e-ea26-499c-ae58-5ba6800f83a2",
+      "versionId": "112bb9dc-61fd-49dc-b856-16911ebbbce4",
+      "size": 19,
+      "sha256": "8c7ea6508cf71f42c88f355a5f9a76a6cf97d2f33a7a61f349d9255e6212a85b",
+      "isLatest": true
+    },
+    {
+      "key": "zebra/artifacts/v1/5d37fb2cb45436408a17813dba9bf8750138ea7949ce7874845ce34e51d621dd/259815b0-aa94-4987-a385-f67e424908b8",
+      "versionId": "2db057e9-1fb4-4474-8594-341ff90d12b1",
+      "size": 26,
+      "sha256": "0bdf390587cdc9509e1f4597883d87d0e5b72aa0ae2c72cebd06beeaaf73fc9b",
+      "isLatest": true
+    },
+    {
+      "key": "zebra/artifacts/v1/761bab914dd34d81bc2449338479b02f8783fdfa7644550a4a1f5a2c66e1ce8f/88819b7a-d4a4-543c-9ff5-c91bfee5ba78",
+      "versionId": "9b4b862d-c337-4699-ae79-d506e435527b",
+      "size": 228,
+      "sha256": "1fde9dac2c2170d7bb201d07231909bbae38107362c02fcc0b0b52ae5669f2ce",
+      "isLatest": true
+    },
+    {
+      "key": "zebra/artifacts/v1/761bab914dd34d81bc2449338479b02f8783fdfa7644550a4a1f5a2c66e1ce8f/8a5683a2-5594-4057-b588-bcdb568e9719",
+      "versionId": "d08e5b42-dc90-4f90-9756-dcbf146927df",
+      "size": 17,
+      "sha256": "f9375980fdca5224484f09fb7efc89f10c8a104c2e1d993d87a9b39d156015e3",
+      "isLatest": true
+    },
+    {
+      "key": "zebra/artifacts/v1/761bab914dd34d81bc2449338479b02f8783fdfa7644550a4a1f5a2c66e1ce8f/e8c66ea5-2059-4aa4-b925-d07225f7169f",
+      "versionId": "3e941201-77a7-4670-931f-6beaa6636d34",
+      "size": 22,
+      "sha256": "11e508c65e8d7951de9ef1011bbe6cef3d0c73181b85126f4452ff1f17c454e5",
+      "isLatest": true
+    },
+    {
+      "key": "zebra/artifacts/v1/7919e390c606552389814c49c9fc6812715cb6b0e20e8247f5a85e280d65741e/d8f9e266-1474-4600-896e-ea4545db7c9b",
+      "versionId": "18520c29-a530-4914-ac5d-30c3b9042eb6",
+      "size": 28,
+      "sha256": "3312a78646099d0d276cf0ad29e4a65ac5fcb8ccbd750cac14fa85a707a50a58",
+      "isLatest": true
+    },
+    {
+      "key": "zebra/artifacts/v1/7ba69f39d6934dba41ad9dc3be7b00ed1d4888ba5eb3fabbaa0e61ea9c56e10f/8be8a341-95e7-4f5b-9c51-8367f22b66c3",
+      "versionId": "5992d10a-e782-47fb-9197-8bf53b9e8ff8",
+      "size": 15,
+      "sha256": "402dcb6fc277fe941732277a4d4355073757aa4370162fa45651bc5ec608d54b",
+      "isLatest": true
+    },
+    {
+      "key": "zebra/artifacts/v1/8875fd58ff704584e4e29ca9e028bbdd29fa03b1712f9c648a2e470711952b09/af137c84-afdb-4bbe-93d5-bc1b6cfd3916",
+      "versionId": "d1b7991e-d125-4f14-b524-df5911729a87",
+      "size": 18,
+      "sha256": "d6f3ee09d38f0920d55b48e68ac71b612c42bc03dd36e923699ccf34a8211369",
+      "isLatest": true
+    },
+    {
+      "key": "zebra/artifacts/v1/b35a0c42744efcc681440a02f107bf686f894ad9240f4a331f3120bc837ae957/7376c227-fd9b-43fd-8258-f840247cd238",
+      "versionId": "afa51f40-f707-4f0c-b2f0-15ff39b3c330",
+      "size": 20,
+      "sha256": "84daa580cd5356bfa972d45096ece1aceab624f875c4370df4e9705ecb6380ca",
+      "isLatest": true
+    },
+    {
+      "key": "zebra/artifacts/v1/bd4627480dd91697b353a1b9995ce8345b095933084957c93244a880183a097c/fc4665d2-76cf-4bc7-a886-3ae22a0ff1b1",
+      "versionId": "ff517eea-bd5b-4b0b-a163-56d1e0b8bb12",
+      "size": 28,
+      "sha256": "3312a78646099d0d276cf0ad29e4a65ac5fcb8ccbd750cac14fa85a707a50a58",
+      "isLatest": true
+    },
+    {
+      "key": "zebra/artifacts/v1/bf5a80d3dba5da2c2de0c3432188995faa786858866db59c90ff3b62bc408f99/65ecba28-b650-4d26-948c-85ed56afcddf",
+      "versionId": "5d99aceb-c1e1-4d8b-bdf6-f0ac92a7b49a",
+      "size": 15,
+      "sha256": "402dcb6fc277fe941732277a4d4355073757aa4370162fa45651bc5ec608d54b",
+      "isLatest": true
+    },
+    {
+      "key": "zebra/artifacts/v1/d5a2b863e54f5468e48059298b55d042229aa5bb53fa7e08a38e9ff0238eb91f/94ede225-0324-4f24-9c9b-5bbbfa1bd8f9",
+      "versionId": "871cce28-9a3f-4321-91ef-1c6b18a5fae3",
+      "size": 20,
+      "sha256": "84daa580cd5356bfa972d45096ece1aceab624f875c4370df4e9705ecb6380ca",
+      "isLatest": true
+    },
+    {
+      "key": "zebra/artifacts/v1/f17d5898fba4565cfcba5ecaeef00ed168f0bc211773f38792500a8e115e177a/1502c0c3-68ea-4979-a47f-97795e55cd37",
+      "versionId": "a620e056-18fe-47eb-878e-eb23b60a0094",
+      "size": 18,
+      "sha256": "d6f3ee09d38f0920d55b48e68ac71b612c42bc03dd36e923699ccf34a8211369",
+      "isLatest": true
+    },
+    {
+      "key": "zebra/artifacts/v1/f9fb4e3cafbc5f3b1c615f56b302265a41115684048c56d951e66d65270fe877/0f77bc08-2078-42f6-af10-0b1f62959466",
+      "versionId": "078dfd59-28f1-494d-b4bd-a9289507553a",
+      "size": 20,
+      "sha256": "3aeee3ddf61dd1a04e1072f29e63ca57450b7843761896f24155d95dc9a4cacd",
+      "isLatest": true
+    },
+    {
+      "key": "zebra/artifacts/v1/fd800073484a632da8e5aea36814d4058d63e48976f3032eda021f6c76ff043c/52a18011-4383-4143-85e3-92109c733e84",
+      "versionId": "6bf37e4f-cb97-434b-8567-4048cad9bf7f",
+      "size": 20,
+      "sha256": "b1736aa28f093978016f8772025973e8b6a7afa3c8a8aa7f74830f18671b83e6",
+      "isLatest": true
+    }
+  ],
+  "privateEvidence": "/Users/lukeding/.codex/worktrees/ca-p7-03d/zebra-agent/.artifacts/ca-p7-03d-s3",
+  "reviews": [
+    "Independent spec/security read-only review: no P1/P2; no reviewer service/test run",
+    "Independent quality read-only review: no P1/P2; no reviewer service/test run"
+  ]
+}

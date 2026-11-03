@@ -1,3 +1,25 @@
+## CA-P7-03D-S3 — 真实对象存储补证（2026-11-02 / Review）
+
+在03D候选5acee368上补真实MinIO版本化对象链，生产源码零改动，缺counter继续严格拒绝。
+实际FileReadTool→coordinator/WMA→PG finalized/verified metadata→原VersionId bytes/hash→
+只读gate完成/不可变原收据/replay通过；parent/counter/terminal仍局部fixture，非正常模型成功链。
+本轮独立401通过、零跳过，覆盖此前12项S3未配条件；变更Ruff/diff与两轮只读复核通过。
+原PG收据/unknown与24个剩余对象版本已保留后ownedPG/MinIO资源清零；无主线整合/部署/生产迁移。
+[新增证据](docs/evidence/ca-p7-03d-s3/validation.json)；下方388/12skip和13跨仓均为历史实跑，未覆盖或冒称本轮重跑。
+完整模型驱动child/synthesis仍因无可信counter未验证，P7不关闭。
+
+## CA-P7-03D — 持久只读完成gate及真实跨仓受限验收（2026-11-02 / Review）
+
+03C已整合Native56ae352a/Overdoze365e843并推主线；ERP历史及无关AGENTS字节保留，无部署。
+D新增v122/123 scoped不可变gate观察/政策冻结，可信发布evaluation_profile_ref指定只读政策，
+实际files.read/栅栏事件/关联产物和父子当前授权/unknown验证，STOP/expiry/保留期同SQL原子完成CAS，
+旧/未知policy或多Attempt/Segment拒绝。修复公开Bundle旧绑定消费、Schema type检查及usage已结算恢复漏扫。
+独立388通过/12 S3条件跳过，Ruff/mypy14通过；真实Go→NativeHTTPS/Task/正常Worker/PG/Redis跨仓13项通过，
+无counter注入、provider0请求；局部Gate对象服务仍内存fixture，不冒称S3或真实模型成功。
+原12库状态/收据unknown和Redis已保留后owned资源零残留；中途失败与配额修复如实记录。
+[正式边界](docs/CA-P7-03D_completion_gate.md) / [证据](docs/evidence/ca-p7-03d/validation.json)。
+候选待主线整合，默认严格拒绝缺counter；真实模型child/synthesis等跨仓正项仍未验证，P7未关闭。
+
 ## 2026-11-02 ERP 迁址认证复核与源码固化
 
 浏览器Origin与签名身份分离，原Task严格绑定保留；补齐旧Manifest共享常量、bootstrap链接与初始传输配置。
