@@ -20841,3 +20841,13 @@ node 1. The remaining 21 on node 1 returned HTTP 503 before any event ID.
 Private window adapter256-recheck-0999A6EF-8455-45F9-BCB3-7809C8F13BA1.
 Both attempts used the existing staging fixture. No full E1 pass; next
 correlate typed 503 reasons and node/database budgets before another run.
+
+CA-HA-03 256-SSE failure attribution: bounded problem-code capture
+reported node 0 128/128, node 1 110/128, and 18 node-1 503s all with
+host_grant_authorization_unavailable. The node-1 API logs report
+DatabaseCapacityExceeded in the authorization path. No admission
+POST was sent. Private evidence
+adapter256-reason-735DAC0B-5D9F-4E9F-B496-B694CD7396B0.
+Both Host GET authorization and existing stream reads use the
+bounded read lane. The exact rejecting gate (executor slot versus
+database connection permit) still needs discriminating telemetry.

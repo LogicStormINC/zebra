@@ -1,6 +1,8 @@
 """Hold signed observation streams through an E1 measurement window."""
 
 import asyncio
+import json
+import re
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
@@ -21,12 +23,32 @@ class Stream:
     status: int | None = None
     failure: str | None = None
     keepalives: int = 0
+    reason: str | None = None
 
 
 class StreamWindowError(RuntimeError):
     def __init__(self, message: str, rows: list[Stream]) -> None:
         super().__init__(message)
         self.rows = rows
+
+
+async def _problem_code(response: httpx.Response) -> str | None:
+    data = bytearray()
+    async for chunk in response.aiter_bytes():
+        if len(data) + len(chunk) > 4096:
+            return None
+        data.extend(chunk)
+    try:
+        body = json.loads(data)
+    except ValueError:
+        return None
+    if isinstance(body, dict):
+        error = body.get("error")
+        nested_code = error.get("code") if isinstance(error, dict) else error
+        for value in (body.get("reason"), body.get("code"), nested_code):
+            if isinstance(value, str) and re.fullmatch(r"[a-z][a-z0-9_]{1,63}", value):
+                return value
+    return None
 
 
 @asynccontextmanager
@@ -66,6 +88,8 @@ async def hold_streams(
                     "text/event-stream"
                 ):
                     row.failure = "invalid_stream_response"
+                    if response.headers.get("content-type", "").startswith("application/json"):
+                        row.reason = await _problem_code(response)
                     return
                 lines = response.aiter_lines()
                 async for line in lines:
