@@ -37367,3 +37367,14 @@ Dockerfile.delta and E1 evidence. Profile only explicit marker + exact owned
 namespace + isolated-child orig_argv; runtime defaults/authority/deadlines and
 standard Dockerfile unchanged. Freeze diagnostic image/config separately; its
 timings cannot be E1 SLO samples. Existing runtime abstractions remain unchanged.
+
+
+CA-HA-03 static validation hot-path claim (2026-11-03, Luke Ding/Codex,
+existing owned branch/worktree): before implementation add PG workspaces.py,
+agent-core/domain/runtime_bundle_catalog.py, E1 Dockerfile.delta and one
+stdlib runnable under tests/compose/cloud_ha_e1/, focused evidence/worklog.
+Delete the PG row's redundant Definition parse; retain WorkspaceProjection's
+same typed field validation. Memoize only immutable static catalog digests
+and component identities. No cache of Definition, tenant, grant, lease or
+mutable schema; keep fresh returned catalog/pins and existing golden bytes.
+Native11 normal samples must explicitly disable the diagnostic marker.

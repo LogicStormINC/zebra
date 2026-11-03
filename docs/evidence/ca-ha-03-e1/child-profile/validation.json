@@ -9,7 +9,127 @@
   "independent_review": "no Important; exact-launcher followup independently passed",
   "profile_data": "private; no SLO samples",
   "exit_boundary": "atexit missing/empty output under SIGKILL/os._exit/forced stop is not an exit receipt",
-  "diagnostic_images_and_native_approval": "not prepared or promoted yet",
-  "live_runtime": "51f2ddb8 / Native9 remains unchanged",
-  "full_E1_capacity": "not_run"
+  "diagnostic_images_and_native_approval": {
+    "definition": "27792887-60b3-413e-8dae-d3f93244d9e6",
+    "published": true,
+    "both_local_workers_live": true,
+    "explicit_profile_marker": 1,
+    "no_old_new_overlap": true
+  },
+  "live_runtime": "2116b6be / Native10 diagnostic marker1; both Workers restored; do not use for SLO samples",
+  "full_E1_capacity": "not_run",
+  "candidate_source": "2116b6be25acbbef92e360d9cc90a7f008422b5d",
+  "common_manifest": "sha256:732b150ac680345bf51153abd290be5931e1041b7c3adbfe14da38041ec68491",
+  "platform_checks": {
+    "vm": {
+      "image": "sha256:e13900a858fb92a91726eaa8cb78134babccadbdc1b3c8eb9a19a22e3b391cc2",
+      "architecture": "arm64",
+      "native_real_startup_and_bytecode_checks": "passed"
+    },
+    "server": {
+      "image": "sha256:576e2ae553bd62dae6da91a0a183f6a2b244f51b7d4a01c068cceb84ea0bc1d2",
+      "architecture": "amd64",
+      "native_real_startup_and_bytecode_checks": "passed"
+    }
+  },
+  "runtime_files_per_arch": 2141,
+  "profile_cases": {
+    "orb2": {
+      "task": "2c262cdb-581c-4597-ac66-97b710d64bae",
+      "actual_owner": "ha-e1-orb2",
+      "profile_sha256": "c3f99efcce05abd45fbbcb9b803a60f2d499299b888f0f90de0b71ba0fbfac0e",
+      "profile_size": 1717504,
+      "total_profile_wall_seconds": 5.562648044000009,
+      "calls": {
+        "parse_definition_snapshot": [
+          {
+            "file": "bundle_definition.py",
+            "calls": 53,
+            "cumulative_wall_seconds": 2.148866
+          }
+        ],
+        "closure": [
+          {
+            "file": "runtime_bundle.py",
+            "calls": 54,
+            "cumulative_wall_seconds": 1.489374
+          }
+        ],
+        "_descriptor": [
+          {
+            "file": "runtime_bundle_catalog.py",
+            "calls": 2160,
+            "cumulative_wall_seconds": 1.239775
+          }
+        ],
+        "runtime_bundle_catalog_digest": [
+          {
+            "file": "runtime_bundle_catalog.py",
+            "calls": 54,
+            "cumulative_wall_seconds": 0.850068
+          }
+        ],
+        "builtin_component_pin": [
+          {
+            "file": "runtime_bundle_catalog.py",
+            "calls": 1080,
+            "cumulative_wall_seconds": 0.629344
+          }
+        ]
+      }
+    },
+    "vm": {
+      "task": "3ef4e618-fde6-4ad5-9ab4-48d702804ca1",
+      "actual_owner": "ha-e1-vm",
+      "profile_sha256": "8b7826064d030fa6fca2eac705f8f1dcf723d512e51495f1b127c17ad93ce779",
+      "profile_size": 1722493,
+      "total_profile_wall_seconds": 4.884591277999982,
+      "calls": {
+        "parse_definition_snapshot": [
+          {
+            "file": "bundle_definition.py",
+            "calls": 53,
+            "cumulative_wall_seconds": 2.177877
+          }
+        ],
+        "closure": [
+          {
+            "file": "runtime_bundle.py",
+            "calls": 54,
+            "cumulative_wall_seconds": 1.508144
+          }
+        ],
+        "_descriptor": [
+          {
+            "file": "runtime_bundle_catalog.py",
+            "calls": 2160,
+            "cumulative_wall_seconds": 1.255332
+          }
+        ],
+        "runtime_bundle_catalog_digest": [
+          {
+            "file": "runtime_bundle_catalog.py",
+            "calls": 54,
+            "cumulative_wall_seconds": 0.862622
+          }
+        ],
+        "builtin_component_pin": [
+          {
+            "file": "runtime_bundle_catalog.py",
+            "calls": 1080,
+            "cumulative_wall_seconds": 0.636233
+          }
+        ]
+      }
+    }
+  },
+  "old34_facts_preserved_after_new2": true,
+  "quiescence": {
+    "active_leases": 0,
+    "pending_commands": 0,
+    "historical_unknown_models": 1,
+    "each_new_case_real_exit_pair": 1,
+    "new_OCI": 0
+  },
+  "profile_interpretation": "Cumulative timings overlap and include profiler/wait overhead. Two single synthetic Tasks, not capacity samples. PG row decode validates the same Definition twice; static catalog schema descriptors regenerate on each closure check."
 }

@@ -18996,3 +18996,17 @@ stats; argv-spoof guard red/green retained. Independent review and final make
 check/Ruff passed. Missing/empty stats never attest exit; actual ACK remains
 unchanged. Standard Dockerfile/runtime paths untouched. Diagnostic frozen images,
 Native10 and one Task/node with private export remain next; Native9 still live.
+
+
+## 2026-11-03 — Native10 child diagnostics and validation hot path
+
+Native10 separately frozen ARM/AMD source2141 and OCI index732b150a, two
+native startup/bytecode gates, old34 hash preservation, published and both
+logical Workers healthy. Explicit profiler mode created no parent/check
+profiles. One new short Task on each owner, one POST/settled model/real exit
+pair each, no OCI. Both0600 pstats exported, Workers unpaused, old34 facts
+unchanged, leases/pending0 and original unknown1. Profile times overlap and
+are diagnostic only. Both traces show53 snapshot parses and2160 descriptor
+rebuilds. PostgreSQL row decode duplicates the existing typed-field parse;
+closure repeatedly regenerates static catalog schemas. Claim narrowly scoped
+fix before editing; Native10 still diagnostic marker1. Full E1 remains open.
