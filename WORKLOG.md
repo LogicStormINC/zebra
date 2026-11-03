@@ -19699,3 +19699,15 @@ Both API readiness probes passed and temporary Worker overlay restored.
 Next bind the fault to the exact input advance call under test and
 require marker evidence. Private artifacts outage-input-lock19.json
 and input-lock-zebra*.log.
+
+CA-HA-03 Native19 real input retry during API outage: Task
+72c147f8-2ef0-4a12-af66-77003f413e99 crossed the first input page boundary
+under a separately held PostgreSQL advisory lock. Captured exactly one
+LockNotAvailable marker for the exact Session, released holder on unwind,
+then the candidate completed. One POST, one committed creation receipt
+recovered through the LB, one accepted command and one settled model;
+completion verified while primary API was still stopped, after 7.049s.
+This drill targets the first page, using the same shared retry as refresh.
+Shell assertion used rg -h in error; corrected read of the retained log
+confirmed the marker. Both APIs ready and Worker overlays removed.
+Evidence outage-input-lock-exact19.json and input-lock-exact-zebra*.log.
