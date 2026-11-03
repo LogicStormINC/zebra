@@ -20472,3 +20472,15 @@ temporary init postmaster; corrected TCP readiness and label cleanup.
 All disposable resources gone. This proves a storage primitive with
 manual fencing, not automatic failover or application receipt RPO.
 Evidence pg-sync-two-hosts.json.
+
+CA-HA-03 F-04 native receipt-store cross-host promotion. Disposable
+PG17.5 primary/standby with synchronous remote_apply and real
+migrations. Native PostgresIdempotencyStore saved one 201 admission
+result. Standby contained exactly one row before old-primary fencing.
+After promotion, a fresh store process with the identical multi-host
+read-write DSN performed only GET and recovered original key, status,
+request hash and body. Promotion through readback 6314 ms (includes
+fresh container and connect timeout). No resubmission. Temporary
+containers and tunnel removed. This tests the real receipt store,
+while API-pool reconnection, automatic fencing and live workload
+remain unqualified. Evidence pg-sync-receipt-two-hosts.json.
