@@ -2,6 +2,7 @@
 
 import importlib
 import json
+import logging
 import os
 import sys
 import time
@@ -23,9 +24,11 @@ from zebra_agent_worker.execution_recovery import execute_claimed_with_stale_ret
 from zebra_agent_worker.loop import build_worker_loop_service
 from zebra_agent_worker.session_process import settings_digest
 
+logger = logging.getLogger(__name__)
+
 
 def main() -> None:
-    started = time.monotonic()
+    started = time.monotonic_ns()
     execute = len(sys.argv) > 1 and sys.argv[1] == "--execute"
     if sys.argv[1:] != ["--check"] and not execute:
         from agent_runtime.executor_supervisor import run
@@ -74,17 +77,29 @@ def main() -> None:
                     {
                         "cloud_composition_ready": True,
                         "run_executed": False,
-                        "composition_ms": round((time.monotonic() - started) * 1000, 1),
+                        "composition_ms": round((time.monotonic_ns() - started) / 1_000_000, 1),
                     }
                 )
             )
             return
+        composed = time.monotonic_ns()
         lease = WorkerLease.model_validate(request["lease"])
         # Parent alone owns heartbeat/release; avoid checkpoint races between processes.
         claimed = ClaimedSession(
             lease=lease,
             recovery=recover_initial_session(service._recovery_service, lease),
         )
+
+        launch = os.environ.get("ZEBRA_SESSION_PROCESS_LAUNCH_NS", "")
+        if launch.isascii() and launch.isdecimal() and len(launch) <= 20:
+            logger.info(
+                "worker_executor_recovered session_id=%s fence=%s "
+                "launch_to_main_ms=%s composition_ms=%s recovery_ms=%s",
+                lease.session_id, lease.fence.fencing_token,
+                (started - int(launch)) // 1_000_000,
+                (composed - started) // 1_000_000,
+                (time.monotonic_ns() - composed) // 1_000_000,
+            )
 
         def require_owned() -> None:
             current = service._claim_service._lease_store.get(lease.session_id)

@@ -37577,3 +37577,6 @@ Reuse the existing strict Coverage and command admission PostgreSQL tests.
 
 CA-HA-03 E1 execution preparation timing follow-up (Luke Ding/Codex, existing
 branch/worktree): own diagnostic phase boundaries in Worker execution.py.
+
+CA-HA-03 E1 isolated executor timing follow-up (Luke Ding/Codex, existing
+branch/worktree): own parent/child timing in session_process{,_child}.py.

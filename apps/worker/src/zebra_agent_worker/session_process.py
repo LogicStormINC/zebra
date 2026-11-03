@@ -2,12 +2,14 @@
 
 import hashlib
 import json
+import logging
 import os
 import subprocess
 import sys
 import tempfile
 from dataclasses import asdict
 from pathlib import Path
+from time import monotonic_ns
 from typing import Any
 
 from agent_runtime import executor_supervisor
@@ -18,6 +20,8 @@ from pydantic import TypeAdapter
 from zebra_agent_worker.execution_errors import WorkerExecutorInterrupted
 from zebra_agent_worker.execution_events import ExecutionInterrupted
 from zebra_agent_worker.execution_finalization import ExecutedSession
+
+logger = logging.getLogger(__name__)
 
 
 def process_factory(settings: Any) -> str | None:
@@ -82,7 +86,9 @@ def execute_isolated(service: Any, request: dict[str, Any]) -> ExecutedSession:
             "fence": lease.fence.model_dump(mode="json"),
         }
         source.write_text(json.dumps(request))
+        registration_started = monotonic_ns()
         register_executor(store.database, sid, lease.fence)
+        launch_started = monotonic_ns()
         try:
             process = subprocess.Popen(
                 [
@@ -95,12 +101,20 @@ def execute_isolated(service: Any, request: dict[str, Any]) -> ExecutedSession:
                 env={
                     **os.environ,
                     "ZEBRA_SESSION_PROCESS_CHILD": "1",
+                    "ZEBRA_SESSION_PROCESS_LAUNCH_NS": str(launch_started),
                     "PYTHONPATH": os.pathsep.join(sys.path),
                 },
             )
         except OSError as error:
             store.acknowledge_executor(sid, lease.fence)
             raise WorkerExecutorInterrupted("isolated executor launch failed") from error
+
+        logger.info(
+            "worker_executor_launched session_id=%s fence=%s registration_ms=%s spawn_ms=%s",
+            sid, lease.fence.fencing_token,
+            (launch_started - registration_started) // 1_000_000,
+            (monotonic_ns() - launch_started) // 1_000_000,
+        )
 
         def acknowledge() -> None:
             receipt = json.loads(result.with_suffix(".exit.json").read_text())
