@@ -526,3 +526,72 @@ def test_request_validation_rejects_mismatched_binding() -> None:
             workspace=request.workspace,
             binding=foreign,
         ).validate()
+
+
+def test_provider_usage_groups_verified_subject_and_preserves_unknown(namespace, postgres_dsn):
+    from dataclasses import replace
+    from datetime import timedelta
+
+    from agent_core.domain.events import EventActor, EventType, SessionEvent
+    from agent_storage.postgres.database import PostgresDatabase
+    from agent_storage.postgres.events import PostgresEventStore
+    from agent_storage.postgres.provider_usage import read_provider_usage
+
+    from tests.agent_core.test_bundle_definition import bundle_version
+
+    version = bundle_version()
+    assembly = version.runtime_assembly
+    scope = assembly.bundle.manifest.scope
+    now = datetime.now(UTC)
+    store = PostgresEventStore(postgres_dsn, deployment_namespace=namespace)
+    admission = PostgresTaskAdmissionTransaction(postgres_dsn, deployment_namespace=namespace)
+    for subject, tokens in (("user-a", 0), ("user-b", None)):
+        request = _request()
+        session = request.session
+        binding = _binding(str(session.session_id))
+        binding = binding.model_copy(
+            update={
+                "host_capability": binding.host_capability.model_copy(
+                    update={"verified_subject_ref": subject}
+                ),
+            }
+        )
+        admission.admit(replace(request, binding=binding))
+        payload = {
+            "attempt_id": str(uuid4()),
+            "definition_id": str(version.definition_id),
+            "bundle_scope": scope.model_dump(mode="json"),
+            "task_id": binding.task_id,
+            "binding_revision": 1,
+            "model_pin": assembly.provider_profile.pin.model_dump(mode="json"),
+        }
+        for offset, phase in enumerate(("started", "finished"), start=1):
+            if tokens is None and phase == "finished":
+                break
+            store.append(
+                SessionEvent.create(
+                    session_id=session.session_id,
+                    sequence=session.current_sequence + offset,
+                    event_type=EventType.PROVIDER_USAGE_OBSERVED,
+                    actor=EventActor.HARNESS,
+                    payload={
+                        **payload,
+                        "phase": phase,
+                        "usage": {"total_tokens": tokens} if phase == "finished" else None,
+                    },
+                    created_at=now,
+                )
+            )
+    result = read_provider_usage(
+        PostgresDatabase(postgres_dsn, deployment_namespace=namespace),
+        scope=scope,
+        definition_id=version.definition_id,
+        start=now - timedelta(seconds=1),
+        end=now + timedelta(seconds=1),
+    )
+    assert result["total"]["attempt_count"] == 2
+    assert result["total"]["tokens"]["total_tokens"] is None
+    assert [(u["identity"]["subject"], u["tokens"]["total_tokens"]) for u in result["users"]] == [
+        ("user-a", 0),
+        ("user-b", None),
+    ]
