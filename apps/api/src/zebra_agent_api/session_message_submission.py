@@ -7,6 +7,7 @@ from agent_core.application import (
     project_turns,
 )
 from agent_core.domain.events import SessionEvent
+from agent_core.domain.runtime_bundle_types import ArtifactPin
 from agent_core.domain.sessions import Session
 from agent_core.ports import EventStorePort
 
@@ -21,6 +22,7 @@ def build_session_message_event(
     clarification_id: str | None,
     model_profile: str | None = None,
     reasoning_effort: str | None = None,
+    selected_model_pin: ArtifactPin | None = None,
 ) -> SessionEvent:
     """Build the next durable message Event with ADR-026 Turn identity."""
 
@@ -35,6 +37,7 @@ def build_session_message_event(
             open_turn_exists=current_turn(events) is not None,
             model_profile=model_profile,
             reasoning_effort=reasoning_effort,
+            selected_model_pin=selected_model_pin,
         ),
     )
 

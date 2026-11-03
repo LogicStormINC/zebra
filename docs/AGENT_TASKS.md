@@ -37357,3 +37357,5 @@ CA-P7-MODEL-01 session selection resolver owns the published assembly lookup for
 CA-P7-MODEL-01 gateway binding owns resolving an exact published model pin at the provider adapter.
 
 CA-P7-MODEL-01 worker selection recovery owns the immutable message pin and provider gateway handoff.
+
+CA-P7-MODEL-01 message binding owns persisting an already resolved model pin in the normal message event builder.
