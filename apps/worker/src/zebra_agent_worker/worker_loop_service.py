@@ -18,7 +18,6 @@ from agent_storage import (
 )
 from agent_storage.postgres.connection_pool import postgres_context
 
-from zebra_agent_worker.ag_ui_projection_work import AgUiProjectionWorkService
 from zebra_agent_worker.child_wakeup import ChildCompletionWakeupService
 from zebra_agent_worker.cloud_memory_recovery import (
     CloudMemoryFinalizationRecovery,
@@ -43,6 +42,7 @@ from zebra_agent_worker.worker_polling import (
 )
 
 if TYPE_CHECKING:
+    from zebra_agent_worker.ag_ui_projection_work import AgUiProjectionWorkService
     from zebra_agent_worker.runtime_gates import RuntimeGateWorker
 
 

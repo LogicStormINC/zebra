@@ -1,16 +1,20 @@
 """Explicit process-owned projection composition, shared standard profiles default off."""
 
+from __future__ import annotations
+
+import os
 from collections.abc import Callable
+from typing import TYPE_CHECKING
 
 from agent_core.ports.task_projection_checkpoints import ProjectionCheckpointHead
 from agent_core.ports.task_projection_work import TaskProjectionWorkPort
-from agent_integrations.ag_ui.checkpoint_consumer import AgUiCheckpointConsumer
-from agent_integrations.ag_ui.profiles import AgUiProjectionProfile
-from agent_integrations.ag_ui.standard_profiles import standard_profiles
 from agent_storage import ControlPlaneStores, PostgresControlPlaneStores
 from zebra_agent_config import ZebraAgentSettings
 
-from zebra_agent_worker.ag_ui_projection_work import AgUiProjectionWorkService
+if TYPE_CHECKING:
+    from agent_integrations.ag_ui.profiles import AgUiProjectionProfile
+
+    from zebra_agent_worker.ag_ui_projection_work import AgUiProjectionWorkService
 
 
 def configure_agui_projection_work(
@@ -19,10 +23,18 @@ def configure_agui_projection_work(
     namespace: str | None,
     checkpoint_committed: Callable[[ProjectionCheckpointHead], object] | None,
 ) -> AgUiProjectionWorkService | None:
+    # The isolated child executes one fenced attempt; only the parent drains projection work.
+    if os.environ.get("ZEBRA_SESSION_PROCESS_CHILD") == "1":
+        return None
     if stores.projection_work is None:
         if settings.stream.agui_profiles_enabled:
             raise ValueError("AG-UI profile composition requires projection work stores")
         return None
+
+    from agent_integrations.ag_ui.checkpoint_consumer import AgUiCheckpointConsumer
+    from agent_integrations.ag_ui.standard_profiles import standard_profiles
+
+    from zebra_agent_worker.ag_ui_projection_work import AgUiProjectionWorkService
 
     def consumer(
         work: TaskProjectionWorkPort, profile: AgUiProjectionProfile | None = None
