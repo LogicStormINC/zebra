@@ -20439,3 +20439,16 @@ mismatched objects leave admission failed. Shared path covers initial
 and follow-up inputs. Five ingress tests passed, including verified
 and absent original outcomes. Next run the real S3/PG publication
 boundary against the isolated candidate.
+
+CA-HA-03 cloud attachment unknown PUT gate passed using b8bd4471
+source in a one-shot exec and isolated real MinIO/PostgreSQL. New
+random namespace, serial external reserve. Three synthetic objects
+received exactly three PUTs; successful replies for initial and
+follow-up inputs withheld at adapter boundary. Original versions
+recovered and exact bytes read back. Partial batch rolled back,
+foreign Session read denied, stale CAS refused without duplication,
+three finalized records with explicit provenance and zero model calls.
+First attempt refused before mutation due to missing process budget
+composition; used one declared external operator connection on retry.
+Running API image unchanged; actual HTTP entry point remains untested.
+Evidence cloud-input-receipt-e1.json.
