@@ -296,6 +296,39 @@ def test_text_message_commits_event_and_projection_together(namespace, postgres_
     assert (
         load_task_binding(postgres_dsn, deployment_namespace=namespace, task_id=task_id) == binding
     )
+    from agent_core.contracts.session_commands import (
+        MessageReleaseBinding,
+        SessionCommand,
+        SessionCommandKind,
+    )
+    from agent_core.domain.events import EventActor, EventType, SessionEvent
+    from agent_storage.postgres.events import PostgresEventStore
+
+    command = SessionCommand(
+        session_id=session.session_id,
+        kind=SessionCommandKind.MESSAGE,
+        expected_revision=session.current_sequence,
+        idempotency_key="switch-release",
+        payload={"content": "follow up"},
+    )
+    accepted = SessionEvent.create(
+        session_id=session.session_id,
+        sequence=event.sequence,
+        event_type=EventType.SESSION_COMMAND_ACCEPTED,
+        actor=EventActor.USER,
+        payload=command.event_payload(
+            message_release_binding=MessageReleaseBinding(
+                previous_snapshot_digest=binding.agent_capability_ceiling.definition_snapshot_digest,
+                snapshot=snapshot,
+                binding=switched,
+            ),
+        ),
+        idempotency_key=command.idempotency_key,
+    )
+    event_store = PostgresEventStore(postgres_dsn, deployment_namespace=namespace)
+    with pytest.raises(SessionEventSequenceConflictError, match="effective release changed"):
+        event_store.append(accepted)
+    assert event_store.list_for_session(session.session_id)[-1].sequence == session.current_sequence
     updated = append_input_message(
         postgres_dsn, namespace, session, (event,), (), release_binding=switched
     )
