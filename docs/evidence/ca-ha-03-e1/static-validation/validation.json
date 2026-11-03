@@ -50,6 +50,27 @@
   "independent_review": "no Critical/Important; separate focused 41 passed",
   "dynamic_authority_changed": false,
   "snapshot_or_mutable_schema_cached": false,
-  "native11": "not yet built or promoted; current Native10 is diagnostic mode only",
+  "native11": {
+    "source": "6cd0162e051f5df6b09f2ab995de2c4f603e3f0c",
+    "arm64_platform_manifest": "sha256:e247e5f01a6d0b36482577aa6b9271d1b6d40ccedcdabac6e8c62f2027982994",
+    "multiarch_index": false,
+    "amd64": "build exit0, SSH timed out before digest/source qualification",
+    "definition": "b41e5b11-0879-455f-b691-6d3ac61efb88",
+    "marker": 0,
+    "old36_facts_unchanged_after_new10": true,
+    "fresh_short_seconds": 5.021,
+    "fresh_pwd_seconds": 15.92,
+    "new10_real_exit_acks": true,
+    "exact_pwd_OCI_removed": true,
+    "new_pstats_files": 0,
+    "burst8": {
+      "accepted_and_completed": 8,
+      "min_seconds": 7.495,
+      "median_seconds": 12.215,
+      "max_seconds": 16.309,
+      "prior_native9_median_seconds": 9.7305,
+      "overall_concurrency_gain_not_proved": true
+    }
+  },
   "fixed_E1": "not run"
 }

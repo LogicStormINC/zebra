@@ -105,7 +105,8 @@
     "max_seconds": 13.401,
     "models_each_settled": 1,
     "OCI": 0,
-    "scope": "diagnostic burst; not fixed E1 historical/SSE/capacity acceptance"
+    "scope": "diagnostic burst; not fixed E1 historical/SSE/capacity acceptance",
+    "operator_attribution": "Raw summary carried previous labels. All eight original request Definition IDs match Native9 publication and exact live source51/image; separate attribution record retained without modifying raw receipts."
   },
   "quiescence": {
     "all_new_tasks_real_exact_exit_pairs": true,

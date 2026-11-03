@@ -19022,3 +19022,22 @@ identical projection SHA. Focused217/make check/Ruff and independent review
 passed. Real PG initial teardown FK errors retained; one fixture-only missing
 gate-row cleanup restored14 passed, with no old QA sweep. Source candidate
 ready for frozen images and Native11 marker0; Native10 still diagnostic.
+
+
+## 2026-11-03 — normal Native11 and fixed-rate diagnostic failure
+
+Native11 source6cd0162e ARM platform-only after AMD build exit0/SSH timeout;
+verified local source2141, marker0, cold no overlap and old36 hashes preserved.
+New short5.021s, pwd15.92s, exact cleanup/ACK; burst8 all completed but
+median12.215/max16.309 worse than Native9, no overall capacity gain claimed.
+Raw Native9 pilot copied labels corrected by separate original Definition-ID
+attribution. No Task receipts edited. Native11 left healthy in normal mode.
+
+5Hz diagnostic stopped at tick6.4s at32 reserved (17 known active/15 in flight),
+32 POSTs once/201,19 admissions above2s (max5.7775). Final Decimal serializer
+failure retained, original-only readonly PG:30 complete, one suspended with
+LockNotAvailable and unknown model, one answer_committed+exit ACK still running
+without active lease/pending work. Both originals preserved. 14 real PG lock
+timeouts span hint settlement, stream append and lease/advisory locks. Worker
+CPU throttles0/1 through responses; insufficient evidence to blame CPU cap.
+Next isolate the hint batch lock hold before changing it. No full E1 claim.

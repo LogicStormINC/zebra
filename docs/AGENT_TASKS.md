@@ -37384,3 +37384,16 @@ CA-HA-03 static validation test ownership addendum (2026-11-03): include
 the runtime_namespace_gates row before its control_plane_epochs parent. The
 real PG run exposed the existing FK dependency during teardown. Keep all
 assertions and previously failed QA receipts; do not sweep old namespaces.
+
+
+CA-HA-03 stream hint contention claim (2026-11-03, Luke Ding/Codex,
+existing owned branch/worktree): before implementation include
+`packages/agent-storage/src/agent_storage/postgres/stream_hint_relay.py`,
+`tests/agent_storage/test_stream_hint_relay_native.py`, E1 Dockerfile.delta,
+focused evidence/worklog. Native11 5Hz diagnostic exposed shared stream
+row lock timeouts. Verify real PG writer contention while the current hint
+claim holds a batch; use set-based bounded claim and skip busy hint settlement.
+Keep exact owner/fence/frontier/DB-clock expiry, ordered bounded selection,
+durable writes, deadlines, receipts, and existing unknowns unchanged. No
+migration, new scheduler or original Task replay. This is one evidenced
+contention path, not a proof of every admission/heartbeat failure's cause.
