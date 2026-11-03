@@ -19,6 +19,8 @@ from uuid import UUID, uuid4
 import jwt
 import psycopg
 import pytest
+from agent_core.application.session_projection import rebuild_session
+from agent_core.application.workspace_projection import rebuild_workspace
 from agent_core.domain.artifact_objects import (
     ArtifactObjectExpectation,
     ArtifactObjectPutRequest,
@@ -457,7 +459,13 @@ def native_media(native_media_dsn, tmp_path, native_objects):
                 "metadata": {"artifact_uri": artifact_uri},
             },
         )
-        api.stores.events.append(event)
+        history = [*api.stores.events.list_for_session(session_id), event]
+        api.stores.worker_projection_transaction.commit_worker_event(
+            event,
+            rebuild_session(history),
+            rebuild_workspace(history),
+            authority=authority,
+        )
         metadata.finalize_for_worker(
             ArtifactFinalizeRequest(
                 artifact_id=reservation.artifact_id,

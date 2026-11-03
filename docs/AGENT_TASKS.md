@@ -37512,3 +37512,6 @@ CA-HA-03 Worker projection addendum: own event-kind dispatch guards in
 model_call_index.py and tool_run_index.py for native and local parity.
 The Worker projection addendum also owns the routing regression in
 tests/worker/test_model_call_index.py.
+
+CA-HA-03 artifact HTTP fault fixture addendum: own the native media
+fixture setup in tests/api/test_artifact_download_deadline.py.

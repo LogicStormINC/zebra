@@ -20422,3 +20422,12 @@ canonical stream/projection prerequisites before touching policy or
 interpreting this as a commit fault. This does not verify API-level
 object publication response loss. Private logs artifact-audit-regression.log
 and artifact-download-regression.log.
+
+CA-HA-03 repaired native HTTP artifact fixture by committing the
+tool Event and its Session/Workspace projections through the normal
+Worker transaction. Raw append previously left an incomplete
+canonical Task and stopped at 409 before reaching the audit proxy.
+All 46 HTTP artifact and PostgreSQL lifecycle regressions passed
+on disposable PostgreSQL 17, including both real audit COMMIT reply
+loss variants with one durable row and no replay. Production code
+unchanged. This is delivery audit, separate from object publication.
