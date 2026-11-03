@@ -184,6 +184,7 @@
 
 # CA-HA-03 — 资源预算、退避与技术namespace隔离
 - Status: In Progress（2026-11-02）；用户“继续”授权后从Ready领取；人类Owner Luke Ding，执行Codex；branch codex/ca-ha-03-budgets；独立worktree ca-ha-03-budgets/zebra-agent；基线56ae352a5。
+- E1 executor incarnation storage follow-up（实施前登记）：沿用 CA-HA-03 的 Owner、branch 与 worktree。Owned paths：既有 force_stop_executors.py、tests/agent_storage/test_postgres_force_stop_recovery.py 与 WORKLOG.md。独立记录实例身份，保留旧启动/退出回执兼容性。可信节点观察器及部署接线另验。
 - E1 Worker-loss supervisor follow-up（实施前登记）：沿用 CA-HA-03 的 Owner、branch 与 worktree。新增 Owned paths：packages/agent-runtime/src/agent_runtime/executor_supervisor.py、tests/worker/test_session_process.py。保留执行子进程的 SIGKILL 父进程保护，仅让监督进程在 Worker 丢失时进入现有清理路径。持久回执对账和监督进程直接 SIGKILL 独立验收。
 - Baseline test-only scope (before edit): 干净56ae352a5已复现test_cloud_factory_composes_bounded_scalar_read的forced缺列；补齐该Mock已存在的SQL列，不更改生产停止判定。
 - Current slice 03A（Review：候选已验收，未生产部署）: 修复Cloud新旧Worker空/blocked/error轮询空转，复用独立控制lane；完成可运行回归和资源边界核算。03B预算装配候选已完成，完整E1/隔离容量验收仍未完成，不能由03A代替。

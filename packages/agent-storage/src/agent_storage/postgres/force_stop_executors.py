@@ -66,12 +66,42 @@ def executor_key(sid: Any, fence: Any) -> str:
     return f"{sid}:{sha256(raw).hexdigest()}"
 
 
-def register_executor(database: PostgresDatabase, sid: Any, fence: Any) -> None:
+def register_executor(
+    database: PostgresDatabase, sid: Any, fence: Any, *, incarnation: dict[str, str] | None = None
+) -> None:
     with _connection(database) as connection:
         connection.execute("SET LOCAL lock_timeout='250ms'")
         assert_current_lease_fence(connection, database.deployment_namespace, sid, fence)
         if not _save(connection, database.deployment_namespace, "executor_started", sid, fence):
             raise LeaseLostError("executor fence was already started")
+        if incarnation is not None and not _save(
+            connection, database.deployment_namespace, "executor_incarnation", sid, fence,
+            body=incarnation,
+        ):
+            raise LeaseLostError("executor incarnation was already registered")
+
+
+def acknowledge_executor_incarnation(
+    database: PostgresDatabase, sid: Any, fence: Any, *, incarnation: dict[str, str]
+) -> bool:
+    """Record exit after the trusted node adapter proves this exact incarnation ended."""
+    namespace = database.deployment_namespace
+    with _connection(database) as connection:
+        row = connection.execute(
+            """SELECT response_body FROM control_plane_idempotency_records
+            WHERE deployment_namespace=%s AND action='executor_incarnation'
+              AND idempotency_key=%s""",
+            (namespace, executor_key(sid, fence)),
+        ).fetchone()
+        if (
+            row is None
+            or row["response_body"] != incarnation
+            or not _receipt(connection, namespace, "executor_started", sid, fence)
+        ):
+            return False
+        _save(connection, namespace, "executor_exit", sid, fence)
+        return True
+
 
 
 def acknowledge_executor(database: PostgresDatabase, sid: Any, fence: Any) -> None:
@@ -120,7 +150,10 @@ def _receipt(connection: Any, namespace: str, action: str, sid: Any, fence: Any)
     }
 
 
-def _save(connection: Any, namespace: str, action: str, sid: Any, fence: Any) -> bool:
+def _save(
+    connection: Any, namespace: str, action: str, sid: Any, fence: Any,
+    *, body: dict[str, str] | None = None,
+) -> bool:
     key = executor_key(sid, fence)
     row = connection.execute(
         """INSERT INTO control_plane_idempotency_records
@@ -132,7 +165,9 @@ def _save(connection: Any, namespace: str, action: str, sid: Any, fence: Any) ->
             action,
             key,
             key,
-            json.dumps({"session_id": str(sid), "fence": fence.model_dump(mode="json")}),
+            json.dumps(body if body is not None else {
+                "session_id": str(sid), "fence": fence.model_dump(mode="json"),
+            }),
         ),
     ).fetchone()
     return row is not None
