@@ -21204,3 +21204,15 @@ captured. Expanded the bounded diagnostic to retain typed status
 as a fallback. Evidence sse-renew256-e1cae0390e4545f190e35c967ae0f504.
 Both isolated APIs restored and TLS ready; no POSTs. Full corpus
 generation concurrently reached 2250 Tasks.
+
+CA-HA-03 repeated frozen 256-stream renewal with typed status capture.
+All initial streams opened; 16 renewals started before a node-1
+resumed GET failed with task_preflight_unavailable. No Host
+authorization warning. The raw Task stream path performs read-only
+preflight via authorized_task_preflight after Host auth, under the
+same remaining deadline; its dispatch does not yet request a
+bounded read executor wait. The HTTP status localizes the boundary
+but also wraps timeout and operational errors, so instrument or
+test that exact preflight before claiming executor saturation.
+Private evidence sse-renew256-ee4059bf9e4541098064c736e932c9ae.
+Both staging APIs restored. Corpus reached 3000 Tasks.
