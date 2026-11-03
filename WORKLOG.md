@@ -20010,3 +20010,19 @@ module/function/line only, enough to distinguish these paths without
 printing locals, SQL or exception values. No deadline behavior changed.
 Ruff, diff check and 31 admission API tests passed. Next capture the
 stage paths in the isolated mixed-load rerun.
+
+CA-HA-03 Native26 source 72c88e68, ARM manifest
+sha256:ceae46fe7aaf11958b22c905438d4db942a56a314d6e0eed04f66ca35176ef7a.
+Both isolated nodes passed cold preservation, readiness and wire checks.
+Trust revision 25, definition 0cf330da-4272-444b-a57e-24a281b23161.
+At 5 Hz and 32 idle SSE, 14 POSTs, nine completed and five unresolved
+after original GET. No resubmissions. All 32 SSE saw heartbeats.
+Five timeout stacks ended in TaskIoConnection.wait: two in bootstrap
+Task index rebuild, one in the second rebuild, and two in wakeup
+binding validation before global advisory lock acquisition. These
+locations identify where the remaining budget ran out, not where
+most of the time was spent. Audit which binding foreign keys require
+the first rebuild and whether fresh inserts can reuse index work
+without losing stable event positions or atomic rollback.
+Evidence preflight5-stage26-21794baf*, stage26-original-receipts.json,
+stage26-zebra*.log and stage26-with-sse-bbbda170*.
