@@ -70,6 +70,7 @@ def main() -> None:
             cloud_worker_composition=bundle,
             cloud_composition=cloud,
             model_http_client=None,
+            execution_only=True,
         )._execution_service
         if check:
             print(

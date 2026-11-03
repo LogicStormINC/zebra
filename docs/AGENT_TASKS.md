@@ -37584,3 +37584,6 @@ branch/worktree): own parent/child timing in session_process{,_child}.py.
 CA-HA-03 E1 child projection composition follow-up (Luke Ding/Codex, existing
 branch/worktree): own AG-UI composition imports and the Worker loop annotation.
 Keep parent projection composition and execution-side durable writes intact.
+
+CA-HA-03 E1 execution-only child follow-up (Luke Ding/Codex, existing branch/worktree):
+use the owned loop/child composition paths and own the focused test_loop regression.

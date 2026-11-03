@@ -39,6 +39,18 @@ def test_worker_loop_returns_idle_when_no_ready_sessions(tmp_path: Path) -> None
     assert result.executed_session_ids == ()
 
 
+def test_execution_only_composition_skips_parent_projection_factory(tmp_path, monkeypatch):
+    def unexpected(*args, **kwargs):
+        raise AssertionError("execution child composed parent projection work")
+
+    monkeypatch.setattr("zebra_agent_worker.loop.configure_agui_projection_work", unexpected)
+    path = tmp_path / "child.db"
+    child = build_worker_loop_service(
+        database_path=path, settings=_settings(path), execution_only=True
+    )
+    assert not child._scan_ready_sessions
+
+
 def test_worker_loop_polls_multiple_idle_cycles_without_final_sleep(
     tmp_path: Path,
 ) -> None:

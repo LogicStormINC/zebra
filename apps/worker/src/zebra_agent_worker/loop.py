@@ -79,6 +79,7 @@ def build_worker_loop_service(
     memory_http_client: httpx.Client | None = None,
     memory_environ: Mapping[str, str] | None = None,
     model_request_budget_factory: ModelRequestBudgetFactory | None = None,
+    execution_only: bool = False,
 ) -> WorkerLoopService:
     client_runtime = None
     if settings.mcp_credentials.worker_enabled and settings.storage_authority != "postgresql":
@@ -367,6 +368,10 @@ def build_worker_loop_service(
             raise ValueError("command delivery requires an explicit cloud DSN")
     elif settings.command_delivery.publish_enabled or settings.command_delivery.consume_enabled:
         raise ValueError("Rabbit command delivery requires PostgreSQL cloud composition")
+    if execution_only:
+        return WorkerLoopService(
+            execution_stores.sessions, execution_service, scan_ready_sessions=False
+        )
     cloud_control = None
     command_sessions = None
     if settings.storage_authority == "postgresql" and not migrated:
@@ -466,11 +471,7 @@ def build_worker_loop_service(
         client_effect_recovery=client_effect_recovery,
         stream_hint_relay=stream_hint_relay,
         projection_work=configure_agui_projection_work(
-            execution_stores,
-            settings,
-            active_namespace,
-            checkpoint_committed,
-        ),
+            execution_stores, settings, active_namespace, checkpoint_committed),
         scan_ready_sessions=not migrated and settings.deployment != "cloud",
         cutover_probe=None if migrated else cutover_probe,
         memory_delivery=(
