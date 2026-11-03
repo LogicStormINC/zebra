@@ -166,6 +166,7 @@ def test_actual_worker_recovers_original_snapshot_after_current_profile_change(
     configured = replace(configured, model=replace(configured.model, model="new-default"))
     monkeypatch.setenv("BUNDLE_MODEL_KEY", "fixture-key-after-rotation")
     bodies = []
+
     def receive(request):
         assert request.headers["Authorization"] == "Bearer fixture-key-after-rotation"
         assert request.url.host == "models.example"
@@ -472,3 +473,50 @@ def test_task_root_budget_follows_configurable_bundle_domain(tmp_path, monkeypat
     assert task_root_budget(legacy) == BudgetReservation(
         model_tokens=0, tool_calls=0, runtime_seconds=0
     )
+
+
+def test_worker_sends_model_request_using_message_release_snapshot(tmp_path, monkeypatch):
+    from agent_core.application import SessionMessageAppendCommand, SessionMessageAppendService
+    from agent_core.application.session_projection import rebuild_session
+    from agent_core.application.workspace_projection import rebuild_workspace
+
+    database = tmp_path / "worker.db"
+    base = replace(settings(), database_url=str(database))
+    original, configured, _ = write_catalog(tmp_path, base)
+    replacement, _ = approved_assembly(base, model="beta")
+    sid, previous = seed(tmp_path, original)
+    version = bundle_version(
+        definition_id=previous.definition_id,
+        authority_issuer=previous.authority_issuer,
+        namespace_id=previous.namespace_id,
+        version=2,
+        runtime_assembly=replacement,
+    )
+    snapshot = snapshot_from_version(version=version, resolved_at=NOW)
+    events = SQLiteEventStore(database)
+    history = events.list_for_session(sid)
+    event = SessionMessageAppendService().build_event(
+        session=rebuild_session(history),
+        next_sequence=history[-1].sequence + 1,
+        command=SessionMessageAppendCommand(
+            content="Use the updated instructions.",
+            prior_human_turns=1,
+            definition_snapshot=snapshot,
+            selected_model_pin=replacement.provider_profile.pin,
+        ),
+    )
+    events.append(event)
+    history = events.list_for_session(sid)
+    SQLiteProjectionStore(database).save_session(rebuild_session(history))
+    SQLiteWorkspaceProjectionStore(database).save_workspace(rebuild_workspace(history))
+    monkeypatch.setenv("BUNDLE_MODEL_KEY", "fixture-key")
+    bodies = []
+    with httpx.Client(
+        transport=httpx.MockTransport(lambda request: reply(request, bodies))
+    ) as client:
+        result = worker(database, configured, client).execute_session(
+            sid, worker_id="bundle-worker"
+        )
+    assert result.session.status is SessionStatus.COMPLETED
+    assert bodies and all(body["model"] == "beta" for body in bodies)
+    assert any("Frozen business beta." in json.dumps(body["messages"]) for body in bodies)
