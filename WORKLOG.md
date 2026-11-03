@@ -20357,3 +20357,14 @@ using a fresh signed read grant. No Task write. Second OrbStack API
 restored and ready. This validates direct cross-host cursor semantics;
 shared-ingress detection and loaded E1-R remain open.
 Private evidence amd64-stream-*.log and amd64-stream-*-resume.txt.
+
+CA-HA-03 cross-physical-host shared ingress smoke. Temporary private
+Caddy used the AMD64 API and a verified TLS relay to the ARM64 API.
+Opened the original stream through Caddy with only AMD64 available;
+then enabled the ARM64 route, allowed active health checks and stopped
+AMD64. The same ingress returned the exact original next frame after
+261 ms and ten times consecutively. No Task writes. Temporary ingress,
+API and forwards exited; second OrbStack API restored and ready.
+This is an API process fault on a cross-host pair, not loss of the
+ingress host, persistent storage, or the loaded E1-R matrix.
+Evidence amd64-ingress-*.log.
