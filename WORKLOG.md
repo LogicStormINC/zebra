@@ -21267,3 +21267,14 @@ legacy/Coverage acceptance. Its bootstrap script also explicitly
 requires an empty database. Full synthetic generation remains
 in its own namespace; compose its authority/rollout separately
 and preserve old fixture evidence in place.
+
+CA-HA-03 rehearsed corpus namespace bootstrap on a fresh, small
+PostgreSQL database. Verified native replay, registered the
+existing synthetic Host issuer under the corpus deployment namespace,
+initialized the epoch, and used the existing command backfill
+barrier (no historical accepted commands). Initial retry exposed
+that epoch bootstrap is deliberately non-idempotent; the fixture
+now reads and preserves the existing epoch. Two consecutive calls
+returned identical evidence, with 3 Tasks/300 Events/300 indexes
+preserved. Runtime role, isolated dependencies and signed API/Worker
+composition are still separate. Full corpus generation untouched.
