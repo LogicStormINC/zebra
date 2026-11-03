@@ -21087,3 +21087,12 @@ Private evidence amd64-permits-fca5d2072d40.log and
 amd64-permits-24726f8ee718.log. Maintain the fleet connection
 ceiling; next target the number/duration of normal direct
 connections in first-Run admission rather than raising the limit.
+
+CA-HA-03 admission now uses the existing synchronous bounded PG
+connection scope under its original two-second deadline. libpq 17+
+can reuse a compatible same-lane socket across completed transactions;
+each borrow still commits or rolls back and resets session state.
+No reuse across requests. Original GET regression on real PG
+verified one physical open for claim plus result reads on libpq17+.
+42 API/atomic PG tests and the focused socket-count assertion passed.
+Next compare actual direct opens and admission outcomes on AMD64.

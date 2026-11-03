@@ -16,6 +16,7 @@ from agent_core.domain.client_capabilities import ProfileLifecycle
 from agent_core.ports.idempotency_store import IdempotencyRecord
 from agent_storage import PostgresControlPlaneStores, new_idempotency_record
 from agent_storage.idempotency import IdempotencyConflictError
+from agent_storage.postgres.connection_scope import postgres_connection_scope
 from agent_storage.postgres.task_io import task_io_deadline
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from psycopg.errors import LockNotAvailable
@@ -203,7 +204,7 @@ def handle_admission_operation(app: Any, request: Any) -> ApiResponse | None:
     assert scoped is not None
     started = monotonic()
     try:
-        with task_io_deadline(started + 2):
+        with task_io_deadline(started + 2), postgres_connection_scope(bounded=True):
             return _handle(
                 app,
                 request,

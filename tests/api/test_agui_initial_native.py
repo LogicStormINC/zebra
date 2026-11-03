@@ -163,7 +163,7 @@ def initial_native(
     return app, request, response, original, message
 
 
-def test_initial_atomic_native_input_is_retained_once(metadata_dsn, tmp_path):
+def test_initial_atomic_native_input_is_retained_once(metadata_dsn, tmp_path, monkeypatch):
     app, request, receipt, original, message = initial_native(metadata_dsn, tmp_path)
     task = TaskId(UUID(original["task_id"]))
     source = app.stores.tasks.read_run_header(task, request.body["run"])
@@ -178,6 +178,17 @@ def test_initial_atomic_native_input_is_retained_once(metadata_dsn, tmp_path):
     assert accepted.idempotency_key == original["command"]["idempotency_key"]
     assert accepted.event_id != UUID(original["command"]["command_id"])
     before = app.stores.tasks.read_task_header(task).current_sequence
+    from agent_storage.postgres.task_io import TaskIoConnections
+    from psycopg import pq
+
+    opened = []
+    original_open = TaskIoConnections._open
+
+    def count_open(self, *args, **kwargs):
+        opened.append(self)
+        return original_open(self, *args, **kwargs)
+
+    monkeypatch.setattr(TaskIoConnections, "_open", count_open)
     retry = RouteAdapter(app).handle(
         replace(
             request,
@@ -187,6 +198,7 @@ def test_initial_atomic_native_input_is_retained_once(metadata_dsn, tmp_path):
         )
     )
     assert retry.body == receipt.body
+    assert len(opened) == (1 if pq.version() >= 170000 else 2)
     assert app.stores.tasks.read_task_header(task).current_sequence == before
 
 
