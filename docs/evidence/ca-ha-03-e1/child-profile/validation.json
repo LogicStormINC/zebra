@@ -1,0 +1,15 @@
+{
+  "scope": "E1-only opt-in stdlib child-latency diagnostic; no standard Dockerfile or runtime execution model change",
+  "guard": "marker1 + exact namespace + exact private launcher -m child --execute",
+  "runnable": "real interpreter startup/atexit valid pstats0600; disabled/foreign/parent/check excluded",
+  "parent_argv_spoof_red": "failed as expected before precise guard",
+  "guard_green": "passed",
+  "ruff": "passed",
+  "make_check": "passed",
+  "independent_review": "no Important; exact-launcher followup independently passed",
+  "profile_data": "private; no SLO samples",
+  "exit_boundary": "atexit missing/empty output under SIGKILL/os._exit/forced stop is not an exit receipt",
+  "diagnostic_images_and_native_approval": "not prepared or promoted yet",
+  "live_runtime": "51f2ddb8 / Native9 remains unchanged",
+  "full_E1_capacity": "not_run"
+}

@@ -18985,3 +18985,14 @@ new10 Tasks. Short5.56s/no OCI; approved pwd16.95s/exact OCI absent; burst8 all
 lease/pending0 and historical unknown1 unchanged. Initial transient-lease read
 and wrong-column readonly query retained/corrected without Task replay. Fixed E1
 historical/SSE/5rps/fault/soak remains open; next diagnose remaining child latency.
+
+
+## 2026-11-03 — bounded E1 child profiler source
+
+No existing profile hook found; standard sitecustomize/cProfile captures only
+explicit E1 marker, exact namespace and private child --execute launcher. Parents
+and --check excluded. Real startup/atexit five-path runnable passed,0600 valid
+stats; argv-spoof guard red/green retained. Independent review and final make
+check/Ruff passed. Missing/empty stats never attest exit; actual ACK remains
+unchanged. Standard Dockerfile/runtime paths untouched. Diagnostic frozen images,
+Native10 and one Task/node with private export remain next; Native9 still live.
