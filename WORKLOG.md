@@ -20647,3 +20647,12 @@ deadline. Exact receipt proof still passed after replay and refused
 the wrong digest. This shows a database guard for one role, not the
 API scheduling policy or full standby inventory. Evidence
 pg-sync-proof-capacity-two-hosts.json.
+
+CA-HA-03 standby proof extended to atomic termination's durable
+stop record shape (client-admission-v1-atomic-stop, 200,
+state=stop_requested). During paused replay and cancelled SyncRep
+the primary exposed the stop but the proof returned false. After
+replay the exact stop verified and wrong digest was refused.
+This tests the replicated stop row, not the API's separate fence
+and absent-result check required for a non-commit certificate.
+Evidence pg-sync-stop-proof-two-hosts.json.
