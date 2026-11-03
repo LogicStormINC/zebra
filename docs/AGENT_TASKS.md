@@ -37472,3 +37472,7 @@ lock rejection outside a borrowed transaction.
 
 CA-HA-03 canonical event retry packaging addendum: include the owned
 worker_commit_confirmation.py in the E1 Dockerfile.delta.
+
+CA-HA-03 atomic admission lock response addendum: own
+client_admission_operations.py for structured original-only reconciliation
+on PostgreSQL lock rejection.

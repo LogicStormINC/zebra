@@ -19830,3 +19830,16 @@ received heartbeats. Next reproduce lock contention around atomic
 admission and preserve original-only reconciliation semantics.
 Private evidence preflight5-atomic21-685ca250*, atomic21-original-*,
 atomic21-recovered-outcome.json, atomic21-errors-zebra*.log.
+
+CA-HA-03 atomic admission lock reproduced by holding the isolated namespace
+command-global advisory key while issuing one fresh signed atomic POST
+2ea05f9c-405b-43f4-b4ca-a956cb78bb94. The API traceback shows
+LockNotAvailable at the exact command_wakeup lock. The diagnostic
+expected JSON on errors and could not parse the plain-text 500. It also
+did not persist the random recovery key, so this new original is retained
+without public replay or recovery. The lock holder exited normally.
+Candidate maps explicit PostgreSQL lock timeout to the existing structured
+503 unknown result, preserving original operation identity. 29 tests
+passed. This handles classification, not contention or throughput.
+Next retain recovery keys before POST and validate the response on real
+PG, then address the global lock hold time.

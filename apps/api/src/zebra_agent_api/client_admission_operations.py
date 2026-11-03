@@ -15,6 +15,7 @@ from agent_storage import PostgresControlPlaneStores, new_idempotency_record
 from agent_storage.idempotency import IdempotencyConflictError
 from agent_storage.postgres.task_io import task_io_deadline
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+from psycopg.errors import LockNotAvailable
 from pydantic import BaseModel, ConfigDict, Field
 
 from zebra_agent_api.client_grant_auth import SessionBackedClientGrantAuthorizer
@@ -207,7 +208,7 @@ def handle_admission_operation(app: Any, request: Any) -> ApiResponse | None:
             )
     except IdempotencyConflictError:
         return ApiResponse(409, {"status": "admission_operation_conflict"})
-    except TimeoutError:
+    except (TimeoutError, LockNotAvailable):
         return ApiResponse(503, {"status": "unknown", "operation": operation})
 
 
