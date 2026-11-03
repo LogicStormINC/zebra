@@ -184,6 +184,7 @@
 
 # CA-HA-03 — 资源预算、退避与技术namespace隔离
 - Status: In Progress（2026-11-02）；用户“继续”授权后从Ready领取；人类Owner Luke Ding，执行Codex；branch codex/ca-ha-03-budgets；独立worktree ca-ha-03-budgets/zebra-agent；基线56ae352a5。
+- E1 rebuilt PostgreSQL cutover（实施前登记）：沿用 CA-HA-03 Owner/branch/worktree。新增 Owned path tests/compose/cloud_ha_e1/switch_rebuilt_postgres.sh，用于受控切换隔离 PostgreSQL，不切换应用。
 - E1 node identity publisher（实施前登记）：沿用 CA-HA-03 Owner/branch/worktree。新增 Owned path tests/compose/cloud_ha_e1/publish_executor_incarnation.py，用于隔离节点身份发布，持久对账接线另验。
 - E1 executor incarnation Worker follow-up（实施前登记）：沿用 CA-HA-03 Owner/branch/worktree。新增 Owned path apps/worker/src/zebra_agent_worker/session_process.py，复用已登记 tests/worker/test_session_process.py。仅由显式节点身份文件启用实例登记。节点观察器和部署挂载另验。
 - E1 executor incarnation storage follow-up（实施前登记）：沿用 CA-HA-03 的 Owner、branch 与 worktree。Owned paths：既有 force_stop_executors.py、tests/agent_storage/test_postgres_force_stop_recovery.py 与 WORKLOG.md。独立记录实例身份，保留旧启动/退出回执兼容性。可信节点观察器及部署接线另验。
