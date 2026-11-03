@@ -256,3 +256,8 @@ A missing response record alongside an intent requires original-operation
 reconciliation. Use a new private evidence directory and the fixture CA
 with a direct, non-retrying HTTP client. Its standalone check uses a
 simulated lost HTTP response and verifies the scheduler issues no replay.
+The adapter's `recover_original` reads the saved intent, exchanges fresh
+authority for the same binding, and issues an original-operation GET. A
+completed receipt must match the operation and canonical request hash and
+pass AES-GCM authentication before its payload is returned. HTTP status
+and incomplete receipts remain visible to the caller.
