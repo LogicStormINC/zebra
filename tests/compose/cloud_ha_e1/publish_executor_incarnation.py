@@ -7,6 +7,7 @@ import subprocess
 import tempfile
 from datetime import datetime
 from pathlib import Path
+from uuid import UUID
 
 
 def docker(*args: str) -> str:
@@ -75,12 +76,37 @@ def publish(binding: dict[str, str], destination: Path) -> None:
             os.close(fd)
 
 
+def acknowledge_exit(
+    witness: dict[str, str], session: UUID, fence_json: str, dsn: str, *, namespace: str
+) -> None:
+    # Imports stay optional for a host that only publishes identity files.
+    from agent_core.domain.leases import LeaseFence
+    from agent_storage.postgres.database import PostgresDatabase
+    from agent_storage.postgres.force_stop_executors import acknowledge_executor_incarnation
+
+    fields = ("engine", "container", "started_at", "pid_namespace")
+    incarnation = {key: witness[key] for key in fields}
+    if not acknowledge_executor_incarnation(
+        PostgresDatabase(dsn, deployment_namespace=namespace),
+        session,
+        LeaseFence.model_validate_json(fence_json),
+        incarnation=incarnation,
+    ):
+        raise ValueError("exit witness does not match an executor registration")
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("container")
     parser.add_argument("destination", type=Path)
     parser.add_argument("--exit-binding", type=Path)
+    parser.add_argument("--ack-session", type=UUID)
+    parser.add_argument("--ack-fence")
     arguments = parser.parse_args()
+    if bool(arguments.ack_session) != bool(arguments.ack_fence) or (
+        arguments.ack_session and arguments.exit_binding is None
+    ):
+        parser.error("acknowledgment requires --exit-binding, --ack-session and --ack-fence")
     if arguments.exit_binding is None:
         binding = identity(arguments.container)
     else:
@@ -88,3 +114,8 @@ if __name__ == "__main__":
             parser.error("exit witness must have a separate destination")
         binding = exit_witness(arguments.container, arguments.exit_binding)
     publish(binding, arguments.destination)
+    if arguments.ack_session:
+        acknowledge_exit(
+            binding, arguments.ack_session, arguments.ack_fence,
+            os.environ["ZEBRA_DATABASE_URL"], namespace="ha-e1-20261102",
+        )
