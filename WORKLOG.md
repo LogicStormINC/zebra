@@ -19491,3 +19491,16 @@ Preserve it for original-only reconciliation. The first runner edit had
 an indentation error before any service change and was corrected. APIs
 restored. Private evidence sse21-live-event-6564659b* and
 sse21-live-resume-original.json.
+
+CA-HA-03 original fd88b19e model reconciliation: canonical events show
+model_request_started at 06:04:56.615Z and suspension at 06:04:58.710Z.
+PostgreSQL reported a worker_leases SELECT FOR SHARE tuple lock timeout
+at 06:04:58.285Z. The same lock protects multiple fenced reads, so timing
+alone cannot identify the exact callback or holder. The synthetic model
+container has no request log in that window, and the original reservation
+has no receipt or model response Event. The request-start Event is written
+before provider completion and is insufficient to infer its outcome.
+Retain the unknown reservation and original command. Next instrument
+a fresh synthetic request with correlated pre-dispatch/provider receipt
+and lock-holder evidence to distinguish fencing before dispatch from
+receipt settlement after dispatch. Private evidence sse21-original-*.
