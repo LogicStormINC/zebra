@@ -123,7 +123,12 @@ def test_tool_schema_type_properties_keep_exact_inspection_and_strict_refusal(wi
     assert not sent and not gateway.worker_budget.reserved
 
 
-def test_normal_guarded_chat_commits_exact_bytes_before_wire():
+@pytest.mark.parametrize(("provider", "details", "cache_miss", "reasoning"), [
+    ("deepseek", {"prompt_cache_hit_tokens": 1, "prompt_cache_miss_tokens": 1,
+                  "completion_tokens_details": {"reasoning_tokens": 1}}, 1, 1),
+    ("zhipu", {"prompt_tokens_details": {"cached_tokens": 1}}, None, None),
+])
+def test_normal_guarded_chat_commits_exact_bytes_before_wire(provider, details, cache_miss, reasoning):
     import httpx
     from agent_integrations.worker_budget import guarded_chat
 
@@ -141,16 +146,22 @@ def test_normal_guarded_chat_commits_exact_bytes_before_wire():
                 "choices": [
                     {"message": {"role": "assistant", "content": "ok"}, "finish_reason": "stop"}
                 ],
-                "usage": {"prompt_tokens": 2, "completion_tokens": 1, "total_tokens": 3},
+                "usage": {"prompt_tokens": 2, "completion_tokens": 1, "total_tokens": 3, **details},
             },
         )
 
     gateway = _gateway(handler)
+    gateway.provider_name = provider
     gateway.model_request_budget = _proof
     result = guarded_chat(
         gateway, {"max_tokens": 5}, tools=(), tool_names=(), resolved=None, metadata=None
     )
     assert result.assistant_message.content == "ok"
+    usage = result.call_metadata.usage
+    assert (usage.input_tokens, usage.output_tokens, usage.total_tokens) == (2, 1, 3)
+    assert usage.prompt_cache_hit_tokens == 1
+    assert usage.prompt_cache_miss_tokens == cache_miss
+    assert usage.reasoning_tokens == reasoning
     assert len(sent) == len(gateway.worker_budget.settled) == 1
 
 
