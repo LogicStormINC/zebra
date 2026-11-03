@@ -21,7 +21,7 @@ function responsePlan(messages) {
       },
     };
   }
-  if (prompt.includes("E2E_FAILURE")) {
+  if (messages.some((message) => message.role === "user" && String(message.content ?? "").includes("E2E_FAILURE"))) {
     return { chunks: ["provider-rejected"], delayMs: 0, finishReason: "content_filter" };
   }
   if (prompt.includes("E2E_STOP_STREAM")) {
