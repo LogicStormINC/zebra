@@ -140,8 +140,10 @@ def reconcile_in_cleanup(container: str, witness: dict[str, str], *, namespace: 
         "from agent_storage.postgres import force_stop_executors as storage\n"
         f"exec(compile({storage.read_bytes()!r}, 'executor_storage', 'exec'), vars(storage))\n"
         + Path(__file__).read_text().rsplit('if __name__ == "__main__":', 1)[0]
-        + f"\nprint(reconcile_exits({witness!r}, os.environ['ZEBRA_DATABASE_URL'], "
-        f"namespace={namespace!r}))\n"
+        + "\nfrom agent_storage.postgres.connection_pool import postgres_pool_scope\n"
+        + "dsn = os.environ['ZEBRA_DATABASE_URL']\n"
+        + "with postgres_pool_scope(dsn, component='cleanup'):\n"
+        + f"    print(reconcile_exits({witness!r}, dsn, namespace={namespace!r}))\n"
     )
     result = subprocess.check_output(
         ["docker", "exec", "-i", spec["Id"], "python", "-"],
