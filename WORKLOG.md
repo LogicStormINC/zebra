@@ -20599,3 +20599,11 @@ CA-HA-03 mapped F-04 exact receipt proof across signed submit,
 original observation and termination. Documented deadline, separate
 standby capacity, endpoint identity, role and topology handoff in
 the resource budget design. No application gate or deployment yet.
+
+CA-HA-03 tested a single-statement limited-reader check with
+system ID, recovery role, checkpoint timeline and exact receipt.
+Wrong configured timeline rejected. Immediately after promotion,
+pg_control_checkpoint().timeline_id still reported the old value,
+while pg_is_in_recovery() changed and caused rejection. Do not use
+checkpoint timeline as the live topology generation; require a
+trusted topology handoff. Evidence pg-sync-timeline-two-hosts.json.
