@@ -94,6 +94,7 @@ def _proof(exact):
 def test_missing_real_counter_refuses_before_any_wire():
     sent = []
     gateway = _gateway(lambda request: sent.append(request))
+    gateway.usage_observer = lambda *args: pytest.fail("rejected request observed as an attempt")
     with pytest.raises(WorkerBudgetError, match="counter"):
         gateway.complete([])
     assert not sent and not gateway.worker_budget.reserved
@@ -128,7 +129,9 @@ def test_tool_schema_type_properties_keep_exact_inspection_and_strict_refusal(wi
                   "completion_tokens_details": {"reasoning_tokens": 1}}, 1, 1),
     ("zhipu", {"prompt_tokens_details": {"cached_tokens": 1}}, None, None),
 ])
-def test_normal_guarded_chat_commits_exact_bytes_before_wire(provider, details, cache_miss, reasoning):
+def test_normal_guarded_chat_commits_exact_bytes_before_wire(
+    provider, details, cache_miss, reasoning
+):
     import httpx
     from agent_integrations.worker_budget import guarded_chat
 
@@ -151,6 +154,8 @@ def test_normal_guarded_chat_commits_exact_bytes_before_wire(provider, details, 
         )
 
     gateway = _gateway(handler)
+    observations = []
+    gateway.usage_observer = lambda *entry: observations.append(entry)
     gateway.provider_name = provider
     gateway.model_request_budget = _proof
     result = guarded_chat(
@@ -163,6 +168,9 @@ def test_normal_guarded_chat_commits_exact_bytes_before_wire(provider, details, 
     assert usage.prompt_cache_miss_tokens == cache_miss
     assert usage.reasoning_tokens == reasoning
     assert len(sent) == len(gateway.worker_budget.settled) == 1
+    first, last = observations
+    assert first == (last[0], "started", None)
+    assert last[1:] == ("finished", usage)
 
 
 def test_wire_parse_failure_does_not_settle_or_retry():

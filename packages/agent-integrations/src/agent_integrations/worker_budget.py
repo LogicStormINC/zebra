@@ -79,7 +79,10 @@ def guarded_completion(
         raise WorkerBudgetError("synchronous guarded transport cannot block an async loop")
     # Existing native async cancellation scope bounds connect, body and cleanup together.
     with asyncio.Runner(loop_factory=_bounded_loop) as runner:
-        payload = runner.run(_wire(gateway, request.exact_body, remaining, stream_sink, responses))
+        def send() -> dict[str, Any]:
+            return runner.run(_wire(gateway, request.exact_body, remaining, stream_sink, responses))
+
+        payload = send() if responses else gateway._observe_usage_attempt(send)
     if monotonic() - started >= remaining:
         raise WorkerBudgetError("model Task deadline exceeded")
     gate.check()
