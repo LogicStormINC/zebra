@@ -21037,3 +21037,14 @@ SQL reductions have not established a capacity improvement.
 Next qualify independent compute placement and collect per-process
 CPU throttling plus end-to-end admission statement counts before
 another change to the write transaction.
+
+CA-HA-03 built source 9a1857a2 as an immutable AMD64 candidate
+on 192.168.101.7, image add56ad6676281c80413b0d94c174b9df8a6a92daf3a3ba4ee240e7b42f00bf5.
+BuildKit misinterpreted the local image ID as a registry reference;
+a per-command legacy build used the pinned local base. Verified
+all changed source hashes against the ARM64 candidate's commit.
+A fresh isolated signed admission on AMD64 returned sealed 201 in
+1725ms. The transient container used 2CPU/2GiB, network none and
+existing private Unix relays to OrbStack dependencies, then exited.
+No production service changed. This qualifies a single cross-host
+API operation, not comparative capacity or the AMD64 Worker.
