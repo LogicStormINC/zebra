@@ -20585,3 +20585,12 @@ expected system ID plus recovery role. Exact original absent during
 replay pause and visible after resume. Test transport isolated by
 SSH; production TLS/endpoint identity and leader timeline/fencing
 are still separate gates. Evidence pg-sync-reader-two-hosts.json.
+
+CA-HA-03 standby identity negative cases passed on disposable
+cross-host PG17.5. Limited receipt reader rejected a wrong system
+identifier while standby was healthy. After exact old-primary
+fencing and promotion, the endpoint retained the expected system
+identifier but the old standby guard rejected its new primary role.
+No fallback approval from a stale endpoint. Evidence
+pg-sync-role-transition-two-hosts.json. API integration must use a
+trusted topology handoff and keep writes gated during this gap.
