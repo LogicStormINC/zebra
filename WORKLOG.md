@@ -19334,3 +19334,16 @@ paced handshakes and used an idle active Task, so it does not measure
 contention after a shared event wake. Next publish one new authorized
 event while the cohort is held and count event/cursor deliveries and
 capacity errors before selecting an admission change.
+
+CA-HA-03 Native15 SSE event-wake attempt: established all 32 observers on
+the ready synthetic Task 3fd93e6e-52ce-4fc6-955c-5528573883de, then sent one
+authenticated /tasks/{id}/resume with a persisted operation key. HTTP 503
+model_gateway_unavailable reported missing execution input tasks/namespace.
+Read-only PostgreSQL reconciliation found status ready, only the three
+bootstrap events and zero model reservations. The original is preserved.
+Source trace: task_routes -> task_api.mutate_task calls app.resume_session
+(the local synchronous executor), whereas the Cloud /sessions/{id}/resume
+route calls submit_command. The planned event wake could not be measured.
+Next align the Cloud Task alias to the durable command route, checking
+suspend and failed Task rollover behavior, and verify with a fresh intent.
+Private receipt: sse15-live-resume-original.json.
