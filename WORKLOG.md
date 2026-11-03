@@ -19087,3 +19087,15 @@ the two post-admission Task header reads separately. Both remaining PostgreSQL
 timeouts were on the durable stream-version UPDATE. Neither log contains the
 Task ID, so the child exits cannot yet be attributed to those statements.
 Original Tasks were inspected read-only.
+
+## Native12 admission phase split
+
+Matched all 29 original accepted requests to both bootstrap and run-command
+events. Bootstrap timestamp to run-command timestamp was 0.124–4.303s,
+median 1.996s. Run-command timestamp to HTTP response was 0.081–2.072s,
+median 0.512s. These are event construction timestamps, with a cross-clock
+estimate for the HTTP boundary. The ordinary execute=true path commits
+bootstrap before queue_cloud_run reads the stream and submits the run command.
+Measure binding freeze, bootstrap commit and the queue's event read separately
+before changing response header reads. Preserve the persisted-command lookup
+for duplicate and interrupted admission recovery.
