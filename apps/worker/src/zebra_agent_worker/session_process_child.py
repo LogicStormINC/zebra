@@ -60,7 +60,7 @@ def main() -> None:
         raise ValueError("isolated execution namespace mismatch")
     factory = request["factory"]
     bundle = None
-    with postgres_pool_scope(settings.database_url, component="executor"):
+    with postgres_pool_scope(settings.database_url, component="executor") as budget:
         if factory != "default":
             module, name = factory.split(":")
             bundle = getattr(importlib.import_module(module), name)(settings, cloud)
@@ -114,6 +114,12 @@ def main() -> None:
             ownership_check=require_owned,
         )
         result_path.write_bytes(TypeAdapter(ExecutedSession).dump_json(result))
+        if budget is not None and logger.isEnabledFor(logging.INFO):
+            stats = budget.stats()
+            logger.info(
+                "worker_executor_database_usage session_id=%s fence=%s peak=%s rejected=%s",
+                lease.session_id, lease.fence.fencing_token, stats["peak"], stats["rejected"],
+            )
 
 
 if __name__ == "__main__":
