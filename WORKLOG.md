@@ -20236,3 +20236,15 @@ Local image ID sha256:374ea416e4729b91fc77bb0922ce8f51755de957ebec1f6dab90c5b3df
 No test API or Worker was activated. Next pin the AMD64 platform
 manifest and qualify tunnel RTT and strict task admission before
 replacing the second OrbStack logical node.
+
+CA-HA-03 pinned AMD64 837defbe platform manifest in the isolated
+registry and independently hashed its OCI payload:
+sha256:374ea416e4729b91fc77bb0922ce8f51755de957ebec1f6dab90c5b3df444f82.
+Existing remote loopback PG listener 25432 accepted TCP but the
+candidate TLS connection timed out. A new scoped SSH reverse forward
+on 35432 to the actual OrbStack PG endpoint passed verify-full in a
+read-only probe. Eight connection setups median 149.13 ms (56.89–
+162.38); 32 SELECT 1 round trips median 7.72 ms (6.55–15.45).
+Temporary forward exited with the probe, original listeners untouched.
+Next qualify the other dependencies using isolated forwards and test
+strict admission over the measured link. No server API/Worker activation.
