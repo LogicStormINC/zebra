@@ -21000,3 +21000,12 @@ path. Two real PG17.5 native API checks passed and Ruff is clean.
 The broader real-PG suite is running (session 50843); its first
 seven tests passed, then it entered the 100k-event repair case.
 No capacity effect claimed until frozen live comparison.
+
+CA-HA-03 froze source 1eaf5026 on both OrbStack engines, including
+the PostgreSQL position CTE. Both immutable images executed offline
+and verified every modified source digest; private manifest
+frozen-position-cte.json. A separate real PG17.5 regression run
+passed 79 position, repair, and byte-bound tests, with the three
+large benchmark variants deselected. The earlier full run remained
+live on its 100k-event case. No live capacity comparison was run
+concurrently with that database workload on the shared Mac.
