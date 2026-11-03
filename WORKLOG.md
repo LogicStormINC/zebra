@@ -19319,3 +19319,18 @@ also used by authorized stream reads. Next distinguish handshake and
 tail socket contention under live cursor traffic before selecting a
 budget or admission change. The 32 established connections do not cover
 the 256-SSE sustained E1 target or reconnect storm.
+
+CA-HA-03 Native15 live SSE diagnostic: one explicit execute=false synthetic
+Task 3fd93e6e-52ce-4fc6-955c-5528573883de stayed ready. With fresh grants
+and one handshake in flight per API, 32/32 streams opened and each received
+a server keepalive. At the common barrier TCP counts rose from 1/0 to
+17/16, consistent with 16 added connections per API. This avoids treating
+buffered terminal replay frames as live stream evidence. Private evidence
+sse15-live-held-446145d4* and live-sse15-be46a9b4*/0.json.
+Code trace: stream tail _read_until routes through the middleware's read
+lane via the ambient async dispatcher. Host authorization uses the same
+lane. Both the executor and native socket permit fail fast. This run
+paced handshakes and used an idle active Task, so it does not measure
+contention after a shared event wake. Next publish one new authorized
+event while the cohort is held and count event/cursor deliveries and
+capacity errors before selecting an admission change.
