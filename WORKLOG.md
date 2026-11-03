@@ -20055,3 +20055,12 @@ requires exactly one updated source row before the next iteration.
 Ruff and diff check passed; 51 focused PostgreSQL 17 tests passed.
 The separate full run remains active in the 100,000-event fixture;
 no full-suite or isolated E1 capacity result is claimed.
+
+CA-HA-03 Native28 source d7d4aba6, ARM manifest
+sha256:30217cd5c1f6fe01a3574843fdb0e6587afcf66ed60dd9f92df51aa56762a4f4.
+2,142 files and three symlinks verified. Both isolated nodes passed
+cold data preservation, readiness, and TLS/SSE/meter checks.
+Trust revision 27 published definition 7286a844-4639-42c3-8520-7a56928b62cf.
+Mixed-load run deferred while the concurrent 100,000-event PostgreSQL
+fixture competes for the same Mac resources. Resume existing session
+73427 before the controlled comparison. No new capacity claim.
