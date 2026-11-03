@@ -529,10 +529,15 @@ def test_request_validation_rejects_mismatched_binding() -> None:
 
 
 def test_provider_usage_groups_verified_subject_and_preserves_unknown(namespace, postgres_dsn):
-    from dataclasses import replace
+    from dataclasses import asdict, replace
+
+    import httpx
     from datetime import timedelta
 
     from agent_core.domain.events import EventActor, EventType, SessionEvent
+    from agent_core.domain.identifiers import new_message_id
+    from agent_core.domain.messages import MessageRole, SessionMessage
+    from agent_integrations import OpenAICompatibleModelGateway
     from agent_storage.postgres.database import PostgresDatabase
     from agent_storage.postgres.events import PostgresEventStore
     from agent_storage.postgres.provider_usage import read_provider_usage
@@ -582,6 +587,48 @@ def test_provider_usage_groups_verified_subject_and_preserves_unknown(namespace,
                     created_at=now,
                 )
             )
+        if subject == "user-b":
+            attempts = []
+            sequence = session.current_sequence + 1
+
+            def observe(attempt_id, phase, usage):
+                nonlocal sequence
+                sequence += 1
+                attempts.append((attempt_id, phase))
+                store.append(SessionEvent.create(
+                    session_id=session.session_id,
+                    sequence=sequence,
+                    event_type=EventType.PROVIDER_USAGE_OBSERVED,
+                    actor=EventActor.HARNESS,
+                    payload={**payload, "attempt_id": str(attempt_id), "phase": phase,
+                             "usage": asdict(usage) if usage is not None else None},
+                    created_at=now,
+                ))
+
+            def respond(_request):
+                if len(attempts) == 1:
+                    return httpx.Response(503, json={"error": {"message": "synthetic unavailable"}})
+                return httpx.Response(200, json={
+                    "id": "retry-result", "model": "deepseek-v4-flash",
+                    "choices": [{"message": {"role": "assistant", "content": "ok"},
+                                 "finish_reason": "stop"}],
+                    "usage": {"prompt_tokens": 7, "completion_tokens": 1, "total_tokens": 8},
+                })
+
+            with httpx.Client(transport=httpx.MockTransport(respond)) as client:
+                gateway = OpenAICompatibleModelGateway(
+                    provider_name="deepseek", base_url="https://models.example",
+                    api_key="synthetic", model_name="deepseek-v4-flash", client=client,
+                )
+                gateway.usage_observer = observe
+                gateway.complete([SessionMessage(
+                    message_id=new_message_id(), role=MessageRole.USER,
+                    content="Retry usage probe", created_at=now,
+                )])
+            first, failed, retry, completed = attempts
+            assert first[0] != retry[0]
+            assert failed == (first[0], "finished") and completed == (retry[0], "finished")
+
     result = read_provider_usage(
         PostgresDatabase(postgres_dsn, deployment_namespace=namespace),
         scope=scope,
@@ -589,7 +636,9 @@ def test_provider_usage_groups_verified_subject_and_preserves_unknown(namespace,
         start=now - timedelta(seconds=1),
         end=now + timedelta(seconds=1),
     )
-    assert result["total"]["attempt_count"] == 2
+    assert result["total"]["attempt_count"] == 4
+    assert [user["attempt_count"] for user in result["users"]] == [1, 3]
+    assert result["users"][1]["tokens"]["input_tokens"] is None
     assert result["total"]["tokens"]["total_tokens"] is None
     assert [(u["identity"]["subject"], u["tokens"]["total_tokens"]) for u in result["users"]] == [
         ("user-a", 0),
