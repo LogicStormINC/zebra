@@ -3,9 +3,9 @@ from __future__ import annotations
 from typing import Protocol
 from uuid import UUID
 
+from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.identifiers import AgentDefinitionId
 from agent_core.domain.runtime_assembly import RuntimeAssembly
-from agent_core.domain.host_authority import HostContextEnvelope
 from agent_security.host_grant import VerifiedHostGrant
 from agent_storage import PostgresControlPlaneStores
 
@@ -80,9 +80,16 @@ def _model_options(app: ZebraAgentApi, request: TaskRouteRequest) -> ApiResponse
         "definition_version_id": str(snapshot.bound_version.version_id),
         "default_model_id": default,
         "models": [
-            {"id": default, "display_name": parameters.model},
-            *({"id": choice.provider_profile.id, "display_name": choice.model}
-              for choice in parameters.selectable_models),
+            {
+                "id": default,
+                "display_name": assembly.provider_profile.display_name or parameters.model,
+            },
+            *(
+                {"id": profile.pin.id, "display_name": profile.display_name or choice.model}
+                for choice, profile in zip(
+                    parameters.selectable_models, assembly.selectable_profiles, strict=True
+                )
+            ),
         ],
     })
 

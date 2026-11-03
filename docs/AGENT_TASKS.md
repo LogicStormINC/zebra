@@ -37365,3 +37365,5 @@ CA-P7-MODEL-01 message admission owns selected_model_id parsing and lookup from 
 CA-P7-MODEL-01 first send binding owns initial model choice parsing, published snapshot resolution and bootstrap message pin.
 
 CA-P7-MODEL-DISCOVERY owns the authenticated business model options route and reuse of the published consumer binding.
+
+CA-P7-MODEL-DISCOVERY display labels owns optional digest-bound profile labels and old-profile serialization compatibility.

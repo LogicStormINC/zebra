@@ -22,3 +22,5 @@ PUT 正文包含 `modelConfigId`、正整数 `revision`、`model` 和 `approvedP
 Worker 的旧快照回归另覆盖模型 API Key 轮换。任务快照持久化后替换批准环境变量的合成值，新 Worker 向受控 HTTP 传输发送新凭据，仍使用原端点、模型和固定 pin。两个值均未出现在事件中。部署目录与已注册 profile 两种路径均通过。该检查使用 SQLite 快照和受控传输。
 
 PUT 支持 `expectedConnectionDigest`，其值为批准 profile 的 `[base_url, api_key_env]` 规范 JSON 的 SHA-256。首次注册时任一字段不匹配返回 409，原操作不落库。该字段计入原请求摘要，缺省时保留旧调用的摘要规则。
+
+Registered provider profiles can carry an optional display name from the model catalog revision. The profile digest covers a present label. Legacy profiles omit it on serialization and business discovery falls back to the provider model name.

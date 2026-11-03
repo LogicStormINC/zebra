@@ -38,6 +38,7 @@ class RegistrationRequest(BundleValue):
     revision: Annotated[int, Field(ge=1, le=2**53 - 1)]
     model: Identifier
     approvedProviderProfile: ArtifactPin
+    displayName: Annotated[str, Field(min_length=1, max_length=256)] | None = None
     expectedConnectionDigest: Annotated[str, Field(pattern=r"^sha256:[0-9a-f]{64}$")] | None = None
 
 
@@ -84,6 +85,8 @@ def perform(settings, namespace, token, headers, action, contract_header, raw):
                     return _error(409, "CONNECTION_MISMATCH")
                 profile_data = approved.model_dump(mode="json", exclude={"pin"})
                 profile_data["models"] = [request.model]
+                if request.displayName is not None:
+                    profile_data["display_name"] = request.displayName
                 identity = json_digest(
                     [approval.scope.model_dump(mode="json"), request.modelConfigId]
                 ).removeprefix("sha256:")

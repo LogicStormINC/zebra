@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Annotated, Any, Literal, Self
 from urllib.parse import urlsplit
 
-from pydantic import BeforeValidator, Field, field_validator, model_validator
+from pydantic import BeforeValidator, Field, field_validator, model_serializer, model_validator
 
 from agent_core.domain.modeling import ModelContextWindow
 from agent_core.domain.runtime_bundle import RuntimeBundleEnvelope
@@ -33,6 +33,7 @@ class RuntimeProviderProfile(BundleValue):
     """Approval ceiling containing an environment reference, never credentials."""
 
     pin: ArtifactPin
+    display_name: Annotated[Text, Field(min_length=1, max_length=256)] | None = None
     provider: Literal["openai-compatible"]
     base_url: Annotated[Text, Field(min_length=1, max_length=2048)]
     api_key_env: Annotated[Text, Field(pattern=r"^[A-Z_][A-Z0-9_]{0,127}$")]
@@ -43,6 +44,13 @@ class RuntimeProviderProfile(BundleValue):
     ]
     max_context_window_tokens: Annotated[int, Field(ge=1, le=1_048_576)]
     max_output_tokens: Annotated[int, Field(ge=1, le=1_048_576)]
+
+    @model_serializer(mode="wrap")
+    def serialize_profile(self, handler: Any) -> dict[str, Any]:
+        data = handler(self)
+        if self.display_name is None:
+            data.pop("display_name", None)
+        return data
 
     @field_validator("base_url")
     @classmethod
