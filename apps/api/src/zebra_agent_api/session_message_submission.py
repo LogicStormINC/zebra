@@ -64,9 +64,10 @@ def build_session_message_event(
             )
             assembly = snapshot.bound_version.runtime_assembly
             if effective_snapshot is not None:
-                chosen = snapshot.snapshot_for_removed_model(
+                chosen = snapshot.snapshot_for_model_selection(
                     effective=effective_snapshot,
                     selected_model_id=remembered or assembly.provider_profile.pin.id,
+                    requested_model_id=selected_model_id,
                 )
                 if chosen is not snapshot:
                     adopted_snapshot = chosen

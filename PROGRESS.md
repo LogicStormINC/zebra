@@ -8892,3 +8892,5 @@ Worker 已从本次发送的持久消息恢复选定 pin，并交给 Bundle 模�
 首次发送的选模回归发现 pin 误写入 TASK_PREPARED，已移至初始用户消息。真实队列事件读回验证默认、显式选择及越权拒绝，相关回归 20 项通过。
 
 Cloud Agent candidate adds authenticated `GET /model-options?definition_id=<uuid>&definition_environment=<environment>` for the effective published Bundle. It returns only the Definition/version, default model ID and available model IDs with provider model names as display labels. Targeted route checks pass. Public HTTPS and administrator-configured labels remain to be verified or wired.
+
+Explicit selection of a model available only in the effective release adopts the full release even when the remembered model is retained. Unchanged selection retains the previous release.

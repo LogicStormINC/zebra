@@ -60,10 +60,12 @@ def prepare_message_release(
             ),
             old_assembly.provider_profile.pin.id,
         )
-        adopted = old.snapshot_for_removed_model(effective=effective, selected_model_id=remembered)
         requested = command.payload.get("selected_model_id")
         if requested is not None and not isinstance(requested, str):
             return bad_request("selected_model_id must be a string")
+        adopted = old.snapshot_for_model_selection(
+            effective=effective, selected_model_id=remembered, requested_model_id=requested,
+        )
         adopted.bound_version.runtime_assembly.resolve_session_model(
             requested_id=requested, remembered_id=remembered if adopted is old else None
         )

@@ -119,13 +119,14 @@ def published(version):
     return BundleDefinitionSnapshot.from_release(release=release, version=version, resolved_at=NOW)
 
 
-def removed_model_release_snapshots():
+def removed_model_release_snapshots(*, retain_default=False):
     previous = bundle_version()
     payload = assembly_payload()
     manifest = payload["bundle"]["manifest"]
     pin = payload["provider_profile"]["pin"]
     original = deepcopy(pin)
-    pin["id"] = "providers/replacement"
+    if not retain_default:
+        pin["id"] = "providers/replacement"
     model = manifest["domains"]["model"]["parameters"]
     model["provider_profile"] = pin
     manifest["lock"] = sorted(
@@ -175,13 +176,13 @@ def test_removed_model_selects_whole_effective_release():
     selected = previous.runtime_assembly.provider_profile.pin.id
     retained = published(bundle_version(definition_id=previous.definition_id, version=2))
     assert retained.snapshot_digest != old.snapshot_digest
-    assert old.snapshot_for_removed_model(effective=retained, selected_model_id=selected) is old
-    adopted = old.snapshot_for_removed_model(effective=effective, selected_model_id=selected)
+    assert old.snapshot_for_model_selection(effective=retained, selected_model_id=selected) is old
+    adopted = old.snapshot_for_model_selection(effective=effective, selected_model_id=selected)
     assert adopted is effective
     assert adopted.bound_version.runtime_assembly.provider_profile.pin.id == "providers/replacement"
     assert adopted.snapshot_digest != old.snapshot_digest
     with pytest.raises(ValueError, match="production scope"):
-        old.snapshot_for_removed_model(
+        old.snapshot_for_model_selection(
             effective=published(bundle_version()), selected_model_id=selected
         )
 

@@ -122,3 +122,30 @@ def test_business_model_options_match_send_admission(monkeypatch):
         app.settings, app.agent_registry, snapshot.definition_id, "dev",
         request.host_context, request.verified_host_grant,
     )
+
+
+def test_new_model_adopts_whole_release_when_current_model_is_retained():
+    old, effective = removed_model_release_snapshots(retain_default=True)
+    event_store = Mock()
+    event_store.list_for_session.return_value = []
+    session = Session.create(title="retain current model")
+    default = old.bound_version.runtime_assembly.provider_profile.pin
+    added = effective.bound_version.runtime_assembly.selectable_profiles[0].pin
+    assert effective.bound_version.runtime_assembly.provider_profile.pin == default
+
+    for choice in (None, default.id, added.id):
+        event = build_session_message_event(
+            event_store=event_store,
+            session=session,
+            content="continue",
+            clarification_id=None,
+            inherited_snapshot=old,
+            effective_snapshot=effective,
+            selected_model_id=choice,
+        )
+        if choice == added.id:
+            assert event.payload["definition_snapshot"] == effective.model_dump(mode="json")
+            assert event.payload["selected_model_pin"] == added.model_dump(mode="json")
+        else:
+            assert "definition_snapshot" not in event.payload
+            assert event.payload["selected_model_pin"] == default.model_dump(mode="json")
