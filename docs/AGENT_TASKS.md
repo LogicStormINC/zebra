@@ -37504,3 +37504,6 @@ in PostgreSQL task_admission.py and its existing atomic rollback regression.
 
 CA-HA-03 event position addendum: own the predecessor validation seam in
 PostgreSQL task_event_positions.py and its existing ordering tests.
+
+CA-HA-03 atomic admission timings addendum: own phase instrumentation
+in client_admission_atomic.py and the isolated E1 delta image entry.

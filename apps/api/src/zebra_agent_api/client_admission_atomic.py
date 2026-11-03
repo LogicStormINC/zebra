@@ -1,5 +1,6 @@
 """Explicit same-PG surface composition; legacy admissions retain their old commits."""
 
+import logging
 from time import monotonic
 from typing import Any
 
@@ -13,6 +14,8 @@ from agent_storage.postgres.client_control_leases import PostgresClientControlLe
 from agent_storage.postgres.client_sessions import PostgresClientSessionRegistry
 from agent_storage.postgres.task_io import current_task_io_deadline
 from psycopg.errors import LockNotAvailable
+
+logger = logging.getLogger(__name__)
 
 
 def eligible_atomic_surface(app: Any) -> bool:
@@ -40,6 +43,7 @@ def execute_atomic_surface(
 ) -> None:
     from zebra_agent_api.client_admission_operations import _authorize, _dispatch, _persist_result
 
+    started = monotonic()
     store = app.stores.idempotency
     protocol = "atomic-task/1" if body.kind == "task_create" else "atomic-surface/1"
     from zebra_agent_api.client_admission_operations import _header
@@ -65,10 +69,20 @@ def execute_atomic_surface(
         prepared = prepare_initial_surface(app, request, body, scoped)
         if prepared is None:
             return
+    prepared_at = monotonic()
     if not start_atomic_surface(store, scoped, digest, protocol=protocol):
         return
+    fenced_at = monotonic()
+    stages: list[tuple[str, int]] = []
+
+    def mark(stage: str) -> None:
+        if protocol == "atomic-task-run/1":
+            stages.append((stage, int((monotonic() - started) * 1000)))
+
     def dispatch_transaction() -> None:
+        mark("transaction_begin")
         with atomic_surface_transaction(store, scoped, digest):
+            mark("transaction_entered")
             rejected = False
             if protocol == "atomic-message-surface/1":
                 from agent_storage.postgres.message_surface_anchor import lock_message_anchor
@@ -113,6 +127,7 @@ def execute_atomic_surface(
                     )
             # Any partial error, budget/receipt failure or final denial rolls back every
             # surface write. No external I/O/Worker execution is admitted by this protocol.
+            mark("dispatch_finished")
             meta = store.get(
                 action="client-admission-v1-claim", idempotency_key=scoped
             ).response_body
@@ -122,6 +137,9 @@ def execute_atomic_surface(
                 raise AtomicSurfaceAborted("surface not admitted")
             if not _persist_result(store, response, operation, scoped, key, digest):
                 raise AtomicSurfaceAborted("atomic receipt unavailable")
+            mark("receipt_written")
+        mark("transaction_committed")
+
     try:
         try:
             dispatch_transaction()
@@ -134,3 +152,14 @@ def execute_atomic_surface(
             dispatch_transaction()
     except AtomicSurfaceAborted:
         return
+    finally:
+        if stages:
+            logger.info(
+                "Atomic first Run milestones elapsed_ms=%s",
+                [
+                    ("prepared", int((prepared_at - started) * 1000)),
+                    ("fenced", int((fenced_at - started) * 1000)),
+                    *stages,
+                    ("dispatch_return", int((monotonic() - started) * 1000)),
+                ],
+            )

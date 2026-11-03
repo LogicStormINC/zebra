@@ -20123,3 +20123,11 @@ only three observed in-flight submissions. Next compare admission
 phase timings with and without SSE over repeated windows.
 Evidence preflight1-idle-repair29-6353db9f*, preflight1-sse-repair29-cd83f38d*,
 repair29-low-sse-original-receipts.json and repair29-low-with-sse-425caa84*.
+
+CA-HA-03 atomic first-Run diagnostics record cumulative milliseconds
+for preparation, durable fence, transaction entry, dispatch, receipt
+write, and successful transaction exit. Separate attempt milestones
+remain visible across the existing lock retry. Logging contains only
+fixed labels and times; request deadline and receipt behavior unchanged.
+Ruff and 31 admission API tests passed. Next run the same isolated
+low-rate pair and mixed load with milestone logging active.
