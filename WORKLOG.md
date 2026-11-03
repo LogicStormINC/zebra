@@ -19169,3 +19169,27 @@ Worker entry point and verifies exactly one child launch. First probe lacked
 a lease serialization stub, corrected before confirming the intended red.
 Focused tests 34 passed, 2 skipped, make check passed. Candidate source only.
 Original session and receipt were inspected read-only.
+
+### CA-HA-03 E1 Native14: fenced recovery after committed answer
+
+- Isolated OrbStack only: source c5b84532, ARM platform manifest
+  sha256:0529e9b63ec1d9173deb13ca921b2941d2cafeae1af37e027d9cff884eff89ff.
+  Both logical nodes passed readiness and TLS/SSE meter checks. Trust revision
+  14, definition 80b05cfc-27bd-444b-aa2c-5a0e24e49fe6. Cold switch preserved
+  existing event, budget, model and executor receipt hashes. No migration.
+- A 5 Hz diagnostic stopped at the 32 in-flight reservation safety limit:
+  32 POSTs, 32 accepted and completed, 32 settled model reservations, zero
+  unknown submissions, tool calls or OCI instances. Admission median 1.902s,
+  max 3.593s, 14 exceeded 2s. This does not pass the sustained E1 gate.
+- Injected one child exit before finalization and result IPC, after the
+  canonical answer was present. The isolated Worker wrote the matching exit
+  receipt and completed task 2dfe8fda-265a-4db0-ab4e-f8f58eb5afbf from
+  canonical state: exactly one answer, completion, and settled model
+  reservation; no active lease or pending command. Removed the temporary
+  Worker bind mounts and verified clean source imports on both nodes.
+- Private evidence under .artifacts/cloud-ha-e1: cold-close14.json,
+  health-close14.json, publication-c5b84532.json, preflight5-close14-*,
+  fault-close14-*/readonly-original.json and fault-marker-*.txt.
+- Next: sample remaining admission bottleneck with concurrent DB wait
+  attribution on Native14. Full corpus, 256 SSE, sustained 5 Hz, failover,
+  soak and independent physical host acceptance remain open.
