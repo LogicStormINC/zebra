@@ -5,7 +5,7 @@ import json
 import re
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from uuid import UUID
 
 import httpx
@@ -25,6 +25,8 @@ class Stream:
     failure: str | None = None
     keepalives: int = 0
     reason: str | None = None
+    renewal_gaps: list[float] = field(default_factory=list)
+    renewing_since: float | None = None
 
 
 class StreamWindowError(RuntimeError):
@@ -60,6 +62,7 @@ async def _event_frames(
     async for line in lines:
         if line.startswith(": keepalive"):
             row.keepalives += 1
+            _mark_resumed(row)
         elif line.startswith("id:"):
             event_id = int(line[3:].strip())
         elif line.startswith("data:"):
@@ -69,8 +72,15 @@ async def _event_frames(
                 if event_id < 0 or (row.last_id is not None and event_id <= row.last_id):
                     raise ValueError("SSE cursor did not advance")
                 row.last_id = event_id
+                _mark_resumed(row)
                 yield event_id, tuple(data)
             event_id, data = None, []
+
+
+def _mark_resumed(row: Stream) -> None:
+    if row.renewing_since is not None:
+        row.renewal_gaps.append(asyncio.get_running_loop().time() - row.renewing_since)
+        row.renewing_since = None
 
 
 @asynccontextmanager
@@ -82,9 +92,12 @@ async def hold_streams(
     principal_token: str,
     count: int = 256,
     startup_timeout: float = 120,
+    renew_after: float | None = None,
 ) -> AsyncIterator[list[Stream]]:
     if not 1 <= count <= 256 or startup_timeout <= 0:
         raise ValueError("invalid E1 stream inventory")
+    if renew_after is not None and not 0 < renew_after < 1800:
+        raise ValueError("invalid SSE renewal interval")
     path = f"/tasks/{UUID(task_id)}/stream"
     loop = asyncio.get_running_loop()
     rows = [Stream(index % len(_NODES)) for index in range(count)]
@@ -94,34 +107,50 @@ async def hold_streams(
     async def hold(row: Stream, signal: asyncio.Event) -> None:
         response = None
         try:
-            async with gates[row.node]:
-                signed = await _exchange(client, principal_token, binding)
-                if signed is None:
-                    row.failure = "grant_failed"
+            while True:
+                async with gates[row.node]:
+                    signed = await _exchange(client, principal_token, binding)
+                    if signed is None:
+                        row.failure = "grant_failed"
+                        return
+                    cursor = row.last_id
+                    request = client.build_request(
+                        "GET",
+                        _NODES[row.node] + path,
+                        params={"after_sequence": cursor} if cursor is not None else None,
+                        headers={"Authorization": "Bearer " + signed, "Origin": _ORIGIN},
+                    )
+                    response = await client.send(request, stream=True, follow_redirects=False)
+                    row.status = response.status_code
+                    content_type = response.headers.get("content-type", "")
+                    if row.status != 200 or not content_type.startswith("text/event-stream"):
+                        row.failure = "invalid_stream_response"
+                        if content_type.startswith("application/json"):
+                            row.reason = await _problem_code(response)
+                        return
+                    frames = _event_frames(response.aiter_lines(), row)
+                    if cursor is None:
+                        first = await anext(frames, None)
+                        if first is None:
+                            row.failure = "unexpected_eof"
+                            return
+                        row.first_id = first[0]
+                        row.opened = loop.time()
+                        signal.set()
+                timer = asyncio.timeout(renew_after)
+                try:
+                    async with timer:
+                        async for _ in frames:
+                            pass
+                except TimeoutError:
+                    if not timer.expired() or row.renewing_since is not None:
+                        raise
+                    row.renewing_since = loop.time()
+                    await response.aclose()
+                    response = None
+                else:
+                    row.failure = "unexpected_eof"
                     return
-                request = client.build_request(
-                    "GET",
-                    _NODES[row.node] + path,
-                    headers={"Authorization": "Bearer " + signed, "Origin": _ORIGIN},
-                )
-                response = await client.send(request, stream=True, follow_redirects=False)
-                row.status = response.status_code
-                if row.status != 200 or not response.headers.get("content-type", "").startswith(
-                    "text/event-stream"
-                ):
-                    row.failure = "invalid_stream_response"
-                    if response.headers.get("content-type", "").startswith("application/json"):
-                        row.reason = await _problem_code(response)
-                    return
-                frames = _event_frames(response.aiter_lines(), row)
-                first = await anext(frames, None)
-                if first is not None:
-                    row.first_id = first[0]
-                    row.opened = loop.time()
-                    signal.set()
-            async for _ in frames:
-                pass
-            row.failure = "unexpected_eof"
         except Exception as exc:
             row.failure = type(exc).__name__
         finally:
@@ -140,7 +169,7 @@ async def hold_streams(
         if any(row.opened is None or row.closed is not None for row in rows):
             raise StreamWindowError("E1 SSE readiness barrier failed", rows)
         yield rows
-        if any(row.closed is not None for row in rows):
+        if any(row.closed is not None or row.renewing_since is not None for row in rows):
             raise StreamWindowError("E1 SSE inventory dropped during the measurement window", rows)
     finally:
         for task in tasks:

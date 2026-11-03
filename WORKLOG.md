@@ -21175,3 +21175,13 @@ Node 1 delivered exact cursor 1 with identical data lines. The
 helper rejects duplicate/nonmonotonic IDs and truncated frames.
 This is planned reconnect of one stream, not the 256-stream rotation
 or node-loss fault case. Corpus generation remains live.
+
+CA-HA-03 optional raw SSE renewal uses a new grant and the last
+complete cursor. Only a complete successor frame or keepalive
+closes the recorded renewal interval. Unexpected EOF, rejected
+cursor, and unfinished renewal at window end still fail the
+window. Live two-node check on one synthetic Task renewed one
+stream per node after 22s; both retained cursor 2 and observed
+the next keepalive after 15.348/15.581s. These intervals include
+heartbeat cadence and do not measure TCP outage duration.
+256-stream renewals and steady acceptance remain unverified.
