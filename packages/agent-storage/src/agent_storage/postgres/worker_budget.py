@@ -15,6 +15,7 @@ from agent_core.ports.worker_budget import (
     trusted_usage,
 )
 from agent_orchestration.domain.orchestration_budget import BudgetReservation, BudgetUsageReceipt
+from psycopg.errors import LockNotAvailable
 from psycopg.types.json import Jsonb
 
 from agent_storage.postgres import worker_budget_queries as q
@@ -122,8 +123,15 @@ class PostgresWorkerBudgetStore:
                 raise WorkerBudgetError("Task deadline exceeded or binding moved")
 
     def check(self, binding: WorkerBudgetBinding) -> float:
-        with self._phase() as c:
-            return q.remaining(c, self.namespace, binding)
+        # This read can be retried after rollback without repeating a provider call.
+        for attempt in range(2):
+            try:
+                with self._phase() as c:
+                    return q.remaining(c, self.namespace, binding)
+            except LockNotAvailable:
+                if attempt == 1:
+                    raise
+        raise AssertionError("unreachable budget check retry state")
 
     def reserve_model(
         self, binding: WorkerBudgetBinding, request: ModelRequestBudget

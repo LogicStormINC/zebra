@@ -37441,3 +37441,7 @@ raw Task and Session source-head recovery boundary.
 CA-HA-03 public execution command identity addendum (Luke Ding/Codex):
 extend owned command_submission.py and tests/api/test_stream_command_admission_api.py
 to reject new Cloud Run/Resume intents missing an explicit Run identifier.
+
+CA-HA-03 fenced budget check retry addendum: reuse owned PostgreSQL
+worker_budget.py and tests/worker/test_worker_budget.py for one independent
+transaction retry on an explicit lock timeout during the read-only check.

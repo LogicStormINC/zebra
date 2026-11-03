@@ -19536,3 +19536,12 @@ attributing the earlier original to this phase. Next introduce one fresh
 transaction retry for the side-effect-free fenced budget check and verify
 under the same injection with the holder released after the first timeout.
 Private evidence model-postwire-zebra*.log and model-postwire-736-*/0.json.
+
+CA-HA-03 budget check candidate: PostgreSQL check retries once in a new
+transaction only on LockNotAvailable. Both attempts revalidate the exact
+binding, lease fence, STOP and absolute deadline. Reservation, settlement
+and model transport are outside the retry. Tests verify transaction exit
+before retry, repeated timeout and revoked-fence propagation. Focused
+31 passed, 3 skipped, Ruff/diff clean. Next use the isolated post-wire
+lock fixture to release the holder after the first check times out and
+verify one provider response, one settled receipt and completion.

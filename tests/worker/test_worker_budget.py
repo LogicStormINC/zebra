@@ -284,3 +284,44 @@ def test_budgeted_research_refuses_before_legacy_child_creation():
     )
     assert result.status is ToolCallStatus.FAILED
     assert result.metadata["reason_code"] == "worker_budget_delegation_unsupported"
+
+
+@pytest.mark.parametrize("second_error", [None, "lock", "fence"])
+def test_budget_lock_retry_opens_fresh_phase_and_rechecks_binding(monkeypatch, second_error):
+    from contextlib import contextmanager
+
+    from agent_core.domain.leases import LeaseLostError
+    from agent_storage.postgres import worker_budget as native
+    from psycopg.errors import LockNotAvailable
+
+    opened, closed = [], []
+    binding = object()
+
+    @contextmanager
+    def phase():
+        assert len(opened) == len(closed)
+        connection = object()
+        opened.append(connection)
+        try:
+            yield connection
+        finally:
+            closed.append(connection)
+
+    def remaining(connection, namespace, actual_binding):
+        assert connection is opened[-1]
+        assert namespace == "ha-test" and actual_binding is binding
+        if len(opened) == 1 or second_error == "lock":
+            raise LockNotAvailable()
+        if second_error == "fence":
+            raise LeaseLostError("revoked during retry")
+        return 3.0
+
+    store = native.PostgresWorkerBudgetStore("dbname=fixture", deployment_namespace="ha-test")
+    monkeypatch.setattr(store, "_phase", phase)
+    monkeypatch.setattr(native.q, "remaining", remaining)
+    if second_error:
+        with pytest.raises(LockNotAvailable if second_error == "lock" else LeaseLostError):
+            store.check(binding)
+    else:
+        assert store.check(binding) == 3.0
+    assert len(opened) == 2 and opened == closed
