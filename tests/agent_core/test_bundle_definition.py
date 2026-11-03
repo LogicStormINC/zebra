@@ -116,9 +116,8 @@ def published(version):
         actor_ref="test-publisher",
         effective_at=NOW,
     )
-    return BundleDefinitionSnapshot.from_release(
-        release=release, version=version, resolved_at=NOW
-    )
+    return BundleDefinitionSnapshot.from_release(release=release, version=version, resolved_at=NOW)
+
 
 def removed_model_release_snapshots():
     previous = bundle_version()
@@ -133,6 +132,31 @@ def removed_model_release_snapshots():
         [pin if entry == original else entry for entry in manifest["lock"]],
         key=lambda entry: (entry["kind"], entry["id"], entry["version"]),
     )
+    from agent_core.domain.runtime_bundle import (
+        builtin_component_pin,
+        runtime_bundle_catalog_digest,
+    )
+
+    alternate = deepcopy(payload["provider_profile"])
+    alternate["models"] = ["example/alternate"]
+    alternate["pin"]["id"] = "providers/alternate"
+    alternate["pin"]["digest"] = canonical_provider_profile_digest(alternate)
+    domain = manifest["domains"]["model"]
+    old_component = domain["component"]
+    domain["component"] = builtin_component_pin("model", selectable=True).model_dump(mode="json")
+    model["selectable_models"] = [
+        {"provider_profile": alternate["pin"], "model": "example/alternate"}
+    ]
+    manifest["catalog_digest"] = runtime_bundle_catalog_digest(selectable=True)
+    manifest["lock"] = sorted(
+        [
+            domain["component"],
+            alternate["pin"],
+            *(p for p in manifest["lock"] if p != old_component),
+        ],
+        key=lambda entry: (entry["kind"], entry["id"], entry["version"]),
+    )
+    payload["selectable_profiles"] = [alternate]
     manifest["domains"]["instructions"]["parameters"]["system_text"] = "new instructions"
     payload["bundle"]["bundle_digest"] = json_digest(manifest)
     updated = bundle_version(

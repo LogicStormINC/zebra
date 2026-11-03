@@ -15,7 +15,9 @@ def test_follow_up_pins_new_release_and_rejects_removed_explicit_choice():
     old_pin = old.bound_version.runtime_assembly.provider_profile.pin
     new_pin = effective.bound_version.runtime_assembly.provider_profile.pin
 
-    for choice in (None, new_pin.id):
+    alternate_pin = effective.bound_version.runtime_assembly.selectable_profiles[0].pin
+    assert alternate_pin != new_pin
+    for choice, expected in ((None, new_pin), (alternate_pin.id, alternate_pin)):
         event = build_session_message_event(
             event_store=event_store,
             session=session,
@@ -26,7 +28,7 @@ def test_follow_up_pins_new_release_and_rejects_removed_explicit_choice():
             selected_model_id=choice,
         )
         assert event.payload["definition_snapshot"] == effective.model_dump(mode="json")
-        assert event.payload["selected_model_pin"] == new_pin.model_dump(mode="json")
+        assert event.payload["selected_model_pin"] == expected.model_dump(mode="json")
 
     with pytest.raises(ValueError, match="requested model is not selectable"):
         build_session_message_event(
