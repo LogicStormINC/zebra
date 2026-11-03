@@ -20484,3 +20484,15 @@ fresh container and connect timeout). No resubmission. Temporary
 containers and tunnel removed. This tests the real receipt store,
 while API-pool reconnection, automatic fencing and live workload
 remain unqualified. Evidence pg-sync-receipt-two-hosts.json.
+
+CA-HA-03 F-04 persistent native receipt-store pool. One AMD64
+process used postgres_pool_scope(component=api), seeded and read
+one admission result against the sync primary, and kept the pool
+open during exact old-primary fencing and standby promotion.
+The same process/pool and unchanged multi-host DSN retrieved the
+identical record with one read-only call and zero observed errors.
+Readback took 1056 ms after promotion observation, 1969 ms from
+promotion command. No write replay. This uses the unprofiled API
+pool and waits for promotion before GET; in-flight/half-open,
+HTTP deadline path and automatic fencing remain unqualified.
+Evidence pg-sync-pool-two-hosts.json.
