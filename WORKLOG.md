@@ -20324,3 +20324,15 @@ was executed and real model SSE was verified separately. Restored
 the OrbStack Worker. Next use the actual model proxy in the isolated
 namespace and verify a fresh Task is leased and completed by AMD64.
 Evidence amd64-worker-boot-*.log.
+
+CA-HA-03 combined AMD64 API/Worker test accepted one synthetic atomic
+first Run (outer 200, sealed 201, client 2041 ms). Receipt and read-only
+SQL prove e1-amd64-run acquired and released the lease, one accepted
+command, zero model responses. The probe's observation SELECT used
+a wrong lease column, aborted and sent SIGTERM in cleanup. The Task
+then had durable executor_process_interrupted / WorkerExecutorInterrupted
+and suspended. Corrected probe to owner_instance_id. Original remains
+preserved without replay; local Workers restored. This proves remote
+pickup but does not qualify remote execution. Next run a fresh case
+with the corrected observer and retain it until a terminal outcome.
+Private evidence amd64-worker-run-e2fc77229b80.log.
