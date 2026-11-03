@@ -19874,3 +19874,16 @@ HTTP 200 with sealed 201 for Task 47815dc6-38eb-4d65-b812-09f3ce8c2e5a
 in 0.537s. PostgreSQL confirmed one Task, command, completion and settled
 model reservation. Both APIs restored and ready. This proves release
 between attempts, not sustained throughput. Evidence atomic-retry790-*.
+
+CA-HA-03 Native22 source 0881e747 and ARM manifest
+sha256:e1d306db4d3bb5cd5f53390c0757f2cf04247dbb10b5286d744bf10419f85624.
+Both nodes verified 2142 files/3 links, cold record hashes, readiness
+and TLS/SSE. Trust 21 and definition 09e70b9f-80c9-45a6-8224-282ee283f30c.
+Signed atomic mixed 5Hz diagnostic stopped at 17 offers: 10 accepted
+and completed with one settled model each; seven 503 unknowns. All
+seven original GETs still unknown and no repeat POST. All 32 idle
+SSE clients received heartbeats. Max successful POST 1.9767s.
+The single-lock retry is insufficient at mixed load. Next measure
+global lock holders and the SQL budget consumption without replaying
+originals. Private evidence preflight5-atomic22-e8170374*,
+atomic22-with-sse-4544de88* and atomic22-original-receipts.json.
