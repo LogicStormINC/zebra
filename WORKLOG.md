@@ -19414,3 +19414,14 @@ The read index must catch up before any cursor advances. AG-UI checkpoint
 classification and conflicts retain their existing handling. Focused tests
 12 passed, 10 native environment skips; Ruff/diff checks passed. Next use
 the two-file API overlay on both isolated nodes for a fresh live wake.
+
+CA-HA-03 two-module overlay wake drill passed: verified source hashes
+on both Native16 API processes, used 32 authorized raw Task SSE clients
+with 16 added established TCP sockets per node, and posted one fresh
+resume for 081774a6-397e-4770-be07-c1a5662cb061. HTTP 202 and the canonical
+acceptance at sequence 3 matched all 32 delivered cursor IDs with zero
+client errors. The command remains pending; this tests event delivery
+through an active tail, not Worker execution or 256-stream capacity.
+Restored both APIs and checked direct readiness. Private evidence:
+sse18-live-event-f0ffc9df*, sse18-live-resume-original.json, wake-tail18-*.
+Next trace fallback pickup on these accepted commands without resending.
