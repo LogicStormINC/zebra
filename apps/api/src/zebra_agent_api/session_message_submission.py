@@ -6,7 +6,11 @@ from agent_core.application import (
     current_turn,
     project_turns,
 )
-from agent_core.domain.bundle_definition import BundleDefinitionSnapshot, parse_definition_snapshot
+from agent_core.domain.bundle_definition import (
+    BundleDefinitionSnapshot,
+    DefinitionSnapshot,
+    parse_definition_snapshot,
+)
 from agent_core.domain.events import EventType, SessionEvent
 from agent_core.domain.runtime_bundle_types import ArtifactPin
 from agent_core.domain.sessions import Session
@@ -24,6 +28,7 @@ def build_session_message_event(
     model_profile: str | None = None,
     reasoning_effort: str | None = None,
     selected_model_id: str | None = None,
+    inherited_snapshot: DefinitionSnapshot | None = None,
 ) -> SessionEvent:
     """Build the next durable message Event with ADR-026 Turn identity."""
 
@@ -35,7 +40,9 @@ def build_session_message_event(
             None,
         )
         raw_snapshot = prepared.payload.get("definition_snapshot") if prepared is not None else None
-        snapshot = parse_definition_snapshot(raw_snapshot) if raw_snapshot is not None else None
+        snapshot = (
+            parse_definition_snapshot(raw_snapshot) if raw_snapshot is not None else inherited_snapshot
+        )
         if isinstance(snapshot, BundleDefinitionSnapshot):
             remembered = next(
                 (

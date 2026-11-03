@@ -343,6 +343,7 @@ class ZebraAgentApi(
                 status_code=404,
                 body={"session_id": session_id, "status": "not_found"},
             )
+        workspace = self.stores.workspaces.get_workspace(session_key)
         try:
             event = build_session_message_event(
                 event_store=self.stores.events,
@@ -351,6 +352,7 @@ class ZebraAgentApi(
                 clarification_id=parsed["clarification_id"],
                 model_profile=parsed["model_profile"],
                 selected_model_id=parsed["selected_model_id"],
+                inherited_snapshot=workspace.definition_snapshot if workspace is not None else None,
                 reasoning_effort=parsed["reasoning_effort"],
             )
         except ValueError as exc:
