@@ -20248,3 +20248,15 @@ read-only probe. Eight connection setups median 149.13 ms (56.89–
 Temporary forward exited with the probe, original listeners untouched.
 Next qualify the other dependencies using isolated forwards and test
 strict admission over the measured link. No server API/Worker activation.
+
+CA-HA-03 AMD64 cross-host dependency probe used temporary alternate
+loopback forwards. Authenticated Redis TLS PONG 51.95 ms, MinIO TLS
+readiness HTTP 200 in 33.04 ms, authority TLS GET HTTP 405 in
+42.88 ms, Rabbit AMQP method frame 153.88 ms, model backend TCP open.
+These are reachability checks, not signed authority or authenticated
+Rabbit and S3 workload acceptance. Existing remote model TLS route
+on 443 timed out after 5 s, consistent with the old dependency
+forward problem. Temporary forwards exited; no remote API/Worker
+started. Next wire a dedicated isolated model TLS listener and test
+the native signed/streaming and authenticated clients.
+Evidence amd64-dependencies-837defbe.txt.
