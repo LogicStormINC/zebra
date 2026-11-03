@@ -405,11 +405,12 @@ def run(application: Path, evidence_path: Path, screenshot_path: Path) -> None:
         )
         assert session["workspace"]["runtime_name"] == "os-sandbox"
         app.refresh()
-        app.wait_body("Runtime")
-        app.wait_element(
-            "css selector",
-            '[data-testid="runtime-name"][data-runtime-name="os-sandbox"]',
-        )
+        app.wait_body("APPROVAL_COMPLETE")
+        runtime_marker = '[data-testid="runtime-name"][data-runtime-name="os-sandbox"]'
+        app.wait_element("css selector", '[role="tab"][aria-selected="true"]')
+        app.click("xpath", "//button[@role='tab' and normalize-space(.)='上下文']")
+        app.execute("document.querySelector(arguments[0])?.scrollIntoView();", runtime_marker)
+        app.wait_element("css selector", runtime_marker)
         steps.append("approval-real-runtime")
 
         app.submit("E2E_FAILURE packaged failure")
