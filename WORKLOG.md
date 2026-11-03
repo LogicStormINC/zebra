@@ -19747,3 +19747,13 @@ either attempt still uses the existing read confirmation and never
 reissues an uncertain write. Focused 2 passed, 19 native DSN skips and
 Ruff clean. Next inject a real stream row lock against the first
 HARNESS_ATTEMPT_STARTED append on the isolated candidate.
+
+CA-HA-03 Native20 real canonical append lock drill: synthetic Task
+eb06be80-be13-4150-b35b-5ec96460239c. A separate PostgreSQL connection
+locked the stream row at the first HARNESS_ATTEMPT_STARTED append.
+The actual LockNotAvailable marker identified event
+e2210a67-ad10-4bff-b7f3-33f1ae887eeb. Holder released on unwind and
+the candidate persisted that exact event once. One completion and
+one settled model reservation confirmed. Both temporary Worker
+overlays removed and clean imports verified. Evidence canonical-lock-
+zebra*.log and canonical-lock-781-*/0.json.
