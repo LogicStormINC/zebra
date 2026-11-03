@@ -20047,3 +20047,11 @@ single rebuild did not clear the sustained-capacity gate. Next inspect
 event-position assignment round trips and keep the stable replay order.
 Evidence preflight5-index27-189102b6*, index27-original-receipts.json,
 index27-zebra*.log and index27-with-sse-741907d2*.
+
+CA-HA-03 event-position assignment reuses the validated predecessor
+inside a contiguous source batch. Legacy validation and each batch
+boundary still read the persisted predecessor. Fresh assignment
+requires exactly one updated source row before the next iteration.
+Ruff and diff check passed; 51 focused PostgreSQL 17 tests passed.
+The separate full run remains active in the 100,000-event fixture;
+no full-suite or isolated E1 capacity result is claimed.

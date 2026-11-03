@@ -98,13 +98,17 @@ def backfill_task_event_positions(
             (namespace, member["session_id"], member["event_position_source_cursor"], limit),
         ).fetchall()
         source_cursor = member["event_position_source_cursor"]
+        previous_position: int | None = None
         for row in rows:
             if row["sequence"] != source_cursor + 1:
                 raise PostgresAgentTaskConflictError("canonical Task source coverage is incomplete")
             position = next_sequence if row["source_task"] is None else row["source_position"]
             if row["source_task"] is not None and position >= next_sequence:
                 raise PostgresAgentTaskConflictError("source Event position exceeds Task counter")
-            _assign(connection, namespace, task_id, row, position)
+            _assign(
+                connection, namespace, task_id, row, position, previous_position=previous_position
+            )
+            previous_position = position
             next_sequence += int(row["source_task"] is None)
             source_cursor = row["sequence"]
         limit -= max(len(rows), 1)  # Empty Segments also consume bounded work.
@@ -212,13 +216,21 @@ def _position_rows(
     return list(rows)
 
 
-def _assign(connection: Any, namespace: str, task_id: TaskId, row: Any, position: int) -> int:
+def _assign(
+    connection: Any,
+    namespace: str,
+    task_id: TaskId,
+    row: Any,
+    position: int,
+    *,
+    previous_position: int | None = None,
+) -> int:
     actual = row["source_task"], row["source_position"]
     if actual[0] is not None and actual[0] != task_id:
         raise PostgresAgentTaskConflictError("source Event belongs to another Task")
     if actual != (None, None) and actual != (task_id, position):
         raise PostgresAgentTaskConflictError("legacy Task reservation conflicts with source")
-    if row["sequence"] > 0:
+    if previous_position is None and row["sequence"] > 0:
         previous = connection.execute(
             """SELECT task_id,task_sequence FROM session_events
                WHERE deployment_namespace=%s AND session_id=%s AND sequence=%s""",
@@ -228,14 +240,17 @@ def _assign(connection: Any, namespace: str, task_id: TaskId, row: Any, position
             raise PostgresAgentTaskConflictError("legacy Task reservation omits a source prefix")
         if previous["task_id"] != task_id:
             raise PostgresAgentTaskConflictError("source Event belongs to another Task")
-        if previous["task_sequence"] >= position:
-            raise PostgresAgentTaskConflictError("legacy Task reservations invert source order")
+        previous_position = previous["task_sequence"]
+    if previous_position is not None and previous_position >= position:
+        raise PostgresAgentTaskConflictError("legacy Task reservations invert source order")
     if actual == (None, None):
-        connection.execute(
+        updated = connection.execute(
             f"""UPDATE session_events SET task_id=%s,task_sequence=%s,event_bytes_bound={BYTE_BOUND}
                WHERE deployment_namespace=%s AND event_id=%s AND task_id IS NULL""",
             (task_id, position, namespace, row["event_id"]),
         )
+        if updated.rowcount != 1:
+            raise PostgresAgentTaskConflictError("source Event changed during position assignment")
     else:
         connection.execute(
             f"UPDATE session_events SET event_bytes_bound={BYTE_BOUND} "
