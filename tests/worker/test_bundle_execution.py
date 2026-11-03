@@ -152,6 +152,7 @@ def test_actual_worker_recovers_original_snapshot_after_current_profile_change(
                 registered_profile if requested == registered_profile.pin else None
             ),
         )
+    monkeypatch.setenv("BUNDLE_MODEL_KEY", "fixture-key-before-rotation")
     sid, snapshot = seed(tmp_path, assembly)
     # A new catalog/provider/default model is not the task's configuration authority.
     from agent_core.domain.runtime_assembly import canonical_provider_profile_digest
@@ -163,11 +164,14 @@ def test_actual_worker_recovers_original_snapshot_after_current_profile_change(
     catalog["providers"] = [profile]
     Path(configured.runtime_bundle_config).write_text(json.dumps(catalog))
     configured = replace(configured, model=replace(configured.model, model="new-default"))
-    monkeypatch.setenv("BUNDLE_MODEL_KEY", "private-key")
+    monkeypatch.setenv("BUNDLE_MODEL_KEY", "fixture-key-after-rotation")
     bodies = []
-    with httpx.Client(
-        transport=httpx.MockTransport(lambda request: reply(request, bodies))
-    ) as client:
+    def receive(request):
+        assert request.headers["Authorization"] == "Bearer fixture-key-after-rotation"
+        assert request.url.host == "models.example"
+        return reply(request, bodies)
+
+    with httpx.Client(transport=httpx.MockTransport(receive)) as client:
         result = worker(database, configured, client).execute_session(
             sid, worker_id="bundle-worker"
         )
@@ -178,7 +182,9 @@ def test_actual_worker_recovers_original_snapshot_after_current_profile_change(
     events = SQLiteEventStore(database).list_for_session(sid)
     prepared = next(e for e in events if e.event_type.value == "task_prepared")
     assert prepared.payload["definition_snapshot"] == snapshot.model_dump(mode="json")
-    assert "private-key" not in json.dumps([event.payload for event in events])
+    payloads = json.dumps([event.payload for event in events])
+    assert "fixture-key-before-rotation" not in payloads
+    assert "fixture-key-after-rotation" not in payloads
     restored = SQLiteWorkspaceProjectionStore(database).get_workspace(sid)
     assert restored.definition_snapshot == snapshot
 
