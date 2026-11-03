@@ -46,8 +46,9 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- if or (gt (int .Values.worker.executionSlots) (int $b.execution_slots)) (lt (int $b.fleet.executor) (int (mul $b.fleet.worker $b.execution_slots))) }}
 {{- fail "database budget omits private executors" }}
 {{- end }}
-{{- $processes := add $b.fleet.api $b.fleet.worker $b.fleet.executor $b.fleet.cleanup $b.fleet.scheduler }}
-{{- $sockets := mul $processes (add $b.pool $b.normal $b.read $b.control $b.probe) }}
+{{- $processes := add $b.fleet.api $b.fleet.worker $b.fleet.cleanup $b.fleet.scheduler }}
+{{- $executor := default $b $b.executor_limits }}
+{{- $sockets := add (mul $processes (add $b.pool $b.normal $b.read $b.control $b.probe)) (mul $b.fleet.executor (add $executor.pool $executor.normal $executor.read $executor.control $executor.probe)) }}
 {{- if gt (int (add $sockets (mul $b.fleet.api $b.receipt) $b.server_reserved $b.external)) (int $b.max_connections) }}
 {{- fail "database fleet exceeds server connection budget" }}
 {{- end }}

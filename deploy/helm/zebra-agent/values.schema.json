@@ -78,6 +78,18 @@
           "minimum": 1,
           "maximum": 262143
         },
+        "executor_limits": {
+          "type": "object",
+          "required": ["pool", "normal", "read", "control", "probe"],
+          "additionalProperties": false,
+          "properties": {
+            "pool": {"type": "integer", "minimum": 1, "maximum": 32},
+            "normal": {"type": "integer", "minimum": 1, "maximum": 32},
+            "read": {"type": "integer", "minimum": 1, "maximum": 32},
+            "control": {"type": "integer", "minimum": 1, "maximum": 32},
+            "probe": {"type": "integer", "minimum": 1, "maximum": 32}
+          }
+        },
         "fleet": {
           "type": "object",
           "required": [

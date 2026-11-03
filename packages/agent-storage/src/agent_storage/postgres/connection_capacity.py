@@ -33,7 +33,7 @@ class ConnectionBudget:
             raise ValueError("database budget requires an explicit operator DSN")
         self.profile = profile
         self._lock, self._closed = Lock(), False
-        self._slots = {k: BoundedSemaphore(getattr(profile, k))
+        self._slots = {k: BoundedSemaphore(profile.limit(component, k))
                        for k in ("normal", "read", "control", "probe")}
         if component == "api" and profile.receipt:
             self._slots["receipt"] = BoundedSemaphore(profile.receipt)

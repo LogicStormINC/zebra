@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from types import MappingProxyType
 from typing import Any
 
+PROCESS_LIMITS = ("pool", "normal", "read", "control", "probe")
 COMPONENTS = frozenset({"api", "worker", "executor", "cleanup", "scheduler"})
 
 
@@ -31,6 +32,7 @@ class CapacityProfile:
     execution_slots: int
     fleet: Mapping[str, int]
     receipt: int = 0
+    executor_limits: Mapping[str, int] | None = None
 
     @classmethod
     def parse(cls, value: str) -> "CapacityProfile":
@@ -40,9 +42,20 @@ class CapacityProfile:
             data = json.loads(value, object_pairs_hook=_unique)
             if isinstance(data, dict):
                 data.setdefault("receipt", 0)
+                if "executor_limits" in data:
+                    limits = data["executor_limits"]
+                    if (
+                        not isinstance(limits, dict)
+                        or set(limits) != set(PROCESS_LIMITS)
+                        or any(type(v) is not int or not 1 <= v <= 32 for v in limits.values())
+                    ):
+                        raise ValueError("invalid executor connection limits")
+                    data["executor_limits"] = MappingProxyType(limits)
+                else:
+                    data["executor_limits"] = None
             if not isinstance(data, dict) or set(data) != set(cls.__dataclass_fields__):
                 raise ValueError("database budget requires the complete inventory")
-            for key in ("pool", "normal", "read", "control", "probe", "execution_slots"):
+            for key in (*PROCESS_LIMITS, "execution_slots"):
                 if type(data[key]) is not int or not 1 <= data[key] <= 32:
                     raise ValueError("database budget limit outside bounds")
             for key in ("max_connections", "server_reserved", "external"):
@@ -70,11 +83,18 @@ class CapacityProfile:
         except (TypeError, KeyError, RecursionError) as exc:
             raise ValueError("invalid database budget profile") from exc
 
+    def limit(self, component: str, lane: str) -> int:
+        if component == "executor" and self.executor_limits is not None:
+            return self.executor_limits[lane]
+        return int(getattr(self, lane))
+
     @property
     def fleet_connections(self) -> int:
         # Counts are PEAKS including deployment surge, not steady replica targets.
-        per_process = self.pool + self.normal + self.read + self.control + self.probe
-        return sum(self.fleet.values()) * per_process + self.fleet["api"] * self.receipt
+        return sum(
+            count * sum(self.limit(component, lane) for lane in PROCESS_LIMITS)
+            for component, count in self.fleet.items()
+        ) + self.fleet["api"] * self.receipt
 
     def require_server(self, row: dict[str, Any]) -> None:
         if (row["maximum"] != self.max_connections

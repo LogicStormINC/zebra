@@ -72,7 +72,8 @@ def postgres_pool_scope(
                     assert row is not None
                     budget.profile.require_server(row)
             with ConnectionPool[Connection[dict[str, Any]]](
-                dsn, min_size=1, max_size=profile.pool if profile else 8, timeout=2, max_waiting=32,
+                dsn, min_size=1, max_size=profile.limit(component, "pool") if profile else 8,
+                timeout=2, max_waiting=32,
                 kwargs={"row_factory": dict_row, "connect_timeout": 2},
                 check=ConnectionPool.check_connection,
                 reset=_reset_transaction_defaults,

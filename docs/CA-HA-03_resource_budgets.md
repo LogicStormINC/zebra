@@ -352,3 +352,9 @@ endpoint still reachable, and measure connection counts and request
 deadlines under mixed load. Current one-shot probes support the
 primitive only. Runtime composition and production activation remain
 pending.
+
+The optional `databaseBudget.executor_limits` mapping declares all five
+private-executor limits (`pool`, `normal`, `read`, `control`, `probe`).
+Omitting it charges and enforces the shared limits for executors as before.
+Helm and runtime charge the override for every peak executor, including rollout
+overlap, and still reserve server and external connections separately.

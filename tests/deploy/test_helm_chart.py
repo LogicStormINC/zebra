@@ -122,3 +122,21 @@ def test_budget_mode_is_install_only_and_counts_terminating_overlap(tmp_path):
             assert "budget-enabled upgrades" in result.stderr
         if bad_peak:
             assert "terminating overlap" in result.stderr
+
+    for maximum in (257, 256):
+        values["databaseBudget"] = {
+            "enabled": True,
+            "max_connections": maximum,
+            "executor_limits": dict(pool=1, normal=1, read=1, control=1, probe=1),
+        }
+        path.write_text(json.dumps(values))
+        result = subprocess.run(
+            ["helm", "template", "ha-review", str(CHART), "-f", str(path)],
+            capture_output=True, text=True, check=False,
+        )
+        if maximum == 257:
+            assert result.returncode == 0, result.stderr
+            assert "executor_limits" in result.stdout
+        else:
+            assert result.returncode != 0
+            assert "database fleet exceeds server connection budget" in result.stderr

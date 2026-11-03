@@ -56,6 +56,32 @@ def test_fleet_budget_counts_executor_and_rollout_peaks():
         CapacityProfile.parse(json.dumps(data))
 
 
+def test_executor_limits_are_charged_and_enforced_separately():
+    from agent_storage.postgres.capacity_profile import CapacityProfile
+    from agent_storage.postgres.connection_capacity import (
+        ConnectionBudget,
+        DatabaseCapacityExceeded,
+    )
+
+    data = profile_data()
+    data["executor_limits"] = dict(pool=1, normal=1, read=1, control=1, probe=1)
+    data["max_connections"] = 49
+    profile = CapacityProfile.parse(json.dumps(data))
+    assert profile.fleet_connections == 42
+    assert profile.limit("executor", "pool") == 1
+    assert profile.limit("api", "pool") == 2
+    budget = ConnectionBudget("dbname=one", profile, "executor")
+    permit = budget.acquire("normal")
+    try:
+        with pytest.raises(DatabaseCapacityExceeded):
+            budget.acquire("normal")
+    finally:
+        permit.release()
+    data["max_connections"] = 48
+    with pytest.raises(ValueError, match="exceeds server"):
+        CapacityProfile.parse(json.dumps(data))
+
+
 @pytest.mark.parametrize("field,value", [("pool", True), ("normal", 0),
                                          ("read", -1), ("control", 1000000)])
 def test_profile_rejects_unsafe_capacity(field, value):
