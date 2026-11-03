@@ -20399,3 +20399,14 @@ Task mutation or replay. This covers adapter-level read rejection
 and integrity readback; API error mapping, object write response loss
 and loaded F-05 remain unqualified.
 Evidence objects-read-outage-routing31.json.
+
+CA-HA-03 F-05 object write reply loss at the native adapter boundary.
+One conditional PUT of a new synthetic object in a dedicated isolated
+prefix reached actual MinIO and returned success to the fault shim.
+The shim withheld the reply and raised ReadTimeoutError. Native
+adapter surfaced ArtifactObjectUnavailableError. Read-only verify
+and versioned GET recovered the same committed version and bytes
+using the original expectation. Exactly one PUT, no retry; retained
+the synthetic proof object. This does not exercise TCP packet loss
+or API/PG publication receipt handling.
+Evidence objects-lost-response-routing31.json.
