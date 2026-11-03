@@ -37600,3 +37600,6 @@ execution_recovery.py. Keep the post-restoration/handoff refresh unchanged.
 
 CA-HA-03 E1 Context timing follow-up (Luke Ding/Codex, existing branch/worktree):
 own timing seams in Worker context_materialization.py and execution.py.
+
+CA-HA-03 E1 context refresh follow-up (Luke Ding/Codex, existing branch/worktree):
+own same-callback coalescing in context_materialization.py and its snapshot regression.

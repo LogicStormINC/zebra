@@ -238,7 +238,9 @@ def _refresh_claim(
     with task_io_deadline(monotonic() + 2) if cloud else nullcontext():
         if cloud:
             with recorder.mutation():
-                ownership_check()
+                # The active primary read checks the recorder's ownership after reading.
+                if ownership_check is not recorder._ownership_check:
+                    ownership_check()
                 observed = recorder.read_active_session()
                 authority = recorder.worker_mutation_authority
                 assert authority is not None
