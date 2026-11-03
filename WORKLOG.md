@@ -20112,3 +20112,14 @@ Next compare bounded admission with low-rate and idle control samples
 and attribute latency by request stage rather than adjusting deadlines.
 Evidence preflight5-repair29-e64f4ef4*, repair29-repeat-original-receipts.json,
 repair29-with-sse-f98ce34a*, repair29-sched-* and repair29-pressure-*.
+
+CA-HA-03 Native29 low-rate control. One signed atomic POST/s
+without idle observers: all 12 completed, zero unknown, maximum
+client admission 2.0813 s. Same rate with 32 established idle SSE:
+six issued, five completed and one remained unknown via original GET;
+no resubmission, all 32 heartbeats. This single sequential pair
+does not establish SSE causality. It shows failures can occur with
+only three observed in-flight submissions. Next compare admission
+phase timings with and without SSE over repeated windows.
+Evidence preflight1-idle-repair29-6353db9f*, preflight1-sse-repair29-cd83f38d*,
+repair29-low-sse-original-receipts.json and repair29-low-with-sse-425caa84*.
