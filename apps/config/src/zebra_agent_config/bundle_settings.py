@@ -4,6 +4,7 @@ import hashlib
 import hmac
 import json
 import re
+from collections.abc import Callable
 from dataclasses import asdict
 from typing import Annotated, Literal, Self
 
@@ -81,7 +82,13 @@ class RuntimeExecutionCatalog(BundleValue):
             raise ValueError("INVALID_EXECUTION_CATALOG")
         return self
 
-    def resolve(self, bundle: RuntimeBundleEnvelope) -> RuntimeAssembly:
+    def resolve(
+        self,
+        bundle: RuntimeBundleEnvelope,
+        *,
+        registered_profile: Callable[[BundleScope, ArtifactPin], RuntimeProviderProfile | None]
+        | None = None,
+    ) -> RuntimeAssembly:
         manifest = bundle.manifest
         if (
             manifest.scope != self.scope
@@ -93,7 +100,9 @@ class RuntimeExecutionCatalog(BundleValue):
             raise ValueError("BUNDLE_ASSETS_NOT_APPROVED")
         pin = manifest.domains.model.parameters.provider_profile
         profile = next((item for item in self.providers if item.pin == pin), None)
-        if profile is None:
+        if profile is None and registered_profile is not None:
+            profile = registered_profile(self.scope, pin)
+        if profile is None or profile.pin != pin:
             raise ValueError("BUNDLE_PROVIDER_NOT_APPROVED")
         budget = manifest.domains.budget
         if (

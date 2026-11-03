@@ -10,6 +10,8 @@ from typing import TYPE_CHECKING, Any
 
 from agent_core.domain.runtime_bundle import MAX_BUNDLE_BYTES, parse_runtime_bundle
 from agent_core.domain.runtime_bundle_json import json_digest
+from agent_storage.postgres.database import PostgresDatabase
+from agent_storage.postgres.model_profile_registration import PostgresModelProfileRegistrations
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from zebra_agent_config import ZebraAgentSettings
@@ -96,7 +98,17 @@ def _perform(
         if catalog.scope != initial.scope:
             return _error(403, "SCOPE_MISMATCH")
         try:
-            assembly = catalog.resolve(bundle)
+            registrations = (
+                PostgresModelProfileRegistrations(
+                    PostgresDatabase(settings.database_url, deployment_namespace=namespace)
+                )
+                if namespace is not None
+                else None
+            )
+            assembly = catalog.resolve(
+                bundle,
+                registered_profile=registrations.resolve if registrations is not None else None,
+            )
             result.update(
                 bundleDigest=bundle.bundle_digest,
                 assemblyDigest=assembly.assembly_digest,
