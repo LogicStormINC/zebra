@@ -19056,3 +19056,21 @@ Original0fdb Task received one signed STOP202, stopped/resources released in
 1.199s with preserved answer/Event prefix/budget/model counts/exit ACK. Its
 old rate sample still failed. Original39aac remains suspended and unknown;
 no model resend or refund. Both original diagnostic records retained.
+
+
+## 2026-11-03 — Native12 local ARM and retained diagnostic handoff
+
+Source93f7f171, exact ARM image f14db224, marker0, unchanged247. Native12
+published after cold six-app no overlap; old78 fact hashes unchanged across
+fresh29, both APIs ready, Workers control-fresh, cleanup running. 5Hz diagnostic
+hit16 inflight, 29 single201,27 complete/two WorkerExecutorInterrupted before
+model,29 genuine exit pairs, lease/pending0, unknown models remain2 historical.
+22/29 admission>2s, max6.0893; PG captured two stream append lock timeouts
+(previous diagnostic14). No overall SLO or E1 pass. Final CPU window includes
+idle tail, do not interpret per-Task estimate as throughput floor. No AMD12 or
+production work; AMD11 post-build source/digest qualification still open.
+Next: use preflight5-hint12-*/readonly-originals.json and private PG/Worker logs
+under .artifacts/cloud-ha-e1. Correlate the two original interrupted fences
+with exact lock holders/child exit boundary and trace API admission stages.
+Preserve original outcomes, no retry of unknown work. Keep the unchanged
+2vCPU/2GiB and rate/deadline envelope. Full corpus/SSE/steady/fault/soak pending.

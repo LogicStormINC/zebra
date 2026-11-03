@@ -297,3 +297,22 @@ v2 row, 23 decodes in readonly native probes: CPU~0.49s to~0.086s, identical
 projection bytes. Focused217 and real PG14 passed; the first PG teardown FK
 failure is retained with the fixture correction. Native11 with profiling off
 and whole-Task measurements are next; full E1 remains unqualified.
+
+
+### Native12 bounded hint claim and remaining E1 failure (2026-11-03)
+
+A real PG 32-row test reproduced the old hint claim holding stream rows across
+per-row round trips and blocking a durable append at its unchanged timeout.
+Set-based ordered claim and nonblocking busy settlement retain exact fence,
+frontier and DB-clock expiry; no migration or deadline changes. Real PG/Redis15,
+unit29 (2 conditional skips), independent review and make check passed.
+
+Native12 ARM-only isolated pair is live and healthy; old78 facts unchanged.
+Fresh 5Hz diagnostic stopped at16 inflight:29 admitted once,27 completed, two
+safe pre-model executor suspensions, all29 exact exit ACKs.22 admissions above
+2s, max6.0893s. Observed PG lock timeouts14→2 across different bounded cohorts;
+remaining stream append timeouts align with the failure window but the exact
+child cause is unproven. No new unknown model calls, no old replay. Original
+Native11 stale-running Task confirmed stopped in1.199s via one signed control
+operation; original answer/receipts preserved, separate unknown case stays
+suspended. Full E1 corpus/SSE/steady/fault/soak and physical HA remain open.
