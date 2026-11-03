@@ -20348,3 +20348,12 @@ e1-amd64-run, exactly one model response. The synthetic POST flowed
 through the live fixture relay. Prior originals were not replayed.
 Temporary remote containers/forwards exited; OrbStack replicas restored.
 This is cross-host execution smoke; workload and fault qualification remain.
+
+CA-HA-03 cross-physical-host SSE continuity smoke on the completed
+AMD64 Run. Remote API opened the authorized original stream and
+captured two frames. After the remote API exited, the surviving ARM64
+API returned the exact second frame from the first frame's cursor
+using a fresh signed read grant. No Task write. Second OrbStack API
+restored and ready. This validates direct cross-host cursor semantics;
+shared-ingress detection and loaded E1-R remain open.
+Private evidence amd64-stream-*.log and amd64-stream-*-resume.txt.
