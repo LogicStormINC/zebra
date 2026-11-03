@@ -20224,3 +20224,15 @@ the stopped API and verified both node readiness endpoints.
 Evidence lb-health-failover-routing31.json. This checks one read-only
 API process outage. E1-R still requires 32 active Tasks, 256 observers
 and the full fault matrix; both logical nodes share one Mac.
+
+CA-HA-03 physical test node preflight on ubuntu@192.168.101.7:
+x86_64, 16 logical CPUs, 22,534 MiB available memory, 48 GiB free
+on Docker filesystem. Exact E1 API/Worker exited, node TLS alive.
+All six test tunnel ports have loopback listeners; end-to-end TLS
+and latency remain to be verified. Built isolated native AMD64
+837defbe from the existing verified AMD64 base with 36 changed
+runtime paths and verified all 2,142 hashes and three symlinks.
+Local image ID sha256:374ea416e4729b91fc77bb0922ce8f51755de957ebec1f6dab90c5b3df444f82.
+No test API or Worker was activated. Next pin the AMD64 platform
+manifest and qualify tunnel RTT and strict task admission before
+replacing the second OrbStack logical node.
