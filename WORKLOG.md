@@ -20807,3 +20807,13 @@ the provider again. Exactly one answer event and one provider call.
 Evidence pg-sync-worker-promotion.json. Uses the native consumer
 with a deterministic no-tool provider and a fixture lease; recovery
 of an already dispatched provider or tool call remains separate.
+
+CA-HA-03 ordinary model-budget cross-host promotion drill committed
+an exact request reservation and sent one real HTTP POST to a local
+synthetic provider, deliberately omitting result settlement. After
+fencing and rebuild, a successor lease/attempt on the new writer
+was denied an identical reservation with "unknown original". The
+original reservation and single provider request were preserved.
+Evidence pg-sync-worker-unknown-model.json. The harness called the
+native budget store directly around synthetic HTTP; full Worker
+transport/reconciliation and tool-call promotion remain separate.
