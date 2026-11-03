@@ -23,6 +23,12 @@ class Stream:
     keepalives: int = 0
 
 
+class StreamWindowError(RuntimeError):
+    def __init__(self, message: str, rows: list[Stream]) -> None:
+        super().__init__(message)
+        self.rows = rows
+
+
 @asynccontextmanager
 async def hold_streams(
     client: httpx.AsyncClient,
@@ -82,13 +88,16 @@ async def hold_streams(
 
     tasks = [asyncio.create_task(hold(row, event)) for row, event in zip(rows, ready, strict=True)]
     try:
-        async with asyncio.timeout(startup_timeout):
-            await asyncio.gather(*(event.wait() for event in ready))
+        try:
+            async with asyncio.timeout(startup_timeout):
+                await asyncio.gather(*(event.wait() for event in ready))
+        except TimeoutError as exc:
+            raise StreamWindowError("E1 SSE readiness barrier timed out", rows) from exc
         if any(row.opened is None or row.closed is not None for row in rows):
-            raise RuntimeError("E1 SSE readiness barrier failed")
+            raise StreamWindowError("E1 SSE readiness barrier failed", rows)
         yield rows
         if any(row.closed is not None for row in rows):
-            raise RuntimeError("E1 SSE inventory dropped during the measurement window")
+            raise StreamWindowError("E1 SSE inventory dropped during the measurement window", rows)
     finally:
         for task in tasks:
             task.cancel()

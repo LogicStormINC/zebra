@@ -20833,3 +20833,11 @@ window. Five planned offers accepted and five signed original GETs
 returned authenticated completed receipts. Private evidence
 adapter-91cf6605895646d6b310468637b2974b. This used the existing
 runtime and no baseline dataset; it is not E1 capacity evidence.
+
+CA-HA-03 live 256-SSE readiness failed twice, with zero admission POSTs
+in the attempted measurement windows. Added per-stream startup failure
+evidence; second run opened 128/128 streams on node 0 and 107/128 on
+node 1. The remaining 21 on node 1 returned HTTP 503 before any event ID.
+Private window adapter256-recheck-0999A6EF-8455-45F9-BCB3-7809C8F13BA1.
+Both attempts used the existing staging fixture. No full E1 pass; next
+correlate typed 503 reasons and node/database budgets before another run.

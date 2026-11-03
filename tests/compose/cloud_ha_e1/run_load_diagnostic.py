@@ -10,7 +10,7 @@ from pathlib import Path
 import httpx
 from open_loop import run_offers
 from signed_load import _record, recover_original, submit_once
-from sse_load import hold_streams
+from sse_load import StreamWindowError, hold_streams
 
 
 async def run(args: argparse.Namespace) -> None:
@@ -53,6 +53,9 @@ async def run(args: argparse.Namespace) -> None:
                 offers = await run_offers(
                     submit, rate=5, duration=args.seconds, max_inflight=16, request_timeout=12
                 )
+        except StreamWindowError as exc:
+            rows = exc.rows
+            raise
         finally:
             _record(
                 args.output / "window.json",
