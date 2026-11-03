@@ -6,6 +6,7 @@ import json
 import os
 import subprocess
 import tempfile
+from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
 from uuid import UUID
@@ -124,8 +125,34 @@ def reconcile_exits(witness: dict[str, str], dsn: str, *, namespace: str) -> int
     return len(rows)
 
 
+def reconcile_in_cleanup(container: str, witness: dict[str, str], *, namespace: str) -> int:
+    spec = json.loads(docker("inspect", "--type", "container", container))[0]
+    if (
+        not spec["State"]["Running"]
+        or spec["Config"]["Labels"].get("zebra.ha.owner") != "ca-ha-03-e1-20261102"
+        or spec["Name"] != "/zebra-ha-e1-20261102-runtime-cleanup-1-corpus"
+    ):
+        raise ValueError("expected the owned E1 cleanup container")
+    root = Path(__file__).resolve().parents[3]
+    storage = root / "packages/agent-storage/src/agent_storage/postgres/force_stop_executors.py"
+    child = (
+        "import os\n"
+        "from agent_storage.postgres import force_stop_executors as storage\n"
+        f"exec(compile({storage.read_bytes()!r}, 'executor_storage', 'exec'), vars(storage))\n"
+        + Path(__file__).read_text().rsplit('if __name__ == "__main__":', 1)[0]
+        + f"\nprint(reconcile_exits({witness!r}, os.environ['ZEBRA_DATABASE_URL'], "
+        f"namespace={namespace!r}))\n"
+    )
+    result = subprocess.check_output(
+        ["docker", "exec", "-i", spec["Id"], "python", "-"],
+        input=child, text=True, timeout=15,
+    )
+    return int(result.strip())
+
+
 def restart_reconciled(
-    container: str, binding_path: Path, destination: Path, dsn: str, *, namespace: str
+    container: str, binding_path: Path, destination: Path, dsn: str, *, namespace: str,
+    reconcile: Callable[[dict[str, str]], int] | None = None,
 ) -> int:
     binding_path = binding_path.resolve()
     lock_path = binding_path.with_suffix(".restart.lock")
@@ -154,8 +181,13 @@ def restart_reconciled(
         else:
             witness = exit_witness(container, binding_path)
             publish(witness, destination)
-        count = reconcile_exits(witness, dsn, namespace=namespace)
-        if reconcile_exits(witness, dsn, namespace=namespace):
+        if reconcile is None:
+            count = reconcile_exits(witness, dsn, namespace=namespace)
+            remaining = reconcile_exits(witness, dsn, namespace=namespace)
+        else:
+            count = reconcile(witness)
+            remaining = reconcile(witness)
+        if remaining:
             raise RuntimeError("executor exits are still being reconciled; retry before restarting")
         container = witness["container"]
         if not running:
@@ -170,7 +202,8 @@ def restart_reconciled(
 
 
 def recover_crash(
-    container: str, binding_path: Path, destination: Path, dsn: str, *, namespace: str
+    container: str, binding_path: Path, destination: Path, dsn: str, *, namespace: str,
+    reconcile: Callable[[dict[str, str]], int] | None = None,
 ) -> int:
     """One periodic recovery tick for a single explicitly managed E1 Worker."""
     spec = json.loads(docker("inspect", "--type", "container", container))[0]
@@ -178,7 +211,9 @@ def recover_crash(
     if state["Status"] == "running" or (
         state["Status"] == "exited" and state["ExitCode"] not in {0, 143}
     ):
-        return restart_reconciled(spec["Id"], binding_path, destination, dsn, namespace=namespace)
+        return restart_reconciled(
+            spec["Id"], binding_path, destination, dsn, namespace=namespace, reconcile=reconcile
+        )
     return 0
 
 
@@ -192,6 +227,7 @@ if __name__ == "__main__":
     parser.add_argument("--reconcile", action="store_true")
     parser.add_argument("--restart", action="store_true")
     parser.add_argument("--recover-crash", action="store_true")
+    parser.add_argument("--cleanup-container")
     arguments = parser.parse_args()
     if arguments.recover_crash:
         if (
@@ -202,9 +238,17 @@ if __name__ == "__main__":
             or arguments.ack_fence
         ):
             parser.error("--recover-crash requires --exit-binding and no other recovery mode")
+        reconcile = None
+        if arguments.cleanup_container:
+            def reconcile(witness: dict[str, str]) -> int:
+                return reconcile_in_cleanup(
+                    arguments.cleanup_container, witness, namespace="ha-e1-20261102"
+                )
+
         count = recover_crash(
             arguments.container, arguments.exit_binding, arguments.destination,
-            os.environ["ZEBRA_DATABASE_URL"], namespace="ha-e1-20261102",
+            os.environ.get("ZEBRA_DATABASE_URL", ""), namespace="ha-e1-20261102",
+            reconcile=reconcile,
         )
         if count:
             print(count)
