@@ -8,6 +8,7 @@ from pydantic import (
 )
 
 from agent_core.contracts.turn_events import validate_turn_identity
+from agent_core.domain.bundle_definition import BundleDefinitionSnapshot
 from agent_core.domain.context_capsule import ContextSourceEventRange
 from agent_core.domain.runtime_bundle_types import ArtifactPin
 from agent_core.domain.session_handoff import HandoffActorKind, HandoffReason
@@ -30,6 +31,9 @@ class UserMessageReceivedPayload(BaseModel):
     turn_index: StrictInt | None = Field(default=None, ge=0, exclude_if=lambda value: value is None)
     origin: str | None = Field(default=None, exclude_if=lambda value: value is None)
     selected_model_pin: ArtifactPin | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+    definition_snapshot: BundleDefinitionSnapshot | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
     model_profile: str | None = Field(

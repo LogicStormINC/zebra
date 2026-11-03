@@ -196,9 +196,9 @@ def test_task_binding_renewal_appends_one_locked_revision(
             connection, namespace, renewed, expected_previous_revision=1
         )
         connection.rollback()
-    assert load_task_binding(
-        postgres_dsn, deployment_namespace=namespace, task_id=task_id
-    ) == current
+    assert (
+        load_task_binding(postgres_dsn, deployment_namespace=namespace, task_id=task_id) == current
+    )
 
     save_task_binding(
         postgres_dsn,
@@ -213,12 +213,18 @@ def test_task_binding_renewal_appends_one_locked_revision(
         task_id=task_id,
     )
     assert latest is not None and latest.binding_revision == 2
-    assert load_task_binding(
-        postgres_dsn, deployment_namespace=namespace, task_id=task_id, binding_revision=1
-    ) == current
-    assert load_task_binding(
-        postgres_dsn, deployment_namespace=namespace, task_id=task_id, binding_revision=3
-    ) is None
+    assert (
+        load_task_binding(
+            postgres_dsn, deployment_namespace=namespace, task_id=task_id, binding_revision=1
+        )
+        == current
+    )
+    assert (
+        load_task_binding(
+            postgres_dsn, deployment_namespace=namespace, task_id=task_id, binding_revision=3
+        )
+        is None
+    )
     with pytest.raises(ValueError, match="advanced concurrently"):
         save_task_binding(
             postgres_dsn,
@@ -240,19 +246,49 @@ def test_task_binding_renewal_appends_one_locked_revision(
 
 
 def test_text_message_commits_event_and_projection_together(namespace, postgres_dsn):
+    from dataclasses import replace
+
     from agent_core.application import SessionMessageAppendCommand, SessionMessageAppendService
+    from agent_core.domain.bundle_definition import BundleDefinitionSnapshot
     from agent_storage.event_rows import SessionEventSequenceConflictError
     from agent_storage.postgres.input_artifact_admission import append_input_message
 
+    from tests.agent_core.test_bundle_definition import NOW, bundle_version
+
     request = _request()
+    task_id = TaskId(request.session.session_id)
+    binding = _binding(str(task_id))
+    request = replace(request, binding=binding)
+    version = bundle_version()
+    snapshot = BundleDefinitionSnapshot.from_version(version=version, resolved_at=NOW)
+    switched = binding.model_copy(
+        update={
+            "binding_revision": 2,
+            "agent_capability_ceiling": binding.agent_capability_ceiling.model_copy(
+                update={
+                    "definition_snapshot_digest": snapshot.snapshot_digest,
+                }
+            ),
+        }
+    )
     PostgresTaskAdmissionTransaction(postgres_dsn, deployment_namespace=namespace).admit(request)
     session = request.session
     event = SessionMessageAppendService().build_event(
         session=session,
         next_sequence=session.current_sequence + 1,
-        command=SessionMessageAppendCommand(content="follow up", prior_human_turns=1),
+        command=SessionMessageAppendCommand(
+            content="follow up",
+            prior_human_turns=1,
+            definition_snapshot=snapshot,
+            selected_model_pin=version.runtime_assembly.provider_profile.pin,
+        ),
     )
-    updated = append_input_message(postgres_dsn, namespace, session, (event,), ())
+    updated = append_input_message(
+        postgres_dsn, namespace, session, (event,), (), release_binding=switched
+    )
+    assert (
+        load_task_binding(postgres_dsn, deployment_namespace=namespace, task_id=task_id) == switched
+    )
     assert updated.current_sequence == event.sequence
     with pytest.raises(SessionEventSequenceConflictError):
         append_input_message(postgres_dsn, namespace, session, (event,), ())

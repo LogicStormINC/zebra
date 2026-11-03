@@ -1,6 +1,7 @@
 """Input metadata shares the exact admission/message transaction, never a Worker lease."""
 
 from typing import Any
+from uuid import UUID
 
 from agent_core.application.session_attachments import attachment_refs_from_event
 from agent_core.application.session_projection import apply_event
@@ -8,13 +9,17 @@ from agent_core.application.workspace_projection import apply_event as apply_wor
 from agent_core.domain.cloud_artifact_payloads import CloudArtifactPayloadRecord
 from agent_core.domain.cloud_artifact_requests import canonical_artifact_reserve_hash
 from agent_core.domain.events import EventType, SessionEvent
+from agent_core.domain.identifiers import TaskId
 from agent_core.domain.sessions import Session
+from agent_core.domain.task_bindings import TaskBindingSnapshot
 
 from agent_storage.event_rows import SessionEventSequenceConflictError
 from agent_storage.postgres.artifact_payload_transaction_support import hash_text
 from agent_storage.postgres.database import PostgresDatabase
 from agent_storage.postgres.events import append_event_in_transaction
 from agent_storage.postgres.projections import save_session_in_transaction
+from agent_storage.postgres.task_admission import save_task_binding_in_transaction
+from agent_storage.postgres.task_control_target import require_task_control_target
 from agent_storage.postgres.workspaces import (
     get_workspace_in_transaction,
     save_workspace_in_transaction,
@@ -113,6 +118,8 @@ def append_input_message(
     session: Session,
     events: tuple[SessionEvent, ...],
     records: tuple[CloudArtifactPayloadRecord, ...],
+    *,
+    release_binding: TaskBindingSnapshot | None = None,
 ) -> Session:
     with PostgresDatabase(dsn, deployment_namespace=namespace).connect() as connection:
         stream = connection.execute(
@@ -123,6 +130,26 @@ def append_input_message(
         if stream is None or stream["current_version"] != session.current_sequence:
             raise SessionEventSequenceConflictError("input message lost its stream CAS")
         workspace = get_workspace_in_transaction(connection, namespace, session.session_id)
+        if release_binding is not None:
+            task_id = TaskId(UUID(release_binding.task_id))
+            require_task_control_target(
+                connection, namespace, task_id, session.session_id, replay=False
+            )
+            snapshot = events[0].payload.get("definition_snapshot")
+            if (
+                events[0].event_type is not EventType.USER_MESSAGE_RECEIVED
+                or not isinstance(snapshot, dict)
+                or snapshot.get("snapshot_digest")
+                != release_binding.agent_capability_ceiling.definition_snapshot_digest
+                or release_binding.binding_revision < 2
+            ):
+                raise ValueError("message release snapshot differs from its authorization")
+            save_task_binding_in_transaction(
+                connection,
+                namespace,
+                release_binding,
+                expected_previous_revision=release_binding.binding_revision - 1,
+            )
         for event in events:
             append_event_in_transaction(connection, namespace, event)
             session = apply_event(session, event)
