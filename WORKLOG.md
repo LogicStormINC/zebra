@@ -20301,3 +20301,15 @@ worked without widening socket permissions. No registry mutation,
 API activation or Task submission. Next reuse the isolated namespace
 for all required forwards and run bounded signed API acceptance.
 Evidence amd64-issuer-loopback-837defbe.txt.
+
+CA-HA-03 AMD64 signed atomic admission crossed physical hosts with
+unchanged issuer and PostgreSQL/Redis/S3/Rabbit endpoints inside a
+network-none namespace backed by temporary SSH Unix socket forwards.
+The original single POST returned outer 200 and sealed inner 201
+in 1,853 ms. Decrypted original receipt identified a completed Task;
+read-only SQL found one accepted command and one model response.
+The existing OrbStack Worker executed it. Restored the second
+OrbStack API after the probe; remote API and forwards exited.
+One sample with 147 ms headroom is not a capacity result. Next
+qualify remote Worker execution and the cross-host failure matrix.
+Private evidence amd64-signed-*.log.
