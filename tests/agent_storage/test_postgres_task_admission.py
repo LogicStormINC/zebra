@@ -382,10 +382,25 @@ def test_text_message_commits_event_and_projection_together(namespace, postgres_
             ),
         }
     )
-    next_command = command.model_copy(update={"expected_revision": updated.current_sequence})
+    from agent_core.application import project_turns
+    from agent_storage.postgres.command_wakeup_message import append_command_message
+    from agent_storage.postgres.leases import lock_session_lease_boundary
+
+    closed = event
+    for turn in project_turns(event_store.list_for_session(session.session_id)):
+        closed = event_store.append(
+            SessionEvent.create(
+                session_id=session.session_id,
+                sequence=closed.sequence + 1,
+                event_type=EventType.TURN_COMPLETED,
+                actor=EventActor.HARNESS,
+                payload={"turn_id": turn.turn_id, "turn_index": turn.turn_index},
+            )
+        )
+    next_command = command.model_copy(update={"expected_revision": closed.sequence})
     accepted = SessionEvent.create(
         session_id=session.session_id,
-        sequence=updated.current_sequence + 1,
+        sequence=closed.sequence + 1,
         event_type=EventType.SESSION_COMMAND_ACCEPTED,
         actor=EventActor.USER,
         payload=next_command.event_payload(
@@ -402,6 +417,25 @@ def test_text_message_commits_event_and_projection_together(namespace, postgres_
     assert persisted.payload["message_release_binding"]["snapshot"] == published.model_dump(
         mode="json"
     )
+
+    with connect(postgres_dsn, row_factory=dict_row) as connection:
+        lock_session_lease_boundary(connection, namespace, session.session_id)
+        message = append_command_message(connection, namespace, persisted, input_event_id=None)
+    assert message.payload["definition_snapshot"] == published.model_dump(mode="json")
+    assert message.payload["selected_model_pin"] == (
+        version.runtime_assembly.provider_profile.pin.model_dump(mode="json")
+    )
+    assert (
+        load_task_binding(postgres_dsn, deployment_namespace=namespace, task_id=task_id)
+        == next_binding
+    )
+    with connect(postgres_dsn, row_factory=dict_row) as connection:
+        lock_session_lease_boundary(connection, namespace, session.session_id)
+        replayed = append_command_message(
+            connection, namespace, persisted, input_event_id=message.event_id
+        )
+    assert replayed == message
+    assert event_store.list_for_session(session.session_id)[-1] == message
 
 
 def test_idempotent_replay_short_circuits(namespace: str, postgres_dsn: str) -> None:
