@@ -18816,3 +18816,11 @@ latency or production HA/SLO claim. See docs/CLOUD_REPLY_ROBUSTNESS_20261103.md.
 旧Native清单，实际schema hash仍与旧样本一致；新Run417后因authority unavailable暂停，未完成答案。
 方案先贯通清单发布及细分诊断，再通用按需物理工作区，最后按实测考虑常驻proof/洁净执行器。
 本轮无模型/搜索/重跑/生产修改或部署；详见docs/CLOUD_FIRST_REPLY_ROOT_CAUSE_20261103.md。
+
+## 2026-11-03 CLOUD-FIRST-REPLY-IMPLEMENT-20261103
+
+按授权完成独立清单发布、授权失败分类和按需物理工作区。211 项定向回归、真实 Linux 强停、
+完整 make check 及生产备份的无模型迁移、内核硬配额和 Provider 序列化验收通过。
+线上以 v117 原镜像为底、只应用追加 v122；修正部署门禁对 Env 列表重排的误判后恢复准入。
+原执行事件和清单内容未变；未请求模型或搜索，未触碰 Search/MCP。
+详见 docs/CLOUD_FIRST_REPLY_IMPLEMENT_20261103.md；真实页面首正文尚未复测。

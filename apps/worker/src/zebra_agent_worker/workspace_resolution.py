@@ -26,3 +26,14 @@ def apply_workspace_resolver(
     if str(resolved) == reference:
         return task
     return replace(task, workspace_root=resolved)
+
+
+def plan_host_workspace(
+    task: RecoveredTask, resolver: WorkspaceRuntimeResolver, session_id: SessionId,
+) -> tuple[RecoveredTask, str | None]:
+    """Use only a trusted logical target; actual file access still needs resolution."""
+    reference = str(task.workspace_root)
+    root = resolver.planned_host_root(reference, session_id=session_id)
+    if root is None:
+        return apply_workspace_resolver(task, resolver, session_id), None
+    return replace(task, workspace_root=root), reference

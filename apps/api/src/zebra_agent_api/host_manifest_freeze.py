@@ -54,9 +54,9 @@ def resolve_frozen_manifest(
     profile = registry.get_profile(
         binding.host_app_id, binding.connector_id, binding.profile_revision
     )
-    if profile is None:
+    if not binding.active or profile is None or profile.status.value != "published":
         raise HostManifestFreezeError(
-            "connector binding references a missing profile revision; failing closed"
+            "connector binding is unavailable; failing closed"
         )
     frozen = load_frozen_manifest(
         dsn,
@@ -64,11 +64,14 @@ def resolve_frozen_manifest(
         host_app_id=profile.host_app_id,
         connector_id=profile.connector_id,
         profile_revision=profile.profile_revision,
+        prefer_publication=True,
     )
     if frozen is not None:
         from agent_integrations.host_tools import HostToolManifest
 
         restored = HostToolManifest.from_payload(frozen)
+        if restored.workload_identity != profile.workload_identity_ref:
+            raise HostManifestFreezeError("cached manifest workload identity mismatch")
         if profile.manifest_binding_policy == "declared" and restored.binding_policy != "declared":
             raise HostManifestFreezeError("cached manifest binding policy mismatch; failing closed")
         return frozen
@@ -158,6 +161,7 @@ def resolve_admission_profile(
         host_app_id=profile.host_app_id,
         connector_id=profile.connector_id,
         profile_revision=profile.profile_revision,
+        prefer_publication=True,
     )
     if frozen is None or HostToolManifest.from_payload(frozen).digest != manifest_digest:
         raise HostManifestFreezeError("connector changed after manifest freeze")

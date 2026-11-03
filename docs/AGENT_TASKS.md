@@ -1,3 +1,11 @@
+## CLOUD-FIRST-REPLY-IMPLEMENT-20261103
+- Owned-path clarification before implementation: Host transport diagnostics use host_tools/{contracts,gateway,http}.py; lazy workspace uses agent-runtime/{harness,workspace_runtime_resolver}.py, agent-context/models.py and Worker execution path; focused regressions under tests/worker/execution and existing Postgres/Host fixtures.
+- Status: Done; no-model acceptance and ERP Native rollout verified; integrated to cloud-agent.
+- Human owner Luke Ding; executor Codex; branch codex/cloud-first-reply-implement-20261103.
+- Base cloud-agent00764794; isolated worktree cloud-first-reply-implement-20261103.
+- Owned paths: apps/api/src/zebra_agent_api/host_manifest_freeze.py; packages/agent-storage/src/agent_storage/postgres/host_manifest*.py and migration_catalog_tail.py; focused manifest publication operator under scripts/; packages/agent-integrations/src/agent_integrations/host_tools/{http,invocation}.py; apps/worker/src/zebra_agent_worker/{host_authority_probe,workspace_resolution,execution_recovery,execution_runtime,execution}.py; packages/agent-runtime/src/agent_runtime/{deferred,local_tool_gateway}.py and focused workspace modules; corresponding existing/focused tests under tests/{api,worker,agent_storage,agent_integrations,agent_runtime}; integrations/erpnext/deploy/runtime/ composition only if needed; docs/CLOUD_FIRST_REPLY_IMPLEMENT_20261103.md, PROGRESS.md, WORKLOG.md.
+- Scope: controlled immutable manifest release independent of connector authority revision; safe authority failure classification; resource-driven physical workspace preparation; isolated no-model regressions then idle production API/Worker update. Preserve original data/frozen contracts, fresh authorization/quota/leases/cancel/force-stop/high/v2. No model/search/replay or Search/MCP restart. No unrelated cloud-agent migrations/features deployed.
+
 # CLOUD-FIRST-REPLY-COMPARE-20261103
 - Status: Done (read-only diagnosis and plan only; implementation not started).
 - Ready then claimed; owner Luke Ding / Codex; branch codex/cloud-first-reply-compare-20261103.

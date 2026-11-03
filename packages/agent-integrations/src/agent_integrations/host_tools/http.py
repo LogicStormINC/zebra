@@ -9,6 +9,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from time import monotonic
 from urllib.parse import urlsplit
+from uuid import UUID
 
 import httpx
 from agent_security.ssrf import (
@@ -97,7 +98,10 @@ class HttpHostToolTransport:
                     response = httpx.Response(
                         upstream.status_code,
                         content=b"".join(chunks),
-                        headers={"content-type": upstream.headers.get("content-type", "")},
+                        headers={
+                            "content-type": upstream.headers.get("content-type", ""),
+                            "x-request-id": upstream.headers.get("x-request-id", ""),
+                        },
                     )
             elif self.client is None:
                 response = httpx.request(
@@ -137,7 +141,18 @@ class HttpHostToolTransport:
             status_code=response.status_code,
             body=payload,
             content_type=response.headers.get("content-type", ""),
+            request_id=safe_host_request_id(response.headers.get("x-request-id")),
         )
+
+
+def safe_host_request_id(value: object) -> str | None:
+    """Accept only canonical UUIDs; never log arbitrary upstream header text."""
+    if isinstance(value, str) and len(value) == 36:
+        try:
+            return value if str(UUID(value)) == value else None
+        except ValueError:
+            pass
+    return None
 
 
 def _validate_endpoint(

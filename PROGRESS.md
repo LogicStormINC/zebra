@@ -1,3 +1,10 @@
+## 2026-11-03 Cloud 首次回复修复上线
+
+独立发布 Host 工具清单，旧任务保留原 digest；授权失败增加有界脱敏分类。
+符合条件的 Cloud Host 工作区延迟到实际文件需求时验证和准备，保持配额、租约、取消和强停。
+真实 PG／Linux 无模型回归后 ERP Native 更新至 v117 基座加 v122，原 Run、搜索和 MCP 保持。
+参见[实现和验收](docs/CLOUD_FIRST_REPLY_IMPLEMENT_20261103.md)。真实页面首正文尚未重测。
+
 ## 2026-11-02 CLOUD-EXECUTOR-STARTUP-20261102
 
 Known execution-input failures now retain a bounded session/fence-bound private IPC receipt

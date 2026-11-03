@@ -96,9 +96,9 @@ class ContextCompileRequest:
             raise ValueError("task_input must not be blank")
         if not self.workspace_root.is_absolute():
             raise ValueError("workspace_root must be absolute")
-        if not self.workspace_root.exists():
+        if self.include_workspace and not self.workspace_root.exists():
             raise ValueError("workspace_root must exist")
-        if not self.workspace_root.is_dir():
+        if self.include_workspace and not self.workspace_root.is_dir():
             raise ValueError("workspace_root must be a directory")
         for item in self.runtime_evidence_items:
             if item.kind not in RUNTIME_EVIDENCE_KINDS:
