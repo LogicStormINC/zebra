@@ -37358,3 +37358,12 @@ AGUI-CLOUD-INTEGRATION accepted: make test11216passed/3082conditional skips;
 make check and SDK typecheck passed; standalone152native+32SDK zero skips,
 SDK full174passed. Prior Zebra repair branches are integrated by ancestry;
 paired Trench UI/ORM history remains external, not imported into Runtime.
+
+
+CA-HA-03 E1 child-latency diagnostic claim (2026-11-03, Luke Ding/Codex,
+existing branch/worktree): before implementation, include E1-only gated stdlib
+sitecustomize/cProfile hook and runnable under tests/compose/cloud_ha_e1/,
+Dockerfile.delta and E1 evidence. Profile only explicit marker + exact owned
+namespace + isolated-child orig_argv; runtime defaults/authority/deadlines and
+standard Dockerfile unchanged. Freeze diagnostic image/config separately; its
+timings cannot be E1 SLO samples. Existing runtime abstractions remain unchanged.

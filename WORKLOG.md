@@ -18973,3 +18973,15 @@ candidate preserves readonly/nonroot/fresh-process runtime. Prototype old red1 /
 new green0, stale same-size/mtime source and no-cache-write check passed; import
 CPU roughly halved. Runnable/Ruff/make check and independent review passed.
 Exact official/delta builds, per-arch checks and fresh whole-Task comparison next.
+
+
+## 2026-11-03 — frozen51 checked-bytecode Native9
+
+Official runtime build/default-user check and both native delta source2140/hash
+checks passed. Actual OCI index ec994197 promoted only to isolated pair, Native9
+published. Cold switch no overlap, old24 fact hashes unchanged both before/after
+new10 Tasks. Short5.56s/no OCI; approved pwd16.95s/exact OCI absent; burst8 all
+201/completed once, median9.7305/max13.401. New10 real exit ACK pairs, global
+lease/pending0 and historical unknown1 unchanged. Initial transient-lease read
+and wrong-column readonly query retained/corrected without Task replay. Fixed E1
+historical/SSE/5rps/fault/soak remains open; next diagnose remaining child latency.
