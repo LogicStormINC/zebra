@@ -37566,3 +37566,7 @@ cloud_ha_e1 node2 relay and systemd units plus their fixture README instructions
 CA-HA-03 fresh position batching addendum, same owner and branch. Own
 task_event_positions.py and existing PostgreSQL Agent Task position tests.
 Batch only the contiguous unassigned root prefix after proving both indexes empty.
+
+CA-HA-03 E1 shadow contention follow-up (Luke Ding/Codex, existing branch/worktree):
+own the mode-check ordering in postgres/command_rollout_shadow.py and its
+PostgreSQL regression. Keep the scope rollout lock around the mode proof.
