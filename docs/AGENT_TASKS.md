@@ -37414,3 +37414,7 @@ reconciliation after child interruption.
 
 CA-HA-03 completion recovery packaging addendum: include execution.py in
 E1 Dockerfile.delta for the isolated ARM candidate.
+
+CA-HA-03 isolated startup recovery addendum (Luke Ding/Codex, existing branch):
+own session_process_child.py and tests/worker/test_session_process.py for one
+fenced retry of initial recovery after PostgreSQL lock timeout.

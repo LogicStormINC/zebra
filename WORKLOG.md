@@ -19258,3 +19258,10 @@ recovery without replaying any effect. Do not resend either original.
 Private evidence: stream-holders-native14.jsonl,
 stream-lock-keys-native14.jsonl, stream-key-worker-*.log and
 preflight5-close14-393a5670-*/readonly-originals.json.
+
+CA-HA-03 startup candidate: retry one initial child recovery slice only when
+SessionRecoveryPending wraps PostgreSQL LockNotAvailable. The same lease
+is passed to both attempts and the database revalidates the fence. Retry
+ends before entering execution. Focused tests: 10 passed, 16 conditional
+skips. Next package the child module into the isolated ARM image and
+verify with a bounded lease-lock injection against a new synthetic task.

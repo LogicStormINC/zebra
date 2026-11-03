@@ -122,3 +122,27 @@ def test_execution_receipt_roundtrip_preserves_body_and_identity(tmp_path, monke
     assert restored == result
     assert restored.session.session_id == session
     assert restored.attempt_result.metadata["assistant_message"] == "Worker completed the session."
+
+
+@pytest.mark.parametrize("repeated", [False, True])
+def test_initial_recovery_retries_one_lock_timeout_under_same_lease(repeated):
+    from unittest.mock import Mock, call
+
+    from psycopg.errors import LockNotAvailable
+    from zebra_agent_worker.bounded_session_recovery import SessionRecoveryPending
+    from zebra_agent_worker.session_process_child import recover_initial_session
+
+    pending = SessionRecoveryPending("busy")
+    pending.__cause__ = LockNotAvailable()
+    result = object()
+    service = Mock()
+    service.recover_session.side_effect = [pending, pending if repeated else result]
+    lease = Mock()
+    if repeated:
+        with pytest.raises(SessionRecoveryPending):
+            recover_initial_session(service, lease)
+    else:
+        assert recover_initial_session(service, lease) is result
+    assert (
+        service.recover_session.call_args_list == [call(lease.session_id, worker_lease=lease)] * 2
+    )

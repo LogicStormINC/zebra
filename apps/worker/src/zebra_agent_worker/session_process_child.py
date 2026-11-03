@@ -11,14 +11,29 @@ from pathlib import Path
 from agent_core.domain.leases import LeaseLostError, WorkerLease
 from agent_storage import cloud_composition_from_environment
 from agent_storage.postgres.connection_pool import postgres_pool_scope
+from psycopg.errors import LockNotAvailable
 from pydantic import TypeAdapter
 from zebra_agent_config import load_settings
 
+from zebra_agent_worker.bounded_session_recovery import SessionRecoveryPending
 from zebra_agent_worker.claims import ClaimedSession
 from zebra_agent_worker.execution_finalization import ExecutedSession
 from zebra_agent_worker.execution_recovery import execute_claimed_with_stale_retry
 from zebra_agent_worker.loop import build_worker_loop_service
+from zebra_agent_worker.recovery import RecoveredSession, SessionRecoveryService
 from zebra_agent_worker.session_process import settings_digest
+
+
+def recover_initial_session(
+    service: SessionRecoveryService, lease: WorkerLease
+) -> RecoveredSession:
+    try:
+        return service.recover_session(lease.session_id, worker_lease=lease)
+    except SessionRecoveryPending as error:
+        if not isinstance(error.__cause__, LockNotAvailable):
+            raise
+    # One fresh preparation slice under the same fence, before starting execution.
+    return service.recover_session(lease.session_id, worker_lease=lease)
 
 
 def main() -> None:
@@ -80,10 +95,7 @@ def main() -> None:
         # Parent alone owns heartbeat/release; avoid checkpoint races between processes.
         claimed = ClaimedSession(
             lease=lease,
-            recovery=service._recovery_service.recover_session(
-                lease.session_id,
-                worker_lease=lease,
-            ),
+            recovery=recover_initial_session(service._recovery_service, lease),
         )
 
         def require_owned() -> None:
