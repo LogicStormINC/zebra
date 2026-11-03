@@ -252,6 +252,13 @@ if __name__ == "__main__":
     parser.add_argument("--recover-crash", action="store_true")
     parser.add_argument("--cleanup-container")
     arguments = parser.parse_args()
+    reconcile = None
+    if arguments.cleanup_container:
+        def reconcile(witness: dict[str, str]) -> int:
+            return reconcile_in_cleanup(
+                arguments.cleanup_container, witness, namespace="ha-e1-20261102"
+            )
+
     if arguments.recover_crash:
         if (
             arguments.exit_binding is None
@@ -261,13 +268,6 @@ if __name__ == "__main__":
             or arguments.ack_fence
         ):
             parser.error("--recover-crash requires --exit-binding and no other recovery mode")
-        reconcile = None
-        if arguments.cleanup_container:
-            def reconcile(witness: dict[str, str]) -> int:
-                return reconcile_in_cleanup(
-                    arguments.cleanup_container, witness, namespace="ha-e1-20261102"
-                )
-
         count = recover_crash(
             arguments.container, arguments.exit_binding, arguments.destination,
             os.environ.get("ZEBRA_DATABASE_URL", ""), namespace="ha-e1-20261102",
@@ -289,7 +289,8 @@ if __name__ == "__main__":
             parser.error("exit witness must have a separate destination")
         print(restart_reconciled(
             arguments.container, arguments.exit_binding, arguments.destination,
-            os.environ["ZEBRA_DATABASE_URL"], namespace="ha-e1-20261102",
+            os.environ.get("ZEBRA_DATABASE_URL", ""), namespace="ha-e1-20261102",
+            reconcile=reconcile,
         ))
         raise SystemExit(0)
     if arguments.exit_binding is None:
