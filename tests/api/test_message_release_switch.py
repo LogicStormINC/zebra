@@ -91,3 +91,34 @@ def test_same_session_remembers_explicit_model_until_next_switch():
     assert [event.payload["selected_model_pin"] for event in pins] == [
         pin.model_dump(mode="json") for pin in (alternate, alternate, default)
     ]
+
+
+def test_business_model_options_match_send_admission(monkeypatch):
+    from zebra_agent_api import task_routes
+
+    _, snapshot = removed_model_release_snapshots()
+    assembly = snapshot.bound_version.runtime_assembly
+    app = Mock()
+    request = Mock(method="GET", path="/model-options", query={
+        "definition_id": str(snapshot.definition_id), "definition_environment": "dev",
+    })
+    resolve = Mock(return_value=snapshot)
+    monkeypatch.setattr(task_routes, "resolve_consumer_binding", resolve)
+    request.verified_host_grant = None
+    assert task_routes.handle_task_route(app, request).status_code == 403
+    resolve.assert_not_called()
+
+    request.verified_host_grant = Mock()
+    response = task_routes.handle_task_route(app, request)
+    assert response.status_code == 200
+    assert response.body["default_model_id"] == assembly.provider_profile.pin.id
+    assert len(response.body["models"]) == 2
+    for option in response.body["models"]:
+        model, profile = assembly.resolve_session_model(
+            requested_id=option["id"], remembered_id=None
+        )
+        assert option == {"id": profile.pin.id, "display_name": model}
+    resolve.assert_called_once_with(
+        app.settings, app.agent_registry, snapshot.definition_id, "dev",
+        request.host_context, request.verified_host_grant,
+    )

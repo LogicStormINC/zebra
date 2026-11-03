@@ -1,13 +1,17 @@
 from __future__ import annotations
 
 from typing import Protocol
+from uuid import UUID
 
+from agent_core.domain.identifiers import AgentDefinitionId
+from agent_core.domain.runtime_assembly import RuntimeAssembly
 from agent_core.domain.host_authority import HostContextEnvelope
 from agent_security.host_grant import VerifiedHostGrant
 from agent_storage import PostgresControlPlaneStores
 
 from zebra_agent_api.app import ZebraAgentApi
-from zebra_agent_api.responses import ApiResponse
+from zebra_agent_api.publication_consumer import resolve_consumer_binding
+from zebra_agent_api.responses import ApiResponse, bad_request
 from zebra_agent_api.subagent_read import SubagentReadApi
 from zebra_agent_api.task_api import (
     TaskReadApi,
@@ -47,8 +51,46 @@ class TaskRouteRequest(Protocol):
     def verified_host_grant(self) -> VerifiedHostGrant | None: ...
 
 
+def _model_options(app: ZebraAgentApi, request: TaskRouteRequest) -> ApiResponse:
+    query = request.query or {}
+    try:
+        definition = AgentDefinitionId(UUID(query.get("definition_id", "")))
+    except ValueError:
+        return bad_request("definition_id must be a UUID")
+    environment = query.get("definition_environment", "production")
+    if not environment.strip() or len(environment) > 256:
+        return bad_request("invalid definition_environment")
+    if request.verified_host_grant is None:
+        return ApiResponse(403, {"status": "forbidden"})
+    if not app.settings.publication_management_config:
+        return ApiResponse(503, {"status": "registry_unavailable"})
+    snapshot = resolve_consumer_binding(
+        app.settings, app.agent_registry, definition, environment,
+        request.host_context, request.verified_host_grant,
+    )
+    if isinstance(snapshot, ApiResponse):
+        return snapshot
+    assembly = snapshot.bound_version.runtime_assembly
+    if not isinstance(assembly, RuntimeAssembly):
+        return ApiResponse(409, {"status": "model_options_unavailable"})
+    parameters = assembly.bundle.manifest.domains.model.parameters
+    default = assembly.provider_profile.pin.id
+    return ApiResponse(200, {
+        "definition_id": str(definition),
+        "definition_version_id": str(snapshot.bound_version.version_id),
+        "default_model_id": default,
+        "models": [
+            {"id": default, "display_name": parameters.model},
+            *({"id": choice.provider_profile.id, "display_name": choice.model}
+              for choice in parameters.selectable_models),
+        ],
+    })
+
+
 def handle_task_route(app: ZebraAgentApi, request: TaskRouteRequest) -> ApiResponse | None:
     method = request.method.upper()
+    if method == "GET" and request.path == "/model-options":
+        return _model_options(app, request)
     if method == "GET" and request.path == "/tasks":
         return TaskReadApi(app.stores).list(request.query or {})
     if method == "POST" and request.path == "/tasks":
