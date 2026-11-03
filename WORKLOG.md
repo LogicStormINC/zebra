@@ -21185,3 +21185,12 @@ stream per node after 22s; both retained cursor 2 and observed
 the next keepalive after 15.348/15.581s. These intervals include
 heartbeat cadence and do not measure TCP outage duration.
 256-stream renewals and steady acceptance remain unverified.
+
+CA-HA-03 read-only planned renewal diagnostic with 32 raw SSE
+streams (16 per isolated API) succeeded. Every stream resumed
+from the same original cursor using a fresh grant; median/max
+time to first resumed observation was 15.407/15.773s including
+keepalive cadence. No admission traffic ran. Private evidence
+sse-renew32-addf7fbcd3c7462ca2e1399e0a68507b.json. Existing
+staging images were used; 256-stream sustained renewal remains
+unmeasured. The independent corpus generator continued running.
