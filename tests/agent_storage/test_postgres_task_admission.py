@@ -227,6 +227,17 @@ def test_task_binding_renewal_appends_one_locked_revision(
             expected_previous_revision=1,
         )
 
+    with connect(postgres_dsn) as connection:
+        connection.execute(
+            """UPDATE task_binding_snapshots SET binding_digest = %s
+               WHERE deployment_namespace = %s AND task_id = %s AND binding_revision = 1""",
+            ("0" * 64, namespace, task_id),
+        )
+    with pytest.raises(ValueError, match="metadata does not match"):
+        load_task_binding(
+            postgres_dsn, deployment_namespace=namespace, task_id=task_id, binding_revision=1
+        )
+
 
 def test_idempotent_replay_short_circuits(namespace: str, postgres_dsn: str) -> None:
     transaction = PostgresTaskAdmissionTransaction(postgres_dsn, deployment_namespace=namespace)
