@@ -20193,3 +20193,16 @@ Worker indexers now dispatch only their own Event kinds, matching
 local behavior; real projection writes retain the existing fence.
 Routing regression and 18 focused Worker tests passed. Next deploy
 in E1 and check canonical/derived parity and suspension frequency.
+
+CA-HA-03 Native31 source 837defbe, ARM manifest
+sha256:d33e150b1091099389b01168db8dbca03b4b89bf5b900add87f29d78baecde5b.
+Both isolated nodes passed cold preservation, readiness and wire.
+Trust revision 30, definition 199a36f2-acfe-4b86-b5ff-5c737c0aa36e.
+5 Hz/32 SSE: 19 POSTs, 14 direct completions, one original GET
+confirmed completed, four unresolved and not resent. All 32 SSE
+heartbeats. Exact SQL join for 14 directly completed runs found 14
+canonical model response events, 14 matching model rows and no extra
+model rows. No admitted run suspended in this sample. Fixture uses
+no tools so live tool projection parity remains untested.
+Evidence preflight5-routing31-72a56b0e*, routing31-original-receipts.json,
+and routing31-with-sse-389b8efc*.
