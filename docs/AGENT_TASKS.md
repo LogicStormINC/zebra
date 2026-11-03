@@ -4,6 +4,7 @@
 - Owned paths: scripts/benchmark_command_scan.py and tests/agent_storage/test_postgres_{leases,effect_faults}.py.
 - Acceptance: reproduce both inherited failures, then verify the real command scan and lease suite on an isolated PostgreSQL.
 - Actual: d544e87f passed 16 PostgreSQL lease tests and the default 10/100/1000 scan workload in run-native-ci-fixtures-002. The positive control explicitly selects the original candidate. Owned resources were cleaned.
+- Full cloud-faults pytest selection: efb19dff passed 40 tests in run-native-ci-fixtures-004 on an isolated PostgreSQL. This uses the four CI test files with run-owned resources instead of the fixed Compose project. Cleanup passed.
 
 # ERP-AUTH-CLOUD-EXPORT-20261102
 - Status: Done; exact source export and static gates verified; integrated for cloud-agent/GitHub.
