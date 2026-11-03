@@ -19302,3 +19302,20 @@ so these samples do not establish a cap on established streams.
 Next separate per-node preflight admission from grant verification and
 measure established-stream occupancy with the same connection budget.
 Artifacts: sse15-pair-c985ee86*, sse15-pair-d73da4c7*, sse15-pair-ea368d42*.
+
+CA-HA-03 Native15 SSE occupancy isolation: with one handshake at a time
+per API and a fresh grant per GET, both read-only 32-client cohorts opened
+all streams and received the expected next frame. In the second cohort
+server TCP snapshots showed 0/0 before and 16/16 established at the common
+hold barrier, then the clients held another two seconds. The next frame
+could already have been buffered. No new Task was submitted. Diagnostic
+artifacts sse15-held-dea55b66* and sse15-held-7eb6ab1f*.
+
+The prior staggered run's 14 host_grant_authorization_unavailable errors
+match eight and six DatabaseCapacityExceeded warnings across the two
+APIs. The middleware gate rejects before admission when busy and releases
+at response start. The socket budget has a separate fail-fast read lane
+also used by authorized stream reads. Next distinguish handshake and
+tail socket contention under live cursor traffic before selecting a
+budget or admission change. The 32 established connections do not cover
+the 256-SSE sustained E1 target or reconnect storm.
