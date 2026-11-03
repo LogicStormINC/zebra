@@ -207,6 +207,8 @@ class SessionExecutionService(SessionExecutionComposition, SessionExecutionEntry
                 model_pin = task.selected_model_pin or assembly.provider_profile.pin
                 usage_scope = {
                     "definition_id": str(snapshot.definition_id),
+                    "bundle_scope": assembly.bundle.manifest.scope.model_dump(mode="json"),
+                    "task_id": task_binding.task_id if task_binding else None,
                     "binding_revision": task_binding.binding_revision if task_binding else None,
                     "model_pin": model_pin.model_dump(mode="json"),
                 }

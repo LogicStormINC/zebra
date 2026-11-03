@@ -5,7 +5,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 from agent_core.contracts.model_commentary import ModelCommentaryPlan
 from agent_core.domain.modeling import CONTEXT_TOKEN_CATEGORIES, ModelUsage
-from agent_core.domain.runtime_bundle_types import ArtifactPin
+from agent_core.domain.runtime_bundle_types import ArtifactPin, BundleScope
 
 
 class ModelTokenBreakdownV2Payload(BaseModel):
@@ -166,6 +166,8 @@ class ProviderUsageObservedPayload(BaseModel):
     attempt_id: UUID
     phase: Literal["started", "finished"]
     definition_id: UUID
+    bundle_scope: BundleScope | None = Field(default=None, exclude_if=lambda value: value is None)
+    task_id: UUID | None = Field(default=None, exclude_if=lambda value: value is None)
     binding_revision: int | None = Field(default=None, ge=1)
     model_pin: ArtifactPin
     usage: ModelUsage | None = None

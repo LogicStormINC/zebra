@@ -529,5 +529,9 @@ def test_worker_sends_model_request_using_message_release_snapshot(tmp_path, mon
         assert started["attempt_id"] == finished["attempt_id"]
         assert (started["phase"], finished["phase"]) == ("started", "finished")
         assert finished["definition_id"] == str(snapshot.definition_id)
+        assert finished["bundle_scope"] == replacement.bundle.manifest.scope.model_dump(
+            mode="json"
+        )
+        assert "task_id" not in finished
         assert finished["model_pin"] == replacement.provider_profile.pin.model_dump(mode="json")
         assert finished["usage"]["total_tokens"] is None
