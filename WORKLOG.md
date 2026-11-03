@@ -19357,3 +19357,21 @@ permits the action. Local rollover and force-stop dispatch are unchanged.
 Focused Task route and local Turn lifecycle suite: 11 passed; Ruff and
 diff check passed. Next add the three API modules to the isolated delta
 image, then exercise a fresh Task against real PostgreSQL with SSE held.
+
+CA-HA-03 Native16 isolated cutover: source 02461e27, image
+sha256:47ff0495344bbb1ceb2abc482a1be510f5ebd1fe1ccdf6223d9bec528b7229b6.
+Verified 2142 files and 3 links, both readiness and wire checks, existing
+record hashes equal. Orb returned empty full inspect output twice; resumed
+from recorded IDs with compact inspect and proved all six old processes and
+connections stopped before starting the candidate. Trust 16 and definition
+14112e51-edb2-4aee-91ec-8746fb231cbb published.
+
+Fresh Task cd5e81ee-2d1d-49ff-9d4f-8a4b74e39141 held 32 observers (16 per
+node above baseline). One Task resume POST returned 202, one canonical
+acceptance event and one pending command. Read-only evidence still shows
+ready and no model reservation; preserve and diagnose that command.
+All 32 SSE clients saw RemoteProtocolError after the wake. API traces show
+DatabaseCapacityExceeded in the stream source-head read via _read_until.
+Next address safe bounded read contention and independently trace pending
+resume delivery. Private artifacts: sse16-live-resume-original.json,
+sse16-live-event-4b701583*, route16-wake-*.log.
