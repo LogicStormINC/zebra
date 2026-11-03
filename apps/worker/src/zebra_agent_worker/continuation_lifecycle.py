@@ -17,6 +17,7 @@ from zebra_agent_worker.client_effect_resume import ClientEffectWakeup
 from zebra_agent_worker.control import SessionControlError, SessionControlService
 from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
 from zebra_agent_worker.execution_finalization import WorkerExecutionError
+from zebra_agent_worker.execution_preparation import finish_preparation
 from zebra_agent_worker.recovery import SessionRecoveryService
 
 
@@ -357,10 +358,11 @@ def _recovered_claim(
     claimed: ClaimedSession,
     recovery_service: SessionRecoveryService,
 ) -> ClaimedSession:
-    return ClaimedSession(
-        recovery=recovery_service.recover_session(
-            claimed.recovery.session.session_id,
-            worker_lease=claimed.lease,
+    # Every Cloud recovery slice verifies the current lease in storage.
+    recovery = finish_preparation(
+        lambda: recovery_service.recover_session(
+            claimed.recovery.session.session_id, worker_lease=claimed.lease
         ),
-        lease=claimed.lease,
+        lambda: None,
     )
+    return ClaimedSession(recovery=recovery, lease=claimed.lease)

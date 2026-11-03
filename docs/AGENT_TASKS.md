@@ -37548,3 +37548,8 @@ Preserve historical adoption, conflict checks, and transaction rollback.
 CA-HA-03 stream negotiation addendum: same owner and branch, include
 stream_v2_http.py's raw and AG-UI preflight dispatch in the existing
 bounded read-executor change. Preserve profile and cursor checks.
+
+CA-HA-03 continuation recovery addendum, same In Progress owner and branch.
+Own Worker continuation_lifecycle.py and tests/worker/test_approved_continuation_recovery.py.
+After a continuation start is committed, finish advancing fenced recovery slices
+without replaying start events or running the tool before recovery completes.

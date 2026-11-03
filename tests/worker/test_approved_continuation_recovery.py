@@ -3,16 +3,18 @@
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
+from unittest.mock import Mock
 
 import pytest
 from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
 from agent_core.application.mock_model import ScriptedModelGateway, ScriptedModelResponse
 from agent_core.domain.events import EventActor, EventType, SessionEvent
-from agent_core.domain.identifiers import new_message_id, new_tool_call_id
+from agent_core.domain.identifiers import new_message_id, new_session_id, new_tool_call_id
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import ModelCompletion
 from agent_core.domain.sessions import SessionStatus
 from agent_core.domain.tools import ToolCall
+from agent_core.ports.worker_preparation import PreparationAdvanced
 from agent_storage import (
     SQLiteEventStore,
     SQLiteLeaseStore,
@@ -27,6 +29,37 @@ from zebra_agent_worker import (
     SessionRecoveryService,
     SessionResumeService,
 )
+
+
+def test_approved_start_finishes_fenced_recovery_without_reappending() -> None:
+    from zebra_agent_worker.continuation_lifecycle import mark_approved_continuation_started
+
+    claimed, recovery_service, event_store, recorder = Mock(), Mock(), Mock(), Mock()
+    claimed.recovery.session.session_id = new_session_id()
+    claimed.recovery.session.current_sequence = 2
+    recovered = Mock()
+    recovery_service.recover_session.side_effect = [PreparationAdvanced("session", 3, 4), recovered]
+
+    result = mark_approved_continuation_started(
+        claimed,
+        event_store=event_store,
+        recovery_service=recovery_service,
+        tool_name="command.run",
+        tool_call_id=str(new_tool_call_id()),
+        started_at=datetime.now(UTC),
+        recorder=recorder,
+    )
+
+    assert result.recovery is recovered
+    assert [item.args[0].event_type for item in recorder.append_event.call_args_list] == [
+        EventType.HARNESS_ATTEMPT_STARTED,
+        EventType.TOOL_EXECUTION_STARTED,
+    ]
+    assert recovery_service.recover_session.call_count == 2
+    assert all(
+        call.kwargs["worker_lease"] is claimed.lease
+        for call in recovery_service.recover_session.call_args_list
+    )
 
 
 def test_completed_tool_continuation_resumes_without_reexecution(
@@ -254,9 +287,7 @@ def test_completed_tool_with_dangling_model_request_recovers(
 
     event_store = SQLiteEventStore(database_path)
     events = event_store.list_for_session(session_id)
-    requested = next(
-        event for event in events if event.event_type is EventType.APPROVAL_REQUESTED
-    )
+    requested = next(event for event in events if event.event_type is EventType.APPROVAL_REQUESTED)
     pending_id = requested.payload["tool_call_id"]
     sequence = events[-1].sequence
     for event_type, payload in (
@@ -308,9 +339,7 @@ def test_completed_tool_with_dangling_model_request_recovers(
 
     assert recovered.session.status is SessionStatus.COMPLETED
     ledger = SQLiteEventStore(database_path).list_for_session(session_id)
-    started = sum(
-        event.event_type is EventType.TOOL_EXECUTION_STARTED for event in ledger
-    )
+    started = sum(event.event_type is EventType.TOOL_EXECUTION_STARTED for event in ledger)
     completed_tools = sum(
         event.event_type is EventType.TOOL_EXECUTION_COMPLETED for event in ledger
     )
