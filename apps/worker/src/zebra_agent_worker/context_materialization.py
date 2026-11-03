@@ -81,13 +81,14 @@ class AttemptAuthorityEvidence:
         session_id: SessionId,
         started_at: datetime,
         attempt_number: int = 1,
+        mark: Callable[[str], None] | None = None,
     ) -> tuple[ClaimedSession, list[SessionEvent]]:
         scope = attempt_authority_scope(
             self.static_scope,
             self.scope_provider,
             claimed.recovery.session,
         )
-        if not persist_attempt_authority(
+        persisted = persist_attempt_authority(
             recorder,
             self.resolver,
             scope,
@@ -95,7 +96,10 @@ class AttemptAuthorityEvidence:
             existing_events=session_events,
             attempt_number=attempt_number,
             created_at=started_at,
-        ):
+        )
+        if mark is not None:
+            mark("context_authority_append")
+        if not persisted:
             return claimed, session_events
         return (
             _refresh_claim(
@@ -171,6 +175,7 @@ def prepare_worker_context(
         session_id=session_id,
         started_at=as_of,
         attempt_number=attempt_number,
+        mark=mark,
     )
     if mark is not None:
         mark("context_authority_evidence")
@@ -211,6 +216,9 @@ def prepare_worker_context(
             },
             created_at=as_of,
         )
+    if mark is not None:
+        mark("context_selection_append")
+    if materialization is not None:
         claimed = _refresh_claim(
             recorder, recovery_service, claimed, ownership_check or recorder._ownership_check
         )
