@@ -335,6 +335,7 @@ def append_task_message(
     *,
     idempotency_key: str | None,
     message_receipt_version: int = 1,
+    verified_host_grant: VerifiedHostGrant | None = None,
 ) -> ApiResponse:
     if message_receipt_version not in {1, 2} or (
         message_receipt_version == 2 and not valid_receipt_key(idempotency_key)
@@ -366,6 +367,13 @@ def append_task_message(
         )
 
     def append(segment: SessionId) -> ApiResponse:
+        if verified_host_grant is not None:
+            return app.append_session_message(
+                str(segment),
+                payload,
+                include_message_coordinates=message_receipt_version == 2,
+                verified_host_grant=verified_host_grant,
+            )
         if message_receipt_version == 2:
             return app.append_session_message(
                 str(segment), payload, include_message_coordinates=True

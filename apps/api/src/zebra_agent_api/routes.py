@@ -186,7 +186,11 @@ class RouteAdapter:
                         extension_admission=self.extension_turn_admission,
                         verified_host_grant=request.verified_host_grant,
                     )
-                return self.app.append_session_message(parts[0], request.body or {})
+                return self.app.append_session_message(
+                    parts[0],
+                    request.body or {},
+                    verified_host_grant=request.verified_host_grant,
+                )
             if len(parts) == 2 and parts[1] == "commands":
                 return self.app.submit_command(
                     parts[0],

@@ -33,6 +33,7 @@ class TaskSessionApi(Protocol):
         payload: dict[str, object],
         *,
         include_message_coordinates: bool = False,
+        verified_host_grant: VerifiedHostGrant | None = None,
     ) -> ApiResponse: ...
 
     def cancel_session(

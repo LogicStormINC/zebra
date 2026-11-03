@@ -327,6 +327,7 @@ class ZebraAgentApi(
         payload: dict[str, object],
         *,
         include_message_coordinates: bool = False,
+        verified_host_grant: VerifiedHostGrant | None = None,
     ) -> ApiResponse:
         parsed = parse_append_session_message_payload(payload)
         if isinstance(parsed, ApiResponse):
@@ -344,6 +345,30 @@ class ZebraAgentApi(
                 body={"session_id": session_id, "status": "not_found"},
             )
         workspace = self.stores.workspaces.get_workspace(session_key)
+        from agent_core.domain.agent_definition_snapshots import BindingPurpose
+        from agent_core.domain.bundle_definition import BundleDefinitionSnapshot
+
+        bound = workspace.definition_snapshot if workspace is not None else None
+        effective = None
+        if (
+            self.settings.storage_authority == "postgresql"
+            and self.settings.publication_management_config
+            and parsed["clarification_id"] is None
+            and isinstance(bound, BundleDefinitionSnapshot)
+            and bound.binding_purpose is BindingPurpose.PRODUCTION
+        ):
+            from zebra_agent_api.publication_consumer import resolve_consumer_binding
+
+            effective = resolve_consumer_binding(
+                self.settings,
+                self.agent_registry,
+                bound.definition_id,
+                bound.bound_version.runtime_assembly.bundle.manifest.scope.environment,
+                verified_host_grant.context if verified_host_grant is not None else None,
+                verified_host_grant,
+            )
+            if isinstance(effective, ApiResponse):
+                return effective
         try:
             event = build_session_message_event(
                 event_store=self.stores.events,
@@ -352,7 +377,8 @@ class ZebraAgentApi(
                 clarification_id=parsed["clarification_id"],
                 model_profile=parsed["model_profile"],
                 selected_model_id=parsed["selected_model_id"],
-                inherited_snapshot=workspace.definition_snapshot if workspace is not None else None,
+                inherited_snapshot=bound,
+                effective_snapshot=effective,
                 reasoning_effort=parsed["reasoning_effort"],
             )
         except ValueError as exc:
@@ -385,6 +411,31 @@ class ZebraAgentApi(
                     events,
                     parsed["attachments"],
                 )
+            release_binding = None
+            switched = event.payload.get("definition_snapshot")
+            if switched is not None:
+                from agent_storage.postgres.task_admission import load_session_task_binding
+
+                from zebra_agent_api.session_binding import renew_task_binding_snapshot
+
+                assert isinstance(bound, BundleDefinitionSnapshot)
+                assert effective is not None and verified_host_grant is not None
+                current = load_session_task_binding(
+                    self.settings.database_url,
+                    deployment_namespace=namespace,
+                    session_id=session_key,
+                )
+                if current is None:
+                    return conflict(session_id=session_id, status="host_binding_missing")
+                try:
+                    release_binding = renew_task_binding_snapshot(
+                        current,
+                        verified_host_grant.context,
+                        authority_issuer=verified_host_grant.authority_issuer,
+                        release_change=(bound.snapshot_digest, effective.snapshot_digest),
+                    )
+                except ValueError:
+                    return conflict(session_id=session_id, status="host_binding_revision_conflict")
             try:
                 updated_session = append_input_message(
                     self.settings.database_url,
@@ -392,9 +443,14 @@ class ZebraAgentApi(
                     session,
                     events,
                     artifacts,
+                    release_binding=release_binding,
                 )
             except SessionEventSequenceConflictError:
                 return message_sequence_conflict(session_id)
+            except ValueError:
+                if release_binding is None:
+                    raise
+                return conflict(session_id=session_id, status="host_binding_revision_conflict")
             event = events[0]
         else:
             attachment_refs = store_text_attachments(

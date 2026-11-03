@@ -29,11 +29,13 @@ def build_session_message_event(
     reasoning_effort: str | None = None,
     selected_model_id: str | None = None,
     inherited_snapshot: DefinitionSnapshot | None = None,
+    effective_snapshot: BundleDefinitionSnapshot | None = None,
 ) -> SessionEvent:
     """Build the next durable message Event with ADR-026 Turn identity."""
 
     events = event_store.list_for_session(session.session_id)
     selected_model_pin = None
+    adopted_snapshot = None
     if clarification_id is None:
         prepared = next(
             (
@@ -61,6 +63,15 @@ def build_session_message_event(
                 None,
             )
             assembly = snapshot.bound_version.runtime_assembly
+            if effective_snapshot is not None:
+                chosen = snapshot.snapshot_for_removed_model(
+                    effective=effective_snapshot,
+                    selected_model_id=remembered or assembly.provider_profile.pin.id,
+                )
+                if chosen is not snapshot:
+                    adopted_snapshot = chosen
+                    assembly = chosen.bound_version.runtime_assembly
+                    remembered = None
             _, profile = assembly.resolve_session_model(
                 requested_id=selected_model_id,
                 remembered_id=remembered,
@@ -79,6 +90,7 @@ def build_session_message_event(
             model_profile=model_profile,
             reasoning_effort=reasoning_effort,
             selected_model_pin=selected_model_pin,
+            definition_snapshot=adopted_snapshot,
         ),
     )
 

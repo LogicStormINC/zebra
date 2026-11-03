@@ -111,6 +111,7 @@ def handle_task_route(app: ZebraAgentApi, request: TaskRouteRequest) -> ApiRespo
             request.body or {},
             idempotency_key=_idempotency_key(request),
             message_receipt_version=version,
+            verified_host_grant=request.verified_host_grant,
         )
     if (
         method == "POST"
