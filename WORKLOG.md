@@ -20735,3 +20735,14 @@ Evidence pg-sync-tls-fenced-promotion-two-hosts.json. The fence was
 operator-driven container stop; no automatic failover or API writer
 reconfiguration was exercised, and only the disposable databases
 were affected.
+
+CA-HA-03 restored synchronous remote_apply after fencing and
+promotion. The replacement needed a fast pg_basebackup checkpoint
+to enter streaming inside the rehearsal deadline. Repointed the
+TLS proof connection to the replacement and re-confirmed the exact
+original STOP record. A new primary SQL write was present on the
+replacement when its commit returned. Evidence
+pg-sync-tls-restore-redundancy.json. The replacement shared the
+promoted primary's host and TLS test identity. This proves the
+replication and proof recovery sequence only; independent failure
+domains, API writer handover, and automated fencing remain open.
