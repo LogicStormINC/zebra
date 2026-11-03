@@ -2,6 +2,8 @@
 
 - In progress. Owner Luke Ding / Codex. Branch `codex/ca-p7-model-registration`.
 - Owned paths for the contract slice are `docs/AGENT_TASKS.md` and `docs/CA-P7-MODEL-01_registration.md`.
+- Owned storage paths are `packages/agent-storage/src/agent_storage/postgres/model_profile_registration*.py` and `migration_catalog_tail.py`.
+
 - Acceptance requires a durable original operation, scope and action authorization, and identical resolution from the normal API and Worker after restart. Cross-repo acceptance uses two Agent Releases pinned to one revision.
 
 # CA-P7-03D-S3 — 真实对象存储证据补齐
