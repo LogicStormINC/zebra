@@ -20558,3 +20558,13 @@ row was visible on standby. No resubmission. This conservative
 global LSN can wait on unrelated WAL under load and needs a trusted
 role/identity/timeline check before app use. No API integration or
 RPO acceptance yet. Evidence pg-sync-watermark-two-hosts.json.
+
+CA-HA-03 exact standby visibility alternative. Paused WAL replay,
+leaving the designated synchronous standby queryable. After explicit
+SyncRep cancellation, psycopg returned success and the primary
+showed the row, but a fresh query for the exact key on the standby
+returned zero. Resumed replay and the same key appeared without
+rewriting. This avoids unrelated global WAL in a candidate receipt
+proof, but requires a separately budgeted, authenticated standby
+read and trusted promotion topology. Tested a synthetic marker, not
+the application route. Evidence pg-sync-exact-visibility-two-hosts.json.
