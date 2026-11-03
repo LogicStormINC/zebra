@@ -30,6 +30,7 @@ class CapacityProfile:
     external: int
     execution_slots: int
     fleet: Mapping[str, int]
+    receipt: int = 0
 
     @classmethod
     def parse(cls, value: str) -> "CapacityProfile":
@@ -37,6 +38,8 @@ class CapacityProfile:
             raise ValueError("database budget profile is too large")
         try:
             data = json.loads(value, object_pairs_hook=_unique)
+            if isinstance(data, dict):
+                data.setdefault("receipt", 0)
             if not isinstance(data, dict) or set(data) != set(cls.__dataclass_fields__):
                 raise ValueError("database budget requires the complete inventory")
             for key in ("pool", "normal", "read", "control", "probe", "execution_slots"):
@@ -45,6 +48,8 @@ class CapacityProfile:
             for key in ("max_connections", "server_reserved", "external"):
                 if type(data[key]) is not int or not 0 <= data[key] <= 262143:
                     raise ValueError("invalid database server budget")
+            if type(data["receipt"]) is not int or not 0 <= data["receipt"] <= 32:
+                raise ValueError("invalid API receipt connection budget")
             if data["external"] < 1:
                 raise ValueError("database budget must reserve migration/operator connections")
             fleet = data["fleet"]
@@ -69,7 +74,7 @@ class CapacityProfile:
     def fleet_connections(self) -> int:
         # Counts are PEAKS including deployment surge, not steady replica targets.
         per_process = self.pool + self.normal + self.read + self.control + self.probe
-        return sum(self.fleet.values()) * per_process
+        return sum(self.fleet.values()) * per_process + self.fleet["api"] * self.receipt
 
     def require_server(self, row: dict[str, Any]) -> None:
         if (row["maximum"] != self.max_connections

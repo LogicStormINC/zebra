@@ -14,7 +14,7 @@ from psycopg.conninfo import conninfo_to_dict
 
 from agent_storage.postgres.capacity_profile import CapacityProfile
 
-Lane = Literal["normal", "read", "control", "probe"]
+Lane = Literal["normal", "read", "control", "probe", "receipt"]
 _lane: ContextVar[Lane] = ContextVar("postgres_capacity_lane", default="normal")
 _budget: ContextVar[ConnectionBudget | None] = ContextVar("postgres_capacity", default=None)
 PROFILE_ENV = "ZEBRA_DATABASE_BUDGET_JSON"
@@ -35,6 +35,8 @@ class ConnectionBudget:
         self._lock, self._closed = Lock(), False
         self._slots = {k: BoundedSemaphore(getattr(profile, k))
                        for k in ("normal", "read", "control", "probe")}
+        if component == "api" and profile.receipt:
+            self._slots["receipt"] = BoundedSemaphore(profile.receipt)
         self._active = dict.fromkeys(self._slots, 0)
         self._peak = dict.fromkeys(self._slots, 0)
         self._rejected = dict.fromkeys(self._slots, 0)
@@ -121,7 +123,7 @@ def capacity_scope(budget: ConnectionBudget | None) -> Iterator[None]:
 
 @contextmanager
 def capacity_lane(lane: Lane) -> Iterator[None]:
-    if lane not in ("normal", "read", "control", "probe"):
+    if lane not in ("normal", "read", "control", "probe", "receipt"):
         raise ValueError("invalid database capacity lane")
     token = _lane.set(lane)
     try:

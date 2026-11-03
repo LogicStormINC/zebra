@@ -23,6 +23,7 @@ from psycopg_pool import PoolTimeout, TooManyRequests
 from starlette.responses import JSONResponse
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
+_ORIGINAL_RECEIPT = re.compile(r"/v1/admission-operations/[0-9a-fA-F-]{36}")
 _CONTROL = re.compile(r"/(tasks|sessions)/[^/]+/(cancel|stop|suspend)")
 
 
@@ -37,6 +38,9 @@ class DatabaseBudgetMiddleware:
             "control": BoundedSemaphore(budget.profile.control),
         }
 
+        if budget.profile.receipt:
+            self._admissions["receipt"] = BoundedSemaphore(budget.profile.receipt)
+
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] != "http":
             await self.app(scope, receive, send)
@@ -48,6 +52,8 @@ class DatabaseBudgetMiddleware:
         lane: Lane = "read" if method in {"GET", "HEAD"} else "normal"
         if method == "POST" and _CONTROL.fullmatch(path):
             lane = "control"
+        if method == "GET" and "receipt" in self._admissions and _ORIGINAL_RECEIPT.fullmatch(path):
+            lane = "receipt"
         started = False
         admitted = self._admissions[lane].acquire(blocking=False)
         if not admitted:
@@ -94,6 +100,8 @@ class ApiDatabaseCalls:
         self._lock, self._closed = Lock(), False
         limits = {"normal": budget.profile.normal + budget.profile.pool,
                   "read": budget.profile.read, "control": budget.profile.control}
+        if budget.profile.receipt:
+            limits["receipt"] = budget.profile.receipt
         self._pools = {k: ThreadPoolExecutor(v, thread_name_prefix=f"api-{k}")
                        for k, v in limits.items()}
         self._slots = {k: BoundedSemaphore(v) for k, v in limits.items()}

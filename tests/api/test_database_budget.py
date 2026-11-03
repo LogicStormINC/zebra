@@ -318,3 +318,33 @@ def test_host_read_waits_before_dispatch_and_cancellation_never_invokes_it():
     finally:
         release.set()
         calls.close()
+
+
+def test_original_receipt_has_capacity_when_stream_reads_are_saturated():
+    from agent_storage.postgres.capacity_profile import CapacityProfile
+    from agent_storage.postgres.connection_capacity import ConnectionBudget, current_lane
+    from zebra_agent_api.database_budget import DatabaseBudgetMiddleware
+
+    profile = CapacityProfile.parse(json.dumps(profile_data() | {"receipt": 1}))
+    baseline = CapacityProfile.parse(json.dumps(profile_data()))
+    assert profile.fleet_connections == baseline.fleet_connections + profile.fleet["api"]
+    budget = ConnectionBudget("dbname=one", profile, "api")
+    app = FastAPI()
+    app.add_middleware(DatabaseBudgetMiddleware, budget=budget)
+
+    @app.api_route("/{path:path}", methods=["GET", "POST"])
+    def request(path):
+        budget.acquire(current_lane()).release()
+        return {"lane": current_lane()}
+
+    receipt = "/v1/admission-operations/00000000-0000-0000-0000-000000000001"
+    read = budget.acquire("read")
+    try:
+        with TestClient(app) as client:
+            assert client.get("/tasks/example/stream").status_code == 503
+            assert client.get(receipt).json() == {"lane": "receipt"}
+            assert client.get(receipt + "/observation").status_code == 503
+            assert client.post(receipt).json() == {"lane": "normal"}
+            assert client.post("/tasks/example/stop").json() == {"lane": "control"}
+    finally:
+        read.release()
