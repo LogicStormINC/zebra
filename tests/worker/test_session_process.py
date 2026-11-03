@@ -2,6 +2,7 @@
 
 import json
 import os
+import select
 import signal
 import subprocess
 import sys
@@ -191,3 +192,77 @@ def test_supervisor_parent_death_before_spawn_writes_only_exit_receipt(tmp_path,
         executor_supervisor.run(request, result)
     assert json.loads(result.with_suffix(".exit.json").read_text()) == receipt
     assert not result.exists()
+
+
+@pytest.mark.skipif(sys.platform != "linux", reason="requires Linux subreaper and parent fence")
+def test_supervisor_drains_after_worker_sigkill():
+    probe = """
+import ctypes
+import json
+import os
+import signal
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
+assert ctypes.CDLL(None).prctl(36, 1, 0, 0, 0) == 0
+with tempfile.TemporaryDirectory() as directory:
+    request = Path(directory) / "request.json"
+    result = Path(directory) / "result.json"
+    receipt = {"session_id": "original", "fence": {"fencing_token": 7}}
+    signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGUSR1})
+    worker = os.fork()
+    if worker == 0:
+        executor = (
+            "import os,signal; "
+            "os.setsid() if os.fork() == 0 else None; "
+            "print('ready', flush=True); signal.pause()"
+        )
+        request.write_text(json.dumps({
+            "parent_pid": os.getpid(),
+            "executor_command": [sys.executable, "-c", executor],
+            "exit_receipt": receipt,
+        }))
+        supervisor = subprocess.Popen(
+            [sys.executable, sys.argv[1], str(request), str(result)]
+        )
+        print(supervisor.pid, flush=True)
+        signal.pause()
+        os._exit(2)
+    try:
+        signal.sigwait({signal.SIGUSR1})
+    finally:
+        os.kill(worker, signal.SIGKILL)
+        os.waitpid(worker, 0)
+    _, status = os.waitpid(-1, 0)
+    assert os.waitstatus_to_exitcode(status) == 1
+    assert json.loads(result.with_suffix(".exit.json").read_text()) == receipt
+    assert not result.exists()
+    print("drained", flush=True)
+"""
+    process = subprocess.Popen(
+        [sys.executable, "-c", probe, executor_supervisor.__file__],
+        stdout=subprocess.PIPE,
+        text=True,
+        start_new_session=True,
+    )
+    try:
+        assert process.stdout is not None
+        ready = b""
+        deadline = time.monotonic() + 5
+        while ready.count(b"ready\n") < 2 and time.monotonic() < deadline:
+            if select.select([process.stdout], [], [], 0.1)[0]:
+                chunk = os.read(process.stdout.fileno(), 1024)
+                if not chunk:
+                    break
+                ready += chunk
+        assert ready.count(b"ready\n") == 2
+        process.send_signal(signal.SIGUSR1)
+        output, _ = process.communicate(timeout=5)
+        assert process.returncode == 0
+        assert output.strip() == "drained"
+    finally:
+        if process.poll() is None:
+            os.killpg(process.pid, signal.SIGKILL)
+            process.wait()
