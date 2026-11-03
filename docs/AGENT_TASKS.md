@@ -37423,3 +37423,6 @@ CA-HA-03 Cloud Task command routing addendum (Luke Ding/Codex, existing branch):
 own routes.py, task_routes.py, command_submission.py, and the focused Task
 command route regression. Route Cloud Task resume/suspend through durable
 Session commands with the same revision parser and idempotency key.
+
+CA-HA-03 Cloud Task command packaging addendum: include the three owned API
+modules in the isolated E1 Dockerfile.delta.
