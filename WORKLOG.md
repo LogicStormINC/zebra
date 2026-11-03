@@ -19461,3 +19461,19 @@ The temporary APIs were restored. Next measure full per-client frame and
 termination timing, then verify resume of an existing interrupted Run.
 Private artifacts sse19-missing-run.json, sse19-live-resume-original.json,
 sse19-live-event-b5935eef*.
+
+CA-HA-03 instrumented SSE terminal delivery: initial cohort established
+32 streams but skipped the POST because one unrelated proxy TCP socket
+closed between snapshots. Adjusted the gate to require all 32 clients
+read a frame plus at least 16 server sockets on each API. The second
+cohort submitted one fresh explicit resume for
+1c818a9c-25cd-43d3-bfc1-383bcdda7837 (202). Twenty-six observers got
+terminal cursor 13; six timed out after 20 seconds of no bytes, having
+read only bootstrap cursors 0–2. All six timeouts were client read
+timeouts, not harness cancellation or EOF. Captured API tails show no
+capacity or checkpoint errors. The observer has a 30-second durable
+reconciliation interval when no hint advances; the 20-second client
+read timeout prevented this run from measuring that fallback. Next
+instrument Redis cursor/barrier and HTTP heartbeat timing and observe
+past the fallback deadline. Both temporary APIs restored.
+Private evidence: sse20-live-event-304d21c8*, sse20-live-resume-original.json.
