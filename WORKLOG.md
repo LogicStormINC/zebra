@@ -20756,3 +20756,13 @@ write was visible on the rebuilt standby at commit return. Evidence
 pg-sync-tls-cross-host-rebuild.json. The fixture reused its ephemeral
 TLS identity and switched topology manually. Application writer
 handover and automatic fencing remain open.
+
+CA-HA-03 live signed HTTP writer handover passed after the manual
+fence, promotion and cross-host rebuild. Booted a new Uvicorn API
+using the promoted writer DSN and rebuilt TLS proof reader, without
+a local commit override. One RS256 POST returned a completed sealed
+201 receipt, original GET returned the identical response, and
+observation recorded the result. Evidence pg-sync-tls-api-handover.json.
+The fresh API used a static verification key and fixture composition.
+This validates manual API reconfiguration, not automatic fencing,
+in-flight writer handoff, Worker recovery or production cutover.
