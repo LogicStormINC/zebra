@@ -5,6 +5,7 @@ import json
 import os
 import subprocess
 import tempfile
+from datetime import datetime
 from pathlib import Path
 
 
@@ -37,8 +38,28 @@ def identity(container: str) -> dict[str, str]:
     }
 
 
-def publish(container: str, destination: Path) -> None:
-    binding = identity(container)
+def exit_witness(container: str, binding_path: Path) -> dict[str, str]:
+    binding = json.loads(binding_path.read_bytes())
+    spec = json.loads(docker("inspect", "--type", "container", container))[0]
+    state = spec["State"]
+    if (
+        binding["engine"] != docker("info", "--format", "{{.ID}}")
+        or spec["Id"] != binding["container"]
+        or state["StartedAt"] != binding["started_at"]
+        or spec["Config"]["Labels"].get("zebra.ha.owner") != "ca-ha-03-e1-20261102"
+        or spec["HostConfig"]["PidMode"] != ""
+        or spec["HostConfig"]["Privileged"]
+        or state["Status"] != "exited"
+        or state["Running"]
+        or state["Pid"] != 0
+        or datetime.fromisoformat(state["FinishedAt"])
+        <= datetime.fromisoformat(binding["started_at"])
+    ):
+        raise ValueError("no exit proof for the registered E1 Worker incarnation")
+    return {**binding, "finished_at": state["FinishedAt"]}
+
+
+def publish(binding: dict[str, str], destination: Path) -> None:
     with tempfile.TemporaryDirectory(dir=destination.parent) as directory:
         temporary = Path(directory) / "identity.json"
         with temporary.open("x") as file:
@@ -58,5 +79,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("container")
     parser.add_argument("destination", type=Path)
+    parser.add_argument("--exit-binding", type=Path)
     arguments = parser.parse_args()
-    publish(arguments.container, arguments.destination)
+    if arguments.exit_binding is None:
+        binding = identity(arguments.container)
+    else:
+        if arguments.exit_binding.resolve() == arguments.destination.resolve():
+            parser.error("exit witness must have a separate destination")
+        binding = exit_witness(arguments.container, arguments.exit_binding)
+    publish(binding, arguments.destination)
