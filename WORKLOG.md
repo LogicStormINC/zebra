@@ -21246,3 +21246,12 @@ sse-renew256-negotiation-b4e6912f5a3f463a8f34f5c31316c675.
 Restored both original staging APIs and verified TLS readiness.
 This is one planned renewal cycle, separate from 30m E1 load,
 node-loss recovery and production.
+
+CA-HA-03 synthetic corpus now checks a bounded 16-Task sample via
+the actual PostgreSQL Task store, requiring strict source coverage,
+header highwater 99 and exact page positions 0..99. Ran that
+read-only check against the live corpus generation volume; all
+16 passed. This validates native replay metadata in the synthetic
+corpus, not tenant-signed admission composition or preserved
+legacy/Coverage samples. The running generator predates the new
+post-check; repeat it after the full count completes.

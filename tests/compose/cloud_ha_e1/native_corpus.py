@@ -7,7 +7,9 @@ import sys
 from uuid import uuid4
 
 import psycopg
-from psycopg.conninfo import conninfo_to_dict
+from agent_core.domain.identifiers import TaskId
+from agent_storage.postgres.agent_tasks import PostgresAgentTaskStore
+from psycopg.conninfo import conninfo_to_dict, make_conninfo
 
 
 def populate(dsn: str, task_count: int) -> dict[str, str | int]:
@@ -79,7 +81,41 @@ def populate(dsn: str, task_count: int) -> dict[str, str | int]:
         ).fetchone()
     if (tasks, events, indexes) != (task_count, task_count * 100, task_count * 100):
         raise RuntimeError(f"corpus coordinates incomplete for {namespace}")
-    return {"namespace": namespace, "tasks": tasks, "events": events, "indexes": indexes}
+    sampled = verify_replay(dsn, namespace)
+    return {
+        "namespace": namespace,
+        "tasks": tasks,
+        "events": events,
+        "indexes": indexes,
+        "replay_samples": sampled,
+    }
+
+
+def verify_replay(dsn: str, namespace: str) -> int:
+    options = conninfo_to_dict(dsn).get("options", "")
+    readonly = make_conninfo(
+        dsn, options=f"{options} -c default_transaction_read_only=on -c statement_timeout=3000"
+    )
+    with psycopg.connect(readonly) as connection:
+        samples = connection.execute(
+            """SELECT task_id FROM agent_tasks WHERE deployment_namespace=%s
+               ORDER BY task_id LIMIT 16""",
+            (namespace,),
+        ).fetchall()
+    if not samples:
+        raise RuntimeError("no corpus Tasks to verify")
+    store = PostgresAgentTaskStore(readonly, deployment_namespace=namespace)
+    for (task_id,) in samples:
+        task = TaskId(task_id)
+        header = store.read_task_header(task, require_source_coverage=True)
+        page = store.read_event_page(task, -1, limit=100)
+        if (
+            header is None
+            or header.current_sequence != 99
+            or [event.task_sequence for event in page.events] != list(range(100))
+        ):
+            raise RuntimeError("corpus Task failed native replay")
+    return len(samples)
 
 
 def main() -> None:
