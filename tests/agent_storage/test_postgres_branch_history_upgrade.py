@@ -10,6 +10,10 @@ from agent_storage import apply_postgres_migrations, bootstrap_control_plane_epo
 from agent_storage.postgres.migration_runner import require_current_schema
 from agent_storage.postgres.migration_types import PostgresMigrationError
 from agent_storage.postgres.migrations import MIGRATIONS
+from agent_storage.postgres.orchestration_gate_migration import ORCHESTRATION_GATE_MIGRATION
+from agent_storage.postgres.orchestration_gate_policy_migration import (
+    ORCHESTRATION_GATE_POLICY_MIGRATION,
+)
 from agent_storage.postgres.runtime_gate_migration import RUNTIME_GATE_MIGRATION
 from agent_storage.postgres.runtime_gate_termination_migration import (
     RUNTIME_GATE_TERMINATION_MIGRATION,
@@ -78,6 +82,52 @@ def test_upgrade_keeps_original_ledger_and_gate_proof(postgres_dsn, p5_history):
             )
         with pytest.raises(ValueError, match="complete verified schema"):
             command_cutover_state(dsn, namespace, require_ready=True)
+        with pytest.raises(PostgresMigrationError):
+            apply_postgres_migrations(dsn)
+        with pytest.raises(PostgresMigrationError):
+            require_current_schema(dsn)
+    finally:
+        with psycopg.connect(postgres_dsn) as connection:
+            connection.execute(sql.SQL("DROP SCHEMA {} CASCADE").format(sql.Identifier(schema)))
+
+@pytest.mark.parametrize("history", ["host-manifest", "03d-partial", "03d-complete"])
+def test_03d_upgrade_keeps_published_migration_rows(postgres_dsn, history):
+    schema = f"test_03d_branch_merge_{uuid4().hex}"
+    with psycopg.connect(postgres_dsn) as connection:
+        connection.execute(sql.SQL("CREATE SCHEMA {}").format(sql.Identifier(schema)))
+    dsn = make_conninfo(postgres_dsn, options=f"-c search_path={schema}")
+    try:
+        if history == "host-manifest":
+            original = tuple(m for m in MIGRATIONS if m.version <= 122)
+        else:
+            original = tuple(m for m in MIGRATIONS if m.version <= 121)
+            original += (ORCHESTRATION_GATE_MIGRATION,)
+            if history == "03d-complete":
+                original += (ORCHESTRATION_GATE_POLICY_MIGRATION,)
+        with patch(
+            "agent_storage.postgres.migration_runner.migration_history_plan", return_value=original
+        ):
+            apply_postgres_migrations(dsn)
+        with psycopg.connect(dsn) as connection:
+            before = connection.execute(
+                "SELECT * FROM zebra_schema_migrations ORDER BY version"
+            ).fetchall()
+        with pytest.raises(PostgresMigrationError):
+            require_current_schema(dsn)
+        apply_postgres_migrations(dsn)
+        apply_postgres_migrations(dsn)
+        require_current_schema(dsn)
+        with psycopg.connect(dsn, row_factory=dict_row) as connection:
+            _require_schema(connection)
+        with psycopg.connect(dsn) as connection:
+            after = connection.execute(
+                "SELECT * FROM zebra_schema_migrations ORDER BY version"
+            ).fetchall()
+            assert all(row in after for row in before)
+            assert len(after) == len(MIGRATIONS)
+            connection.execute(
+                "UPDATE zebra_schema_migrations SET checksum=%s WHERE version=122", ("0" * 64,)
+            )
         with pytest.raises(PostgresMigrationError):
             apply_postgres_migrations(dsn)
         with pytest.raises(PostgresMigrationError):

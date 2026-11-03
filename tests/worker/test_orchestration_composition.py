@@ -51,8 +51,8 @@ def test_recorder_ownership_callback_uses_ambient_safe_clock_only():
 
 
 @pytest.fixture
-def native():
-    return published_fixture.__wrapped__()
+def native(request):
+    return published_fixture.__wrapped__(request)
 
 
 def test_real_gateway_tools_use_native_registry_binding_and_child_snapshot(

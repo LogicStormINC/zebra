@@ -47,7 +47,11 @@ class HumanApproval(BaseModel):
 
 
 class GateInput(BaseModel):
-    """Durable facts the gate evaluates — no model free-text trust."""
+    """Pure evaluator input; constructing this value supplies no execution authority.
+
+    Production completion must derive facts and policy inside its storage work
+    unit. This type is also accepted by local test evaluators, so it is not proof.
+    """
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 

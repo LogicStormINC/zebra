@@ -1,0 +1,188 @@
+{
+  "task": "CA-P7-03D",
+  "status": "Review; native readonly gate candidate plus restricted real cross-repo proof; full positive model orchestration open",
+  "baseCommit": "56ae352a5b50f1ce323899afcef464ad641a302c",
+  "tests": {
+    "command": [
+      "/Users/lukeding/.codex/worktrees/ca-p5-main-integration/zebra-agent/.venv/bin/python",
+      "-m",
+      "pytest",
+      "-q",
+      "tests/agent_orchestration",
+      "tests/agent_tools/test_orchestration_tools.py",
+      "tests/agent_integrations/test_worker_budget_transport.py",
+      "tests/agent_integrations/test_openai_compatible.py",
+      "tests/agent_integrations/test_deepseek_responses.py",
+      "tests/agent_integrations/test_bundle_model.py",
+      "tests/worker/test_worker_budget.py",
+      "tests/worker/test_orchestration_composition.py",
+      "tests/worker/test_orchestration_factory.py",
+      "tests/worker/test_orchestration_wiring.py",
+      "tests/worker/test_cloud_memory_recovery.py",
+      "tests/worker/test_loop.py",
+      "tests/worker/test_bound_execution_authority.py",
+      "tests/agent_storage/test_postgres_worker_budget.py",
+      "tests/agent_storage/test_postgres_orchestration_completion.py",
+      "tests/agent_storage/test_postgres_orchestration_admission.py",
+      "tests/agent_storage/test_postgres_orchestration.py",
+      "tests/agent_storage/test_postgres_subagent_delegation.py",
+      "tests/agent_storage/test_postgres_force_stops.py",
+      "tests/agent_integrations/test_orchestration_projection_view.py",
+      "tests/architecture/test_orchestration_boundaries.py",
+      "tests/architecture/test_core_boundaries.py",
+      "tests/agent_storage/test_postgres_orchestration_gate.py",
+      "tests/agent_tools/test_file_read_tool.py",
+      "tests/agent_tools/test_output_projection.py",
+      "tests/agent_runtime/test_harness_runner.py",
+      "tests/worker/test_tool_output_artifacts_postgres.py"
+    ],
+    "exitCode": 0,
+    "sourceSha256Before": {
+      "apps/worker/src/zebra_agent_worker/orchestration_composition.py": "9a001450012419a16d2cf40f0f371c991951d572162c761aded3a1e985b4c100",
+      "apps/worker/src/zebra_agent_worker/orchestration_wakeup_hook.py": "56ff3f822d6e3acafe8c1fac0e404698bada07fd5bc4235c1f21f166a3022ad0",
+      "packages/agent-integrations/src/agent_integrations/worker_budget.py": "9866f635f14b0b313f0657b41a2095a3505bd036cd036da5f07d3ca4a4df5311",
+      "packages/agent-orchestration/src/agent_orchestration/application/completion_gate.py": "033f543a2a6fb5cf5d7ef73c40ac5bda1f96965ca0c1473e5cd16db9d6720d92",
+      "packages/agent-orchestration/src/agent_orchestration/application/orchestration_completion_gate.py": "5f35d6a8f867feb670e1d622bb9db0c5f7070905660ee9194a4ff51182e79271",
+      "packages/agent-orchestration/src/agent_orchestration/application/orchestration_runtime.py": "722438b0b3cc7eaeadcebee19100717afc7f8728373a789c8d73ba6e48ff6b07",
+      "packages/agent-runtime/src/agent_runtime/harness.py": "7c1302fdeed2a0442fa2ebbd724aaf691b5c5189d0dbb8ad2dc5b2ce88c4808b",
+      "packages/agent-storage/src/agent_storage/postgres/migration_catalog_tail.py": "d39dd8c971db48c1b375aedf4b25e81a495db15ea743d0d790376e21cbdd38be",
+      "packages/agent-storage/src/agent_storage/postgres/orchestration.py": "c2573555fe873c7a2c8e48709fcf9ccd9a585e5bb38030252de4fc48d98de448",
+      "packages/agent-storage/src/agent_storage/postgres/orchestration_gate.py": "dcd2715520c834e7743b8a6eb6a95e8c6ee5f46aa3d17450af50a8496ee69aa2",
+      "packages/agent-storage/src/agent_storage/postgres/orchestration_gate_migration.py": "36b624ac7676ffd68781d9dea08e0b57e739459a7ade794f154facccac581579",
+      "packages/agent-storage/src/agent_storage/postgres/orchestration_gate_policy_migration.py": "a828868547d26c9b881f08c56336e9f7161da2829787235f7e197053293e268c",
+      "packages/agent-storage/src/agent_storage/postgres/orchestration_gate_queries.py": "4aca002e3697246add2bf8e4177cfc83e46840bbab31109c4c5a3b17402b7295",
+      "packages/agent-tools/src/agent_tools/builtin/files.py": "f3ffb13b45c29bf4d3c883bff2592fc2dd2fe80213f32bfe0ab90c863b1f3534",
+      "tests/agent_integrations/test_worker_budget_transport.py": "d4cde87414155c21b87a9edda13ff7d5d4a1e1e65acb5312270eea25b3cbf038",
+      "tests/agent_orchestration/test_completion_gate.py": "6f957bc22d3903aacce19bca98baf4a82efa89bb8f1972f77acd4915034149bc",
+      "tests/agent_orchestration/test_orchestration_runtime.py": "580c42021b0b8b1e9f8788ba9c904d2b193682222e967df1032c83dbdb5c2dc2",
+      "tests/agent_storage/test_postgres_orchestration_completion.py": "0cc9611c69b6199d9f8c081671b594900f1c0551ef04e3fc4bbce5811832b121",
+      "tests/agent_storage/test_postgres_orchestration_gate.py": "6b55f0e2a7ce8a78719bb4f3308dc1dbc08d11549bd9f4c76082259e1bab99ed",
+      "tests/agent_tools/test_file_read_tool.py": "7503dc6d5554d151d48f346dbe8847bf2beeb78d2dfc1794eca9d20baa5e120b",
+      "tests/worker/test_orchestration_composition.py": "fa7c44d00758db94237aeba87f024323316aadf9df22a86f33da54dfb89e008a",
+      "tests/worker/test_orchestration_factory.py": "398ba8c162659262294b084087862ac1b56c92b9189bada678215630f5592950"
+    },
+    "sourceUnchangedDuringRun": true,
+    "retainedPreviousRuns": [
+      "independent-pytest.json.initial-failed",
+      "independent-pytest.json.before-schema-fix"
+    ],
+    "result": "388 passed,12 skipped in76.17s; all12 require unavailable S3/MinIO"
+  },
+  "static": [
+    {
+      "command": [
+        "/Users/lukeding/.codex/worktrees/ca-p5-main-integration/zebra-agent/.venv/bin/python",
+        "-m",
+        "ruff",
+        "check",
+        "apps/worker/src/zebra_agent_worker/orchestration_composition.py",
+        "apps/worker/src/zebra_agent_worker/orchestration_wakeup_hook.py",
+        "packages/agent-integrations/src/agent_integrations/worker_budget.py",
+        "packages/agent-orchestration/src/agent_orchestration/application/completion_gate.py",
+        "packages/agent-orchestration/src/agent_orchestration/application/orchestration_completion_gate.py",
+        "packages/agent-orchestration/src/agent_orchestration/application/orchestration_runtime.py",
+        "packages/agent-runtime/src/agent_runtime/harness.py",
+        "packages/agent-storage/src/agent_storage/postgres/migration_catalog_tail.py",
+        "packages/agent-storage/src/agent_storage/postgres/orchestration.py",
+        "packages/agent-storage/src/agent_storage/postgres/orchestration_gate.py",
+        "packages/agent-storage/src/agent_storage/postgres/orchestration_gate_migration.py",
+        "packages/agent-storage/src/agent_storage/postgres/orchestration_gate_policy_migration.py",
+        "packages/agent-storage/src/agent_storage/postgres/orchestration_gate_queries.py",
+        "packages/agent-tools/src/agent_tools/builtin/files.py",
+        "tests/agent_integrations/test_worker_budget_transport.py",
+        "tests/agent_orchestration/test_completion_gate.py",
+        "tests/agent_orchestration/test_orchestration_runtime.py",
+        "tests/agent_storage/test_postgres_orchestration_completion.py",
+        "tests/agent_storage/test_postgres_orchestration_gate.py",
+        "tests/agent_tools/test_file_read_tool.py",
+        "tests/worker/test_orchestration_composition.py",
+        "tests/worker/test_orchestration_factory.py"
+      ],
+      "exitCode": 0,
+      "output": "All checks passed!\n"
+    },
+    {
+      "command": [
+        "/Users/lukeding/.codex/worktrees/ca-p5-main-integration/zebra-agent/.venv/bin/python",
+        "-m",
+        "mypy",
+        "--follow-imports=silent",
+        "apps/worker/src/zebra_agent_worker/orchestration_composition.py",
+        "apps/worker/src/zebra_agent_worker/orchestration_wakeup_hook.py",
+        "packages/agent-integrations/src/agent_integrations/worker_budget.py",
+        "packages/agent-orchestration/src/agent_orchestration/application/completion_gate.py",
+        "packages/agent-orchestration/src/agent_orchestration/application/orchestration_completion_gate.py",
+        "packages/agent-orchestration/src/agent_orchestration/application/orchestration_runtime.py",
+        "packages/agent-runtime/src/agent_runtime/harness.py",
+        "packages/agent-storage/src/agent_storage/postgres/migration_catalog_tail.py",
+        "packages/agent-storage/src/agent_storage/postgres/orchestration.py",
+        "packages/agent-storage/src/agent_storage/postgres/orchestration_gate.py",
+        "packages/agent-storage/src/agent_storage/postgres/orchestration_gate_migration.py",
+        "packages/agent-storage/src/agent_storage/postgres/orchestration_gate_policy_migration.py",
+        "packages/agent-storage/src/agent_storage/postgres/orchestration_gate_queries.py",
+        "packages/agent-tools/src/agent_tools/builtin/files.py"
+      ],
+      "exitCode": 0,
+      "output": "Success: no issues found in 14 source files\n"
+    }
+  ],
+  "crossRepo": {
+    "result": "13 PASS restricted checks; provider POST count0; actual Go/Native HTTPS/normal Worker/PG/Redis",
+    "reportInOverdoze": "docs/evidence/p7-03/restricted-public-chain.json",
+    "nativeSourceFilesFrozen": 1542,
+    "platformSourceFilesFrozen": 688,
+    "goBinariesBuilt": 5,
+    "nativeHeadAtRun": "56ae352a5b50f1ce323899afcef464ad641a302c",
+    "nativeCandidateDirtyAtRun": true
+  },
+  "boundaries": [
+    "Published readonly policy uses actual FileReadTool/projector/CloudArtifactCoordinator/WorkerMutationAuthority/PG; object bytes service and local counter capabilities in focused factory tests remain explicit fixtures.",
+    "No production trustedcounter. Cross chain injects none and makes zero provider requests; children success and synthesis remain unverified.",
+    "Cross publication eval/TLS/RSA/JWKS/admin are owned fixture inputs, actual trusted-local Runtime is a supported development mode, not OCI/gVisor or productionHA.",
+    "No full frontend/Go gate, deployment or production migration; v122/v123 only in temporary owned databases."
+  ],
+  "review": [
+    "Independent source spec/security review: no remaining blockers, no reviewer test run.",
+    "Independent final code-quality review: no remaining blockers, no reviewer service/test run.",
+    "Root shared JSON Schema type fix separately reviewed; no weakening of counter/exact bytes/media rejection."
+  ],
+  "failuresRetained": [
+    "cross01 short idempotency keys fixed in acceptance script",
+    "cross02 real Redis prerequisite added with new immutable baseline, not original Task rewrite",
+    "cross03 legacy public Bundle Definition binding consumer compatibility corrected without old admission mutation",
+    "initial regression384 pass/14 setup errors:2 fixture request-forwarding fixed;12 temp PG quota errors, all7 DBs dumped before replacing with bounded512MiB PG/WAL64:32",
+    "cross04 JSON Schema dict/list type discriminator TypeError fixed in shared inspector;2 red then18 transport green; full388/12skip rerun",
+    "One replacement PG initialization failed min_wal_size16 rule; no test DB created, logs retained, corrected to64:32"
+  ],
+  "cleanup": {
+    "utc": "2026-11-02T13:07:22.615555+00:00",
+    "activePgClientsBeforeDump": 0,
+    "ownedContainerRemnants": 0,
+    "ownedProcessesRemaining": 0,
+    "finalDumpAllSha256": "cd09e38f554dfcc9d68f2a6c146543483fa1bd1a71542b042aad2eba0cea087e",
+    "redisDumpSha256": "1cf5dda06f5aa6c633d3b064fb52601af90f2abb4e288283b2f5a00967d853d2",
+    "retained": "all7 first-phase DBs plus all5 final-phase DBs; original receipts/unknown/history, logs/config/TLS and source hashes retained privately",
+    "containerIdsRemoved": [
+      "4b4252a0887ce56fc3a4fc88f92598fc6a80d6de06ce94f37aa8bf1ebadf2beb",
+      "71c4276cdbc14efeae0ff650ebfe45fe86c93f5ce672d9f4eccc75cf27b7eda2"
+    ],
+    "redisCapture": "RDB saved; Docker archive API tmpfs omission bypassed via exec byte stream"
+  },
+  "retiredResources": [
+    {
+      "name": "ca-p7-03d-20261102121831-pg",
+      "id": "9007169f702060d2212cee274af6985ac6bcbafa6a8b3bf5492433696f77a595",
+      "reason": "256MiB quota exhausted in independent test schema migrations",
+      "dumpAllSha256": "0f75ad86720d617a3032b187008ae9223d4f72a4b1e6f33c6dc8b84bce6e8dca",
+      "retained": ".artifacts/ca-p7-03d/first-phase-all-databases.sql.gz",
+      "removed": true
+    },
+    {
+      "name": "ca-p7-03d-20261102121831-pg-final",
+      "id": "a56efad17d1e326947f133d338086e71f9683974ce09875dd34a6f910086f396",
+      "reason": "min_wal_size16 invalid for16MiB segments; no test or business databases created",
+      "removed": true
+    }
+  ],
+  "retainedPrivateEvidence": "/Users/lukeding/.codex/worktrees/ca-p7-03d/zebra-agent/.artifacts/ca-p7-03d"
+}

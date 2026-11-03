@@ -4,6 +4,10 @@ from dataclasses import replace
 
 from agent_storage.postgres.migration_history_plan import migration_history_plan
 from agent_storage.postgres.migrations import MIGRATIONS
+from agent_storage.postgres.orchestration_gate_migration import ORCHESTRATION_GATE_MIGRATION
+from agent_storage.postgres.orchestration_gate_policy_migration import (
+    ORCHESTRATION_GATE_POLICY_MIGRATION,
+)
 from agent_storage.postgres.runtime_gate_migration import RUNTIME_GATE_MIGRATION
 from agent_storage.postgres.runtime_gate_termination_migration import (
     RUNTIME_GATE_TERMINATION_MIGRATION,
@@ -38,3 +42,19 @@ def test_unknown_checksum_does_not_enable_legacy_slot_mapping():
 def test_historical_prefix_catalog_remains_supported():
     prefix = tuple(m for m in MIGRATIONS if m.version <= 109)
     assert migration_history_plan({}, prefix) == prefix
+
+def test_03d_history_preserves_partial_and_complete_candidate_tails():
+    gate = ORCHESTRATION_GATE_MIGRATION
+    policy = ORCHESTRATION_GATE_POLICY_MIGRATION
+    canonical = {m.version: m for m in MIGRATIONS}
+    assert canonical[122].name == "host_manifest_publications"
+    assert canonical[123].checksum == gate.checksum
+    assert canonical[124].checksum == policy.checksum
+    for tail in ((gate,), (gate, policy), (RUNTIME_GATE_MIGRATION, gate, policy)):
+        history = {m.version: (m.name, m.checksum) for m in tail}
+        plan = {m.version: m for m in migration_history_plan(history)}
+        assert len(plan) == len(MIGRATIONS)
+        assert all((plan[v].name, plan[v].checksum) == value for v, value in history.items())
+        assert plan[123] == policy
+        assert plan[124].name == "host_manifest_publications"
+    assert migration_history_plan({122: (gate.name, "0" * 64)}) == MIGRATIONS

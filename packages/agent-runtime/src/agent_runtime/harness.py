@@ -260,6 +260,7 @@ class LocalToolGateway(ToolGatewayPort):
             FileReadTool(
                 self._workspace,
                 max_bytes=None if output_projector is not None else 16_384,
+                output_projector=output_projector,
             ),
             *(
                 (FilePublishTool(self._workspace, file_publisher, max_bytes=max_publish_bytes),)

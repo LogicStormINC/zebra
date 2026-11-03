@@ -1,3 +1,6 @@
+[CA-P7-03D持久只读完成gate与受限真实跨仓验收](CA-P7-03D_completion_gate.md)：
+388通过/12 S3条件跳过、13跨仓检查；缺counter严格拒绝，模型驱动child/synthesis未验，无部署。
+
 [CA-P7-03C普通Worker累计预算与正常入口候选](CA-P7-03C_worker_budget.md)：
 跨Attempt持久guard/可信usage装配；缺生产counter或持久gate仍拒绝，非部署或完整跨仓验收。
 

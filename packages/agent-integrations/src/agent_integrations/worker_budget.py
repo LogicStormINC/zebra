@@ -43,9 +43,11 @@ def inspect_request(gateway: Any, body: dict[str, Any]) -> ModelRequestBudget:
 
 def _supported_content(value: Any) -> None:
     if isinstance(value, dict):
-        if value.get("type") in {"image_url", "input_image", "image", "file", "input_file"} or any(
-            key in value for key in ("previous_response_id", "continuation")
-        ):
+        kind = value.get("type")
+        if (
+            isinstance(kind, str)
+            and kind in {"image_url", "input_image", "image", "file", "input_file"}
+        ) or any(key in value for key in ("previous_response_id", "continuation")):
             raise WorkerBudgetError("guarded counter contract does not support image/continuation")
         for child in value.values():
             _supported_content(child)
