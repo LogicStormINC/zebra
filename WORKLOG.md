@@ -19010,3 +19010,15 @@ are diagnostic only. Both traces show53 snapshot parses and2160 descriptor
 rebuilds. PostgreSQL row decode duplicates the existing typed-field parse;
 closure repeatedly regenerates static catalog schemas. Claim narrowly scoped
 fix before editing; Native10 still diagnostic marker1. Full E1 remains open.
+
+
+## 2026-11-03 — static validation candidate
+
+Shared PG row decoder retains typed validation once. Static fingerprint caches
+hold only bounded immutable strings/tuples; mutable public objects and current
+authority still fresh. Standalone old red/new green, exact golden, tamper and
+mutation isolation. Native same-row23 decode CPU0.490/0.494 ->0.087/0.086,
+identical projection SHA. Focused217/make check/Ruff and independent review
+passed. Real PG initial teardown FK errors retained; one fixture-only missing
+gate-row cleanup restored14 passed, with no old QA sweep. Source candidate
+ready for frozen images and Native11 marker0; Native10 still diagnostic.

@@ -277,3 +277,23 @@ checks pass with read-only non-root runtime. No warm process pool or runtime
 isolation change. Source review, runnable and make check passed; exact candidate
 builds and whole-Task measurements remain pending. See deferred-config and
 checked-bytecode evidence; no production or full capacity acceptance.
+
+
+### Native9 improvement and static validation root cause (2026-11-03)
+
+Native9 on the two logical nodes preserved old24 event/budget/model/receipt
+hashes. New short5.56s, approved pwd16.95s and one eight-offer burst median
+9.7305/max13.401s passed real exit/cleanup checks. The burst did not include
+the fixed historical corpus or 256 streams. The separate Native10 diagnostic
+profiled one fresh short Task per node and preserved old34 facts. Both profiles
+showed53 Definition parses and2160 static descriptor builds per Task; profile
+cumulative times overlap and are excluded from SLO measurement.
+
+PG row conversion no longer parses a snapshot before the same typed field
+validator. Native catalog memoization stores only one digest and 20 immutable
+component identities; each public catalog and pin remains fresh. No dynamic
+lease, grant, Definition, or authorization decision is cached. Same persisted
+v2 row, 23 decodes in readonly native probes: CPU~0.49s to~0.086s, identical
+projection bytes. Focused217 and real PG14 passed; the first PG teardown FK
+failure is retained with the fixture correction. Native11 with profiling off
+and whole-Task measurements are next; full E1 remains unqualified.

@@ -37378,3 +37378,9 @@ same typed field validation. Memoize only immutable static catalog digests
 and component identities. No cache of Definition, tenant, grant, lease or
 mutable schema; keep fresh returned catalog/pins and existing golden bytes.
 Native11 normal samples must explicitly disable the diagnostic marker.
+
+CA-HA-03 static validation test ownership addendum (2026-11-03): include
+`tests/agent_storage/test_postgres_workspaces.py` only for fixture cleanup of
+the runtime_namespace_gates row before its control_plane_epochs parent. The
+real PG run exposed the existing FK dependency during teardown. Keep all
+assertions and previously failed QA receipts; do not sweep old namespaces.

@@ -18,6 +18,8 @@ COPY --chown=65532:65532 packages/agent-storage/src/agent_storage/postgres/task_
 COPY --chown=65532:65532 apps/host_grant_broker/src/zebra_host_grant_broker/grant_minting.py /app/apps/host_grant_broker/src/zebra_host_grant_broker/grant_minting.py
 COPY --chown=65532:65532 packages/agent-storage/src/agent_storage/postgres/force_stop_executors.py /app/packages/agent-storage/src/agent_storage/postgres/force_stop_executors.py
 COPY --chown=65532:65532 tests/compose/cloud_ha_e1/child_profile_sitecustomize.py /app/.venv/lib/python3.12/site-packages/sitecustomize.py
+COPY --chown=65532:65532 packages/agent-storage/src/agent_storage/postgres/workspaces.py /app/packages/agent-storage/src/agent_storage/postgres/workspaces.py
+COPY --chown=65532:65532 packages/agent-core/src/agent_core/domain/runtime_bundle_catalog.py /app/packages/agent-core/src/agent_core/domain/runtime_bundle_catalog.py
 ARG E1_SOURCE_COMMIT
 LABEL org.opencontainers.image.revision=${E1_SOURCE_COMMIT}
 
