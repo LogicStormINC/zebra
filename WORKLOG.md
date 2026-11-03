@@ -20215,3 +20215,12 @@ tool completion to exactly one projection, with no extra rows.
 The projected tool was command.run. Evidence guarded-pwd-routing31.json.
 This verifies the real tool path at smoke scope; E1 sustained load
 and cross-physical-host failover are still open.
+
+CA-HA-03 Native31 API failure smoke: stopped only the exact owned API
+container on zebra-gvisor. Shared ingress returned one initial 502;
+by 1.666 s the surviving API returned the exact next SSE frame from
+the original cursor. Ten consecutive exact resumes followed. Restored
+the stopped API and verified both node readiness endpoints.
+Evidence lb-health-failover-routing31.json. This checks one read-only
+API process outage. E1-R still requires 32 active Tasks, 256 observers
+and the full fault matrix; both logical nodes share one Mac.
