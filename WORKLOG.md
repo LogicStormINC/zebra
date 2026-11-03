@@ -21216,3 +21216,12 @@ but also wraps timeout and operational errors, so instrument or
 test that exact preflight before claiming executor saturation.
 Private evidence sse-renew256-ee4059bf9e4541098064c736e932c9ae.
 Both staging APIs restored. Corpus reached 3000 Tasks.
+
+CA-HA-03 HTTP Task/Session read preflight now uses the existing
+bounded read-slot wait, under the same remaining authorization
+deadline. It runs only the admitted read callback and never
+replays authorization or SQL. Failure logs distinguish exception
+classes without payloads and preserve existing HTTP shape.
+The regression holds a single slot and verifies actual authorized
+preflight waits, then runs once; 15 focused tests passed.
+Live frozen 256-stream renewal comparison pending.

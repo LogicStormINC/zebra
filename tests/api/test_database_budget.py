@@ -277,10 +277,14 @@ def test_host_read_waits_before_dispatch_and_cancellation_never_invokes_it():
     import pytest
     from agent_storage.postgres.capacity_profile import CapacityProfile
     from agent_storage.postgres.connection_capacity import ConnectionBudget, capacity_lane
+    from fastapi import FastAPI
+    from zebra_agent_api.ag_ui_task_view import authorized_task_preflight
     from zebra_agent_api.database_budget import ApiDatabaseCalls
 
     profile = CapacityProfile.parse(json.dumps({**profile_data(), "read": 1}))
     calls = ApiDatabaseCalls(ConnectionBudget("dbname=one", profile, "api"))
+    app = FastAPI()
+    app.state.database_calls = calls
     entered, release = Event(), Event()
     invoked = []
 
@@ -296,7 +300,12 @@ def test_host_read_waits_before_dispatch_and_cancellation_never_invokes_it():
                 async with asyncio.timeout(0.03):
                     await calls.call(lambda: invoked.append("cancelled"), wait_for_read_slot=True)
             waiting = asyncio.create_task(
-                calls.call(lambda: invoked.append("admitted"), wait_for_read_slot=True)
+                authorized_task_preflight(
+                    lambda: None,
+                    lambda: invoked.append("admitted"),
+                    authorization_expires_at=None,
+                    http_app=app,
+                )
             )
             await asyncio.sleep(0.02)
             assert not invoked

@@ -329,6 +329,7 @@ def create_http_app(
                 lambda: adapter.handle(route_request),
                 authorization_expires_at=getattr(route_request.host_context, "expires_at", None),
                 request_deadline=getattr(request.state, "authorization_deadline", None),
+                http_app=request.scope.get("app"),
             )
         else:
             # Observation budgets must not turn an uncertain command into a retry.
@@ -360,6 +361,7 @@ def create_http_app(
                         route_request.host_context, "expires_at", None
                     ),
                     request_deadline=getattr(request.state, "authorization_deadline", None),
+                    http_app=request.scope.get("app"),
                 )
                 if isinstance(head, ApiResponse):
                     return JSONResponse(status_code=head.status_code, content=head.body)
@@ -404,6 +406,7 @@ def create_http_app(
                             route_request.host_context, "expires_at", None
                         ),
                         request_deadline=getattr(request.state, "authorization_deadline", None),
+                        http_app=request.scope.get("app"),
                     )
                     if isinstance(highwater, ApiResponse):
                         return JSONResponse(
