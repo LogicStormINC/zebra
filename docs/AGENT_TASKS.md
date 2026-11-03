@@ -7,6 +7,8 @@
 - Owned resolution paths are `apps/config/src/zebra_agent_config/bundle_settings.py` and `apps/api/src/zebra_agent_api/bundle_management.py`.
 - Owned publication paths are `apps/api/src/zebra_agent_api/{bundle_assembly,publication_service,publication_management}.py`.
 - Owned management paths are `apps/api/src/zebra_agent_api/{bundle_management,bundle_management_config,validation_transport,model_profile_management,host_registry_management}.py`.
+- Owned API verification path is `tests/api/test_model_profile_management.py`.
+
 
 
 
