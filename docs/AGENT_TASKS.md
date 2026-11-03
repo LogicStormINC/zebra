@@ -37355,3 +37355,5 @@ CA-P7-MODEL-01 selectable publication assembly owns the model parameters, lock a
 CA-P7-MODEL-01 session selection resolver owns the published assembly lookup for explicit and remembered model choices.
 
 CA-P7-MODEL-01 gateway binding owns resolving an exact published model pin at the provider adapter.
+
+CA-P7-MODEL-01 worker selection recovery owns the immutable message pin and provider gateway handoff.

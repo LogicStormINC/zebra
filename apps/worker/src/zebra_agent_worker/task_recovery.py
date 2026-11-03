@@ -31,6 +31,7 @@ from agent_core.domain.modeling import (
     ModelReasoningEffort,
     ModelThinkingMode,
 )
+from agent_core.domain.runtime_bundle_types import ArtifactPin
 from agent_core.domain.session_history import normalize_history_session_ids
 from agent_core.domain.task_bindings import TaskBindingSnapshot, host_context_digest
 from agent_core.domain.tool_profiles import ToolProfile
@@ -124,6 +125,7 @@ class RecoveredTask:
     model_invocation_policy: ModelInvocationPolicy | None = None
     acceptance_contract: TaskAcceptanceContract | None = None
     coverage_admission: CoverageTaskAdmission | None = None
+    selected_model_pin: ArtifactPin | None = None
 
 
 def apply_bound_host_context(
@@ -213,6 +215,8 @@ def recover_task(
     except (FileNotFoundError, ValueError) as exc:
         raise ValueError(f"queued session attachment recovery failed: {exc}") from exc
     definition_snapshot = _definition_snapshot(task_payload.get("definition_snapshot"))
+    raw_pin = user_event.payload.get("selected_model_pin")
+    selected_model_pin = ArtifactPin.model_validate(raw_pin) if raw_pin is not None else None
     invocation_policy = _model_invocation_policy(user_event.payload, task_payload)
     if (
         image_attachments
@@ -256,6 +260,7 @@ def recover_task(
         ),
         client_state=client_state_evidence,
         model_invocation_policy=invocation_policy,
+        selected_model_pin=selected_model_pin,
         acceptance_contract=task_contract,
         coverage_admission=coverage_admission,
     )
