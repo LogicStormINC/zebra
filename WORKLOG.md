@@ -19275,3 +19275,15 @@ Archived that receipt and used revision 15 with the same operation identity.
 Materialize/publish returned 200, definition 46bae679-ecd1-45e7-8424-ae5e32409c64.
 Next inject a PostgreSQL lease-boundary lock timeout before the initial
 child recovery returns and reconcile the new synthetic task.
+
+CA-HA-03 Native15 real startup lock drill: single synthetic Task
+980c7cd0-c6ce-413d-91b4-5b212604dd42. A temporary child bind mount acquired
+the same session-scoped PostgreSQL advisory lock on another connection,
+recorded the actual LockNotAvailable from initial recovery, and released
+the holder before the unchanged retry helper entered its second slice.
+One POST, one fault marker, one executor start/exit, one committed answer,
+one completion and one settled model reservation. No active lease, pending
+command or runtime instance. Both Workers restored to clean image imports.
+Private evidence: fault-start15-*/readonly-original.json and start15-marker-*.
+The drill releases the lock before retry by design. Sustained load, 256
+SSE streams and multi-host failover acceptance are still open.
