@@ -20548,3 +20548,13 @@ the old primary could see a locally committed but unreplicated row.
 Next qualify admission and receipt visibility against the same
 durability watermark or close ingress until sync authority is proven.
 No deployed code changes. Evidence pg-sync-driver-notice-two-hosts.json.
+
+CA-HA-03 sync watermark primitive passed on disposable cross-host
+PG17.5. After cancelled SyncRep wait, the row was locally visible
+but a fixed post-read WAL insert LSN was ahead of the designated
+streaming synchronous standby's replay LSN. Rejected at that
+watermark; after unpause the same watermark became covered and the
+row was visible on standby. No resubmission. This conservative
+global LSN can wait on unrelated WAL under load and needs a trusted
+role/identity/timeline check before app use. No API integration or
+RPO acceptance yet. Evidence pg-sync-watermark-two-hosts.json.
