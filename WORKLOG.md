@@ -19545,3 +19545,14 @@ before retry, repeated timeout and revoked-fence propagation. Focused
 31 passed, 3 skipped, Ruff/diff clean. Next use the isolated post-wire
 lock fixture to release the holder after the first check times out and
 verify one provider response, one settled receipt and completion.
+
+CA-HA-03 real post-wire retry green: fresh Task
+dc721ac9-4bbe-4b22-8b52-ca49f18fe3c4 received one synthetic response. A
+separate connection held the lease row through the first 500ms lock
+timeout; the fixture released it as the first phase unwound. The unchanged
+candidate check opened its second transaction, validated the same binding
+and settled digest 0f9c0581317c5fa1. PostgreSQL confirmed one reservation,
+response Event, answer, and completion. Both temporary Worker overlays
+restored and clean imports verified. This covers a lock that clears before
+the second check. Next freeze a combined candidate of the validated
+API/Worker modules and run the capacity and failure gates.
