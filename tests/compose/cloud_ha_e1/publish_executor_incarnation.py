@@ -163,6 +163,7 @@ def reconcile_in_cleanup(container: str, witness: dict[str, str], *, namespace: 
 def restart_reconciled(
     container: str, binding_path: Path, destination: Path, dsn: str, *, namespace: str,
     reconcile: Callable[[dict[str, str]], int] | None = None,
+    abnormal_only: bool = False,
 ) -> int:
     binding_path = binding_path.resolve()
     lock_path = binding_path.with_suffix(".restart.lock")
@@ -170,12 +171,23 @@ def restart_reconciled(
         raise ValueError("exit witness must have a separate destination")
     with lock_path.open("a") as lock:
         fcntl.flock(lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-        running = json.loads(docker("inspect", "--type", "container", container))[0]["State"][
-            "Running"
-        ]
+        spec = json.loads(docker("inspect", "--type", "container", container))[0]
+        state = spec["State"]
+        running = state["Status"] == "running"
+        if abnormal_only and not running and (
+            state["Status"] != "exited" or state["ExitCode"] in {0, 143}
+        ):
+            return 0
         if running:
-            current = identity(container)
             previous = json.loads(binding_path.read_bytes())
+            if abnormal_only and (
+                spec["Id"] == previous["container"]
+                and state["StartedAt"] == previous["started_at"]
+            ):
+                # No mutation on a healthy tick. An exit after this snapshot is
+                # handled by the next tick instead of a second identity read.
+                return 0
+            current = identity(container)
             if current == previous:
                 return 0
             witness = json.loads(destination.read_bytes())
@@ -222,7 +234,8 @@ def recover_crash(
         state["Status"] == "exited" and state["ExitCode"] not in {0, 143}
     ):
         return restart_reconciled(
-            spec["Id"], binding_path, destination, dsn, namespace=namespace, reconcile=reconcile
+            spec["Id"], binding_path, destination, dsn, namespace=namespace,
+            reconcile=reconcile, abnormal_only=True,
         )
     return 0
 
