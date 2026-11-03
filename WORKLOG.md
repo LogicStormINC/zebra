@@ -21128,3 +21128,13 @@ Nonempty history still validates before assignment, and already
 persisted states avoid a redundant state write. Real PG17.5
 position/repair/byte-bound/native tests: 84 passed, three large
 benchmark variants deselected. Live capacity impact pending.
+
+CA-HA-03 frozen e888c661 AMD64 diagnostic at 5rps/3s:
+3/15 sealed responses, three normal permit rejects and nine
+atomic-body TimeoutErrors. Original GET confirmed the same
+three, nine unknown and three not_observed. Prior instrumented
+candidate accepted 2/15; successful body median was 1081ms
+(n=2) vs 856ms (n=3). The small success-only samples cannot
+establish capacity improvement; final deadline failures persisted.
+No CPU throttling and no replay. Private evidence
+amd64-empty-position-a3c40252d417.log and originals JSON.
