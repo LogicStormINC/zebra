@@ -20260,3 +20260,13 @@ forward problem. Temporary forwards exited; no remote API/Worker
 started. Next wire a dedicated isolated model TLS listener and test
 the native signed/streaming and authenticated clients.
 Evidence amd64-dependencies-837defbe.txt.
+
+CA-HA-03 AMD64 model wire: temporary loopback Caddy 34443 proxied
+through owned SSH 38082 to the OrbStack fixture. The candidate resolved
+the model hostname to loopback, verified the fixture CA, exact peer
+certificate and fixture marker, then decoded the native streamed pwd
+tool call and coherent usage in 20.91 ms on a warm HTTP client.
+Temporary listener/container and forward exited with the probe.
+No Task or real provider call. Next verify signed authority and
+stage the cross-host API/Worker with independently owned forwards.
+Evidence amd64-model-wire-837defbe.txt.
