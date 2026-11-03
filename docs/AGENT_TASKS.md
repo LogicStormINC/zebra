@@ -5,6 +5,8 @@
 - Owned storage paths are `packages/agent-storage/src/agent_storage/postgres/model_profile_registration*.py` and `migration_catalog_tail.py`.
 - Owned verification path is `tests/agent_storage/test_postgres_model_profile_registration.py`.
 - Owned resolution paths are `apps/config/src/zebra_agent_config/bundle_settings.py` and `apps/api/src/zebra_agent_api/bundle_management.py`.
+- Owned publication paths are `apps/api/src/zebra_agent_api/{bundle_assembly,publication_service,publication_management}.py`.
+
 
 
 

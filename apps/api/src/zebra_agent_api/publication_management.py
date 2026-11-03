@@ -14,6 +14,8 @@ import psycopg
 from agent_core.domain.runtime_bundle_json import load_bundle_json
 from agent_storage import CloudCompositionSettings
 from agent_storage.postgres.agent_registry import PostgresAgentRegistry
+from agent_storage.postgres.database import PostgresDatabase
+from agent_storage.postgres.model_profile_registration import PostgresModelProfileRegistrations
 from agent_storage.postgres.host_management import HostManagementConflict, HostManagementUnavailable
 from agent_storage.postgres.publication import PublicationStore
 from fastapi import FastAPI, Request
@@ -110,6 +112,9 @@ def perform(
             ):
                 raise PermissionError("PERMISSION_DENIED")
 
+        registrations = PostgresModelProfileRegistrations(
+            PostgresDatabase(settings.database_url, deployment_namespace=namespace)
+        )
         result = store.apply(
             approval.trust,
             payload["operationId"],
@@ -117,7 +122,12 @@ def perform(
             approval.definition_scope.scope_key,
             payload["expectedRevision"],
             lambda: mutate_publication(
-                approval, payload, registry, settings.runtime_bundle_config, scripts=scripts
+                approval,
+                payload,
+                registry,
+                settings.runtime_bundle_config,
+                scripts=scripts,
+                registrations=registrations,
             ),
             recheck,
         )
