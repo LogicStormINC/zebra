@@ -118,7 +118,10 @@ def test_saturated_execution_does_not_block_independent_control_tick(monkeypatch
     asyncio.run(scenario())
 
 
-def test_cancelled_handoff_await_and_shutdown_keep_slot_until_real_execution_finishes(monkeypatch):
+def test_cancelled_handoff_await_and_shutdown_keep_slot_until_real_execution_finishes(
+    monkeypatch, caplog
+):
+    caplog.set_level("INFO", logger=runtime.__name__)
     event, lease, body = _fixture(monkeypatch)
     admitting, allow_admit, executing, allow_execute = Event(), Event(), Event(), Event()
 
@@ -152,6 +155,7 @@ def test_cancelled_handoff_await_and_shutdown_keep_slot_until_real_execution_fin
             allow_admit.set()
             await _wait(executing)
             assert not consumer._slots.acquire(blocking=False)
+            assert "command_execution_slot_released" not in caplog.text
             assert delivery.acks == 0
             closing = asyncio.create_task(consumer.close())
             await asyncio.sleep(0)
@@ -166,6 +170,11 @@ def test_cancelled_handoff_await_and_shutdown_keep_slot_until_real_execution_fin
             await consumer.close()
 
     asyncio.run(scenario())
+    records = [r for r in caplog.records if r.message.startswith("command_execution_slot_released")]
+    assert len(records) == 1
+    session_id, fence, handoff_ms, held_ms = records[0].args
+    assert (session_id, fence) == (lease.session_id, lease.fence.fencing_token)
+    assert 0 <= handoff_ms <= held_ms
 
 
 @pytest.mark.parametrize("failure", ["schedule", "schedule_value", "database", "quarantine"])
