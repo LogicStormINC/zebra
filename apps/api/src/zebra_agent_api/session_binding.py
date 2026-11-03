@@ -52,6 +52,7 @@ def renew_task_binding_snapshot(
     *,
     authority_issuer: str | None = None,
     bound_at: datetime | None = None,
+    release_change: tuple[str, str] | None = None,
 ) -> TaskBindingSnapshot:
     """Create the next immutable revision from one freshly verified Grant."""
 
@@ -89,8 +90,21 @@ def renew_task_binding_snapshot(
             "host_context": host_context,
         }
     )
+    ceiling = binding.agent_capability_ceiling
+    if release_change is not None:
+        expected_digest, replacement_digest = release_change
+        if ceiling.definition_snapshot_digest != expected_digest:
+            raise ValueError("Task binding differs from the previous release snapshot")
+        ceiling = AgentCapabilityCeilingSnapshot.model_validate(
+            {
+                **ceiling.model_dump(),
+                "definition_snapshot_digest": replacement_digest,
+                "resolved_at": renewed_at,
+            }
+        )
     return binding.model_copy(
         update={
+            "agent_capability_ceiling": ceiling,
             "host_capability": renewed_host,
             "binding_revision": binding.binding_revision + 1,
             "bound_at": renewed_at,

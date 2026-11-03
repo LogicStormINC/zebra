@@ -75,6 +75,24 @@ def test_renewal_appends_revision_and_preserves_frozen_anchors() -> None:
     assert renewed.host_capability.host_context == fresh
     assert renewed.host_capability.grant_digest == host_context_digest(fresh)
     assert renewed.host_capability.grant_expires_at == fresh.expires_at
+    switched = renew_task_binding_snapshot(
+        binding,
+        fresh,
+        authority_issuer="https://api.trench.local",
+        bound_at=now,
+        release_change=("a" * 64, "c" * 64),
+    )
+    assert switched.agent_capability_ceiling.definition_snapshot_digest == "c" * 64
+    assert switched.effective_capabilities == binding.effective_capabilities
+    assert switched.host_capability == renewed.host_capability
+    with pytest.raises(ValueError, match="previous release snapshot"):
+        renew_task_binding_snapshot(
+            switched,
+            fresh,
+            authority_issuer="https://api.trench.local",
+            bound_at=now,
+            release_change=("a" * 64, "c" * 64),
+        )
     assert renewed.agent_capability_ceiling == binding.agent_capability_ceiling
     assert renewed.host_capability.manifest_digest == binding.host_capability.manifest_digest
     assert renewed.host_capability.connector_profile_digest == (
