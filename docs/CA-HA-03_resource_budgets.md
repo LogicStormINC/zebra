@@ -316,3 +316,39 @@ child cause is unproven. No new unknown model calls, no old replay. Original
 Native11 stale-running Task confirmed stopped in1.199s via one signed control
 operation; original answer/receipts preserved, separate unknown case stays
 suspended. Full E1 corpus/SSE/steady/fault/soak and physical HA remain open.
+
+### F-04 receipt durability gate design
+
+The PostgreSQL 17.5 two-host probes showed that cancelling a SyncRep
+wait can return a successful command tag and a warning while only the
+primary exposes the receipt. A receipt proof must compare the exact
+record on the designated synchronous replay target. Compare the
+namespace, action, scoped key, request hash, status, and immutable
+response body. Keep the current grant and binding checks ahead of
+any client-visible result.
+
+Apply the same gate at three boundaries. The submit response must
+withhold the sealed result until the replica confirms it. Original
+observation must withhold the result and its recorded flag under the
+same conditions. Termination must apply the equivalent check to its
+durable stop proof before exposing non-commit proof. An unavailable,
+lagged, mismatched or promoted verification endpoint leaves the
+operation unresolved. A failed check grants no authority to replay.
+
+The proof connection needs its own declared finite standby budget and
+the remaining request deadline. Compose an explicitly configured
+verification endpoint with TLS identity, database system identity and
+expected recovery role. Promotion requires fencing and a trusted
+topology change that rebinds the proof target. Keep admission closed
+until that change and synchronous membership are verified. A database
+system identifier is shared by physical replicas, so it only proves
+cluster membership. The endpoint identity and leader timeline must
+come from the fenced topology.
+
+Acceptance requires the signed HTTP POST, original GET and
+termination cases during paused replay, then exact readback after
+replay. Repeat after a fenced promotion, with the previous proof
+endpoint still reachable, and measure connection counts and request
+deadlines under mixed load. Current one-shot probes support the
+primitive only. Runtime composition and production activation remain
+pending.

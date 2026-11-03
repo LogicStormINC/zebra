@@ -20594,3 +20594,8 @@ identifier but the old standby guard rejected its new primary role.
 No fallback approval from a stale endpoint. Evidence
 pg-sync-role-transition-two-hosts.json. API integration must use a
 trusted topology handoff and keep writes gated during this gap.
+
+CA-HA-03 mapped F-04 exact receipt proof across signed submit,
+original observation and termination. Documented deadline, separate
+standby capacity, endpoint identity, role and topology handoff in
+the resource budget design. No application gate or deployment yet.
