@@ -20576,3 +20576,12 @@ the original receipt on the primary but absent on the designated
 standby. Resumed replay and matched exact key, request hash, status
 and response status without a second write. This is an SQL proof,
 not yet an API gate. Evidence pg-sync-exact-receipt-two-hosts.json.
+
+CA-HA-03 least-privilege standby receipt probe. Disposable PG17.5
+cross-host replication. Dedicated login with SELECT on six receipt
+columns and EXECUTE on pg_control_system, no receipt DML and no
+Session event read. Query used read-only transactions and checked
+expected system ID plus recovery role. Exact original absent during
+replay pause and visible after resume. Test transport isolated by
+SSH; production TLS/endpoint identity and leader timeline/fencing
+are still separate gates. Evidence pg-sync-reader-two-hosts.json.
