@@ -20064,3 +20064,14 @@ Trust revision 27 published definition 7286a844-4639-42c3-8520-7a56928b62cf.
 Mixed-load run deferred while the concurrent 100,000-event PostgreSQL
 fixture competes for the same Mac resources. Resume existing session
 73427 before the controlled comparison. No new capacity claim.
+
+CA-HA-03 Native28 full positions/admission PostgreSQL 17 regression
+passed 54 tests, including the 100,000-event fixture, in 655.34 s.
+After that fixture finished, the isolated 5 Hz/32 SSE diagnostic
+issued 16 POSTs. Eleven completed, five remained unknown via the
+original GET, none resent. All 32 SSE received heartbeats.
+Timeout sites were bootstrap insert (1), position source update
+and derived insert (2), subsequent repair (1), and wakeup shadow (1).
+Next inspect synchronous legacy repair on a just-created Task.
+Evidence preflight5-position28-ebc292cd*, position28-original-receipts.json,
+position28-zebra*.log and position28-with-sse-c709ada9*.
