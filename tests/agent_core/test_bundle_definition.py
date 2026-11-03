@@ -108,7 +108,19 @@ def bundle_version(**changes):
     return BundleDefinitionVersion(**{**payload, **changes})
 
 
-def test_removed_model_selects_whole_effective_release():
+def published(version):
+    release = AgentRelease.from_version(
+        version,
+        release_id=uuid4(),
+        environment=version.runtime_assembly.bundle.manifest.scope.environment,
+        actor_ref="test-publisher",
+        effective_at=NOW,
+    )
+    return BundleDefinitionSnapshot.from_release(
+        release=release, version=version, resolved_at=NOW
+    )
+
+def removed_model_release_snapshots():
     previous = bundle_version()
     payload = assembly_payload()
     manifest = payload["bundle"]["manifest"]
@@ -129,19 +141,13 @@ def test_removed_model_selects_whole_effective_release():
         runtime_assembly=RuntimeAssembly.model_validate(payload),
     )
 
-    def published(version):
-        release = AgentRelease.from_version(
-            version,
-            release_id=uuid4(),
-            environment=version.runtime_assembly.bundle.manifest.scope.environment,
-            actor_ref="test-publisher",
-            effective_at=NOW,
-        )
-        return BundleDefinitionSnapshot.from_release(
-            release=release, version=version, resolved_at=NOW
-        )
+    return published(previous), published(updated)
 
-    old, effective = published(previous), published(updated)
+
+def test_removed_model_selects_whole_effective_release():
+    old, effective = removed_model_release_snapshots()
+    previous = old.bound_version
+
     selected = previous.runtime_assembly.provider_profile.pin.id
     retained = published(bundle_version(definition_id=previous.definition_id, version=2))
     assert retained.snapshot_digest != old.snapshot_digest
