@@ -20957,3 +20957,17 @@ support a single dominant lock. Next compare a matched no-SSE run
 and log atomic milestones before changing a write-path invariant.
 Private run sse-blockers-5b053d365232408bb1c9c40b92740e83.
 Both original staging APIs restored; no POST replay.
+
+CA-HA-03 matched no-SSE frozen control still failed at 5rps for
+three seconds: 10/15 sealed POSTs and 11/15 completed originals by
+GET. A second no-SSE run with only milestone log severity raised
+returned 11/15 sealed POSTs. All 15 logged first-Run milestones:
+11 reached commit, three stopped after entering the atomic
+transaction, and one stopped after writing the receipt before
+confirmed commit. Median milestones from atomic dispatch entry:
+prepared 211ms, fenced 311ms, transaction entered 473ms,
+dispatch finished 1091ms (12 observed). These samples have different
+denominators and do not imply additive phase durations. This
+shows SSE is not necessary for the deadline failure. Both original
+isolated APIs restored. Private runs no-sse-frozen-6902c3080aa24f6387c91e102eb15b10
+and no-sse-milestones-22ed6e5c81554afdb0d51731c23ac12d.

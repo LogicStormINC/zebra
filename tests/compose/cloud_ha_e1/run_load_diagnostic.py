@@ -4,6 +4,7 @@ import argparse
 import asyncio
 import json
 import ssl
+from contextlib import nullcontext
 from dataclasses import asdict
 from pathlib import Path
 
@@ -43,13 +44,18 @@ async def run(args: argparse.Namespace) -> None:
         rows = []
         offers = []
         try:
-            async with hold_streams(
-                streams,
-                task_id=fixture["response"]["task_id"],
-                binding=fixture["binding"],
-                principal_token=token,
-                count=args.streams,
-            ) as rows:
+            stream_window = (
+                hold_streams(
+                    streams,
+                    task_id=fixture["response"]["task_id"],
+                    binding=fixture["binding"],
+                    principal_token=token,
+                    count=args.streams,
+                )
+                if args.streams
+                else nullcontext([])
+            )
+            async with stream_window as rows:
                 offers = await run_offers(
                     submit, rate=5, duration=args.seconds, max_inflight=16, request_timeout=12
                 )
@@ -80,7 +86,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     for option in ("fixture", "task", "principals", "ca", "output"):
         parser.add_argument("--" + option, required=True, type=Path)
-    parser.add_argument("--streams", type=int, choices=range(1, 257), default=4)
+    parser.add_argument("--streams", type=int, choices=range(257), default=4)
     parser.add_argument("--seconds", type=int, choices=range(1, 4), default=1)
     asyncio.run(run(parser.parse_args()))
 
