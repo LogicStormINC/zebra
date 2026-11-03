@@ -348,6 +348,61 @@ def test_text_message_commits_event_and_projection_together(namespace, postgres_
             ).fetchone()
             assert result == (event.sequence,)
 
+    from agent_core.domain.agent_definitions import AgentDefinition, AgentRelease
+    from agent_storage.postgres.agent_registry import PostgresAgentRegistry
+
+    registry = PostgresAgentRegistry(postgres_dsn, deployment_namespace=namespace)
+    registry.save_definition(
+        AgentDefinition(
+            definition_id=version.definition_id,
+            authority_issuer=version.authority_issuer,
+            namespace_id=version.namespace_id,
+            name="release fence fixture",
+            created_at=NOW,
+        )
+    )
+    registry.save_version(version)
+    release = registry.append_release(
+        AgentRelease.from_version(
+            version,
+            release_id=uuid4(),
+            environment=version.runtime_assembly.bundle.manifest.scope.environment,
+            actor_ref="fixture",
+            effective_at=NOW,
+        )
+    )
+    published = BundleDefinitionSnapshot.from_release(
+        release=release, version=version, resolved_at=NOW
+    )
+    next_binding = switched.model_copy(
+        update={
+            "binding_revision": 3,
+            "agent_capability_ceiling": switched.agent_capability_ceiling.model_copy(
+                update={"definition_snapshot_digest": published.snapshot_digest}
+            ),
+        }
+    )
+    next_command = command.model_copy(update={"expected_revision": updated.current_sequence})
+    accepted = SessionEvent.create(
+        session_id=session.session_id,
+        sequence=updated.current_sequence + 1,
+        event_type=EventType.SESSION_COMMAND_ACCEPTED,
+        actor=EventActor.USER,
+        payload=next_command.event_payload(
+            message_release_binding=MessageReleaseBinding(
+                previous_snapshot_digest=snapshot.snapshot_digest,
+                snapshot=published,
+                binding=next_binding,
+            ),
+        ),
+        idempotency_key=next_command.idempotency_key,
+    )
+    event_store.append(accepted)
+    persisted = event_store.list_for_session(session.session_id)[-1]
+    assert persisted.payload["message_release_binding"]["snapshot"] == published.model_dump(
+        mode="json"
+    )
+
 
 def test_idempotent_replay_short_circuits(namespace: str, postgres_dsn: str) -> None:
     transaction = PostgresTaskAdmissionTransaction(postgres_dsn, deployment_namespace=namespace)
