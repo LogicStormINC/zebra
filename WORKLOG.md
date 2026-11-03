@@ -21255,3 +21255,15 @@ read-only check against the live corpus generation volume; all
 corpus, not tenant-signed admission composition or preserved
 legacy/Coverage samples. The running generator predates the new
 post-check; repeat it after the full count completes.
+
+CA-HA-03 added a read-only full-corpus verification CLI, reusing
+count, exact position joins, and strict native replay sampling.
+A fresh PostgreSQL pilot seeded then independently verified three
+Tasks / 300 Events / 300 indexes. Separately inventoried the existing
+staging namespace: 781 Tasks, 11,699 Events, 4,528 idempotency
+records, no Coverage model ledger or execution receipts, all
+position states ready. Thus the current fixture cannot stand in for
+legacy/Coverage acceptance. Its bootstrap script also explicitly
+requires an empty database. Full synthetic generation remains
+in its own namespace; compose its authority/rollout separately
+and preserve old fixture evidence in place.

@@ -12,7 +12,7 @@ from agent_storage.postgres.agent_tasks import PostgresAgentTaskStore
 from psycopg.conninfo import conninfo_to_dict, make_conninfo
 
 
-def populate(dsn: str, task_count: int) -> dict[str, str | int]:
+def _validate_target(dsn: str, task_count: int) -> None:
     params = conninfo_to_dict(dsn)
     if (
         params.get("host") not in {"localhost", "127.0.0.1"}
@@ -22,6 +22,10 @@ def populate(dsn: str, task_count: int) -> dict[str, str | int]:
         or not 1 <= task_count <= 10_000
     ):
         raise ValueError("expected an explicit, dedicated loopback E1 corpus database")
+
+
+def populate(dsn: str, task_count: int) -> dict[str, str | int]:
+    _validate_target(dsn, task_count)
     namespace = f"e1-corpus-{uuid4().hex}"
     print(f"seeding {namespace}", file=sys.stderr, flush=True)
     with psycopg.connect(dsn, options="-c statement_timeout=60000") as connection:
@@ -67,6 +71,14 @@ def populate(dsn: str, task_count: int) -> dict[str, str | int]:
                        ORDER BY id,n""",
                     (namespace, task_ids),
                 )
+    return verify_corpus(dsn, namespace, task_count)
+
+
+def verify_corpus(dsn: str, namespace: str, task_count: int) -> dict[str, str | int]:
+    _validate_target(dsn, task_count)
+    if not namespace.startswith("e1-corpus-"):
+        raise ValueError("expected an E1 corpus namespace")
+    with psycopg.connect(dsn, options="-c default_transaction_read_only=on") as connection:
         tasks, events, indexes = connection.execute(
             """SELECT (SELECT count(*) FROM agent_tasks WHERE deployment_namespace=%s
                        AND event_position_state='ready' AND next_event_sequence=100),
@@ -121,8 +133,13 @@ def verify_replay(dsn: str, namespace: str) -> int:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--tasks", type=int, default=10_000)
+    parser.add_argument("--verify", metavar="NAMESPACE", help="verify an existing corpus read-only")
     args = parser.parse_args()
-    print(json.dumps(populate(os.environ["ZEBRA_E1_CORPUS_DSN"], args.tasks)))
+    dsn = os.environ["ZEBRA_E1_CORPUS_DSN"]
+    result = (
+        verify_corpus(dsn, args.verify, args.tasks) if args.verify else populate(dsn, args.tasks)
+    )
+    print(json.dumps(result))
 
 
 if __name__ == "__main__":
