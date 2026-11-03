@@ -37476,3 +37476,7 @@ worker_commit_confirmation.py in the E1 Dockerfile.delta.
 CA-HA-03 atomic admission lock response addendum: own
 client_admission_operations.py for structured original-only reconciliation
 on PostgreSQL lock rejection.
+
+CA-HA-03 atomic first-Run transaction retry addendum: own
+client_admission_atomic.py and the existing admission-operation tests
+for one same-request retry after a confirmed PostgreSQL lock rejection.

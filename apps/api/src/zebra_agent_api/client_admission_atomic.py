@@ -1,5 +1,6 @@
 """Explicit same-PG surface composition; legacy admissions retain their old commits."""
 
+from time import monotonic
 from typing import Any
 
 from agent_storage.postgres.admission_atomic_surface import (
@@ -10,6 +11,8 @@ from agent_storage.postgres.admission_atomic_surface import (
 from agent_storage.postgres.client_capabilities import PostgresClientCapabilityRegistry
 from agent_storage.postgres.client_control_leases import PostgresClientControlLeaseStore
 from agent_storage.postgres.client_sessions import PostgresClientSessionRegistry
+from agent_storage.postgres.task_io import current_task_io_deadline
+from psycopg.errors import LockNotAvailable
 
 
 def eligible_atomic_surface(app: Any) -> bool:
@@ -64,7 +67,7 @@ def execute_atomic_surface(
             return
     if not start_atomic_surface(store, scoped, digest, protocol=protocol):
         return
-    try:
+    def dispatch_transaction() -> None:
         with atomic_surface_transaction(store, scoped, digest):
             rejected = False
             if protocol == "atomic-message-surface/1":
@@ -119,5 +122,15 @@ def execute_atomic_surface(
                 raise AtomicSurfaceAborted("surface not admitted")
             if not _persist_result(store, response, operation, scoped, key, digest):
                 raise AtomicSurfaceAborted("atomic receipt unavailable")
+    try:
+        try:
+            dispatch_transaction()
+        except LockNotAvailable:
+            deadline = current_task_io_deadline()
+            if protocol != "atomic-task-run/1" or deadline is None or monotonic() >= deadline:
+                raise
+            # The first transaction rolled back. Reenter the original fence so
+            # a concurrent termination still wins before any admission write.
+            dispatch_transaction()
     except AtomicSurfaceAborted:
         return

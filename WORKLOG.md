@@ -19855,3 +19855,12 @@ POST. Evidence atomic-global-correlation788.json and
 atomic788-original-observation.json. Next reduce lock hold cost or
 test a bounded same-request transaction retry against concurrent
 termination and original-receipt invariants.
+
+CA-HA-03 atomic first-Run candidate retries one rolled-back
+LockNotAvailable transaction inside the same signed request and existing
+deadline. It reuses the prepared admission and original operation fence;
+a durable stop prevents the second dispatch. Other protocols and
+ambiguous timeout handling keep their existing rules. 31 focused tests
+passed, including termination between attempts. Next run real advisory
+lock injection with release after the first rollback and verify one
+sealed receipt and one model settlement.

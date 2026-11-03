@@ -158,3 +158,49 @@ def test_initial_surface_rejects_invalid_envelope_without_ports(payload):
         validate_initial_surface(
             SimpleNamespace(), api.Admission(kind="task_create", run="owned-run", payload=payload)
         )
+
+
+@pytest.mark.parametrize("terminate", [False, True])
+def test_atomic_first_run_rechecks_original_fence_after_lock_timeout(monkeypatch, terminate):
+    from contextlib import contextmanager
+    from time import monotonic
+    from unittest.mock import Mock
+
+    from psycopg.errors import LockNotAvailable
+    from zebra_agent_api import client_admission_atomic as atomic
+    from zebra_agent_api import client_admission_task as task
+
+    store = Mock()
+    prepared = Mock(side_effect=[LockNotAvailable(), api.ApiResponse(201, {})])
+    monkeypatch.setattr(task, "prepare_atomic_task", Mock(return_value=prepared))
+    monkeypatch.setattr(atomic, "start_atomic_surface", Mock(return_value=True))
+    monkeypatch.setattr(atomic, "current_task_io_deadline", lambda: monotonic() + 1)
+    monkeypatch.setattr(api, "_authorize", Mock(return_value=None))
+    persist = Mock(return_value=True)
+    monkeypatch.setattr(api, "_persist_result", persist)
+    visits = []
+
+    @contextmanager
+    def transaction(actual_store, scoped, digest):
+        assert (actual_store, scoped, digest) == (store, "original", "digest")
+        visits.append("enter")
+        try:
+            if terminate and visits.count("enter") == 2:
+                raise atomic.AtomicSurfaceAborted("original stopped")
+            yield
+        finally:
+            visits.append("exit")
+
+    monkeypatch.setattr(atomic, "atomic_surface_transaction", transaction)
+    atomic.execute_atomic_surface(
+        SimpleNamespace(stores=SimpleNamespace(idempotency=store)),
+        SimpleNamespace(headers={"X-Zebra-Admission-Protocol": "atomic-task-run/1"}),
+        SimpleNamespace(kind="task_create"),
+        "original",
+        b"key",
+        "digest",
+        "operation",
+    )
+    assert visits == ["enter", "exit", "enter", "exit"]
+    assert prepared.call_count == (1 if terminate else 2)
+    assert persist.call_count == (0 if terminate else 1)
