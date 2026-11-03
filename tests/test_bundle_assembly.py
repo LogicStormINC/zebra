@@ -315,7 +315,7 @@ def test_unapproved_budget_pin_rejected_at_resolve():
         resolved.resolve(bundle)
 
 
-def test_selectable_bundle_requires_each_provider_approval():
+def test_selectable_bundle_requires_each_provider_approval(monkeypatch):
     from agent_core.domain.runtime_assembly import canonical_provider_profile_digest
     from agent_core.domain.runtime_bundle import (
         builtin_component_pin,
@@ -377,3 +377,12 @@ def test_selectable_bundle_requires_each_provider_approval():
     )
     with pytest.raises(ValueError, match="requested model is not selectable"):
         resolved.resolve_session_model(requested_id="other", remembered_id=None)
+
+    from agent_integrations.bundle_model import BundleModelGateway
+
+    monkeypatch.setenv(alternate_profile.api_key_env, "synthetic")
+    gateway = BundleModelGateway(resolved, selected_pin=alternate_profile.pin)
+    assert gateway._model_name == "alternate"
+    stale = alternate_profile.pin.model_copy(update={"version": "9.0.0"})
+    with pytest.raises(ValueError, match="BUNDLE_SELECTED_MODEL_PIN_MISMATCH"):
+        BundleModelGateway(resolved, selected_pin=stale)

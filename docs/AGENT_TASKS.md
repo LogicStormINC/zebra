@@ -37353,3 +37353,5 @@ CA-P7-MODEL-01 connection binding owns the optional approved connection digest i
 CA-P7-MODEL-01 selectable publication assembly owns the model parameters, lock and provider approval resolution.
 
 CA-P7-MODEL-01 session selection resolver owns the published assembly lookup for explicit and remembered model choices.
+
+CA-P7-MODEL-01 gateway binding owns resolving an exact published model pin at the provider adapter.
