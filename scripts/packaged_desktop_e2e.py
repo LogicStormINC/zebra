@@ -424,13 +424,14 @@ def run(application: Path, evidence_path: Path, screenshot_path: Path) -> None:
         steps.append("approval-real-runtime")
 
         app.submit("E2E_FAILURE packaged failure")
-        app.wait_body("任务已暂停", timeout=40)
-        app.wait_body("已暂停")
+        paused_status = "//span[@aria-live='polite' and normalize-space(.)='已暂停']"
+        app.wait_element("xpath", paused_status, timeout=40)
         failure_session_id = app.wait_active_session_id()
         failure_session = request_json(
             "GET", f"{API_URL}/tasks/{failure_session_id}", headers=AUTH_HEADERS
         )
         assert failure_session["status"] == "suspended"
+        wait_for_stream_event(failure_session_id, "session_suspended")
         steps.append("failure-visible")
 
         stop_process(api)
@@ -440,7 +441,7 @@ def run(application: Path, evidence_path: Path, screenshot_path: Path) -> None:
         app.refresh()
         app.wait_body("本地运行时已连接", timeout=20)
         app.wait_body("E2E_FAILURE packaged failure", timeout=20)
-        app.wait_body("任务已暂停")
+        app.wait_element("xpath", paused_status)
         recovered_session = request_json(
             "GET", f"{API_URL}/tasks/{failure_session_id}", headers=AUTH_HEADERS
         )
