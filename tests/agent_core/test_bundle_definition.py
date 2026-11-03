@@ -143,7 +143,9 @@ def test_removed_model_selects_whole_effective_release():
 
     old, effective = published(previous), published(updated)
     selected = previous.runtime_assembly.provider_profile.pin.id
-    assert old.snapshot_for_removed_model(effective=old, selected_model_id=selected) is old
+    retained = published(bundle_version(definition_id=previous.definition_id, version=2))
+    assert retained.snapshot_digest != old.snapshot_digest
+    assert old.snapshot_for_removed_model(effective=retained, selected_model_id=selected) is old
     adopted = old.snapshot_for_removed_model(effective=effective, selected_model_id=selected)
     assert adopted is effective
     assert adopted.bound_version.runtime_assembly.provider_profile.pin.id == "providers/replacement"
