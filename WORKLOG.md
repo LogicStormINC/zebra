@@ -19642,3 +19642,15 @@ restored. Private evidence receipt-cross-principal18.json. Next inject
 rollback after PostgresTaskAdmissionTransaction.admit_in_transaction
 returns but before its outer context commits, then query the fresh key
 through the other node and reconcile zero admission effects.
+
+CA-HA-03 Native18 pre-COMMIT drill passed for synthetic Session
+709e4d10-00fb-441c-b329-ad9bab4de0f2. One POST reached the isolated API
+with a temporary marker-scoped fault after admission SQL returned inside
+the open transaction. The fault raised to force rollback. The client
+closed without reading the response. Original key lookup on the other
+API returned not_observed. PostgreSQL independently verified no original
+receipt, Session events/projection, Task, pending command or model
+reservation. Both APIs restored and ready. This is transaction rollback
+injection, not abrupt process death. Evidence precommit-create18.json.
+Next freeze the receipt modules into the E1 image and verify the LB
+read path and write receipt together during the one-API outage.
