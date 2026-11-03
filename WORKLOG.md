@@ -20460,3 +20460,15 @@ PUT and original verification; SQL found one finalized artifact and
 one canonical materialization Event. This is complementary to the
 previous real MinIO/PG test, which injected the fault without HTTP.
 Ruff and diff check passed; no running image was changed.
+
+CA-HA-03 F-04 storage primitive on two physical hosts. Actual E1 PG
+has no standby. Separate disposable PG17.5 primary on OrbStack and
+AMD64 standby on 192.168.101.7 used synchronous remote_apply over an
+owned tunnel. Confirmed sync state, wrote a marker, fenced the exact
+disposable primary before promotion and read the same marker from
+the promoted standby in 973 ms including operator commands.
+First setup attempts used an unavailable utility and raced the
+temporary init postmaster; corrected TCP readiness and label cleanup.
+All disposable resources gone. This proves a storage primitive with
+manual fencing, not automatic failover or application receipt RPO.
+Evidence pg-sync-two-hosts.json.
