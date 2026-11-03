@@ -21,6 +21,8 @@ COPY --chown=65532:65532 tests/compose/cloud_ha_e1/child_profile_sitecustomize.p
 COPY --chown=65532:65532 packages/agent-storage/src/agent_storage/postgres/workspaces.py /app/packages/agent-storage/src/agent_storage/postgres/workspaces.py
 COPY --chown=65532:65532 packages/agent-core/src/agent_core/domain/runtime_bundle_catalog.py /app/packages/agent-core/src/agent_core/domain/runtime_bundle_catalog.py
 COPY --chown=65532:65532 packages/agent-storage/src/agent_storage/postgres/stream_hint_relay.py /app/packages/agent-storage/src/agent_storage/postgres/stream_hint_relay.py
+COPY --chown=65532:65532 packages/agent-storage/src/agent_storage/postgres/migration_catalog_tail.py /app/packages/agent-storage/src/agent_storage/postgres/migration_catalog_tail.py
+COPY --chown=65532:65532 packages/agent-storage/src/agent_storage/postgres/projection_work_shared_lock_migration.py /app/packages/agent-storage/src/agent_storage/postgres/projection_work_shared_lock_migration.py
 ARG E1_SOURCE_COMMIT
 LABEL org.opencontainers.image.revision=${E1_SOURCE_COMMIT}
 

@@ -37403,3 +37403,6 @@ add a forward PostgreSQL migration and register it in migration_catalog_tail.py.
 Own a focused real-PG concurrency check under tests/agent_storage. Change the
 Task wake trigger to shared namespace locking while projector enable retains
 exclusive locking. Preserve historical migration bytes and routing semantics.
+
+CA-HA-03 migration 122 packaging addendum: include E1 Dockerfile.delta to
+carry the forward migration and catalog in the isolated ARM candidate.
