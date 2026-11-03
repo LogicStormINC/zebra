@@ -19514,3 +19514,13 @@ repeat the wire request within either invocation. This isolates why the
 original database state cannot establish dispatch. 21 transport tests and
 Ruff passed. Next use phase-specific correlation in the isolated live
 fixture before attributing the original lock to either check.
+
+CA-HA-03 live model phase baseline: temporary isolated Worker instrumentation
+emits digest prefixes and phase labels for a synthetic prompt marker only.
+Fresh Task 5362cd0b-1e41-45ce-8d54-89fa40dee72a shows one complete trace
+from reservation through wire response and settlement. Correlated digest
+4215ceb1dcfafd20 with the original settled row. The earlier unknown Task
+remains suspended with its unsettled reservation. Both overlays restored
+and clean imports verified. This baseline had no lock fault; next inject
+a bounded lease row lock between wire return and the fenced read to
+verify the live failure boundary. Private evidence model-phase-zebra*.log.
