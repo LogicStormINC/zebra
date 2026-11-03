@@ -37430,3 +37430,6 @@ modules in the isolated E1 Dockerfile.delta.
 CA-HA-03 SSE read contention addendum (Luke Ding/Codex, existing branch):
 own ag_ui_checkpoint_tail.py and tests/api/test_stream_wait_heartbeats.py
 for bounded capacity backoff shared by observation tail readers.
+
+CA-HA-03 SSE read contention packaging addendum: include the owned
+ag_ui_checkpoint_tail.py module in the isolated E1 Dockerfile.delta.

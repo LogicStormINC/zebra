@@ -27,6 +27,7 @@ COPY --chown=65532:65532 apps/worker/src/zebra_agent_worker/execution.py /app/ap
 COPY --chown=65532:65532 apps/api/src/zebra_agent_api/routes.py /app/apps/api/src/zebra_agent_api/routes.py
 COPY --chown=65532:65532 apps/api/src/zebra_agent_api/task_routes.py /app/apps/api/src/zebra_agent_api/task_routes.py
 COPY --chown=65532:65532 apps/api/src/zebra_agent_api/command_submission.py /app/apps/api/src/zebra_agent_api/command_submission.py
+COPY --chown=65532:65532 apps/api/src/zebra_agent_api/ag_ui_checkpoint_tail.py /app/apps/api/src/zebra_agent_api/ag_ui_checkpoint_tail.py
 ARG E1_SOURCE_COMMIT
 LABEL org.opencontainers.image.revision=${E1_SOURCE_COMMIT}
 
