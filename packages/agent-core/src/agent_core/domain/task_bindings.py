@@ -69,6 +69,9 @@ class HostCapabilitySnapshot(BaseModel):
     resource_binding_digest: str = Field(min_length=64, max_length=MAX_DIGEST_LENGTH)
     bound_at: datetime
     host_context: HostContextEnvelope | None = None
+    verified_subject_ref: str | None = Field(
+        default=None, min_length=1, max_length=512, exclude_if=lambda value: value is None
+    )
 
     @model_validator(mode="after")
     def _validate(self) -> Self:
@@ -181,6 +184,8 @@ class TaskBindingSnapshot(BaseModel):
             "effectiveCapabilities": sorted(self.effective_capabilities),
             "bindingRevision": self.binding_revision,
         }
+        if self.host_capability.verified_subject_ref is not None:
+            canonical["verifiedSubjectRef"] = self.host_capability.verified_subject_ref
         encoded = json.dumps(canonical, sort_keys=True, separators=(",", ":")).encode()
         return hashlib.sha256(encoded).hexdigest()
 

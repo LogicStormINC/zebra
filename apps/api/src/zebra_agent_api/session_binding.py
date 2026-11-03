@@ -54,10 +54,17 @@ def renew_task_binding_snapshot(
     bound_at: datetime | None = None,
     release_change: tuple[str, str] | None = None,
     previous_definition_digest: str | None = None,
+    verified_subject_ref: str | None = None,
 ) -> TaskBindingSnapshot:
     """Create the next immutable revision from one freshly verified Grant."""
 
     host = binding.host_capability
+    if (
+        host.verified_subject_ref is not None
+        and verified_subject_ref is not None
+        and host.verified_subject_ref != verified_subject_ref
+    ):
+        raise ValueError("Host Grant subject drifted from the Task binding")
     previous = host.host_context
     if previous is None:
         raise ValueError("Task binding has no renewable Host context")
@@ -152,6 +159,7 @@ def renew_host_binding_for_command(
             current,
             host_context,
             authority_issuer=verified_host_grant.authority_issuer,
+            verified_subject_ref=verified_host_grant.subject_ref,
         )
     except ValueError as exc:
         return ApiResponse(
@@ -244,6 +252,7 @@ def _build_binding_snapshot(
             authority_issuer=verified_host_grant.authority_issuer,
             namespace_id=host_context.namespace_id,
             grant_digest=envelope_grant_digest(host_context),
+            verified_subject_ref=verified_host_grant.subject_ref,
             grant_expires_at=host_context.expires_at,
             connector_id=f"{host_context.host_app_id}-unbound",
             connector_profile_revision=1,

@@ -434,6 +434,7 @@ class ZebraAgentApi(
                         authority_issuer=verified_host_grant.authority_issuer,
                         release_change=(bound.snapshot_digest, effective.snapshot_digest),
                         previous_definition_digest=bound.definition_digest,
+                        verified_subject_ref=verified_host_grant.subject_ref,
                     )
                 except ValueError:
                     return conflict(session_id=session_id, status="host_binding_revision_conflict")

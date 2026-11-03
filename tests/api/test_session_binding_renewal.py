@@ -73,6 +73,9 @@ def test_renewal_appends_revision_and_preserves_frozen_anchors() -> None:
 
     assert renewed.binding_revision == 2
     assert renewed.host_capability.host_context == fresh
+    assert renewed.host_capability.verified_subject_ref == "user-1"
+    with pytest.raises(ValueError, match="subject drifted"):
+        renew_task_binding_snapshot(binding, fresh, bound_at=now, verified_subject_ref="user-2")
     assert renewed.host_capability.grant_digest == host_context_digest(fresh)
     assert renewed.host_capability.grant_expires_at == fresh.expires_at
     switched = renew_task_binding_snapshot(
