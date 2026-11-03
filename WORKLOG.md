@@ -20625,3 +20625,9 @@ or Session Event reads. Caller still had function execute only.
 Cross-host paused/replayed cases and wrong digest behaved as before.
 Disposable SQL proof; deployment role provisioning and API composition
 are pending. Evidence pg-sync-proof-owner-two-hosts.json.
+
+CA-HA-03 checked in the isolated standby receipt proof operator SQL.
+Executed the exact file against the disposable cross-host pair,
+including non-login owner privileges, pause/cancel/replay behavior,
+and wrong digest rejection. Fixture only, no deployment or migration.
+Evidence pg-sync-proof-fixture-two-hosts.json.
