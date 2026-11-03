@@ -160,7 +160,8 @@ def execute_atomic_surface(
         return None
     finally:
         if stages:
-            logger.info(
+            log = logger.info if stages[-1][0] == "transaction_committed" else logger.warning
+            log(
                 "Atomic first Run milestones operation_id=%s elapsed_ms=%s",
                 operation,
                 [
