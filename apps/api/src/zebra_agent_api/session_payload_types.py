@@ -56,6 +56,7 @@ class AppendSessionMessagePayload(TypedDict):
     clarification_id: str | None
     attachments: tuple[TextAttachmentInput | ImageAttachmentInput, ...]
     model_profile: str | None
+    selected_model_id: str | None
     reasoning_effort: str | None
 
 

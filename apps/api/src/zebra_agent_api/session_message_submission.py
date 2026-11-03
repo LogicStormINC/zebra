@@ -6,7 +6,8 @@ from agent_core.application import (
     current_turn,
     project_turns,
 )
-from agent_core.domain.events import SessionEvent
+from agent_core.domain.bundle_definition import BundleDefinitionSnapshot, parse_definition_snapshot
+from agent_core.domain.events import EventType, SessionEvent
 from agent_core.domain.runtime_bundle_types import ArtifactPin
 from agent_core.domain.sessions import Session
 from agent_core.ports import EventStorePort
@@ -22,11 +23,37 @@ def build_session_message_event(
     clarification_id: str | None,
     model_profile: str | None = None,
     reasoning_effort: str | None = None,
-    selected_model_pin: ArtifactPin | None = None,
+    selected_model_id: str | None = None,
 ) -> SessionEvent:
     """Build the next durable message Event with ADR-026 Turn identity."""
 
     events = event_store.list_for_session(session.session_id)
+    selected_model_pin = None
+    if clarification_id is None:
+        prepared = next(
+            (event for event in reversed(events) if event.event_type is EventType.TASK_PREPARED),
+            None,
+        )
+        raw_snapshot = prepared.payload.get("definition_snapshot") if prepared is not None else None
+        snapshot = parse_definition_snapshot(raw_snapshot) if raw_snapshot is not None else None
+        if isinstance(snapshot, BundleDefinitionSnapshot):
+            remembered = next(
+                (
+                    ArtifactPin.model_validate(raw).id
+                    for event in reversed(events)
+                    if event.event_type is EventType.USER_MESSAGE_RECEIVED
+                    and (raw := event.payload.get("selected_model_pin")) is not None
+                ),
+                None,
+            )
+            assembly = snapshot.bound_version.runtime_assembly
+            _, profile = assembly.resolve_session_model(
+                requested_id=selected_model_id,
+                remembered_id=remembered,
+            )
+            selected_model_pin = profile.pin
+        elif selected_model_id is not None:
+            raise ValueError("selected_model_requires_published_bundle")
     return SessionMessageAppendService().build_event(
         session=session,
         next_sequence=session.current_sequence + 1,

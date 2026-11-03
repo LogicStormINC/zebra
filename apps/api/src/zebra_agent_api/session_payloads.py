@@ -310,11 +310,22 @@ def parse_append_session_message_payload(
     reasoning_effort = _reasoning_effort(payload.get("reasoning_effort"))
     if isinstance(reasoning_effort, ApiResponse):
         return reasoning_effort
+    selected = payload.get("selected_model_id")
+    if selected is not None and (
+        not isinstance(selected, str)
+        or not selected
+        or len(selected) > 256
+        or model_profile is not None
+        or reasoning_effort is not None
+        or clarification_id is not None
+    ):
+        return bad_request("selected_model_id is invalid for this message")
     return {
         "content": content.strip(),
         "clarification_id": clarification_id.strip() if clarification_id else None,
         "attachments": attachments,
         "model_profile": model_profile,
+        "selected_model_id": selected,
         "reasoning_effort": reasoning_effort,
     }
 

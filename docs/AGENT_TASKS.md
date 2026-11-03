@@ -37359,3 +37359,5 @@ CA-P7-MODEL-01 gateway binding owns resolving an exact published model pin at th
 CA-P7-MODEL-01 worker selection recovery owns the immutable message pin and provider gateway handoff.
 
 CA-P7-MODEL-01 message binding owns persisting an already resolved model pin in the normal message event builder.
+
+CA-P7-MODEL-01 message admission owns selected_model_id parsing and lookup from the durable segment publication snapshot.

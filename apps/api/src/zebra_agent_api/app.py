@@ -350,6 +350,7 @@ class ZebraAgentApi(
                 content=parsed["content"],
                 clarification_id=parsed["clarification_id"],
                 model_profile=parsed["model_profile"],
+                selected_model_id=parsed["selected_model_id"],
                 reasoning_effort=parsed["reasoning_effort"],
             )
         except ValueError as exc:
