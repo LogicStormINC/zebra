@@ -37495,3 +37495,6 @@ and task_admission.py PostgreSQL modules in E1 Dockerfile.delta.
 
 CA-HA-03 command wakeup lock duration addendum: own the fresh admission
 outbox lookup and scope capacity lock seams in PostgreSQL command_wakeup.py.
+
+CA-HA-03 admission diagnostics addendum: own the bounded failure logging
+seam in client_admission_operations.py and its E1 delta image entry.

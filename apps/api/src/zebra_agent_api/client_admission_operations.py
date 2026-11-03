@@ -3,6 +3,7 @@
 import base64
 import hashlib
 import json
+import logging
 import os
 from dataclasses import replace
 from datetime import UTC, datetime
@@ -24,6 +25,8 @@ from zebra_agent_api.idempotency import scoped_idempotency_key
 from zebra_agent_api.responses import ApiResponse
 from zebra_agent_api.task_api import create_task
 from zebra_agent_api.tenant_guard import host_list_context_response, task_access_response
+
+logger = logging.getLogger(__name__)
 
 _PREFIX = "/v1/admission-operations/"
 _CLAIM = "client-admission-v1-claim"
@@ -195,8 +198,9 @@ def handle_admission_operation(app: Any, request: Any) -> ApiResponse | None:
         }
     )
     assert scoped is not None
+    started = monotonic()
     try:
-        with task_io_deadline(monotonic() + 2):
+        with task_io_deadline(started + 2):
             return _handle(
                 app,
                 request,
@@ -208,7 +212,13 @@ def handle_admission_operation(app: Any, request: Any) -> ApiResponse | None:
             )
     except IdempotencyConflictError:
         return ApiResponse(409, {"status": "admission_operation_conflict"})
-    except (TimeoutError, LockNotAvailable):
+    except (TimeoutError, LockNotAvailable) as exc:
+        logger.warning(
+            "Admission outcome unknown mode=%s error=%s elapsed_ms=%d",
+            "terminate" if termination else "observe" if observation else "submit",
+            type(exc).__name__,
+            (monotonic() - started) * 1000,
+        )
         return ApiResponse(503, {"status": "unknown", "operation": operation})
 
 

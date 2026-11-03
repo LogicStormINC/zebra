@@ -19977,3 +19977,11 @@ cannot be assigned to COMMIT based on this sampling. Next separate
 those exception types and correlate budget use with transaction phases.
 Evidence global-lock-admission24.jsonl, preflight5-admission24-13ec5076*,
 admission24-sampled-original-receipts.json and admission24-with-sse-252ae730*.
+
+CA-HA-03 admission diagnostics now log mode, exception class, and
+elapsed milliseconds on the existing 503 boundary. The log contains
+no receipt, operation identifier, exception message, or user input.
+The response and two-second deadline are unchanged. Ruff and all
+31 admission API tests passed. Next run the mixed diagnostic with
+this candidate and classify the sampled failures before changing
+timeouts or further optimizing the transaction.
