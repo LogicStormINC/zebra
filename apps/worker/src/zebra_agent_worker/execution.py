@@ -179,6 +179,7 @@ class SessionExecutionService(SessionExecutionComposition, SessionExecutionEntry
         task = bundle.resolve_bound_workspace(task, self._workspace_resolver, session_id)
         if fresh_authority is not None:
             model_gateway = fresh_authority.model(model_gateway)
+        mark("model_workspace_setup")
         effect_recorder: list[DurableHarnessEventRecorder] = []
 
         def current_recorder() -> DurableHarnessEventRecorder:
@@ -213,6 +214,7 @@ class SessionExecutionService(SessionExecutionComposition, SessionExecutionEntry
             task_binding = prepared_context.binding
             task = apply_bound_host_context(task, task_binding)
             materialized_context = prepared_context.materialization
+            mark("context_materialization")
             task_budget = prepare_task_budget(
                 self, claimed, task_binding, attempt_number, model_gateway, task)
             budget_check.gate = task_budget
@@ -229,7 +231,7 @@ class SessionExecutionService(SessionExecutionComposition, SessionExecutionEntry
         except (RuntimeError, ValueError) as exc:
             log_worker_failure("worker_setup_failed", "context_prepare", session_id, exc)
             raise WorkerExecutionError(str(exc)) from exc
-        mark("context_budget")
+        mark("budget_start")
         setup_stage = "runtime_instance_binding"
         try:
             compatible_ids = runtime_setup.runtime_session_ids(self._task_index_store, session_id)
