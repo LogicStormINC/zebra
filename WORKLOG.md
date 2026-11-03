@@ -20899,3 +20899,13 @@ overlay mount limit. The derivative is unqualified and was not
 deployed. Original APIs remain on the verified base. Next rebuild
 from a lower-depth source image or flatten a disposable base with
 config and source parity checks; use a native-schema corpus loader.
+
+CA-HA-03 built two runnable immutable ARM64 candidates from 0487fdae.
+Exported a new stopped container from the exact 471-layer isolated
+base and imported its filesystem as one layer, preserving image
+configuration. Added the six committed API source changes and
+checked-hash bytecode. Both images ran offline, matched all six source
+hashes, imported the API and proof gate, and matched base image
+configuration except the revision label. Private manifest
+frozen-read-wait.json. This is staged image qualification only;
+the active APIs still use the original image and the corpus is short.
