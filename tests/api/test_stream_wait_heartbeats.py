@@ -146,3 +146,19 @@ def test_observation_capacity_backoff_stops_at_deadline(monkeypatch):
     with pytest.raises(TimeoutError):
         asyncio.run(checkpoint._read_until(monotonic() + 0.1, lambda: None))
     assert dispatch.await_count == 1
+
+
+@pytest.mark.parametrize("kind", ["task_id", "session_id"])
+def test_raw_source_head_waits_for_projection_without_changing_target(monkeypatch, kind):
+    from time import monotonic
+    from unittest.mock import AsyncMock
+
+    head = object()
+    store = SimpleNamespace(read_stream_source_head=lambda **_: head)
+    read = AsyncMock(side_effect=[CheckpointNotReady("source is ahead"), head])
+    monkeypatch.setattr(session, "_read_until", read)
+    monkeypatch.setattr(session, "uniform", lambda *_: 0)
+    assert asyncio.run(session._read_raw_head(monotonic() + 1, store, **{kind: "target"})) is head
+    assert read.await_count == 2
+    assert read.await_args_list[0] == read.await_args_list[1]
+    assert read.await_args.kwargs[kind] == "target"

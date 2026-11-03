@@ -37433,3 +37433,7 @@ for bounded capacity backoff shared by observation tail readers.
 
 CA-HA-03 SSE read contention packaging addendum: include the owned
 ag_ui_checkpoint_tail.py module in the isolated E1 Dockerfile.delta.
+
+CA-HA-03 raw SSE checkpoint lag addendum (Luke Ding/Codex, existing branch):
+own session_streaming.py and reuse the owned stream heartbeat tests for the
+raw Task and Session source-head recovery boundary.

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 from collections.abc import AsyncGenerator, AsyncIterator, Sequence
 from datetime import UTC, datetime
@@ -13,7 +14,8 @@ from agent_core.domain.sessions import SessionStatus
 from agent_core.ports import LiveEventCursor, LiveEventFanoutPort
 from agent_core.ports.event_store import BoundedSessionEventReadPort
 from agent_core.ports.live_event_fanout import CanonicalFrontierNotificationPort
-from agent_core.ports.stream_source_head import StreamSourceHeadPort
+from agent_core.ports.stream_source_head import StreamSourceHead, StreamSourceHeadPort
+from agent_core.ports.task_projection_checkpoints import CheckpointNotReady
 from agent_integrations.redis_live_fanout_async import AsyncRedisNotifications
 from agent_storage import ControlPlaneStores, sqlite_control_plane_stores
 from fastapi import Request
@@ -35,6 +37,24 @@ _MAX_STREAM_SECONDS = 1800.0
 _ACTIVE_STATUSES = frozenset(
     {SessionStatus.READY, SessionStatus.RUNNING, SessionStatus.AWAITING_TURN}
 )
+
+
+async def _read_raw_head(
+    deadline: float,
+    store: StreamSourceHeadPort,
+    *,
+    task_id: TaskId | None = None,
+    session_id: SessionId | None = None,
+) -> StreamSourceHead | None:
+    # The canonical write can wake observers before its read index catches up.
+    async with asyncio.timeout(max(0, deadline - monotonic())):
+        while True:
+            try:
+                return await _read_until(
+                    deadline, store.read_stream_source_head, task_id=task_id, session_id=session_id
+                )
+            except CheckpointNotReady:
+                await asyncio.sleep(uniform(0.025, 0.075))
 
 
 class StreamWake:
@@ -227,9 +247,7 @@ async def tail_session_events(
                 and same_source
                 and getattr(active.events, "stream_head_reads_compatible", task_database is None)
             ):
-                head = await _read_until(
-                    deadline, active.tasks.read_stream_source_head, session_id=session_id
-                )
+                head = await _read_raw_head(deadline, active.tasks, session_id=session_id)
                 if head is None or head.task.strict_coverage or head.session_sequence is None:
                     return
             if cloud and (
@@ -335,7 +353,7 @@ async def tail_task_events(
                 isinstance(store, StreamSourceHeadPort)
                 and getattr(store, "stream_head_reads_compatible", True)
             ):
-                head = await _read_until(deadline, store.read_stream_source_head, task_id=task_id)
+                head = await _read_raw_head(deadline, store, task_id=task_id)
                 if head is None or head.task.strict_coverage:
                     return
             if head is None or cursor < head.task.current_sequence:

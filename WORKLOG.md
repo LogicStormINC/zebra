@@ -19407,3 +19407,10 @@ Next handle lag at the raw tail source-head boundary within the current
 deadline. Preserve AG-UI's separate checkpoint handling and any existing
 pending commands. Evidence: sse17-live-event-7fa1856a*, wake-tail17-*.log,
 sse17-live-resume-original.json.
+
+CA-HA-03 raw SSE candidate retries CheckpointNotReady only around Task
+and Session source-head reads, under the existing absolute deadline.
+The read index must catch up before any cursor advances. AG-UI checkpoint
+classification and conflicts retain their existing handling. Focused tests
+12 passed, 10 native environment skips; Ruff/diff checks passed. Next use
+the two-file API overlay on both isolated nodes for a fresh live wake.
