@@ -8,6 +8,7 @@ import os
 from dataclasses import replace
 from datetime import UTC, datetime
 from time import monotonic
+from traceback import walk_tb
 from typing import Any, Literal
 from uuid import UUID, uuid4
 
@@ -213,11 +214,18 @@ def handle_admission_operation(app: Any, request: Any) -> ApiResponse | None:
     except IdempotencyConflictError:
         return ApiResponse(409, {"status": "admission_operation_conflict"})
     except (TimeoutError, LockNotAvailable) as exc:
+        # Code locations identify the failed stage without logging frame locals,
+        # exception messages, query text, or credentials.
+        frames = [
+            f"{frame.f_globals['__name__']}.{frame.f_code.co_name}:{line}"
+            for frame, line in walk_tb(exc.__traceback__)
+        ]
         logger.warning(
-            "Admission outcome unknown mode=%s error=%s elapsed_ms=%d",
+            "Admission outcome unknown mode=%s error=%s elapsed_ms=%d path=%s",
             "terminate" if termination else "observe" if observation else "submit",
             type(exc).__name__,
             (monotonic() - started) * 1000,
+            " > ".join(frames),
         )
         return ApiResponse(503, {"status": "unknown", "operation": operation})
 

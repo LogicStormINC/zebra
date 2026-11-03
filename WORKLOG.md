@@ -20001,3 +20001,12 @@ The diagnostic does not identify which stage consumed the budget.
 Evidence preflight5-diagnostic25-1b82ff1d*, diagnostic25-original-receipts.json
 and diagnostic25-with-sse-cf66a509*. Next correlate task I/O deadlines
 with phase and remaining budget before changing the deadline.
+
+CA-HA-03 timeout stage follow-up. The task I/O adapter reserves up
+to 200 ms from the shared deadline for cleanup. The same TimeoutError
+can come from SQL/COMMIT, connection setup, or the outer deadline check
+after the handler returns. The existing warning now records Python
+module/function/line only, enough to distinguish these paths without
+printing locals, SQL or exception values. No deadline behavior changed.
+Ruff, diff check and 31 admission API tests passed. Next capture the
+stage paths in the isolated mixed-load rerun.
