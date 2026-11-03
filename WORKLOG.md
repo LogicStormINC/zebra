@@ -20098,3 +20098,17 @@ runs do not establish comparative capacity. Next measure per-stage
 latency and VM scheduling pressure before more admission tuning.
 Evidence preflight5-repair29-bd7be55d*, repair29-original-receipts.json,
 repair29-zebra*.log and repair29-with-sse-d6ff6b5c*.
+
+CA-HA-03 Native29 scheduling sample, same 5 Hz/32 idle SSE. Twenty
+POSTs, eleven directly completed, one completed via original GET,
+eight unresolved and not resent. All 32 streams received heartbeats.
+Guest CPU PSI unavailable. Observed runnable process peaks 20 and 21;
+both API cgroups added zero throttled periods. Worker cgroups added
+30 and 3 periods and 1.084 and 0.055 s aggregate throttle time.
+These counters include the observation window and do not prove host
+CPU starvation or attribute delay to individual operations. Reported
+worker CPU per completed run 4.92 s versus 7.07 s in the prior sample.
+Next compare bounded admission with low-rate and idle control samples
+and attribute latency by request stage rather than adjusting deadlines.
+Evidence preflight5-repair29-e64f4ef4*, repair29-repeat-original-receipts.json,
+repair29-with-sse-f98ce34a*, repair29-sched-* and repair29-pressure-*.
