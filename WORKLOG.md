@@ -19425,3 +19425,16 @@ through an active tail, not Worker execution or 256-stream capacity.
 Restored both APIs and checked direct readiness. Private evidence:
 sse18-live-event-f0ffc9df*, sse18-live-resume-original.json, wake-tail18-*.
 Next trace fallback pickup on these accepted commands without resending.
+
+CA-HA-03 pending resume diagnosis: both original SSE-wake resume commands
+have accepted handoff receipts and released leases, with no handled Event.
+The Worker did pick them up. Worker traces show RetryableWorkerSetupError
+from recover_execution_progress before executor startup. PostgreSQL
+comparison in the test namespace found all 10 resume commands lack a
+payload run_id while all 332 run commands have one. The two fresh Tasks
+have only bootstrap and resume acceptance and therefore no canonical Run
+anchor. The Worker deliberately refuses to invent one in recovery.
+Next validate the first-run contract at admission: explicit run for an
+unstarted Task and defined identity semantics for public resume of an
+existing Run. Verify internal continuation receipts separately before
+changing shared command parsing. Preserve the two original receipts.
