@@ -19920,3 +19920,17 @@ the test to observe both real rebuilds before wakeup and assert no
 durable Task, event, pending row or outbox after injected rejection.
 22 native tests passed on rerun; both disposable containers stopped.
 Next package the two storage modules and compare Native22 lock sampling.
+
+CA-HA-03 Native23 source 61154d3f, ARM manifest
+sha256:8529b5ce05a5961a19775293f66a315df0249258be4d4da41ee982d52b718a9d.
+Cold cutover hashes and both node readiness/wire checks passed.
+Trust revision 22, definition 7021f7fa-8a15-4852-a033-1f75f40b0c03.
+Mixed 5Hz: 15 POSTs, eight immediate accepted/completed, one more
+sealed 201 recovered via original GET, six still unknown. All 32
+idle observers got heartbeats. Longest sampled holder span decreased
+from 400ms to 198ms. Task and Session-event index work disappeared
+from the observed global lock region; pending/outbox, receipt and
+COMMIT remain. Sampling is not a full lock duration measurement.
+Next measure those remaining statements and the durable COMMIT tail.
+Evidence global-lock-defer23.jsonl, preflight5-defer23-8ecac8d2*,
+defer23-original-receipts.json and defer23-recovered-facts.txt.
