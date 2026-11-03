@@ -7,6 +7,7 @@ import hashlib
 import hmac
 import re
 from dataclasses import replace
+from datetime import datetime
 from typing import TYPE_CHECKING
 from uuid import UUID
 
@@ -15,8 +16,13 @@ from agent_core.domain.runtime_bundle_json import load_bundle_json
 from agent_storage import CloudCompositionSettings
 from agent_storage.postgres.agent_registry import PostgresAgentRegistry
 from agent_storage.postgres.database import PostgresDatabase
-from agent_storage.postgres.host_management import HostManagementConflict, HostManagementUnavailable
+from agent_storage.postgres.host_management import (
+    HostManagementConflict,
+    HostManagementStore,
+    HostManagementUnavailable,
+)
 from agent_storage.postgres.model_profile_registration import PostgresModelProfileRegistrations
+from agent_storage.postgres.provider_usage import read_provider_usage
 from agent_storage.postgres.publication import PublicationStore
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
@@ -44,6 +50,8 @@ if TYPE_CHECKING:
 
 PATH = "/management/v1/runtime-publication"
 CONTRACT = "runtime-publication/1"
+USAGE_PATH = "/management/v1/agent-provider-usage"
+USAGE_CONTRACT = "agent-provider-usage/1"
 
 
 def perform(
@@ -55,6 +63,7 @@ def perform(
     raw: bytes,
     *,
     scripts: bool = False,
+    usage: bool = False,
 ) -> JSONResponse:
     credential_digest = hashlib.sha256(token.encode()).hexdigest()
     try:
@@ -65,9 +74,7 @@ def perform(
         return _error(401, "UNAUTHENTICATED")
     except (OSError, ValueError, TypeError):
         raise RuntimeError("PUBLICATION_CONFIGURATION_UNAVAILABLE") from None
-    if not hmac.compare_digest(
-        credential_digest, approval.credential_sha256
-    ):
+    if not hmac.compare_digest(credential_digest, approval.credential_sha256):
         return _error(401, "UNAUTHENTICATED")
     expected = {
         "deploymentId": approval.scope.deployment_id,
@@ -80,6 +87,51 @@ def perform(
         return _error(403, "SCOPE_MISMATCH")
     if namespace is None:
         raise ValueError("NAMESPACE_REQUIRED")
+    if usage:
+        if method != "POST":
+            return _error(405, "METHOD_NOT_ALLOWED")
+        if "usage.read" not in approval.actions:
+            return _error(403, "PERMISSION_DENIED")
+        payload = load_bundle_json(raw)
+        if (
+            not isinstance(payload, dict)
+            or set(payload) != {"start", "end"}
+            or any(
+                not isinstance(payload[field], str) or len(payload[field]) > 40
+                for field in ("start", "end")
+            )
+        ):
+            return _error(400, "INVALID_ARGUMENT")
+        database = PostgresDatabase(settings.database_url, deployment_namespace=namespace)
+        authority = HostManagementStore(settings.database_url, deployment_namespace=namespace)
+        with authority.authorized(approval.trust) as connection:
+            result = read_provider_usage(
+                database,
+                scope=approval.scope,
+                definition_id=approval.definition_scope.definition_id,
+                start=datetime.fromisoformat(payload["start"]),
+                end=datetime.fromisoformat(payload["end"]),
+            )
+            if (
+                load_publication_approval(
+                    settings.publication_management_config,
+                    namespace,
+                    credential_digest=credential_digest,
+                )
+                != approval
+            ):
+                raise PermissionError("PERMISSION_DENIED")
+            authority._live(connection, approval.trust)
+        return JSONResponse(
+            content={
+                "contractVersion": USAGE_CONTRACT,
+                "scope": approval.scope.model_dump(mode="json"),
+                "definitionId": str(approval.definition_id),
+                "trustRevision": approval.trust_revision,
+                **result,
+            },
+            headers={"Cache-Control": "no-store"},
+        )
     contract = script_publication_contract() if scripts else None
     if contract is not None and headers[SCRIPT_HEADER] != [contract["contractDigest"]]:
         return _error(409, "CONTRACT_MISMATCH")
@@ -113,9 +165,11 @@ def perform(
         def recheck() -> None:
             if (
                 load_publication_approval(
-                    settings.publication_management_config, namespace,
+                    settings.publication_management_config,
+                    namespace,
                     credential_digest=credential_digest,
-                ) != approval
+                )
+                != approval
             ):
                 raise PermissionError("PERMISSION_DENIED")
 
@@ -172,6 +226,7 @@ def register_publication_management(
         if re.fullmatch(r"rtpub_[A-Za-z0-9_-]{43}", token) is None:
             return _error(401, "UNAUTHENTICATED")
         scripts = request.url.path.endswith(SCRIPT_PATH)
+        usage = request.url.path == USAGE_PATH
         names = (
             *_HEADERS.values(),
             "content-type",
@@ -196,7 +251,7 @@ def register_publication_management(
         async def body() -> bytes:
             value = bytearray()
             async for chunk in request.stream():
-                if len(value) + len(chunk) > 262144:
+                if len(value) + len(chunk) > (512 if usage else 262144):
                     raise ValueError("BODY_TOO_LARGE")
                 value.extend(chunk)
             return bytes(value)
@@ -213,7 +268,15 @@ def register_publication_management(
         headers = {name: request.headers.getlist(name) for name in names}
         task = asyncio.create_task(
             asyncio.to_thread(
-                perform, settings, namespace, token, headers, request.method, raw, scripts=scripts
+                perform,
+                settings,
+                namespace,
+                token,
+                headers,
+                request.method,
+                raw,
+                scripts=scripts,
+                usage=usage,
             )
         )
 
@@ -235,7 +298,7 @@ def register_publication_management(
             return _error(503, "MANAGEMENT_UNAVAILABLE")
 
     # Both channels share the same per-instance resource budget and durable CAS.
-    for path in (PATH, SCRIPT_PATH):
+    for path in (PATH, SCRIPT_PATH, USAGE_PATH):
         route = Route(path, handle)
         route.methods = None
         app.router.routes.append(route)

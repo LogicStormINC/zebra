@@ -29,9 +29,9 @@ class PublicationApproval(BundleValue):
     credential_sha256: Annotated[str, Field(pattern=r"^[0-9a-f]{64}$", repr=False)]
     expires_at: str
     actions: Annotated[
-        tuple[Literal["materialize", "publish", "read"], ...],
+        tuple[Literal["materialize", "publish", "read", "usage.read"], ...],
         BeforeValidator(lambda value: tuple(value) if type(value) is list else value),
-        Field(min_length=1, max_length=3),
+        Field(min_length=1, max_length=4),
     ]
     references: Annotated[
         tuple[Annotated[str, Field(min_length=1, max_length=512)], ...],
@@ -112,7 +112,8 @@ def load_publication_approval(
             raise ValueError("INVALID_PUBLICATION_APPROVAL")
         if credential_digest is not None:
             matching = [
-                entry for entry in approvals
+                entry
+                for entry in approvals
                 if compare_digest(entry.credential_sha256, credential_digest)
             ]
         elif definition_id is not None:
