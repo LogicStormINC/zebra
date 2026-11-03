@@ -19119,3 +19119,16 @@ whether shared trigger locking can preserve exclusion against configuration
 changes. The sampler did not capture lock keys, so it cannot attribute
 every observed wait to family 68. Keep the failed original sample and
 inspect its receipt without replay.
+
+## Projector admission lock migration candidate
+
+Real isolated PG reproduced the family 68 conflict with two distinct Task
+inserts under the original trigger. Migration 122 allowed both inserts to
+commit concurrently and preserved mutual exclusion with the projector
+configuration lock in both acquisition orders. Existing migration definitions
+are untouched. The first private probes exposed fixture auto-commit and a
+missing deferred segment FK, both corrected in the committed regression.
+Focused real PG regression and make check passed. Next stage the migration
+with the exact candidate image in the isolated pair and repeat admission
+diagnostics with fresh intents. Native12 and its original receipts remain
+the prior comparison cohort.

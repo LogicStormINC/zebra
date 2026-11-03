@@ -37397,3 +37397,9 @@ Keep exact owner/fence/frontier/DB-clock expiry, ordered bounded selection,
 durable writes, deadlines, receipts, and existing unknowns unchanged. No
 migration, new scheduler or original Task replay. This is one evidenced
 contention path, not a proof of every admission/heartbeat failure's cause.
+
+CA-HA-03 projector admission lock claim (Luke Ding/Codex, existing branch):
+add a forward PostgreSQL migration and register it in migration_catalog_tail.py.
+Own a focused real-PG concurrency check under tests/agent_storage. Change the
+Task wake trigger to shared namespace locking while projector enable retains
+exclusive locking. Preserve historical migration bytes and routing semantics.
