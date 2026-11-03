@@ -20034,3 +20034,16 @@ until after indexing in the same transaction. Updated the existing
 rollback check to require exactly one rebuild before wakeup. Ten
 isolated PostgreSQL 17 atomic initial Run and Task admission tests,
 Ruff, and diff check passed. Next package and repeat 5 Hz/32 SSE.
+
+CA-HA-03 Native27 source a9773472, ARM manifest
+sha256:8c30252a2a86e2e83e06cdcc652bf937b665765ceb7e246b2975cd78557f8136.
+Both isolated nodes passed cold preservation, readiness and wire checks.
+Trust revision 26, definition b097f9d1-ef1a-46b9-80d4-83b187160030.
+5 Hz/32 idle SSE: 16 POSTs, ten completed, six unresolved after original
+GET; no resubmissions. All 32 SSE received heartbeats. Four timeouts
+ended in event position backfill at line 107 (one on retry), one in
+binding validation and one in the pending scope sequence query. The
+single rebuild did not clear the sustained-capacity gate. Next inspect
+event-position assignment round trips and keep the stable replay order.
+Evidence preflight5-index27-189102b6*, index27-original-receipts.json,
+index27-zebra*.log and index27-with-sse-741907d2*.
