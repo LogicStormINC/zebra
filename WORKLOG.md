@@ -19804,3 +19804,15 @@ This isolates the smaller internal gap of the atomic path but the
 four-sample end-to-end difference is insufficient for a capacity claim.
 Evidence concurrent-admission21.json and concurrent-admission21-facts.json.
 Next sample actual preflight and transaction time at target mixed load.
+
+CA-HA-03 Native21 API stage attribution under 32 idle SSE observers and
+guarded 5Hz. Temporary marker-scoped API logging, 31 paired requests:
+authorization median/max 265/484ms, create_queued_session 417/904ms,
+queue_cloud_run 388/788ms, receipt update 14/386ms, POST 1596/2778ms.
+Queue stages include SQL and app work and are not pure COMMIT measures.
+All 31 accepted once, completed and settled; all 32 observers got a
+heartbeat. Guard stopped at 31 reservations. Restored both APIs and
+verified readiness. Private evidence stage785-summary.json,
+preflight5-stage785-533dd486*, stage785-with-sse-79cdb7c9*.
+Next compare atomic versus generic at identical open-loop load and
+observe active Task streams with per-client cursor accounting.
