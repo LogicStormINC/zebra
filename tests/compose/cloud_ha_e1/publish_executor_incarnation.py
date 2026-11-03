@@ -95,6 +95,34 @@ def acknowledge_exit(
         raise ValueError("exit witness does not match an executor registration")
 
 
+def reconcile_exits(witness: dict[str, str], dsn: str, *, namespace: str) -> int:
+    import psycopg
+
+    fields = ("engine", "container", "started_at", "pid_namespace")
+    incarnation = {key: witness[key] for key in fields}
+    with psycopg.connect(dsn, connect_timeout=2) as connection:
+        connection.execute("SET LOCAL statement_timeout='1500ms'")
+        rows = connection.execute(
+            """SELECT s.response_body
+            FROM control_plane_idempotency_records i
+            JOIN control_plane_idempotency_records s
+              ON s.deployment_namespace=i.deployment_namespace
+             AND s.idempotency_key=i.idempotency_key AND s.action='executor_started'
+            LEFT JOIN control_plane_idempotency_records e
+              ON e.deployment_namespace=i.deployment_namespace
+             AND e.idempotency_key=i.idempotency_key AND e.action='executor_exit'
+            WHERE i.deployment_namespace=%s AND i.action='executor_incarnation'
+              AND i.response_body=%s::jsonb AND e.response_body IS DISTINCT FROM s.response_body
+            ORDER BY i.idempotency_key LIMIT 100""",
+            (namespace, json.dumps(incarnation)),
+        ).fetchall()
+    for (start,) in rows:
+        acknowledge_exit(
+            witness, UUID(start["session_id"]), json.dumps(start["fence"]), dsn, namespace=namespace
+        )
+    return len(rows)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("container")
@@ -102,7 +130,10 @@ if __name__ == "__main__":
     parser.add_argument("--exit-binding", type=Path)
     parser.add_argument("--ack-session", type=UUID)
     parser.add_argument("--ack-fence")
+    parser.add_argument("--reconcile", action="store_true")
     arguments = parser.parse_args()
+    if arguments.reconcile and (arguments.exit_binding is None or arguments.ack_session):
+        parser.error("--reconcile requires --exit-binding without --ack-session")
     if bool(arguments.ack_session) != bool(arguments.ack_fence) or (
         arguments.ack_session and arguments.exit_binding is None
     ):
@@ -119,3 +150,8 @@ if __name__ == "__main__":
             binding, arguments.ack_session, arguments.ack_fence,
             os.environ["ZEBRA_DATABASE_URL"], namespace="ha-e1-20261102",
         )
+    if arguments.reconcile:
+        count = reconcile_exits(
+            binding, os.environ["ZEBRA_DATABASE_URL"], namespace="ha-e1-20261102"
+        )
+        print(count)
