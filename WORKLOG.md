@@ -20684,3 +20684,14 @@ Turning proof true recovered the exact original; four checks shared
 one scoped key and canonical sequence did not change. One targeted
 test passed. This injects the proof at the route boundary and uses
 already verified authority, not a live signed HTTP/TLS standby run.
+
+CA-HA-03 cross-host PostgreSQL 17.5 rehearsal repeated over TLS
+verify-full with an ephemeral certificate. The restricted reader
+withheld the exact atomic STOP receipt while replay was paused
+despite the primary reporting termination after SyncRep cancellation.
+After replay resumed the exact receipt was visible. Wrong digest
+and wrong TLS hostname were rejected, and pg_stat_ssl confirmed
+TLS on the proof connection. Both disposable databases were stopped.
+Evidence pg-sync-tls-stop-two-hosts.json. This probe uses psycopg
+directly; signed HTTP and the enabled API gate remain to be exercised
+against this fixture.
