@@ -34,6 +34,7 @@ class CreateSessionPayload(TypedDict):
     definition_id: AgentDefinitionId | None
     definition_environment: str | None
     interaction_mode: InteractionMode | None
+    selected_model_id: NotRequired[str | None]
     model_profile: str | None
     reasoning_effort: str | None
 

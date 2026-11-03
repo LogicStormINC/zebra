@@ -220,6 +220,17 @@ def parse_create_session_payload(
     if isinstance(reasoning_effort, ApiResponse):
         return reasoning_effort
 
+    selected = payload.get("selected_model_id")
+    if selected is not None and (
+        not isinstance(selected, str)
+        or not selected
+        or len(selected) > 256
+        or model_profile is not None
+        or reasoning_effort is not None
+        or coverage is not None
+    ):
+        return bad_request("selected_model_id is invalid for this session")
+
     result: CreateSessionPayload = {
         "prompt": prompt.strip(),
         "title": title.strip(),
@@ -245,6 +256,8 @@ def parse_create_session_payload(
         "model_profile": model_profile,
         "reasoning_effort": reasoning_effort,
     }
+    if selected is not None:
+        result["selected_model_id"] = selected
     if coverage is not None:
         result["coverage_admission"] = coverage
     return result
