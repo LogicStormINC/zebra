@@ -20724,3 +20724,14 @@ override to produce the primary-only visibility window. RS256 key
 resolution used a static test key. Evidence
 pg-sync-tls-signed-submit-two-hosts.json. Primary role fencing and
 production deployment remain pending.
+
+CA-HA-03 isolated cross-host manual fencing drill passed. Stopped the
+labelled disposable primary and verified its TCP endpoint was down
+before promotion. Promoted the standby with matching system identity,
+verified the original STOP record survived, and committed one new
+SQL write. The actual TLS API proof connector rejected the promoted
+endpoint as a standby, even though the original record was present.
+Evidence pg-sync-tls-fenced-promotion-two-hosts.json. The fence was
+operator-driven container stop; no automatic failover or API writer
+reconfiguration was exercised, and only the disposable databases
+were affected.
