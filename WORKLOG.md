@@ -19524,3 +19524,15 @@ remains suspended with its unsettled reservation. Both overlays restored
 and clean imports verified. This baseline had no lock fault; next inject
 a bounded lease row lock between wire return and the fenced read to
 verify the live failure boundary. Private evidence model-phase-zebra*.log.
+
+CA-HA-03 real post-wire lock drill: fresh Task
+79b8ef05-a4da-416e-a81e-3703f56c37f9 received the synthetic provider response
+once for digest c5bc675dfd011c24. A separate PostgreSQL transaction then
+held that Task's lease row, inducing LockNotAvailable in the subsequent
+fenced read before settlement. The task suspended with one unsettled
+reservation. Both overlays restored and imports verified. This proves
+the post-response mechanism can yield the earlier ambiguous state without
+attributing the earlier original to this phase. Next introduce one fresh
+transaction retry for the side-effect-free fenced budget check and verify
+under the same injection with the holder released after the first timeout.
+Private evidence model-postwire-zebra*.log and model-postwire-736-*/0.json.
