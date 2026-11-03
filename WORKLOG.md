@@ -19943,3 +19943,22 @@ Ruff and git diff --check passed. Disposable PostgreSQL 17 passed
 118 command wakeup, handoff, recovery and discovery tests.
 Next package the candidate and rerun the paired 5 Hz and 32 SSE
 preflight before increasing load. No new live capacity result yet.
+
+CA-HA-03 Native24 isolated E1. Runtime source 592522dc, ARM manifest
+sha256:35dee172a04aa979a50b9983405d6d61ecd2d9adfd6eb4ea9e65dacb00e5af91.
+Verified 2,142 runtime files and three symlinks. Both logical nodes
+passed ready, worker freshness, and TLS/SSE/meter wire checks. Cold
+cutover verified identical event, budget, model and execution-receipt
+hashes. Node2 required a direct transfer of the verified image.
+Trust revision 23 published definition 35349925-bd9d-4af0-a5c1-3238d0cc8aaa.
+At 5 Hz with 32 idle SSE streams, 18 POSTs were issued before the
+first unknown halted issuance. Nine accepted and completed initially.
+Three of nine unknowns showed completed through the original GET.
+Six remain unknown and were not resent. All 32 streams kept alive.
+Native23 yielded 9 confirmed of 15 with six unresolved, so this
+sample does not establish a sustained-capacity improvement. Native24
+lock sampling was not captured. Next capture admission stage timing
+under the same workload, especially receipt and durable COMMIT.
+Evidence cold-admission24.json, health-admission24.json,
+publication-592522dc.json, preflight5-admission24-15faa1b8*,
+admission24-with-sse-1e0ac69b* and admission24-original-receipts.json.
