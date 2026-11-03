@@ -19556,3 +19556,23 @@ response Event, answer, and completion. Both temporary Worker overlays
 restored and clean imports verified. This covers a lock that clears before
 the second check. Next freeze a combined candidate of the validated
 API/Worker modules and run the capacity and failure gates.
+
+CA-HA-03 Native18 combined candidate source
+e4b1359c26ffeeb44f23f84d43db191e71e4ada9 and ARM platform manifest
+sha256:82a65a7fa48fca6e1db61393fc2b6105159667d66ba1c0e66ce7e1d35b8c0f65.
+Verified 2142 files, 3 symlinks and same digest on both nodes. The
+remaining malformed resume had exhausted automatic recovery before
+cutover; pre-switch scan found zero pending and no active lease.
+Cold switch verified six old apps stopped, no overlapping connections,
+existing record hashes unchanged, readiness and TLS/SSE on both nodes.
+Trust revision 17, definition 9ea722ce-b54b-4bba-bd20-94f76c0c622f.
+
+Native18 guarded 5 Hz run 2aabaf07-8a61-4a42-b993-cb3f3cb8e3cb
+issued 32 once and all completed with 32 settled model reservations,
+zero unknown admissions, no tools or OCI. Admission max 2.4783s.
+The 32 active reservation guard stopped issuance, so sustained 5 Hz
+is open. The runner substituted only the short source prefix in its
+runtime label; the authoritative build, cutover and publication records
+give the full SHA above. Preserve original sample file. Next combine
+the live stream workload with the bounded admission run and exercise
+isolated API failover with reconnect evidence.
