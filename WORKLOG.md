@@ -19598,3 +19598,17 @@ confirmed stop. Both APIs restored and ready. This is a single historical
 data path through the LB; write receipts, other read paths and independent
 failure domains remain open. Private baseline and after evidence:
 lb-failover-combined18.json and lb-health-failover-combined18.json.
+
+CA-HA-03 Native18 unobserved create response drill: sent one isolated POST
+through the LB, waited for its committed session.create receipt, and closed
+the client socket without reading the HTTP response. The script assumed
+the inner receipt contained task_id, so its first cross-node GET used an
+invalid ID and returned 400. Corrected read-only reconciliation by original
+key found the unique 201 receipt with session_id
+0958a039-06cd-4975-810f-9e69a47b1b69. PostgreSQL confirms one accepted
+command, one model reservation with settlement, one answer and one
+completion. No repeat POST. This reproduces client-side non-observation
+after COMMIT. It does not prove network loss timing or authorized public
+GET receipt recovery. Next check the public receipt surface and persist
+the exchange binding coordinates before sending the next fresh intent.
+Private evidence lost-create-combined18.json.
