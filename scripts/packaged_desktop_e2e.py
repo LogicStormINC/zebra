@@ -406,11 +406,21 @@ def run(application: Path, evidence_path: Path, screenshot_path: Path) -> None:
         assert session["workspace"]["runtime_name"] == "os-sandbox"
         app.refresh()
         app.wait_body("APPROVAL_COMPLETE")
-        runtime_marker = '[data-testid="runtime-name"][data-runtime-name="os-sandbox"]'
         app.wait_element("css selector", '[role="tab"][aria-selected="true"]')
         app.click("xpath", "//button[@role='tab' and normalize-space(.)='上下文']")
-        app.execute("document.querySelector(arguments[0])?.scrollIntoView();", runtime_marker)
-        app.wait_element("css selector", runtime_marker)
+        runtime_marker = '[data-testid="runtime-name"]'
+        observed_runtime = app.execute(
+            """
+            const marker = document.querySelector(arguments[0]);
+            if (!marker) return null;
+            marker.scrollIntoView();
+            return { label: marker.textContent, runtime: marker.dataset.runtimeName };
+            """,
+            runtime_marker,
+        )
+        assert observed_runtime == {"label": "os-sandbox", "runtime": "os-sandbox"}, (
+            f"packaged Runtime marker mismatch: {observed_runtime!r}"
+        )
         steps.append("approval-real-runtime")
 
         app.submit("E2E_FAILURE packaged failure")
