@@ -20607,3 +20607,13 @@ pg_control_checkpoint().timeline_id still reported the old value,
 while pg_is_in_recovery() changed and caused rejection. Do not use
 checkpoint timeline as the live topology generation; require a
 trusted topology handoff. Evidence pg-sync-timeline-two-hosts.json.
+
+CA-HA-03 boolean standby proof prototype passed. The dedicated
+caller had no receipt table or Session Event privilege; only a
+fixed-search-path SECURITY DEFINER function with PUBLIC revoked.
+Same-system standby role and exact namespace/action/key/hash/status/
+JSON equality returned false before replay and true afterward. Wrong
+digest returned false. Disposable prototype used the migration admin
+as function owner; production needs a dedicated non-login owner
+with column-only SELECT and guarded topology configuration.
+Evidence pg-sync-boolean-proof-two-hosts.json.
