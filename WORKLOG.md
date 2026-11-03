@@ -20279,3 +20279,14 @@ in 194.97 ms. The same endpoint rejected an invalid credential with
 The remote API still needs to validate an issued grant in its own
 live composition and pass bounded admission before joining ingress.
 Evidence amd64-authority-837defbe.txt.
+
+CA-HA-03 short-lived AMD64 API on 192.168.101.7 reached HTTP 200
+readiness on isolated loopback 38080 using the verified image,
+Native31 execution catalog, and fresh dependency forwards. Stopped
+the second OrbStack API after checking no active lease/pending command
+to keep the two-API budget, then restored it and verified readiness.
+The temporary API and forwards exited. This proves boot/readiness;
+signed ingress was not attempted because the configured issuer still
+uses the original stale authority loopback port. Next preserve that
+issuer identity while replacing its transport, then run one bounded
+signed admission. Evidence amd64-api-ready-837defbe.txt.
