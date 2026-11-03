@@ -19843,3 +19843,15 @@ Candidate maps explicit PostgreSQL lock timeout to the existing structured
 passed. This handles classification, not contention or throughput.
 Next retain recovery keys before POST and validate the response on real
 PG, then address the global lock hold time.
+
+CA-HA-03 atomic lock response live validation: held the exact isolated
+command-global key for one fresh signed POST
+fe2470d1-dbfd-41d2-9343-99519c875a00. Saved the recovery key before
+dispatch. The API overlay returned structured 503 unknown with
+the exact operation ID. Original-only GET observation returned
+claim_recorded=true, result_recorded=false, retry_allowed=false.
+The holder exited and both APIs were restored and ready. No repeat
+POST. Evidence atomic-global-correlation788.json and
+atomic788-original-observation.json. Next reduce lock hold cost or
+test a bounded same-request transaction retry against concurrent
+termination and original-receipt invariants.
