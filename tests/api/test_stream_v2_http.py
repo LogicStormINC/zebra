@@ -569,9 +569,11 @@ def test_raw_preparation_one_dispatch_keeps_source_cursor_and_fallback(
         assert kwargs[f"{route}_id"] == resource
         yield "data: canonical\n\n"
 
+    http_app = SimpleNamespace()
     original_dispatch = ag_ui_task_view.database_call
 
     async def dispatch(app, function, *args, **kwargs):
+        assert app is http_app and kwargs["wait_for_read_slot"] is True
         dispatches.append(True)
         return await original_dispatch(app, function, *args, **kwargs)
 
@@ -587,6 +589,7 @@ def test_raw_preparation_one_dispatch_keeps_source_cursor_and_fallback(
         stream_v2_reader=SimpleNamespace(tail=lambda context, source, **kwargs: source),
     )
     request = SimpleNamespace(
+        scope={"app": http_app},
         state=SimpleNamespace(host_context=None, authorization_deadline=monotonic() + 2),
         query_params={},
         headers={},

@@ -37544,3 +37544,7 @@ CA-HA-03 event-position write round-trip follow-up: same owner and
 branch, existing task_event_positions.py and native source-position tests.
 Combine the guarded source update and index insert for unassigned events.
 Preserve historical adoption, conflict checks, and transaction rollback.
+
+CA-HA-03 stream negotiation addendum: same owner and branch, include
+stream_v2_http.py's raw and AG-UI preflight dispatch in the existing
+bounded read-executor change. Preserve profile and cursor checks.

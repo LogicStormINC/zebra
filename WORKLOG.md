@@ -21225,3 +21225,14 @@ classes without payloads and preserve existing HTTP shape.
 The regression holds a single slot and verifies actual authorized
 preflight waits, then runs once; 15 focused tests passed.
 Live frozen 256-stream renewal comparison pending.
+
+CA-HA-03 frozen 3e6ce44b renewal still failed: 256 initial streams,
+21 renewal starts, one task_preflight_unavailable, logged
+ApiDatabaseExecutorSaturated. Private run
+sse-renew256-preflight-acb73db4327e42b2adcf2ee1d05c9d2a.
+Traced the missing wait to stream negotiation's own raw/AG-UI
+preflight, before the HTTP fallback preflight. Routed both through
+the same bounded executor wait. Initial unit run exposed old
+request doubles without ASGI scope; updated the existing dispatch
+regression to supply scope and assert the wait option. Both isolated
+APIs were restored. Corpus reached 4000 Tasks.

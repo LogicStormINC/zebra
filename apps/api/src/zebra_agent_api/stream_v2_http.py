@@ -344,7 +344,6 @@ async def agui_response(
                 prepared, public_slice=public_slice, public_cursor_exhausted=exhausted
             )
         return prepared if isinstance(prepared, ApiResponse) else (context, prepared)
-
     def prepare() -> tuple[V2StreamContext | None, AgUiStreamContext | None] | ApiResponse:
         if authority is None:
             return prepare_context()
@@ -358,6 +357,7 @@ async def agui_response(
         prepare,
         authorization_expires_at=getattr(host, "expires_at", None),
         request_deadline=getattr(request.state, "authorization_deadline", None),
+        http_app=request.scope.get("app"),
     )
     if isinstance(admitted, ApiResponse):
         return JSONResponse(status_code=admitted.status_code, content=admitted.body)
@@ -457,6 +457,7 @@ async def raw_response(
         prepare,
         authorization_expires_at=getattr(host, "expires_at", None),
         request_deadline=getattr(request.state, "authorization_deadline", None),
+        http_app=request.scope.get("app"),
     )
     if isinstance(admitted, ApiResponse):
         return JSONResponse(status_code=admitted.status_code, content=admitted.body)
