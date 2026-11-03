@@ -3,7 +3,7 @@
 from typing import Any
 
 from agent_core.contracts import SessionCommandAcceptedPayload, SessionCommandKind
-from agent_core.domain.events import SessionEvent
+from agent_core.domain.events import EventType, SessionEvent
 from agent_core.domain.extension_snapshots import ExtensionSnapshot, ExtensionTaskCeiling
 from agent_core.domain.extensions import ExtensionScope
 from agent_core.domain.identifiers import ClientSessionId, EventId, SessionId, TaskId
@@ -439,3 +439,16 @@ def read_session_highwater(connection: Any, namespace: str, session_id: SessionI
     if row is None:
         raise SessionRecoveryConflict("canonical Session source is unavailable")
     return int(row["current_version"])
+
+
+def latest_selected_model_pin(connection: Any, namespace: str, session_id: SessionId) -> object:
+    row = connection.execute(
+        """
+        SELECT payload -> 'selected_model_pin' AS pin FROM session_events
+        WHERE deployment_namespace = %s AND session_id = %s AND event_type = %s
+          AND payload -> 'selected_model_pin' <> 'null'::jsonb
+        ORDER BY sequence DESC LIMIT 1
+        """,
+        (namespace, session_id, EventType.USER_MESSAGE_RECEIVED.value),
+    ).fetchone()
+    return row["pin"] if row is not None else None

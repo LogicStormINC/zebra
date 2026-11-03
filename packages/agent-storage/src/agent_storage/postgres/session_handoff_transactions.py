@@ -27,7 +27,7 @@ from agent_core.ports.session_handoff import (
 from psycopg.types.json import Jsonb
 
 from agent_storage.postgres.command_wakeup import _validated_host_context
-from agent_storage.postgres.events import append_event_in_transaction
+from agent_storage.postgres.events import append_event_in_transaction, latest_selected_model_pin
 from agent_storage.postgres.leases import lock_session_lease_boundary
 from agent_storage.postgres.projections import (
     get_session_in_transaction,
@@ -152,20 +152,13 @@ def commit_handoff_in_transaction(
         or segment["segment_index"] != request.envelope.source_stage_index
     ):
         raise HandoffStorageConflictError("handoff Task lineage changed")
-    selected_model = connection.execute(
-        """
-        SELECT payload -> 'selected_model_pin' AS pin FROM session_events
-        WHERE deployment_namespace = %s AND session_id = %s AND event_type = %s
-          AND payload -> 'selected_model_pin' <> 'null'::jsonb
-        ORDER BY sequence DESC LIMIT 1
-        """,
-        (deployment_namespace, operation.source_session_id, EventType.USER_MESSAGE_RECEIVED.value),
-    ).fetchone()
     events = build_handoff_events(
         operation,
         request,
         workspace.model_dump(mode="json"),
-        selected_model_pin=selected_model["pin"] if selected_model is not None else None,
+        selected_model_pin=latest_selected_model_pin(
+            connection, deployment_namespace, operation.source_session_id
+        ),
         host_context=_child_host_context(
             connection, deployment_namespace, operation.source_session_id
         ),
