@@ -112,10 +112,12 @@ async function submit(page: Page, prompt: string) {
 }
 
 async function activeSessionId(page: Page): Promise<string> {
-  return page.evaluate(() => {
+  const readSessionId = () => page.evaluate(() => {
     const raw = localStorage.getItem("zebra-agent-desktop.operator-config");
     return raw ? String(JSON.parse(raw).sessionId ?? "") : "";
   });
+  await expect.poll(readSessionId).not.toBe("");
+  return readSessionId();
 }
 
 async function assistantMarkers(page: Page, prefix: string): Promise<string[]> {
