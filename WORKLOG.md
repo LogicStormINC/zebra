@@ -20797,3 +20797,13 @@ an old-DSN reference in the harness's replacement API composition;
 recomposing direct control and client platform ports resolved it.
 The fault boundary was synchronized by a test hook and the key
 resolver used a static public key. Worker and automatic fencing open.
+
+CA-HA-03 native Worker recovered a pending Run across the cross-host
+PostgreSQL promotion. Created the original Run and committed a
+short-lived old-worker lease before fencing. After promotion and
+synchronous standby rebuild, a Worker composed against the new
+writer consumed the existing command. A second scan did not invoke
+the provider again. Exactly one answer event and one provider call.
+Evidence pg-sync-worker-promotion.json. Uses the native consumer
+with a deterministic no-tool provider and a fixture lease; recovery
+of an already dispatched provider or tool call remains separate.
