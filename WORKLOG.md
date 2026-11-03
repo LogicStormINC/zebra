@@ -19438,3 +19438,12 @@ Next validate the first-run contract at admission: explicit run for an
 unstarted Task and defined identity semantics for public resume of an
 existing Run. Verify internal continuation receipts separately before
 changing shared command parsing. Preserve the two original receipts.
+
+CA-HA-03 Cloud admission candidate rejects new public Run/Resume commands
+with missing or blank run_id after duplicate/revision classification and
+before append. Existing receipts remain readable and internal Harness
+continuations retain their existing identity rules. This validates the
+required identifier shape, not every resumability condition. 25 focused
+tests passed after fixing the test proxy to supply its Session store.
+Next verify fresh first-run and explicit resume with the isolated API and
+leave original pending receipts available for read-only reconciliation.

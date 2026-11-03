@@ -215,3 +215,22 @@ def test_new_capable_client_legacy_acceptance_remains_old_worker_compatible(tmp_
     )
     assert retry.status_code == 200 and "stream_admission" not in retry.body
     assert retry.body["event_sequence"] == first.body["event_sequence"]
+
+
+@pytest.mark.parametrize("kind", ["run", "resume"])
+def test_new_cloud_execution_command_requires_run_identity(tmp_path, kind):
+    path, session, revision = _seed_ready_session(tmp_path)
+    stores = sqlite_control_plane_stores(path)
+    proxy = SimpleNamespace(
+        events=stores.events, sessions=stores.sessions, deployment_namespace="cloud-test"
+    )
+    before = stores.events.list_for_session(session)
+    result = submit_session_command(
+        proxy,
+        str(session),
+        {"kind": kind, "expected_revision": revision},
+        idempotency_key="new-without-run",
+    )
+    assert result.status_code == 400
+    assert "run_id" in result.body["reason"]
+    assert stores.events.list_for_session(session) == before

@@ -37437,3 +37437,7 @@ ag_ui_checkpoint_tail.py module in the isolated E1 Dockerfile.delta.
 CA-HA-03 raw SSE checkpoint lag addendum (Luke Ding/Codex, existing branch):
 own session_streaming.py and reuse the owned stream heartbeat tests for the
 raw Task and Session source-head recovery boundary.
+
+CA-HA-03 public execution command identity addendum (Luke Ding/Codex):
+extend owned command_submission.py and tests/api/test_stream_command_admission_api.py
+to reject new Cloud Run/Resume intents missing an explicit Run identifier.

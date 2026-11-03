@@ -164,6 +164,14 @@ def submit_session_command(
     )
     if decision.status is not SessionCommandStatus.ACCEPTED:
         return _decision_response(session_id, command, decision, existing)
+    if (
+        getattr(stores, "deployment_namespace", None) is not None
+        and actor is EventActor.USER
+        and command.kind in {SessionCommandKind.RUN, SessionCommandKind.RESUME}
+    ):
+        run_id = command.payload.get("run_id")
+        if not isinstance(run_id, str) or not run_id.strip():
+            return bad_request("run_id is required for cloud run and resume commands")
     assert decision.event_type is EventType.SESSION_COMMAND_ACCEPTED
     scope = snapshot = task_ceiling = None
     if needs_extensions and extension_admission is not None:
