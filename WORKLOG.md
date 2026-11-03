@@ -20817,3 +20817,12 @@ original reservation and single provider request were preserved.
 Evidence pg-sync-worker-unknown-model.json. The harness called the
 native budget store directly around synthetic HTTP; full Worker
 transport/reconciliation and tool-call promotion remain separate.
+
+CA-HA-03 tool-effect promotion drill committed an original outbox
+claim before emitting one synthetic external effect. After fencing,
+promotion and synchronous rebuild, the successor lease recovered
+the same dispatch ID and claim fence, moved it to UNCERTAIN, and
+could not claim it for dispatch again. No terminal result was
+invented. Evidence pg-sync-tool-effect-promotion.json. The harness
+used native effect storage and a file-backed synthetic side effect,
+without an actual production connector.
