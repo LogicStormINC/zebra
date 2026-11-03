@@ -19215,3 +19215,24 @@ Next measure per-component CPU and admission stages, then compare a
 resource-isolated Worker capacity step while retaining the database budget
 and durable settings. Evidence: admission-waits-native14.jsonl and
 preflight5-close14-e21c450a-ffda-4b0f-91fa-b0aef80e4e0a/summary.json.
+
+### CA-HA-03 Native14 Worker quota comparison
+
+On the same 10-core Mac, temporarily increased only the two isolated Worker
+quotas from 2 to 3 cores each; kept the image, durable PostgreSQL settings,
+connection budget and load guard. Both quotas restored and inspected at 2.
+Run 080f781c-7378-4e0c-a294-282ebe0e9d68 accepted 32 once; 31 completed,
+one suspended, all 32 model reservations settled, no unknown submissions.
+Throttle observations fell from 77 to 3 compared with the sampled 4-core
+run. Admission median 1.347s vs 1.392s; max 2.396s vs 2.196s; 7 vs 4 over
+2s. Both stopped at the active reservation cap. Increasing CPU alone did
+not pass the gate or demonstrate a reliable latency gain.
+
+Suspended original 8c841ba6-26b0-4644-b229-60c37931ba06 has one settled
+model and no committed answer, with execution_storage_contention /
+LockNotAvailable. PostgreSQL reported a session_streams UPDATE lock timeout
+136 ms before the suspension event; logs have no task correlation, so the
+association is suggestive. Preserve this original and do not resend.
+Next capture holder and waiter on the same stream transaction and isolate
+the contention before changing retry or lock policy. Private artifacts:
+preflight5-close14-cpu6-*/readonly-originals.json and cpu6-postgres-window.log.
