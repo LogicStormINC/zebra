@@ -19132,3 +19132,26 @@ Focused real PG regression and make check passed. Next stage the migration
 with the exact candidate image in the isolated pair and repeat admission
 diagnostics with fresh intents. Native12 and its original receipts remain
 the prior comparison cohort.
+
+## Native13 isolated migration and admission comparison
+
+Packaged source 6bfa3f7e and verified 2142 runtime files plus three symlinks.
+Both logical ARM nodes run platform manifest
+sha256:0720852aec0450c1df3d6a6260b2f52f9d310fecd53904d9264fdf6c42207343.
+Stopped the exact six idle apps and checked zero old app connections before
+applying migration 122 to ha_e1 as ha_app. Verified the live shared trigger,
+both node readiness/control checks, and the 138 prior session fact hashes
+before new requests. Native13 publication 1522142a-677a-44f3-9a0c-f3f5516aa12b.
+
+Fresh 5Hz diagnostic stopped at 32 active reservations (peak 13 in flight).
+32 single POSTs accepted, 31 completed, one suspended after answer commit
+(411426de-f18f-4c0a-8ed7-d9877d3c93ef). All 32 model reservations settled,
+zero active leases and pending commands. No Task replay. Admission median
+2.0867s and max 3.1114s versus sampled Native12 median 3.0947s and max 5.2977s.
+16/32 above 2s, so the capacity diagnostic remains failed. Task-INSERT
+advisory-wait observations dropped from 97 to zero, all advisory waits
+104 to 18, across different bounded cohorts. No sustained E1 claim.
+Private evidence: admission-waits-native13.jsonl and
+preflight5-lock13-80ea6834-5825-47d3-a39f-afded09248ac/readonly-originals.json.
+Next inspect the remaining advisory wait families and the post-answer
+suspension. Preserve the original answer and settlement.
