@@ -19985,3 +19985,19 @@ The response and two-second deadline are unchanged. Ruff and all
 31 admission API tests passed. Next run the mixed diagnostic with
 this candidate and classify the sampled failures before changing
 timeouts or further optimizing the transaction.
+
+CA-HA-03 Native25 diagnostics deployed only to both isolated logical
+nodes. Source 4c493f4b, ARM manifest
+sha256:662debb52e5712e234c54e361d0487806d116a5f8309a8181ca9d968817f67cd.
+Overlay mount length forced combining the two changed files in one
+layer atop Native23. Full runtime hash verification (2,142 files,
+three symlinks), cold preservation, readiness and wire checks passed.
+Trust revision 24, definition 27bcfeb2-2661-4f3e-afe6-54548963fa97.
+At 5 Hz with 32 SSE, 16 POSTs: ten completed initially, one recovered
+as completed via original GET, five still unknown. All 32 SSE got
+heartbeats. All six unknown submits logged TimeoutError at
+1890–2005ms inside the two-second budget; none logged LockNotAvailable.
+The diagnostic does not identify which stage consumed the budget.
+Evidence preflight5-diagnostic25-1b82ff1d*, diagnostic25-original-receipts.json
+and diagnostic25-with-sse-cf66a509*. Next correlate task I/O deadlines
+with phase and remaining budget before changing the deadline.
