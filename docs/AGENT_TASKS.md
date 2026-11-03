@@ -37411,3 +37411,6 @@ CA-HA-03 isolated completion recovery claim (Luke Ding/Codex): own the
 Worker execution.py interruption branch and test_close_recovery_guard.py.
 Refresh canonical recovery under the same fence before completion-only
 reconciliation after child interruption.
+
+CA-HA-03 completion recovery packaging addendum: include execution.py in
+E1 Dockerfile.delta for the isolated ARM candidate.
