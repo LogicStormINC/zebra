@@ -20389,3 +20389,13 @@ nonexistent Docker healthcheck in cleanup; repeated with explicit
 readback and protocol verification. No Task mutation. Active stream
 and loaded recovery, object loss, and PG failover remain open.
 Evidence redis-outage-routing31.json.
+
+CA-HA-03 F-05 isolated object read outage. Native S3 adapter read
+and hash-verified an existing synthetic object (158 ms), then
+returned ArtifactObjectUnavailableError in 69 ms after the exact
+owned MinIO process stopped. Restarted the same container and read
+the same expected object successfully in 157 ms. No object write,
+Task mutation or replay. This covers adapter-level read rejection
+and integrity readback; API error mapping, object write response loss
+and loaded F-05 remain unqualified.
+Evidence objects-read-outage-routing31.json.
