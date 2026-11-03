@@ -19654,3 +19654,15 @@ reservation. Both APIs restored and ready. This is transaction rollback
 injection, not abrupt process death. Evidence precommit-create18.json.
 Next freeze the receipt modules into the E1 image and verify the LB
 read path and write receipt together during the one-API outage.
+
+CA-HA-03 Native19 source 9378c646, ARM manifest
+sha256:4024bcb3a81bc46020eb3ebdd82534fceba0d8a237765d801e3ea48dd19b9ed1.
+Verified 2142 files/3 links, cold no overlap, existing evidence hashes,
+both readiness and TLS/SSE. Published definition
+5c3646db-4fd0-4efb-9dfa-be86e99742a1 at trust revision 18.
+During one API stop, the LB first returned 502, then 10 consecutive
+read groups each returned the exact prior SSE next frame and original
+create receipt. Tenth group finished at 10.771s from confirmed stop.
+Both APIs restored and ready. Private evidence lb-receipt19-combined.json.
+The read drill uses one prior stream and one prior receipt. Independent
+write availability during outage and E1 workload gates remain open.
