@@ -37555,3 +37555,7 @@ After a continuation start is committed, finish advancing fenced recovery slices
 without replaying start events or running the tool before recovery completes.
 
 CA-HA-03 E1 corpus factory addendum, same owner and branch. Own tests/compose/cloud_ha_e1/e1_composition.py for the exact isolated fleet database allowlist.
+
+CA-HA-03 E1 continuation lock follow-up, same owner and branch.
+Own execution_preparation.py, session_process_child.py and the existing continuation
+recovery test. Reuse the one same-fence lock retry for the post-start recovery read.

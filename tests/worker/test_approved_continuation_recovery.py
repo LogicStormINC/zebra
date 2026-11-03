@@ -21,6 +21,7 @@ from agent_storage import (
     SQLiteProjectionStore,
     SQLiteWorkspaceProjectionStore,
 )
+from psycopg.errors import LockNotAvailable
 from zebra_agent_api import create_app
 from zebra_agent_config import ApiSettings, ModelSettings, ZebraAgentSettings
 from zebra_agent_worker import (
@@ -31,14 +32,22 @@ from zebra_agent_worker import (
 )
 
 
-def test_approved_start_finishes_fenced_recovery_without_reappending() -> None:
+@pytest.mark.parametrize("lock_timeout", [False, True])
+def test_approved_start_finishes_fenced_recovery_without_reappending(lock_timeout: bool) -> None:
     from zebra_agent_worker.continuation_lifecycle import mark_approved_continuation_started
 
     claimed, recovery_service, event_store, recorder = Mock(), Mock(), Mock(), Mock()
     claimed.recovery.session.session_id = new_session_id()
     claimed.recovery.session.current_sequence = 2
     recovered = Mock()
-    recovery_service.recover_session.side_effect = [PreparationAdvanced("session", 3, 4), recovered]
+    from zebra_agent_worker.bounded_session_recovery import SessionRecoveryPending
+
+    if lock_timeout:
+        pending = SessionRecoveryPending("recovery lock timeout")
+        pending.__cause__ = LockNotAvailable()
+    else:
+        pending = PreparationAdvanced("session", 3, 4)
+    recovery_service.recover_session.side_effect = [pending, recovered]
 
     result = mark_approved_continuation_started(
         claimed,
