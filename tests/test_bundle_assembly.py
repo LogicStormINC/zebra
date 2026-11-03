@@ -357,4 +357,23 @@ def test_selectable_bundle_requires_each_provider_approval():
     resolved = RuntimeExecutionCatalog.model_validate_json(canonical_json_bytes(catalog)).resolve(
         bundle
     )
-    assert resolved.selectable_profiles[0].pin.id == "provider/alternate"
+    alternate_profile = resolved.selectable_profiles[0]
+    default = (bundle.manifest.domains.model.parameters.model, resolved.provider_profile)
+    selected = ("alternate", alternate_profile)
+    assert resolved.resolve_session_model(requested_id=None, remembered_id=None) == default
+    assert (
+        resolved.resolve_session_model(
+            requested_id=alternate_profile.pin.id, remembered_id=resolved.provider_profile.pin.id
+        )
+        == selected
+    )
+    assert (
+        resolved.resolve_session_model(requested_id=None, remembered_id=alternate_profile.pin.id)
+        == selected
+    )
+    assert (
+        assembly.resolve_session_model(requested_id=None, remembered_id=alternate_profile.pin.id)
+        == default
+    )
+    with pytest.raises(ValueError, match="requested model is not selectable"):
+        resolved.resolve_session_model(requested_id="other", remembered_id=None)

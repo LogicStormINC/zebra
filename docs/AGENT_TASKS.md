@@ -37351,3 +37351,5 @@ paired Trench UI/ORM history remains external, not imported into Runtime.
 CA-P7-MODEL-01 connection binding owns the optional approved connection digest in model-profile registration and its transport regression.
 
 CA-P7-MODEL-01 selectable publication assembly owns the model parameters, lock and provider approval resolution.
+
+CA-P7-MODEL-01 session selection resolver owns the published assembly lookup for explicit and remembered model choices.

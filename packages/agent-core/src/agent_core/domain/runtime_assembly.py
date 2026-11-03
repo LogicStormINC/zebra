@@ -159,6 +159,21 @@ class RuntimeAssembly(BundleValue):
             raise ValueError("native Bundle assembly requires the canonical text output schema")
         return self
 
+    def resolve_session_model(
+        self, *, requested_id: str | None, remembered_id: str | None
+    ) -> tuple[str, RuntimeProviderProfile]:
+        """Resolve a send against this release's approved models."""
+        model = self.bundle.manifest.domains.model.parameters
+        selected_id = requested_id if requested_id is not None else remembered_id
+        if selected_id is None or selected_id == self.provider_profile.pin.id:
+            return model.model, self.provider_profile
+        for choice, profile in zip(model.selectable_models, self.selectable_profiles, strict=True):
+            if profile.pin.id == selected_id:
+                return choice.model, profile
+        if requested_id is not None:
+            raise ValueError("requested model is not selectable in this release")
+        return model.model, self.provider_profile
+
     @property
     def assembly_digest(self) -> str:
         checked = type(self).model_validate(self)
