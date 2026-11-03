@@ -19962,3 +19962,18 @@ under the same workload, especially receipt and durable COMMIT.
 Evidence cold-admission24.json, health-admission24.json,
 publication-592522dc.json, preflight5-admission24-15faa1b8*,
 admission24-with-sse-1e0ac69b* and admission24-original-receipts.json.
+
+CA-HA-03 Native24 sampled repeat, 5 Hz with 32 idle SSE. All 32
+streams kept alive. 15 POSTs, eight completed immediately, one
+confirmed completed through the original GET, six remain unknown.
+No resubmissions. Exact command-global sampling saw eight holders,
+one advisory waiter, four COMMIT samples, and longest observed
+holder span 100 ms (Native23 198 ms). This is a sampled lower bound,
+not a measured transaction duration. Admission still reached 2.289 s.
+The prior Native24 run's nine original unknown responses were all
+HTTP 503; the handler maps both TimeoutError and LockNotAvailable to
+that response under a two-second deadline. The remaining bottleneck
+cannot be assigned to COMMIT based on this sampling. Next separate
+those exception types and correlate budget use with transaction phases.
+Evidence global-lock-admission24.jsonl, preflight5-admission24-13ec5076*,
+admission24-sampled-original-receipts.json and admission24-with-sse-252ae730*.
