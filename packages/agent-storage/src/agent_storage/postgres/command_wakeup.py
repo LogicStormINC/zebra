@@ -84,14 +84,14 @@ def record_command_wakeup_in_transaction(
     kind = SessionCommandKind(event.payload["kind"])
     # Stable per-scope sequence and capacity share one fixed global -> scope
     # transaction lock order. The sequence never changes when older rows finish.
-    for identity in (
-        f"{deployment_namespace}:command-global",
-        f"{deployment_namespace}:command-scope:{scope_key}",
-    ):
-        connection.execute(
-            "SELECT pg_advisory_xact_lock(hashtextextended(%s, 49))",
-            (identity,),
-        )
+    connection.execute(
+        """WITH global_lock AS MATERIALIZED (
+               SELECT pg_advisory_xact_lock(hashtextextended(%s,49))
+           )
+           SELECT pg_advisory_xact_lock(hashtextextended(%s,49)) FROM global_lock""",
+        (f"{deployment_namespace}:command-global",
+         f"{deployment_namespace}:command-scope:{scope_key}"),
+    )
     existing = connection.execute(
         """SELECT accepted_event_id, session_id, accepted_sequence, tenant_id, workspace_id
            FROM session_command_pending
@@ -120,22 +120,17 @@ def record_command_wakeup_in_transaction(
             kind,
             max_unpublished_outbox=rollout["max_unpublished_outbox"],
             reserved_control_outbox=rollout["reserved_control_outbox"],
+            global_lock_held=True,
         )
-        next_scope_sequence = connection.execute(
-            """SELECT COALESCE(MAX(scope_sequence), 0) + 1 AS value
-               FROM session_command_pending
-               WHERE deployment_namespace=%s AND scope_key=%s""",
-            (deployment_namespace, scope_key),
-        ).fetchone()["value"]
         connection.execute(
             """INSERT INTO session_command_pending (
                deployment_namespace, scope_key, scope_sequence, command_id, session_id,
                accepted_event_id, accepted_sequence, tenant_id, workspace_id, origin, command_kind
-               ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+               ) SELECT %s,%s,COALESCE(MAX(scope_sequence),0)+1,%s,%s,%s,%s,%s,%s,%s,%s
+                 FROM session_command_pending WHERE deployment_namespace=%s AND scope_key=%s""",
             (
                 deployment_namespace,
                 scope_key,
-                next_scope_sequence,
                 envelope.operation_id,
                 event.session_id,
                 event.event_id,
@@ -144,6 +139,8 @@ def record_command_wakeup_in_transaction(
                 scope.workspace_id,
                 "live" if is_new_admission else "historical",
                 event.payload["kind"],
+                deployment_namespace,
+                scope_key,
             ),
         )
         if is_new_admission:
@@ -176,6 +173,7 @@ def record_command_wakeup_in_transaction(
             kind,
             max_unpublished_outbox=rollout["max_unpublished_outbox"],
             reserved_control_outbox=rollout["reserved_control_outbox"],
+            global_lock_held=True,
         )
     insert_command_outbox(connection, envelope)
     if capability is not None:
@@ -189,11 +187,13 @@ def _check_outbox_capacity(
     *,
     max_unpublished_outbox: int,
     reserved_control_outbox: int,
+    global_lock_held: bool = False,
 ) -> None:
-    connection.execute(
-        "SELECT pg_advisory_xact_lock(hashtextextended(%s, 49))",
-        (f"{namespace}:command-global",),
-    )
+    if not global_lock_held:
+        connection.execute(
+            "SELECT pg_advisory_xact_lock(hashtextextended(%s, 49))",
+            (f"{namespace}:command-global",),
+        )
     outbox_count = connection.execute(
         """SELECT count(*) AS total FROM broker_outbox
            WHERE deployment_namespace=%s AND status IN ('pending','publishing')""",

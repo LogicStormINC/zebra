@@ -21138,3 +21138,12 @@ candidate accepted 2/15; successful body median was 1081ms
 establish capacity improvement; final deadline failures persisted.
 No CPU throttling and no replay. Private evidence
 amd64-empty-position-a3c40252d417.log and originals JSON.
+
+CA-HA-03 shortened the namespace command-wakeup critical section.
+Global then scope advisory acquisition uses one materialized CTE;
+the already-locked path skips the duplicate global lock request,
+and pending insert computes the next scope sequence in the same
+statement. Recovery still takes the global lock via the capacity
+helper. Durable capacity checks and pending/outbox identity remain
+in the same transaction. PG17.5 admission/native 27 passed;
+PostgreSQL wakeup/recovery 66 passed. Cross-host impact pending.
