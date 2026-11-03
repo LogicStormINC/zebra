@@ -1,5 +1,6 @@
 """Trusted E1-only operator factory. Business requests cannot select this module."""
 
+import re
 import runpy
 from dataclasses import replace
 from pathlib import Path
@@ -31,12 +32,19 @@ def counter_for(model, assembly):
 def compose(settings, cloud=None):
     cloud = cloud if cloud is not None else cloud_composition_from_environment()
     address = urlsplit(cloud.dsn)
+    legacy = (
+        cloud.deployment_namespace == "ha-e1-20261102"
+        and address.path in {"/ha_e1", "/zebra_e1_corpus_fleet"}
+    )
+    rebuilt = (
+        address.path == "/zebra_e1_corpus_rebuilt"
+        and re.fullmatch(r"e1-corpus-[0-9a-f]{32}", cloud.deployment_namespace) is not None
+    )
     if (
         settings.deployment != "cloud"
         or settings.storage_authority != "postgresql"
-        or cloud.deployment_namespace != "ha-e1-20261102"
+        or not (legacy or rebuilt)
         or (address.hostname, address.port) != ("127.0.0.1", 25432)
-        or address.path not in {"/ha_e1", "/zebra_e1_corpus_fleet"}
     ):
         raise ValueError("E1 operator factory refuses another deployment")
     runpy.run_path(str(Path(__file__).with_name("check_model.py")))
