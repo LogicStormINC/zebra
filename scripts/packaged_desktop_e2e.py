@@ -379,7 +379,10 @@ def run(application: Path, evidence_path: Path, screenshot_path: Path) -> None:
             stop_session_id,
             lambda session: int(session.get("current_sequence", 0)) >= 4,
         )
-        app.click_aria("停止任务")
+        app.click_aria("会话操作")
+        cancel_item = "//li[@role='menuitem' and normalize-space(.)='取消会话']"
+        app.wait_element("xpath", cancel_item)
+        app.click("xpath", cancel_item)
         wait_for_session(stop_session_id, lambda session: session.get("status") == "cancelled")
         app.wait_body("已停止")
         stop_events = wait_for_stream_event(stop_session_id, "session_cancelled")
