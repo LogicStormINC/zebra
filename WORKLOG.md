@@ -20784,3 +20784,16 @@ promoted database had zero rows for the uncommitted insert. The
 previously committed STOP receipt survived and new writes succeeded.
 Evidence pg-sync-inflight-fence-two-hosts.json. This exercised a
 database transaction, not a live Worker or signed HTTP request.
+
+CA-HA-03 held a single live RS256 POST at the receipt-proof boundary
+after the original atomic result committed. The harness then fenced
+the old writer and promoted the standby. Releasing the hook called
+the real TLS proof, and the old HTTP request returned unknown with
+no sealed response. After cross-host rebuild, a fresh API composed
+all PostgreSQL ports against the new writer, and signed original
+GET returned the exact pre-promotion receipt with no second POST.
+Evidence pg-sync-tls-inflight-http.json. The first attempt exposed
+an old-DSN reference in the harness's replacement API composition;
+recomposing direct control and client platform ports resolved it.
+The fault boundary was synchronized by a test hook and the key
+resolver used a static public key. Worker and automatic fencing open.
