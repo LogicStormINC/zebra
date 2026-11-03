@@ -104,18 +104,21 @@ def register_management_routes(
     register_runtime_gate_termination(app, settings, current)
     from zebra_agent_api.bundle_management import register_bundle_management
 
-    register_bundle_management(app, settings, current)
+    host_settings = (
+        replace(settings, database_url=cloud_composition.dsn)
+        if cloud_composition is not None
+        else settings
+    )
+    register_bundle_management(app, host_settings, current)
+    from zebra_agent_api.model_profile_management import register_model_profile_management
+
+    register_model_profile_management(app, host_settings, current)
     from zebra_agent_api.script_validation import register_script_validation
 
     register_script_validation(app, settings, current)
     from zebra_agent_api.script_bundle_validation import register_script_bundle_validation
 
     register_script_bundle_validation(app, settings, current)
-    host_settings = (
-        replace(settings, database_url=cloud_composition.dsn)
-        if cloud_composition is not None
-        else settings
-    )
     from zebra_agent_api.plugin_admission import register_plugin_admission
 
     register_plugin_admission(app, host_settings, current, cloud_composition)

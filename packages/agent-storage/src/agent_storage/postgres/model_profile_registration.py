@@ -67,7 +67,7 @@ class PostgresModelProfileRegistrations:
     def lookup_operation(self, scope: BundleScope, operation_id: UUID) -> dict | None:
         with self.database.connect() as connection:
             return connection.execute(
-                """SELECT o.model_config_id, o.revision, r.profile
+                """SELECT o.model_config_id, o.revision, r.profile, r.request_digest
                    FROM model_profile_registration_operations o
                    JOIN model_profile_revisions r USING (scope_digest, model_config_id, revision)
                    WHERE o.scope_digest = %s AND o.operation_id = %s""",

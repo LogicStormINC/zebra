@@ -1,13 +1,13 @@
 # Cloud Agent 模型修订注册 v1
 
-状态为待实现合同。运行时复用现有 `RuntimeProviderProfile`、原生 pin 和 Bundle Assembly。管理操作不执行模型调用。
+管理接口已有实现候选，Worker 重启及跨仓验收待验证。运行时复用现有 `RuntimeProviderProfile`、原生 pin 和 Bundle Assembly。管理操作不执行模型调用。
 
 | 操作 | 方法和路径 | 权限 |
 | --- | --- | --- |
 | 注册或重放 | `PUT /v1/management/model-profile-registrations/{operationId}` | `model-profile.register` |
 | 查询原操作 | `GET /v1/management/model-profile-registrations/{operationId}` | `model-profile.registration.read` |
 
-两个入口使用现有管理 scope headers 和独立的 action 授权。scope 绑定 deployment、product、environment、audience 与当前 trust revision。原操作 ID 为 UUID。授权检查先于读取或写入。无有效凭据返回 401，作用域或操作权限不符返回 403，授权作用域内未知原操作返回 404。
+两个入口使用现有管理 scope headers 和独立的 action 授权。PUT 使用 `x-runtime-model-profile-contract: cloud-agent.model-profile-registration/1`。scope 绑定 deployment、product、environment、audience 与当前 trust revision。原操作 ID 为 UUID。授权检查先于读取或写入。无有效凭据返回 401，作用域或操作权限不符返回 403，授权作用域内未知原操作返回 404。
 
 PUT 正文包含 `modelConfigId`、正整数 `revision`、`model` 和 `approvedProviderProfile`。后者为部署已批准的 profile 完整 pin。运行时从批准目录解析 endpoint、协议、凭据引用和执行限制，并校验请求模型在其允许列表中。首期复用部署批准的接入参数，平台模型目录中的地址和协议须与该批准项一致。新增接入地址或凭据引用仍需目标部署批准。
 

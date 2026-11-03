@@ -42,15 +42,17 @@ def register_validation_routes(
     request_timeout: float,
     read_validation_path: bool = False,
     extra_headers: tuple[str, ...] = (),
+    write_method: str = "POST",
+    operation_path_parameter: str | None = None,
 ) -> None:
     slots = asyncio.Semaphore(8)
 
     async def handle(request: Request) -> JSONResponse:
         method = (
             "GET"
-            if request.url.path.endswith(contract_path)
+            if (contract_path and request.url.path.endswith(contract_path))
             or (read_validation_path and request.method == "GET")
-            else "POST"
+            else write_method
         )
         if request.method != method:
             response = _error(405, "METHOD_NOT_ALLOWED")
@@ -80,7 +82,7 @@ def register_validation_routes(
         ):
             return _error(400, "INVALID_ARGUMENT")
         contract_headers = request.headers.getlist(contract_header)
-        if method == "POST" and (
+        if method == write_method and (
             request.headers.getlist("content-type") != ["application/json"]
             or len(contract_headers) != 1
         ):
@@ -89,7 +91,7 @@ def register_validation_routes(
         if lengths and (
             re.fullmatch(r"[0-9]+", lengths[0]) is None
             or len(lengths[0]) > 7
-            or int(lengths[0]) > (max_bytes if method == "POST" else 0)
+            or int(lengths[0]) > (max_bytes if method == write_method else 0)
         ):
             return _error(400, "INVALID_ARGUMENT")
         if request.headers.getlist("transfer-encoding") and (
@@ -114,6 +116,8 @@ def register_validation_routes(
         headers = {
             name: request.headers.getlist(name) for name in (*_HEADERS.values(), *extra_headers)
         }
+        if operation_path_parameter is not None:
+            headers[operation_path_parameter] = [request.path_params[operation_path_parameter]]
         action = actions[0] if method == "GET" else actions[1]
         task = asyncio.create_task(
             asyncio.to_thread(
@@ -145,7 +149,7 @@ def register_validation_routes(
         ):
             return _error(503, "MANAGEMENT_UNAVAILABLE")
 
-    for path in (contract_path, validation_path):
+    for path in filter(None, (contract_path, validation_path)):
         route = Route(path, handle)
         route.methods = None  # Include extension methods in the scoped fixed-error handler.
         app.router.routes.append(route)
