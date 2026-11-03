@@ -21383,3 +21383,5 @@ No Worker or real broker on this run. Full corpus continued.
 - Original classified-run Task later completed normally. Its single runtime instance was created 71.197s after approval and was removed. The 25s STOP probe timeout therefore missed a delayed launch, not a continuation failure.
 
 - Started the E1 mixed gate with sandbox observation bounded by the Task persisted execution deadline instead of 25s. The probe measures observed launch latency and selects the Worker node only after matching the exact sandbox ID and namespace/Task/engine labels. It retains one signed STOP, cleanup proof and independent survivor results.
+
+- Deadline-aware E1 mixed run observed a live sandbox 8.893s after approval and sent one signed STOP, accepted HTTP 202. A later status GET returned 503 and failed the subprocess. Reconciled the original via signed read-only GET (HTTP 200 stopped/resources_released), Docker exact-ID absence on both nodes and PostgreSQL removed instance/session_cancelled. No STOP replay. The runner should keep polling only the status GET on transient responses.
