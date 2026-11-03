@@ -19383,3 +19383,12 @@ change HTTP command admission, grant checks or read quotas. Focused stream
 tests: 10 passed; Ruff/diff checks passed. Native16 still live. Next package
 the shared tail module and rerun the held-cohort wake, retaining the original
 pending resume for separate read-only command pickup diagnosis.
+
+CA-HA-03 Native17 SSE candidate source 46e9a9e0 frozen as ARM manifest
+sha256:d2066fa929fc721ac2e8b2aa77019536185301f0e26b6e935c8aaf89fde868ae.
+Verified 2142 files and three links; only the shared tail reader changed.
+The Native16 resume is still pending, live origin, generation 1, with
+no recovery code or scoped broker rollout. The all-service cutover guard
+requires no pending commands. For the next SSE wake test, use the verified
+tail module as an API-only isolated overlay, keeping the Worker processes
+running while independently tracing the original fallback pickup.
