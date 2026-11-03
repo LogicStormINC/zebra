@@ -37489,3 +37489,6 @@ and task_admission.py and the existing native Task admission regression.
 
 CA-HA-03 atomic lock ordering test addendum: include
 tests/agent_storage/test_admission_atomic_task_run.py.
+
+CA-HA-03 deferred wakeup packaging addendum: include the owned events.py
+and task_admission.py PostgreSQL modules in E1 Dockerfile.delta.
