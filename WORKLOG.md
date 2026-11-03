@@ -19794,3 +19794,13 @@ with one settled model reservation each. Small serial samples overlap
 and provide no reliable latency advantage. Keep both paths and measure
 stage timings under controlled load before changing generic admission.
 Private receipts atomic-run21-*.json and generic-run21-*.json.
+
+CA-HA-03 Native21 concurrent admission comparison used four generator
+slots, alternating 4 generic and 4 signed atomic intents through the LB.
+All eight accepted once, completed and had one settled model each.
+POST medians generic 0.890s, atomic 0.793s; grant exchange 0.022/0.027s.
+Canonical bootstrap-to-command event timestamp medians 0.373/0.016s.
+This isolates the smaller internal gap of the atomic path but the
+four-sample end-to-end difference is insufficient for a capacity claim.
+Evidence concurrent-admission21.json and concurrent-admission21-facts.json.
+Next sample actual preflight and transaction time at target mixed load.
