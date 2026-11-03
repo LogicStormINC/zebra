@@ -20496,3 +20496,14 @@ promotion command. No write replay. This uses the unprofiled API
 pool and waits for promotion before GET; in-flight/half-open,
 HTTP deadline path and automatic fencing remain unqualified.
 Evidence pg-sync-pool-two-hosts.json.
+
+CA-HA-03 F-04 bounded read during primary stall. Paused the exact
+disposable sync primary while keeping the TCP forward open. Native
+original receipt GET under task_io_deadline(+2s) raised TimeoutError
+after 1809 ms. Then fenced the old primary and promoted the standby.
+Same long-lived process recovered the original receipt in 1762 ms
+from promotion command (1010 ms after its promotion observation),
+without write replay. This injects an unresponsive database behind
+an open transport and exercises the bounded connection path; it
+does not inject a half-open in-flight COMMIT or HTTP route.
+Evidence pg-sync-half-open-two-hosts.json.
