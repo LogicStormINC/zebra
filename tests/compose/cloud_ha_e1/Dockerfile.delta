@@ -19,3 +19,9 @@ COPY --chown=65532:65532 apps/host_grant_broker/src/zebra_host_grant_broker/gran
 COPY --chown=65532:65532 packages/agent-storage/src/agent_storage/postgres/force_stop_executors.py /app/packages/agent-storage/src/agent_storage/postgres/force_stop_executors.py
 ARG E1_SOURCE_COMMIT
 LABEL org.opencontainers.image.revision=${E1_SOURCE_COMMIT}
+
+# ponytail: compile only image-owned code; source hashes still reject stale caches.
+USER root
+RUN python -m compileall -q -f --invalidation-mode checked-hash \
+    /app/apps /app/packages /app/.venv/lib/python3.12/site-packages /usr/local/lib/python3.12
+USER zebra

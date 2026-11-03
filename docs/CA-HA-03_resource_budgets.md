@@ -258,3 +258,22 @@ frozen. The object existed but had not started; running-tool kill is not claimed
 Both Workers are restored, old7 event/budget/unknown hashes unchanged. Full E1
 corpus/load/fault/soak, physical/storage HA and production remain unqualified.
 See evidence/ca-ha-03-e1/native-9b4f9ad3/validation.json for every case and boundary.
+
+
+### Deferred E1 baseline and checked-bytecode candidate (2026-11-03)
+
+Native8 separately freezes existing deferred provision; cold switch preserved all
+13 prior sessions' fact hashes. Fresh no-tool completed6.347s without any OCI
+instance; approved pwd completed17.7s with provisioning after approval, exact
+cleanup and real exit ACKs. Eight fresh concurrent offers each returned201 once
+and completed8.307–20.549s (median11.781), without tools/OCI. This is a diagnostic
+burst, not the E1 historical/SSE/load qualification. A malformed operator marker
+selected normal pwd and was stopped once without approval/replay; retained.
+
+Cold import consumed~1.63–1.66 CPU seconds versus~0.81–0.88 with standard
+checked-hash bytecode in an isolated prototype. Build-time compileall is the
+minimal candidate; source hash/magic validation and same-size/mtime mutation
+checks pass with read-only non-root runtime. No warm process pool or runtime
+isolation change. Source review, runnable and make check passed; exact candidate
+builds and whole-Task measurements remain pending. See deferred-config and
+checked-bytecode evidence; no production or full capacity acceptance.

@@ -1,0 +1,50 @@
+{
+  "old_image": "sha256:2cbbb14b896367f1ceb3d8bf93b76a85ac4ff32b5fec653c547ac22a51692183",
+  "prototype_image": "sha256:897d855a9fb9590787ef7057be031f9c1d9fcd4e557163a3c33f62d5082df9a3",
+  "prototype_not_promoted": true,
+  "samples": [
+    {
+      "variant": "old",
+      "wall": 1.6599917389976326,
+      "cpu": 1.655556701
+    },
+    {
+      "variant": "compiled",
+      "wall": 0.8819642869930249,
+      "cpu": 0.881803537
+    },
+    {
+      "variant": "old",
+      "wall": 1.6306749180075713,
+      "cpu": 1.628292035
+    },
+    {
+      "variant": "compiled",
+      "wall": 0.8139955980004743,
+      "cpu": 0.812392331
+    }
+  ],
+  "checked_hash_headers": [
+    {
+      "file": "/app/apps/worker/src/zebra_agent_worker/session_process_child.py",
+      "checked_source_hash": true
+    },
+    {
+      "file": "/app/packages/agent-core/src/agent_core/domain/events.py",
+      "checked_source_hash": true
+    },
+    {
+      "file": "/usr/local/lib/python3.12/typing.py",
+      "checked_source_hash": true
+    }
+  ],
+  "old_image_check_exit": 1,
+  "prototype_check_exit": 0,
+  "same_size_mtime_changed_source_rejected": true,
+  "read_only_cache_unchanged": true,
+  "make_check": "passed",
+  "ruff": "passed",
+  "independent_review": "no Critical/Important; full Dockerfile and per-arch builds/checks still required",
+  "current_live_runtime": "9b4f9ad3 / Native8; prototype not promoted",
+  "E1_capacity": "not_run"
+}

@@ -18961,3 +18961,15 @@ removed. Lifecycle/import measurements retained; not a capacity certificate.
 Only E1 configuration now opts existing cloud deferred runtime; existing6 tests
 and Ruff pass. New baseline/Native8, cold idle promotion and new no-tool/pwd cases
 are next. Runtime9b and local defaults unchanged; no original intent replay.
+
+
+## 2026-11-03 — Native8 and checked-bytecode build candidate
+
+Native8 cold/old13 hash preservation, fresh no-OCI short6.347s and approved
+pwd17.7s with real cleanup/ACK verified. Diagnostic8 burst all201/completed once,
+median11.781/max20.549s; not capacity acceptance. Malformed marker original task
+stopped once without approval; retained. Build-time checked-hash stdlib compiler
+candidate preserves readonly/nonroot/fresh-process runtime. Prototype old red1 /
+new green0, stale same-size/mtime source and no-cache-write check passed; import
+CPU roughly halved. Runnable/Ruff/make check and independent review passed.
+Exact official/delta builds, per-arch checks and fresh whole-Task comparison next.
