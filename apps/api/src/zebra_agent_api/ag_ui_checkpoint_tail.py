@@ -16,6 +16,7 @@ from agent_core.ports.stream_source_head import StreamSourceHeadPort
 from agent_core.ports.task_projection_checkpoints import CheckpointConflict, CheckpointNotReady
 from agent_core.ports.task_projection_work import ProjectionWorkProblem
 from agent_integrations.ag_ui.checkpoint_observer import AgUiCheckpointObserver
+from agent_storage.postgres.connection_capacity import DatabaseCapacityExceeded
 from agent_storage.postgres.task_io import task_io_deadline
 
 from zebra_agent_api.database_budget import database_call
@@ -34,7 +35,14 @@ async def _read_until[**P, R](
         with task_io_deadline(min(deadline, monotonic() + 2.0)):
             return read(*args, **kwargs)
 
-    return await database_call(None, bounded)
+    # A saturated read lane has no result to advance the cursor with.
+    # Spread retries across woken observers without extending their authorization.
+    async with asyncio.timeout(max(0, deadline - monotonic())):
+        while True:
+            try:
+                return await database_call(None, bounded)
+            except DatabaseCapacityExceeded:
+                await asyncio.sleep(uniform(0.025, 0.075))
 
 
 def observation_problem(code: str, *, retryable: bool) -> str:

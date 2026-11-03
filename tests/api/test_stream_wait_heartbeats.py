@@ -115,3 +115,34 @@ def test_heartbeats_continue_without_advancing_thirty_second_sql_retry(
             assert fanout.captures == (2 if reader == "agui" and outage else 1)
 
     asyncio.run(collect())
+
+
+def test_observation_retries_capacity_without_changing_read_coordinates(monkeypatch):
+    from time import monotonic
+    from unittest.mock import AsyncMock
+
+    from agent_storage.postgres.connection_capacity import DatabaseCapacityExceeded
+
+    read = object()
+    expected_page = object()
+    dispatch = AsyncMock(side_effect=[DatabaseCapacityExceeded(), expected_page])
+    monkeypatch.setattr(checkpoint, "database_call", dispatch)
+    monkeypatch.setattr(checkpoint, "uniform", lambda *_: 0)
+    result = asyncio.run(checkpoint._read_until(monotonic() + 1, read, "task", 42))
+    assert result is expected_page
+    assert dispatch.await_count == 2
+    assert dispatch.await_args_list[0] == dispatch.await_args_list[1]
+
+
+def test_observation_capacity_backoff_stops_at_deadline(monkeypatch):
+    from time import monotonic
+    from unittest.mock import AsyncMock
+
+    from agent_storage.postgres.connection_capacity import DatabaseCapacityExceeded
+
+    dispatch = AsyncMock(side_effect=DatabaseCapacityExceeded())
+    monkeypatch.setattr(checkpoint, "database_call", dispatch)
+    monkeypatch.setattr(checkpoint, "uniform", lambda *_: 1)
+    with pytest.raises(TimeoutError):
+        asyncio.run(checkpoint._read_until(monotonic() + 0.1, lambda: None))
+    assert dispatch.await_count == 1

@@ -37426,3 +37426,7 @@ Session commands with the same revision parser and idempotency key.
 
 CA-HA-03 Cloud Task command packaging addendum: include the three owned API
 modules in the isolated E1 Dockerfile.delta.
+
+CA-HA-03 SSE read contention addendum (Luke Ding/Codex, existing branch):
+own ag_ui_checkpoint_tail.py and tests/api/test_stream_wait_heartbeats.py
+for bounded capacity backoff shared by observation tail readers.

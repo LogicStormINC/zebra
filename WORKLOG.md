@@ -19375,3 +19375,11 @@ DatabaseCapacityExceeded in the stream source-head read via _read_until.
 Next address safe bounded read contention and independently trace pending
 resume delivery. Private artifacts: sse16-live-resume-original.json,
 sse16-live-event-4b701583*, route16-wake-*.log.
+
+CA-HA-03 SSE capacity candidate: shared observation read retries explicit
+DatabaseCapacityExceeded with jitter up to the existing absolute deadline.
+The same callable and cursor arguments are retried. The handler does not
+change HTTP command admission, grant checks or read quotas. Focused stream
+tests: 10 passed; Ruff/diff checks passed. Native16 still live. Next package
+the shared tail module and rerun the held-cohort wake, retaining the original
+pending resume for separate read-only command pickup diagnosis.
