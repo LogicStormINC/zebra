@@ -85,6 +85,11 @@ class SessionBootstrapService:
                 event_type=EventType.USER_MESSAGE_RECEIVED,
                 actor=EventActor.USER,
                 payload={
+                    **(
+                        {"selected_model_pin": command.selected_model_pin.model_dump(mode="json")}
+                        if command.selected_model_pin is not None
+                        else {}
+                    ),
                     "content": command.user_input,
                     "turn_id": str(turn_id),
                     "turn_index": 0,
@@ -118,11 +123,6 @@ class SessionBootstrapService:
                     **(
                         {"coverage_admission": coverage_admission.model_dump(mode="json")}
                         if coverage_admission is not None
-                        else {}
-                    ),
-                    **(
-                        {"selected_model_pin": command.selected_model_pin.model_dump(mode="json")}
-                        if command.selected_model_pin is not None
                         else {}
                     ),
                     **({"model_profile": command.model_profile} if command.model_profile else {}),
