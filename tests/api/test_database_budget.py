@@ -268,3 +268,44 @@ def test_extension_list_metadata_fanout_fits_read_budget(read_limit, monkeypatch
         assert len(response.json()["items"]) == len(completed) == 3
     finally:
         app.state.database_calls.close()
+
+
+def test_host_read_waits_before_dispatch_and_cancellation_never_invokes_it():
+    import asyncio
+    from threading import Event
+
+    import pytest
+    from agent_storage.postgres.capacity_profile import CapacityProfile
+    from agent_storage.postgres.connection_capacity import ConnectionBudget, capacity_lane
+    from zebra_agent_api.database_budget import ApiDatabaseCalls
+
+    profile = CapacityProfile.parse(json.dumps({**profile_data(), "read": 1}))
+    calls = ApiDatabaseCalls(ConnectionBudget("dbname=one", profile, "api"))
+    entered, release = Event(), Event()
+    invoked = []
+
+    def occupy():
+        entered.set()
+        assert release.wait(3)
+
+    async def exercise():
+        with capacity_lane("read"):
+            busy = asyncio.create_task(calls.call(occupy))
+            assert await asyncio.to_thread(entered.wait, 1)
+            with pytest.raises(TimeoutError):
+                async with asyncio.timeout(0.03):
+                    await calls.call(lambda: invoked.append("cancelled"), wait_for_read_slot=True)
+            waiting = asyncio.create_task(
+                calls.call(lambda: invoked.append("admitted"), wait_for_read_slot=True)
+            )
+            await asyncio.sleep(0.02)
+            assert not invoked
+            release.set()
+            await asyncio.gather(busy, waiting)
+            assert invoked == ["admitted"]
+
+    try:
+        asyncio.run(exercise())
+    finally:
+        release.set()
+        calls.close()

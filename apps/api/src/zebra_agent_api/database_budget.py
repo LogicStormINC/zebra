@@ -98,21 +98,31 @@ class ApiDatabaseCalls:
                        for k, v in limits.items()}
         self._slots = {k: BoundedSemaphore(v) for k, v in limits.items()}
 
-    async def call[T](self, action: Callable[..., T], *args: Any, **kwargs: Any) -> T:
+    async def call[T](
+        self, action: Callable[..., T], *args: Any, wait_for_read_slot: bool = False, **kwargs: Any
+    ) -> T:
         def invoke() -> T:
             # Nested async storage remains owned by this running synchronous callback.
             with async_dispatch_scope(None):
                 return action(*args, **kwargs)
 
         lane = current_lane()
-        with self._lock:
-            if self._closed or not self._slots[lane].acquire(blocking=False):
+        while True:
+            with self._lock:
+                if self._closed:
+                    raise ApiDatabaseExecutorSaturated("API database executor closed")
+                if self._slots[lane].acquire(blocking=False):
+                    try:
+                        future = self._pools[lane].submit(copy_context().run, invoke)
+                    except BaseException:
+                        self._slots[lane].release()
+                        raise
+                    break
+            if lane != "read" or not wait_for_read_slot:
                 raise ApiDatabaseExecutorSaturated("API database lane unavailable")
-            try:
-                future = self._pools[lane].submit(copy_context().run, invoke)
-            except BaseException:
-                self._slots[lane].release()
-                raise
+            # ponytail: only admitted Host reads wait here under the HTTP auth deadline.
+            # A separate FIFO would be needed if this small waiter set required ordering.
+            await asyncio.sleep(0.01)
         future.add_done_callback(lambda _: self._slots[lane].release())
         wrapped = asyncio.wrap_future(future)
         wrapped.add_done_callback(lambda done: None if done.cancelled() else done.exception())
@@ -126,14 +136,15 @@ class ApiDatabaseCalls:
 
 
 async def database_call[T](
-    app: FastAPI | None, action: Callable[..., T], *args: Any, **kwargs: Any,
+    app: FastAPI | None, action: Callable[..., T], *args: Any,
+    wait_for_read_slot: bool = False, **kwargs: Any,
 ) -> T:
     calls: ApiDatabaseCalls | None = (
         getattr(getattr(app, "state", None), "database_calls", None)
     )
     if calls is None:
         return await storage_call(action, *args, **kwargs)
-    return await calls.call(action, *args, **kwargs)
+    return await calls.call(action, *args, wait_for_read_slot=wait_for_read_slot, **kwargs)
 
 
 def configure_database_budget(app: FastAPI, health: Any, dsn: str) -> None:

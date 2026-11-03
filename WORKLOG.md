@@ -20869,3 +20869,12 @@ Restored the exact original image and source on the second API and
 verified TLS readiness. Next isolate or fairly queue stream polling
 and authorization in the bounded read executor without enlarging
 the declared fleet connection budget.
+
+CA-HA-03 source candidate lets already admitted Host reads wait for
+an executor slot inside the original authorization deadline. Only
+pre-submission saturation is waited on; once submitted, the original
+callback runs at most once. Existing HTTP admission bounds waiter
+count; connection/worker quotas and write/control paths are unchanged.
+Regression holds the only read slot, proves timeout runs no callback,
+then proves release runs one callback. Fifteen focused tests passed.
+Live 256-stream comparison on the isolated two APIs remains pending.

@@ -283,7 +283,9 @@ async def authorize_request(
                     return error
                 request.state.authorized_body = body
                 request.state.authorized_body_read = True
-            verified = await database_call(request.scope.get("app"), operation)
+            verified = await database_call(
+                request.scope.get("app"), operation, wait_for_read_slot=True
+            )
         context = getattr(verified, "context", None)
         if context is not None and not isinstance(context, HostContextEnvelope):
             return _forbidden("host_grant_context_invalid")
