@@ -20131,3 +20131,21 @@ remain visible across the existing lock retry. Logging contains only
 fixed labels and times; request deadline and receipt behavior unchanged.
 Ruff and 31 admission API tests passed. Next run the same isolated
 low-rate pair and mixed load with milestone logging active.
+
+CA-HA-03 Native30 timing source d25e9a40, ARM manifest
+sha256:67639acb6d447df4040619b219e3b1503f083dd1a6d428c07176df862d055f6a.
+Both logical nodes passed cold preservation, readiness and wire checks.
+Trust revision 29, definition f0dbe311-1e8e-4f6c-b4da-7309f6dece1a.
+First two 5 Hz/32 SSE windows lacked a root logging handler;
+15 POSTs/11 confirmed/four unresolved and 19/13/six respectively.
+A scoped INFO logger with a root handler on both isolated APIs
+captured 12/12 timings on the third window: seven direct completions,
+one confirmed via original GET and four unknown. No resubmission.
+32 SSE heartbeats. Seven confirmed transaction exits had 427–909 ms
+in dispatch, and 4–81 ms from receipt to commit exit. Four failed
+dispatches ran 802–1290 ms after entering the transaction. One
+finished receipt write but lost transaction exit observation and
+was recovered from its original receipt. Next break down dispatch
+and compare the low-rate controls with timing enabled.
+Evidence preflight5-timing30-handler-9cf30318*, timing30-handler-zebra*.log,
+timing30-handler-original-receipts.json and timing30-handler-with-sse-1d996a6d*.
