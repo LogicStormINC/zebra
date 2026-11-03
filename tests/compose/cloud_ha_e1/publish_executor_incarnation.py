@@ -123,6 +123,20 @@ def reconcile_exits(witness: dict[str, str], dsn: str, *, namespace: str) -> int
     return len(rows)
 
 
+def restart_reconciled(
+    witness: dict[str, str], binding_path: Path, dsn: str, *, namespace: str
+) -> int:
+    container = witness["container"]
+    count = reconcile_exits(witness, dsn, namespace=namespace)
+    if reconcile_exits(witness, dsn, namespace=namespace):
+        raise RuntimeError("executor exits are still being reconciled; retry before restarting")
+    if exit_witness(container, binding_path) != witness:
+        raise ValueError("Worker exit witness changed before restart")
+    docker("start", container)
+    publish(identity(container), binding_path)
+    return count
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("container")
@@ -131,7 +145,10 @@ if __name__ == "__main__":
     parser.add_argument("--ack-session", type=UUID)
     parser.add_argument("--ack-fence")
     parser.add_argument("--reconcile", action="store_true")
+    parser.add_argument("--restart", action="store_true")
     arguments = parser.parse_args()
+    if arguments.restart and not arguments.reconcile:
+        parser.error("--restart requires --reconcile")
     if arguments.reconcile and (arguments.exit_binding is None or arguments.ack_session):
         parser.error("--reconcile requires --exit-binding without --ack-session")
     if bool(arguments.ack_session) != bool(arguments.ack_fence) or (
@@ -151,7 +168,11 @@ if __name__ == "__main__":
             os.environ["ZEBRA_DATABASE_URL"], namespace="ha-e1-20261102",
         )
     if arguments.reconcile:
-        count = reconcile_exits(
-            binding, os.environ["ZEBRA_DATABASE_URL"], namespace="ha-e1-20261102"
-        )
+        dsn = os.environ["ZEBRA_DATABASE_URL"]
+        if arguments.restart:
+            count = restart_reconciled(
+                binding, arguments.exit_binding, dsn, namespace="ha-e1-20261102"
+            )
+        else:
+            count = reconcile_exits(binding, dsn, namespace="ha-e1-20261102")
         print(count)
