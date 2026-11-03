@@ -3,7 +3,7 @@
 from typing import Any
 
 from agent_core.contracts import SessionCommandAcceptedPayload, SessionCommandKind
-from agent_core.domain.events import SessionEvent
+from agent_core.domain.events import EventType, SessionEvent
 from agent_core.domain.extension_snapshots import ExtensionSnapshot, ExtensionTaskCeiling
 from agent_core.domain.extensions import ExtensionScope
 from agent_core.domain.identifiers import ClientSessionId, EventId, SessionId, TaskId
@@ -320,6 +320,8 @@ def append_event_in_transaction(
     connection: Any,
     deployment_namespace: str,
     event: SessionEvent,
+    *,
+    deferred_command_wakeups: list[SessionEvent] | None = None,
 ) -> SessionEvent:
     """Append one Event using the caller's PostgreSQL transaction."""
     existing = _find_idempotent_event(connection, deployment_namespace, event)
@@ -364,6 +366,12 @@ def append_event_in_transaction(
             event.model_profile,
         ),
     )
+    if (
+        deferred_command_wakeups is not None
+        and event.event_type is EventType.SESSION_COMMAND_ACCEPTED
+    ):
+        deferred_command_wakeups.append(event)
+        return event
     return _record_command_wakeup(connection, deployment_namespace, event, is_new_admission=True)
 
 

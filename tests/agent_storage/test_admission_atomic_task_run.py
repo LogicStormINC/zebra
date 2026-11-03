@@ -123,3 +123,29 @@ def test_committed_run_has_exact_persisted_identity_never_noncommit(isolated_mig
         ]
         == "unsupported"
     )
+
+
+def test_atomic_initial_run_indexes_before_wakeup_and_rolls_back_on_rejection(
+    isolated_migration_dsn, monkeypatch
+):
+    from agent_storage.postgres import task_admission
+
+    store, op = setup(isolated_migration_dsn, PROTOCOL)
+    enable(store)
+    assert start_atomic_surface(store, op, "a" * 64, protocol=PROTOCOL)
+    wake = task_admission.record_command_wakeup_in_transaction
+
+    def reject(connection, namespace, event, *, is_new_admission):
+        assert connection.execute(
+            "SELECT 1 AS indexed FROM session_events "
+            "WHERE deployment_namespace=%s AND event_id=%s AND task_sequence IS NOT NULL",
+            (namespace, event.event_id),
+        ).fetchone() == {"indexed": 1}
+        wake(connection, namespace, event, is_new_admission=is_new_admission)
+        raise AtomicSurfaceAborted("controlled wakeup rollback")
+
+    monkeypatch.setattr(task_admission, "record_command_wakeup_in_transaction", reject)
+    with pytest.raises(AtomicSurfaceAborted, match="controlled wakeup rollback"):
+        with atomic_surface_transaction(store, op, "a" * 64):
+            effects(store)
+    assert counts(store) == [0] * 5 and command_counts(store) == [0, 0]

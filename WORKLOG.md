@@ -19902,3 +19902,12 @@ the wakeup recording after post-append Task projection inside the same
 transaction. Preserve global admission caps and same-transaction
 event/pending/outbox/receipt invariants. Evidence global-lock792.jsonl,
 preflight5-lock792-37be19f5*, lock792-original-receipts.json.
+
+CA-HA-03 atomic Task admission candidate defers only newly appended
+initial-command wakeups until after the Task index and artifact writes.
+The command Event, pending row, outbox and receipt still share the
+original transaction and capacity locks. Ordinary appends and existing
+idempotent Event handling retain their previous order. Added native
+rollback coverage around the deferred wakeup. Focused 31 passed and
+3 native skips, Ruff clean. Next run the PostgreSQL regression and a
+fresh isolated mixed load comparison before claiming a latency gain.

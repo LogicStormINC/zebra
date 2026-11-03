@@ -12,7 +12,7 @@ from __future__ import annotations
 from typing import Any
 from uuid import UUID
 
-from agent_core.domain.events import EventType
+from agent_core.domain.events import EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId, TaskId
 from agent_core.domain.task_bindings import TaskBindingSnapshot, renew_task_binding_snapshot
 from agent_core.ports.idempotency_store import IdempotencyRecord
@@ -24,6 +24,7 @@ from agent_core.ports.task_admission_transaction import (
 from psycopg import IsolationLevel, errors
 from psycopg.types.json import Jsonb
 
+from agent_storage.postgres.command_wakeup import record_command_wakeup_in_transaction
 from agent_storage.postgres.database import PostgresDatabase
 from agent_storage.postgres.events import append_event_in_transaction
 from agent_storage.postgres.projections import save_session_in_transaction
@@ -130,14 +131,24 @@ class PostgresTaskAdmissionTransaction:
                 namespace,
                 request.binding,
             )
+        deferred_wakeups: list[SessionEvent] = []
         persisted_events += tuple(
-            append_event_in_transaction(connection, namespace, event) for event in command_events
+            append_event_in_transaction(
+                connection, namespace, event, deferred_command_wakeups=deferred_wakeups
+            )
+            for event in command_events
         )
         if command_events:
             task = rebuild_task_in_transaction(connection, namespace, root_session_id)
         from agent_storage.postgres.input_artifact_admission import persist_input_artifacts
 
         persist_input_artifacts(connection, namespace, request.events, request.input_artifacts)
+        # Take the namespace admission lock after indexing the new Task.
+        # A rejected wakeup still rolls back every write in this transaction.
+        for event in deferred_wakeups:
+            record_command_wakeup_in_transaction(
+                connection, namespace, event, is_new_admission=True
+            )
         return TaskAdmissionReceipt(
             task_id=task.task_id,
             session_id=root_session_id,

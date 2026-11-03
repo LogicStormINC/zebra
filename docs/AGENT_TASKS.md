@@ -37483,3 +37483,9 @@ for one same-request retry after a confirmed PostgreSQL lock rejection.
 
 CA-HA-03 atomic admission retry packaging addendum: include the two
 owned client admission modules in the isolated E1 Dockerfile.delta.
+
+CA-HA-03 atomic command lock duration addendum: own PostgreSQL events.py
+and task_admission.py and the existing native Task admission regression.
+
+CA-HA-03 atomic lock ordering test addendum: include
+tests/agent_storage/test_admission_atomic_task_run.py.
