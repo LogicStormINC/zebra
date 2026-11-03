@@ -21060,3 +21060,17 @@ evidence amd64-load-d437a0a5d3e2.log and matching originals JSON.
 Local API CPU quota saturation does not explain this run. The
 cross-host DB and authority transports differ from the ARM run;
 next instrument those paths before attributing the gap.
+
+CA-HA-03 AMD64 attribution run repeated 1/15 acceptance, with four
+Host-authorization 503s logged as DatabaseCapacityExceeded (distinct
+from the executor subclass), and ten submit TimeoutErrors. Every
+broker exchange succeeded, 44.6ms max. The four authorization
+rejects returned within 7.5ms after POST start; the ten admitted
+unknowns returned after median 2275ms. One extra bounded read-only
+connection measured 83.76ms connect and 26 SELECT 1 samples with
+median 9.015ms/max 61.97ms over the private cross-host relay.
+Zero CPU quota throttles. The probe adds one sampling connection
+and the RTT is a shared transport measurement, not a trace of
+each transaction. Evidence amd64-attribution-afff591d40d5.log.
+No POST replay; next audit normal connection inventory and
+transaction round trips over the cross-host transport.
