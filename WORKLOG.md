@@ -20656,3 +20656,13 @@ replay the exact stop verified and wrong digest was refused.
 This tests the replicated stop row, not the API's separate fence
 and absent-result check required for a non-commit certificate.
 Evidence pg-sync-stop-proof-two-hosts.json.
+
+CA-HA-03 real atomic termination storage operation exercised against
+paused standby replay. Seeded original claim and fence via native
+stores, called observe_atomic_termination(write=True). Cancelling
+one SyncRep wait was insufficient; two targeted cancellations let
+it return terminated on the primary. Exact STOP proof remained false
+on standby until replay resumed. This demonstrates a false durability
+confirmation risk in the current ungated route composition. No
+production change; API must withhold non_commit_proven until proof.
+Evidence pg-sync-native-stop-two-hosts.json.
