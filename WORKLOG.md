@@ -19621,3 +19621,14 @@ minimal accepted identity. A miss returns not_observed and says nothing
 about whether an in-flight original can commit. Focused route suite:
 15 passed and Ruff/diff clean. Next validate real Host grant authorization
 and cross-node lookup after client response loss on the isolated pair.
+
+CA-HA-03 authorized cross-node create receipt green on the Native18 API
+overlay. One fresh POST via the LB, client socket closed without reading
+the response after the original 201 was durable. A fresh grant for the
+same binding and the original Idempotency-Key yielded HTTP 200 from the
+other node at GET /tasks/create-receipt. The URL and request contained
+no Task ID. Returned identity 2151b381-6f53-4d71-a896-4e1b311b7d2b matched
+the original receipt. PostgreSQL confirmed one command, one completion
+and one settled model reservation. Restored both APIs and verified
+readiness. Private evidence lost-create-public18.json. Next run a
+pre-COMMIT loss injection and cross-principal negative check.
