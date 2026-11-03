@@ -21009,3 +21009,12 @@ passed 79 position, repair, and byte-bound tests, with the three
 large benchmark variants deselected. The earlier full run remained
 live on its 100k-event case. No live capacity comparison was run
 concurrently with that database workload on the shared Mac.
+
+CA-HA-03 full PG17.5 event-position/repair/byte-bound and native
+API suite completed: 87 passed in 753.06s, including the 100k
+case. The queued frozen CTE no-SSE diagnostic then ran without
+that database workload. At 5rps/3s, 10/15 POSTs accepted, and
+original GET confirmed 10 with five still unknown. Prior matched
+claim-reuse run accepted 10/15 and recovered 11. No capacity gain
+established. Private run no-sse-position-cte-cf71c885e9a14f1cbe8c57491ff87582.
+Restored both isolated APIs; verified TLS readiness on each.
