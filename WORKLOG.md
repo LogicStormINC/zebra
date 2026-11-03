@@ -21147,3 +21147,14 @@ statement. Recovery still takes the global lock via the capacity
 helper. Durable capacity checks and pending/outbox identity remain
 in the same transaction. PG17.5 admission/native 27 passed;
 PostgreSQL wakeup/recovery 66 passed. Cross-host impact pending.
+
+CA-HA-03 frozen e517a804 AMD64 wakeup change diagnostic matched
+the prior candidate's 3/15 sealed, nine atomic TimeoutErrors and
+three normal permit rejections at 5rps/3s. Exact original GET
+confirmed three, nine unknown, three not_observed. Successful
+transaction bodies median 835ms vs 856ms (n=3 each); lock-timeout
+bodies one vs two. Zero CPU throttling, no POST replay.
+Private evidence amd64-wakeup-629062641aa4.log and originals.
+No capacity gain established. Repeated small SQL cuts have not
+closed the WAN gap; prioritize qualified database placement and
+the native baseline corpus before more isolated micro-tuning.
