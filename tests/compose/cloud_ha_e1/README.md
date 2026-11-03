@@ -209,3 +209,14 @@ promotion. Freeze the external fixture source/hash separately from the runtime
 image source/hash in the load manifest; Native7 TLS/SSE/meter qualification is not
 provider semantic quality, capacity or full E1 acceptance. First validate a NEW
 native short Task once, retain its receipt, then prepare load/corpus tests.
+
+
+New E1 preparation explicitly opts into the runtime's existing Cloud deferred
+provisioning. Its existing fresh-binding/materialization/no-MCP/no-skills guards
+remain authoritative; local defaults and isolation are unchanged. This changes
+the non-model configuration baseline and requires a NEW Native approval before
+cold switching idle staging apps. Runtime image9b remains frozen; provider b15
+remains separately frozen. Verify a NEW no-tool Task creates no OCI object, then
+a NEW pwd Task still provisions/cleans at first approved tool, retains the original
+budget deadline and exact exit proof. Never mix Native7 eager and new deferred
+measurements into one capacity claim. Native8 runtime acceptance is pending.

@@ -1,3 +1,14 @@
+## 2026-11-03 — E1短任务实链与现有deferred配置候选
+
+外部provider b15单独冻结/仅切model，runtime9b/Native7不变；双节点TLS/SSE/meter复验通过。
+新短Task ee10410b仅POST一次，1模型结算14226合成单位、0工具、1真实退出配对，8.546s；
+不是5rps/容量通过。原PG连接中位5.2/7.3ms、持久commit约2ms，均fsync/synchronous_commit
+开启，仅新建自有probe schema后精确删除；非生产基准。executor start1.036s、runtime实例
+创建4.347s、model start6.409s；新容器worker模块导入约1.78s，需继续拆分，不改耐久性。
+发现既有cloud DeferredRuntime/opt-in，当前未开；仅E1 prepare显式开启，6既有守卫单测与
+Ruff通过。拟新config baseline/Native8后idle冷切，分别验证无tool不建OCI和原pwd授权/预算/
+退出证明。runtime代码/镜像9b、本地默认不变；新配置尚未上线，完整E1/生产仍未验。
+
 ## 2026-11-03 — E1-A短任务外部provider夹具候选
 
 原夹具总发pwd需审批，不能用作合同确定性短任务。仅user文本显式版本marker返回固定无

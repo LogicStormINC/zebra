@@ -1,0 +1,38 @@
+{
+  "runtime_source": "9b4f9ad3",
+  "external_fixture_source": "b15a32eb",
+  "new_config": "existing ZEBRA_RUNTIME_DEFER_PROVISION opt-in in E1 only",
+  "runtime_code_changed": false,
+  "local_defaults_changed": false,
+  "existing_guard_unit_tests": 6,
+  "ruff": "passed",
+  "live_short_eager": {
+    "task": "ee10410b-5246-4713-80bd-7159167425db",
+    "seconds": 8.546,
+    "model_calls_settled": 1,
+    "synthetic_units": 14226,
+    "tool_calls": 0,
+    "exact_exit_pairs": 1
+  },
+  "idle_PG_probe": {
+    "connect_median_ms_primary": 5.227,
+    "connect_median_ms_node2": 7.264,
+    "durable_insert_median_ms_primary": 2.144,
+    "durable_insert_median_ms_node2": 1.84,
+    "fsync": "on",
+    "synchronous_commit": "on",
+    "scope": "micro diagnostic only; exact newly owned schemas removed"
+  },
+  "Native8": "not prepared or promoted yet",
+  "required_next": [
+    "separate frozen baseline and approval",
+    "idle cold switch",
+    "new no-tool no-OCI path",
+    "new approved pwd provision/cleanup",
+    "old task/budget/unknown preservation"
+  ],
+  "E1_capacity": "not_run",
+  "independent_existing_guard_tests": 6,
+  "independent_review": "no Critical/Important; native no-tool/pwd and old-receipt checks still required",
+  "make_check": "passed"
+}

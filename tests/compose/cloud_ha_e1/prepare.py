@@ -111,6 +111,7 @@ def main() -> None:
         "ZEBRA_S3_SECRET_KEY": values["s3_secret"],
         "ZEBRA_LIVE_REDIS_URL": f"rediss://:{values['redis']}@127.0.0.1:26379/0?ssl_ca_certs=/e1/ca.crt",
         "ZEBRA_RUNTIME_CLASS": "gvisor",
+        "ZEBRA_RUNTIME_DEFER_PROVISION": "true",
         "ZEBRA_RUNTIME_REQUIRE_WORKSPACE_QUOTA": "true",
         "ZEBRA_RUNTIME_IMAGE": (
             "python:3.12-slim-bookworm@sha256:"

@@ -18950,3 +18950,14 @@ the unchanged meter/caps/HTTP. Original pwd/system marker and shared-template
 isolation verified red/green; independent runnable+Ruff passed. Runtime9b/Native7
 unchanged; external fixture must be frozen separately before a NEW short Task.
 No variant promotion or load result yet.
+
+
+## 2026-11-03 — short native receipt and existing deferred configuration
+
+External fixture b15 alone promoted, both native wire checks passed. Fresh short
+Task ee10410b completed8.546s, model1 settled14226, tools0, real exit pair1. Idle
+PG connects5.2/7.3ms and durable commits~2ms; fsync unchanged, owned probe schemas
+removed. Lifecycle/import measurements retained; not a capacity certificate.
+Only E1 configuration now opts existing cloud deferred runtime; existing6 tests
+and Ruff pass. New baseline/Native8, cold idle promotion and new no-tool/pwd cases
+are next. Runtime9b and local defaults unchanged; no original intent replay.
