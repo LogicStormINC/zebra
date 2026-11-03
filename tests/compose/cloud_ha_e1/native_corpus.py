@@ -115,6 +115,7 @@ def verify_replay(dsn: str, namespace: str) -> int:
     with psycopg.connect(readonly) as connection:
         samples = connection.execute(
             """SELECT task_id FROM agent_tasks WHERE deployment_namespace=%s
+               AND event_position_state='ready' AND next_event_sequence=100
                ORDER BY task_id LIMIT 16""",
             (namespace,),
         ).fetchall()
