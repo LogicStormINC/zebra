@@ -51,10 +51,9 @@ def test_cancelled_normal_calls_keep_slots_and_do_not_starve_control():
     from agent_storage.postgres.capacity_profile import CapacityProfile
     from agent_storage.postgres.connection_capacity import (
         ConnectionBudget,
-        DatabaseCapacityExceeded,
         capacity_lane,
     )
-    from zebra_agent_api.database_budget import ApiDatabaseCalls
+    from zebra_agent_api.database_budget import ApiDatabaseCalls, ApiDatabaseExecutorSaturated
 
     budget = ConnectionBudget(
         "dbname=one", CapacityProfile.parse(json.dumps(profile_data())), "api"
@@ -75,7 +74,7 @@ def test_cancelled_normal_calls_keep_slots_and_do_not_starve_control():
             for task in normal:
                 task.cancel()
             await asyncio.gather(*normal, return_exceptions=True)
-            with pytest.raises(DatabaseCapacityExceeded):
+            with pytest.raises(ApiDatabaseExecutorSaturated):
                 await calls.call(lambda: None)
             with capacity_lane("control"):
                 assert await calls.call(lambda: "control") == "control"

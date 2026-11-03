@@ -83,6 +83,10 @@ class DatabaseBudgetMiddleware:
                 release_admission()
 
 
+class ApiDatabaseExecutorSaturated(DatabaseCapacityExceeded):
+    """The API lane rejected work before a database connection was attempted."""
+
+
 class ApiDatabaseCalls:
     """Bounded sync work per lane; cancellation never frees a running Future's slot."""
 
@@ -103,7 +107,7 @@ class ApiDatabaseCalls:
         lane = current_lane()
         with self._lock:
             if self._closed or not self._slots[lane].acquire(blocking=False):
-                raise DatabaseCapacityExceeded("API database lane unavailable")
+                raise ApiDatabaseExecutorSaturated("API database lane unavailable")
             try:
                 future = self._pools[lane].submit(copy_context().run, invoke)
             except BaseException:

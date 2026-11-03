@@ -20851,3 +20851,11 @@ adapter256-reason-735DAC0B-5D9F-4E9F-B496-B694CD7396B0.
 Both Host GET authorization and existing stream reads use the
 bounded read lane. The exact rejecting gate (executor slot versus
 database connection permit) still needs discriminating telemetry.
+
+CA-HA-03 differentiated API executor saturation from a PostgreSQL
+connection permit rejection. The executor raises a specific subclass
+of DatabaseCapacityExceeded, so existing HTTP mapping stays identical
+and the existing auth log records the precise rejecting gate without
+logging exception payloads. Targeted suites 17 passed, 7 skipped.
+The isolated running image predates the diagnostic; a fresh candidate
+must be used before interpreting another 256-stream run.
