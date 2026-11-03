@@ -20368,3 +20368,14 @@ API and forwards exited; second OrbStack API restored and ready.
 This is an API process fault on a cross-host pair, not loss of the
 ingress host, persistent storage, or the loaded E1-R matrix.
 Evidence amd64-ingress-*.log.
+
+CA-HA-03 reverse cross-host ingress fault. Opened original SSE
+through temporary Caddy via ARM64, enabled AMD64, then withdrew
+the ARM relay listener and cancelled all its open connections.
+Same ingress resumed exact next frame via AMD64 in 1.700 s and
+returned ten consecutive exact resumes. First attempt's test
+listener waited for pooled clients to close; stopped its exact
+temporary container, corrected the harness and repeated read-only.
+No Task mutation. Restored second OrbStack API and verified readiness.
+This isolates the API link, not shared dependency loss or loaded E1-R.
+Evidence amd64-ingress-link-*.log.
