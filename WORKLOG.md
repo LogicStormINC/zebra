@@ -20878,3 +20878,12 @@ count; connection/worker quotas and write/control paths are unchanged.
 Regression holds the only read slot, proves timeout runs no callback,
 then proves release runs one callback. Fifteen focused tests passed.
 Live 256-stream comparison on the isolated two APIs remains pending.
+
+CA-HA-03 bounded read-wait candidate passed the live 256-SSE
+diagnostic on two isolated APIs using a temporary two-file overlay.
+Both nodes opened 128 streams without a readiness rejection.
+All five planned 5rps offers accepted and all five original GETs
+authenticated. Private evidence sse-read-wait-6a32202786014156a045492619e3ce81.
+Restored both original API containers and verified TLS ready.
+This is a one-second measurement with an existing synthetic stream
+fixture, not a frozen-image E1 steady run or production deployment.
