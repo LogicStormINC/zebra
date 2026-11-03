@@ -20524,3 +20524,15 @@ certifies the original stopped. Existing post-COMMIT branch still
 finds exactly one durable command/outbox. Seven PG17 cases passed
 including both artifact audit COMMIT-loss consumers of the proxy.
 No production code change.
+
+CA-HA-03 sync standby stall safety discovery. On disposable PG17.5
+cross-host remote_apply, paused standby and observed writer wait
+event SyncRep. An ordinary statement timeout test did not return
+in six seconds. In a separate run targeted pg_cancel_backend of
+the SyncRep writer returned the synchronous-wait cancellation warning
+but psql exited 0 and the locally committed row was visible. After
+resuming standby it caught up. Thus a success command tag alone
+does not prove remote apply under explicit cancellation. Next test
+the native driver notice path and fail closed on this condition
+before treating synchronous PG configuration as receipt RPO=0.
+Evidence pg-sync-stall-two-hosts.json. Temporary resources removed.
