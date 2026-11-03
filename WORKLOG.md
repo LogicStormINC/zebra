@@ -19864,3 +19864,13 @@ ambiguous timeout handling keep their existing rules. 31 focused tests
 passed, including termination between attempts. Next run real advisory
 lock injection with release after the first rollback and verify one
 sealed receipt and one model settlement.
+
+CA-HA-03 atomic first-Run real lock retry green. One signed POST
+8551f345-bd05-406d-a2ea-70477c96f4da under the isolated two-module
+overlay. Separate connection held the exact global command advisory key,
+first transaction returned LockNotAvailable and rolled back. The holder
+exited before the candidate retried within the original deadline.
+HTTP 200 with sealed 201 for Task 47815dc6-38eb-4d65-b812-09f3ce8c2e5a
+in 0.537s. PostgreSQL confirmed one Task, command, completion and settled
+model reservation. Both APIs restored and ready. This proves release
+between attempts, not sustained throughput. Evidence atomic-retry790-*.
