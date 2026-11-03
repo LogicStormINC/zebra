@@ -5,6 +5,15 @@ from typing import Any
 
 from agent_core.contracts.model_events import ModelTokenBreakdownV2Payload
 
+TOKEN_USAGE_FIELDS = (
+    "input_tokens",
+    "output_tokens",
+    "total_tokens",
+    "prompt_cache_hit_tokens",
+    "prompt_cache_miss_tokens",
+    "reasoning_tokens",
+)
+
 LATEST_USAGE_KEYS = (
     "input_tokens",
     "input_token_limit",
@@ -19,8 +28,19 @@ LATEST_USAGE_KEYS = (
 def advance_model_usage(state: Mapping[str, Any], payload: Mapping[str, Any]) -> dict[str, Any]:
     latest = dict(state.get("latest", {}))
     latest.update({key: payload[key] for key in LATEST_USAGE_KEYS if payload.get(key) is not None})
+    prior_calls = state.get("model_call_count", 0)
+    totals = {}
+    for key in TOKEN_USAGE_FIELDS:
+        previous = state.get("provider_token_totals", {}).get(key) if prior_calls else 0
+        current = payload.get(key)
+        totals[key] = (
+            previous + current
+            if previous is not None and type(current) is int and current >= 0
+            else None
+        )
     return {
-        "model_call_count": state.get("model_call_count", 0) + 1,
+        "model_call_count": prior_calls + 1,
+        "provider_token_totals": totals,
         "cache_hit_tokens": state.get("cache_hit_tokens", 0)
         + _non_negative(payload.get("prompt_cache_hit_tokens")),
         "cache_miss_tokens": state.get("cache_miss_tokens", 0)
@@ -35,6 +55,9 @@ def public_model_usage(state: Mapping[str, Any]) -> dict[str, object] | None:
     summary: dict[str, object] = {
         key: state[key] for key in ("model_call_count", "cache_hit_tokens", "cache_miss_tokens")
     }
+    summary["provider_token_totals"] = state.get(
+        "provider_token_totals", dict.fromkeys(TOKEN_USAGE_FIELDS)
+    )
     latest = state["latest"]
     for key in ("input_tokens", "input_token_limit", "reasoning_effort"):
         value = latest.get(key)

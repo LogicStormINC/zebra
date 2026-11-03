@@ -1,82 +1,15 @@
-from __future__ import annotations
-
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Iterable
 from typing import Any
 
-from agent_core.contracts.model_events import ModelTokenBreakdownV2Payload
+from agent_core.application.task_model_usage import advance_model_usage, public_model_usage
 from agent_core.domain.events import EventType
 from agent_core.ports.agent_tasks import TaskEvent
 
 
 def summarize_task_model_usage(events: Iterable[TaskEvent]) -> dict[str, object] | None:
     """Return the bounded public usage summary for a durable Task."""
-
-    calls: list[Mapping[str, Any]] = [
-        item.event.payload
-        for item in events
-        if item.event.event_type is EventType.MODEL_RESPONSE_RECEIVED
-    ]
-    if not calls:
-        return None
-    summary: dict[str, object] = {
-        "model_call_count": len(calls),
-        "cache_hit_tokens": sum(
-            _non_negative(call.get("prompt_cache_hit_tokens")) for call in calls
-        ),
-        "cache_miss_tokens": sum(
-            _non_negative(call.get("prompt_cache_miss_tokens")) for call in calls
-        ),
-    }
-    _copy_latest(summary, calls, "input_tokens")
-    _copy_latest(summary, calls, "input_token_limit")
-    _copy_latest(summary, calls, "reasoning_effort")
-    breakdown = _bounded_breakdown(_latest(calls, "token_breakdown"))
-    if breakdown:
-        summary["token_breakdown"] = breakdown
-    detailed = _bounded_breakdown_v2(_latest(calls, "token_breakdown_v2"))
-    if detailed is not None:
-        summary["token_breakdown_v2"] = detailed
-    model = _latest(calls, "resolved_model") or _latest(calls, "model_name")
-    if isinstance(model, str) and model.strip():
-        summary["model"] = model.strip()
-    return summary
-
-
-def _copy_latest(
-    target: dict[str, object], calls: Sequence[Mapping[str, Any]], key: str
-) -> None:
-    value = _latest(calls, key)
-    if isinstance(value, bool):
-        return
-    if isinstance(value, int | float) and value >= 0:
-        target[key] = int(value)
-    elif isinstance(value, str) and value.strip():
-        target[key] = value.strip()
-
-
-def _latest(calls: Sequence[Mapping[str, Any]], key: str) -> object | None:
-    return next((call[key] for call in reversed(calls) if call.get(key) is not None), None)
-
-
-def _non_negative(value: object) -> int:
-    if isinstance(value, bool) or not isinstance(value, int | float) or value < 0:
-        return 0
-    return int(value)
-
-
-def _bounded_breakdown(value: object) -> dict[str, int]:
-    if not isinstance(value, Mapping):
-        return {}
-    return {
-        key: _non_negative(value.get(key))
-        for key in ("messages", "system", "tools")
-        if value.get(key) is not None
-    }
-
-
-def _bounded_breakdown_v2(value: object) -> dict[str, object] | None:
-    try:
-        breakdown = ModelTokenBreakdownV2Payload.model_validate(value)
-    except (TypeError, ValueError):
-        return None
-    return breakdown.model_dump(mode="json", exclude_none=True)
+    state: dict[str, Any] = {}
+    for item in events:
+        if item.event.event_type is EventType.MODEL_RESPONSE_RECEIVED:
+            state = advance_model_usage(state, item.event.payload)
+    return public_model_usage(state)

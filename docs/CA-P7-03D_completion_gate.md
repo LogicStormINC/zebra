@@ -94,3 +94,6 @@ parent admission、counter与terminal驱动仍是明确局部fixture，不冒称
 按version/key/hash核验后导出；故障/剪枝用例预期删除的对象由其断言与元数据说明。
 bucket、credential与数据均为本run所有，未删业务/未知资源；清理后disk130GiB、memory free67%。
 无生产counter、未合主线、未部署/生产迁移；模型驱动child/synthesis等完整跨仓正项仍待验。
+### 托管 API 用量核算
+
+按当前范围，仅使用托管 API。GLM 自建原型和 GPU 计划保留为历史实验。复用现有 Chat Completions 兼容解析及 DeepSeek Responses 解析，按 Task 汇总供应商报告的输入、输出、总量、缓存命中、缓存未命中和推理 token。新字段 `provider_token_totals` 逐项返回累计值或 null，任一已投影响应缺该项时该项总数未知。旧投影没有完整历史累计值时保守返回未知，既有缓存展示字段保持兼容。缓存和推理属于明细，不叠加到总 token。缺少可信 usage 时 Worker 预算保留原预留。发送前仍要求可信上界，未为任一供应商启用严格准入。轻量回归 101 通过、3 跳过，未调用真实供应商、未做计费、未部署。

@@ -195,3 +195,24 @@ def test_compact_turns_match_every_randomized_canonical_prefix():
             "turn_id": visible.turn_id if visible else None,
             "current_turn_status": visible.status.value if visible else None,
         }, sequence
+
+
+def test_provider_totals_keep_missing_usage_distinct_from_zero():
+    payload = {
+        "input_tokens": 10,
+        "output_tokens": 4,
+        "total_tokens": 14,
+        "prompt_cache_hit_tokens": 0,
+        "prompt_cache_miss_tokens": 10,
+        "reasoning_tokens": 2,
+    }
+    first = advance_model_usage({}, payload)
+    second = advance_model_usage(first, payload)
+    assert public_model_usage(second)["provider_token_totals"] == {
+        key: value * 2 for key, value in payload.items()
+    }
+    missing = advance_model_usage(second, {})
+    later = advance_model_usage(missing, payload)
+    assert public_model_usage(later)["provider_token_totals"] == dict.fromkeys(payload)
+    legacy = {key: value for key, value in first.items() if key != "provider_token_totals"}
+    assert public_model_usage(legacy)["provider_token_totals"] == dict.fromkeys(payload)
