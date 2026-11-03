@@ -42,6 +42,11 @@ class ToolRunIndexer:
     def index_worker_event(
         self, event: SessionEvent, *, authority: WorkerMutationAuthority
     ) -> ToolRunRecord | None:
+        if event.event_type not in {
+            EventType.TOOL_EXECUTION_COMPLETED,
+            EventType.TOOL_EXECUTION_FAILED,
+        }:
+            return None
         index = getattr(self._tool_run_store, "index_worker_event", None)
         if callable(index):
             return cast(ToolRunRecord | None, index(event, authority=authority))

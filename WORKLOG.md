@@ -20182,3 +20182,14 @@ logs had no matching Session entry. Four storage adapters use the
 same SQL shape, so the precise caller and blocking transaction remain
 unproven. Model/tool projection is a candidate to check against the
 actual Worker composition. No task writes or replay performed.
+
+CA-HA-03 native Worker recorder invokes both indexers per Event,
+and cloud composition uses the same PostgreSQL model/tool store for
+both. Both indexers previously forwarded every Event, reacquiring the
+stream share lock twice even for no-op Event kinds. The suspended
+Session already has the exact model projection, consistent with a
+later redundant lock but not proof of its specific call site.
+Worker indexers now dispatch only their own Event kinds, matching
+local behavior; real projection writes retain the existing fence.
+Routing regression and 18 focused Worker tests passed. Next deploy
+in E1 and check canonical/derived parity and suspension frequency.

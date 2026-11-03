@@ -37507,3 +37507,8 @@ PostgreSQL task_event_positions.py and its existing ordering tests.
 
 CA-HA-03 atomic admission timings addendum: own phase instrumentation
 in client_admission_atomic.py and the isolated E1 delta image entry.
+
+CA-HA-03 Worker projection addendum: own event-kind dispatch guards in
+model_call_index.py and tool_run_index.py for native and local parity.
+The Worker projection addendum also owns the routing regression in
+tests/worker/test_model_call_index.py.

@@ -1,10 +1,11 @@
 from datetime import UTC, datetime
 from pathlib import Path
+from unittest.mock import Mock
 
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import new_session_id
 from agent_storage import SQLiteModelCallStore
-from zebra_agent_worker import ModelCallIndexer
+from zebra_agent_worker import ModelCallIndexer, ToolRunIndexer
 
 
 def test_model_call_indexer_indexes_model_response_event(tmp_path: Path) -> None:
@@ -39,3 +40,23 @@ def test_model_call_indexer_indexes_model_response_event(tmp_path: Path) -> None
     assert record.cache_hit is True
     assert record.tool_call_count == 1
     assert store.list_for_session(event.session_id) == [record]
+
+
+def test_native_indexers_skip_events_outside_their_projection() -> None:
+    store = Mock()
+    authority = Mock()
+    model = ModelCallIndexer(store)
+    tool = ToolRunIndexer(store)
+    event = Mock(event_type=EventType.MODEL_RESPONSE_RECEIVED)
+
+    assert tool.index_worker_event(event, authority=authority) is None
+    store.index_worker_event.assert_not_called()
+    model.index_worker_event(event, authority=authority)
+    store.index_worker_event.assert_called_once_with(event, authority=authority)
+
+    store.reset_mock()
+    event = Mock(event_type=EventType.TOOL_EXECUTION_COMPLETED)
+    assert model.index_worker_event(event, authority=authority) is None
+    store.index_worker_event.assert_not_called()
+    tool.index_worker_event(event, authority=authority)
+    store.index_worker_event.assert_called_once_with(event, authority=authority)
