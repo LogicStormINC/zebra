@@ -134,16 +134,20 @@ def test_atomic_initial_run_indexes_before_wakeup_and_rolls_back_on_rejection(
     enable(store)
     assert start_atomic_surface(store, op, "a" * 64, protocol=PROTOCOL)
     wake = task_admission.record_command_wakeup_in_transaction
+    rebuild = task_admission.rebuild_task_in_transaction
+    indexed = []
+
+    def observe_rebuild(connection, namespace, session_id):
+        task = rebuild(connection, namespace, session_id)
+        indexed.append(session_id)
+        return task
 
     def reject(connection, namespace, event, *, is_new_admission):
-        assert connection.execute(
-            "SELECT 1 AS indexed FROM session_events "
-            "WHERE deployment_namespace=%s AND event_id=%s AND task_sequence IS NOT NULL",
-            (namespace, event.event_id),
-        ).fetchone() == {"indexed": 1}
+        assert indexed == [event.session_id, event.session_id]
         wake(connection, namespace, event, is_new_admission=is_new_admission)
         raise AtomicSurfaceAborted("controlled wakeup rollback")
 
+    monkeypatch.setattr(task_admission, "rebuild_task_in_transaction", observe_rebuild)
     monkeypatch.setattr(task_admission, "record_command_wakeup_in_transaction", reject)
     with pytest.raises(AtomicSurfaceAborted, match="controlled wakeup rollback"):
         with atomic_surface_transaction(store, op, "a" * 64):

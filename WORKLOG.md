@@ -19911,3 +19911,12 @@ idempotent Event handling retain their previous order. Added native
 rollback coverage around the deferred wakeup. Focused 31 passed and
 3 native skips, Ruff clean. Next run the PostgreSQL regression and a
 fresh isolated mixed load comparison before claiming a latency gain.
+
+CA-HA-03 native rollback and commit confirmation validated on a disposable
+local PostgreSQL 17 container and unique test schemas. First run exposed
+a wrong assertion in the new test: bootstrap indexing can use the legacy
+position path, so task_sequence need not be populated there. Corrected
+the test to observe both real rebuilds before wakeup and assert no
+durable Task, event, pending row or outbox after injected rejection.
+22 native tests passed on rerun; both disposable containers stopped.
+Next package the two storage modules and compare Native22 lock sampling.
