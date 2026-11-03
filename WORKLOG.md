@@ -21074,3 +21074,16 @@ and the RTT is a shared transport measurement, not a trace of
 each transaction. Evidence amd64-attribution-afff591d40d5.log.
 No POST replay; next audit normal connection inventory and
 transaction round trips over the cross-host transport.
+
+CA-HA-03 verified AMD64 normal lane saturation with test-only
+instrumentation in the transient isolated API. Across two fresh
+5rps/3s runs, all nine permit rejects were at normal 8/8; read
+and control were idle at the samples. The second run captured 545
+TaskIoConnection.execute calls on api-normal threads across the
+15 offers, including authorization and failed transactions.
+This is an aggregate wrapper count, not per-request wire RTT or
+a successful-request statement count. Zero CPU throttle in both.
+Private evidence amd64-permits-fca5d2072d40.log and
+amd64-permits-24726f8ee718.log. Maintain the fleet connection
+ceiling; next target the number/duration of normal direct
+connections in first-Run admission rather than raising the limit.
