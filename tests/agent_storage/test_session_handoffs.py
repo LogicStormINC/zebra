@@ -14,6 +14,7 @@ from agent_core.application.workspace_projection import rebuild_workspace
 from agent_core.domain.context_capsule import ContextSourceEventRange
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId
+from agent_core.domain.runtime_bundle_types import ArtifactPin
 from agent_core.domain.session_handoff import (
     HandoffActorKind,
     HandoffReason,
@@ -92,6 +93,26 @@ def test_commit_atomically_creates_child_events_lineage_envelope_and_outbox(
     assert dispatch.child_session_id == operation.target_session_id
     store.acknowledge_dispatch(dispatch.delivery_id, worker_id="worker-1")
     assert store.claim_dispatch(worker_id="worker-2", claimed_at=NOW) is None
+
+
+def test_handoff_persists_selected_model_for_the_child(tmp_path: Path) -> None:
+    database_path = tmp_path / "handoff.db"
+    pin = ArtifactPin(
+        kind="provider-profile",
+        id="provider/alternate",
+        version="1.0.0",
+        digest="sha256:" + "a" * 64,
+    )
+    source_id = _seed_completed_source(database_path, tmp_path, selected_model_pin=pin)
+    store = SQLiteSessionHandoffStore(database_path)
+    operation, commit = _prepared_commit(store, source_id)
+    store.commit(commit)
+
+    child_events = SQLiteEventStore(database_path).list_for_session(operation.target_session_id)
+    message = next(
+        event for event in child_events if event.event_type is EventType.USER_MESSAGE_RECEIVED
+    )
+    assert message.payload["selected_model_pin"] == pin.model_dump(mode="json")
 
 
 def test_child_recovery_revalidates_workspace_even_after_dispatch_ack(tmp_path: Path) -> None:
@@ -579,11 +600,17 @@ def test_handoff_threads_skill_components_into_child_task_and_authority(
     assert child_workspace.skill_components == ("Review", "evidence")
 
 
-def _seed_completed_source(database_path: Path, workspace_root: Path) -> SessionId:
+def _seed_completed_source(
+    database_path: Path,
+    workspace_root: Path,
+    *,
+    selected_model_pin: ArtifactPin | None = None,
+) -> SessionId:
     bootstrap = SessionBootstrapService().build(
         SessionBootstrapCommand(
             title="Source stage",
             user_input="Complete source",
+            selected_model_pin=selected_model_pin,
             workspace_root=workspace_root,
             policy_profile="local-safe",
             created_at=NOW,

@@ -152,10 +152,20 @@ def commit_handoff_in_transaction(
         or segment["segment_index"] != request.envelope.source_stage_index
     ):
         raise HandoffStorageConflictError("handoff Task lineage changed")
+    selected_model = connection.execute(
+        """
+        SELECT payload -> 'selected_model_pin' AS pin FROM session_events
+        WHERE deployment_namespace = %s AND session_id = %s AND event_type = %s
+          AND payload -> 'selected_model_pin' <> 'null'::jsonb
+        ORDER BY sequence DESC LIMIT 1
+        """,
+        (deployment_namespace, operation.source_session_id, EventType.USER_MESSAGE_RECEIVED.value),
+    ).fetchone()
     events = build_handoff_events(
         operation,
         request,
         workspace.model_dump(mode="json"),
+        selected_model_pin=selected_model["pin"] if selected_model is not None else None,
         host_context=_child_host_context(
             connection, deployment_namespace, operation.source_session_id
         ),
