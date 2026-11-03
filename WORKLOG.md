@@ -20746,3 +20746,13 @@ pg-sync-tls-restore-redundancy.json. The replacement shared the
 promoted primary's host and TLS test identity. This proves the
 replication and proof recovery sequence only; independent failure
 domains, API writer handover, and automated fencing remain open.
+
+CA-HA-03 rebuilt a standby on OrbStack from the promoted primary
+on 192.168.101.7 after stopping the original writer. Streaming used
+a temporary SSH forward bound to the OrbStack private interface.
+Re-established remote_apply and verified the TLS API proof connector
+against the rebuilt standby for the original STOP record. A new SQL
+write was visible on the rebuilt standby at commit return. Evidence
+pg-sync-tls-cross-host-rebuild.json. The fixture reused its ephemeral
+TLS identity and switched topology manually. Application writer
+handover and automatic fencing remain open.
