@@ -1,6 +1,7 @@
 """Publish an E1 Worker identity from the trusted Docker host."""
 
 import argparse
+import fcntl
 import json
 import os
 import subprocess
@@ -124,17 +125,25 @@ def reconcile_exits(witness: dict[str, str], dsn: str, *, namespace: str) -> int
 
 
 def restart_reconciled(
-    witness: dict[str, str], binding_path: Path, dsn: str, *, namespace: str
+    container: str, binding_path: Path, destination: Path, dsn: str, *, namespace: str
 ) -> int:
-    container = witness["container"]
-    count = reconcile_exits(witness, dsn, namespace=namespace)
-    if reconcile_exits(witness, dsn, namespace=namespace):
-        raise RuntimeError("executor exits are still being reconciled; retry before restarting")
-    if exit_witness(container, binding_path) != witness:
-        raise ValueError("Worker exit witness changed before restart")
-    docker("start", container)
-    publish(identity(container), binding_path)
-    return count
+    binding_path = binding_path.resolve()
+    lock_path = binding_path.with_suffix(".restart.lock")
+    if destination.resolve() in {binding_path, lock_path}:
+        raise ValueError("exit witness must have a separate destination")
+    with lock_path.open("a") as lock:
+        fcntl.flock(lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        witness = exit_witness(container, binding_path)
+        publish(witness, destination)
+        count = reconcile_exits(witness, dsn, namespace=namespace)
+        if reconcile_exits(witness, dsn, namespace=namespace):
+            raise RuntimeError("executor exits are still being reconciled; retry before restarting")
+        container = witness["container"]
+        if exit_witness(container, binding_path) != witness:
+            raise ValueError("Worker exit witness changed before restart")
+        docker("start", container)
+        publish(identity(container), binding_path)
+        return count
 
 
 if __name__ == "__main__":
@@ -155,6 +164,14 @@ if __name__ == "__main__":
         arguments.ack_session and arguments.exit_binding is None
     ):
         parser.error("acknowledgment requires --exit-binding, --ack-session and --ack-fence")
+    if arguments.restart:
+        if arguments.exit_binding.resolve() == arguments.destination.resolve():
+            parser.error("exit witness must have a separate destination")
+        print(restart_reconciled(
+            arguments.container, arguments.exit_binding, arguments.destination,
+            os.environ["ZEBRA_DATABASE_URL"], namespace="ha-e1-20261102",
+        ))
+        raise SystemExit(0)
     if arguments.exit_binding is None:
         binding = identity(arguments.container)
     else:
@@ -169,10 +186,4 @@ if __name__ == "__main__":
         )
     if arguments.reconcile:
         dsn = os.environ["ZEBRA_DATABASE_URL"]
-        if arguments.restart:
-            count = restart_reconciled(
-                binding, arguments.exit_binding, dsn, namespace="ha-e1-20261102"
-            )
-        else:
-            count = reconcile_exits(binding, dsn, namespace="ha-e1-20261102")
-        print(count)
+        print(reconcile_exits(binding, dsn, namespace="ha-e1-20261102"))
