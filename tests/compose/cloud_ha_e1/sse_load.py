@@ -48,7 +48,7 @@ async def _problem_code(response: httpx.Response) -> str | None:
     if isinstance(body, dict):
         error = body.get("error")
         nested_code = error.get("code") if isinstance(error, dict) else error
-        for value in (body.get("reason"), body.get("code"), nested_code):
+        for value in (body.get("reason"), body.get("code"), nested_code, body.get("status")):
             if isinstance(value, str) and re.fullmatch(r"[a-z][a-z0-9_]{1,63}", value):
                 return value
     return None

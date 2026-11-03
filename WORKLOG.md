@@ -21194,3 +21194,13 @@ keepalive cadence. No admission traffic ran. Private evidence
 sse-renew32-addf7fbcd3c7462ca2e1399e0a68507b.json. Existing
 staging images were used; 256-stream sustained renewal remains
 unmeasured. The independent corpus generator continued running.
+
+CA-HA-03 frozen 256-stream read-only renewal diagnostic: all
+256 initial streams opened, but the first renewal wave failed
+closed after 11 attempts started. One node-1 resumed GET with
+after_sequence=2 returned 503, before any renewed heartbeat;
+no Host authorization exception logged. No reason field was
+captured. Expanded the bounded diagnostic to retain typed status
+as a fallback. Evidence sse-renew256-e1cae0390e4545f190e35c967ae0f504.
+Both isolated APIs restored and TLS ready; no POSTs. Full corpus
+generation concurrently reached 2250 Tasks.
