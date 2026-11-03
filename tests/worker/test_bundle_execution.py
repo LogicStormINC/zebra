@@ -520,3 +520,14 @@ def test_worker_sends_model_request_using_message_release_snapshot(tmp_path, mon
     assert result.session.status is SessionStatus.COMPLETED
     assert bodies and all(body["model"] == "beta" for body in bodies)
     assert any("Frozen business beta." in json.dumps(body["messages"]) for body in bodies)
+    observed = [
+        event.payload for event in events.list_for_session(sid)
+        if event.event_type.value == "provider_usage_observed"
+    ]
+    assert len(observed) == 2 * len(bodies)
+    for started, finished in zip(observed[::2], observed[1::2], strict=True):
+        assert started["attempt_id"] == finished["attempt_id"]
+        assert (started["phase"], finished["phase"]) == ("started", "finished")
+        assert finished["definition_id"] == str(snapshot.definition_id)
+        assert finished["model_pin"] == replacement.provider_profile.pin.model_dump(mode="json")
+        assert finished["usage"]["total_tokens"] is None

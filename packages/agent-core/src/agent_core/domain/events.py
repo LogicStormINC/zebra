@@ -34,6 +34,7 @@ class EventType(StrEnum):
     PLAN_PROPOSED = "plan_proposed"
     PLAN_APPROVED = "plan_approved"
     PLAN_UPDATED = "plan_updated"
+    PROVIDER_USAGE_OBSERVED = "provider_usage_observed"
     MODEL_REQUEST_STARTED = "model_request_started"
     MODEL_RESPONSE_DELTA = "model_response_delta"
     MODEL_RESPONSE_RECEIVED = "model_response_received"

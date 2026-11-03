@@ -56,6 +56,7 @@ def serialize_task_event(item: TaskEvent) -> dict[str, object]:
 def is_user_task_event(item: TaskEvent) -> bool:
     event = item.event
     if event.event_type in {
+        EventType.PROVIDER_USAGE_OBSERVED,
         EventType.SESSION_HANDOFF_COMMITTED,
         EventType.SESSION_HANDOFF_RECEIVED,
     }:

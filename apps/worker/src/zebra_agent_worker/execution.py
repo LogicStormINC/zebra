@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from dataclasses import replace
+from dataclasses import asdict, replace
 from datetime import datetime
 
 import zebra_agent_config
@@ -11,6 +11,7 @@ from agent_core.domain.execution_authority import ExecutionAuthorityResolutionEr
 from agent_core.domain.plugin_authority import PluginAuthorityUnavailable
 from agent_core.domain.sessions import SessionStatus
 from agent_integrations import build_model_gateway
+from agent_integrations.bundle_model import BundleModelGateway
 from agent_security import resolve_effective_network_profile
 
 import zebra_agent_worker.bundle_assembly as bundle
@@ -158,6 +159,7 @@ class SessionExecutionService(SessionExecutionComposition, SessionExecutionEntry
                 raise WorkerExecutionError("coverage_unsupported")
             return self._coverage_runtime.execute(self, inputs, authority_recorder, ownership_check)
         model_gateway = execution_gateway.model_gateway(self, build_model_gateway, task=task)
+        transport_gateway = model_gateway
         task = bundle.resolve_bound_workspace(task, self._workspace_resolver, session_id)
         if fresh_authority is not None:
             model_gateway = fresh_authority.model(model_gateway)
@@ -198,6 +200,30 @@ class SessionExecutionService(SessionExecutionComposition, SessionExecutionEntry
             task_budget = prepare_task_budget(
                 self, claimed, task_binding, attempt_number, model_gateway, task)
             budget_check.gate = task_budget
+            assembly = bundle.task_assembly(task)
+            if isinstance(transport_gateway, BundleModelGateway) and assembly is not None:
+                snapshot = task.definition_snapshot
+                assert snapshot is not None
+                model_pin = task.selected_model_pin or assembly.provider_profile.pin
+                usage_scope = {
+                    "definition_id": str(snapshot.definition_id),
+                    "binding_revision": task_binding.binding_revision if task_binding else None,
+                    "model_pin": model_pin.model_dump(mode="json"),
+                }
+
+                def persist_provider_usage(attempt_id, phase, usage):
+                    current_recorder().append(
+                        EventType.PROVIDER_USAGE_OBSERVED,
+                        EventActor.HARNESS,
+                        {
+                            **usage_scope,
+                            "attempt_id": str(attempt_id),
+                            "phase": phase,
+                            "usage": asdict(usage) if usage is not None else None,
+                        },
+                    )
+
+                transport_gateway.usage_observer = persist_provider_usage
         except ExecutionInterrupted:
             return execution_preflight._superseded_by_control_event(authority_recorder)
         except PluginAuthorityUnavailable as exc:
