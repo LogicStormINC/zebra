@@ -41,6 +41,19 @@ def test_hung_executor_is_killed_without_stopping_shared_worker_or_sibling():
         terminate_group(sibling, grace=0.01)
 
 
+@pytest.mark.skipif(not hasattr(os, "pidfd_open"), reason="requires Linux pidfd")
+def test_executor_exit_wakes_before_next_cancellation_poll():
+    process = child("import time; time.sleep(.15)")
+    acknowledged = []
+    started = time.monotonic()
+    try:
+        supervise(process, lambda: False, interval=2, on_exit=lambda: acknowledged.append(True))
+        assert time.monotonic() - started < 2
+        assert process.returncode == 0 and acknowledged == [True]
+    finally:
+        terminate_group(process, grace=0.01)
+
+
 def test_database_uncertainty_does_not_authorize_killing_executor():
     process = child("import time; time.sleep(.1)")
     calls = []

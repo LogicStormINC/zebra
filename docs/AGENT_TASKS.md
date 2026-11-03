@@ -37590,3 +37590,6 @@ use the owned loop/child composition paths and own the focused test_loop regress
 
 CA-HA-03 E1 fresh execution input follow-up (Luke Ding/Codex, existing branch/worktree):
 own the suspended restoration guard and focused Worker reliability boundary check.
+
+CA-HA-03 E1 supervisor exit wakeup follow-up (Luke Ding/Codex, existing branch/worktree):
+own process_supervision.py exit waiting and the Worker supervision regression.
