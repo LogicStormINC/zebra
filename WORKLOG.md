@@ -19757,3 +19757,17 @@ the candidate persisted that exact event once. One completion and
 one settled model reservation confirmed. Both temporary Worker
 overlays removed and clean imports verified. Evidence canonical-lock-
 zebra*.log and canonical-lock-781-*/0.json.
+
+CA-HA-03 Native21 source 62bb72e7 and ARM manifest
+sha256:7119fc124856a8924b7fbd333af05855eeddbea6040a1bcd5f54520328bc8a44.
+Both nodes verified 2142 runtime files/3 links, cold record hashes,
+readiness and TLS/SSE. Trust 20 and definition
+66bd2d77-cf52-47a3-81cf-37a7b3badf95 published.
+Repeat mixed diagnostic held 32 idle Task SSE clients, all received
+heartbeats, no client errors. 20 tasks accepted once and completed,
+20 model reservations settled, no unknown POSTs. The generator hit 16
+in-flight at 5 Hz before the active reservation cap. Maximum admission
+3.8818s. This sample eliminated the earlier suspension but is not an
+E1 capacity pass. Next attribute API preflight and Worker throughput
+with per-component measurements and test multi-Task live cursors.
+Evidence preflight5-commit21-39a54ca8* and commit21-with-sse-86a617ac*.
