@@ -29,8 +29,10 @@ from agent_storage.postgres.task_admission import (
     PostgresTaskAdmissionTransaction,
     load_task_binding,
     save_task_binding,
+    save_task_binding_in_transaction,
 )
 from psycopg import connect
+from psycopg.rows import dict_row
 
 
 @pytest.fixture(scope="session")
@@ -188,6 +190,15 @@ def test_task_binding_renewal_appends_one_locked_revision(
             "binding_revision": 2,
         }
     )
+
+    with connect(postgres_dsn, row_factory=dict_row) as connection:
+        save_task_binding_in_transaction(
+            connection, namespace, renewed, expected_previous_revision=1
+        )
+        connection.rollback()
+    assert load_task_binding(
+        postgres_dsn, deployment_namespace=namespace, task_id=task_id
+    ) == current
 
     save_task_binding(
         postgres_dsn,

@@ -192,46 +192,62 @@ def save_task_binding(
 
     database = PostgresDatabase(dsn, deployment_namespace=deployment_namespace)
     with database.connect() as connection:
-        # Bindings and fenced aggregate mutations share the Task boundary.
-        # Lock before reading revisions so renewal cannot slip past final validation.
-        _lock_task(connection, deployment_namespace, TaskId(UUID(binding.task_id)))
-        if expected_previous_revision is not None:
-            latest = connection.execute(
-                """
-                SELECT binding_revision FROM task_binding_snapshots
-                WHERE deployment_namespace = %s AND task_id = %s
-                ORDER BY binding_revision DESC
-                LIMIT 1
-                FOR UPDATE
-                """,
-                (deployment_namespace, str(binding.task_id)),
-            ).fetchone()
-            actual = latest["binding_revision"] if latest is not None else 0
-            if actual != expected_previous_revision:
-                raise ValueError(
-                    "task binding revision advanced concurrently; retry from the latest snapshot"
-                )
-            if binding.binding_revision != actual + 1:
-                raise ValueError("task binding renewal must append exactly one revision")
-        existing = connection.execute(
+        return save_task_binding_in_transaction(
+            connection,
+            deployment_namespace,
+            binding,
+            expected_previous_revision=expected_previous_revision,
+        )
+
+
+def save_task_binding_in_transaction(
+    connection: Any,
+    deployment_namespace: str,
+    binding: TaskBindingSnapshot,
+    *,
+    expected_previous_revision: int | None,
+) -> str:
+    """Append a binding under the caller's transaction and Task revision fence."""
+    # Bindings and fenced aggregate mutations share the Task boundary.
+    # Lock before reading revisions so renewal cannot slip past final validation.
+    _lock_task(connection, deployment_namespace, TaskId(UUID(binding.task_id)))
+    if expected_previous_revision is not None:
+        latest = connection.execute(
             """
-            SELECT binding_digest FROM task_binding_snapshots
+            SELECT binding_revision FROM task_binding_snapshots
             WHERE deployment_namespace = %s AND task_id = %s
-                AND binding_revision = %s
+            ORDER BY binding_revision DESC
+            LIMIT 1
+            FOR UPDATE
             """,
-            (
-                deployment_namespace,
-                str(binding.task_id),
-                binding.binding_revision,
-            ),
+            (deployment_namespace, str(binding.task_id)),
         ).fetchone()
-        if existing is not None:
-            if existing["binding_digest"] != binding.binding_digest:
-                raise ValueError(
-                    "task binding revision is immutable and already exists with a different digest"
-                )
-            return binding.binding_digest
-        _insert_binding_snapshot(connection, deployment_namespace, binding)
+        actual = latest["binding_revision"] if latest is not None else 0
+        if actual != expected_previous_revision:
+            raise ValueError(
+                "task binding revision advanced concurrently; retry from the latest snapshot"
+            )
+        if binding.binding_revision != actual + 1:
+            raise ValueError("task binding renewal must append exactly one revision")
+    existing = connection.execute(
+        """
+        SELECT binding_digest FROM task_binding_snapshots
+        WHERE deployment_namespace = %s AND task_id = %s
+            AND binding_revision = %s
+        """,
+        (
+            deployment_namespace,
+            str(binding.task_id),
+            binding.binding_revision,
+        ),
+    ).fetchone()
+    if existing is not None:
+        if existing["binding_digest"] != binding.binding_digest:
+            raise ValueError(
+                "task binding revision is immutable and already exists with a different digest"
+            )
+        return binding.binding_digest
+    _insert_binding_snapshot(connection, deployment_namespace, binding)
     return binding.binding_digest
 
 
