@@ -242,13 +242,15 @@ class OpenAICompatibleModelGateway:
                 if self.authority_check is not None:
                     self.authority_check(call_id)
                 try:
-                    response_data = read_openai_stream(
-                        client,
-                        url=f"{self._base_url}{CHAT_COMPLETIONS_PATH}",
-                        headers=self._headers(),
-                        body=request_body,
-                        on_text_delta=on_text_delta,
-                        on_semantic_output=mark_semantic_output,
+                    response_data = self._observe_usage_attempt(
+                        lambda: read_openai_stream(
+                            client,
+                            url=f"{self._base_url}{CHAT_COMPLETIONS_PATH}",
+                            headers=self._headers(),
+                            body=request_body,
+                            on_text_delta=on_text_delta,
+                            on_semantic_output=mark_semantic_output,
+                        )
                     )
                     # A completed stream's buffered reasoning/tool arguments are not
                     # published text or executed tools. Allow one Harness parse repair.
@@ -399,14 +401,21 @@ class OpenAICompatibleModelGateway:
         self, body: dict[str, Any] | bytes, *, endpoint: str | None = None,
         deadline_s: float | None = None,
     ) -> dict[str, Any]:
+        return self._observe_usage_attempt(
+            lambda: self._send_chat_completion(body, endpoint=endpoint, deadline_s=deadline_s)
+        )
+
+    def _observe_usage_attempt(
+        self, send: Callable[[], dict[str, Any]]
+    ) -> dict[str, Any]:
         observer = self.usage_observer
         if observer is None:
-            return self._send_chat_completion(body, endpoint=endpoint, deadline_s=deadline_s)
+            return send()
         attempt = uuid4()
         observer(attempt, "started", None)
         usage = None
         try:
-            payload = self._send_chat_completion(body, endpoint=endpoint, deadline_s=deadline_s)
+            payload = send()
             try:
                 usage = parse_usage(payload.get("usage"))
             except ValueError:

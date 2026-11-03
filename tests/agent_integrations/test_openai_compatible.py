@@ -135,6 +135,8 @@ def test_openai_compatible_gateway_streams_text_and_rebuilds_final_completion() 
     )
     deltas = []
 
+    attempts = []
+    gateway.usage_observer = lambda *entry: attempts.append(entry)
     completion = gateway.complete_stream(
         [_user_message("Hello")],
         on_text_delta=deltas.append,
@@ -152,6 +154,9 @@ def test_openai_compatible_gateway_streams_text_and_rebuilds_final_completion() 
     assert [delta.content for delta in deltas] == ["Hello ", "Zebra"]
     assert completion.assistant_message.content == "Hello Zebra"
     assert completion.call_metadata.usage.total_tokens == 4
+    started, finished = attempts
+    assert started == (finished[0], "started", None)
+    assert finished[1:] == ("finished", completion.call_metadata.usage)
 
 
 def test_openai_compatible_gateway_rebuilds_fragmented_stream_tool_calls() -> None:
