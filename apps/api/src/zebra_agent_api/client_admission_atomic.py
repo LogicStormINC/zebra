@@ -161,7 +161,8 @@ def execute_atomic_surface(
     finally:
         if stages:
             logger.info(
-                "Atomic first Run milestones elapsed_ms=%s",
+                "Atomic first Run milestones operation_id=%s elapsed_ms=%s",
+                operation,
                 [
                     ("prepared", int((prepared_at - started) * 1000)),
                     ("fenced", int((fenced_at - started) * 1000)),
