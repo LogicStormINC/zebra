@@ -20161,3 +20161,14 @@ does not isolate SSE causality. Focus on dispatch and investigate the
 separate accepted-then-suspended outcome before qualification.
 Evidence preflight1-idle-timing30-9b68049e*, preflight1-sse-timing30-68754547*,
 timing30-low-*-zebra*.log, timing30-low-*-original-receipts.json.
+
+CA-HA-03 inspected the sole accepted-then-suspended Native30 1 Hz
+idle control by exact Session identity in a read-only E1 DB transaction.
+Sequence 7 model_request_started, 8 model_response_delta, 9
+model_response_received, 10 session_suspended. Durable reason
+execution_storage_contention; metadata LockNotAvailable, retryable
+false. No canonical terminal answer or completion precedes suspension.
+This is a separate Worker post-model storage fault, not an admission
+timeout or provider failure. No replay or resume was sent.
+Next locate the post-response storage call that raised the lock error,
+then test retry/reconciliation of the exact write without model replay.
