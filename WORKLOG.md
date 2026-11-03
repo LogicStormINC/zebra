@@ -19632,3 +19632,13 @@ the original receipt. PostgreSQL confirmed one command, one completion
 and one settled model reservation. Restored both APIs and verified
 readiness. Private evidence lost-create-public18.json. Next run a
 pre-COMMIT loss injection and cross-principal negative check.
+
+CA-HA-03 live receipt authorization check: on the isolated node2 overlay,
+the original principal resolved its committed receipt. A different fixture
+principal using the exact same key and binding coordinates received the
+same not_observed body as an absent key under the original principal.
+No Task ID was disclosed in either negative response. The overlay was
+restored. Private evidence receipt-cross-principal18.json. Next inject
+rollback after PostgresTaskAdmissionTransaction.admit_in_transaction
+returns but before its outer context commits, then query the fresh key
+through the other node and reconcile zero admission effects.
