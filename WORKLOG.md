@@ -19477,3 +19477,17 @@ read timeout prevented this run from measuring that fallback. Next
 instrument Redis cursor/barrier and HTTP heartbeat timing and observe
 past the fallback deadline. Both temporary APIs restored.
 Private evidence: sse20-live-event-304d21c8*, sse20-live-resume-original.json.
+
+CA-HA-03 extended SSE capture: fresh Task fd88b19e-69c5-4e5c-a3f4-aa3730813997
+received one resume 202 while 32 observers held. All 32 received every
+cursor 0–8 in order then clean EOF. The harness expected session_completed,
+but cursor 8 was session_suspended, so its completion counter is zero.
+Redis frontier hints reached 2,3,4,5,7,8. Clients recorded zero or one
+heartbeat and no timeout. This shows complete suspended-state delivery;
+the earlier missing completion frames still need attribution. The Task
+suspended after model_request_started on execution_storage_contention /
+LockNotAvailable; one model reservation has no settlement receipt.
+Preserve it for original-only reconciliation. The first runner edit had
+an indentation error before any service change and was corrected. APIs
+restored. Private evidence sse21-live-event-6564659b* and
+sse21-live-resume-original.json.
