@@ -261,3 +261,11 @@ authority for the same binding, and issues an original-operation GET. A
 completed receipt must match the operation and canonical request hash and
 pass AES-GCM authentication before its payload is returned. HTTP status
 and incomplete receipts remain visible to the caller.
+
+The SSE adapter in `sse_load.py` defaults to 256 streams split evenly
+between the two direct fixture endpoints. Each stream exchanges a fresh
+grant and must deliver a nonempty event ID before the readiness barrier
+opens. An early closure invalidates the steady window. Supply a dedicated
+TLS client with at least 256 stream connections plus grant-exchange
+headroom. The standalone check simulates early EOF; live capacity and
+cursor-resume fault measurement are separate.
