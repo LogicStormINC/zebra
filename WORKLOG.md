@@ -20639,3 +20639,11 @@ paused, the proof failed closed after 456 ms. On resume the same
 original receipt verified without a new write. Single serial proof
 connection, no fleet concurrency or HTTP wiring. Evidence
 pg-sync-proof-deadline-two-hosts.json.
+
+CA-HA-03 database-side standby proof capacity check. Shared limited
+login with CONNECTION LIMIT 2 held two distinct native sockets;
+a third connection was rejected in 2 ms under a 500 ms request
+deadline. Exact receipt proof still passed after replay and refused
+the wrong digest. This shows a database guard for one role, not the
+API scheduling policy or full standby inventory. Evidence
+pg-sync-proof-capacity-two-hosts.json.
