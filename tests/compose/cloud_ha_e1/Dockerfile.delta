@@ -35,6 +35,8 @@ COPY --chown=65532:65532 apps/api/src/zebra_agent_api/http_host_auth.py /app/app
 COPY --chown=65532:65532 apps/api/src/zebra_agent_api/tenant_guard.py /app/apps/api/src/zebra_agent_api/tenant_guard.py
 COPY --chown=65532:65532 apps/worker/src/zebra_agent_worker/execution_input_preparation.py /app/apps/worker/src/zebra_agent_worker/execution_input_preparation.py
 COPY --chown=65532:65532 packages/agent-storage/src/agent_storage/postgres/worker_commit_confirmation.py /app/packages/agent-storage/src/agent_storage/postgres/worker_commit_confirmation.py
+COPY --chown=65532:65532 apps/api/src/zebra_agent_api/client_admission_atomic.py /app/apps/api/src/zebra_agent_api/client_admission_atomic.py
+COPY --chown=65532:65532 apps/api/src/zebra_agent_api/client_admission_operations.py /app/apps/api/src/zebra_agent_api/client_admission_operations.py
 ARG E1_SOURCE_COMMIT
 LABEL org.opencontainers.image.revision=${E1_SOURCE_COMMIT}
 
