@@ -37742,3 +37742,7 @@ In Progress branch/worktree). Own Scheduler `admission.py` and
 CA-HA-03 F-09 stream preflight error classification (Luke Ding/Codex, existing
 In Progress branch/worktree). Own `stream_v2_http.py` and
 `test_agui_preparation_retry.py` for transient source-read errors.
+
+CA-HA-03 F-09 stream snapshot Run header reuse (Luke Ding/Codex, existing
+In Progress branch/worktree). Own `stream_proof_batch.py` and
+`test_stream_proof_batch.py` for exact same-snapshot lookup reuse.

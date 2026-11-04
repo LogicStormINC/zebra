@@ -38,13 +38,14 @@ from agent_storage.postgres.worker_replay_reader import AUTHORITY_TYPES, read_wo
 class StreamProofSnapshot:
     """Connection-bound readonly operations; never survives its context manager.
 
-    ponytail: this shares a transaction, not mutable authority results. Existing
+    ponytail: this reuses one immutable Run header within a single snapshot. Existing
     source qualification remains O(history), bounded by the same 2s deadline.
     """
 
     def __init__(self, connection: Any, database: PostgresDatabase) -> None:
         self._connection, self._database = connection, database
         self._namespace = database.deployment_namespace
+        self._latest_run: TaskRunHeader | None = None
 
     def get_session_namespace(self, session_id: SessionId) -> tuple[bool, str | None]:
         return read_session_namespace(self._connection, self._namespace, session_id)
@@ -110,10 +111,16 @@ class StreamProofSnapshot:
     def read_run_header(
         self, task_id: TaskId, run_id: str, *, through_sequence: int | None = None
     ) -> TaskRunHeader:
+        latest = self._latest_run
+        if through_sequence is None and latest is not None and (
+            latest.task_id, latest.run_id
+        ) == (task_id, run_id):
+            return latest
         return read_run_header(self._connection, self._namespace, task_id, run_id, through_sequence)
 
     def read_latest_run_header(self, task_id: TaskId) -> TaskRunHeader:
-        return read_latest_run_header(self._connection, self._namespace, task_id)
+        self._latest_run = read_latest_run_header(self._connection, self._namespace, task_id)
+        return self._latest_run
 
     def read_event_header(self, task_id: TaskId, task_sequence: int) -> TaskEventHeader | None:
         return read_event_header(self._connection, self._namespace, task_id, task_sequence)
