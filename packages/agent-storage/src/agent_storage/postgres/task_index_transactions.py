@@ -1,5 +1,6 @@
 """PostgreSQL Task-index transaction and row primitives."""
 
+from contextlib import nullcontext
 from typing import Any
 from uuid import UUID
 
@@ -12,6 +13,7 @@ from agent_core.domain.leases import LeaseLostError
 from agent_core.domain.sessions import SessionStatus
 from agent_core.ports.aggregate_mutation import WorkerMutationAuthority
 from psycopg import errors
+from psycopg.pq import TransactionStatus
 from psycopg.rows import dict_row
 
 from agent_storage.postgres.leases import assert_current_lease_fence, lock_session_lease_boundary
@@ -27,12 +29,17 @@ def rebuild_task_in_transaction(
     connection: Any,
     deployment_namespace: str,
     root_session_id: SessionId,
+    *,
+    savepoint: bool = True,
 ) -> AgentTask:
-    """Rebuild one Event-derived Task index in the caller's transaction."""
+    """Rebuild the index; disabling the savepoint requires caller-owned rollback."""
+    if not savepoint and connection.info.transaction_status != TransactionStatus.INTRANS:
+        raise RuntimeError("Task rebuild requires an active admission transaction")
     try:
         with connection.cursor(row_factory=dict_row) as cursor:
-            cursor.execute("SELECT 1")
-            with connection.transaction():
+            if savepoint:
+                cursor.execute("SELECT 1")
+            with connection.transaction() if savepoint else nullcontext():
                 return _rebuild_task(cursor, deployment_namespace, root_session_id)
     except errors.UniqueViolation as exc:
         raise PostgresAgentTaskConflictError("task lineage conflicts with its index") from exc

@@ -166,8 +166,15 @@ def test_atomic_initial_run_indexes_before_wakeup_and_rolls_back_on_rejection(
     rebuild = task_admission.rebuild_task_in_transaction
     indexed = []
 
-    def observe_rebuild(connection, namespace, session_id):
-        task = rebuild(connection, namespace, session_id)
+    def observe_rebuild(connection, namespace, session_id, **kwargs):
+        class AdmissionConnection:
+            def __getattr__(self, name):
+                return getattr(connection, name)
+
+            def transaction(self):
+                pytest.fail("atomic Task rebuild must use its existing admission transaction")
+
+        task = rebuild(AdmissionConnection(), namespace, session_id, **kwargs)
         indexed.append(session_id)
         return task
 

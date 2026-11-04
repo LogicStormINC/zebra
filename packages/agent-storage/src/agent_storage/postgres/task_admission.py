@@ -140,7 +140,9 @@ class PostgresTaskAdmissionTransaction:
             )
             for event in command_events
         )
-        task = rebuild_task_in_transaction(connection, namespace, root_session_id)
+        task = rebuild_task_in_transaction(
+            connection, namespace, root_session_id, savepoint=False
+        )
         from agent_storage.postgres.input_artifact_admission import persist_input_artifacts
 
         persist_input_artifacts(connection, namespace, request.events, request.input_artifacts)
