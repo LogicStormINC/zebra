@@ -97,14 +97,16 @@ def native_tls_source(
                 str(4096 if mode == "drip" else len(body) + (mode == "incomplete")),
             )
             self.end_headers()
-            entered.set()
             try:
                 if mode == "drip":
                     while not release.wait(0.01):
                         self.wfile.write(b"e")
                         self.wfile.flush()
                         writes.append(monotonic())
+                        # Cancellation tests need a live body transfer, not just headers.
+                        entered.set()
                 else:
+                    entered.set()
                     self.wfile.write(body)
             except (BrokenPipeError, ConnectionResetError, ssl.SSLError):
                 peer_closed.set()
