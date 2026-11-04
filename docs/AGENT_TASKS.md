@@ -37726,3 +37726,7 @@ existing In Progress branch/worktree). Own `model_tool_projections.py` and
 CA-HA-03 E1-R F-08 cleanup fault proof (Luke Ding/Codex, existing In
 Progress branch/worktree). Own `test_command_runtime_cleanup_live.py` for
 the lost removal response with real OCI and isolated PostgreSQL.
+
+CA-HA-03 F-09 Scheduler claimant loss proof (Luke Ding/Codex, existing
+In Progress branch/worktree). Own `test_postgres_task_schedules.py` for
+process death, natural expiry, recovery and stale settlement evidence.
