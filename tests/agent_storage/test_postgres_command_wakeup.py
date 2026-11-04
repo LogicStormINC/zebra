@@ -435,6 +435,35 @@ def test_execution_saturation_preserves_reserved_control_admission(dsn):
     assert _counts(dsn) == (2, 2)
 
 
+def test_new_command_uses_one_pending_query_under_admission_locks(dsn, monkeypatch):
+    from agent_storage.postgres import events
+
+    session = _seed(dsn)
+    _enable(dsn)
+    original = events.record_command_wakeup_in_transaction
+    after_lock = []
+
+    def capture(connection, *args, **kwargs):
+        class TracedConnection:
+            def __getattr__(self, name):
+                return getattr(connection, name)
+
+            def execute(self, statement, params):
+                if "pg_advisory_xact_lock" in statement:
+                    after_lock.append("lock")
+                elif after_lock and "session_command_pending" in statement:
+                    after_lock.append("pending")
+                return connection.execute(statement, params)
+
+        return original(TracedConnection(), *args, **kwargs)
+
+    monkeypatch.setattr(events, "record_command_wakeup_in_transaction", capture)
+    event = _command(session.session_id, key="single-pending-roundtrip")
+    assert _store(dsn).append(event) == event
+    assert _counts(dsn) == (1, 1)
+    assert after_lock == ["lock", "pending"]
+
+
 def test_idempotent_retry_is_not_rejected_when_outbox_is_at_capacity(dsn):
     session = _seed(dsn)
     _enable(dsn)
