@@ -38,7 +38,7 @@ from agent_storage.postgres.worker_replay_reader import AUTHORITY_TYPES, read_wo
 class StreamProofSnapshot:
     """Connection-bound readonly operations; never survives its context manager.
 
-    ponytail: this reuses one immutable Run header within a single snapshot. Existing
+    ponytail: this reuses one Run header and one qualified Task within the snapshot. Existing
     source qualification remains O(history), bounded by the same 2s deadline.
     """
 
@@ -46,6 +46,7 @@ class StreamProofSnapshot:
         self._connection, self._database = connection, database
         self._namespace = database.deployment_namespace
         self._latest_run: TaskRunHeader | None = None
+        self._qualified_task: TaskReadHeader | None = None
 
     def get_session_namespace(self, session_id: SessionId) -> tuple[bool, str | None]:
         return read_session_namespace(self._connection, self._namespace, session_id)
@@ -61,7 +62,9 @@ class StreamProofSnapshot:
     ) -> StreamSourceHead | None:
         from agent_storage.postgres.stream_source_head import read_source_head
 
-        return read_source_head(self._connection, self._namespace, task_id, session_id)
+        head = read_source_head(self._connection, self._namespace, task_id, session_id)
+        self._qualified_task = head.task if head is not None else None
+        return head
 
     def read_stream_checkpoint_head(
         self,
@@ -106,6 +109,7 @@ class StreamProofSnapshot:
             self._namespace,
             task_id,
             require_source_coverage=require_source_coverage,
+            source_proof=self._qualified_task,
         )
 
     def read_run_header(

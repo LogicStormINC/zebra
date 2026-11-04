@@ -50,7 +50,9 @@ def test_native_issue_resolve_observes_intervening_source_mutation(owned, monkey
             assignments = {
                 "token": "fencing_token=fencing_token+1",
                 "owner": "owner_instance_id='changed-owner'",
-                "expiry": "expires_at=clock_timestamp()-interval '1 second'",
+                "expiry": "acquired_at=acquired_at-interval '1 minute', "
+                "heartbeat_at=heartbeat_at-interval '1 minute', "
+                "expires_at=clock_timestamp()-interval '1 second'",
             }
             connection.execute(
                 "UPDATE worker_leases SET "

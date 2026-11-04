@@ -15,6 +15,7 @@ def read_task_header(
     *,
     member_session_id: SessionId | None = None,
     require_source_coverage: bool = False,
+    source_proof: TaskReadHeader | None = None,
 ) -> TaskReadHeader | None:
     if (task_id is None) == (member_session_id is None):
         raise ValueError("Task header requires exactly one lookup coordinate")
@@ -79,7 +80,18 @@ def read_task_header(
             raise CheckpointNotReady("Task Event positions require explicit backfill")
         if row["status"] is None or row["active_segment_sequence"] is None:
             raise CheckpointNotReady("stream observation header requires explicit preparation")
-        strict_coverage = require_stream_source(connection, namespace, task_id, row)
+        # A proof supplied by StreamProofSnapshot belongs to this same SQL snapshot.
+        if (
+            source_proof is not None
+            and source_proof.strict_coverage is not None
+            and source_proof.task_id == task_id
+            and source_proof.active_segment_id == row["active_segment_id"]
+            and source_proof.current_sequence == row["next_event_sequence"] - 1
+            and source_proof.active_segment_sequence == row["active_segment_sequence"]
+        ):
+            strict_coverage = source_proof.strict_coverage
+        else:
+            strict_coverage = require_stream_source(connection, namespace, task_id, row)
     if row["event_position_state"] != "ready":
         raise CheckpointNotReady("Task Event positions require explicit backfill")
     return TaskReadHeader(

@@ -294,7 +294,7 @@ def test_unknown_stream_prefix_cannot_use_unrelated_signed_grant_to_read_victim(
     monkeypatch,
     method,
 ):
-    from dataclasses import fields
+    from dataclasses import fields, replace
 
     from agent_storage import sqlite_control_plane_stores
     from fastapi.testclient import TestClient
@@ -307,7 +307,11 @@ def test_unknown_stream_prefix_cannot_use_unrelated_signed_grant_to_read_victim(
 
     native, victim = source
     key = _key()
-    grant = verified((key, _settings(key)), run="unrelated-run")
+    settings = _settings(key)
+    grant = verified(
+        (key, replace(settings, allowed_scopes=(*settings.allowed_scopes, "artifact.read"))),
+        run="unrelated-run",
+    )
     authorizer = Authorizer(grant)
     local = sqlite_control_plane_stores(tmp_path / "prefix.sqlite")
     stores = SimpleNamespace(
@@ -368,3 +372,30 @@ def test_malformed_normalized_route_is_404_before_adapter_replay(
         host_grant_authorizer=_FakeHostAuthorizer(),
     )
     assert TestClient(application).get(shape.format(id=sid)).status_code == 404
+
+
+def test_stream_snapshot_reuses_qualified_source_for_same_task_header(
+    source, postgres_dsn, task_namespace, monkeypatch
+):
+    from agent_storage.postgres import stream_read_preflight
+    from agent_storage.postgres.stream_proof_batch import StreamProofReader
+
+    _, sid = source
+    task = TaskId(sid)
+    reader = StreamProofReader(postgres_dsn, deployment_namespace=task_namespace)
+    source_row = stream_read_preflight.source_row
+    requalifications = []
+
+    def counted(*args):
+        requalifications.append(args[2])
+        return source_row(*args)
+
+    monkeypatch.setattr(stream_read_preflight, "source_row", counted)
+    with reader.snapshot() as snapshot:
+        head = snapshot.read_stream_source_head(task_id=task)
+        assert head is not None
+        assert snapshot.read_task_header(task, require_source_coverage=True) == head.task
+    assert requalifications == []
+    with reader.snapshot() as fresh:
+        assert fresh.read_task_header(task, require_source_coverage=True) == head.task
+    assert requalifications == [task]

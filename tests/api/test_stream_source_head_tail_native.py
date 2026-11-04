@@ -267,6 +267,7 @@ def test_agui_initial_snapshot_one_socket_and_native_override_fallback(owned, mo
             bundle, SimpleNamespace(publish_committed=lambda _: None)
         ),
         stream_v2_reader=reader,
+        agui_profiles=None,
         cloud_control=PostgresDirectControl(owned[0], deployment_namespace=run.namespace),
         live_event_fanout=None,
         command_outcome=None,
@@ -294,6 +295,8 @@ def test_agui_initial_snapshot_one_socket_and_native_override_fallback(owned, mo
 
     def request(query=None):
         return SimpleNamespace(
+            method="GET",
+            scope={},
             state=SimpleNamespace(host_context=host, authorization_deadline=monotonic() + 2),
             query_params=query or {},
             headers={},
@@ -553,7 +556,7 @@ def test_agui_initial_snapshot_one_socket_and_native_override_fallback(owned, mo
         previous_heads = len(head_calls)
         rejected = asyncio.run(stream_v2_http.agui_response(api, request({"cursor": "malformed"})))
         assert rejected.status_code == 409 and qualified_calls == [True]
-        assert rejected.body.find(b"stream_source_unavailable") >= 0
+        assert b"projection_not_ready" in rejected.body
         assert len(head_calls) == previous_heads
         original_bind = reader.authority.bind_snapshot
 
