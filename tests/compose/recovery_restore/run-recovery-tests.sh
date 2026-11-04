@@ -47,6 +47,7 @@ run_verifier() {
 }
 
 "${COMPOSE[@]}" config --quiet
+"${COMPOSE[@]}" build minio
 "${COMPOSE[@]}" up --detach --wait postgres redis minio
 "${COMPOSE[@]}" run --rm minio-init
 

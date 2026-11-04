@@ -55,6 +55,7 @@ cleanup() {
 trap cleanup EXIT
 
 "${COMPOSE[@]}" config --quiet
+"${COMPOSE[@]}" build minio
 "${COMPOSE[@]}" up --detach --wait postgres minio
 "${COMPOSE[@]}" run --rm minio-init >/dev/null
 

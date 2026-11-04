@@ -46,6 +46,7 @@ trap cleanup EXIT
 
 "${BASE_COMPOSE[@]}" config --quiet
 "${APP_COMPOSE[@]}" config --quiet
+"${BASE_COMPOSE[@]}" build minio
 "${BASE_COMPOSE[@]}" up --detach --wait postgres minio
 "${BASE_COMPOSE[@]}" run --rm minio-init
 "${APP_COMPOSE[@]}" up --detach --build zebra-migrate

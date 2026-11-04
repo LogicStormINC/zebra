@@ -17,7 +17,9 @@ services:
     networks: [dependencies]
 
   minio:
-    image: quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z
+    image: zebra-ci-minio:20250422-20250416
+    pull_policy: never
+    build: ../minio-fixture
     command: [server, /data, --console-address, ":9001"]
     environment:
       MINIO_ROOT_USER: zebra-application
@@ -30,7 +32,8 @@ services:
     networks: [dependencies]
 
   minio-init:
-    image: quay.io/minio/mc:RELEASE.2025-04-16T18-13-26Z
+    image: zebra-ci-minio:20250422-20250416
+    pull_policy: never
     depends_on:
       minio:
         condition: service_healthy
