@@ -78,6 +78,7 @@
           "minimum": 1,
           "maximum": 262143
         },
+        "api_read": {"type": "integer", "minimum": 0, "maximum": 32},
         "executor_limits": {
           "type": "object",
           "required": ["pool", "normal", "read", "control", "probe"],

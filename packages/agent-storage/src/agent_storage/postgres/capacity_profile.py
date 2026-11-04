@@ -32,6 +32,7 @@ class CapacityProfile:
     execution_slots: int
     fleet: Mapping[str, int]
     receipt: int = 0
+    api_read: int = 0
     executor_limits: Mapping[str, int] | None = None
 
     @classmethod
@@ -42,6 +43,7 @@ class CapacityProfile:
             data = json.loads(value, object_pairs_hook=_unique)
             if isinstance(data, dict):
                 data.setdefault("receipt", 0)
+                data.setdefault("api_read", 0)
                 if "executor_limits" in data:
                     limits = data["executor_limits"]
                     if (
@@ -63,6 +65,8 @@ class CapacityProfile:
                     raise ValueError("invalid database server budget")
             if type(data["receipt"]) is not int or not 0 <= data["receipt"] <= 32:
                 raise ValueError("invalid API receipt connection budget")
+            if type(data["api_read"]) is not int or not 0 <= data["api_read"] <= 32:
+                raise ValueError("invalid API read connection budget")
             if data["external"] < 1:
                 raise ValueError("database budget must reserve migration/operator connections")
             fleet = data["fleet"]
@@ -84,6 +88,8 @@ class CapacityProfile:
             raise ValueError("invalid database budget profile") from exc
 
     def limit(self, component: str, lane: str) -> int:
+        if component == "api" and lane == "read" and self.api_read:
+            return self.api_read
         if component == "executor" and self.executor_limits is not None:
             return self.executor_limits[lane]
         return int(getattr(self, lane))

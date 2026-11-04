@@ -82,6 +82,28 @@ def test_executor_limits_are_charged_and_enforced_separately():
         CapacityProfile.parse(json.dumps(data))
 
 
+def test_api_read_slots_are_charged_only_to_api_peak():
+    from agent_storage.postgres.capacity_profile import CapacityProfile
+    from agent_storage.postgres.connection_capacity import ConnectionBudget
+
+    data = profile_data()
+    base = CapacityProfile.parse(json.dumps(data))
+    data["api_read"] = base.read + 2
+    data["max_connections"] = (
+        base.fleet_connections + base.server_reserved + base.external + 2 * base.fleet["api"]
+    )
+    profile = CapacityProfile.parse(json.dumps(data))
+    assert profile.limit("worker", "read") == base.read
+    assert profile.limit("executor", "read") == base.read
+    budget = ConnectionBudget("dbname=one", profile, "api")
+    permits = [budget.acquire("read") for _ in range(data["api_read"])]
+    for permit in permits:
+        permit.release()
+    data["max_connections"] -= 1
+    with pytest.raises(ValueError, match="exceeds server"):
+        CapacityProfile.parse(json.dumps(data))
+
+
 @pytest.mark.parametrize("field,value", [("pool", True), ("normal", 0),
                                          ("read", -1), ("control", 1000000)])
 def test_profile_rejects_unsafe_capacity(field, value):

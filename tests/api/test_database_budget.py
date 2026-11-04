@@ -358,7 +358,7 @@ def test_cursor_resume_waits_within_read_budget_without_queueing_other_reads():
     from agent_storage.postgres.connection_capacity import ConnectionBudget
     from zebra_agent_api.database_budget import DatabaseBudgetMiddleware
 
-    profile = CapacityProfile.parse(json.dumps(profile_data() | {"read": 1}))
+    profile = CapacityProfile.parse(json.dumps(profile_data() | {"read": 2, "api_read": 1}))
     budget = ConnectionBudget("dbname=one", profile, "api")
     app = FastAPI()
     app.add_middleware(DatabaseBudgetMiddleware, budget=budget)

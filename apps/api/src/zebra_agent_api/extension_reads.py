@@ -178,7 +178,8 @@ async def extension_read_response(
             )
             state = getattr(request.scope.get("app"), "state", None)
             budget = getattr(state, "database_budget", None)
-            semaphore = asyncio.Semaphore(min(8, budget.profile.read) if budget else 8)
+            limit = min(8, budget.profile.limit("api", "read")) if budget else 8
+            semaphore = asyncio.Semaphore(limit)
 
             async def describe(record: SkillInstallation | McpConnection) -> dict[str, object]:
                 async with semaphore:

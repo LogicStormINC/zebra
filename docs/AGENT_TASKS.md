@@ -37641,3 +37641,8 @@ CA-HA-03 F-04 peer writer routing follow-up (Luke Ding/Codex, existing In
 Progress branch/worktree): own the existing node2_dependency_relay.py and its
 fixture README. Preserve the fixed Worker DSN and use a root-owned runtime
 route selector for new PostgreSQL connections during a fenced drill.
+
+CA-HA-03 API read inventory follow-up (Luke Ding/Codex, existing In Progress
+branch/worktree): own capacity_profile.py, database_budget.py, extension_reads.py,
+the existing capacity/API/Helm tests and database-budget chart schema/helper.
+Count the optional API-only read limit against peak replicas at every gate.

@@ -35,13 +35,14 @@ class DatabaseBudgetMiddleware:
         self, app: ASGIApp, *, budget: ConnectionBudget, calls: "ApiDatabaseCalls | None" = None,
     ) -> None:
         self.app, self.budget, self.calls = app, budget, calls
+        read_limit = getattr(budget.profile, "api_read", 0) or budget.profile.read
         self._admissions = {
             "normal": BoundedSemaphore(budget.profile.normal + budget.profile.pool),
-            "read": BoundedSemaphore(budget.profile.read),
+            "read": BoundedSemaphore(read_limit),
             "control": BoundedSemaphore(budget.profile.control),
         }
 
-        self._resume_waiters = BoundedSemaphore(budget.profile.read)
+        self._resume_waiters = BoundedSemaphore(read_limit)
 
         if budget.profile.receipt:
             self._admissions["receipt"] = BoundedSemaphore(budget.profile.receipt)
@@ -123,7 +124,8 @@ class ApiDatabaseCalls:
     def __init__(self, budget: ConnectionBudget) -> None:
         self._lock, self._closed = Lock(), False
         limits = {"normal": budget.profile.normal + budget.profile.pool,
-                  "read": budget.profile.read, "control": budget.profile.control}
+                  "read": getattr(budget.profile, "api_read", 0) or budget.profile.read,
+                  "control": budget.profile.control}
         if budget.profile.receipt:
             limits["receipt"] = budget.profile.receipt
         self._pools = {k: ThreadPoolExecutor(v, thread_name_prefix=f"api-{k}")

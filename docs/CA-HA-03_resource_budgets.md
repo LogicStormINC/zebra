@@ -317,6 +317,12 @@ Native11 stale-running Task confirmed stopped in1.199s via one signed control
 operation; original answer/receipts preserved, separate unknown case stays
 suspended. Full E1 corpus/SSE/steady/fault/soak and physical HA remain open.
 
+The optional `api_read` budget replaces the shared read limit for API
+processes only. Omit it or set it to zero to inherit `read`. Count any
+difference against the declared peak API replica count, including rollout
+overlap. Deploy the profile parser, HTTP admission, executor and connection
+budget code together before enabling the override.
+
 ### F-04 receipt durability gate design
 
 The PostgreSQL 17.5 two-host probes showed that cancelling a SyncRep

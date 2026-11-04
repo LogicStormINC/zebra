@@ -123,10 +123,12 @@ def test_budget_mode_is_install_only_and_counts_terminating_overlap(tmp_path):
         if bad_peak:
             assert "terminating overlap" in result.stderr
 
-    for maximum in (257, 256):
+    cases = ((257, 0, True), (256, 0, False), (261, 3, True), (260, 3, False))
+    for maximum, api_read, fits in cases:
         values["databaseBudget"] = {
             "enabled": True,
             "max_connections": maximum,
+            "api_read": api_read,
             "executor_limits": dict(pool=1, normal=1, read=1, control=1, probe=1),
         }
         path.write_text(json.dumps(values))
@@ -134,7 +136,7 @@ def test_budget_mode_is_install_only_and_counts_terminating_overlap(tmp_path):
             ["helm", "template", "ha-review", str(CHART), "-f", str(path)],
             capture_output=True, text=True, check=False,
         )
-        if maximum == 257:
+        if fits:
             assert result.returncode == 0, result.stderr
             assert "executor_limits" in result.stdout
         else:
