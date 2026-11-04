@@ -37738,3 +37738,7 @@ bundle, authority self-check and README under `tests/compose/cloud_ha_e1/`.
 CA-HA-03 F-09 scheduled publication admission fix (Luke Ding/Codex, existing
 In Progress branch/worktree). Own Scheduler `admission.py` and
 `tests/scheduler/test_scheduler_admission.py` for frozen Definition resolution.
+
+CA-HA-03 F-09 stream preflight error classification (Luke Ding/Codex, existing
+In Progress branch/worktree). Own `stream_v2_http.py` and
+`test_agui_preparation_retry.py` for transient source-read errors.

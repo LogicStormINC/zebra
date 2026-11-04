@@ -23,6 +23,7 @@ from agent_storage.postgres.stream_proof_batch import StreamProofSnapshot
 from agent_storage.postgres.task_io import current_task_io_deadline
 from fastapi import Request
 from fastapi.responses import JSONResponse, StreamingResponse
+from psycopg import OperationalError
 
 from zebra_agent_api.ag_ui_observation_binding import stream_negotiation_problem as _problem
 from zebra_agent_api.ag_ui_stream import AgUiStreamContext, prepare_agui_stream, tail_agui_events
@@ -220,11 +221,15 @@ def prepare_v2(
                     for entry in page.events
                 ):
                     return None
+        except (TimeoutError, OperationalError):
+            raise
         except Exception:
             pass
         return _problem(409, "projection_not_ready")
     except ValueError:
         return _problem(400, "invalid_cursor")
+    except (TimeoutError, OperationalError):
+        raise
     except Exception:
         return _problem(409, "stream_source_unavailable")
 
