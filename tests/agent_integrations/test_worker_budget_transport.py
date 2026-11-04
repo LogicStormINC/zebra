@@ -6,6 +6,7 @@ import pytest
 from agent_core.ports.worker_budget import (
     ModelBudgetReservation,
     ModelRequestBudget,
+    ModelRequestOutcomeUnknown,
     WorkerBudgetError,
     trusted_usage,
 )
@@ -200,6 +201,22 @@ def test_guarded_stream_with_usage_settles_after_true_terminal():
     assert len(emitted) == len(gateway.worker_budget.settled) == 1
 
 
+def test_connection_loss_after_reservation_requires_reconciliation():
+    import httpx
+    from agent_integrations.worker_budget import guarded_chat
+
+    def disconnect(request):
+        raise httpx.ConnectError("controlled connection loss", request=request)
+
+    gateway = _gateway(disconnect)
+    gateway.model_request_budget = _proof
+    with pytest.raises(ModelRequestOutcomeUnknown, match="model request outcome is unknown"):
+        guarded_chat(
+            gateway, {"max_tokens": 5}, tools=(), tool_names=(), resolved=None, metadata=None
+        )
+    assert len(gateway.worker_budget.reserved) == 1 and not gateway.worker_budget.settled
+
+
 def test_absolute_io_deadline_cancels_and_preserves_unknown():
     import asyncio
 
@@ -212,10 +229,11 @@ def test_absolute_io_deadline_cancels_and_preserves_unknown():
     gateway = _gateway(slow)
     gateway.model_request_budget = _proof
     gateway.worker_budget.check = lambda: 0.01
-    with pytest.raises(TimeoutError):
+    with pytest.raises(ModelRequestOutcomeUnknown) as caught:
         guarded_chat(
             gateway, {"max_tokens": 5}, tools=(), tool_names=(), resolved=None, metadata=None
         )
+    assert isinstance(caught.value.__cause__, TimeoutError)
     assert len(gateway.worker_budget.reserved) == 1 and not gateway.worker_budget.settled
 
 

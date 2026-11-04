@@ -9,6 +9,7 @@ from agent_core.domain.sessions import SessionStatus
 from agent_core.domain.turns import InteractionMode
 from agent_core.harness.models import HarnessAttemptOutcome, HarnessAttemptResult
 from agent_core.ports.execution_inputs import ExecutionInputLimitExceeded
+from agent_core.ports.worker_budget import ModelRequestOutcomeUnknown
 from psycopg import OperationalError
 from psycopg.errors import LockNotAvailable
 from test_client_effect_resume import NOW, SESSION, _event, _stream
@@ -23,6 +24,12 @@ from zebra_agent_worker.continuation_lifecycle import restore_suspended_session_
 from zebra_agent_worker.execution_completion import finish_execution
 from zebra_agent_worker.execution_errors import WorkerExecutionError, exception_attempt_result
 from zebra_agent_worker.execution_input_preparation import ExecutionInputEventView
+
+
+def test_unreceipted_model_transport_loss_suspends_without_retry():
+    result = exception_attempt_result(ModelRequestOutcomeUnknown(), {})
+    assert result.outcome is HarnessAttemptOutcome.SUSPENDED
+    assert result.metadata == {"stop_reason": "model_request_outcome_unknown", "retryable": False}
 
 
 @pytest.mark.parametrize("fault", [LockNotAvailable, OperationalError])
