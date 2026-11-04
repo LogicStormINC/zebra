@@ -234,3 +234,35 @@ def test_commit_preparation_cancel_retains_prior_header_and_rolls_back_current(
     assert [(r["requested_through"], r["closed_through"]) for r in queue.work_rows()] == [
         (0, 0), (1, None),
     ]
+
+def test_running_repair_crosses_additive_migration(scratch, tmp_path, monkeypatch):
+    from agent_storage.postgres.projection_work_io import REPAIR_HEADER_SIGNATURE, _WorkConnection
+    from agent_storage.postgres.projection_work_repair_plan_migration import (
+        PROJECTION_WORK_REPAIR_PLAN_MIGRATION,
+    )
+
+    queue = QueueFixture("postgres", tmp_path, scratch)
+    queue.append(0)
+    queue.append(1)
+    store = active(queue)
+    with queue.connect() as connection:
+        connection.execute(f"DROP FUNCTION {REPAIR_HEADER_SIGNATURE}")
+    original = _WorkConnection.execute
+    paths = []
+
+    def observe(connection, statement, params=None):
+        if statement == "DO %s":
+            paths.append("legacy")
+        elif statement.startswith("SELECT repair_task_projection_header("):
+            paths.append("cached")
+        return original(connection, statement, params)
+
+    monkeypatch.setattr(_WorkConnection, "execute", observe)
+    first = store.repair_projection_work(queue.task, limit=1)
+    assert first.after_sequence == 0 and first.needs_repair
+    with queue.connect() as connection:
+        for statement in PROJECTION_WORK_REPAIR_PLAN_MIGRATION.statements:
+            connection.execute(statement)
+    final = store.repair_projection_work(queue.task, limit=1)
+    assert final.after_sequence == 1 and not final.needs_repair
+    assert paths == ["legacy", "cached"]

@@ -85,3 +85,22 @@ def test_upgrade_keeps_original_ledger_and_gate_proof(postgres_dsn, p5_history):
     finally:
         with psycopg.connect(postgres_dsn) as connection:
             connection.execute(sql.SQL("DROP SCHEMA {} CASCADE").format(sql.Identifier(schema)))
+
+def test_live_runtime_schema_gates_cross_additive_repair_upgrade(postgres_dsn):
+    schema = f"test_repair_rollout_{uuid4().hex}"
+    with psycopg.connect(postgres_dsn) as connection:
+        connection.execute(sql.SQL("CREATE SCHEMA {}").format(sql.Identifier(schema)))
+    dsn = make_conninfo(postgres_dsn, options=f"-c search_path={schema}")
+    try:
+        with patch("agent_storage.postgres.migration_runner.MIGRATIONS", MIGRATIONS[:-1]):
+            apply_postgres_migrations(dsn)
+        with psycopg.connect(dsn, row_factory=dict_row) as worker:
+            for _ in range(2):
+                require_current_schema(dsn)
+                _require_schema(worker)
+                with pytest.raises(ValueError, match="explicit operator cutover"):
+                    command_cutover_state(dsn, "repair-rollout", require_ready=True)
+                apply_postgres_migrations(dsn)
+    finally:
+        with psycopg.connect(postgres_dsn) as connection:
+            connection.execute(sql.SQL("DROP SCHEMA {} CASCADE").format(sql.Identifier(schema)))

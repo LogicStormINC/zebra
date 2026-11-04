@@ -23,7 +23,7 @@ from agent_core.ports.task_projection_work import (
 )
 
 from agent_storage.postgres.database import PostgresDatabase
-from agent_storage.postgres.projection_work_io import _WorkConnection
+from agent_storage.postgres.projection_work_io import REPAIR_HEADER_SIGNATURE, _WorkConnection
 from agent_storage.postgres.task_io import TaskIoConnection
 from agent_storage.projection_work import (
     PENDING,
@@ -283,11 +283,15 @@ class PostgresTaskProjectionWorkStore(TaskProjectionWorkPort):
                 raise CheckpointNotReady("explicit source position repair required")
             connection.execute("SET TRANSACTION ISOLATION LEVEL READ COMMITTED")
             route = execute(
-                "SELECT * FROM task_projection_work_routes WHERE deployment_namespace=%s "
-                "AND task_id=%s AND projector_version=%s",
-                key,
+                """SELECT *,
+                to_regprocedure(format('%%I.%%s', current_schema(), %s))
+                  IS NOT NULL AS cached_repair
+                FROM task_projection_work_routes WHERE deployment_namespace=%s
+                AND task_id=%s AND projector_version=%s""",
+                (REPAIR_HEADER_SIGNATURE, *key),
             ).fetchone()
             assert route is not None
+            cached_repair = route["cached_repair"]
             used = 0
             problem = None
             # ponytail: one bounded header transaction, not a page-long route lock.
@@ -336,13 +340,7 @@ class PostgresTaskProjectionWorkStore(TaskProjectionWorkPort):
                         finish_timeout=f"{finish_timeout}ms",
                     )
                     # Restore the cleanup timeout before the next roundtrip.
-                    step.execute(
-                        """SELECT repair_task_projection_header(
-                          %(namespace)s,%(task_id)s,%(event_id)s,%(task_sequence)s,
-                          %(event_type)s,%(command_kind)s,%(run_id)s,%(internal)s,
-                          %(version)s,%(finish_timeout)s)""",
-                        params,
-                    )
+                    step.repair_header(params, cached=cached_repair)
                     connection.commit()
                 except CheckpointNotReady as exc:
                     if connection.connection.closed:
