@@ -71,6 +71,7 @@ from zebra_agent_api.session_control import ApiSessionControlMixin
 from zebra_agent_api.session_identity_read import _parse_session_id as parse_session_id
 from zebra_agent_api.session_message_submission import (
     append_session_message_event,
+    appended_message_response,
     build_session_message_event,
     message_sequence_conflict,
 )
@@ -393,6 +394,7 @@ class ZebraAgentApi(
                 ),
             )
         if self.settings.storage_authority == "postgresql":
+            from agent_core.domain.attachments import SessionAttachmentRef
             from agent_core.domain.cloud_artifact_payloads import CloudArtifactPayloadRecord
             from agent_core.domain.events import SessionEvent
             from agent_storage.event_rows import SessionEventSequenceConflictError
@@ -403,12 +405,13 @@ class ZebraAgentApi(
                 return ApiResponse(503, {"status": "message_storage_unavailable"})
             events: tuple[SessionEvent, ...] = (event,)
             artifacts: tuple[CloudArtifactPayloadRecord, ...] = ()
+            attachment_refs: tuple[SessionAttachmentRef, ...] = ()
             if parsed["attachments"]:
                 if self.input_artifact_objects is None:
                     return ApiResponse(503, {"status": "artifact_ingress_unavailable"})
                 from zebra_agent_api.cloud_attachment_ingress import prepare_cloud_inputs
 
-                events, _, artifacts = prepare_cloud_inputs(
+                events, attachment_refs, artifacts = prepare_cloud_inputs(
                     self.input_artifact_objects,
                     namespace,
                     events,
@@ -475,33 +478,12 @@ class ZebraAgentApi(
             workspace = self.stores.workspaces.get_workspace(session_key)
             if workspace is not None:
                 self.stores.workspaces.save_workspace(apply_workspace_event(workspace, event))
-        body: dict[str, object] = {
-            "session_id": session_id,
-            "appended": True,
-            **(
-                {
-                    "clarification_resolved": True,
-                    "clarification_id": parsed["clarification_id"],
-                }
-                if event.event_type.value == "clarification_responded"
-                else {}
-            ),
-            "content": parsed["content"],
-            "sequence": event.sequence,
-            "status": updated_session.status.value,
-            "current_sequence": updated_session.current_sequence,
-        }
-        if include_message_coordinates:
-            body["message_coordinates"] = {
-                "event_id": str(event.event_id),
-                "segment_id": str(event.session_id),
-                "segment_sequence": event.sequence,
-            }
-        if attachment_refs:
-            body["attachments"] = [ref.to_mapping() for ref in attachment_refs]
-        return ApiResponse(
-            status_code=201,
-            body=body,
+        return appended_message_response(
+            session_id, event, updated_session,
+            content=parsed["content"],
+            clarification_id=parsed["clarification_id"],
+            attachment_refs=attachment_refs,
+            include_message_coordinates=include_message_coordinates,
         )
 
     def _create_and_execute_session(self, parsed: CreateSessionPayload) -> ApiResponse:

@@ -486,9 +486,7 @@ def _exact_tail_details(
 
 
 def _optional_positive_int(value: object) -> int | None:
-    if not isinstance(value, int) or isinstance(value, bool):
-        return None
-    return value if value > 0 else None
+    return value if isinstance(value, int) and not isinstance(value, bool) and value > 0 else None
 
 
 def _host_context(value: object) -> HostContextEnvelope | None:

@@ -9,7 +9,7 @@ from agent_core.domain.identifiers import SessionId
 from agent_core.domain.runtime_bundle_types import ArtifactPin
 from agent_core.ports.session_handoff import HandoffOperation, SessionHandoffCommitRequest
 
-from agent_storage.session_handoff_rows import HandoffStorageConflictError
+from agent_storage.session_handoff_rows import HandoffStorageConflictError, insert_event
 
 
 def reject_strict_sqlite_source(connection: sqlite3.Connection, session_id: SessionId) -> None:
@@ -169,3 +169,30 @@ def insert_child_projections(
         f"INSERT INTO workspace_projections ({', '.join(columns)}) VALUES ({placeholders})",
         values,
     )
+
+
+def persist_sqlite_handoff_events(
+    connection: sqlite3.Connection,
+    operation: HandoffOperation,
+    request: SessionHandoffCommitRequest,
+    workspace: Mapping[str, Any],
+) -> None:
+    selected_model = connection.execute(
+        """
+        SELECT json_extract(payload, '$.selected_model_pin') AS pin FROM session_events
+        WHERE session_id = ? AND event_type = ?
+          AND json_extract(payload, '$.selected_model_pin') IS NOT NULL
+        ORDER BY sequence DESC LIMIT 1
+        """,
+        (str(operation.source_session_id), EventType.USER_MESSAGE_RECEIVED.value),
+    ).fetchone()
+    events = build_handoff_events(
+        operation,
+        request,
+        workspace,
+        selected_model_pin=(
+            json.loads(selected_model["pin"]) if selected_model is not None else None
+        ),
+    )
+    for event in events:
+        insert_event(connection, event)

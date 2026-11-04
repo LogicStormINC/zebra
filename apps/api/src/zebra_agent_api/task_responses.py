@@ -69,3 +69,9 @@ def is_user_task_event(item: TaskEvent) -> bool:
     if event.event_type is EventType.USER_MESSAGE_RECEIVED:
         return event.payload.get("actor_kind") != HandoffActorKind.AUTOMATION.value
     return True
+
+
+def rewrite_task_identity(response: ApiResponse, task_id: str) -> ApiResponse:
+    body = dict(response.body)
+    body.update(task_id=task_id, session_id=task_id)
+    return ApiResponse(response.status_code, body)

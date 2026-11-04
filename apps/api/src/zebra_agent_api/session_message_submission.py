@@ -6,6 +6,7 @@ from agent_core.application import (
     current_turn,
     project_turns,
 )
+from agent_core.domain.attachments import SessionAttachmentRef
 from agent_core.domain.bundle_definition import (
     BundleDefinitionSnapshot,
     DefinitionSnapshot,
@@ -124,4 +125,44 @@ def message_sequence_conflict(session_id: str) -> ApiResponse:
         session_id=session_id,
         status="sequence_conflict",
         reason="concurrent_append_won_the_sequence",
+    )
+
+
+def appended_message_response(
+    session_id: str,
+    event: SessionEvent,
+    updated_session: Session,
+    *,
+    content: str,
+    clarification_id: str | None,
+    attachment_refs: tuple[SessionAttachmentRef, ...],
+    include_message_coordinates: bool,
+) -> ApiResponse:
+    body: dict[str, object] = {
+        "session_id": session_id,
+        "appended": True,
+        **(
+            {
+                "clarification_resolved": True,
+                "clarification_id": clarification_id,
+            }
+            if event.event_type.value == "clarification_responded"
+            else {}
+        ),
+        "content": content,
+        "sequence": event.sequence,
+        "status": updated_session.status.value,
+        "current_sequence": updated_session.current_sequence,
+    }
+    if include_message_coordinates:
+        body["message_coordinates"] = {
+            "event_id": str(event.event_id),
+            "segment_id": str(event.session_id),
+            "segment_sequence": event.sequence,
+        }
+    if attachment_refs:
+        body["attachments"] = [ref.to_mapping() for ref in attachment_refs]
+    return ApiResponse(
+        status_code=201,
+        body=body,
     )

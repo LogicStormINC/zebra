@@ -142,3 +142,44 @@ def test_message_append_maps_only_sequence_races_to_conflict() -> None:
             _Store(ValueError("event id replayed with conflicting content")),  # type: ignore[arg-type]
             object(),  # type: ignore[arg-type]
         )
+
+
+def test_postgres_message_append_returns_created_without_attachments(monkeypatch) -> None:
+    from types import SimpleNamespace
+    from unittest.mock import Mock
+
+    from agent_storage.postgres import input_artifact_admission
+    from zebra_agent_api.app import ZebraAgentApi
+
+    session = Session.create(title="Cloud session")
+    events = Mock()
+    events.list_for_session.return_value = []
+    stores = SimpleNamespace(
+        deployment_namespace="isolated",
+        events=events,
+        sessions=Mock(),
+        workspaces=Mock(),
+    )
+    stores.sessions.get_session.return_value = session
+    stores.workspaces.get_workspace.return_value = None
+    api = SimpleNamespace(
+        _parse_session_id=ZebraAgentApi._parse_session_id,
+        settings=SimpleNamespace(
+            storage_authority="postgresql",
+            publication_management_config=None,
+            database_url="postgresql://unused",
+        ),
+        stores=stores,
+    )
+    persisted = Mock(return_value=session)
+    monkeypatch.setattr(input_artifact_admission, "append_input_message", persisted)
+
+    response = ZebraAgentApi.append_session_message(
+        api, str(session.session_id), {"content": "Continue"}, include_message_coordinates=True
+    )
+
+    assert response.status_code == 201
+    assert response.body["appended"] is True
+    assert "attachments" not in response.body
+    assert response.body["message_coordinates"]
+    persisted.assert_called_once()

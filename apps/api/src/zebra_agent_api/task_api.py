@@ -37,7 +37,7 @@ from zebra_agent_api.task_message_contract import valid_receipt_key
 from zebra_agent_api.task_model_usage import summarize_task_model_usage
 from zebra_agent_api.task_read_summaries import task_projection_pending, task_summary_fields
 from zebra_agent_api.task_responses import is_user_task_event as is_user_task_event
-from zebra_agent_api.task_responses import parse_task_limit, task_not_found
+from zebra_agent_api.task_responses import parse_task_limit, rewrite_task_identity, task_not_found
 from zebra_agent_api.task_responses import serialize_task_event as serialize_task_event
 from zebra_agent_api.task_session_api import TaskSessionApi
 
@@ -312,9 +312,9 @@ def mutate_task(
             idempotency_key=idempotency_key,
             task_id=TaskId(UUID(task_id)),
         )
-        return _rewrite_task_identity(response, task_id)
+        return rewrite_task_identity(response, task_id)
     handler = {"suspend": app.suspend_session, "resume": app.resume_session}[action]
-    return _rewrite_task_identity(handler(str(active), payload), task_id)
+    return rewrite_task_identity(handler(str(active), payload), task_id)
 
 
 def route_active_task(
@@ -325,7 +325,7 @@ def route_active_task(
     active = TaskReadApi(stores).active_segment(task_id)
     if isinstance(active, ApiResponse):
         return active
-    return _rewrite_task_identity(handler(str(active)), task_id)
+    return rewrite_task_identity(handler(str(active)), task_id)
 
 
 def append_task_message(
@@ -393,7 +393,7 @@ def append_task_message(
         SessionStatus.FAILED,
     }:
         return finish(
-            _rewrite_task_identity(append(active), task_id)
+            rewrite_task_identity(append(active), task_id)
         )
     content = payload.get("content")
     if not isinstance(content, str) or not content.strip():
@@ -418,7 +418,7 @@ def append_task_message(
     next_active = reader.active_segment(task_id)
     if isinstance(next_active, ApiResponse):
         return finish(next_active)
-    appended = _rewrite_task_identity(
+    appended = rewrite_task_identity(
         append(next_active), task_id
     )
     if appended.status_code not in {200, 201}:
@@ -493,12 +493,6 @@ def _rollover(
         principal_identity_hash=sha256(f"task:{task_id}".encode()).hexdigest(),
         actor_kind=actor_kind,
     )
-
-
-def _rewrite_task_identity(response: ApiResponse, task_id: str) -> ApiResponse:
-    body = dict(response.body)
-    body.update(task_id=task_id, session_id=task_id)
-    return ApiResponse(response.status_code, body)
 
 
 def _follow_up_key(task_id: str, sequence: int, content: str) -> str:
