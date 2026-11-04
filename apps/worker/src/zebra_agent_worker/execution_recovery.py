@@ -221,11 +221,12 @@ def recover_execution_inputs(
         events=event_store.list_for_session(session_id) if execution_input_reader else None,
     )
     session_events = event_store.list_for_session(session_id)
-    if execution_input_store is not None and (
-        execution_input_store.read(claimed.lease).state.session_revision
-        != claimed.recovery.session.current_sequence
-    ):
-        raise StaleExecutionSnapshot("execution inputs disagree with restored Session revision")
+    evidence = None
+    if execution_input_store is not None:
+        input_state = execution_input_store.read(claimed.lease).state
+        if input_state.session_revision != claimed.recovery.session.current_sequence:
+            raise StaleExecutionSnapshot("execution inputs disagree with restored Session revision")
+        evidence = input_state.evidence
     active_context = context_lifecycle_store.get_active_capsule(session_id)
     provider_continuation = resolve_provider_continuation(
         cloud_continuation,
@@ -244,16 +245,14 @@ def recover_execution_inputs(
             ),
             client_state_evidence=recover_client_state_evidence(session_events),
         )
-        if execution_input_store is not None:
-            evidence = execution_input_store.read(claimed.lease).state.evidence
-            if evidence is not None:
-                task = replace(
-                    task,
-                    runtime_evidence=(
-                        *task.runtime_evidence,
-                        execution_evidence_context(evidence),
-                    ),
-                )
+        if evidence is not None:
+            task = replace(
+                task,
+                runtime_evidence=(
+                    *task.runtime_evidence,
+                    execution_evidence_context(evidence),
+                ),
+            )
         if (
             task.coverage_admission is not None
             and not strict_dispatch_configured

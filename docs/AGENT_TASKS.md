@@ -37651,3 +37651,8 @@ CA-HA-03 E1 capacity-backoff follow-up (Luke Ding/Codex, existing In Progress
 branch/worktree): use the already-owned command_process.py, command_background.py
 and test_cloud_ha_polling.py. Keep local DB permit pressure on the existing
 bounded blocked cadence while retaining the existing error cadence for outages.
+
+CA-HA-03 E1 input evidence snapshot follow-up (Luke Ding/Codex, existing
+In Progress branch/worktree): own existing execution_recovery.py and the
+execution input compaction regression. Use the same fenced head for the
+post-restoration revision check and its evidence, preserving bounded reads.
