@@ -79,6 +79,9 @@ from agent_storage.postgres.projection_work_fanout_migration import (
     TASK_PROJECTION_WORK_FANOUT_MIGRATION,
 )
 from agent_storage.postgres.projection_work_migration import TASK_PROJECTION_WORK_MIGRATION
+from agent_storage.postgres.projection_work_repair_plan_migration import (
+    PROJECTION_WORK_REPAIR_PLAN_MIGRATION,
+)
 from agent_storage.postgres.projection_work_routing_migration import (
     TASK_PROJECTION_WORK_ROUTING_MIGRATION,
 )
@@ -212,4 +215,5 @@ LATEST_MIGRATIONS = (
     ORCHESTRATION_ADMISSION_MIGRATION,
     WORKER_BUDGET_MIGRATION,
     PROJECTION_WORK_SHARED_LOCK_MIGRATION,
+    PROJECTION_WORK_REPAIR_PLAN_MIGRATION,
 )

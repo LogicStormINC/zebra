@@ -185,12 +185,16 @@ def test_completed_header_restores_cleanup_budget_before_next_roundtrip(
     budgets = []
 
     def observe_budget(connection, statement, params=None):
+        if not statement.startswith("SELECT repair_task_projection_header("):
+            return original(connection, statement, params)
+        connection.connection.execute("SET LOCAL plan_cache_mode=force_custom_plan")
         result = original(connection, statement, params)
-        if statement == "DO %s":
-            row = connection.connection.execute(
-                "SELECT current_setting('statement_timeout')::interval AS budget"
-            ).fetchone()
-            budgets.append(row["budget"].total_seconds())
+        row = connection.connection.execute(
+            "SELECT current_setting('statement_timeout')::interval AS budget, "
+            "current_setting('plan_cache_mode') AS plan_mode"
+        ).fetchone()
+        assert row["plan_mode"] == "force_custom_plan"
+        budgets.append(row["budget"].total_seconds())
         return result
 
     monkeypatch.setattr(_WorkConnection, "execute", observe_budget)
@@ -212,7 +216,7 @@ def test_commit_preparation_cancel_retains_prior_header_and_rolls_back_current(
 
     def cancel_second_commit(connection, statement, params=None):
         nonlocal cancelled
-        if statement == "DO %s":
+        if statement.startswith("SELECT repair_task_projection_header("):
             headers.append(1)
         if statement == "COMMIT" and len(headers) == 2 and not cancelled:
             cancelled = True

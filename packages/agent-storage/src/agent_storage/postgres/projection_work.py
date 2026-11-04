@@ -21,7 +21,6 @@ from agent_core.ports.task_projection_work import (
     ProjectionWorkRepair,
     TaskProjectionWorkPort,
 )
-from psycopg import ClientCursor
 
 from agent_storage.postgres.database import PostgresDatabase
 from agent_storage.postgres.projection_work_io import _WorkConnection
@@ -39,17 +38,11 @@ from agent_storage.projection_work_routing import (
     activate_privacy,
     classified_pending,
     matches_task_privacy,
-    routed_statements,
     task_version,
 )
 
 PG_WHERE = WHERE.replace("?", "%s")
 PG_PENDING = PENDING.replace("?", "%s").replace("h.task_id=w.task_id", "h.task_id=w.task_id::uuid")
-SOURCE = """SELECT %(namespace)s::text AS deployment_namespace,%(task_id)s::text AS task_id,
- %(event_id)s::text AS event_id,%(task_sequence)s::bigint AS task_sequence,
- %(event_type)s::text AS event_type,%(command_kind)s::text AS command_kind,
- %(run_id)s::text AS run_id,%(internal)s::integer AS internal,
- %(version)s::text AS selected_version"""
 HEADER_BYTES = "128+" + "+".join(
     f"COALESCE(octet_length({name}::text),0)"
     for name in ("event_id", "event_type", "replay_command_kind", "replay_run_id")
@@ -301,11 +294,6 @@ class PostgresTaskProjectionWorkStore(TaskProjectionWorkPort):
             # Native routing serializes and checks the frontier; source reads need no lock.
             deadline = min(connection.deadline - 0.2, time.monotonic() + 0.1)
             step = _WorkConnection(connection.connection, deadline)
-            routing = (
-                "BEGIN "
-                + ";".join(routed_statements(SOURCE, postgres=True, profiles=True))
-                + (";PERFORM set_config('statement_timeout',%(finish_timeout)s,true);END")
-            )
             for index in range(limit):
                 remaining = step.deadline - time.monotonic()
                 if remaining <= 0 or route["observed_through"] >= route["wanted_through"]:
@@ -347,9 +335,14 @@ class PostgresTaskProjectionWorkStore(TaskProjectionWorkPort):
                         internal=int(row["replay_internal_continuation"]),
                         finish_timeout=f"{finish_timeout}ms",
                     )
-                    code = ClientCursor(connection.connection).mogrify(routing, params)
-                    # The DO is page-bounded; restore cleanup timeout before its next roundtrip.
-                    step.execute("DO %s", (code,))
+                    # Restore the cleanup timeout before the next roundtrip.
+                    step.execute(
+                        """SELECT repair_task_projection_header(
+                          %(namespace)s,%(task_id)s,%(event_id)s,%(task_sequence)s,
+                          %(event_type)s,%(command_kind)s,%(run_id)s,%(internal)s,
+                          %(version)s,%(finish_timeout)s)""",
+                        params,
+                    )
                     connection.commit()
                 except CheckpointNotReady as exc:
                     if connection.connection.closed:
