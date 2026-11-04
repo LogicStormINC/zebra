@@ -78,6 +78,8 @@ def test_privacy_append_after_head_denies_changed_page(source, monkeypatch, read
         return page
 
     monkeypatch.setattr(owner, method, read)
+    if reader == "task":
+        monkeypatch.setattr(type(owner), "stream_head_reads_compatible", True)
     tail = tail_session_events if reader == "session" else tail_task_events
 
     async def collect():

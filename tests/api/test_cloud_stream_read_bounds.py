@@ -413,6 +413,8 @@ def test_native_task_tail_checks_source_once_before_page_and_again_before_output
     from agent_core.domain.identifiers import SessionId
     from zebra_agent_api.session_streaming import tail_task_events
 
+    from tests.stream_storage.telemetry import Telemetry
+
     stores, sid = source
     cursor = stores.tasks.read_stream_source_head(task_id=TaskId(sid)).task.current_sequence
     append(source, EventType.MODEL_RESPONSE_DELTA, {"content_delta": "next"})
@@ -452,5 +454,10 @@ def test_native_task_tail_checks_source_once_before_page_and_again_before_output
         finally:
             await stream.aclose()
 
-    assert "next" in asyncio.run(asyncio.wait_for(first_frame(), 5))
+    telemetry = Telemetry()
+    with telemetry.installed():
+        assert "next" in asyncio.run(asyncio.wait_for(first_frame(), 5))
     assert reads == ([] if with_hint else ["header"]) + ["head", "page", "head"]
+    assert sum(v for k, v in telemetry.calls.items() if k.endswith("/new_pg_socket")) == (
+        2 + (not with_hint) + (psycopg.pq.version() < 170000)
+    )

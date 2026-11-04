@@ -12,12 +12,14 @@ from agent_core.domain.events import SessionEvent
 from agent_core.domain.identifiers import SessionId, TaskId
 from agent_core.domain.sessions import SessionStatus
 from agent_core.ports import LiveEventCursor, LiveEventFanoutPort
+from agent_core.ports.agent_tasks import TaskEventPage
 from agent_core.ports.event_store import BoundedSessionEventReadPort
 from agent_core.ports.live_event_fanout import CanonicalFrontierNotificationPort
 from agent_core.ports.stream_source_head import StreamSourceHead, StreamSourceHeadPort
 from agent_core.ports.task_projection_checkpoints import CheckpointNotReady
 from agent_integrations.redis_live_fanout_async import AsyncRedisNotifications
 from agent_storage import ControlPlaneStores, sqlite_control_plane_stores
+from agent_storage.postgres.connection_scope import postgres_connection_scope
 from fastapi import Request
 
 from zebra_agent_api.ag_ui_checkpoint_tail import _backoff_slice, _read_until
@@ -339,6 +341,13 @@ async def tail_task_events(
         and getattr(store, "stream_head_reads_compatible", True) else None
     )
 
+    def read_native_page(cursor: int) -> TaskEventPage | None:
+        # The callback may reuse a socket, but the privacy proof needs its own
+        # fresh transaction to see a Coverage commit made during page replay.
+        with postgres_connection_scope(bounded=True):
+            page = store.read_event_page(task_id, cursor)
+            return page if coverage_task_read_problem(active, task_id) is None else None
+
     async def frames() -> AsyncGenerator[str, None]:
         wake_segment = initial_wake_segment if source_heads is not None else None
         if wake_segment is None:
@@ -369,7 +378,12 @@ async def tail_task_events(
                 head = await _read_raw_head(deadline, source_heads, task_id=task_id)
                 if head is None or head.task.strict_coverage is not False:
                     return
-            if head is None or cursor < head.task.current_sequence:
+            if head is not None and cursor < head.task.current_sequence:
+                native_page = await _read_until(deadline, read_native_page, cursor)
+                if native_page is None:
+                    return
+                events = native_page.events
+            elif head is None:
                 page = await _read_until(deadline, store.read_event_page, task_id, cursor)
                 if cloud:
                     problem = await _read_until(
