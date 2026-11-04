@@ -79,19 +79,10 @@ def admit_coverage_task(
 def strict_command_source(connection: Any, namespace: str, session_id: UUID) -> Any:
     """Any raw Task-prepared marker is strict, including later Segment markers."""
     rows = connection.execute(
-        """SELECT t.task_id,t.root_session_id,e.event_id AS bootstrap_event_id,e.payload,
-                  e.session_id AS prepared_session_id,e.sequence AS prepared_sequence,
-                  e.created_at AS prepared_created_at,
-                  b.snapshot_json,b.binding_digest,b.binding_revision
+        """WITH strict_task AS MATERIALIZED (
+        SELECT t.deployment_namespace,t.task_id,t.root_session_id
         FROM execution_segments s JOIN agent_tasks t
           ON t.deployment_namespace=s.deployment_namespace AND t.task_id=s.task_id
-        JOIN execution_segments source ON source.deployment_namespace=t.deployment_namespace
-          AND source.task_id=t.task_id
-        LEFT JOIN session_events e ON e.deployment_namespace=t.deployment_namespace
-          AND e.session_id=source.session_id AND e.event_type='task_prepared'
-        LEFT JOIN LATERAL (SELECT snapshot_json,binding_digest,binding_revision
-          FROM task_binding_snapshots WHERE deployment_namespace=t.deployment_namespace
-            AND task_id=t.task_id ORDER BY binding_revision DESC LIMIT 1) b ON TRUE
         WHERE s.deployment_namespace=%s AND s.session_id=%s
           AND (EXISTS (
             SELECT 1 FROM execution_segments marker_segment JOIN session_events marker
@@ -104,6 +95,19 @@ def strict_command_source(connection: Any, namespace: str, session_id: UUID) -> 
             WHERE requirement.deployment_namespace=t.deployment_namespace
               AND requirement.task_id=t.task_id
           ))
+        )
+        SELECT t.task_id,t.root_session_id,e.event_id AS bootstrap_event_id,e.payload,
+                  e.session_id AS prepared_session_id,e.sequence AS prepared_sequence,
+                  e.created_at AS prepared_created_at,
+                  b.snapshot_json,b.binding_digest,b.binding_revision
+        FROM strict_task t
+        JOIN execution_segments source ON source.deployment_namespace=t.deployment_namespace
+          AND source.task_id=t.task_id
+        LEFT JOIN session_events e ON e.deployment_namespace=t.deployment_namespace
+          AND e.session_id=source.session_id AND e.event_type='task_prepared'
+        LEFT JOIN LATERAL (SELECT snapshot_json,binding_digest,binding_revision
+          FROM task_binding_snapshots WHERE deployment_namespace=t.deployment_namespace
+            AND task_id=t.task_id ORDER BY binding_revision DESC LIMIT 1) b ON TRUE
         ORDER BY source.segment_index,e.sequence LIMIT 65""",
         (namespace, session_id),
     ).fetchall()
