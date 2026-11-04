@@ -110,7 +110,13 @@ def context(stores, segment, public):
     from types import SimpleNamespace
 
     return AgUiStreamContext(
-        stores=SimpleNamespace(tasks=stores.cold(), deployment_namespace=None),
+        stores=SimpleNamespace(
+            tasks=stores.cold(),
+            deployment_namespace=None,
+            projection_work=None,
+            coverage_projection_work=None,
+            projection_work_for_version=lambda _version: None,
+        ),
         task_id=TaskId(segment),
         identity=AgUiRunIdentity(session_id=segment, thread_id=str(segment), run_id="run"),
         cursor=None,
@@ -174,7 +180,7 @@ def test_successor_resolution_reads_exact_after_coordinate_not_future_state(nati
         )
 
 
-def test_old_terminal_does_not_close_open_successor_and_own_terminal_ends(native):
+def test_old_terminal_does_not_close_open_successor_and_own_terminal_ends(native, caplog):
     segment = root(native)
     append(
         native, segment, 4, EventType.SESSION_SUSPENDED, {"reason": "execution_storage_unavailable"}
@@ -209,6 +215,7 @@ def test_old_terminal_does_not_close_open_successor_and_own_terminal_ends(native
             await tail.aclose()
 
     received = asyncio.run(exercise())
+    assert not any("AG-UI observation read failed" in record.message for record in caplog.records)
     assert received[0]["type"] == "RUN_STARTED" and received[0]["runId"] == second.run_id
     assert received[-1]["type"] == "RUN_FINISHED"
     assert not any(e.get("name", "").startswith("zebra.stream") for e in received)
