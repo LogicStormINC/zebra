@@ -37758,3 +37758,7 @@ In Progress branch/worktree). Own `session_streaming.py` Task tail and
 CA-HA-03 model/tool projection stream lock (Luke Ding/Codex, existing In
 Progress branch/worktree). Own `model_tool_projections.py` and
 `test_postgres_model_tool_projections.py` for projection under stream contention.
+
+CA-HA-03 Worker execution input handoff read (Luke Ding/Codex, existing In
+Progress branch/worktree). Own `execution_recovery.py` and
+`test_execution_input_frontier.py` for reuse of unchanged non-handoff input.

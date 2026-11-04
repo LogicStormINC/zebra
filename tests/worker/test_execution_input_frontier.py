@@ -431,13 +431,14 @@ def test_event_view_finishes_only_reads_and_delegates_writes(tmp_path):
         view.list_for_session("foreign-session")
 
 
-def test_cloud_input_entry_uses_typed_checkpoint_without_history(tmp_path):
+def test_cloud_input_entry_uses_typed_checkpoint_without_history(tmp_path, monkeypatch):
     from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
     from agent_core.application.session_projection import rebuild_session
     from agent_core.application.workspace_projection import rebuild_workspace
     from zebra_agent_worker.claims import ClaimedSession
     from zebra_agent_worker.execution_recovery import recover_execution_inputs
     from zebra_agent_worker.recovery import RecoveredSession
+    from zebra_agent_worker.session_handoff import SessionHandoffRecoveryGate
 
     tasks, events, lease, store = setup_inputs(tmp_path)
     bootstrap = SessionBootstrapService().build(
@@ -460,8 +461,11 @@ def test_cloud_input_entry_uses_typed_checkpoint_without_history(tmp_path):
     events.list_for_session = lambda *_: pytest.fail("cloud whole-history hydration")
     context_store = Mock()
     context_store.get_active_capsule.return_value = None
-    handoff = Mock()
-    handoff.recover.return_value = None
+    handoff = SessionHandoffRecoveryGate(str(tmp_path / "handoff.sqlite"))
+    from zebra_agent_worker import execution_input_preparation
+
+    read = Mock(wraps=execution_input_preparation.recover_execution_input_events)
+    monkeypatch.setattr(execution_input_preparation, "recover_execution_input_events", read)
     inputs = recover_execution_inputs(
         claimed=claimed,
         session_id=lease.session_id,
@@ -482,6 +486,7 @@ def test_cloud_input_entry_uses_typed_checkpoint_without_history(tmp_path):
         ownership_check=Mock(),
     )
     assert inputs.task.user_input == "Keep constraints"
+    assert read.call_count == 2
     assert inputs.execution_input_reader(lease) == source
 
 

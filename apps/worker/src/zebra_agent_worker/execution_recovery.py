@@ -47,7 +47,7 @@ from zebra_agent_worker.provider_continuation_execution import (
     resolve_provider_continuation,
 )
 from zebra_agent_worker.recovery import RecoveredSession
-from zebra_agent_worker.session_handoff import recover_worker_handoff
+from zebra_agent_worker.session_handoff import SessionHandoffRecoveryGate, recover_worker_handoff
 from zebra_agent_worker.session_process import process_factory
 from zebra_agent_worker.task_recovery import (
     RecoveredTask,
@@ -214,15 +214,23 @@ def recover_execution_inputs(
         started_at=started_at,
         event_store=event_store,
     )
+    handoff_events = event_store.list_for_session(session_id) if execution_input_reader else None
     recovered_handoff = recover_worker_handoff(
         handoff_gate,
         session_id,
         fence=claimed.lease.fence,
         recovered_at=started_at,
         release=lambda: None,
-        events=event_store.list_for_session(session_id) if execution_input_reader else None,
+        events=handoff_events,
     )
-    session_events = event_store.list_for_session(session_id)
+    # The native gate returning None made no changes. A real handoff or
+    # custom gate can change the source, so reread before constructing inputs.
+    session_events = (
+        handoff_events
+        if handoff_events is not None and recovered_handoff is None
+        and type(handoff_gate) is SessionHandoffRecoveryGate
+        else event_store.list_for_session(session_id)
+    )
     evidence = None
     if execution_input_store is not None:
         input_state = execution_input_store.read(claimed.lease).state
