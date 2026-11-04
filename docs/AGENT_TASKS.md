@@ -37762,3 +37762,7 @@ Progress branch/worktree). Own `model_tool_projections.py` and
 CA-HA-03 Worker execution input handoff read (Luke Ding/Codex, existing In
 Progress branch/worktree). Own `execution_recovery.py` and
 `test_execution_input_frontier.py` for reuse of unchanged non-handoff input.
+
+CA-HA-03 pre-spawn supervisor exit proof (Luke Ding/Codex, existing In
+Progress branch/worktree). Own `executor_supervisor.py` and
+`test_session_process.py` for parent mismatch before executor spawn.

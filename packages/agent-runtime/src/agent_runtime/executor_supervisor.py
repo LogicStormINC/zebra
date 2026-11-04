@@ -10,10 +10,16 @@ import time
 from pathlib import Path
 
 
+class ParentFenceLost(RuntimeError):
+    """The expected parent exited before the child could arm its fence."""
+
+
 def parent_fence(parent_pid: int, *, death_signal: int = signal.SIGKILL) -> None:
     libc = ctypes.CDLL(None, use_errno=True)
-    if libc.prctl(1, death_signal, 0, 0, 0) != 0 or os.getppid() != parent_pid:
+    if libc.prctl(1, death_signal, 0, 0, 0) != 0:
         raise RuntimeError("executor parent fence unavailable")
+    if os.getppid() != parent_pid:
+        raise ParentFenceLost("executor parent fence unavailable")
 
 
 def _children() -> set[int]:
@@ -64,7 +70,12 @@ def run(source: Path, result: Path) -> None:
 
     signal.signal(signal.SIGTERM, stop)
     signal.signal(signal.SIGINT, stop)
-    parent_fence(request["parent_pid"], death_signal=signal.SIGTERM)
+    try:
+        parent_fence(request["parent_pid"], death_signal=signal.SIGTERM)
+    except ParentFenceLost:
+        # Parent died before arming. No executor was spawned, so this private
+        # supervisor can attest its empty process tree without starting work.
+        stopping = True
     process = None
     if not stopping:
         process = subprocess.Popen(

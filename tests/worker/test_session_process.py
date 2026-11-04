@@ -183,7 +183,10 @@ def test_child_rejects_missing_parent_before_worker_import(tmp_path):
     assert "worker imports ran first" not in result.stderr
 
 
-def test_supervisor_parent_death_before_spawn_writes_only_exit_receipt(tmp_path, monkeypatch):
+@pytest.mark.parametrize("parent_lost_before_arm", [False, True])
+def test_supervisor_parent_death_before_spawn_writes_only_exit_receipt(
+    tmp_path, monkeypatch, parent_lost_before_arm,
+):
     request = tmp_path / "request.json"
     result = tmp_path / "result.json"
     receipt = {"session_id": "original", "fence": {"fencing_token": 7}}
@@ -204,8 +207,12 @@ def test_supervisor_parent_death_before_spawn_writes_only_exit_receipt(tmp_path,
     def parent_died(parent_pid, *, death_signal):
         assert parent_pid == 123
         assert death_signal == signal.SIGTERM
+        if parent_lost_before_arm:
+            return original_fence(parent_pid, death_signal=death_signal)
         handlers[death_signal](death_signal, None)
 
+    original_fence = executor_supervisor.parent_fence
+    monkeypatch.setattr(os, "getppid", lambda: 1)
     monkeypatch.setattr(executor_supervisor, "parent_fence", parent_died)
     with pytest.raises(SystemExit, match="1"):
         executor_supervisor.run(request, result)
