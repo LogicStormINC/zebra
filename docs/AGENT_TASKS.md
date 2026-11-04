@@ -37665,3 +37665,8 @@ CA-HA-03 E1 early executor parent fence follow-up (Luke Ding/Codex, existing
 In Progress branch/worktree): own session_process.py, session_process_child.py
 and the existing session-process regression. Arm the Linux executor fence before
 Worker imports, retaining the current supervisor, private process and receipts.
+
+CA-HA-03 F-02 live-lease recovery schedule follow-up (Luke Ding/Codex,
+existing In Progress branch/worktree): own command_wakeup_recovery.py and its
+PostgreSQL recovery regression. Recheck active leases by their expiry within
+the existing retry bound, using the same locked authority and proof checks.

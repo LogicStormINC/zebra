@@ -151,12 +151,11 @@ def _recover(
         lock_session_lease_boundary(connection, namespace, session_id)
         _lock_epoch(connection, namespace)
         _lock_lease_and_clock(connection, namespace, session_id, update=True)
-        # Denial only: a racing release may delay recovery by RETRY_DELAY, never
-        # authorize execution. Move active candidates off the due page so they
-        # cannot starve expired leases. Inactive/fenced paths retain full proof.
+        # Move live leases off the due page without waiting past their current
+        # expiry. A renewal is checked under the same locks on the next scan.
         deferred = connection.execute(
             """UPDATE session_command_pending AS pending
-               SET recovery_due_at = clock_timestamp() + %s
+               SET recovery_due_at = LEAST(clock_timestamp() + %s, lease.expires_at)
                FROM worker_leases AS lease, control_plane_epochs AS authority,
                     command_wakeup_rollouts AS rollout
                WHERE pending.deployment_namespace = %s AND pending.accepted_event_id = %s
@@ -240,7 +239,7 @@ def _recover(
     if continuation_fence is not None:
         assert_current_lease_fence(connection, namespace, session_id, continuation_fence)
     elif lease is not None and _active(lease, epoch, now):
-        _defer(connection, namespace, event_id, now + RETRY_DELAY)
+        _defer(connection, namespace, event_id, min(now + RETRY_DELAY, lease["expires_at"]))
         return result(RecoveryStatus.DEFERRED)
     outbox = connection.execute(
         """SELECT * FROM broker_outbox WHERE deployment_namespace = %s AND scope_key = %s

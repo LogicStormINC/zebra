@@ -168,7 +168,10 @@ def test_active_lease_defers_without_quarantining_and_batch_progresses(dsn):
     _due(dsn)
     assert _recover(dsn, batch_size=1)[0].status is RecoveryStatus.DEFERRED
     assert _recover(dsn, batch_size=1) == ()
-    assert _rows(dsn, "session_command_pending")[0]["status"] == "pending"
+    pending, = _rows(dsn, "session_command_pending")
+    lease, = _rows(dsn, "worker_leases")
+    assert pending["status"] == "pending"
+    assert pending["recovery_due_at"] == lease["expires_at"]
 
 
 def test_two_recovery_calls_approve_only_one_generation(dsn):
