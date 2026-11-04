@@ -37857,3 +37857,7 @@ CA-HA-03 terminal fallback Outbox retirement (same owner and branch). Own
 the additive command_outbox_retirement_migration.py, migration catalog tail,
 and native command receipt regression. Provide a bounded explicit operator
 transaction under the scope rollout lock and preserve all envelope evidence.
+
+CA-HA-03 Outbox capacity index (same owner and branch). Own additive
+command_outbox_capacity_index_migration.py and migration catalog tail. Add the
+measured partial index for existing pending/publishing capacity predicates.
