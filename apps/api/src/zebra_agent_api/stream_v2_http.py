@@ -10,7 +10,6 @@ from uuid import UUID
 from agent_core.domain.events import EventType
 from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.identifiers import SessionId, TaskId
-from agent_core.ports.stream_source_head import StreamObservationReadPort
 from agent_core.ports.task_projection_checkpoints import CheckpointNotReady, ProjectionScope
 from agent_integrations.ag_ui.checkpoint_plan import checkpoint_version
 from agent_integrations.ag_ui.profiles import AgUiProjectionProfile
@@ -36,7 +35,7 @@ from zebra_agent_api.app import ZebraAgentApi
 from zebra_agent_api.responses import ApiResponse
 from zebra_agent_api.session_streaming import _deadline, tail_session_events, tail_task_events
 from zebra_agent_api.stream_v2_authority import V2ReadAuthority, V2ReadBinding
-from zebra_agent_api.stream_v2_query import _source_query
+from zebra_agent_api.stream_v2_query import source_query as source_query
 from zebra_agent_api.stream_v2_reader import V2StreamContext
 from zebra_agent_api.tenant_guard import task_access_response
 
@@ -234,19 +233,6 @@ def prepare_v2(
         return _problem(409, "stream_source_unavailable")
 
 
-def source_query(
-    api: ZebraAgentApi,
-    context: V2StreamContext,
-    query: Mapping[str, str],
-    *,
-    initial_metadata: StreamObservationReadPort | None = None,
-) -> dict[str, str] | ApiResponse:
-    try:
-        return _source_query(api, context, query, initial_metadata=initial_metadata)
-    except ValueError:
-        return _problem(400, "invalid_cursor")
-
-
 _native_agui_callbacks = (task_access_response, prepare_v2, source_query, prepare_agui_stream)
 
 
@@ -410,7 +396,7 @@ async def raw_response(
 
     def prepare_context(
         proof: StreamProofSnapshot | None = None,
-    ) -> ApiResponse | tuple[V2StreamContext, dict[str, str], UUID, int] | None:
+    ) -> ApiResponse | tuple[V2StreamContext, dict[str, str], UUID, int, SessionId | None] | None:
         if "X-Zebra-AGUI-Profile" in request.headers or "X-Zebra-AGUI-Revision" in request.headers:
             return _problem(409, "agui_profile_unavailable")
         context = (
@@ -431,6 +417,7 @@ async def raw_response(
             resource = UUID(request.url.path.strip("/").split("/")[1])
         except ValueError:
             return ApiResponse(400, {"status": "invalid_request"})
+        initial_wake_segment = None
         if request.url.path.startswith("/tasks/"):
             header = (proof if proof is not None else api.stores.tasks).read_task_header(
                 TaskId(resource), require_source_coverage=api.settings.deployment != "local"
@@ -438,6 +425,8 @@ async def raw_response(
             if header is None:
                 return ApiResponse(404, {"status": "not_found"})
             highwater = header.current_sequence
+            if proof is not None:
+                initial_wake_segment = header.active_segment_id
         elif api.settings.deployment != "local":
             if proof is not None:
                 highwater = proof.read_session_highwater(SessionId(resource))
@@ -447,9 +436,11 @@ async def raw_response(
             highwater = after
         if after > highwater:
             return ApiResponse(400, {"status": "invalid_request"})
-        return context, rewritten, resource, after
+        return context, rewritten, resource, after, initial_wake_segment
 
-    def prepare() -> ApiResponse | tuple[V2StreamContext, dict[str, str], UUID, int] | None:
+    def prepare() -> (
+        ApiResponse | tuple[V2StreamContext, dict[str, str], UUID, int, SessionId | None] | None
+    ):
         if authority is None or snapshot_preflight is None:
             return prepare_context()
         with authority.proofs.snapshot() as proof:
@@ -468,7 +459,7 @@ async def raw_response(
         return JSONResponse(status_code=admitted.status_code, content=admitted.body)
     if admitted is None:
         return None
-    context, query, resource, after = admitted
+    context, query, resource, after, initial_wake_segment = admitted
     deadline = _deadline(getattr(host, "expires_at", None))
     options = dict(
         database_path=database_path,
@@ -482,7 +473,10 @@ async def raw_response(
         recovery_notice=isinstance(context, V2StreamContext) and context.full_recovery,
     )
     if request.url.path.startswith("/tasks/"):
-        stream = tail_task_events(task_id=TaskId(resource), **options)  # type: ignore[arg-type]
+        stream = tail_task_events(
+            task_id=TaskId(resource), initial_wake_segment=initial_wake_segment,
+            **options,  # type: ignore[arg-type]
+        )
     else:
         stream = tail_session_events(session_id=SessionId(resource), **options)  # type: ignore[arg-type]
     if isinstance(context, V2StreamContext):

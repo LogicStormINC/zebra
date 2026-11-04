@@ -399,3 +399,58 @@ def test_stream_snapshot_reuses_qualified_source_for_same_task_header(
     with reader.snapshot() as fresh:
         assert fresh.read_task_header(task, require_source_coverage=True) == head.task
     assert requalifications == [task]
+
+
+@pytest.mark.parametrize("with_hint", [False, True])
+def test_native_task_tail_checks_source_once_before_page_and_again_before_output(
+    source, monkeypatch, with_hint,
+):
+    import asyncio
+    from pathlib import Path
+    from unittest.mock import AsyncMock
+    from uuid import uuid4
+
+    from agent_core.domain.identifiers import SessionId
+    from zebra_agent_api.session_streaming import tail_task_events
+
+    stores, sid = source
+    cursor = stores.tasks.read_stream_source_head(task_id=TaskId(sid)).task.current_sequence
+    append(source, EventType.MODEL_RESPONSE_DELTA, {"content_delta": "next"})
+    original_head = stores.tasks.read_stream_source_head
+    original_page = stores.tasks.read_event_page
+    original_header = stores.tasks.read_task_header
+    reads = []
+
+    def header(*args, **kwargs):
+        reads.append("header")
+        return original_header(*args, **kwargs)
+
+    def head(**kwargs):
+        reads.append("head")
+        return original_head(**kwargs)
+
+    def page(*args, **kwargs):
+        reads.append("page")
+        return original_page(*args, **kwargs)
+
+    monkeypatch.setattr(stores.tasks, "read_stream_source_head", head)
+    monkeypatch.setattr(stores.tasks, "read_event_page", page)
+    monkeypatch.setattr(stores.tasks, "read_task_header", header)
+    # Preserve the native adapter contract for these observation-only spies.
+    monkeypatch.setattr(type(stores.tasks), "stream_head_reads_compatible", True)
+
+    async def first_frame():
+        # Even a stale notification hint must read the current canonical source.
+        hint = {"initial_wake_segment": SessionId(uuid4())} if with_hint else {}
+        stream = tail_task_events(
+            database_path=Path("/unused"), stores=stores, task_id=TaskId(sid),
+            request=SimpleNamespace(is_disconnected=AsyncMock(return_value=False)),
+            after_sequence=cursor, **hint,
+        )
+        try:
+            return await anext(stream)
+        finally:
+            await stream.aclose()
+
+    assert "next" in asyncio.run(asyncio.wait_for(first_frame(), 5))
+    assert reads == ([] if with_hint else ["header"]) + ["head", "page", "head"]

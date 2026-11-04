@@ -328,6 +328,7 @@ async def tail_task_events(
     authorization_expires_at: datetime | None = None,
     notifications: AsyncRedisNotifications | None = None,
     recovery_notice: bool = False,
+    initial_wake_segment: SessionId | None = None,
 ) -> AsyncIterator[str]:
     active = stores or sqlite_control_plane_stores(database_path)
     store, deadline = active.tasks, _deadline(authorization_expires_at)
@@ -339,24 +340,27 @@ async def tail_task_events(
     )
 
     async def frames() -> AsyncGenerator[str, None]:
-        task = await _read_until(
-            deadline, store.read_task_header if cloud else store.get_task, task_id
-        )
-        if task is None:
-            return
+        wake_segment = initial_wake_segment if source_heads is not None else None
+        if wake_segment is None:
+            task = await _read_until(
+                deadline, store.read_task_header if cloud else store.get_task, task_id
+            )
+            if task is None:
+                return
+            wake_segment = task.active_segment_id
         wake = StreamWake(
             live_event_fanout,
             deployment_namespace,
-            task.active_segment_id,
+            wake_segment,
             deadline,
             cloud=getattr(active, "deployment_namespace", None) is not None,
             notifications=notifications,
         )
         await wake.capture()
-        if source_heads is None and await _read_until(
-            deadline, coverage_task_read_problem, active, task_id
-        ):
-            return
+        if source_heads is None:
+            problem = await _read_until(deadline, coverage_task_read_problem, active, task_id)
+            if problem is not None:
+                return
         cursor, closing, last_delivery = after_sequence, False, monotonic()
         recovered = not recovery_notice
         while not await request.is_disconnected():

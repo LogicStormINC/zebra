@@ -10,6 +10,8 @@ from agent_core.domain.identifiers import SessionId
 from agent_core.ports.stream_source_head import StreamObservationReadPort
 from agent_integrations.ag_ui import AgUiCursor
 
+from zebra_agent_api.ag_ui_observation_binding import stream_negotiation_problem
+from zebra_agent_api.responses import ApiResponse
 from zebra_agent_api.stream_v2_reader import V2StreamContext
 
 if TYPE_CHECKING:
@@ -73,3 +75,16 @@ def _source_query(
             )
     result["cursor"] = cursor.encode()
     return result
+
+
+def source_query(
+    api: ZebraAgentApi,
+    context: V2StreamContext,
+    query: Mapping[str, str],
+    *,
+    initial_metadata: StreamObservationReadPort | None = None,
+) -> dict[str, str] | ApiResponse:
+    try:
+        return _source_query(api, context, query, initial_metadata=initial_metadata)
+    except ValueError:
+        return stream_negotiation_problem(400, "invalid_cursor")

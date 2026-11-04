@@ -298,6 +298,7 @@ def test_native_handoff_parent_canonical_history_has_no_child_drafts(owned, monk
 
     def raw_request(after=None):
         return SimpleNamespace(
+            scope={},
             state=SimpleNamespace(host_context=fresh, authorization_deadline=monotonic() + 2),
             headers={},
             is_disconnected=connected,
