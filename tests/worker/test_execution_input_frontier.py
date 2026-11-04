@@ -574,3 +574,29 @@ def test_stale_page_cas_and_released_lease_cannot_advance(tmp_path):
     SQLiteLeaseStore(tmp_path / "inputs.sqlite").release(lease.session_id, fence=lease.fence)
     with pytest.raises(LeaseLostError):
         store.advance(lease, page)
+
+
+def test_execution_input_retries_confirmed_lock_timeout_on_same_page(tmp_path, monkeypatch):
+    from psycopg.errors import LockNotAvailable
+
+    tasks, events, lease, store = setup_inputs(tmp_path)
+    latest = append(events, lease, 2, EventType.USER_MESSAGE_RECEIVED, {"content": "continue"})
+    advance = store.advance
+    attempts = []
+
+    def contended(current_lease, page):
+        attempts.append((current_lease, page))
+        if len(attempts) == 1:
+            raise LockNotAvailable("isolated contention")
+        return advance(current_lease, page)
+
+    monkeypatch.setattr(store, "advance", contended)
+    ownership = Mock()
+    recovered = recover_execution_input_events(
+        store=store, tasks=tasks, lease=lease, ownership_check=ownership
+    )
+
+    assert latest in recovered
+    assert len(attempts) == 2 and attempts[0] == attempts[1]
+    assert ownership.call_count >= 3
+    assert store.read(lease).through_sequence == latest.sequence
