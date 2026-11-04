@@ -15,6 +15,7 @@ from agent_integrations.ag_ui.checkpoint_plan import checkpoint_version
 from agent_integrations.ag_ui.profiles import AgUiProjectionProfile
 from agent_storage.live_event_store import PostCommitPublishingEventStore
 from agent_storage.postgres.agent_tasks import PostgresAgentTaskStore
+from agent_storage.postgres.connection_scope import postgres_connection_scope
 from agent_storage.postgres.direct_control import PostgresDirectControl
 from agent_storage.postgres.events import PostgresEventStore
 from agent_storage.postgres.projections import PostgresProjectionStore
@@ -246,10 +247,7 @@ def _agui_snapshot_authority(api: ZebraAgentApi) -> V2ReadAuthority | None:
         )
     ):
         return None
-    authority = _raw_snapshot_authority(api)
-    if authority is None:
-        return None
-    return authority
+    return _raw_snapshot_authority(api)
 
 
 async def agui_response(
@@ -394,9 +392,9 @@ async def raw_response(
 
     authority = _raw_snapshot_authority(api) if snapshot_preflight is not None else None
 
-    def prepare_context(
-        proof: StreamProofSnapshot | None = None,
-    ) -> ApiResponse | tuple[V2StreamContext, dict[str, str], UUID, int, SessionId | None] | None:
+    type Prepared = ApiResponse | tuple[V2StreamContext, UUID, int, SessionId | None] | None
+
+    def prepare_context(proof: StreamProofSnapshot | None = None) -> Prepared:
         if "X-Zebra-AGUI-Profile" in request.headers or "X-Zebra-AGUI-Revision" in request.headers:
             return _problem(409, "agui_profile_unavailable")
         context = (
@@ -436,20 +434,23 @@ async def raw_response(
             highwater = after
         if after > highwater:
             return ApiResponse(400, {"status": "invalid_request"})
-        return context, rewritten, resource, after, initial_wake_segment
+        return context, resource, after, initial_wake_segment
 
-    def prepare() -> (
-        ApiResponse | tuple[V2StreamContext, dict[str, str], UUID, int, SessionId | None] | None
-    ):
+    def prepare() -> Prepared:
         if authority is None or snapshot_preflight is None:
-            return prepare_context()
+            if preflight is None:
+                return prepare_context()
+            with postgres_connection_scope(bounded=True):
+                denied = preflight()
+                _check_read_deadline(current_task_io_deadline(), getattr(host, "expires_at", None))
+                return denied if denied is not None else prepare_context()
         with authority.proofs.snapshot() as proof:
             denied = snapshot_preflight(proof)
             _check_read_deadline(current_task_io_deadline(), getattr(host, "expires_at", None))
             return denied if denied is not None else prepare_context(proof)
 
     admitted = await authorized_task_preflight(
-        preflight if authority is None and preflight is not None else lambda: None,
+        lambda: None,
         prepare,
         authorization_expires_at=getattr(host, "expires_at", None),
         request_deadline=getattr(request.state, "authorization_deadline", None),
@@ -459,7 +460,7 @@ async def raw_response(
         return JSONResponse(status_code=admitted.status_code, content=admitted.body)
     if admitted is None:
         return None
-    context, query, resource, after, initial_wake_segment = admitted
+    context, resource, after, initial_wake_segment = admitted
     deadline = _deadline(getattr(host, "expires_at", None))
     options = dict(
         database_path=database_path,
