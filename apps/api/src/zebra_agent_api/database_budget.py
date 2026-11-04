@@ -23,8 +23,11 @@ from psycopg_pool import PoolTimeout, TooManyRequests
 from starlette.responses import JSONResponse
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
+from zebra_agent_api.http_stream_routing import _is_raw_stream_path
+
 _ORIGINAL_RECEIPT = re.compile(r"/v1/admission-operations/[0-9a-fA-F-]{36}")
 _CONTROL = re.compile(r"/(tasks|sessions)/[^/]+/(cancel|stop|suspend)")
+_STREAM_CURSOR = re.compile(rb"(?:^|&)after_sequence=[0-9]+(?:&|$)")
 
 
 class DatabaseBudgetMiddleware:
@@ -37,6 +40,8 @@ class DatabaseBudgetMiddleware:
             "read": BoundedSemaphore(budget.profile.read),
             "control": BoundedSemaphore(budget.profile.control),
         }
+
+        self._resume_waiters = BoundedSemaphore(budget.profile.read)
 
         if budget.profile.receipt:
             self._admissions["receipt"] = BoundedSemaphore(budget.profile.receipt)
@@ -55,7 +60,26 @@ class DatabaseBudgetMiddleware:
         if method == "GET" and "receipt" in self._admissions and _ORIGINAL_RECEIPT.fullmatch(path):
             lane = "receipt"
         started = False
-        admitted = self._admissions[lane].acquire(blocking=False)
+        slots = self._admissions[lane]
+        admitted = slots.acquire(blocking=False)
+        if (
+            not admitted
+            and method == "GET"
+            and _is_raw_stream_path(path)
+            and _STREAM_CURSOR.search(scope.get("query_string", b""))
+            and self._resume_waiters.acquire(blocking=False)
+        ):
+            # ponytail: at most one short waiting wave. Reads outside this
+            # cursor route keep immediate admission and their existing limits.
+            try:
+                async with asyncio.timeout(0.5):
+                    while not admitted:
+                        await asyncio.sleep(0.01)
+                        admitted = slots.acquire(blocking=False)
+            except TimeoutError:
+                pass
+            finally:
+                self._resume_waiters.release()
         if not admitted:
             await JSONResponse({"error": {"code": "capacity_unavailable"}},
                                status_code=503)(scope, receive, send)
@@ -65,7 +89,7 @@ class DatabaseBudgetMiddleware:
             nonlocal admitted
             if admitted:
                 admitted = False
-                self._admissions[lane].release()
+                slots.release()
 
         async def observed(message: Message) -> None:
             nonlocal started

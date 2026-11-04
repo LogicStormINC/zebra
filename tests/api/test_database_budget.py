@@ -348,3 +348,47 @@ def test_original_receipt_has_capacity_when_stream_reads_are_saturated():
             assert client.post("/tasks/example/stop").json() == {"lane": "control"}
     finally:
         read.release()
+
+
+def test_cursor_resume_waits_within_read_budget_without_queueing_other_reads():
+    import asyncio
+
+    import httpx
+    from agent_storage.postgres.capacity_profile import CapacityProfile
+    from agent_storage.postgres.connection_capacity import ConnectionBudget
+    from zebra_agent_api.database_budget import DatabaseBudgetMiddleware
+
+    profile = CapacityProfile.parse(json.dumps(profile_data() | {"read": 1}))
+    budget = ConnectionBudget("dbname=one", profile, "api")
+    app = FastAPI()
+    app.add_middleware(DatabaseBudgetMiddleware, budget=budget)
+
+    async def exercise():
+        entered, release = asyncio.Event(), asyncio.Event()
+
+        @app.get("/tasks/{task_id}/stream")
+        async def stream(task_id: str):
+            if task_id == "holding":
+                entered.set()
+                await release.wait()
+            return {"task": task_id}
+
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            holding = asyncio.create_task(client.get("/tasks/holding/stream"))
+            await entered.wait()
+            resumed = asyncio.create_task(client.get("/tasks/resume/stream?after_sequence=2"))
+            try:
+                await asyncio.sleep(0)
+                assert not resumed.done()
+                overflow = await client.get("/tasks/overflow/stream?after_sequence=2")
+                assert overflow.status_code == 503
+                ordinary = await client.get("/tasks/ordinary/stream")
+                assert ordinary.status_code == 503
+            finally:
+                release.set()
+                await holding
+            assert (await resumed).json() == {"task": "resume"}
+
+    asyncio.run(exercise())
