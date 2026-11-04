@@ -184,6 +184,8 @@
 
 # CA-HA-03 — 资源预算、退避与技术namespace隔离
 
+- E1 Task 根投影和成员读取合并（实施前登记）：沿用 CA-HA-03 Owner、branch 和 worktree。Owned paths 为 packages/agent-storage/src/agent_storage/postgres/task_index_transactions.py、tests/agent_storage/test_admission_atomic_task_run.py 和 WORKLOG.md。复用 Task 锁，保留重建校验与行锁。
+
 - E1 原子 Task 准入重建（实施前登记）：沿用 CA-HA-03 Owner、branch 和 worktree。Owned paths 为 packages/agent-storage/src/agent_storage/postgres/{task_index_transactions,task_admission}.py、tests/agent_storage/test_admission_atomic_task_run.py 和 WORKLOG.md。首次准入复用外层事务回滚，保留其余重建调用的 savepoint。
 
 - E1 准入身份与待处理记录合并（实施前登记）：沿用 CA-HA-03 Owner、branch 和 worktree。Owned paths 为 packages/agent-storage/src/agent_storage/postgres/command_wakeup.py、tests/agent_storage/test_postgres_command_wakeup.py 和 WORKLOG.md。保持全局与范围锁、重复身份校验及容量优先级，移除首次准入锁内一个往返。
