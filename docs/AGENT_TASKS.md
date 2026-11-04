@@ -37709,3 +37709,7 @@ and `tests/agent_storage/test_postgres_command_wakeup_pickup.py`.
 CA-HA-03 released-lease recovery scheduling follow-up (Luke Ding/Codex,
 existing In Progress branch/worktree). Own `command_wakeup_recovery.py` and
 `test_postgres_command_wakeup_recovery.py` for the expiry-bound deferral.
+
+CA-HA-03 scoped relay query follow-up (Luke Ding/Codex, existing In Progress
+branch/worktree). Own `command_wakeup_relay.py` and
+`test_postgres_command_wakeup_relay.py` for a scope-filtered claim query plan.
