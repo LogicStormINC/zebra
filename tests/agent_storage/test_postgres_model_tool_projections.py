@@ -103,7 +103,7 @@ def test_worker_index_is_fenced_idempotent_and_replayable(dsn: str) -> None:
     with psycopg.connect(dsn) as stream_writer:
         stream_writer.execute(
             "SELECT 1 FROM session_streams WHERE deployment_namespace=%s "
-            "AND session_id=%s FOR NO KEY UPDATE",
+            "AND session_id=%s FOR UPDATE",
             (namespace, session_id),
         )
         assert PostgresModelToolProjectionStore(

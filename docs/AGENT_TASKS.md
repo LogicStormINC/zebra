@@ -37754,3 +37754,7 @@ Progress branch/worktree). Own PostgreSQL `task_event_pages.py` and
 CA-HA-03 native Task stream initial privacy lookup (Luke Ding/Codex, existing
 In Progress branch/worktree). Own `session_streaming.py` Task tail and
 `test_stream_source_head_tail_native.py` for first-frame query reduction.
+
+CA-HA-03 model/tool projection stream lock (Luke Ding/Codex, existing In
+Progress branch/worktree). Own `model_tool_projections.py` and
+`test_postgres_model_tool_projections.py` for projection under stream contention.

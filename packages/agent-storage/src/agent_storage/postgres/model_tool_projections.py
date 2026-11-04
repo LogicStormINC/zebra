@@ -115,12 +115,12 @@ def _assert_worker_stream_revision(
         raise PostgresModelToolProjectionConflictError(
             "projection Event does not follow the expected stream revision"
         )
-    # Projection uses an immutable Event; allow concurrent version advances.
+    # The lease fences the writer and the projection FK pins its immutable
+    # Event. Read the frontier without contending with stream writers.
     row = connection.execute(
         """
         SELECT current_version FROM session_streams
         WHERE deployment_namespace = %s AND session_id = %s
-        FOR KEY SHARE
         """,
         (deployment_namespace, event.session_id),
     ).fetchone()
