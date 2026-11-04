@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Literal, Self
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -173,7 +173,7 @@ class ProviderUsageObservedPayload(BaseModel):
     usage: ModelUsage | None = None
 
     @model_validator(mode="after")
-    def validate_phase(self):
+    def validate_phase(self) -> Self:
         if self.phase == "started" and self.usage is not None:
             raise ValueError("provider attempt cannot have usage before sending")
         return self

@@ -349,7 +349,7 @@ class ZebraAgentApi(
         from agent_core.domain.bundle_definition import BundleDefinitionSnapshot
 
         bound = workspace.definition_snapshot if workspace is not None else None
-        effective = None
+        effective: BundleDefinitionSnapshot | None = None
         if (
             self.settings.storage_authority == "postgresql"
             and self.settings.publication_management_config
@@ -359,7 +359,7 @@ class ZebraAgentApi(
         ):
             from zebra_agent_api.publication_consumer import resolve_consumer_binding
 
-            effective = resolve_consumer_binding(
+            resolved = resolve_consumer_binding(
                 self.settings,
                 self.agent_registry,
                 bound.definition_id,
@@ -367,8 +367,9 @@ class ZebraAgentApi(
                 verified_host_grant.context if verified_host_grant is not None else None,
                 verified_host_grant,
             )
-            if isinstance(effective, ApiResponse):
-                return effective
+            if isinstance(resolved, ApiResponse):
+                return resolved
+            effective = resolved
         try:
             event = build_session_message_event(
                 event_store=self.stores.events,
@@ -392,14 +393,16 @@ class ZebraAgentApi(
                 ),
             )
         if self.settings.storage_authority == "postgresql":
+            from agent_core.domain.cloud_artifact_payloads import CloudArtifactPayloadRecord
+            from agent_core.domain.events import SessionEvent
             from agent_storage.event_rows import SessionEventSequenceConflictError
             from agent_storage.postgres.input_artifact_admission import append_input_message
 
             namespace = getattr(self.stores, "deployment_namespace", None)
             if not isinstance(namespace, str):
                 return ApiResponse(503, {"status": "message_storage_unavailable"})
-            events = (event,)
-            artifacts = ()
+            events: tuple[SessionEvent, ...] = (event,)
+            artifacts: tuple[CloudArtifactPayloadRecord, ...] = ()
             if parsed["attachments"]:
                 if self.input_artifact_objects is None:
                     return ApiResponse(503, {"status": "artifact_ingress_unavailable"})
@@ -426,7 +429,7 @@ class ZebraAgentApi(
                     session_id=session_key,
                 )
                 if current is None:
-                    return conflict(session_id=session_id, status="host_binding_missing")
+                    return ApiResponse(409, {"status": "host_binding_missing"})
                 try:
                     release_binding = renew_task_binding_snapshot(
                         current,
@@ -437,7 +440,7 @@ class ZebraAgentApi(
                         verified_subject_ref=verified_host_grant.subject_ref,
                     )
                 except ValueError:
-                    return conflict(session_id=session_id, status="host_binding_revision_conflict")
+                    return ApiResponse(409, {"status": "host_binding_revision_conflict"})
             try:
                 updated_session = append_input_message(
                     self.settings.database_url,
@@ -453,7 +456,7 @@ class ZebraAgentApi(
             except ValueError:
                 if release_binding is None:
                     raise
-                return conflict(session_id=session_id, status="host_binding_revision_conflict")
+                return ApiResponse(409, {"status": "host_binding_revision_conflict"})
             event = events[0]
         else:
             attachment_refs = store_text_attachments(

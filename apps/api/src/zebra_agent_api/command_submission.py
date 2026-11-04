@@ -159,11 +159,12 @@ def submit_session_command(
     if command.kind is SessionCommandKind.MESSAGE and settings is not None:
         from zebra_agent_api.message_release_admission import prepare_message_release
 
-        release_binding = prepare_message_release(
+        prepared = prepare_message_release(
             stores, settings, agent_registry, command, events, verified_host_grant
         )
-        if isinstance(release_binding, ApiResponse):
-            return release_binding
+        if isinstance(prepared, ApiResponse):
+            return prepared
+        release_binding = prepared
     scope = snapshot = task_ceiling = None
     if needs_extensions and extension_admission is not None:
         assert isinstance(verified_host_grant, VerifiedHostGrant)

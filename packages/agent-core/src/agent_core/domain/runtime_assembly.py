@@ -5,7 +5,14 @@ from __future__ import annotations
 from typing import Annotated, Any, Literal, Self
 from urllib.parse import urlsplit
 
-from pydantic import BeforeValidator, Field, field_validator, model_serializer, model_validator
+from pydantic import (
+    BeforeValidator,
+    Field,
+    SerializerFunctionWrapHandler,
+    field_validator,
+    model_serializer,
+    model_validator,
+)
 
 from agent_core.domain.modeling import ModelContextWindow
 from agent_core.domain.runtime_bundle import RuntimeBundleEnvelope
@@ -46,8 +53,8 @@ class RuntimeProviderProfile(BundleValue):
     max_output_tokens: Annotated[int, Field(ge=1, le=1_048_576)]
 
     @model_serializer(mode="wrap")
-    def serialize_profile(self, handler: Any) -> dict[str, Any]:
-        data = handler(self)
+    def serialize_profile(self, handler: SerializerFunctionWrapHandler) -> dict[str, Any]:
+        data: dict[str, Any] = handler(self)
         if self.display_name is None:
             data.pop("display_name", None)
         return data

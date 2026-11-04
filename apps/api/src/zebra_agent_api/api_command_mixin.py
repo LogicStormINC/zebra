@@ -18,8 +18,11 @@ from zebra_agent_api.responses import ApiResponse, conflict
 
 
 class _CommandApp(Protocol):
-    stores: ControlPlaneStores
-    agent_registry: AgentRegistryPort | None
+    @property
+    def agent_registry(self) -> AgentRegistryPort | None: ...
+
+    @property
+    def stores(self) -> ControlPlaneStores: ...
 
     @property
     def settings(self) -> ZebraAgentSettings: ...

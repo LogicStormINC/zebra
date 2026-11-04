@@ -3,11 +3,14 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import asdict, replace
 from datetime import datetime
+from typing import Literal
+from uuid import UUID
 
 import zebra_agent_config
 from agent_core.application import SessionTitleService
 from agent_core.domain.events import EventActor, EventType
 from agent_core.domain.execution_authority import ExecutionAuthorityResolutionError
+from agent_core.domain.modeling import ModelUsage
 from agent_core.domain.plugin_authority import PluginAuthorityUnavailable
 from agent_core.domain.sessions import SessionStatus
 from agent_integrations import build_model_gateway
@@ -213,7 +216,11 @@ class SessionExecutionService(SessionExecutionComposition, SessionExecutionEntry
                     "model_pin": model_pin.model_dump(mode="json"),
                 }
 
-                def persist_provider_usage(attempt_id, phase, usage):
+                def persist_provider_usage(
+                    attempt_id: UUID,
+                    phase: Literal["started", "finished"],
+                    usage: ModelUsage | None,
+                ) -> None:
                     current_recorder().append(
                         EventType.PROVIDER_USAGE_OBSERVED,
                         EventActor.HARNESS,

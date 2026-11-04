@@ -142,9 +142,10 @@ def perform(
             raise ValueError("INVALID_ARGUMENT")
         if "read" not in approval.actions:
             return _error(403, "PERMISSION_DENIED")
-        result = store.read(approval.trust, operation[0])
-        if result is None:
+        receipt = store.read(approval.trust, operation[0])
+        if receipt is None:
             return _error(404, "NOT_FOUND")
+        result = receipt
     else:
         payload = load_bundle_json(raw)
         if not isinstance(payload, dict) or payload.get("action") not in approval.actions:

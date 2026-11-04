@@ -1,5 +1,6 @@
 """Atomic durable registration and exact scoped lookup for model profiles."""
 
+from typing import Any
 from uuid import UUID
 
 from agent_core.domain.runtime_assembly import RuntimeProviderProfile
@@ -64,7 +65,7 @@ class PostgresModelProfileRegistrations:
             if operation != {"model_config_id": model_config_id, "revision": revision}:
                 raise ModelProfileRegistrationConflict("operation already registered")
 
-    def lookup_operation(self, scope: BundleScope, operation_id: UUID) -> dict | None:
+    def lookup_operation(self, scope: BundleScope, operation_id: UUID) -> dict[str, Any] | None:
         with self.database.connect() as connection:
             return connection.execute(
                 """SELECT o.model_config_id, o.revision, r.profile, r.request_digest

@@ -42,7 +42,15 @@ class RegistrationRequest(BundleValue):
     expectedConnectionDigest: Annotated[str, Field(pattern=r"^sha256:[0-9a-f]{64}$")] | None = None
 
 
-def perform(settings, namespace, token, headers, action, contract_header, raw):
+def perform(
+    settings: ZebraAgentSettings,
+    namespace: str | None,
+    token: str,
+    headers: dict[str, list[str]],
+    action: str,
+    contract_header: str | None,
+    raw: bytes,
+) -> JSONResponse:
     approval = load_bundle_management_approval(settings.bundle_management_config, namespace)
     denied = _authorize(approval, token, headers, action)
     if denied is not None:
