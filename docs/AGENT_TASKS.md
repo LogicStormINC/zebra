@@ -37718,3 +37718,7 @@ CA-HA-03 memory recovery polling follow-up (Luke Ding/Codex, existing In
 Progress branch/worktree). Own `worker_loop_service.py`,
 `cloud_memory_recovery.py` and `test_cloud_memory_recovery.py` for bounded
 no-progress polling; preserve original completion receipts and recovery keys.
+
+CA-HA-03 canonical model/tool projection contention follow-up (Luke Ding/Codex,
+existing In Progress branch/worktree). Own `model_tool_projections.py` and
+`test_postgres_model_tool_projections.py` for the stream lock strength.

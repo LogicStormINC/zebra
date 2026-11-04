@@ -21,7 +21,7 @@ from agent_storage import (
 )
 from agent_storage.postgres.model_tool_projections import index_event_in_transaction
 from psycopg import sql
-from psycopg.conninfo import make_conninfo
+from psycopg.conninfo import conninfo_to_dict, make_conninfo
 from psycopg.rows import dict_row
 
 
@@ -97,7 +97,18 @@ def test_worker_index_is_fenced_idempotent_and_replayable(dsn: str) -> None:
             model,
             authority=authority.model_copy(update={"deployment_namespace": "other"}),
         )
-    assert store.index_worker_event(model, authority=authority) is not None
+    short_lock_dsn = make_conninfo(
+        dsn, options=conninfo_to_dict(dsn)["options"] + " -c lock_timeout=100"
+    )
+    with psycopg.connect(dsn) as stream_writer:
+        stream_writer.execute(
+            "SELECT 1 FROM session_streams WHERE deployment_namespace=%s "
+            "AND session_id=%s FOR NO KEY UPDATE",
+            (namespace, session_id),
+        )
+        assert PostgresModelToolProjectionStore(
+            short_lock_dsn, deployment_namespace=namespace
+        ).index_worker_event(model, authority=authority) is not None
 
     tool_authority = authority.model_copy(update={"expected_stream_revision": 1})
     with psycopg.connect(dsn) as connection:
