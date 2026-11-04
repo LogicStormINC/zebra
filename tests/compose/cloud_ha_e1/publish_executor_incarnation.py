@@ -308,5 +308,8 @@ if __name__ == "__main__":
             os.environ["ZEBRA_DATABASE_URL"], namespace=arguments.namespace,
         )
     if arguments.reconcile:
-        dsn = os.environ["ZEBRA_DATABASE_URL"]
-        print(reconcile_exits(binding, dsn, namespace=arguments.namespace))
+        print(
+            reconcile(binding) if reconcile is not None else reconcile_exits(
+                binding, os.environ["ZEBRA_DATABASE_URL"], namespace=arguments.namespace,
+            )
+        )
