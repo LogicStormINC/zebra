@@ -5,8 +5,10 @@ from contextlib import aclosing
 from types import SimpleNamespace
 
 import pytest
+from agent_core.domain.sessions import SessionStatus
 from agent_core.ports.live_event_fanout import LiveEventBatch, LiveEventCursor
 from agent_core.ports.task_projection_checkpoints import CheckpointNotReady
+from agent_storage import SQLiteAgentTaskStore, SQLiteProjectionStore
 from zebra_agent_api import ag_ui_checkpoint_tail as checkpoint
 from zebra_agent_api import session_streaming as session
 
@@ -162,3 +164,34 @@ def test_raw_source_head_waits_for_projection_without_changing_target(monkeypatc
     assert read.await_count == 2
     assert read.await_args_list[0] == read.await_args_list[1]
     assert read.await_args.kwargs[kind] == "target"
+
+
+@pytest.mark.parametrize("resource", ["session", "task"])
+def test_native_stream_keeps_observing_during_approval(tmp_path, monkeypatch, resource):
+    clock = Clock()
+    database, identity, revision = _seed_session(tmp_path)
+    projections = SQLiteProjectionStore(database)
+    current = projections.get_session(identity)
+    assert current is not None
+    projections.save_session(current.model_copy(update={"status": SessionStatus.WAITING_APPROVAL}))
+    monkeypatch.setattr(session, "monotonic", lambda: clock.now)
+
+    async def wait(*args, **kwargs):
+        clock.now += 15
+        return False
+
+    monkeypatch.setattr(session.StreamWake, "wait", wait)
+
+    if resource == "task":
+        task = SQLiteAgentTaskStore(database).ensure_for_session(identity)
+        tail, target = session.tail_task_events, {"task_id": task.task_id}
+    else:
+        tail, target = session.tail_session_events, {"session_id": identity}
+
+    async def collect():
+        async with aclosing(tail(
+            database_path=database, request=Connected(), after_sequence=revision, **target,
+        )) as source:
+            assert await anext(source) == ": keepalive\n\n"
+
+    asyncio.run(asyncio.wait_for(collect(), 2))

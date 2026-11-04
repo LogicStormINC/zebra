@@ -35,7 +35,12 @@ _FALLBACK_SECONDS = 1.0
 _MAX_STREAM_SECONDS = 1800.0
 # awaiting_turn keeps a conversation Task stream open between Turns (ADR-026).
 _ACTIVE_STATUSES = frozenset(
-    {SessionStatus.READY, SessionStatus.RUNNING, SessionStatus.AWAITING_TURN}
+    {
+        SessionStatus.READY,
+        SessionStatus.RUNNING,
+        SessionStatus.AWAITING_TURN,
+        SessionStatus.WAITING_APPROVAL,
+    }
 )
 
 
