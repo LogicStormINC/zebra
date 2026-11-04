@@ -238,6 +238,7 @@ def _delete_namespace(dsn: str, namespace: str) -> None:
             "session_events",
             "session_streams",
             "worker_leases",
+            "runtime_namespace_gates",
             "control_plane_epochs",
         ):
             connection.execute(

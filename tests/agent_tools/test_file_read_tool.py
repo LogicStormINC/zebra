@@ -83,3 +83,20 @@ def test_file_read_tool_rejects_non_string_path_argument(tmp_path: Path) -> None
 
     with pytest.raises(ToolArgumentError, match="path' to be a string"):
         executor.execute(_tool_call({"path": 7}))
+
+
+def test_read_tool_uses_existing_output_projector_for_cloud_artifact(tmp_path):
+    from agent_tools.output_projection import ToolOutputProjector
+
+    captured = []
+    (tmp_path / "small.txt").write_text("actual read bytes")
+    projector = ToolOutputProjector(
+        lambda text, name: captured.append((text, name)) or "artifact://fixture"
+    )
+    result = FileReadTool(LocalWorkspace(tmp_path), output_projector=projector).handle(
+        _tool_call({"path": "small.txt"})
+    )
+    assert captured == [("actual read bytes", "small.txt")]
+    assert result.metadata["artifact_uri"] == "artifact://fixture"
+    assert result.metadata["path"] == "small.txt"
+    assert result.output == "actual read bytes"

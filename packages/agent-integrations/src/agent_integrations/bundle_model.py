@@ -14,6 +14,7 @@ from agent_core.domain.modeling import (
     ModelToolDefinition,
 )
 from agent_core.domain.runtime_assembly import RuntimeAssembly
+from agent_core.domain.runtime_bundle_types import ArtifactPin
 from agent_core.domain.script_bundle import parse_runtime_assembly
 
 from agent_integrations.deepseek_profiles import ResolvedDeepSeekInvocation
@@ -22,10 +23,21 @@ from agent_integrations.request_metadata import ModelRequestMetadata
 
 
 class BundleModelGateway(OpenAICompatibleModelGateway):
-    def __init__(self, assembly: RuntimeAssembly, *, client: httpx.Client | None = None) -> None:
+    def __init__(
+        self,
+        assembly: RuntimeAssembly,
+        *,
+        selected_pin: ArtifactPin | None = None,
+        client: httpx.Client | None = None,
+    ) -> None:
         self._assembly = parse_runtime_assembly(assembly)
         model = self._assembly.bundle.manifest.domains.model.parameters
-        profile = self._assembly.provider_profile
+        model_name, profile = self._assembly.resolve_session_model(
+            requested_id=selected_pin.id if selected_pin is not None else None,
+            remembered_id=None,
+        )
+        if selected_pin is not None and profile.pin != selected_pin:
+            raise ValueError("BUNDLE_SELECTED_MODEL_PIN_MISMATCH")
         key = os.environ.get(profile.api_key_env, "").strip()
         if not key:
             raise ValueError("BUNDLE_PROVIDER_CREDENTIAL_UNAVAILABLE")
@@ -33,7 +45,7 @@ class BundleModelGateway(OpenAICompatibleModelGateway):
             provider_name=profile.provider,
             base_url=profile.base_url,
             api_key=key,
-            model_name=model.model,
+            model_name=model_name,
             max_retries=model.max_retries,
             client=client,
         )

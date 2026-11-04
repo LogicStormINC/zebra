@@ -39,12 +39,14 @@ from agent_integrations.model_errors import (
 from agent_integrations.openai_payloads import (
     internal_tool_names,
     parse_completion,
+    parse_usage,
     provider_tool_names,
     serialize_message,
     serialize_tool,
 )
 from agent_integrations.openai_streaming import read_openai_stream
 from agent_integrations.provider_settings import ModelProviderSettings
+from agent_integrations.provider_usage import ProviderUsageObserver, observe_provider_attempt
 from agent_integrations.request_metadata import (
     ModelRequestMetadata,
     build_request_metadata,
@@ -83,6 +85,7 @@ class OpenAICompatibleModelGateway:
             )
         self._client = client
         self._prepared_requests = PreparedChatRequests()
+        self.usage_observer: ProviderUsageObserver | None = None
         self.authority_check: Callable[[str], None] | None = None
 
     def prepare_text_request(
@@ -237,13 +240,15 @@ class OpenAICompatibleModelGateway:
                 if self.authority_check is not None:
                     self.authority_check(call_id)
                 try:
-                    response_data = read_openai_stream(
-                        client,
-                        url=f"{self._base_url}{CHAT_COMPLETIONS_PATH}",
-                        headers=self._headers(),
-                        body=request_body,
-                        on_text_delta=on_text_delta,
-                        on_semantic_output=mark_semantic_output,
+                    response_data = self._observe_usage_attempt(
+                        lambda: read_openai_stream(
+                            client,
+                            url=f"{self._base_url}{CHAT_COMPLETIONS_PATH}",
+                            headers=self._headers(),
+                            body=request_body,
+                            on_text_delta=on_text_delta,
+                            on_semantic_output=mark_semantic_output,
+                        )
                     )
                     # A completed stream's buffered reasoning/tool arguments are not
                     # published text or executed tools. Allow one Harness parse repair.
@@ -391,6 +396,19 @@ class OpenAICompatibleModelGateway:
         return httpx.Timeout(120.0, connect=10.0)
 
     def _post_chat_completion(
+        self, body: dict[str, Any] | bytes, *, endpoint: str | None = None,
+        deadline_s: float | None = None,
+    ) -> dict[str, Any]:
+        return self._observe_usage_attempt(
+            lambda: self._send_chat_completion(body, endpoint=endpoint, deadline_s=deadline_s)
+        )
+
+    def _observe_usage_attempt(
+        self, send: Callable[[], dict[str, Any]]
+    ) -> dict[str, Any]:
+        return observe_provider_attempt(self.usage_observer, send, parse_usage)
+
+    def _send_chat_completion(
         self, body: dict[str, Any] | bytes, *, endpoint: str | None = None,
         deadline_s: float | None = None,
     ) -> dict[str, Any]:

@@ -10,6 +10,7 @@ from agent_core.domain.runtime_bundle_types import (
     EmptyParameters,
     InstructionsParameters,
     ModelParameters,
+    SingleModelParameters,
 )
 
 # Tuples keep the authoritative allowlist immutable; callers receive fresh JSON values.
@@ -37,9 +38,9 @@ _SOURCE_REFS = (
 )
 
 
-def _descriptor(domain: str, source: str) -> dict[str, Any]:
+def _descriptor(domain: str, source: str, *, selectable: bool = False) -> dict[str, Any]:
     parameter_types: dict[str, type[BundleValue]] = {
-        "model": ModelParameters,
+        "model": ModelParameters if selectable else SingleModelParameters,
         "instructions": InstructionsParameters,
         "budget": BudgetParameters,
     }
@@ -48,7 +49,7 @@ def _descriptor(domain: str, source: str) -> dict[str, Any]:
     descriptor = {
         "domain": domain,
         "id": f"cloud-agent/native/{domain}",
-        "version": "1.0.0",
+        "version": "1.1.0" if selectable and domain == "model" else "1.0.0",
         "mode": "configurable" if configurable else "pinned",
         "reason": "validation-only" if configurable else "requires-runtime-assembly",
         "parameters_schema": parameters.model_json_schema(),
@@ -57,22 +58,28 @@ def _descriptor(domain: str, source: str) -> dict[str, Any]:
     return {**descriptor, "digest": json_digest(descriptor)}
 
 
-def runtime_bundle_catalog() -> dict[str, Any]:
+def runtime_bundle_catalog(*, selectable: bool = False) -> dict[str, Any]:
     return {
         "schema_version": "cloud-agent.component-catalog/1",
-        "components": [_descriptor(domain, source) for domain, source in sorted(_SOURCE_REFS)],
+        "components": [
+            _descriptor(domain, source, selectable=selectable)
+            for domain, source in sorted(_SOURCE_REFS)
+        ],
     }
 
 
-def runtime_bundle_catalog_digest() -> str:
-    return json_digest(runtime_bundle_catalog())
+def runtime_bundle_catalog_digest(*, selectable: bool = False) -> str:
+    return json_digest(runtime_bundle_catalog(selectable=selectable))
 
 
-def builtin_component_pin(domain: str) -> ArtifactPin:
+def builtin_component_pin(domain: str, *, selectable: bool = False) -> ArtifactPin:
     for name, source in _SOURCE_REFS:
         if domain == name:
-            descriptor = _descriptor(name, source)
+            descriptor = _descriptor(name, source, selectable=selectable)
             return ArtifactPin(
-                kind="component", id=descriptor["id"], version="1.0.0", digest=descriptor["digest"]
+                kind="component",
+                id=descriptor["id"],
+                version=descriptor["version"],
+                digest=descriptor["digest"],
             )
     raise ValueError("unsupported native component")

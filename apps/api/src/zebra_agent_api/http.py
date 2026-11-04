@@ -218,6 +218,7 @@ def create_http_app(
     async def handle(request: Request, full_path: str = "") -> Response:
         if request.method.upper() == "OPTIONS" and not is_extension_path(request.url.path):
             return Response(status_code=200)
+        model_options = request.method == "GET" and request.url.path == "/model-options"
         auth_error = await authorize_request(
             request,
             active_settings,
@@ -228,6 +229,8 @@ def create_http_app(
         if auth_error is not None:
             if is_extension_path(request.url.path):
                 return extension_error(auth_error.status_code)
+            if model_options:
+                auth_error.headers["Cache-Control"] = "no-store"
             return auth_error
         if (
             active_settings.deployment != "local"
@@ -434,7 +437,11 @@ def create_http_app(
                     "X-Accel-Buffering": "no",
                 },
             )
-        return JSONResponse(status_code=response.status_code, content=response.body)
+        return JSONResponse(
+            status_code=response.status_code,
+            content=response.body,
+            headers={"Cache-Control": "no-store"} if model_options else None,
+        )
 
     async def handle_artifact_preview_head(
         request: Request,

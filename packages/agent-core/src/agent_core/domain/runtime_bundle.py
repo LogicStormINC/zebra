@@ -79,12 +79,14 @@ class ResolvedRuntimeBundle(BundleValue):
     def closure(self) -> Self:
         if self.baseline_config.kind != "baseline-config":
             raise ValueError("baseline configuration pin required")
-        if self.catalog_digest != runtime_bundle_catalog_digest():
+        selectable = bool(self.domains.model.parameters.selectable_models)
+        if self.catalog_digest != runtime_bundle_catalog_digest(selectable=selectable):
             raise ValueError("unsupported native catalog")
         references = [
             self.engine.image,
             self.baseline_config,
             self.domains.model.parameters.provider_profile,
+            *(item.provider_profile for item in self.domains.model.parameters.selectable_models),
             self.domains.instructions.parameters.output_schema,
             *self.build_evidence,
         ]
@@ -93,7 +95,7 @@ class ResolvedRuntimeBundle(BundleValue):
             references.append(budget.parameters.budget_profile)
         for domain in RuntimeDomains.model_fields:
             component = getattr(self.domains, domain).component
-            if component != builtin_component_pin(domain):
+            if component != builtin_component_pin(domain, selectable=selectable):
                 raise ValueError("unsupported native component")
             references.append(component)
         if any(pin.kind != "build-evidence" for pin in self.build_evidence):

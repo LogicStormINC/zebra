@@ -76,6 +76,11 @@ def apply_event(
         updates["mcp_allowlist"] = _mcp_allowlist_from_event(event)
         updates["skill_components"] = _skill_components_from_event(event)
         updates["definition_snapshot"] = _definition_snapshot_from_event(event)
+    if (
+        event.event_type is EventType.USER_MESSAGE_RECEIVED
+        and event.payload.get("definition_snapshot") is not None
+    ):
+        updates["definition_snapshot"] = _definition_snapshot_from_event(event)
     if event.event_type is EventType.RUNTIME_PROVISIONED:
         updates["runtime_name"] = _required_payload_string(event, "runtime_class")
         updates["runtime_engine"] = _required_payload_string(event, "engine")

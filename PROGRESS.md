@@ -1,3 +1,25 @@
+## CA-P7-03D-S3 — 真实对象存储补证（2026-11-02 / Review）
+
+在03D候选5acee368上补真实MinIO版本化对象链，生产源码零改动，缺counter继续严格拒绝。
+实际FileReadTool→coordinator/WMA→PG finalized/verified metadata→原VersionId bytes/hash→
+只读gate完成/不可变原收据/replay通过；parent/counter/terminal仍局部fixture，非正常模型成功链。
+本轮独立401通过、零跳过，覆盖此前12项S3未配条件；变更Ruff/diff与两轮只读复核通过。
+原PG收据/unknown与24个剩余对象版本已保留后ownedPG/MinIO资源清零；无主线整合/部署/生产迁移。
+[新增证据](docs/evidence/ca-p7-03d-s3/validation.json)；下方388/12skip和13跨仓均为历史实跑，未覆盖或冒称本轮重跑。
+完整模型驱动child/synthesis仍因无可信counter未验证，P7不关闭。
+
+## CA-P7-03D — 持久只读完成gate及真实跨仓受限验收（2026-11-02 / Review）
+
+03C已整合Native56ae352a/Overdoze365e843并推主线；ERP历史及无关AGENTS字节保留，无部署。
+D新增v122/123 scoped不可变gate观察/政策冻结，可信发布evaluation_profile_ref指定只读政策，
+实际files.read/栅栏事件/关联产物和父子当前授权/unknown验证，STOP/expiry/保留期同SQL原子完成CAS，
+旧/未知policy或多Attempt/Segment拒绝。修复公开Bundle旧绑定消费、Schema type检查及usage已结算恢复漏扫。
+独立388通过/12 S3条件跳过，Ruff/mypy14通过；真实Go→NativeHTTPS/Task/正常Worker/PG/Redis跨仓13项通过，
+无counter注入、provider0请求；局部Gate对象服务仍内存fixture，不冒称S3或真实模型成功。
+原12库状态/收据unknown和Redis已保留后owned资源零残留；中途失败与配额修复如实记录。
+[正式边界](docs/CA-P7-03D_completion_gate.md) / [证据](docs/evidence/ca-p7-03d/validation.json)。
+候选待主线整合，默认严格拒绝缺counter；真实模型child/synthesis等跨仓正项仍未验证，P7未关闭。
+
 ## 2026-11-02 ERP 迁址认证复核与源码固化
 
 浏览器Origin与签名身份分离，原Task严格绑定保留；补齐旧Manifest共享常量、bootstrap链接与初始传输配置。
@@ -8848,3 +8870,36 @@ CA-P5-10 final design revision: initial full5 identity/context propagation failu
 CA-P5-09/10 combined final producer gates: make test11240 passed/3080 conditional skips, make check0 file-size violations/ruff/mypy1448/Eval30 passed; source hashes unchanged. Legacy real PG8 and original resource binding7 passed in exact-owned temporary PG (historical fixture replaced for isolation only; assertions unchanged). All owned temporary PG/anonymous volumes removed, no new volumes/networks;4 foreign-owner containers preserved. Source publication required before fresh consumer images; P5 not yet closed.
 
 CA-P5-08 verification resumed on9e91d75f after both producer gates passed and GitHub HTTPS remote verified. No code changes; consumer V22 uses new exact-source images in one environment. After cleanup compare frozen blobs and reuse current-turn full result if unchanged. Prior unknowns/data preserved; final S1 still pending.
+
+CA-P7-MODEL-01 注册支持核对连接摘要。真实 PostgreSQL 定向测试覆盖 Base URL 和凭据引用不匹配时拒绝且不落原操作，以及正常重放和重启恢复。
+
+多模型 Bundle 装配候选新增 1.1.0 模型组件，保留旧目录摘要。额外模型 pin 进入 lock 并逐一校验供应商批准。装配测试 11 项通过，公开合同发布和发送选模待接入。
+
+多模型组件目录和独立摘要已加入 Cloud Agent 公开 Bundle 校验合同。公开合同与装配定向测试 15 项通过。新版公开合同摘要需要 Overdoze 更新对应信任 pin。
+
+已发布装配新增会话模型解析。显式选择必须在当前 Release 内，历史选择可沿用，缺省或历史选项已移除时使用主模型。15 项合同与装配回归通过。发送持久化与 Worker 消费待接入。
+
+Bundle 模型网关已能按完整已批准 pin 选用相应供应商连接和模型。装配与网关 13 项定向测试通过，覆盖匹配选择及旧修订拒绝。消息持久化与 Worker 接线待完成。
+
+Worker 已从本次发送的持久消息恢复选定 pin，并交给 Bundle 模型网关。缺装配时拒绝带 pin 的执行。执行输入与网关 28 项定向测试通过，API 可信写入和端到端选择仍待接入。
+
+消息事件构建器已可随新用户消息持久化服务端解析的模型 pin。消息和 Turn 生命周期 12 项通过，新增 pin 断言的消息组复验 3 项通过。公开发送准入接线待完成。
+
+后续消息入口已可接收模型 ID，并从会话段固定的发布快照解析完整 pin 后随消息落库。消息与 Turn 生命周期回归 12 项通过。首次发送、当前 Release 变更后回退和端到端验收待接入。
+
+首次发送已从绑定的发布快照解析显式选择或默认模型，并将完整 pin 写入初始用户消息。Bootstrap 与 Turn 生命周期 13 项回归通过。新版 Release 下的旧会话回退与跨仓实跑待完成。
+
+首次发送的选模回归发现 pin 误写入 TASK_PREPARED，已移至初始用户消息。真实队列事件读回验证默认、显式选择及越权拒绝，相关回归 20 项通过。
+
+Cloud Agent candidate adds authenticated `GET /model-options?definition_id=<uuid>&definition_environment=<environment>` for the effective published Bundle. It returns only the Definition/version, default model ID and available model IDs with provider model names as display labels. Targeted route checks pass. Public HTTPS and administrator-configured labels remain to be verified or wired.
+
+Explicit selection of a model available only in the effective release adopts the full release even when the remembered model is retained. Unchanged selection retains the previous release.
+
+Cloud command read-state preparation now pins the Worker lease with a shared row lock while advancing a derived checkpoint. Actual handoff and lease changes retain exclusive locks. A two-connection PostgreSQL regression reproduced the original contention and the command handoff suite passed after the change.
+
+Cloud Agent PR #266 now checks historical ScriptBundle artifacts at the producer
+commit in their manifest. The three unchanged contract directories still have
+working-tree byte checks. Current Bundle exports are checked against the live
+producer and schema. The four focused contract and configuration suites passed
+20 checks. The Backend quality workflow fetches the Git history used by the
+historical regression.

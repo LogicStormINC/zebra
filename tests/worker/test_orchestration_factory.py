@@ -69,12 +69,14 @@ class TrustedFixtureGateway(OpenAICompatibleModelGateway):
         )
 
 
-def _publish(factory, name):
+def _publish(factory, name, **version_changes):
     assembly = assembly_payload()
     assembly["bundle"]["manifest"]["scope"]["namespace_id"] = factory.namespace
     assembly["bundle"]["bundle_digest"] = json_digest(assembly["bundle"]["manifest"])
     version = bundle_version(
-        namespace_id=factory.namespace, runtime_assembly=RuntimeAssembly.model_validate(assembly)
+        namespace_id=factory.namespace,
+        runtime_assembly=RuntimeAssembly.model_validate(assembly),
+        **version_changes,
     )
     definition = AgentDefinition(
         definition_id=version.definition_id,
@@ -102,7 +104,7 @@ def _publish(factory, name):
 
 
 @pytest.fixture
-def native():
+def native(request):
     dsn = os.environ.get("ZEBRA_TEST_POSTGRES_DSN")
     if not dsn:
         pytest.skip("requires the explicitly owned PostgreSQL DSN")
@@ -110,7 +112,9 @@ def native():
     ns = "factory-" + uuid4().hex
     bootstrap_control_plane_epoch(dsn, deployment_namespace=ns)
     factory = PostgresOrchestrationFactory(dsn, ns)
-    snapshot = _publish(factory, "system/orchestrator")
+    options = dict(getattr(request, "param", {}))
+    legacy_binding = options.pop("legacy_binding", False)
+    snapshot = _publish(factory, "system/orchestrator", **options)
     role = _publish(factory, "system/researcher")
     boot = SessionBootstrapService().build(
         SessionBootstrapCommand(
@@ -127,7 +131,9 @@ def native():
             "effective_capabilities": caps,
             "agent_capability_ceiling": parent.agent_capability_ceiling.model_copy(
                 update={
-                    "definition_snapshot_digest": snapshot.snapshot_digest,
+                    "definition_snapshot_digest": snapshot.definition_digest
+                    if legacy_binding
+                    else snapshot.snapshot_digest,
                     "capabilities": caps,
                 }
             ),
@@ -458,3 +464,36 @@ def test_parent_release_upgrade_preserves_frozen_run_and_explicit_revoke_denies(
         )
     with pytest.raises(OrchestrationToolError, match="revoked"):
         _runtime(native)
+
+
+@pytest.mark.parametrize("native", [{"legacy_binding": True}], indirect=True)
+def test_public_legacy_bundle_binding_and_new_child_binding_are_both_exact(native):
+    factory, task, parent, _, _, _, _ = native
+    assert (
+        parent.agent_capability_ceiling.definition_snapshot_digest
+        == task.definition_snapshot.definition_digest
+    )
+    runtime = _runtime(native)
+    receipt = runtime.propose_plan(_proposal())
+    snapshot = factory.store.get_snapshot(receipt.run_ref)
+    with runtime._authorized("request") as authority:
+        child = factory._builder(task, task.definition_snapshot)(
+            authority, parent, snapshot, snapshot.nodes[0].proposal
+        )
+    assert (
+        child.admission.binding.agent_capability_ceiling.definition_snapshot_digest
+        != parent.agent_capability_ceiling.definition_snapshot_digest
+    )
+    assert (
+        child.admission.binding.agent_capability_ceiling.definition_snapshot_digest
+        == child.admission.events[2].payload["definition_snapshot"]["snapshot_digest"]
+    )
+    wrong = parent.model_copy(
+        update={
+            "agent_capability_ceiling": parent.agent_capability_ceiling.model_copy(
+                update={"definition_snapshot_digest": "f" * 64},
+            )
+        }
+    )
+    with pytest.raises(OrchestrationToolError, match="real Task Definition snapshot"):
+        _runtime(native, binding=wrong)

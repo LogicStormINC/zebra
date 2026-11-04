@@ -15,7 +15,7 @@ def test_ready_requires_counter_real_hook_and_cancellable_transport():
     assert not TaskBudgetGate.ready(model)
     model.worker_budget_hook_contract = "worker-budget/1"
     assert TaskBudgetGate.ready(model)
-    model._client = httpx.Client()
+    model._client = httpx.Client(trust_env=False)
     try:
         assert not TaskBudgetGate.ready(model)
     finally:

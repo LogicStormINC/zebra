@@ -69,3 +69,16 @@ def test_capabilities_are_fingerprinted_and_server_mode_cannot_be_spoofed():
         SessionCommand(
             **{**value.model_dump(), "payload": {"stream_admission": {"mode": "transient_v2"}}}
         )
+
+
+@pytest.mark.parametrize("field", ["definition_snapshot", "selected_model_pin", "binding_revision"])
+def test_message_payload_cannot_supply_server_release_binding(field):
+    value = command()
+    with pytest.raises(ValueError, match="release binding is server-owned"):
+        SessionCommand(
+            **{
+                **value.model_dump(),
+                "kind": SessionCommandKind.MESSAGE,
+                "payload": {"content": "follow up", field: "forged"},
+            }
+        )

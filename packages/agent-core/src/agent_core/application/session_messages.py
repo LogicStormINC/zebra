@@ -3,7 +3,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 
+from agent_core.domain.bundle_definition import BundleDefinitionSnapshot
 from agent_core.domain.events import EventActor, EventType, SessionEvent
+from agent_core.domain.runtime_bundle_types import ArtifactPin
 from agent_core.domain.sessions import Session, SessionStatus
 from agent_core.domain.turns import derive_turn_id
 
@@ -20,6 +22,8 @@ class SessionMessageAppendCommand:
     open_turn_exists: bool = False
     model_profile: str | None = None
     reasoning_effort: str | None = None
+    selected_model_pin: ArtifactPin | None = None
+    definition_snapshot: BundleDefinitionSnapshot | None = None
 
 
 class SessionMessageAppendService:
@@ -35,7 +39,11 @@ class SessionMessageAppendService:
             raise ValueError("content_must_not_be_blank")
         if session.status.value in {"completed", "failed", "cancelled"}:
             raise ValueError("cannot append a message to a terminal session")
+        if command.definition_snapshot is not None and command.selected_model_pin is None:
+            raise ValueError("message_definition_snapshot_requires_model_pin")
         if session.status is SessionStatus.WAITING_INPUT:
+            if command.selected_model_pin is not None:
+                raise ValueError("cannot_change_model_during_clarification")
             clarification = session.clarification_context
             if clarification is None:
                 raise ValueError("clarification_context_missing")
@@ -81,6 +89,16 @@ class SessionMessageAppendService:
                 "turn_id": turn_id,
                 "turn_index": command.prior_human_turns,
                 "origin": "human",
+                **(
+                    {"selected_model_pin": command.selected_model_pin.model_dump(mode="json")}
+                    if command.selected_model_pin is not None
+                    else {}
+                ),
+                **(
+                    {"definition_snapshot": command.definition_snapshot.model_dump(mode="json")}
+                    if command.definition_snapshot is not None
+                    else {}
+                ),
                 **({"model_profile": command.model_profile} if command.model_profile else {}),
                 **(
                     {"reasoning_effort": command.reasoning_effort}

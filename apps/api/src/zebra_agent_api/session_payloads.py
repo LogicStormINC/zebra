@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
 from uuid import UUID
 
 from agent_core.domain.attachments import TextAttachmentInput
@@ -11,7 +10,6 @@ from agent_core.domain.coverage_task_admission import (
 from agent_core.domain.identifiers import AgentDefinitionId
 from agent_core.domain.image_attachments import ImageAttachmentInput
 from agent_core.domain.mcp import normalize_mcp_allowlist
-from agent_core.domain.memories import MemoryType
 from agent_core.domain.networking import NetworkProfileName
 from agent_core.domain.session_history import normalize_history_session_ids
 from agent_core.domain.tool_profiles import ToolProfile
@@ -22,15 +20,19 @@ from agent_security import NetworkProfileError, PolicyProfile, parse_network_pro
 
 from zebra_agent_api.responses import ApiResponse, bad_request, service_unavailable
 from zebra_agent_api.session_attachment_inputs import parse_attachment_inputs
+from zebra_agent_api.session_memory_payloads import (
+    parse_memory_overview_payload as parse_memory_overview_payload,
+)
+from zebra_agent_api.session_memory_payloads import (
+    parse_queue_sweep_preview_payload as parse_queue_sweep_preview_payload,
+)
 from zebra_agent_api.session_payload_types import (
     AppendSessionMessagePayload,
     ApprovalDecisionPayload,
     BulkMemoryReviewPayload,
     CancelSessionPayload,
     CommitSessionPayload,
-    MemoryOverviewPayload,
     PullRequestPayload,
-    QueueSweepPreviewPayload,
     ResumeSessionPayload,
     SuspendSessionPayload,
 )
@@ -220,6 +222,17 @@ def parse_create_session_payload(
     if isinstance(reasoning_effort, ApiResponse):
         return reasoning_effort
 
+    selected = payload.get("selected_model_id")
+    if selected is not None and (
+        not isinstance(selected, str)
+        or not selected
+        or len(selected) > 256
+        or model_profile is not None
+        or reasoning_effort is not None
+        or coverage is not None
+    ):
+        return bad_request("selected_model_id is invalid for this session")
+
     result: CreateSessionPayload = {
         "prompt": prompt.strip(),
         "title": title.strip(),
@@ -245,6 +258,8 @@ def parse_create_session_payload(
         "model_profile": model_profile,
         "reasoning_effort": reasoning_effort,
     }
+    if selected is not None:
+        result["selected_model_id"] = selected
     if coverage is not None:
         result["coverage_admission"] = coverage
     return result
@@ -310,11 +325,22 @@ def parse_append_session_message_payload(
     reasoning_effort = _reasoning_effort(payload.get("reasoning_effort"))
     if isinstance(reasoning_effort, ApiResponse):
         return reasoning_effort
+    selected = payload.get("selected_model_id")
+    if selected is not None and (
+        not isinstance(selected, str)
+        or not selected
+        or len(selected) > 256
+        or model_profile is not None
+        or reasoning_effort is not None
+        or clarification_id is not None
+    ):
+        return bad_request("selected_model_id is invalid for this message")
     return {
         "content": content.strip(),
         "clarification_id": clarification_id.strip() if clarification_id else None,
         "attachments": attachments,
         "model_profile": model_profile,
+        "selected_model_id": selected,
         "reasoning_effort": reasoning_effort,
     }
 
@@ -447,54 +473,3 @@ def parse_pull_request_payload(
         "head_branch": head_branch.strip() if isinstance(head_branch, str) else None,
         "dry_run": dry_run,
     }
-
-
-def parse_memory_overview_payload(
-    payload: dict[str, object],
-) -> MemoryOverviewPayload | ApiResponse:
-    user_id = payload.get("user_id")
-    if user_id is not None and (not isinstance(user_id, str) or not user_id.strip()):
-        return bad_request("user_id must be a non-blank string when provided")
-
-    tenant_id = payload.get("tenant_id")
-    if tenant_id is not None and (not isinstance(tenant_id, str) or not tenant_id.strip()):
-        return bad_request("tenant_id must be a non-blank string when provided")
-
-    as_of = payload.get("as_of")
-    parsed_as_of: datetime | None = None
-    if as_of is not None:
-        if not isinstance(as_of, str) or not as_of.strip():
-            return bad_request("as_of must be a non-blank ISO 8601 string when provided")
-        try:
-            parsed_as_of = datetime.fromisoformat(as_of.strip())
-        except ValueError:
-            return bad_request("as_of must be a valid ISO 8601 datetime when provided")
-        if parsed_as_of.tzinfo is None:
-            return bad_request("as_of must include timezone information")
-        parsed_as_of = parsed_as_of.astimezone(UTC)
-
-    return {
-        "user_id": user_id.strip() if isinstance(user_id, str) else None,
-        "tenant_id": tenant_id.strip() if isinstance(tenant_id, str) else None,
-        "as_of": parsed_as_of,
-    }
-
-
-def parse_queue_sweep_preview_payload(
-    payload: dict[str, object],
-) -> QueueSweepPreviewPayload | ApiResponse:
-    decision = payload.get("decision")
-    if decision not in {"confirm", "expire"}:
-        return bad_request("decision must be either 'confirm' or 'expire'")
-
-    memory_type = payload.get("memory_type")
-    if memory_type is not None:
-        if not isinstance(memory_type, str) or not memory_type.strip():
-            return bad_request("memory_type must be a non-blank string when provided")
-        try:
-            MemoryType(memory_type.strip())
-        except ValueError:
-            return bad_request("memory_type is not supported")
-        memory_type = memory_type.strip()
-
-    return {"decision": decision, "memory_type": memory_type}

@@ -38,7 +38,6 @@ from agent_storage.session_handoff_rows import (
     SCHEMA,
     HandoffIdempotencyConflictError,
     HandoffStorageConflictError,
-    insert_event,
     lineage_from_row,
     migrate_handoff_fence_columns,
     operation_from_row,
@@ -381,9 +380,7 @@ class SQLiteSessionHandoffStore(SessionHandoffPort):
                 envelope.checksum,
             ),
         )
-        events = handoff_events.build_handoff_events(operation, request, workspace)
-        for event in events:
-            insert_event(connection, event)
+        handoff_events.persist_sqlite_handoff_events(connection, operation, request, workspace)
         parent_sequence = operation.expected_source_stream_version + 1
         connection.execute(
             """

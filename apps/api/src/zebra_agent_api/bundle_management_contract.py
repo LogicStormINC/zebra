@@ -24,6 +24,8 @@ def native_bundle_contract() -> dict[str, Any]:
         "envelopeSchema": runtime_bundle_json_schema(),
         "componentCatalog": runtime_bundle_catalog(),
         "catalogDigest": runtime_bundle_catalog_digest(),
+        "selectableModelCatalog": runtime_bundle_catalog(selectable=True),
+        "selectableModelCatalogDigest": runtime_bundle_catalog_digest(selectable=True),
         "nativeFormats": {
             "definition": ["agent-definition/1", "agent-definition/2"],
             "definitionSnapshot": ["agent-definition-snapshot/1", "agent-definition-snapshot/2"],

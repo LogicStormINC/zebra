@@ -22,6 +22,7 @@ from agent_storage import (
     PostgresProjectionStore,
     PostgresWorkspaceProjectionStore,
 )
+from agent_storage.postgres import direct_control
 from agent_storage.postgres.session_handoff_transactions import commit_handoff_in_transaction
 from agent_storage.postgres.session_handoffs import PostgresSessionHandoffStore
 from agent_storage.postgres.task_control_target import require_task_control_target
@@ -84,9 +85,15 @@ def _handoff(dsn, source):
 
 
 @pytest.mark.parametrize("winner", ["handoff", "cancel"])
-def test_handoff_and_cancel_serialize_both_winners_without_partial_lineage(dsn, winner):
+def test_handoff_and_cancel_serialize_both_winners_without_partial_lineage(
+    dsn, winner, monkeypatch
+):
     source = _suspended(dsn)
     _, request = _handoff(dsn, source)
+    direct_control.finish_command_read_state(dsn, deployment_namespace=NAMESPACE, session_id=source)
+    # Queue the mutation transactions. Cancellation preparation takes the same lock
+    # in a separate transaction and would otherwise occupy the first queue position.
+    monkeypatch.setattr(direct_control, "finish_command_read_state", lambda *args, **kwargs: None)
     names = {name: f"task-control-{name}-{uuid4()}" for name in ("handoff", "cancel")}
 
     def handoff():
@@ -173,9 +180,10 @@ def test_task_row_contention_is_safe_conflict_without_any_mutation(dsn):
 
 def test_task_allocator_contention_is_safe_conflict_before_cancellation_row_lock(dsn):
     source = _suspended(dsn)
-    before = {table: _rows(dsn, table) for table in (
-        "session_events", "worker_leases", "agent_tasks", "task_event_index"
-    )}
+    before = {
+        table: _rows(dsn, table)
+        for table in ("session_events", "worker_leases", "agent_tasks", "task_event_index")
+    }
     with psycopg.connect(dsn) as allocator:
         _lock_task(allocator, NAMESPACE, TaskId(source))
         response = RouteAdapter(_app(dsn)).handle(_request(source))

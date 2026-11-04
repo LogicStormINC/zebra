@@ -7,6 +7,7 @@ from agent_core.application import SessionBootstrapCommand, SessionBootstrapServ
 from agent_core.application.session_projection import rebuild_session
 from agent_core.application.workspace_projection import rebuild_workspace
 from agent_core.domain.agent_definition_snapshots import AgentDefinitionSnapshot
+from agent_core.domain.bundle_definition import BundleDefinitionSnapshot
 from agent_core.domain.cloud_artifact_payloads import CloudArtifactPayloadRecord
 from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.script_definition import ScriptDefinitionSnapshot
@@ -59,6 +60,19 @@ def create_queued_session(
             or verified_host_grant.context != host_context
         ):
             return ApiResponse(403, {"status": "verified_host_grant_required"})
+    requested_id = parsed.get("selected_model_id")
+    selected_pin = None
+    if isinstance(definition_snapshot, BundleDefinitionSnapshot):
+        assembly = definition_snapshot.bound_version.runtime_assembly
+        try:
+            _, selected_profile = assembly.resolve_session_model(
+                requested_id=requested_id, remembered_id=None
+            )
+        except ValueError:
+            return ApiResponse(400, {"status": "selected_model_not_available"})
+        selected_pin = selected_profile.pin
+    elif requested_id is not None:
+        return ApiResponse(400, {"status": "selected_model_requires_published_bundle"})
     bootstrap = SessionBootstrapService().build(
         SessionBootstrapCommand(
             title=str(parsed["title"]),
@@ -78,6 +92,7 @@ def create_queued_session(
             interaction_mode=parsed["interaction_mode"],
             model_profile=parsed["model_profile"],
             reasoning_effort=parsed["reasoning_effort"],
+            selected_model_pin=selected_pin,
             coverage_admission=parsed.get("coverage_admission"),
         )
     )

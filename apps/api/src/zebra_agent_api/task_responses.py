@@ -36,6 +36,13 @@ def serialize_task_event(item: TaskEvent) -> dict[str, object]:
         and payload.get("source") == "session_handoff"
     ):
         payload = {"content": payload.get("content", "")}
+    elif event.event_type is EventType.USER_MESSAGE_RECEIVED and "definition_snapshot" in payload:
+        payload = {key: value for key, value in payload.items() if key != "definition_snapshot"}
+    elif (
+        event.event_type is EventType.SESSION_COMMAND_ACCEPTED
+        and "message_release_binding" in payload
+    ):
+        payload = {key: value for key, value in payload.items() if key != "message_release_binding"}
     return {
         "event_id": str(event.event_id),
         "sequence": item.task_sequence,
@@ -49,6 +56,7 @@ def serialize_task_event(item: TaskEvent) -> dict[str, object]:
 def is_user_task_event(item: TaskEvent) -> bool:
     event = item.event
     if event.event_type in {
+        EventType.PROVIDER_USAGE_OBSERVED,
         EventType.SESSION_HANDOFF_COMMITTED,
         EventType.SESSION_HANDOFF_RECEIVED,
     }:
@@ -61,3 +69,9 @@ def is_user_task_event(item: TaskEvent) -> bool:
     if event.event_type is EventType.USER_MESSAGE_RECEIVED:
         return event.payload.get("actor_kind") != HandoffActorKind.AUTOMATION.value
     return True
+
+
+def rewrite_task_identity(response: ApiResponse, task_id: str) -> ApiResponse:
+    body = dict(response.body)
+    body.update(task_id=task_id, session_id=task_id)
+    return ApiResponse(response.status_code, body)

@@ -392,3 +392,69 @@ def test_publisher_private_arrays_remain_strict_and_version_bounds(publisher):
             c.post(PATH, headers=p.headers, json={**payload, "version": 2**53}).status_code == 422
         )
         assert p.registry.get_definition(p.scope) is None
+
+
+def test_same_target_selects_distinct_definition_approvals(publisher):
+    p = publisher
+    token_b = "rtpub_" + "d" * 43
+    digest_b = hashlib.sha256(token_b.encode()).hexdigest()
+    approval_b = {
+        **p.approval,
+        "actor": "publisher-" + uuid4().hex[:12],
+        "definition_id": str(uuid4()),
+        "credential_sha256": digest_b,
+    }
+    write(
+        p.path,
+        {
+            "schema_version": "cloud-agent.publication-approvals/1",
+            "approvals": [p.approval, approval_b],
+        },
+    )
+    trust_b = load_publication_approval(str(p.path), "local", credential_digest=digest_b).trust
+    HostManagementStore(p.cfg.database_url, deployment_namespace="local").approve(trust_b, 0)
+    headers_b = {**p.headers, "Authorization": "Bearer " + token_b}
+    with TestClient(create_http_app(settings=p.cfg, stores=p.stores)) as client:
+        body_a, body_b = materialize(p), materialize(p)
+        for headers, body, approval in (
+            (p.headers, body_a, p.approval),
+            (headers_b, body_b, approval_b),
+        ):
+            response = client.post(PATH, headers=headers, json=body)
+            assert response.status_code == 200, response.text
+            assert response.json()["result"]["definitionId"] == approval["definition_id"]
+        response = client.get(
+            PATH, headers={**p.headers, "X-Runtime-Operation": body_b["operationId"]}
+        )
+        assert response.status_code == 404
+
+
+def test_provider_usage_requires_explicit_definition_read_authority(publisher):
+    from zebra_agent_api.publication_management import USAGE_CONTRACT, USAGE_PATH
+
+    p = publisher
+    window = {"start": "2026-10-01T00:00:00Z", "end": "2026-10-02T00:00:00Z"}
+    with TestClient(create_http_app(settings=p.cfg, stores=p.stores)) as client:
+        assert client.post(USAGE_PATH, headers=p.headers, json=window).status_code == 403
+        write(
+            p.path,
+            {**p.approval, "actions": ["usage.read"], "trust_revision": 2},
+        )
+        approval = load_publication_approval(str(p.path), "local")
+        HostManagementStore(p.cfg.database_url, deployment_namespace="local").approve(
+            approval.trust, 1
+        )
+        headers = {**p.headers, "X-Runtime-Trust-Revision": "2"}
+        assert client.post(USAGE_PATH, headers=p.headers, json=window).status_code == 403
+        response = client.post(USAGE_PATH, headers=headers, json=window)
+        assert response.status_code == 200, response.text
+        assert response.json()["contractVersion"] == USAGE_CONTRACT
+        assert response.json()["definitionId"] == str(p.scope.definition_id)
+        assert response.json()["total"]["attempt_count"] == 0
+        assert response.json()["users"] == []
+        assert (
+            client.post(
+                USAGE_PATH, headers=headers, json={**window, "definitionId": str(uuid4())}
+            ).status_code
+            == 400
+        )

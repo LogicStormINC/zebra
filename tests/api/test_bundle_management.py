@@ -458,10 +458,10 @@ def test_full_approval_is_reauthorized_immediately_before_response(tmp_path, mon
                 release.wait(5)
                 return original_contract()
 
-            def blocked_resolve(catalog, bundle, entered=entered, release=release):
+            def blocked_resolve(catalog, bundle, entered=entered, release=release, **kwargs):
                 entered.set()
                 release.wait(5)
-                return original_resolve(catalog, bundle)
+                return original_resolve(catalog, bundle, **kwargs)
 
             monkeypatch.setattr(
                 module,
@@ -485,8 +485,14 @@ def test_full_approval_is_reauthorized_immediately_before_response(tmp_path, mon
                             if method == "GET"
                             else client.post(VALIDATION_PATH, headers=post_headers, json=candidate)
                         )
-                        while not entered.is_set():
-                            await asyncio.sleep(0.001)
+                        async with asyncio.timeout(5):
+                            while not entered.is_set():
+                                if task.done():
+                                    response = task.result()
+                                    raise AssertionError(
+                                        f"{method} returned before reauthorization: {response.text}"
+                                    )
+                                await asyncio.sleep(0.001)
                         write(path, {**copy.deepcopy(approval), **change})
                         release.set()
                         response = await task

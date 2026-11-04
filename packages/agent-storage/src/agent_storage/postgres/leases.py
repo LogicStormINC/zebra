@@ -250,10 +250,16 @@ def assert_current_lease_fence(
 
 
 def lock_session_lease_boundary(
-    connection: Any, deployment_namespace: str, session_id: SessionId,
+    connection: Any, deployment_namespace: str, session_id: SessionId, *, shared: bool = False,
 ) -> None:
-    """Serialize Lease acquisition with terminal aggregate transitions."""
+    """Fence derived checkpoints against lease acquisition and terminal transitions."""
+    # Recovery proof records native SELECT strings for exact finalization.
+    statement = (
+        "SELECT pg_advisory_xact_lock_shared(hashtextextended(%s, 0))"
+        if shared
+        else "SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))"
+    )
     connection.execute(
-        "SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))",
+        statement,
         (f"{deployment_namespace}:{session_id}",),
     )

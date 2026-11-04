@@ -31,11 +31,12 @@ def resolve_definition_binding(
     definition_id = parsed.get("definition_id")
     if definition_id is None:
         return None
+    environment = parsed.get("definition_environment") or "production"
     if getattr(settings, "publication_management_config", None):
         from zebra_agent_api.publication_consumer import resolve_consumer_binding
 
         return resolve_consumer_binding(
-            settings, registry, parsed, host_context, verified_host_grant
+            settings, registry, definition_id, environment, host_context, verified_host_grant
         )
     if registry is None or publisher_grants is None:
         return service_unavailable(
@@ -68,7 +69,6 @@ def resolve_definition_binding(
         namespace_id=host_context.namespace_id,
         definition_id=definition_id,
     )
-    environment = str(parsed.get("definition_environment") or "production")
     try:
         return binding.resolve_production_snapshot(
             scope,

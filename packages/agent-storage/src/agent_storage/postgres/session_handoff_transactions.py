@@ -27,7 +27,7 @@ from agent_core.ports.session_handoff import (
 from psycopg.types.json import Jsonb
 
 from agent_storage.postgres.command_wakeup import _validated_host_context
-from agent_storage.postgres.events import append_event_in_transaction
+from agent_storage.postgres.events import append_event_in_transaction, latest_selected_model_pin
 from agent_storage.postgres.leases import lock_session_lease_boundary
 from agent_storage.postgres.projections import (
     get_session_in_transaction,
@@ -156,6 +156,9 @@ def commit_handoff_in_transaction(
         operation,
         request,
         workspace.model_dump(mode="json"),
+        selected_model_pin=latest_selected_model_pin(
+            connection, deployment_namespace, operation.source_session_id
+        ),
         host_context=_child_host_context(
             connection, deployment_namespace, operation.source_session_id
         ),

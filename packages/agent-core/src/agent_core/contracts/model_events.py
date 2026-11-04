@@ -1,9 +1,11 @@
-from typing import Literal
+from typing import Literal, Self
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from agent_core.contracts.model_commentary import ModelCommentaryPlan
-from agent_core.domain.modeling import CONTEXT_TOKEN_CATEGORIES
+from agent_core.domain.modeling import CONTEXT_TOKEN_CATEGORIES, ModelUsage
+from agent_core.domain.runtime_bundle_types import ArtifactPin, BundleScope
 
 
 class ModelTokenBreakdownV2Payload(BaseModel):
@@ -156,3 +158,22 @@ class ModelResponseReceivedPayload(BaseModel):
         if value is not None and any(not key.strip() or count < 0 for key, count in value.items()):
             raise ValueError("token breakdown values must be named and non-negative")
         return value
+
+
+class ProviderUsageObservedPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    attempt_id: UUID
+    phase: Literal["started", "finished"]
+    definition_id: UUID
+    bundle_scope: BundleScope | None = Field(default=None, exclude_if=lambda value: value is None)
+    task_id: UUID | None = Field(default=None, exclude_if=lambda value: value is None)
+    binding_revision: int | None = Field(default=None, ge=1)
+    model_pin: ArtifactPin
+    usage: ModelUsage | None = None
+
+    @model_validator(mode="after")
+    def validate_phase(self) -> Self:
+        if self.phase == "started" and self.usage is not None:
+            raise ValueError("provider attempt cannot have usage before sending")
+        return self

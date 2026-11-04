@@ -119,7 +119,9 @@ def test_old_actions_never_implicitly_allow_scripts_and_old_route_unchanged(prep
         )
 
 
-@pytest.mark.parametrize("case", ["digest", "lock", "plan", "source-field", "base-only", "scope"])
+@pytest.mark.parametrize(
+    "case", ["digest", "lock", "plan", "source-field", "base-only", "scope", "selectable-field"]
+)
 def test_hostile_or_unapproved_bundle(prepared, tmp_path, case):
     cfg, _, _, original, headers = prepared
     value = copy.deepcopy(original)
@@ -133,6 +135,8 @@ def test_hostile_or_unapproved_bundle(prepared, tmp_path, case):
         value["source"] = "DO_NOT_ECHO"
     elif case == "base-only":
         value = value["base_bundle"]
+    elif case == "selectable-field":
+        value["base_bundle"]["manifest"]["domains"]["model"]["parameters"]["selectable_models"] = []
     else:
         value["base_bundle"]["manifest"]["scope"]["product_id"] = "foreign"
         value["base_bundle"]["bundle_digest"] = json_digest(value["base_bundle"]["manifest"])
@@ -232,28 +236,33 @@ def test_unconfigured_is_fail_closed(tmp_path):
 def test_timed_out_threads_keep_bounded_slots(prepared, tmp_path, monkeypatch):
     import asyncio
     import threading
+    from concurrent.futures import ThreadPoolExecutor
 
     import httpx
     from zebra_agent_config.native_script import ScriptExecutionCatalog
 
     cfg, _, _, value, headers = prepared
-    entered, release = threading.Event(), threading.Event()
+    entered = asyncio.Event()
+    release = threading.Event()
     lock = threading.Lock()
     count = 0
     original = ScriptExecutionCatalog.resolve_scripts
 
-    def blocked(self, bundle):
-        nonlocal count
-        with lock:
-            count += 1
-            if count == 8:
-                entered.set()
-        assert release.wait(10), "owned test release deadline"
-        return original(self, bundle)
-
-    monkeypatch.setattr(ScriptExecutionCatalog, "resolve_scripts", blocked)
-
     async def run():
+        loop = asyncio.get_running_loop()
+        # The default executor can have fewer than eight workers on small CI runners.
+        loop.set_default_executor(ThreadPoolExecutor(max_workers=8))
+        def blocked(self, bundle):
+            nonlocal count
+            with lock:
+                count += 1
+                if count == 8:
+                    loop.call_soon_threadsafe(entered.set)
+            assert release.wait(10), "owned test release deadline"
+            return original(self, bundle)
+
+        monkeypatch.setattr(ScriptExecutionCatalog, "resolve_scripts", blocked)
+
         app = create_http_app(tmp_path / "state.sqlite", settings=cfg)
         async with httpx.AsyncClient(
             transport=httpx.ASGITransport(app=app), base_url="http://test"
@@ -262,7 +271,7 @@ def test_timed_out_threads_keep_bounded_slots(prepared, tmp_path, monkeypatch):
                 asyncio.create_task(c.post(POST, headers=headers, json=value)) for _ in range(8)
             ]
             try:
-                assert await asyncio.to_thread(entered.wait, 5)
+                await asyncio.wait_for(entered.wait(), timeout=5)
                 replies = await asyncio.gather(*tasks)
                 assert all(reply.status_code == 503 for reply in replies)
                 response = await c.get(GET, headers=headers)

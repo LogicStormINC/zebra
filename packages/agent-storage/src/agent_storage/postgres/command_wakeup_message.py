@@ -15,16 +15,20 @@ from agent_core.contracts import (
     is_command_message_materialization,
     validate_accepted_session_command,
 )
+from agent_core.domain.bundle_definition import BundleDefinitionSnapshot
 from agent_core.domain.events import EventActor, EventType, SessionEvent
-from agent_core.domain.identifiers import EventId
+from agent_core.domain.identifiers import EventId, TaskId
+from agent_core.domain.runtime_bundle_types import ArtifactPin
 
 from agent_storage.postgres.command_read_state import (
     command_event_at,
     load_command_read_state,
     store_command_read_state,
 )
-from agent_storage.postgres.events import append_event_in_transaction
+from agent_storage.postgres.events import append_event_in_transaction, latest_selected_model_pin
 from agent_storage.postgres.projections import save_session_in_transaction
+from agent_storage.postgres.task_admission import save_task_binding_in_transaction
+from agent_storage.postgres.task_control_target import require_task_control_target
 from agent_storage.postgres.workspaces import save_workspace_in_transaction
 
 
@@ -55,15 +59,28 @@ def append_command_message(
         raise MessageInputRejected("invalid canonical message input") from None
     if command.kind is not SessionCommandKind.MESSAGE:
         raise MessageInputRejected("invalid canonical message input")
+    release = command.message_release_binding
     payload = command.payload
     if not isinstance(payload, dict):
         raise MessageInputRejected("invalid canonical message input")
     content = payload.get("content")
     clarification_id = payload.get("clarification_id")
+    requested_model = payload.get("selected_model_id")
     if (
         not isinstance(content, str)
         or not content.strip()
         or (clarification_id is not None and not isinstance(clarification_id, str))
+        or (
+            requested_model is not None
+            and (
+                not isinstance(requested_model, str)
+                or not requested_model
+                or len(requested_model) > 256
+                or clarification_id is not None
+                or payload.get("model_profile") is not None
+                or payload.get("reasoning_effort") is not None
+            )
+        )
     ):
         raise MessageInputRejected("invalid canonical message input")
     event_id = EventId(uuid5(NAMESPACE_URL, f"zebra-command-input:{namespace}:{accepted.event_id}"))
@@ -90,6 +107,11 @@ def append_command_message(
             or existing.payload.get("content") != content.strip()
             or existing.payload.get("clarification_id") != clarification_id
             or (
+                release is not None
+                and existing.payload.get("definition_snapshot")
+                != release.snapshot.model_dump(mode="json")
+            )
+            or (
                 clarification_id is None
                 and command.extension_turn_id is not None
                 and existing.payload.get("turn_id") != command.extension_turn_id
@@ -112,11 +134,35 @@ def append_command_message(
     assert state.session is not None and state.workspace is not None
     now = connection.execute("SELECT clock_timestamp() AS now").fetchone()["now"].astimezone(UTC)
     try:
+        model_pin = None
+        snapshot = state.workspace.definition_snapshot
+        if release is not None:
+            if (
+                not isinstance(snapshot, BundleDefinitionSnapshot)
+                or snapshot.snapshot_digest != release.previous_snapshot_digest
+            ):
+                raise ValueError("message release source has changed")
+            snapshot = release.snapshot
+        if clarification_id is None and isinstance(snapshot, BundleDefinitionSnapshot):
+            remembered = latest_selected_model_pin(connection, namespace, accepted.session_id)
+            _, profile = snapshot.bound_version.runtime_assembly.resolve_session_model(
+                requested_id=requested_model,
+                remembered_id=(
+                    ArtifactPin.model_validate(remembered).id
+                    if remembered is not None and release is None
+                    else None
+                ),
+            )
+            model_pin = profile.pin
+        elif requested_model is not None:
+            raise ValueError("selected_model_requires_published_bundle")
         event = SessionMessageAppendService().build_event(
             session=state.session,
             next_sequence=state.through_sequence + 1,
             command=SessionMessageAppendCommand(
                 content=content,
+                selected_model_pin=model_pin,
+                definition_snapshot=release.snapshot if release is not None else None,
                 clarification_id=clarification_id,
                 appended_at=now,
                 prior_human_turns=state.turns.human_turn_count,
@@ -124,6 +170,21 @@ def append_command_message(
                 open_turn_exists=state.turns.current_turn() is not None,
             ),
         )
+        if release is not None:
+            binding = release.binding
+            require_task_control_target(
+                connection,
+                namespace,
+                TaskId(UUID(binding.task_id)),
+                accepted.session_id,
+                replay=False,
+            )
+            save_task_binding_in_transaction(
+                connection,
+                namespace,
+                binding,
+                expected_previous_revision=binding.binding_revision - 1,
+            )
     except ValueError:
         raise MessageInputRejected("canonical message requires reconciliation") from None
     event = event.model_copy(

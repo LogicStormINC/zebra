@@ -1,3 +1,43 @@
+# CA-P7-MODEL-01 — 模型修订注册
+
+- In progress. Owner Luke Ding / Codex. Branch `codex/ca-p7-model-registration`.
+- Owned paths for the contract slice are `docs/AGENT_TASKS.md` and `docs/CA-P7-MODEL-01_registration.md`.
+- Owned storage paths are `packages/agent-storage/src/agent_storage/postgres/model_profile_registration*.py` and `migration_catalog_tail.py`.
+- Owned verification path is `tests/agent_storage/test_postgres_model_profile_registration.py`.
+- Owned resolution paths are `apps/config/src/zebra_agent_config/bundle_settings.py` and `apps/api/src/zebra_agent_api/bundle_management.py`.
+- Owned publication paths are `apps/api/src/zebra_agent_api/{bundle_assembly,publication_service,publication_management}.py`.
+- Owned management paths are `apps/api/src/zebra_agent_api/{bundle_management,bundle_management_config,validation_transport,model_profile_management,host_registry_management}.py`.
+- Owned API verification path is `tests/api/test_model_profile_management.py`.
+- Owned Worker verification path is `tests/worker/test_bundle_execution.py`.
+- Owned publisher authorization paths are `apps/api/src/zebra_agent_api/{publication_config,publication_management,publication_consumer}.py` and `tests/api/test_publication_management.py`.
+
+
+
+
+
+
+
+
+- Acceptance requires a durable original operation, scope and action authorization, and identical resolution from the normal API and Worker after restart. Cross-repo acceptance uses two Agent Releases pinned to one revision.
+
+# CA-P7-03D-S3 — 真实对象存储证据补齐
+- Created Ready then claimed before tests; now Review2026-11-02: independent401 pass/zero skips, changed-test Ruff, two source reviews, realPG/MinIO retained+cleaned; owner Luke Ding/Codex; branch codex/ca-p7-03d-s3-evidence; base5acee368。
+- User continuation scope: complete feasible03D evidence; strict missing-counter denial persists, no deployment/production migration/main integration or paused environment restart.
+- Owned paths tests: tests/agent_storage/test_postgres_orchestration_gate.py; tests/agent_storage/test_postgres_orchestration_gate_s3.py. Reuse actualFileRead/projector/coordinator/WorkerMutationAuthority/nativePG gate fixture; select realS3 objects only in explicit opt-in variant, original in-memory tests retain their meaning. No production source edits without scope registration.
+- Owned paths governance: docs/AGENT_TASKS.md; PROGRESS.md; WORKLOG.md; docs/CA-P7-03D_completion_gate.md; docs/evidence/ca-p7-03d-s3/; private.artifacts/ca-p7-03d-s3/。
+- Acceptance: unique run-owned bounded PG+MinIO, fresh owner bucket, all12 prior S3 conditional cases plus actual readonly gate producer→versioned S3 bytes→fenced finalizedmetadata→immutable receipt/CAS/replay. Counter capability/parent admission remain explicit local test fixtures; no normal model success claim. No provider calls or fake object fallback. Source freeze/checks and separate root run; dump original receipts/unknown and retain actual object versions/logs before precise cleanup.
+
+# CA-P7-03D — 持久完成gate与真实跨仓受限验收
+- Created Ready then claimed before implementation; now Review2026-11-02: independent388 pass/12 S3 conditional skips, Ruff/mypy14,13 real restricted cross checks, two reviews and exact owned cleanup; owner Luke Ding/Codex; branch codex/ca-p7-03d-completion-gate; base56ae352a,03C整合后开工。
+- User authorization: integrate03C then03D; no trusted counter exists, strict denial mandatory; no deployment/production migrations/paused-environment restart.
+- Owned paths gate: packages/agent-orchestration/src/agent_orchestration/application/{completion_gate.py,orchestration_runtime.py,orchestration_completion_gate.py}; packages/agent-storage/src/agent_storage/postgres/{orchestration.py,orchestration_completion.py,orchestration_gate.py,orchestration_gate_queries.py,orchestration_gate_migration.py,orchestration_gate_policy_migration.py,migration_catalog_tail.py}; apps/worker/src/zebra_agent_worker/{orchestration_composition.py,orchestration_roles.py,orchestration_wakeup_hook.py}; tests/agent_orchestration/{test_completion_gate.py,test_orchestration_runtime.py}; tests/agent_storage/{test_postgres_orchestration_gate.py,test_postgres_orchestration_completion.py}; tests/worker/{test_orchestration_factory.py,test_orchestration_wiring.py,test_orchestration_composition.py}.
+- Owned paths acceptance seam if needed: apps/worker/src/zebra_agent_worker/{worker_budget.py,execution_composition.py}; tests/worker/test_worker_budget.py. Register additional exact paths before edits.
+- Owned paths real artifact producer (registered before edits): packages/agent-tools/src/agent_tools/builtin/files.py; packages/agent-runtime/src/agent_runtime/harness.py; tests/agent_tools/test_file_read_tool.py. Reuse existing optional ToolOutputProjector and real normal Harness composition, preserve local/research callers; no gateway reexport changes needed.
+- Owned paths real transport boundary fix (registered before edits): packages/agent-integrations/src/agent_integrations/worker_budget.py; tests/agent_integrations/test_worker_budget_transport.py. Preserve typed fail-closed counter checks while allowing ordinary JSON-Schema type properties to be inspected without TypeError.
+- Owned paths governance: docs/CA-P7-03D_completion_gate.md; docs/AGENT_TASKS.md; PROGRESS.md; WORKLOG.md; docs/README.md; README.md; docs/evidence/ca-p7-03d/; private .artifacts/ca-p7-03d/.
+- Domain/consistency: native owns Task/run/lease/tool facts. Gate proof binds exact namespace/parent/binding/current revision/original nodes/children and trusted durable facts; model claims/old generic receipts cannot prove completion. Required review absent denies. Atomic current-authority/STOP/revision check plus immutable receipt and terminal CAS in one bounded short transaction; network outside locks. Recovery bounded and independent of usage-null scan.
+- Acceptance: focused source tests plus unique ownedPG real-storage/CAS/restart/cross-process checks; actual Go→Native HTTPS/publicTask/Worker denial across two products. No production counter means no successful external-model orchestration claim; direct fixtures remain labeled. Preserve original receipts/unknown and dump before cleanup. Actual scope refined in design before source edits.
+
 # ERP-AUTH-CLOUD-EXPORT-20261102
 - Status: Done; exact source export and static gates verified; integrated for cloud-agent/GitHub.
 - Created Ready then claimed In Progress; owner Luke Ding / Codex.
@@ -38,7 +78,7 @@
 - Canonical ERP implements native surface completion; no ERP domain changes in Cloud core.
 - No model/search/original Run replay; isolate real workflow acceptance, preserve Search/MCP.
 # CA-P7-03C — Worker跨Attempt预算、可信usage与正常编排装配
-- Created Ready after authorized03B integration, claimed before changes; now Review2026-11-02: independent333 passed/zero skips, changed Ruff/mypy24, final source review and owned PG cleanup complete; owner Luke Ding/Codex.
+- Created Ready after authorized03B integration, claimed before changes; now Done2026-11-02 (integrated cloud-agent56ae352a): independent333 passed/zero skips, changed Ruff/mypy24, final source review and owned PG cleanup complete; owner Luke Ding/Codex.
 - Branch codex/ca-p7-03c-worker-budget; base integration7f1f499b (03B381978f9+preserved ERP docs); independent worktree /Users/lukeding/.codex/worktrees/ca-p7-03c/zebra-agent.
 - User authorizes03B integration and03C implementation; no deployment/production migration or paused heavyweight environment restart.
 - Owned paths budget lane: packages/agent-core/src/agent_core/ports/worker_budget.py; packages/agent-integrations/src/agent_integrations/{worker_budget.py,model_gateway_factory.py,openai_compatible.py,openai_streaming.py,deepseek_responses.py,deepseek_responses_streaming.py}; packages/agent-storage/src/agent_storage/postgres/{worker_budget.py,worker_budget_queries.py,worker_budget_migration.py,migration_catalog_tail.py}; apps/worker/src/zebra_agent_worker/{worker_budget.py,bound_execution_authority.py,execution_events.py,worker_tool_gateway.py,cloud_memory_recovery.py}; tests/agent_storage/test_postgres_worker_budget.py; tests/agent_integrations/test_worker_budget_transport.py; tests/worker/test_worker_budget.py; tests/worker/test_cloud_memory_recovery.py.
@@ -37307,3 +37347,29 @@ AGUI-CLOUD-INTEGRATION accepted: make test11216passed/3082conditional skips;
 make check and SDK typecheck passed; standalone152native+32SDK zero skips,
 SDK full174passed. Prior Zebra repair branches are integrated by ancestry;
 paired Trench UI/ORM history remains external, not imported into Runtime.
+
+CA-P7-MODEL-01 connection binding owns the optional approved connection digest in model-profile registration and its transport regression.
+
+CA-P7-MODEL-01 selectable publication assembly owns the model parameters, lock and provider approval resolution.
+
+CA-P7-MODEL-01 session selection resolver owns the published assembly lookup for explicit and remembered model choices.
+
+CA-P7-MODEL-01 gateway binding owns resolving an exact published model pin at the provider adapter.
+
+CA-P7-MODEL-01 worker selection recovery owns the immutable message pin and provider gateway handoff.
+
+CA-P7-MODEL-01 message binding owns persisting an already resolved model pin in the normal message event builder.
+
+CA-P7-MODEL-01 message admission owns selected_model_id parsing and lookup from the durable segment publication snapshot.
+
+CA-P7-MODEL-01 first send binding owns initial model choice parsing, published snapshot resolution and bootstrap message pin.
+
+CA-P7-MODEL-DISCOVERY owns the authenticated business model options route and reuse of the published consumer binding.
+
+CA-P7-MODEL-DISCOVERY display labels owns optional digest-bound profile labels and old-profile serialization compatibility.
+
+CA-P7-MODEL-01 contract review follow-up (Active, Codex,
+`codex/ca-p7-model-registration`, PR #266): owns the ScriptBundle historical
+artifact regression and its Backend quality checkout. Verify the pinned
+producer bytes independently of current Bundle exports, and retain working-tree
+byte checks for the three unchanged contract directories.

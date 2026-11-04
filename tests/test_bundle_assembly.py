@@ -228,7 +228,6 @@ def _configurable_budget_envelope(worker_settings, ceilings=None):
 
 
 def test_configurable_budget_within_ceiling_resolves():
-
     bundle, profile, catalog = _configurable_budget_envelope(settings())
     catalog = dict(catalog, budget=profile)
     from zebra_agent_config.bundle_settings import RuntimeExecutionCatalog
@@ -314,3 +313,76 @@ def test_unapproved_budget_pin_rejected_at_resolve():
 
     with pytest.raises(ValueError, match="BUNDLE_BUDGET_NOT_APPROVED"):
         resolved.resolve(bundle)
+
+
+def test_selectable_bundle_requires_each_provider_approval(monkeypatch):
+    from agent_core.domain.runtime_assembly import canonical_provider_profile_digest
+    from agent_core.domain.runtime_bundle import (
+        builtin_component_pin,
+        parse_runtime_bundle,
+        runtime_bundle_catalog_digest,
+    )
+    from agent_core.domain.runtime_bundle_json import canonical_json_bytes, json_digest
+    from zebra_agent_config.bundle_settings import RuntimeExecutionCatalog
+
+    assembly, catalog = approved_assembly(settings())
+    alternate = {**catalog["providers"][0], "models": ["alternate"]}
+    alternate["pin"] = {
+        **alternate["pin"],
+        "id": "provider/alternate",
+        "digest": canonical_provider_profile_digest(alternate),
+    }
+    envelope = assembly.bundle.model_dump(mode="json")
+    manifest = envelope["manifest"]
+    domain = manifest["domains"]["model"]
+    old_component = domain["component"]
+    domain["component"] = builtin_component_pin("model", selectable=True).model_dump(mode="json")
+    domain["parameters"]["selectable_models"] = [
+        {"provider_profile": alternate["pin"], "model": "alternate"}
+    ]
+    manifest["catalog_digest"] = runtime_bundle_catalog_digest(selectable=True)
+    manifest["lock"] = sorted(
+        [
+            domain["component"],
+            alternate["pin"],
+            *(p for p in manifest["lock"] if p != old_component),
+        ],
+        key=lambda p: (p["kind"], p["id"], p["version"]),
+    )
+    envelope["bundle_digest"] = json_digest(manifest)
+    bundle = parse_runtime_bundle(canonical_json_bytes(envelope))
+    with pytest.raises(ValueError, match="BUNDLE_PROVIDER_NOT_APPROVED"):
+        RuntimeExecutionCatalog.model_validate_json(canonical_json_bytes(catalog)).resolve(bundle)
+    catalog["providers"].append(alternate)
+    resolved = RuntimeExecutionCatalog.model_validate_json(canonical_json_bytes(catalog)).resolve(
+        bundle
+    )
+    alternate_profile = resolved.selectable_profiles[0]
+    default = (bundle.manifest.domains.model.parameters.model, resolved.provider_profile)
+    selected = ("alternate", alternate_profile)
+    assert resolved.resolve_session_model(requested_id=None, remembered_id=None) == default
+    assert (
+        resolved.resolve_session_model(
+            requested_id=alternate_profile.pin.id, remembered_id=resolved.provider_profile.pin.id
+        )
+        == selected
+    )
+    assert (
+        resolved.resolve_session_model(requested_id=None, remembered_id=alternate_profile.pin.id)
+        == selected
+    )
+    assert (
+        assembly.resolve_session_model(requested_id=None, remembered_id=alternate_profile.pin.id)
+        == default
+    )
+    with pytest.raises(ValueError, match="requested model is not selectable"):
+        resolved.resolve_session_model(requested_id="other", remembered_id=None)
+
+    from agent_integrations.bundle_model import BundleModelGateway
+
+    monkeypatch.setenv(alternate_profile.api_key_env, "synthetic")
+    gateway = BundleModelGateway(resolved, selected_pin=alternate_profile.pin)
+    assert gateway._model_name == "alternate"
+    stale = alternate_profile.pin.model_copy(update={"version": "9.0.0"})
+    with pytest.raises(ValueError, match="BUNDLE_SELECTED_MODEL_PIN_MISMATCH"):
+        BundleModelGateway(resolved, selected_pin=stale)

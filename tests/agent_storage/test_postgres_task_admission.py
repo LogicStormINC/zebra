@@ -29,8 +29,10 @@ from agent_storage.postgres.task_admission import (
     PostgresTaskAdmissionTransaction,
     load_task_binding,
     save_task_binding,
+    save_task_binding_in_transaction,
 )
 from psycopg import connect
+from psycopg.rows import dict_row
 
 
 @pytest.fixture(scope="session")
@@ -189,6 +191,15 @@ def test_task_binding_renewal_appends_one_locked_revision(
         }
     )
 
+    with connect(postgres_dsn, row_factory=dict_row) as connection:
+        save_task_binding_in_transaction(
+            connection, namespace, renewed, expected_previous_revision=1
+        )
+        connection.rollback()
+    assert (
+        load_task_binding(postgres_dsn, deployment_namespace=namespace, task_id=task_id) == current
+    )
+
     save_task_binding(
         postgres_dsn,
         deployment_namespace=namespace,
@@ -202,6 +213,18 @@ def test_task_binding_renewal_appends_one_locked_revision(
         task_id=task_id,
     )
     assert latest is not None and latest.binding_revision == 2
+    assert (
+        load_task_binding(
+            postgres_dsn, deployment_namespace=namespace, task_id=task_id, binding_revision=1
+        )
+        == current
+    )
+    assert (
+        load_task_binding(
+            postgres_dsn, deployment_namespace=namespace, task_id=task_id, binding_revision=3
+        )
+        is None
+    )
     with pytest.raises(ValueError, match="advanced concurrently"):
         save_task_binding(
             postgres_dsn,
@@ -209,6 +232,210 @@ def test_task_binding_renewal_appends_one_locked_revision(
             binding=renewed.model_copy(update={"binding_revision": 3}),
             expected_previous_revision=1,
         )
+
+    with connect(postgres_dsn) as connection:
+        connection.execute(
+            """UPDATE task_binding_snapshots SET binding_digest = %s
+               WHERE deployment_namespace = %s AND task_id = %s AND binding_revision = 1""",
+            ("0" * 64, namespace, task_id),
+        )
+    with pytest.raises(ValueError, match="metadata does not match"):
+        load_task_binding(
+            postgres_dsn, deployment_namespace=namespace, task_id=task_id, binding_revision=1
+        )
+
+
+def test_text_message_commits_event_and_projection_together(namespace, postgres_dsn):
+    from dataclasses import replace
+
+    from agent_core.application import SessionMessageAppendCommand, SessionMessageAppendService
+    from agent_core.domain.bundle_definition import BundleDefinitionSnapshot
+    from agent_storage.event_rows import SessionEventSequenceConflictError
+    from agent_storage.postgres.input_artifact_admission import append_input_message
+
+    from tests.agent_core.test_bundle_definition import NOW, bundle_version
+
+    request = _request()
+    task_id = TaskId(request.session.session_id)
+    binding = _binding(str(task_id))
+    request = replace(request, binding=binding)
+    version = bundle_version()
+    snapshot = BundleDefinitionSnapshot.from_version(version=version, resolved_at=NOW)
+    switched = binding.model_copy(
+        update={
+            "binding_revision": 2,
+            "agent_capability_ceiling": binding.agent_capability_ceiling.model_copy(
+                update={
+                    "definition_snapshot_digest": snapshot.snapshot_digest,
+                }
+            ),
+        }
+    )
+    PostgresTaskAdmissionTransaction(postgres_dsn, deployment_namespace=namespace).admit(request)
+    session = request.session
+    event = SessionMessageAppendService().build_event(
+        session=session,
+        next_sequence=session.current_sequence + 1,
+        command=SessionMessageAppendCommand(
+            content="follow up",
+            prior_human_turns=1,
+            definition_snapshot=snapshot,
+            selected_model_pin=version.runtime_assembly.provider_profile.pin,
+        ),
+    )
+    with pytest.raises(SessionEventSequenceConflictError, match="effective release changed"):
+        append_input_message(
+            postgres_dsn,
+            namespace,
+            session,
+            (event,),
+            (),
+            release_binding=switched,
+            effective_release=snapshot,
+        )
+    assert (
+        load_task_binding(postgres_dsn, deployment_namespace=namespace, task_id=task_id) == binding
+    )
+    from agent_core.contracts.session_commands import (
+        MessageReleaseBinding,
+        SessionCommand,
+        SessionCommandKind,
+    )
+    from agent_core.domain.events import EventActor, EventType, SessionEvent
+    from agent_storage.postgres.events import PostgresEventStore
+
+    command = SessionCommand(
+        session_id=session.session_id,
+        kind=SessionCommandKind.MESSAGE,
+        expected_revision=session.current_sequence,
+        idempotency_key="switch-release",
+        payload={"content": "follow up"},
+    )
+    accepted = SessionEvent.create(
+        session_id=session.session_id,
+        sequence=event.sequence,
+        event_type=EventType.SESSION_COMMAND_ACCEPTED,
+        actor=EventActor.USER,
+        payload=command.event_payload(
+            message_release_binding=MessageReleaseBinding(
+                previous_snapshot_digest=binding.agent_capability_ceiling.definition_snapshot_digest,
+                snapshot=snapshot,
+                binding=switched,
+            ),
+        ),
+        idempotency_key=command.idempotency_key,
+    )
+    event_store = PostgresEventStore(postgres_dsn, deployment_namespace=namespace)
+    with pytest.raises(SessionEventSequenceConflictError, match="effective release changed"):
+        event_store.append(accepted)
+    assert event_store.list_for_session(session.session_id)[-1].sequence == session.current_sequence
+    updated = append_input_message(
+        postgres_dsn, namespace, session, (event,), (), release_binding=switched
+    )
+    assert (
+        load_task_binding(postgres_dsn, deployment_namespace=namespace, task_id=task_id) == switched
+    )
+    assert updated.current_sequence == event.sequence
+    with pytest.raises(SessionEventSequenceConflictError):
+        append_input_message(postgres_dsn, namespace, session, (event,), ())
+
+    with connect(postgres_dsn) as connection:
+        for table in ("session_projections", "workspace_projections"):
+            result = connection.execute(
+                f"SELECT current_sequence FROM {table} "
+                "WHERE deployment_namespace=%s AND session_id=%s",
+                (namespace, session.session_id),
+            ).fetchone()
+            assert result == (event.sequence,)
+
+    from agent_core.domain.agent_definitions import AgentDefinition, AgentRelease
+    from agent_storage.postgres.agent_registry import PostgresAgentRegistry
+
+    registry = PostgresAgentRegistry(postgres_dsn, deployment_namespace=namespace)
+    registry.save_definition(
+        AgentDefinition(
+            definition_id=version.definition_id,
+            authority_issuer=version.authority_issuer,
+            namespace_id=version.namespace_id,
+            name="release fence fixture",
+            created_at=NOW,
+        )
+    )
+    registry.save_version(version)
+    release = registry.append_release(
+        AgentRelease.from_version(
+            version,
+            release_id=uuid4(),
+            environment=version.runtime_assembly.bundle.manifest.scope.environment,
+            actor_ref="fixture",
+            effective_at=NOW,
+        )
+    )
+    published = BundleDefinitionSnapshot.from_release(
+        release=release, version=version, resolved_at=NOW
+    )
+    next_binding = switched.model_copy(
+        update={
+            "binding_revision": 3,
+            "agent_capability_ceiling": switched.agent_capability_ceiling.model_copy(
+                update={"definition_snapshot_digest": published.snapshot_digest}
+            ),
+        }
+    )
+    from agent_core.application import project_turns
+    from agent_storage.postgres.command_wakeup_message import append_command_message
+    from agent_storage.postgres.leases import lock_session_lease_boundary
+
+    closed = event
+    for turn in project_turns(event_store.list_for_session(session.session_id)):
+        closed = event_store.append(
+            SessionEvent.create(
+                session_id=session.session_id,
+                sequence=closed.sequence + 1,
+                event_type=EventType.TURN_COMPLETED,
+                actor=EventActor.HARNESS,
+                payload={"turn_id": turn.turn_id, "turn_index": turn.turn_index},
+            )
+        )
+    next_command = command.model_copy(update={"expected_revision": closed.sequence})
+    accepted = SessionEvent.create(
+        session_id=session.session_id,
+        sequence=closed.sequence + 1,
+        event_type=EventType.SESSION_COMMAND_ACCEPTED,
+        actor=EventActor.USER,
+        payload=next_command.event_payload(
+            message_release_binding=MessageReleaseBinding(
+                previous_snapshot_digest=snapshot.snapshot_digest,
+                snapshot=published,
+                binding=next_binding,
+            ),
+        ),
+        idempotency_key=next_command.idempotency_key,
+    )
+    event_store.append(accepted)
+    persisted = event_store.list_for_session(session.session_id)[-1]
+    assert persisted.payload["message_release_binding"]["snapshot"] == published.model_dump(
+        mode="json"
+    )
+
+    with connect(postgres_dsn, row_factory=dict_row) as connection:
+        lock_session_lease_boundary(connection, namespace, session.session_id)
+        message = append_command_message(connection, namespace, persisted, input_event_id=None)
+    assert message.payload["definition_snapshot"] == published.model_dump(mode="json")
+    assert message.payload["selected_model_pin"] == (
+        version.runtime_assembly.provider_profile.pin.model_dump(mode="json")
+    )
+    assert (
+        load_task_binding(postgres_dsn, deployment_namespace=namespace, task_id=task_id)
+        == next_binding
+    )
+    with connect(postgres_dsn, row_factory=dict_row) as connection:
+        lock_session_lease_boundary(connection, namespace, session.session_id)
+        replayed = append_command_message(
+            connection, namespace, persisted, input_event_id=message.event_id
+        )
+    assert replayed == message
+    assert event_store.list_for_session(session.session_id)[-1] == message
 
 
 def test_idempotent_replay_short_circuits(namespace: str, postgres_dsn: str) -> None:
@@ -299,3 +526,122 @@ def test_request_validation_rejects_mismatched_binding() -> None:
             workspace=request.workspace,
             binding=foreign,
         ).validate()
+
+
+def test_provider_usage_groups_verified_subject_and_preserves_unknown(namespace, postgres_dsn):
+    from dataclasses import asdict, replace
+    from datetime import timedelta
+
+    import httpx
+    from agent_core.domain.events import EventActor, EventType, SessionEvent
+    from agent_core.domain.identifiers import new_message_id
+    from agent_core.domain.messages import MessageRole, SessionMessage
+    from agent_integrations import OpenAICompatibleModelGateway
+    from agent_storage.postgres.database import PostgresDatabase
+    from agent_storage.postgres.events import PostgresEventStore
+    from agent_storage.postgres.provider_usage import read_provider_usage
+
+    from tests.agent_core.test_bundle_definition import bundle_version
+
+    version = bundle_version()
+    assembly = version.runtime_assembly
+    scope = assembly.bundle.manifest.scope
+    now = datetime.now(UTC)
+    store = PostgresEventStore(postgres_dsn, deployment_namespace=namespace)
+    admission = PostgresTaskAdmissionTransaction(postgres_dsn, deployment_namespace=namespace)
+    for subject, tokens in (("user-a", 0), ("user-b", None)):
+        request = _request()
+        session = request.session
+        binding = _binding(str(session.session_id))
+        binding = binding.model_copy(
+            update={
+                "host_capability": binding.host_capability.model_copy(
+                    update={"verified_subject_ref": subject}
+                ),
+            }
+        )
+        admission.admit(replace(request, binding=binding))
+        payload = {
+            "attempt_id": str(uuid4()),
+            "definition_id": str(version.definition_id),
+            "bundle_scope": scope.model_dump(mode="json"),
+            "task_id": binding.task_id,
+            "binding_revision": 1,
+            "model_pin": assembly.provider_profile.pin.model_dump(mode="json"),
+        }
+        for offset, phase in enumerate(("started", "finished"), start=1):
+            if tokens is None and phase == "finished":
+                break
+            store.append(
+                SessionEvent.create(
+                    session_id=session.session_id,
+                    sequence=session.current_sequence + offset,
+                    event_type=EventType.PROVIDER_USAGE_OBSERVED,
+                    actor=EventActor.HARNESS,
+                    payload={
+                        **payload,
+                        "phase": phase,
+                        "usage": {"total_tokens": tokens} if phase == "finished" else None,
+                    },
+                    created_at=now,
+                )
+            )
+        if subject == "user-b":
+            attempts = []
+            sequence = session.current_sequence + 1
+
+            def observe(
+                attempt_id, phase, usage, *, attempts=attempts, session=session, payload=payload
+            ):
+                nonlocal sequence
+                sequence += 1
+                attempts.append((attempt_id, phase))
+                store.append(SessionEvent.create(
+                    session_id=session.session_id,
+                    sequence=sequence,
+                    event_type=EventType.PROVIDER_USAGE_OBSERVED,
+                    actor=EventActor.HARNESS,
+                    payload={**payload, "attempt_id": str(attempt_id), "phase": phase,
+                             "usage": asdict(usage) if usage is not None else None},
+                    created_at=now,
+                ))
+
+            def respond(_request, *, attempts=attempts):
+                if len(attempts) == 1:
+                    return httpx.Response(503, json={"error": {"message": "synthetic unavailable"}})
+                return httpx.Response(200, json={
+                    "id": "retry-result", "model": "deepseek-v4-flash",
+                    "choices": [{"message": {"role": "assistant", "content": "ok"},
+                                 "finish_reason": "stop"}],
+                    "usage": {"prompt_tokens": 7, "completion_tokens": 1, "total_tokens": 8},
+                })
+
+            with httpx.Client(transport=httpx.MockTransport(respond)) as client:
+                gateway = OpenAICompatibleModelGateway(
+                    provider_name="deepseek", base_url="https://models.example",
+                    api_key="synthetic", model_name="deepseek-v4-flash", client=client,
+                )
+                gateway.usage_observer = observe
+                gateway.complete([SessionMessage(
+                    message_id=new_message_id(), role=MessageRole.USER,
+                    content="Retry usage probe", created_at=now,
+                )])
+            first, failed, retry, completed = attempts
+            assert first[0] != retry[0]
+            assert failed == (first[0], "finished") and completed == (retry[0], "finished")
+
+    result = read_provider_usage(
+        PostgresDatabase(postgres_dsn, deployment_namespace=namespace),
+        scope=scope,
+        definition_id=version.definition_id,
+        start=now - timedelta(seconds=1),
+        end=now + timedelta(seconds=1),
+    )
+    assert result["total"]["attempt_count"] == 4
+    assert [user["attempt_count"] for user in result["users"]] == [1, 3]
+    assert result["users"][1]["tokens"]["input_tokens"] is None
+    assert result["total"]["tokens"]["total_tokens"] is None
+    assert [(u["identity"]["subject"], u["tokens"]["total_tokens"]) for u in result["users"]] == [
+        ("user-a", 0),
+        ("user-b", None),
+    ]

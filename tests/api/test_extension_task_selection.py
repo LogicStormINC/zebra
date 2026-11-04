@@ -18,9 +18,13 @@ from tests.api.test_session_command_routes import _seed_ready_session
 def test_selected_skills_are_persisted_in_task_ceiling(tmp_path, skill_id):
     database_path, _, _ = _seed_ready_session(tmp_path)
     app = create_app(database_path=database_path)
-    parsed = parse_create_session_payload({
-        "prompt": "go", "workspace": str(tmp_path), "skill_components": [skill_id],
-    })
+    parsed = parse_create_session_payload(
+        {
+            "prompt": "go",
+            "workspace": str(tmp_path),
+            "skill_components": [skill_id],
+        }
+    )
     assert not isinstance(parsed, ApiResponse)
     response = create_queued_session(app.stores, parsed)
     from uuid import UUID
@@ -67,17 +71,58 @@ def test_disabled_or_other_user_selection_is_rejected(skill):
 def test_revoked_publication_is_rejected():
     admission, store, _ = _admission(2)
     store.authorize_frozen_skills.side_effect = ExtensionSkillAuthorizationError("revoked")
-    assert validate_task_skill_selection(
-        {"skill_components": ["skill-01"]}, _verified(), admission,
-    ).status_code == 403
+    assert (
+        validate_task_skill_selection(
+            {"skill_components": ["skill-01"]},
+            _verified(),
+            admission,
+        ).status_code
+        == 403
+    )
 
 
 def test_next_selection_uses_upgrade_without_changing_skill_ceiling():
     admission, store, _ = _admission(2)
     old = store.list_skills.return_value.items[1]
-    upgraded = old.model_copy(update={
-        "revision": 2, "version": old.version.model_copy(update={"version_id": "v2"}),
-    })
+    upgraded = old.model_copy(
+        update={
+            "revision": 2,
+            "version": old.version.model_copy(update={"version_id": "v2"}),
+        }
+    )
     store.list_skills.return_value = SkillInstallationPage(items=(upgraded,))
     selected = asyncio.run(admission._list_enabled_skills(old.scope, frozenset({"skill-01"})))
     assert selected == [upgraded]
+
+
+@pytest.mark.parametrize("explicit", [False, True])
+def test_first_message_persists_the_published_model_pin(tmp_path, explicit):
+    from uuid import UUID
+
+    from agent_core.domain.bundle_definition import snapshot_from_version
+    from agent_core.domain.events import EventType
+
+    from tests.agent_core.test_bundle_definition import NOW, bundle_version
+
+    database_path, _, _ = _seed_ready_session(tmp_path)
+    app = create_app(database_path=database_path)
+    version = bundle_version()
+    snapshot = snapshot_from_version(version=version, resolved_at=NOW)
+    expected = version.runtime_assembly.provider_profile.pin
+    payload = {"prompt": "go", "workspace": str(tmp_path)}
+    if explicit:
+        payload["selected_model_id"] = expected.id
+    parsed = parse_create_session_payload(payload)
+    assert not isinstance(parsed, ApiResponse)
+    denied = create_queued_session(
+        app.stores,
+        {**parsed, "selected_model_id": "provider/unapproved"},
+        definition_snapshot=snapshot,
+    )
+    assert denied.status_code == 400
+    assert denied.body["status"] == "selected_model_not_available"
+    response = create_queued_session(app.stores, parsed, definition_snapshot=snapshot)
+    assert response.status_code == 201
+    events = app.stores.events.list_for_session(SessionId(UUID(response.body["session_id"])))
+    message = next(event for event in events if event.event_type is EventType.USER_MESSAGE_RECEIVED)
+    assert message.payload["selected_model_pin"] == expected.model_dump(mode="json")

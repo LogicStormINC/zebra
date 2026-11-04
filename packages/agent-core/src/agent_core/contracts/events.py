@@ -40,6 +40,7 @@ from agent_core.contracts.model_events import (
     ModelRequestStartedPayload,
     ModelResponseDeltaPayload,
     ModelResponseReceivedPayload,
+    ProviderUsageObservedPayload,
 )
 from agent_core.contracts.public_output import PublicOutputPayload
 from agent_core.contracts.runtime_events import (
@@ -330,6 +331,7 @@ _EVENT_PAYLOAD_MODELS: dict[EventType, type[BaseModel]] = {
     EventType.TASK_PREPARED: TaskPreparedPayload,
     EventType.RUNTIME_PROVISIONED: RuntimeProvisionedPayload,
     EventType.RUNTIME_CLEANUP_FAILED: RuntimeCleanupFailedPayload,
+    EventType.PROVIDER_USAGE_OBSERVED: ProviderUsageObservedPayload,
     EventType.MODEL_REQUEST_STARTED: ModelRequestStartedPayload,
     EventType.MODEL_RESPONSE_DELTA: ModelResponseDeltaPayload,
     EventType.MODEL_RESPONSE_RECEIVED: ModelResponseReceivedPayload,

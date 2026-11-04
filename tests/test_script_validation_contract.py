@@ -1,7 +1,10 @@
 """Producer exports, native vectors and unchanged A/P2 schema artifacts."""
 
 import hashlib
+import io
 import json
+import subprocess
+import tarfile
 from pathlib import Path
 
 import pytest
@@ -80,6 +83,31 @@ def test_current_contract_identity_and_no_implicit_worker_approval():
     ],
 )
 def test_old_producer_artifacts_are_byte_identical(directory):
+    root = Path("docs/contracts") / directory
+    expected = json.loads((ROOT / "prior-artifacts.json").read_bytes())
+    producer = expected["producerCommit"]
+    archive = subprocess.check_output(["git", "archive", producer, root.as_posix()])
+    digest = hashlib.sha256()
+    with tarfile.open(fileobj=io.BytesIO(archive)) as artifacts:
+        files = sorted(
+            (member for member in artifacts.getmembers() if member.isfile()),
+            key=lambda member: member.name,
+        )
+        assert files
+        for member in files:
+            artifact = artifacts.extractfile(member)
+            assert artifact is not None
+            with artifact:
+                content = artifact.read()
+            path = Path(member.name).relative_to(root)
+            digest.update(path.as_posix().encode() + b"\0" + content + b"\0")
+    assert "sha256:" + digest.hexdigest() == expected["directoryDigests"][directory]
+
+
+@pytest.mark.parametrize(
+    "directory", ["native-script-v1", "native-script-worker-v1", "runtime-publication-v1"]
+)
+def test_unchanged_producer_directories_still_match_working_tree(directory):
     root = Path("docs/contracts") / directory
     digest = hashlib.sha256()
     paths = sorted(path for path in root.rglob("*") if path.is_file())

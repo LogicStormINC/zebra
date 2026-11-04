@@ -134,7 +134,7 @@ class RouteAdapter:
         ):
             return _not_found(request)
         if method == "POST" and request.path.startswith("/approvals/"):
-            parts = _approval_path_parts(request.path)
+            parts = _path_parts(request.path, "/approvals/")
             if len(parts) == 2 and parts[1] == "approve":
                 return self.app.approve(parts[0], request.body or {})
             if len(parts) == 2 and parts[1] == "reject":
@@ -142,7 +142,7 @@ class RouteAdapter:
         if method == "GET" and request.path == "/approvals":
             return self.app.list_approvals(host_context=request.host_context)
         if method == "GET" and request.path.startswith("/approvals/"):
-            parts = _approval_path_parts(request.path)
+            parts = _path_parts(request.path, "/approvals/")
             if len(parts) == 1:
                 return self.app.get_approval(parts[0])
         personalization_response = handle_personalization_route(self.app, request)
@@ -152,7 +152,7 @@ class RouteAdapter:
         if memory_response is not None:
             return memory_response
         if method == "POST" and request.path.startswith("/sessions/"):
-            parts = _session_path_parts(request.path)
+            parts = _path_parts(request.path, "/sessions/")
             if len(parts) == 2 and parts[1] == "handoff":
                 return self.app.create_session_handoff(
                     parts[0],
@@ -186,7 +186,11 @@ class RouteAdapter:
                         extension_admission=self.extension_turn_admission,
                         verified_host_grant=request.verified_host_grant,
                     )
-                return self.app.append_session_message(parts[0], request.body or {})
+                return self.app.append_session_message(
+                    parts[0],
+                    request.body or {},
+                    verified_host_grant=request.verified_host_grant,
+                )
             if len(parts) == 2 and parts[1] == "commands":
                 return self.app.submit_command(
                     parts[0],
@@ -351,7 +355,7 @@ class RouteAdapter:
                     idempotency_key=_idempotency_key(request),
                 )
         if method == "GET" and request.path.startswith("/sessions/"):
-            parts = _session_path_parts(request.path)
+            parts = _path_parts(request.path, "/sessions/")
             if parts == ():
                 return _not_found(request)
             if len(parts) == 1:
@@ -386,11 +390,11 @@ class RouteAdapter:
         if method == "GET" and request.path == "/admin/skills":
             return self.app.list_skills()
         if method == "GET" and request.path.startswith("/admin/skills/"):
-            parts = _admin_skills_path_parts(request.path)
+            parts = _path_parts(request.path, "/admin/skills/")
             if len(parts) == 1:
                 return self.app.show_skill(parts[0])
         if method == "POST" and request.path.startswith("/admin/skills/"):
-            parts = _admin_skills_path_parts(request.path)
+            parts = _path_parts(request.path, "/admin/skills/")
             if len(parts) == 2 and parts[1] == "enable":
                 return self.app.enable_skill(parts[0], request.body or {})
             if len(parts) == 2 and parts[1] == "disable":
@@ -401,11 +405,8 @@ class RouteAdapter:
         return _not_found(request)
 
 
-def _session_path_parts(path: str) -> tuple[str, ...]:
-    suffix = path.removeprefix("/sessions/")
-    if not suffix:
-        return ()
-    return tuple(part for part in suffix.split("/") if part)
+def _path_parts(path: str, prefix: str) -> tuple[str, ...]:
+    return tuple(part for part in path.removeprefix(prefix).split("/") if part)
 
 
 def _artifact_content_range(query: dict[str, str] | None) -> tuple[int, int] | None:
@@ -416,20 +417,6 @@ def _artifact_content_range(query: dict[str, str] | None) -> tuple[int, int] | N
     except ValueError:
         return None
     return (start, end) if start >= 0 and end >= start else None
-
-
-def _approval_path_parts(path: str) -> tuple[str, ...]:
-    suffix = path.removeprefix("/approvals/")
-    if not suffix:
-        return ()
-    return tuple(part for part in suffix.split("/") if part)
-
-
-def _admin_skills_path_parts(path: str) -> tuple[str, ...]:
-    suffix = path.removeprefix("/admin/skills/")
-    if not suffix:
-        return ()
-    return tuple(part for part in suffix.split("/") if part)
 
 
 def _is(parts: list[str], length: int, second: str, third: str) -> bool:

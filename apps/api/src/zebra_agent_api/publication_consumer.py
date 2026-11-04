@@ -7,9 +7,9 @@ from agent_core.application.agent_definition_binding import (
     DefinitionBindingService,
 )
 from agent_core.application.agent_definitions import StaticPublisherGrantResolver
-from agent_core.domain.agent_definition_snapshots import AgentDefinitionSnapshot
 from agent_core.domain.bundle_definition import BundleDefinitionSnapshot, BundleDefinitionVersion
 from agent_core.domain.host_authority import HostContextEnvelope
+from agent_core.domain.identifiers import AgentDefinitionId
 from agent_core.domain.script_bundle import ScriptRuntimeAssembly
 from agent_core.ports.agent_registry import AgentRegistryPort
 from agent_security.host_grant import VerifiedHostGrant
@@ -21,16 +21,16 @@ from zebra_agent_config import ZebraAgentSettings
 
 from zebra_agent_api.publication_config import load_publication_approval
 from zebra_agent_api.responses import ApiResponse
-from zebra_agent_api.session_payloads import CreateSessionPayload
 
 
 def resolve_consumer_binding(
     settings: object,
     registry: AgentRegistryPort | None,
-    parsed: CreateSessionPayload,
+    definition_id: AgentDefinitionId,
+    environment: str,
     context: HostContextEnvelope | None,
     verified: object | None,
-) -> AgentDefinitionSnapshot | ApiResponse:
+) -> BundleDefinitionSnapshot | ApiResponse:
     if not isinstance(settings, ZebraAgentSettings) or registry is None:
         return ApiResponse(503, {"status": "registry_unavailable"})
     if (
@@ -41,13 +41,14 @@ def resolve_consumer_binding(
         return ApiResponse(403, {"status": "forbidden"})
     try:
         approval = load_publication_approval(
-            settings.publication_management_config, context.namespace_id
+            settings.publication_management_config, context.namespace_id,
+            definition_id=str(definition_id),
         )
         if (
             context.host_app_id not in approval.consumer_hosts
             or verified.authority_issuer != approval.scope.authority_issuer
-            or str(parsed.get("definition_id")) != str(approval.definition_id)
-            or (parsed.get("definition_environment") or "production") != approval.scope.environment
+            or str(definition_id) != str(approval.definition_id)
+            or environment != approval.scope.environment
         ):
             return ApiResponse(403, {"status": "forbidden"})
         database = PostgresDatabase(
@@ -89,7 +90,8 @@ def resolve_consumer_binding(
                 return ApiResponse(403, {"status": "forbidden"})
             if (
                 load_publication_approval(
-                    settings.publication_management_config, context.namespace_id
+                    settings.publication_management_config, context.namespace_id,
+                    definition_id=str(approval.definition_id),
                 )
                 != approval
             ):

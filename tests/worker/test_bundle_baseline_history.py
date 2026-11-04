@@ -62,3 +62,49 @@ def test_actual_frozen_task_accepts_exact_history_and_rejects_configuration_drif
         with pytest.raises(RetryableWorkerSetupError, match="INCOMPATIBLE_RUNTIME_BUNDLE"):
             require_task_compatibility(mutated, task)
     assert [event.model_dump_json() for event in store.list_for_session(sid)] == before
+
+
+def test_recovery_reads_the_full_snapshot_pinned_to_the_message(tmp_path):
+    from agent_core.domain.bundle_definition import BundleDefinitionSnapshot
+    from agent_core.domain.events import EventType
+
+    from tests.agent_core.test_bundle_definition import NOW, bundle_version
+
+    assembly, _, _ = write_catalog(tmp_path, settings())
+    sid, _ = seed(tmp_path, assembly)
+    events = SQLiteEventStore(tmp_path / "worker.db").list_for_session(sid)
+    version = bundle_version()
+    snapshot = BundleDefinitionSnapshot.from_version(version=version, resolved_at=NOW)
+    pin = version.runtime_assembly.provider_profile.pin
+    message = next(event for event in events if event.event_type is EventType.USER_MESSAGE_RECEIVED)
+    switched = message.model_copy(
+        update={
+            "sequence": events[-1].sequence + 1,
+            "payload": {
+                **message.payload,
+                "definition_snapshot": snapshot.model_dump(mode="json"),
+                "selected_model_pin": pin.model_dump(mode="json"),
+            },
+        }
+    )
+    later = switched.model_copy(
+        update={
+            "sequence": switched.sequence + 1,
+            "payload": {
+                "content": "Next message",
+                "selected_model_pin": pin.model_dump(mode="json"),
+            },
+        }
+    )
+    pinned = [*events, switched, later]
+    assert rebuild_workspace(pinned).definition_snapshot == snapshot
+    task = recover_task(
+        pinned,
+        workspace=rebuild_workspace(events),
+        fallback_title="fallback",
+        attachment_reader=LocalArtifactPayloadReader(
+            SQLiteArtifactPayloadStore(tmp_path / "read.db")
+        ),
+    )
+    assert task.definition_snapshot == snapshot
+    assert task.selected_model_pin == pin

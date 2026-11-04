@@ -1,0 +1,29 @@
+{
+  "status": "PASS",
+  "checks": [
+    "two-product-go-https-publication",
+    "missing-evaluation-denied",
+    "materialization-replay",
+    "cross-product-validation-denied",
+    "publisher-cannot-admit",
+    "admin-cannot-admit",
+    "host-grant-cannot-publish",
+    "cross-product-grant-denied",
+    "jti-replay-denied",
+    "signed-public-task-run",
+    "normal-worker-missing-counter-refused",
+    "fresh-task-after-worker-restart-refused",
+    "old-task-events-preserved"
+  ],
+  "provider_sends": 0,
+  "native_head": "7414c2c2abf788e1bc69f185492fe3f0a63fc511",
+  "owned_processes_cleaned": true,
+  "child_success": "UNVERIFIED_MISSING_TRUSTED_COUNTER",
+  "synthesis": "UNVERIFIED_NO_MODEL_DRIVEN_ORCHESTRATION_WITHOUT_TRUSTED_COUNTER",
+  "deployment": false,
+  "overdoze_report_sha256": "467356c80666876467b20c483511d4b5e1cb354d7048f5968b50b01efdf58236",
+  "focused_tests": {
+    "transport_and_projection": 41,
+    "postgres_retains_unknown_reservation": 1
+  }
+}

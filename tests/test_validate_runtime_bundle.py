@@ -48,7 +48,7 @@ def test_real_validator_declares_no_execution_and_does_not_rewrite_input(tmp_pat
     "content",
     [
         b'{"private":"bearer_DO_NOT_ECHO_123",',
-        b" " * (262144 + 1),
+        pytest.param(b" " * (262144 + 1), id="oversized"),
         b'"secret_DO_NOT_ECHO"',
         b"\xff",
         b'{"x":1,"x":2}',

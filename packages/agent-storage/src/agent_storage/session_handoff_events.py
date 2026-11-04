@@ -6,9 +6,10 @@ from typing import Any
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.identifiers import SessionId
+from agent_core.domain.runtime_bundle_types import ArtifactPin
 from agent_core.ports.session_handoff import HandoffOperation, SessionHandoffCommitRequest
 
-from agent_storage.session_handoff_rows import HandoffStorageConflictError
+from agent_storage.session_handoff_rows import HandoffStorageConflictError, insert_event
 
 
 def reject_strict_sqlite_source(connection: sqlite3.Connection, session_id: SessionId) -> None:
@@ -31,8 +32,12 @@ def build_handoff_events(
     workspace: Mapping[str, Any],
     *,
     host_context: HostContextEnvelope | None = None,
+    selected_model_pin: object = None,
 ) -> tuple[SessionEvent, ...]:
     envelope = request.envelope
+    snapshot = (
+        workspace["definition_snapshot"] if "definition_snapshot" in workspace.keys() else None
+    )
     parent = SessionEvent.create(
         session_id=operation.source_session_id,
         sequence=operation.expected_source_stream_version + 1,
@@ -71,6 +76,15 @@ def build_handoff_events(
             EventActor.USER,
             {
                 "content": request.create_request.stage_prompt,
+                **(
+                    {
+                        "selected_model_pin": ArtifactPin.model_validate(
+                            selected_model_pin
+                        ).model_dump(mode="json")
+                    }
+                    if selected_model_pin is not None
+                    else {}
+                ),
                 "source": "session_handoff",
                 "origin": "session_handoff",
                 "handoff_id": str(operation.handoff_id),
@@ -86,6 +100,7 @@ def build_handoff_events(
                 "title": request.create_request.title,
                 "user_input": request.create_request.stage_prompt,
                 "workspace_root": workspace["workspace_root"],
+                **({"definition_snapshot": _json_value(snapshot)} if snapshot is not None else {}),
                 **(
                     {"host_context": host_context.model_dump(mode="json")}
                     if host_context is not None
@@ -154,3 +169,30 @@ def insert_child_projections(
         f"INSERT INTO workspace_projections ({', '.join(columns)}) VALUES ({placeholders})",
         values,
     )
+
+
+def persist_sqlite_handoff_events(
+    connection: sqlite3.Connection,
+    operation: HandoffOperation,
+    request: SessionHandoffCommitRequest,
+    workspace: Mapping[str, Any],
+) -> None:
+    selected_model = connection.execute(
+        """
+        SELECT json_extract(payload, '$.selected_model_pin') AS pin FROM session_events
+        WHERE session_id = ? AND event_type = ?
+          AND json_extract(payload, '$.selected_model_pin') IS NOT NULL
+        ORDER BY sequence DESC LIMIT 1
+        """,
+        (str(operation.source_session_id), EventType.USER_MESSAGE_RECEIVED.value),
+    ).fetchone()
+    events = build_handoff_events(
+        operation,
+        request,
+        workspace,
+        selected_model_pin=(
+            json.loads(selected_model["pin"]) if selected_model is not None else None
+        ),
+    )
+    for event in events:
+        insert_event(connection, event)

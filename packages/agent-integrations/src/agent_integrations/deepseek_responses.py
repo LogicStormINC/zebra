@@ -27,6 +27,7 @@ from agent_integrations.deepseek_responses_parse import (
     parse_responses_completion as parse_responses_completion,
 )
 from agent_integrations.deepseek_responses_payloads import (
+    parse_usage,
     request_metadata,
     serialize_input,
 )
@@ -42,6 +43,7 @@ from agent_integrations.openai_payloads import (
     internal_tool_names,
     provider_tool_names,
 )
+from agent_integrations.provider_usage import ProviderUsageObserver, observe_provider_attempt
 from agent_integrations.request_metadata import ModelRequestMetadata
 
 RESPONSES_PATH = "/responses"
@@ -70,6 +72,7 @@ class DeepSeekResponsesModelGateway:
         self._max_retries = max_retries
         self._router = deepseek_router or DeepSeekProfileRouter(legacy_executor_model=model_name)
         self._client = client
+        self.usage_observer: ProviderUsageObserver | None = None
         self.authority_check: Callable[[str], None] | None = None
 
     @property
@@ -110,7 +113,9 @@ class DeepSeekResponsesModelGateway:
             if self.authority_check is not None:
                 self.authority_check(call_id)
             try:
-                payload = self._post(body, deadline_s=deadline_s)
+                payload = self._observe_usage_attempt(
+                    lambda: self._post(body, deadline_s=deadline_s)
+                )
                 completion = parse_responses_completion(
                     payload,
                     resolved=resolved,
@@ -179,13 +184,15 @@ class DeepSeekResponsesModelGateway:
                 if self.authority_check is not None:
                     self.authority_check(call_id)
                 try:
-                    payload = read_deepseek_responses_stream(
-                        client,
-                        url=f"{self._base_url}{RESPONSES_PATH}",
-                        headers=self._headers(),
-                        body=body,
-                        on_text_delta=on_text_delta,
-                        on_semantic_output=mark_semantic_output,
+                    payload = self._observe_usage_attempt(
+                        lambda: read_deepseek_responses_stream(
+                            client,
+                            url=f"{self._base_url}{RESPONSES_PATH}",
+                            headers=self._headers(),
+                            body=body,
+                            on_text_delta=on_text_delta,
+                            on_semantic_output=mark_semantic_output,
+                        )
                     )
                     # Completed private output is safe for bounded Harness parse repair.
                     public_delta_emitted = (
@@ -271,6 +278,9 @@ class DeepSeekResponsesModelGateway:
             body["tool_choice"] = resolved.tool_choice.value
         metadata = request_metadata(body)
         return resolved, body, metadata, names
+
+    def _observe_usage_attempt(self, send: Callable[[], dict[str, Any]]) -> dict[str, Any]:
+        return observe_provider_attempt(self.usage_observer, send, parse_usage)
 
     def _post(self, body: dict[str, Any], *, deadline_s: float | None = None) -> dict[str, Any]:
         if deadline_s is not None:

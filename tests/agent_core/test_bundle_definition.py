@@ -1,12 +1,13 @@
 """Frozen native Bundle binding, independent of legacy Definition hashes."""
 
+from copy import deepcopy
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 import pytest
 from agent_core.contracts.task_prepared import TaskPreparedPayload
 from agent_core.domain.agent_definition_snapshots import AgentDefinitionSnapshot, BindingPurpose
-from agent_core.domain.agent_definitions import AgentDefinitionVersion
+from agent_core.domain.agent_definitions import AgentDefinitionVersion, AgentRelease
 from agent_core.domain.bundle_definition import (
     BundleDefinitionSnapshot,
     BundleDefinitionVersion,
@@ -105,6 +106,85 @@ def bundle_version(**changes):
         runtime_assembly=RuntimeAssembly.model_validate(assembly_payload()),
     )
     return BundleDefinitionVersion(**{**payload, **changes})
+
+
+def published(version):
+    release = AgentRelease.from_version(
+        version,
+        release_id=uuid4(),
+        environment=version.runtime_assembly.bundle.manifest.scope.environment,
+        actor_ref="test-publisher",
+        effective_at=NOW,
+    )
+    return BundleDefinitionSnapshot.from_release(release=release, version=version, resolved_at=NOW)
+
+
+def removed_model_release_snapshots(*, retain_default=False):
+    previous = bundle_version()
+    payload = assembly_payload()
+    manifest = payload["bundle"]["manifest"]
+    pin = payload["provider_profile"]["pin"]
+    original = deepcopy(pin)
+    if not retain_default:
+        pin["id"] = "providers/replacement"
+    model = manifest["domains"]["model"]["parameters"]
+    model["provider_profile"] = pin
+    manifest["lock"] = sorted(
+        [pin if entry == original else entry for entry in manifest["lock"]],
+        key=lambda entry: (entry["kind"], entry["id"], entry["version"]),
+    )
+    from agent_core.domain.runtime_bundle import (
+        builtin_component_pin,
+        runtime_bundle_catalog_digest,
+    )
+
+    alternate = deepcopy(payload["provider_profile"])
+    alternate["models"] = ["example/alternate"]
+    alternate["pin"]["id"] = "providers/alternate"
+    alternate["pin"]["digest"] = canonical_provider_profile_digest(alternate)
+    domain = manifest["domains"]["model"]
+    old_component = domain["component"]
+    domain["component"] = builtin_component_pin("model", selectable=True).model_dump(mode="json")
+    model["selectable_models"] = [
+        {"provider_profile": alternate["pin"], "model": "example/alternate"}
+    ]
+    manifest["catalog_digest"] = runtime_bundle_catalog_digest(selectable=True)
+    manifest["lock"] = sorted(
+        [
+            domain["component"],
+            alternate["pin"],
+            *(p for p in manifest["lock"] if p != old_component),
+        ],
+        key=lambda entry: (entry["kind"], entry["id"], entry["version"]),
+    )
+    payload["selectable_profiles"] = [alternate]
+    manifest["domains"]["instructions"]["parameters"]["system_text"] = "new instructions"
+    payload["bundle"]["bundle_digest"] = json_digest(manifest)
+    updated = bundle_version(
+        definition_id=previous.definition_id,
+        version=2,
+        runtime_assembly=RuntimeAssembly.model_validate(payload),
+    )
+
+    return published(previous), published(updated)
+
+
+def test_removed_model_selects_whole_effective_release():
+    old, effective = removed_model_release_snapshots()
+    previous = old.bound_version
+
+    selected = previous.runtime_assembly.provider_profile.pin.id
+    retained = published(bundle_version(definition_id=previous.definition_id, version=2))
+    assert retained.snapshot_digest != old.snapshot_digest
+    assert old.snapshot_for_model_selection(effective=retained, selected_model_id=selected) is old
+    adopted = old.snapshot_for_model_selection(effective=effective, selected_model_id=selected)
+    assert adopted is effective
+    assert adopted.bound_version.runtime_assembly.provider_profile.pin.id == "providers/replacement"
+    assert adopted.snapshot_digest != old.snapshot_digest
+    with pytest.raises(ValueError, match="production scope"):
+        old.snapshot_for_model_selection(
+            effective=published(bundle_version()), selected_model_id=selected
+        )
 
 
 def test_version_snapshot_task_recovery_retains_whole_assembly():

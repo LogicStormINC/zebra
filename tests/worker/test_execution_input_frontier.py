@@ -269,8 +269,26 @@ def test_exact_task_bootstrap_budgets_client_state_and_old_conversation(tmp_path
         event for event in bootstrap.events if event.event_type is EventType.TASK_PREPARED
     )
     append(events, lease, 2, EventType.TASK_PREPARED, prepared.payload)
-    append(events, lease, 3, EventType.USER_MESSAGE_RECEIVED, {"content": "Never mutate"})
-    append(events, lease, 4, EventType.USER_MESSAGE_RECEIVED, {"content": "Now inspect"})
+    model_pin = {
+        "kind": "provider-profile",
+        "id": "provider/selected",
+        "version": "1.0.0",
+        "digest": "sha256:" + "a" * 64,
+    }
+    append(
+        events,
+        lease,
+        3,
+        EventType.USER_MESSAGE_RECEIVED,
+        {"content": "Never mutate", "selected_model_pin": {**model_pin, "id": "provider/old"}},
+    )
+    append(
+        events,
+        lease,
+        4,
+        EventType.USER_MESSAGE_RECEIVED,
+        {"content": "Now inspect", "selected_model_pin": model_pin},
+    )
     client = client_event(session_id=lease.session_id, sequence=5)
     events.append(client)
     exact = recover_execution_input_events(store=store, tasks=tasks, lease=lease)
@@ -282,6 +300,8 @@ def test_exact_task_bootstrap_budgets_client_state_and_old_conversation(tmp_path
         client_state_evidence=recover_client_state_evidence(exact),
     )
     assert task.user_input == "Now inspect" and task.title == "Exact task"
+    assert task.selected_model_pin is not None
+    assert task.selected_model_pin.model_dump(mode="json") == model_pin
     assert (task.max_attempts, task.max_model_calls, task.max_tool_calls) == (4, 7, 9)
     assert task.conversation_history[0].content == "Never mutate"
     assert task.client_state == recover_client_state_evidence([client])
@@ -554,3 +574,29 @@ def test_stale_page_cas_and_released_lease_cannot_advance(tmp_path):
     SQLiteLeaseStore(tmp_path / "inputs.sqlite").release(lease.session_id, fence=lease.fence)
     with pytest.raises(LeaseLostError):
         store.advance(lease, page)
+
+
+def test_execution_input_retries_confirmed_lock_timeout_on_same_page(tmp_path, monkeypatch):
+    from psycopg.errors import LockNotAvailable
+
+    tasks, events, lease, store = setup_inputs(tmp_path)
+    latest = append(events, lease, 2, EventType.USER_MESSAGE_RECEIVED, {"content": "continue"})
+    advance = store.advance
+    attempts = []
+
+    def contended(current_lease, page):
+        attempts.append((current_lease, page))
+        if len(attempts) == 1:
+            raise LockNotAvailable("isolated contention")
+        return advance(current_lease, page)
+
+    monkeypatch.setattr(store, "advance", contended)
+    ownership = Mock()
+    recovered = recover_execution_input_events(
+        store=store, tasks=tasks, lease=lease, ownership_check=ownership
+    )
+
+    assert latest in recovered
+    assert len(attempts) == 2 and attempts[0] == attempts[1]
+    assert ownership.call_count >= 3
+    assert store.read(lease).through_sequence == latest.sequence

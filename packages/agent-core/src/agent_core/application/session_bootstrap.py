@@ -12,6 +12,7 @@ from agent_core.domain.coverage_task_admission import CoverageTaskAdmission
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.mcp import normalize_mcp_allowlist
+from agent_core.domain.runtime_bundle_types import ArtifactPin
 from agent_core.domain.session_history import normalize_history_session_ids
 from agent_core.domain.sessions import Session
 from agent_core.domain.tool_profiles import ToolProfile
@@ -39,6 +40,7 @@ class SessionBootstrapCommand:
     interaction_mode: InteractionMode | None = None
     model_profile: str | None = None
     reasoning_effort: str | None = None
+    selected_model_pin: ArtifactPin | None = None
     created_at: datetime | None = None
     coverage_admission: CoverageTaskAdmission | None = None
 
@@ -83,6 +85,11 @@ class SessionBootstrapService:
                 event_type=EventType.USER_MESSAGE_RECEIVED,
                 actor=EventActor.USER,
                 payload={
+                    **(
+                        {"selected_model_pin": command.selected_model_pin.model_dump(mode="json")}
+                        if command.selected_model_pin is not None
+                        else {}
+                    ),
                     "content": command.user_input,
                     "turn_id": str(turn_id),
                     "turn_index": 0,

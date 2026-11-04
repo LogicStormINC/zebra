@@ -31,6 +31,7 @@ from agent_core.domain.modeling import (
     ModelReasoningEffort,
     ModelThinkingMode,
 )
+from agent_core.domain.runtime_bundle_types import ArtifactPin
 from agent_core.domain.session_history import normalize_history_session_ids
 from agent_core.domain.task_bindings import TaskBindingSnapshot, host_context_digest
 from agent_core.domain.tool_profiles import ToolProfile
@@ -124,6 +125,7 @@ class RecoveredTask:
     model_invocation_policy: ModelInvocationPolicy | None = None
     acceptance_contract: TaskAcceptanceContract | None = None
     coverage_admission: CoverageTaskAdmission | None = None
+    selected_model_pin: ArtifactPin | None = None
 
 
 def apply_bound_host_context(
@@ -166,6 +168,7 @@ def recover_task(
     user_input: str | None = None
     task_payload: dict[str, object] | None = None
     user_event: SessionEvent | None = None
+    message_snapshot: object = None
     strict_identity: CoverageTaskAdmission | None = None
     for event in events:
         if event.event_type is EventType.USER_MESSAGE_RECEIVED:
@@ -173,6 +176,8 @@ def recover_task(
             if isinstance(content, str) and content.strip():
                 user_input = content.strip()
                 user_event = event
+                if event.payload.get("definition_snapshot") is not None:
+                    message_snapshot = event.payload["definition_snapshot"]
         if event.event_type is EventType.TASK_PREPARED:
             raw_admission = event.payload.get("coverage_admission")
             candidate = (
@@ -212,7 +217,13 @@ def recover_task(
         )
     except (FileNotFoundError, ValueError) as exc:
         raise ValueError(f"queued session attachment recovery failed: {exc}") from exc
-    definition_snapshot = _definition_snapshot(task_payload.get("definition_snapshot"))
+    definition_snapshot = _definition_snapshot(
+        message_snapshot
+        if message_snapshot is not None
+        else task_payload.get("definition_snapshot")
+    )
+    raw_pin = user_event.payload.get("selected_model_pin")
+    selected_model_pin = ArtifactPin.model_validate(raw_pin) if raw_pin is not None else None
     invocation_policy = _model_invocation_policy(user_event.payload, task_payload)
     if (
         image_attachments
@@ -256,6 +267,7 @@ def recover_task(
         ),
         client_state=client_state_evidence,
         model_invocation_policy=invocation_policy,
+        selected_model_pin=selected_model_pin,
         acceptance_contract=task_contract,
         coverage_admission=coverage_admission,
     )
@@ -474,9 +486,7 @@ def _exact_tail_details(
 
 
 def _optional_positive_int(value: object) -> int | None:
-    if not isinstance(value, int) or isinstance(value, bool):
-        return None
-    return value if value > 0 else None
+    return value if isinstance(value, int) and not isinstance(value, bool) and value > 0 else None
 
 
 def _host_context(value: object) -> HostContextEnvelope | None:

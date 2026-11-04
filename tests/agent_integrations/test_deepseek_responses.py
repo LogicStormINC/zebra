@@ -143,7 +143,10 @@ def test_responses_stream_uses_semantic_terminal_and_hides_reasoning() -> None:
         )
 
     deltas = []
-    completion = _gateway(handle).complete_stream(
+    gateway = _gateway(handle)
+    observations = []
+    gateway.usage_observer = lambda *entry: observations.append(entry)
+    completion = gateway.complete_stream(
         [_message("review")],
         on_text_delta=deltas.append,
     )
@@ -155,6 +158,9 @@ def test_responses_stream_uses_semantic_terminal_and_hides_reasoning() -> None:
     assert completion.call_metadata.time_to_first_public_text_ms is not None
     assert completion.call_metadata.usage.prompt_cache_hit_tokens == 7
     assert completion.call_metadata.usage.prompt_cache_miss_tokens == 5
+    started, finished = observations
+    assert started == (finished[0], "started", None)
+    assert finished[1:] == ("finished", completion.call_metadata.usage)
     assert completion.call_metadata.request_hash is not None
     assert completion.call_metadata.message_count == 1
     assert len(completion.call_metadata.message_prefix_hashes) == 1

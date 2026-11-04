@@ -278,3 +278,13 @@ def test_http_app_stream_rejects_invalid_session_id(tmp_path: Path) -> None:
         "status": "invalid_request",
         "reason": "session_id must be a valid UUID",
     }
+
+
+def test_http_model_options_response_is_not_cached(tmp_path: Path) -> None:
+    client = TestClient(create_http_app(tmp_path / "sessions.sqlite"))
+    response = client.get("/model-options", params={
+        "definition_id": "10000000-0000-4000-8000-000000000001",
+    })
+
+    assert response.status_code == 403
+    assert response.headers["cache-control"] == "no-store"

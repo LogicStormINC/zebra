@@ -76,6 +76,35 @@ class BundleDefinitionSnapshot(AgentDefinitionSnapshot):
             raise ValueError("snapshot_digest does not match Bundle snapshot content")
         return self
 
+    def snapshot_for_model_selection(
+        self, *, effective: BundleDefinitionSnapshot, selected_model_id: str,
+        requested_model_id: str | None = None
+    ) -> BundleDefinitionSnapshot:
+        """Select a complete snapshot using an already authorized effective release."""
+        previous = self.bound_version.runtime_assembly
+        current = effective.bound_version.runtime_assembly
+        if (
+            self.binding_purpose is not BindingPurpose.PRODUCTION
+            or effective.binding_purpose is not BindingPurpose.PRODUCTION
+            or self.definition_id != effective.definition_id
+            or previous.bundle.manifest.scope != current.bundle.manifest.scope
+        ):
+            raise ValueError("effective release differs from the bound production scope")
+        previous.resolve_session_model(requested_id=selected_model_id, remembered_id=None)
+        _, profile = current.resolve_session_model(
+            requested_id=None, remembered_id=selected_model_id
+        )
+        if profile.pin.id != selected_model_id:
+            return effective
+        if requested_model_id is not None:
+            _, requested = previous.resolve_session_model(
+                requested_id=None, remembered_id=requested_model_id
+            )
+            if requested.pin.id != requested_model_id:
+                current.resolve_session_model(requested_id=requested_model_id, remembered_id=None)
+                return effective
+        return self
+
     @classmethod
     def from_version(cls, *, version: AgentDefinitionVersion, resolved_at: datetime) -> Self:
         checked = parse_definition_version(version)

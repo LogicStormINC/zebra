@@ -85,6 +85,8 @@ def postgres_transaction_work_unit(database: Any, connection: Any) -> Iterator[N
     """
     configured = conninfo_to_dict(database._dsn)
     actual = connection.info.get_parameters()
+    # libpq omits default-valued parameters, including an explicit port 5432.
+    actual.setdefault("port", str(connection.info.port))
     options = configured.get("options", "")
     actual_options = actual.get("options", "")
     if not isinstance(options, str) or not isinstance(actual_options, str):

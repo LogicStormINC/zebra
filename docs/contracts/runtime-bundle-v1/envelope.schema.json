@@ -306,6 +306,15 @@
           ],
           "title": "Thinking",
           "type": "string"
+        },
+        "selectable_models": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/SelectableModel"
+          },
+          "maxLength": 16,
+          "title": "Selectable Models",
+          "type": "array"
         }
       },
       "required": [
@@ -507,6 +516,26 @@
         "operations"
       ],
       "title": "RuntimeDomains",
+      "type": "object"
+    },
+    "SelectableModel": {
+      "additionalProperties": false,
+      "properties": {
+        "provider_profile": {
+          "$ref": "#/$defs/ArtifactPin"
+        },
+        "model": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Model",
+          "type": "string"
+        }
+      },
+      "required": [
+        "provider_profile",
+        "model"
+      ],
+      "title": "SelectableModel",
       "type": "object"
     }
   },

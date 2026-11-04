@@ -12,18 +12,21 @@ from agent_core.domain.agent_definitions import (
     AgentReleaseEnforcementMode,
     AgentReleaseStatus,
 )
+from agent_core.domain.bundle_definition import BundleDefinitionSnapshot
 from agent_core.domain.identifiers import (
     AgentDefinitionId,
     AgentDefinitionVersionId,
     AgentReleaseId,
 )
 
+from agent_storage.event_rows import SessionEventSequenceConflictError
 from agent_storage.postgres.agent_registry_bundle import save_version, version_from_row
 from agent_storage.postgres.agent_registry_common import AgentRegistryStorageError, _Jsonb
 from agent_storage.postgres.agent_registry_drafts import AgentDraftAuthorityMixin
 from agent_storage.postgres.agent_registry_evidence import AgentDefinitionEvalEvidence
 from agent_storage.postgres.database import PostgresDatabase
 from agent_storage.postgres.publication import lock_definition
+from agent_storage.postgres.work_unit import postgres_transaction_work_unit
 
 __all__ = [
     "AgentDefinitionEvalEvidence",
@@ -162,6 +165,7 @@ class PostgresAgentRegistry(AgentDraftAuthorityMixin):
             release.definition_id,
         )
         with self._database.connect() as connection:
+            lock_definition(connection, scope_key)
             current = connection.execute(
                 "SELECT release_id, revision FROM agent_release_records"
                 " WHERE authority_issuer = %s AND namespace_id = %s"
@@ -401,3 +405,30 @@ def _release_from_row(row: dict[str, Any]) -> AgentRelease:
         enforcement_mode=AgentReleaseEnforcementMode(row["enforcement_mode"]),
         effective_at=row["effective_at"],
     )
+
+
+def require_effective_message_release(
+    database: PostgresDatabase, connection: Any, effective_release: BundleDefinitionSnapshot
+) -> None:
+    """Hold the publication fence until the caller commits the message or command."""
+    scope = AgentDefinitionScope(
+        authority_issuer=effective_release.authority_issuer,
+        namespace_id=effective_release.namespace_id,
+        definition_id=effective_release.definition_id,
+    )
+    environment = effective_release.bound_version.runtime_assembly.bundle.manifest.scope.environment
+    lock_definition(connection, scope.scope_key)
+    with postgres_transaction_work_unit(database, connection):
+        current = PostgresAgentRegistry(
+            database._dsn, deployment_namespace=database.deployment_namespace
+        ).resolve_published(scope, environment=environment)
+    if current is None or (
+        current.release_id,
+        current.revision,
+        current.definition_digest,
+    ) != (
+        effective_release.release_id,
+        effective_release.release_revision,
+        effective_release.bound_version.definition_digest,
+    ):
+        raise SessionEventSequenceConflictError("effective release changed before message commit")

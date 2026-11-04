@@ -10,6 +10,7 @@ from uuid import uuid4
 import psycopg
 import pytest
 from agent_core.domain.sessions import SessionStatus
+from agent_storage.postgres.force_stop_signal import STOP_ANCESTRY
 from agent_storage.postgres.projections import PostgresProjectionStore
 from agent_storage.postgres.task_io import task_io_deadline
 from psycopg import sql
@@ -20,7 +21,11 @@ def test_scalar_control_read_uses_one_query_and_no_body_or_setup_statement() -> 
     store = PostgresProjectionStore("postgresql://localhost/unused", deployment_namespace="one")
     connection = Mock()
     connection.execute.return_value.fetchone.side_effect = [
-        {"status": "running"}, {"status": "cancelled"}, None, {"status": "corrupt"},
+        {"status": "running", "forced": False},
+        {"status": "running", "forced": True},
+        {"status": "cancelled", "forced": False},
+        {"status": None, "forced": False},
+        {"status": "corrupt", "forced": False},
     ]
     store._database = SimpleNamespace(
         connect_task_io=Mock(return_value=nullcontext(connection)), deployment_namespace="one"
@@ -28,15 +33,19 @@ def test_scalar_control_read_uses_one_query_and_no_body_or_setup_statement() -> 
     session_id = uuid4()
     assert store.get_session_status(session_id) is SessionStatus.RUNNING
     assert store.get_session_status(session_id) is SessionStatus.CANCELLED
+    assert store.get_session_status(session_id) is SessionStatus.CANCELLED
     assert store.get_session_status(session_id) is None
     with pytest.raises(ValueError):
         store.get_session_status(session_id)
-    assert connection.execute.call_count == 4
+    assert connection.execute.call_count == 5
     for request in connection.execute.call_args_list:
         query, parameters = request.args
-        assert query == ("SELECT status FROM session_projections "
-                         "WHERE deployment_namespace=%s AND session_id=%s")
-        assert parameters == ("one", session_id)
+        assert query == (
+            "SELECT (SELECT status FROM session_projections WHERE "
+            "deployment_namespace=%(namespace)s AND session_id=%(sid)s) AS status, "
+            "EXISTS(" + STOP_ANCESTRY + ") AS forced"
+        )
+        assert parameters == {"namespace": "one", "sid": session_id}
 
 
 def test_status_does_not_bypass_custom_full_reader(monkeypatch: pytest.MonkeyPatch) -> None:

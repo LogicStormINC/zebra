@@ -4,6 +4,7 @@ import pytest
 from agent_core.application import SessionMessageAppendCommand, SessionMessageAppendService
 from agent_core.domain.clarifications import ClarificationContext
 from agent_core.domain.events import EventActor, EventType
+from agent_core.domain.runtime_bundle_types import ArtifactPin
 from agent_core.domain.sessions import Session, SessionStatus
 
 
@@ -16,12 +17,19 @@ def test_session_message_append_service_builds_user_message_event() -> None:
         }
     )
 
+    pin = ArtifactPin(
+        kind="provider-profile",
+        id="provider/selected",
+        version="1.0.1",
+        digest="sha256:" + "a" * 64,
+    )
     event = SessionMessageAppendService().build_event(
         session=session,
         next_sequence=3,
         command=SessionMessageAppendCommand(
             content="Please continue from the latest state.",
             appended_at=created_at,
+            selected_model_pin=pin,
         ),
     )
 
@@ -32,6 +40,7 @@ def test_session_message_append_service_builds_user_message_event() -> None:
     assert event.payload["origin"] == "human"
     assert event.payload["turn_index"] == 0
     assert event.payload["turn_id"]
+    assert event.payload["selected_model_pin"] == pin.model_dump(mode="json")
 
 
 def test_session_message_append_service_rejects_terminal_session() -> None:

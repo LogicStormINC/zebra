@@ -94,8 +94,13 @@ def model_gateway(
     from zebra_agent_worker.bundle_assembly import task_assembly
 
     assembly = task_assembly(task) if task is not None else None
+    selected_pin = task.selected_model_pin if task is not None else None
     if assembly is not None:
-        model: ModelGatewayPort = BundleModelGateway(assembly, client=service._model_http_client)
+        model: ModelGatewayPort = BundleModelGateway(
+            assembly, selected_pin=selected_pin, client=service._model_http_client
+        )
+    elif selected_pin is not None:
+        raise ValueError("BUNDLE_SELECTED_MODEL_REQUIRES_ASSEMBLY")
     else:
         settings = model_provider_settings(service._settings)
         model = (

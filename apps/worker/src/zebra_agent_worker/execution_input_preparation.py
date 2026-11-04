@@ -17,7 +17,7 @@ from agent_core.ports.execution_inputs import (
 )
 from agent_core.ports.task_projection_checkpoints import CheckpointNotReady, CheckpointStale
 from agent_core.ports.worker_preparation import PreparationAdvanced
-from agent_storage.postgres.task_io import task_io_deadline
+from agent_storage.postgres.task_io import current_task_io_deadline, task_io_deadline
 from psycopg.errors import LockNotAvailable, QueryCanceled
 
 
@@ -70,11 +70,21 @@ def recover_execution_input_events(
                     if head.through_sequence == header.current_sequence:
                         return _ready_events(head, expected_session_revision)
                 page = store.read_page(lease, head.through_sequence, header.current_sequence)
-                try:
-                    head = store.advance(lease, page)
-                    committed = True
-                except CheckpointStale:
-                    head = store.read(lease)
+                while True:
+                    try:
+                        head = store.advance(lease, page)
+                        committed = True
+                        break
+                    except CheckpointStale:
+                        head = store.read(lease)
+                        break
+                    except LockNotAvailable:
+                        # PostgreSQL rejected and rolled back this derived write.
+                        # Reuse the page and lease within the existing I/O deadline.
+                        if monotonic() >= (current_task_io_deadline() or deadline):
+                            raise
+                        if ownership_check is not None:
+                            ownership_check()
             latest = tasks.read_task_header(task_id)
             if latest is None or latest.active_segment_id != lease.session_id:
                 raise CheckpointNotReady("execution input Segment was superseded")

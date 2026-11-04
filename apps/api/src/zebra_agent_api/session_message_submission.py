@@ -6,7 +6,14 @@ from agent_core.application import (
     current_turn,
     project_turns,
 )
-from agent_core.domain.events import SessionEvent
+from agent_core.domain.attachments import SessionAttachmentRef
+from agent_core.domain.bundle_definition import (
+    BundleDefinitionSnapshot,
+    DefinitionSnapshot,
+    parse_definition_snapshot,
+)
+from agent_core.domain.events import EventType, SessionEvent
+from agent_core.domain.runtime_bundle_types import ArtifactPin
 from agent_core.domain.sessions import Session
 from agent_core.ports import EventStorePort
 
@@ -21,10 +28,59 @@ def build_session_message_event(
     clarification_id: str | None,
     model_profile: str | None = None,
     reasoning_effort: str | None = None,
+    selected_model_id: str | None = None,
+    inherited_snapshot: DefinitionSnapshot | None = None,
+    effective_snapshot: BundleDefinitionSnapshot | None = None,
 ) -> SessionEvent:
     """Build the next durable message Event with ADR-026 Turn identity."""
 
     events = event_store.list_for_session(session.session_id)
+    selected_model_pin = None
+    adopted_snapshot = None
+    if clarification_id is None:
+        prepared = next(
+            (
+                event
+                for event in reversed(events)
+                if event.event_type in {EventType.TASK_PREPARED, EventType.USER_MESSAGE_RECEIVED}
+                and event.payload.get("definition_snapshot") is not None
+            ),
+            None,
+        )
+        raw_snapshot = prepared.payload.get("definition_snapshot") if prepared is not None else None
+        snapshot = (
+            parse_definition_snapshot(raw_snapshot)
+            if raw_snapshot is not None
+            else inherited_snapshot
+        )
+        if isinstance(snapshot, BundleDefinitionSnapshot):
+            remembered = next(
+                (
+                    ArtifactPin.model_validate(raw).id
+                    for event in reversed(events)
+                    if event.event_type is EventType.USER_MESSAGE_RECEIVED
+                    and (raw := event.payload.get("selected_model_pin")) is not None
+                ),
+                None,
+            )
+            assembly = snapshot.bound_version.runtime_assembly
+            if effective_snapshot is not None:
+                chosen = snapshot.snapshot_for_model_selection(
+                    effective=effective_snapshot,
+                    selected_model_id=remembered or assembly.provider_profile.pin.id,
+                    requested_model_id=selected_model_id,
+                )
+                if chosen is not snapshot:
+                    adopted_snapshot = chosen
+                    assembly = chosen.bound_version.runtime_assembly
+                    remembered = None
+            _, profile = assembly.resolve_session_model(
+                requested_id=selected_model_id,
+                remembered_id=remembered,
+            )
+            selected_model_pin = profile.pin
+        elif selected_model_id is not None:
+            raise ValueError("selected_model_requires_published_bundle")
     return SessionMessageAppendService().build_event(
         session=session,
         next_sequence=session.current_sequence + 1,
@@ -35,6 +91,8 @@ def build_session_message_event(
             open_turn_exists=current_turn(events) is not None,
             model_profile=model_profile,
             reasoning_effort=reasoning_effort,
+            selected_model_pin=selected_model_pin,
+            definition_snapshot=adopted_snapshot,
         ),
     )
 
@@ -67,4 +125,44 @@ def message_sequence_conflict(session_id: str) -> ApiResponse:
         session_id=session_id,
         status="sequence_conflict",
         reason="concurrent_append_won_the_sequence",
+    )
+
+
+def appended_message_response(
+    session_id: str,
+    event: SessionEvent,
+    updated_session: Session,
+    *,
+    content: str,
+    clarification_id: str | None,
+    attachment_refs: tuple[SessionAttachmentRef, ...],
+    include_message_coordinates: bool,
+) -> ApiResponse:
+    body: dict[str, object] = {
+        "session_id": session_id,
+        "appended": True,
+        **(
+            {
+                "clarification_resolved": True,
+                "clarification_id": clarification_id,
+            }
+            if event.event_type.value == "clarification_responded"
+            else {}
+        ),
+        "content": content,
+        "sequence": event.sequence,
+        "status": updated_session.status.value,
+        "current_sequence": updated_session.current_sequence,
+    }
+    if include_message_coordinates:
+        body["message_coordinates"] = {
+            "event_id": str(event.event_id),
+            "segment_id": str(event.session_id),
+            "segment_sequence": event.sequence,
+        }
+    if attachment_refs:
+        body["attachments"] = [ref.to_mapping() for ref in attachment_refs]
+    return ApiResponse(
+        status_code=201,
+        body=body,
     )

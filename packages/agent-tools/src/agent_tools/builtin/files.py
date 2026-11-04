@@ -5,6 +5,7 @@ from agent_core.ports.workspace import WorkspacePort
 
 from agent_tools.contracts import ToolContract
 from agent_tools.errors import ToolArgumentError
+from agent_tools.output_projection import ToolOutputProjector
 
 file_read_contract = ToolContract(
     name="files.read",
@@ -18,11 +19,18 @@ file_read_contract = ToolContract(
 
 
 class FileReadTool:
-    def __init__(self, workspace: WorkspacePort, *, max_bytes: int | None = 16_384) -> None:
+    def __init__(
+        self,
+        workspace: WorkspacePort,
+        *,
+        max_bytes: int | None = 16_384,
+        output_projector: ToolOutputProjector | None = None,
+    ) -> None:
         if max_bytes is not None and max_bytes <= 0:
             raise ValueError("max_bytes must be positive")
         self._workspace = workspace
         self._max_bytes = max_bytes
+        self._output_projector = output_projector
 
     @property
     def contract(self) -> ToolContract:
@@ -46,15 +54,21 @@ class FileReadTool:
         visible = content[: self._max_bytes].decode("utf-8", errors="replace")
         if self._max_bytes is None:
             visible = content.decode("utf-8", errors="replace")
+        projected = (
+            self._output_projector.project_text(visible, artifact_name=target_path.name)
+            if self._output_projector is not None
+            else None
+        )
         return ToolResult(
             tool_call_id=tool_call.tool_call_id,
             status=ToolCallStatus.EXECUTED,
-            output=visible,
+            output=projected.model_output if projected is not None else visible,
             metadata={
                 "path": str(Path(relative_path)),
                 "evidence_refs": [str(Path(relative_path))],
                 "byte_count": len(content),
                 "truncated": truncated,
+                **(projected.metadata if projected is not None else {}),
             },
         )
 

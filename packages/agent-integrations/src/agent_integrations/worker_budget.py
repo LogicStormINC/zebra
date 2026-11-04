@@ -43,9 +43,11 @@ def inspect_request(gateway: Any, body: dict[str, Any]) -> ModelRequestBudget:
 
 def _supported_content(value: Any) -> None:
     if isinstance(value, dict):
-        if value.get("type") in {"image_url", "input_image", "image", "file", "input_file"} or any(
-            key in value for key in ("previous_response_id", "continuation")
-        ):
+        kind = value.get("type")
+        if (
+            isinstance(kind, str)
+            and kind in {"image_url", "input_image", "image", "file", "input_file"}
+        ) or any(key in value for key in ("previous_response_id", "continuation")):
             raise WorkerBudgetError("guarded counter contract does not support image/continuation")
         for child in value.values():
             _supported_content(child)
@@ -77,7 +79,10 @@ def guarded_completion(
         raise WorkerBudgetError("synchronous guarded transport cannot block an async loop")
     # Existing native async cancellation scope bounds connect, body and cleanup together.
     with asyncio.Runner(loop_factory=_bounded_loop) as runner:
-        payload = runner.run(_wire(gateway, request.exact_body, remaining, stream_sink, responses))
+        def send() -> dict[str, Any]:
+            return runner.run(_wire(gateway, request.exact_body, remaining, stream_sink, responses))
+
+        payload = gateway._observe_usage_attempt(send)
     if monotonic() - started >= remaining:
         raise WorkerBudgetError("model Task deadline exceeded")
     gate.check()

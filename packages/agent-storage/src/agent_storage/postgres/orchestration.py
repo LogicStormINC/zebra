@@ -7,11 +7,13 @@ result bundles and gate receipts are content-addressed by digest.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from datetime import UTC, datetime
 from typing import Any
 from uuid import uuid4
 
 from agent_core.domain.identifiers import TaskId
+from agent_orchestration.application.completion_gate import GateEvaluation
 from agent_orchestration.application.orchestration_scheduling import NodeOutcome, SchedulingDecision
 from agent_orchestration.domain.orchestration import (
     OrchestrationPlanSnapshot,
@@ -21,6 +23,7 @@ from agent_orchestration.domain.orchestration import (
 from psycopg.types.json import Jsonb
 
 from agent_storage.postgres.database import PostgresDatabase
+from agent_storage.postgres.work_unit import postgres_work_unit
 
 
 class OrchestrationStorageError(RuntimeError):
@@ -30,7 +33,15 @@ class OrchestrationStorageError(RuntimeError):
 class PostgresOrchestrationStore:
     """Read/write store over the v27 projections."""
 
-    def __init__(self, dsn: str, *, deployment_namespace: str) -> None:
+    def __init__(
+        self,
+        dsn: str,
+        *,
+        deployment_namespace: str,
+        gate_authorize: Callable[[Any, OrchestrationPlanSnapshot], dict[str, Any] | None]
+        | None = None,
+    ) -> None:
+        self._gate_authorize = gate_authorize
         self._database = PostgresDatabase(dsn, deployment_namespace=deployment_namespace)
 
     @property
@@ -41,7 +52,7 @@ class PostgresOrchestrationStore:
         """Persist a validated run with its revision-1 plan atomically."""
 
         namespace = self.deployment_namespace
-        with self._database.connect() as connection:
+        with postgres_work_unit(self._database), self._database.connect() as connection:
             inserted = connection.execute(
                 """
                 INSERT INTO orchestration_runs (
@@ -61,12 +72,19 @@ class PostgresOrchestrationStore:
             if inserted is None:
                 raise OrchestrationStorageError("run already exists; append a revision")
             self._write_revision(connection, namespace, snapshot)
+            if self._gate_authorize is not None:
+                policy = self._gate_authorize(connection, snapshot)
+                if policy is not None:
+                    connection.execute(
+                        "INSERT INTO orchestration_completion_policies VALUES (%s,%s,%s,%s)",
+                        (namespace, snapshot.run_ref, snapshot.plan_revision, Jsonb(policy)),
+                    )
 
     def append_plan_revision(self, snapshot: OrchestrationPlanSnapshot) -> None:
         """Persist a newer revision and advance the run pointer atomically."""
 
         namespace = self.deployment_namespace
-        with self._database.connect() as connection:
+        with postgres_work_unit(self._database), self._database.connect() as connection:
             row = connection.execute(
                 """
                 UPDATE orchestration_runs
@@ -82,6 +100,13 @@ class PostgresOrchestrationStore:
                     "plan revision must extend the current revision by exactly one"
                 )
             self._write_revision(connection, namespace, snapshot)
+            if self._gate_authorize is not None:
+                policy = self._gate_authorize(connection, snapshot)
+                if policy is not None:
+                    connection.execute(
+                        "INSERT INTO orchestration_completion_policies VALUES (%s,%s,%s,%s)",
+                        (namespace, snapshot.run_ref, snapshot.plan_revision, Jsonb(policy)),
+                    )
 
     def transition_run(
         self,
@@ -373,3 +398,15 @@ class PostgresOrchestrationStore:
         return commit_node_outcome(
             self, run_ref, node_key, outcome, revision=revision, child_task_id=child_task_id
         )
+
+    def complete_run(self, run_ref: str) -> GateEvaluation:
+        from agent_storage.postgres.orchestration_gate import complete_run
+
+        return complete_run(self, run_ref)
+
+    def read_completion_receipt(
+        self, run_ref: str, revision: int, input_digest: str
+    ) -> dict[str, Any] | None:
+        from agent_storage.postgres.orchestration_gate import read_receipt
+
+        return read_receipt(self, run_ref, revision, input_digest)

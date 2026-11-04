@@ -13,6 +13,8 @@ from zebra_agent_config.private_configuration import read_private_configuration
 Action = Literal[
     "bundle.contract.read",
     "bundle.validate",
+    "model-profile.register",
+    "model-profile.registration.read",
     "script-bundle.contract.read",
     "script-bundle.validate",
 ]
@@ -28,7 +30,7 @@ class BundleManagementApproval(BundleValue):
     actions: Annotated[
         tuple[Action, ...],
         BeforeValidator(lambda value: tuple(value) if type(value) is list else value),
-        Field(min_length=1, max_length=4),
+        Field(min_length=1, max_length=6),
     ]
 
     @model_validator(mode="after")

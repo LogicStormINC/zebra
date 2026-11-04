@@ -16,6 +16,7 @@ from agent_core.domain.runtime_bundle import parse_runtime_bundle
 from agent_core.domain.runtime_bundle_json import canonical_json_bytes
 from agent_core.domain.script_bundle import ScriptBundle, ScriptRuntimeAssembly
 from agent_storage.postgres.agent_registry import PostgresAgentRegistry
+from agent_storage.postgres.model_profile_registration import PostgresModelProfileRegistrations
 
 from zebra_agent_api.bundle_assembly import resolve_bundle_assembly
 from zebra_agent_api.publication_config import PublicationApproval
@@ -29,6 +30,7 @@ def mutate_publication(
     catalog_path: str | None,
     *,
     scripts: bool = False,
+    registrations: PostgresModelProfileRegistrations | None = None,
 ) -> dict[str, Any]:
     now = datetime.now(UTC)
     action = payload["action"]
@@ -59,7 +61,7 @@ def mutate_publication(
         )
         if bundle.manifest.scope != approval.scope:
             raise PermissionError("SCOPE_MISMATCH")
-        assembly = resolve_bundle_assembly(raw_bundle, catalog_path)
+        assembly = resolve_bundle_assembly(raw_bundle, catalog_path, registrations=registrations)
         service = AgentDefinitionDraftService(registry, approval.resolver())
         draft = registry.get_draft(scope)
         if draft is None:

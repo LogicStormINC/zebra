@@ -232,3 +232,26 @@ def test_normal_entry_materializes_before_request() -> None:
     )
     receipt = runtime.propose_plan(_proposal())
     assert store.status[receipt.run_ref] is OrchestrationRunStatus.RUNNING
+
+
+def test_production_ignores_injected_gate_reader_and_requires_atomic_producer():
+    from agent_orchestration.application.completion_gate import GateInput
+
+    runtime, store = _runtime()
+    receipt = _propose(runtime)
+    calls = []
+    production = OrchestrationRuntime(
+        store,
+        require_persisted_gate=True,
+        gate_reader=lambda _: calls.append("unsafe")
+        or GateInput(
+            model_claimed_complete=True,
+            evidence_count=100,
+            successful_tool_calls=100,
+            binding_digest="a" * 64,
+            expected_binding_digest="a" * 64,
+        ),
+    )
+    with pytest.raises(OrchestrationToolError, match="gate_evidence_unavailable"):
+        production.synthesize(receipt.run_ref)
+    assert calls == []

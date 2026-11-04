@@ -131,6 +131,14 @@ def test_task_read_projects_bounded_task_model_usage(tmp_path: Path) -> None:
         "input_tokens": 10_500,
         "model": "deepseek/flash",
         "model_call_count": 2,
+        "provider_token_totals": {
+            "input_tokens": 18_500,
+            "output_tokens": None,
+            "total_tokens": None,
+            "prompt_cache_hit_tokens": 170,
+            "prompt_cache_miss_tokens": 30,
+            "reasoning_tokens": None,
+        },
         "reasoning_effort": "high",
         "token_breakdown": {"messages": 7_800, "system": 2_100, "tools": 600},
         "token_breakdown_v2": {
