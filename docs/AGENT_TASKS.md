@@ -37772,3 +37772,8 @@ Progress branch/worktree). Own the existing PostgreSQL Task header reader,
 execution_inputs.py and test_execution_input_read_batch.py. Resolve namespace
 membership in the initial header statement while retaining the fresh final
 header and existing fenced checkpoint writes.
+
+CA-HA-03 E1 bounded recorder ownership check (Luke Ding/Codex, existing In
+Progress branch/worktree). Own execution_events.py and test_bounded_recorder_tail.py
+for removing the duplicate ownership read immediately before the bounded tail's
+own read guard. Retain the unbounded/local check and the append/commit fence.

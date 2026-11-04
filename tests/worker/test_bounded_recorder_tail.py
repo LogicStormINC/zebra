@@ -14,10 +14,14 @@ from agent_storage.postgres.task_io import TaskIoConnection, task_io_deadline
 from agent_storage.postgres.worker_replay_reader import PostgresWorkerReplayReader
 from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
 
+from tests.agent_storage.test_postgres_task_projection_checkpoints import (
+    checkpoint_dsn as full_schema,
+)
 from tests.worker.test_bounded_session_recovery import NS, seed
 from tests.worker.test_bounded_session_recovery import native as native_fixture
 
 native = native_fixture
+checkpoint_dsn = full_schema
 
 
 def recorder(state, after, read):
@@ -157,3 +161,27 @@ def test_native_tail_cumulative_deadline_resumes_same_captured_head(
     assert target.session.current_sequence == 599
     assert target._tail_highwater is None
     assert [event.sequence for event in target.events] == (list(range(4, 600)) if project else [])
+
+
+def test_prepare_checks_ownership_once_before_bounded_tail(checkpoint_dsn):
+    state = seed(checkpoint_dsn, 10)
+    reader = PostgresWorkerReplayReader(checkpoint_dsn, deployment_namespace=NS)
+    read = Mock(wraps=reader.tail_page)
+    target = recorder(state, 9, read)
+
+    def check():
+        lease = state.leases.get(state.session_id)
+        if lease is None or lease.fence != state.lease.fence:
+            raise LeaseLostError("ownership revoked")
+
+    target._ownership_check = Mock(side_effect=check)
+    args = (EventType.RUNTIME_CLEANUP_FAILED, EventActor.SYSTEM,
+            {"target": "runtime", "error_type": "probe", "attempt_number": 1})
+    assert target.prepare(*args).sequence == 10
+    target._ownership_check.assert_called_once()
+    read.assert_called_once()
+
+    state.leases.release(state.session_id, fence=state.lease.fence)
+    with pytest.raises(LeaseLostError, match="ownership revoked"):
+        target.prepare(*args)
+    read.assert_called_once()
