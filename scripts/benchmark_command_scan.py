@@ -23,6 +23,7 @@ from agent_core.application import SessionBootstrapCommand, SessionBootstrapServ
 from agent_core.contracts import SessionCommand, SessionCommandKind
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_storage.postgres.events import PostgresEventStore, append_event_in_transaction
+from agent_storage.postgres.idempotency import PostgresIdempotencyStore
 from agent_storage.postgres.migration_runner import apply_postgres_migrations
 from agent_storage.postgres.projections import (
     PostgresProjectionStore,
@@ -79,7 +80,12 @@ def benchmark(dsn: str, size: int, repeats: int) -> dict:
             called.append(session_id)
 
     # Only RUN is exercised; recovery workspace methods must never be called here.
-    stores = SimpleNamespace(events=events, sessions=sessions, workspaces=None)
+    stores = SimpleNamespace(
+        events=events,
+        sessions=sessions,
+        workspaces=None,
+        idempotency=PostgresIdempotencyStore(dsn, deployment_namespace=namespace),
+    )
     consumer = SessionCommandConsumer(stores, NoModelExecution())
     queries = 0
     connections = 0

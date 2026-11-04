@@ -9,6 +9,11 @@ API_PORT="${ZEBRA_APPLICATION_TEST_API_PORT:-18081}"
 BASE_COMPOSE=(docker compose --project-name "$PROJECT-dependencies" --file "$BASE_COMPOSE_FILE")
 APP_COMPOSE=(docker compose --project-name "$PROJECT" --file "$APP_COMPOSE_FILE")
 
+if [[ -z "${ZEBRA_DOCKER_SOCKET_GID:-}" ]]; then
+  ZEBRA_DOCKER_SOCKET_GID=$(stat -c '%g' /var/run/docker.sock 2>/dev/null ||
+    stat -f '%g' /var/run/docker.sock)
+fi
+export ZEBRA_DOCKER_SOCKET_GID
 export ZEBRA_APPLICATION_NETWORK=zebra-application-test-dependencies
 export ZEBRA_PROFILE=cloud
 export ZEBRA_DATABASE_URL=postgresql://zebra:zebra-application-test-password@postgres:5432/zebra
