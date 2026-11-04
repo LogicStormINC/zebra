@@ -37734,3 +37734,7 @@ process death, natural expiry, recovery and stale settlement evidence.
 CA-HA-03 F-09 isolated Scheduler composition (Luke Ding/Codex, existing
 In Progress branch/worktree). Own E1 fixture authority, preparation, Compose
 bundle, authority self-check and README under `tests/compose/cloud_ha_e1/`.
+
+CA-HA-03 F-09 scheduled publication admission fix (Luke Ding/Codex, existing
+In Progress branch/worktree). Own Scheduler `admission.py` and
+`tests/scheduler/test_scheduler_admission.py` for frozen Definition resolution.
