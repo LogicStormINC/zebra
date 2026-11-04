@@ -184,6 +184,8 @@
 
 # CA-HA-03 — 资源预算、退避与技术namespace隔离
 
+- E1 F-10 回执链夹具（实施前登记）：沿用 CA-HA-03 Owner、branch 和 worktree。Owned paths 为 tests/worker/test_coverage_execution_receipts.py 和 WORKLOG.md。为已启用回执的夹具声明 native verifier，保留默认关闭的负向检查。
+
 - E1 新根 Task 事件批量写入（实施前登记）：沿用 CA-HA-03 Owner、branch 和 worktree。Owned paths 为 packages/agent-storage/src/agent_storage/postgres/{events,task_admission}.py、tests/agent_storage/test_admission_atomic_task_run.py 和 WORKLOG.md。只优化连续且无幂等键的新根启动事件，命令和既有流仍沿用已有逐条校验。
 
 - E1 准入全局锁内往返（实施前登记）：沿用 CA-HA-03 Owner、branch 和 worktree。Owned paths 为 packages/agent-storage/src/agent_storage/postgres/command_wakeup.py、tests/agent_storage/test_postgres_command_wakeup.py 和 WORKLOG.md。合并首次准入容量读取和待处理记录插入，保留锁顺序、控制预留、错误优先级与既有恢复校验。
