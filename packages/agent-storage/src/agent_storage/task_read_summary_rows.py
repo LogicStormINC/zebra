@@ -6,7 +6,11 @@ from typing import Any
 from uuid import UUID
 
 from agent_core.application.session_attachments import attachment_refs_from_event
-from agent_core.application.task_model_usage import advance_model_usage, public_model_usage
+from agent_core.application.task_model_usage import (
+    TOKEN_USAGE_FIELDS,
+    advance_model_usage,
+    public_model_usage,
+)
 from agent_core.application.task_turn_fields import SegmentTurnReadState, advance_segment_turns
 from agent_core.domain.attachments import SessionAttachmentRef
 from agent_core.domain.events import EventType
@@ -35,12 +39,21 @@ def usage_state(text: str) -> dict[str, Any]:
     keys = {"model_call_count", "cache_hit_tokens", "cache_miss_tokens", "latest"}
     if (
         not isinstance(state, dict)
-        or not keys <= set(state) <= keys | {"turn_state"}
+        or not keys <= set(state) <= keys | {"turn_state", "provider_token_totals"}
         or not isinstance(state["latest"], dict)
     ):
         raise CheckpointConflict("invalid persisted Task usage state")
     if any(type(state[key]) is not int or state[key] < 0 for key in keys - {"latest"}):
         raise CheckpointConflict("invalid persisted Task usage counters")
+    if "provider_token_totals" in state:
+        totals = state["provider_token_totals"]
+        if (
+            not isinstance(totals, dict)
+            or set(totals) != set(TOKEN_USAGE_FIELDS)
+            or any(value is not None and (type(value) is not int or value < 0)
+                   for value in totals.values())
+        ):
+            raise CheckpointConflict("invalid persisted Task provider token totals")
     return state
 
 
