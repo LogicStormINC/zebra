@@ -52,21 +52,20 @@ def _rebuild_task(
 ) -> AgentTask:
     task_id = TaskId(UUID(str(root_session_id)))
     _lock_task(connection, deployment_namespace, task_id)
-    root = connection.execute(
-        """
-        SELECT created_at FROM session_projections
-        WHERE deployment_namespace = %s AND session_id = %s
-        """,
-        (deployment_namespace, root_session_id),
-    ).fetchone()
-    if root is None:
+    # Membership writers use the same Task lock, so read both sources together.
+    root_and_members = connection.execute(
+        """SELECT root.created_at, member.session_id, member.predecessor_id,
+                  member.segment_index, member.rollover_reason
+           FROM session_projections AS root
+           LEFT JOIN execution_segments AS member
+             ON member.deployment_namespace=root.deployment_namespace AND member.task_id=%s
+           WHERE root.deployment_namespace=%s AND root.session_id=%s""",
+        (task_id, deployment_namespace, root_session_id),
+    ).fetchall()
+    if not root_and_members:
         raise PostgresAgentTaskConflictError("task root Session was not found")
     lineage = derive_lineage(connection, deployment_namespace, root_session_id)
-    members = connection.execute(
-        """SELECT session_id,task_id,predecessor_id,segment_index,visibility,rollover_reason
-           FROM execution_segments WHERE deployment_namespace=%s AND task_id=%s""",
-        (deployment_namespace, task_id),
-    ).fetchall()
+    members = [row for row in root_and_members if row["session_id"] is not None]
     expected = {row["session_id"]: row for row in lineage}
     for member in members:
         canonical = expected.get(member["session_id"])
@@ -95,7 +94,7 @@ def _rebuild_task(
             task_id,
             root_session_id,
             active["session_id"],
-            root["created_at"],
+            root_and_members[0]["created_at"],
             deployment_namespace,
             active["session_id"],
         ),

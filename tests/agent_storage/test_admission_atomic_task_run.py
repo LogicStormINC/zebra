@@ -1,6 +1,7 @@
 """Task + first RUN + native wakeups are visible only after the original commit."""
 
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager
 from threading import Event
 from types import SimpleNamespace
 
@@ -165,6 +166,7 @@ def test_atomic_initial_run_indexes_before_wakeup_and_rolls_back_on_rejection(
     wake = task_admission.record_command_wakeup_in_transaction
     rebuild = task_admission.rebuild_task_in_transaction
     indexed = []
+    root_member_reads = []
 
     def observe_rebuild(connection, namespace, session_id, **kwargs):
         class AdmissionConnection:
@@ -174,12 +176,26 @@ def test_atomic_initial_run_indexes_before_wakeup_and_rolls_back_on_rejection(
             def transaction(self):
                 pytest.fail("atomic Task rebuild must use its existing admission transaction")
 
+            @contextmanager
+            def cursor(self, **options):
+                with connection.cursor(**options) as cursor:
+                    class RebuildCursor:
+                        def execute(self, statement, params):
+                            if ("SELECT created_at FROM session_projections" in statement
+                                or "FROM execution_segments WHERE" in statement
+                                or "LEFT JOIN execution_segments AS member" in statement):
+                                root_member_reads.append(statement)
+                            return cursor.execute(statement, params)
+
+                    yield RebuildCursor()
+
         task = rebuild(AdmissionConnection(), namespace, session_id, **kwargs)
         indexed.append(session_id)
         return task
 
     def reject(connection, namespace, event, *, is_new_admission):
         assert indexed == [event.session_id]
+        assert len(root_member_reads) == 1
         wake(connection, namespace, event, is_new_admission=is_new_admission)
         raise AtomicSurfaceAborted("controlled wakeup rollback")
 
