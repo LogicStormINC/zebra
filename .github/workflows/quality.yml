@@ -30,6 +30,20 @@ jobs:
           version: "0.11.12"
       - name: Install locked workspace
         run: uv sync --frozen --all-packages --group dev
+      - name: Build SQLite scan statistics test library
+        run: |
+          probe_dir=$(mktemp -d "$RUNNER_TEMP/sqlite-scanstatus.XXXXXX")
+          curl --fail --silent --show-error --location --retry 3 --max-time 90 \
+            https://sqlite.org/2025/sqlite-amalgamation-3500400.zip -o "$probe_dir/sqlite.zip"
+          source="$probe_dir/sqlite3.c"
+          unzip -p "$probe_dir/sqlite.zip" sqlite-amalgamation-3500400/sqlite3.c > "$source"
+          # Published by SQLite in the 3.50.4 release notes.
+          expected=9145255e83da6529e70121ee4d7a4c88fe83ca4511da0c9ed13d10842df36782
+          actual=$(openssl dgst -sha3-256 -r "$source" | cut -d ' ' -f 1)
+          test "$actual" = "$expected"
+          cc -O2 -fPIC -shared -DSQLITE_ENABLE_STMT_SCANSTATUS \
+            "$source" -o "$probe_dir/libsqlite3-scanstatus.so" -ldl -pthread -lm
+          echo "ZEBRA_TEST_SQLITE_SCANSTATUS_LIBRARY=$probe_dir/libsqlite3-scanstatus.so" >> "$GITHUB_ENV"
       - name: Run tests
         run: make test
       - name: Run static and release gates

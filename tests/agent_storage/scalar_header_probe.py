@@ -4,6 +4,7 @@ import argparse
 import ctypes
 import ctypes.util
 import json
+import os
 import sqlite3
 import time
 from pathlib import Path
@@ -14,7 +15,8 @@ from agent_storage.task_replay_headers import read_event_header, read_run_header
 
 
 def sqlite_visits(path: Path, statement: str) -> dict:
-    library = ctypes.CDLL(ctypes.util.find_library("sqlite3"))
+    probe_library = os.environ.get("ZEBRA_TEST_SQLITE_SCANSTATUS_LIBRARY")
+    library = ctypes.CDLL(probe_library or ctypes.util.find_library("sqlite3"))
     library.sqlite3_open_v2.argtypes = [
         ctypes.c_char_p,
         ctypes.c_void_p,
