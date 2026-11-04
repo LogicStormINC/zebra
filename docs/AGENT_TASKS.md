@@ -184,6 +184,8 @@
 
 # CA-HA-03 — 资源预算、退避与技术namespace隔离
 
+- E1 SSE 快照内复用源证明（实施前登记）：沿用 CA-HA-03 Owner、branch 和 worktree。Owned paths 为 packages/agent-storage/src/agent_storage/postgres/{stream_proof_batch,task_read_header}.py、tests/api/test_cloud_stream_read_bounds.py 和 WORKLOG.md。仅同只读快照内同 Task 同水位复用，保留安全终态读取。
+
 - E1 Worker 类型回放尾页（实施前登记）：沿用 CA-HA-03 Owner、branch 和 worktree。Owned paths 为 packages/agent-storage/src/agent_storage/postgres/worker_replay_reader.py、tests/worker/{test_bounded_worker_replay,test_bounded_session_recovery}.py 和 WORKLOG.md。补齐真实租约停止查询所需的测试 schema；只在类型元数据证明读到尾页时省去空页查询，保留快照、字节预算和租约栅栏。
 
 - E1 严格命令源候选门槛（实施前登记）：沿用 CA-HA-03 Owner、branch 和 worktree。Owned paths 为 packages/agent-storage/src/agent_storage/postgres/command_coverage_admission.py 和 WORKLOG.md。保留同一 SQL 快照、全部历史严格标记、绑定及拒绝逻辑。
