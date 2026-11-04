@@ -127,21 +127,27 @@ def record_command_wakeup_in_transaction(
             SessionCommandKind.STOP,
             SessionCommandKind.SUSPEND,
         }
-        kinds = ["cancel", "stop", "suspend"] if control else ["run", "resume", "message"]
+        kinds = "('cancel','stop','suspend')" if control else "('run','resume','message')"
         ceiling = rollout[
             "max_pending_control_per_scope" if control else "max_pending_per_scope"
         ]
         inserted = connection.execute(
-            """INSERT INTO session_command_pending (
+            f"""INSERT INTO session_command_pending (
                deployment_namespace, scope_key, scope_sequence, command_id, session_id,
                accepted_event_id, accepted_sequence, tenant_id, workspace_id, origin, command_kind
-               ) SELECT %s,%s,COALESCE(MAX(scope_sequence),0)+1,%s,%s,%s,%s,%s,%s,%s,%s
-                 FROM session_command_pending WHERE deployment_namespace=%s AND scope_key=%s
-                 HAVING NOT %s OR count(*) FILTER (
-                     WHERE status='pending' AND command_kind = ANY(%s)
-                 ) < %s
-                 RETURNING command_id""",
+               ) SELECT %s,%s,COALESCE((
+                   SELECT MAX(scope_sequence) FROM session_command_pending
+                   WHERE deployment_namespace=%s AND scope_key=%s
+               ),0)+1,%s,%s,%s,%s,%s,%s,%s,%s
+               WHERE NOT %s OR (
+                   SELECT count(*) FROM session_command_pending
+                   WHERE deployment_namespace=%s AND scope_key=%s
+                     AND status='pending' AND command_kind IN {kinds}
+               ) < %s
+               RETURNING command_id""",
             (
+                deployment_namespace,
+                scope_key,
                 deployment_namespace,
                 scope_key,
                 envelope.operation_id,
@@ -152,10 +158,9 @@ def record_command_wakeup_in_transaction(
                 scope.workspace_id,
                 "live" if is_new_admission else "historical",
                 event.payload["kind"],
+                is_new_admission,
                 deployment_namespace,
                 scope_key,
-                is_new_admission,
-                kinds,
                 ceiling,
             ),
         ).fetchone()

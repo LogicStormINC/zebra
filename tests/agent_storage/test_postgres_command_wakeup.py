@@ -440,3 +440,21 @@ def test_idempotent_retry_is_not_rejected_when_outbox_is_at_capacity(dsn):
     assert _store(dsn).append(event) == event
     assert _store(dsn).append(event.model_copy(update={"event_id": uuid4()})) == event
     assert _counts(dsn) == (1, 1)
+
+
+def test_live_scope_capacity_excludes_done_rows_but_sequence_keeps_history(dsn):
+    first, second = _seed(dsn), _seed(dsn)
+    _enable(dsn)
+    with psycopg.connect(dsn) as connection:
+        connection.execute("UPDATE command_wakeup_rollouts SET max_pending_per_scope=1")
+
+    _store(dsn).append(_command(first.session_id, key="first"))
+    with psycopg.connect(dsn) as connection:
+        connection.execute("UPDATE session_command_pending SET status='done'")
+
+    _store(dsn).append(_command(second.session_id, key="second"))
+    with psycopg.connect(dsn) as connection:
+        rows = connection.execute(
+            "SELECT scope_sequence, status FROM session_command_pending ORDER BY scope_sequence"
+        ).fetchall()
+    assert rows == [(1, "done"), (2, "pending")]

@@ -37613,3 +37613,8 @@ own timing seams in Worker context_materialization.py and execution.py.
 
 CA-HA-03 E1 context refresh follow-up (Luke Ding/Codex, existing branch/worktree):
 own same-callback coalescing in context_materialization.py and its snapshot regression.
+
+CA-HA-03 E1 scope admission history scan follow-up (Luke Ding/Codex, existing
+In Progress branch/worktree): own the existing command_wakeup.py and
+test_postgres_command_wakeup.py for the measured admission scan. Reuse the
+existing sequence and pending indexes with the same lock order and limits.
