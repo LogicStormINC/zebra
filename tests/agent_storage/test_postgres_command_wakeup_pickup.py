@@ -3,6 +3,7 @@
 import asyncio
 from datetime import UTC, datetime
 from threading import Event
+from uuid import uuid4
 
 import psycopg
 import pytest
@@ -38,8 +39,9 @@ def _discover(dsn, lane, **kwargs):
     ("execution", "normal", "read"),
     ("control", "control", "control"),
 ])
-def test_discovery_reserves_the_expected_connection_lane(
-    monkeypatch, pickup_lane, caller_lane, expected,
+@pytest.mark.parametrize("lookup", ["discover", "resolve"])
+def test_pickup_reads_reserve_the_expected_connection_lane(
+    monkeypatch, pickup_lane, caller_lane, expected, lookup,
 ):
     from agent_storage.postgres import command_wakeup_pickup
     from agent_storage.postgres.connection_capacity import capacity_lane, current_lane
@@ -52,7 +54,12 @@ def test_discovery_reserves_the_expected_connection_lane(
     monkeypatch.setattr(command_wakeup_pickup, "_database", lambda *_: Database())
     with capacity_lane(caller_lane):
         with pytest.raises(ConnectionError, match="connection probe reached"):
-            _discover("unused", pickup_lane)
+            if lookup == "discover":
+                _discover("unused", pickup_lane)
+            else:
+                resolve_command_pickup(
+                    "unused", deployment_namespace=NAMESPACE, accepted_event_id=uuid4()
+                )
         assert current_lane() == caller_lane
 
 

@@ -219,7 +219,12 @@ def resolve_command_pickup(
     """The untrusted UUID is only a lookup hint within configured deployment."""
     if not isinstance(accepted_event_id, UUID):
         raise ValueError("invalid command lookup hint")
-    with _database(dsn, deployment_namespace).connect_task_io() as connection:
+    connection_lane = current_lane()
+    database = _database(dsn, deployment_namespace)
+    with (
+        capacity_lane("read" if connection_lane == "normal" else connection_lane),
+        database.connect_task_io() as connection,
+    ):
         event = read_event_in_transaction(
             connection, deployment_namespace, EventId(accepted_event_id)
         )
