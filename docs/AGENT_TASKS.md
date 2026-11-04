@@ -37750,3 +37750,7 @@ In Progress branch/worktree). Own `stream_proof_batch.py` and
 CA-HA-03 bounded PostgreSQL event page lookup (Luke Ding/Codex, existing In
 Progress branch/worktree). Own PostgreSQL `task_event_pages.py` and
 `test_postgres_task_event_pages.py` for metadata round-trip reduction.
+
+CA-HA-03 native Task stream initial privacy lookup (Luke Ding/Codex, existing
+In Progress branch/worktree). Own `session_streaming.py` Task tail and
+`test_stream_source_head_tail_native.py` for first-frame query reduction.

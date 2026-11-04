@@ -333,6 +333,11 @@ async def tail_task_events(
     store, deadline = active.tasks, _deadline(authorization_expires_at)
     cloud = getattr(active, "deployment_namespace", None) is not None
 
+    source_heads = (
+        store if cloud and isinstance(store, StreamSourceHeadPort)
+        and getattr(store, "stream_head_reads_compatible", True) else None
+    )
+
     async def frames() -> AsyncGenerator[str, None]:
         task = await _read_until(
             deadline, store.read_task_header if cloud else store.get_task, task_id
@@ -348,18 +353,17 @@ async def tail_task_events(
             notifications=notifications,
         )
         await wake.capture()
-        if await _read_until(deadline, coverage_task_read_problem, active, task_id):
+        if source_heads is None and await _read_until(
+            deadline, coverage_task_read_problem, active, task_id
+        ):
             return
         cursor, closing, last_delivery = after_sequence, False, monotonic()
         recovered = not recovery_notice
         while not await request.is_disconnected():
             head = None
-            if cloud and (
-                isinstance(store, StreamSourceHeadPort)
-                and getattr(store, "stream_head_reads_compatible", True)
-            ):
-                head = await _read_raw_head(deadline, store, task_id=task_id)
-                if head is None or head.task.strict_coverage:
+            if source_heads is not None:
+                head = await _read_raw_head(deadline, source_heads, task_id=task_id)
+                if head is None or head.task.strict_coverage is not False:
                     return
             if head is None or cursor < head.task.current_sequence:
                 page = await _read_until(deadline, store.read_event_page, task_id, cursor)

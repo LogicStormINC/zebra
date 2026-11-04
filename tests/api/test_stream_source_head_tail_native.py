@@ -659,3 +659,40 @@ def test_native_quiet_tails_honor_task_and_publisher_public_read_hooks(source, m
             with pytest.raises(CheckpointNotReady):
                 asyncio.run(asyncio.wait_for(task_frames(), 2))
             assert invoked
+
+
+def test_native_task_tail_checks_source_once_before_page_and_again_before_output(
+    source, monkeypatch,
+):
+    stores, sid = source
+    cursor = stores.tasks.read_stream_source_head(task_id=TaskId(sid)).task.current_sequence
+    append(source, EventType.MODEL_RESPONSE_DELTA, {"content_delta": "next"})
+    original_head = stores.tasks.read_stream_source_head
+    original_page = stores.tasks.read_event_page
+    reads = []
+
+    def head(**kwargs):
+        reads.append("head")
+        return original_head(**kwargs)
+
+    def page(*args, **kwargs):
+        reads.append("page")
+        return original_page(*args, **kwargs)
+
+    monkeypatch.setattr(stores.tasks, "read_stream_source_head", head)
+    monkeypatch.setattr(stores.tasks, "read_event_page", page)
+    # Preserve the native adapter contract for these observation-only spies.
+    monkeypatch.setattr(type(stores.tasks), "stream_head_reads_compatible", True)
+
+    async def first_frame():
+        stream = tail_task_events(
+            database_path=Path("/unused"), stores=stores, task_id=TaskId(sid),
+            request=Connected(), after_sequence=cursor,
+        )
+        try:
+            return await anext(stream)
+        finally:
+            await stream.aclose()
+
+    assert "next" in asyncio.run(asyncio.wait_for(first_frame(), 5))
+    assert reads == ["head", "page", "head"]
