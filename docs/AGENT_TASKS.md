@@ -37861,3 +37861,8 @@ transaction under the scope rollout lock and preserve all envelope evidence.
 CA-HA-03 Outbox capacity index (same owner and branch). Own additive
 command_outbox_capacity_index_migration.py and migration catalog tail. Add the
 measured partial index for existing pending/publishing capacity predicates.
+
+CA-HA-03 additive Outbox runtime readiness window (same owner and branch).
+Own migration_history_plan.py and branch-history regressions. Allow the exact
+pre-upgrade ledgers while staging current runtime code; keep checksum, gap,
+unknown-version and explicit cutover checks fail-closed.
