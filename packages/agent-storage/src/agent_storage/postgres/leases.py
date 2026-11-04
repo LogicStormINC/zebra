@@ -253,8 +253,13 @@ def lock_session_lease_boundary(
     connection: Any, deployment_namespace: str, session_id: SessionId, *, shared: bool = False,
 ) -> None:
     """Fence derived checkpoints against lease acquisition and terminal transitions."""
-    function = "pg_advisory_xact_lock_shared" if shared else "pg_advisory_xact_lock"
+    # Recovery proof records native SELECT strings for exact finalization.
+    statement = (
+        "SELECT pg_advisory_xact_lock_shared(hashtextextended(%s, 0))"
+        if shared
+        else "SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))"
+    )
     connection.execute(
-        sql.SQL("SELECT {}(hashtextextended(%s, 0))").format(sql.Identifier(function)),
+        statement,
         (f"{deployment_namespace}:{session_id}",),
     )
