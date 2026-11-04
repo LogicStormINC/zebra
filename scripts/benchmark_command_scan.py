@@ -110,8 +110,12 @@ def benchmark(dsn: str, size: int, repeats: int) -> dict:
             assert result.status == "idle", "old pending command unexpectedly found"
     assert not called
     scan_queries, scan_connections = queries, connections
-    # Positive control: an expanded window finds the same command without touching its state.
-    result = consumer.consume_once(worker_id="baseline", lease_ttl_seconds=30, batch_size=size)
+    # The production scan caps at 500. Feed the known candidate to the same
+    # consumer path so the positive control also works above that cap.
+    positive_control = SessionCommandConsumer(
+        stores, NoModelExecution(), command_sessions=lambda _limit, _after: [oldest]
+    )
+    result = positive_control.consume_once(worker_id="baseline", lease_ttl_seconds=30)
     assert result.status == "executed" and called == [oldest.session_id]
     assert (
         events.list_for_session(oldest.session_id)[-1].event_type
