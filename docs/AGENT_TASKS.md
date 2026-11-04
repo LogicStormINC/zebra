@@ -184,6 +184,8 @@
 
 # CA-HA-03 — 资源预算、退避与技术namespace隔离
 
+- E1 严格命令源候选门槛（实施前登记）：沿用 CA-HA-03 Owner、branch 和 worktree。Owned paths 为 packages/agent-storage/src/agent_storage/postgres/command_coverage_admission.py 和 WORKLOG.md。保留同一 SQL 快照、全部历史严格标记、绑定及拒绝逻辑。
+
 - E1 Task 回填源尾与水位更新（实施前登记）：沿用 CA-HA-03 Owner、branch 和 worktree。Owned paths 为 packages/agent-storage/src/agent_storage/postgres/task_event_positions.py、tests/agent_storage/test_admission_atomic_task_run.py 和 WORKLOG.md。只合并尾部存在性判断和 Segment 水位写入，保留 Task 锁及有界回填。
 
 - E1 Task 事件位置水位读取（实施前登记）：沿用 CA-HA-03 Owner、branch 和 worktree。Owned paths 为 packages/agent-storage/src/agent_storage/postgres/task_event_positions.py、tests/agent_storage/test_admission_atomic_task_run.py 和 WORKLOG.md。仅合并 legacy 水位与状态读取，保留 Task 锁和校验。
