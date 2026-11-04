@@ -37636,3 +37636,8 @@ branch/worktree): own e1_receipt_proof.py, standby_receipt_proof.sql, the
 existing client admission proof regression, check_receipt_timeline.sh, and
 the CA-HA-03 receipt runbook.
 Require the configured recovery timeline as part of the existing exact proof.
+
+CA-HA-03 F-04 peer writer routing follow-up (Luke Ding/Codex, existing In
+Progress branch/worktree): own the existing node2_dependency_relay.py and its
+fixture README. Preserve the fixed Worker DSN and use a root-owned runtime
+route selector for new PostgreSQL connections during a fenced drill.

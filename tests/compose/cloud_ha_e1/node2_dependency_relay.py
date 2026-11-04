@@ -1,5 +1,21 @@
 import asyncio
 import contextlib
+from pathlib import Path
+
+_WRITER_ROUTE = Path("/run/zebra-e1-node2-pg-route")
+
+
+def target(port: int) -> tuple[str, int]:
+    if port == 25432:
+        try:
+            route = _WRITER_ROUTE.read_text().strip()
+        except FileNotFoundError:
+            route = "source"
+        if route == "promoted":
+            return "127.0.0.1", 25437
+        if route != "source":
+            raise OSError("E1 PostgreSQL route is closed")
+    return "192.168.139.232", port
 
 
 async def pipe(source, target):
@@ -12,7 +28,7 @@ async def pipe(source, target):
 async def relay(port, reader, writer):
     other = None
     try:
-        remote, other = await asyncio.wait_for(asyncio.open_connection("192.168.139.232", port), 3)
+        remote, other = await asyncio.wait_for(asyncio.open_connection(*target(port)), 3)
         async with asyncio.TaskGroup() as tasks:
             tasks.create_task(pipe(reader, other))
             tasks.create_task(pipe(remote, writer))
@@ -33,4 +49,5 @@ async def main():
         ))
     await asyncio.gather(*(server.serve_forever() for server in servers))
 
-asyncio.run(main())
+if __name__ == "__main__":
+    asyncio.run(main())

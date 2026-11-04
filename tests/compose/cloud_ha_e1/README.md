@@ -304,6 +304,19 @@ the node2 TLS `/health/ready` endpoint. To retire this fixture, disable and
 stop the corpus unit, then the relay unit, and remove the installed files.
 The relay uses loopback listeners and a fixed first-node dependency address.
 
+### Fenced peer writer routing
+
+The isolated node2 PostgreSQL relay reads `/run/zebra-e1-node2-pg-route` for
+each new connection to port 25432. With no file it uses the source writer.
+Atomically install a root-owned file with `closed` before fencing the old
+writer. After confirming the old writer is stopped and the peer has been
+promoted, atomically replace the file with `promoted` to route to the peer
+writer on loopback port 25437. The selection lasts until the next node reboot.
+Keep the old writer fenced through reboot. On a read-only rehearsal rollback,
+close the route, stop the promoted copy, restore the source and then remove
+the route file. Keep the proof gate closed to new admission until a new
+synchronous proof follower is configured and checked.
+
 ### Rebuilt PostgreSQL standby restart
 
 On the isolated node2, verify that `zebra-e1-f04-rebuilt-standby` has the
