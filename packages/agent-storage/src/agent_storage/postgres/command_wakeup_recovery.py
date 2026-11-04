@@ -298,7 +298,7 @@ def _recover(
             and lease is not None
             and lease["expires_at"] > now
         ):
-            _defer(connection, namespace, event_id, now + RETRY_DELAY)
+            _defer(connection, namespace, event_id, min(now + RETRY_DELAY, lease["expires_at"]))
             return result(RecoveryStatus.DEFERRED)
     if not uncertain:
         uncertain = (

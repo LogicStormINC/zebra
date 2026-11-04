@@ -13,7 +13,7 @@ from agent_storage.postgres.command_wakeup_handoff import HandoffStatus
 from agent_storage.postgres.command_wakeup_recovery import RecoveryStatus, recover_command_batch
 from agent_storage.postgres.command_wakeup_relay import claim_relay_batch
 from agent_storage.postgres.database import PostgresDatabase
-from agent_storage.postgres.leases import lock_session_lease_boundary
+from agent_storage.postgres.leases import PostgresLeaseStore, lock_session_lease_boundary
 from psycopg.rows import dict_row
 
 from tests.agent_storage.test_command_wakeup import _command
@@ -162,9 +162,14 @@ def test_any_raw_tail_evidence_even_without_started_receipt_is_quarantined(dsn, 
     )
 
 
-def test_active_lease_defers_without_quarantining_and_batch_progresses(dsn):
+@pytest.mark.parametrize("released", [False, True], ids=["active", "released"])
+def test_unexpired_lease_defers_until_expiry(dsn, released):
     command = _prepare(dsn)
-    _handoff(dsn, command)
+    original = _handoff(dsn, command)
+    if released:
+        PostgresLeaseStore(dsn, deployment_namespace=NAMESPACE).release(
+            command.session_id, fence=original.lease.fence
+        )
     _due(dsn)
     assert _recover(dsn, batch_size=1)[0].status is RecoveryStatus.DEFERRED
     assert _recover(dsn, batch_size=1) == ()
