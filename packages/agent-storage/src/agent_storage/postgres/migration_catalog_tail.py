@@ -10,6 +10,9 @@ from agent_storage.postgres.bundle_definition_migration import BUNDLE_DEFINITION
 from agent_storage.postgres.command_coverage_admission_migration import (
     COMMAND_COVERAGE_ADMISSION_MIGRATION,
 )
+from agent_storage.postgres.command_outbox_retirement_migration import (
+    COMMAND_OUTBOX_RETIREMENT_MIGRATION,
+)
 from agent_storage.postgres.command_read_state_migration import COMMAND_READ_STATE_MIGRATION
 from agent_storage.postgres.control_plane_migration import CONTROL_PLANE_MIGRATION
 from agent_storage.postgres.coverage_authority_migration import COVERAGE_AUTHORITY_MIGRATION
@@ -216,4 +219,5 @@ LATEST_MIGRATIONS = (
     WORKER_BUDGET_MIGRATION,
     PROJECTION_WORK_SHARED_LOCK_MIGRATION,
     PROJECTION_WORK_REPAIR_PLAN_MIGRATION,
+    COMMAND_OUTBOX_RETIREMENT_MIGRATION,
 )
