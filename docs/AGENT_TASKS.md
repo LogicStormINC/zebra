@@ -37825,3 +37825,7 @@ In Progress branch/worktree). Own raw preflight in stream_v2_http.py, Task
 tail in session_streaming.py, and the native stream source-tail regression.
 Reuse the preflight Segment only for notification capture; retain fresh
 canonical source, privacy and rollover checks before delivering events.
+
+CA-HA-03 first-frame file boundary follow-up (same owner and branch). Also
+own stream_v2_query.py and test_cloud_stream_read_bounds.py to relocate the
+existing query adapter and the extended regression, keeping import compatibility.
