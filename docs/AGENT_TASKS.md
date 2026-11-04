@@ -37829,3 +37829,6 @@ canonical source, privacy and rollover checks before delivering events.
 CA-HA-03 first-frame file boundary follow-up (same owner and branch). Also
 own stream_v2_query.py and test_cloud_stream_read_bounds.py to relocate the
 existing query adapter and the extended regression, keeping import compatibility.
+
+CA-HA-03 first-frame test fixture follow-up (same owner and branch). Own
+test_stream_v2_http.py's native handoff request fixture to supply ASGI scope.
