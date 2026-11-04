@@ -37832,3 +37832,8 @@ existing query adapter and the extended regression, keeping import compatibility
 
 CA-HA-03 first-frame test fixture follow-up (same owner and branch). Own
 test_stream_v2_http.py's native handoff request fixture to supply ASGI scope.
+
+CA-HA-03 native Task SSE page and privacy dispatch (same owner and branch).
+Own session_streaming.py and existing native source-tail regressions. Reuse
+one bounded callback socket for the page and its subsequent privacy check,
+with separate transactions and the legacy path preserved.
