@@ -37670,3 +37670,10 @@ CA-HA-03 F-02 live-lease recovery schedule follow-up (Luke Ding/Codex,
 existing In Progress branch/worktree): own command_wakeup_recovery.py and its
 PostgreSQL recovery regression. Recheck active leases by their expiry within
 the existing retry bound, using the same locked authority and proof checks.
+
+CA-HA-03 F-02 initial handoff recovery schedule follow-up (Luke Ding/Codex,
+existing In Progress branch/worktree): own command_wakeup_handoff.py and the
+existing PostgreSQL handoff regression. Only an accepted fenced handoff can
+advance the pending row's first recovery check to the lease expiry.
+The handoff file size boundary adds ownership of command_wakeup_receipts.py
+for moving its existing inbox verification, retaining the handoff import seam.

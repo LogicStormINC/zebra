@@ -100,9 +100,10 @@ def test_broker_and_fallback_race_commit_one_lease_receipt_and_inbox(dsn):
     assert _counts(dsn) == (1, 1, 1)
     with psycopg.connect(dsn) as connection:
         assert connection.execute("SELECT fencing_token FROM worker_leases").fetchone() == (1,)
-        assert connection.execute("SELECT status FROM session_command_pending").fetchone() == (
-            "pending",
-        )
+        lease = next(result.lease for result in results if result.lease is not None)
+        assert connection.execute(
+            "SELECT status, recovery_due_at FROM session_command_pending"
+        ).fetchone() == ("pending", lease.expires_at)
 
 
 def test_handed_off_execution_still_consumes_durable_scope_capacity(dsn):
