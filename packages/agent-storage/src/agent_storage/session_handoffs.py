@@ -394,7 +394,9 @@ class SQLiteSessionHandoffStore(SessionHandoffPort):
             operation,
             request,
             workspace,
-            selected_model_pin=json.loads(selected_model["pin"]) if selected_model is not None else None,
+            selected_model_pin=(
+                json.loads(selected_model["pin"]) if selected_model is not None else None
+            ),
         )
         for event in events:
             insert_event(connection, event)

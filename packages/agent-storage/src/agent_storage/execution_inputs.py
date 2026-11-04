@@ -288,7 +288,9 @@ class ExecutionInputStore(WorkerProgressStoreMixin):
             if self._progress_postgres:
                 from agent_storage.postgres.leases import lock_session_lease_boundary
 
-                lock_session_lease_boundary(connection, self._namespace, lease.session_id, shared=True)
+                lock_session_lease_boundary(
+                    connection, self._namespace, lease.session_id, shared=True
+                )
             self._fence(connection, lease)
             key = self._key(lease, connection)
             canonical = self._page(

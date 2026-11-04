@@ -530,10 +530,9 @@ def test_request_validation_rejects_mismatched_binding() -> None:
 
 def test_provider_usage_groups_verified_subject_and_preserves_unknown(namespace, postgres_dsn):
     from dataclasses import asdict, replace
-
-    import httpx
     from datetime import timedelta
 
+    import httpx
     from agent_core.domain.events import EventActor, EventType, SessionEvent
     from agent_core.domain.identifiers import new_message_id
     from agent_core.domain.messages import MessageRole, SessionMessage
@@ -591,7 +590,9 @@ def test_provider_usage_groups_verified_subject_and_preserves_unknown(namespace,
             attempts = []
             sequence = session.current_sequence + 1
 
-            def observe(attempt_id, phase, usage):
+            def observe(
+                attempt_id, phase, usage, *, attempts=attempts, session=session, payload=payload
+            ):
                 nonlocal sequence
                 sequence += 1
                 attempts.append((attempt_id, phase))
@@ -605,7 +606,7 @@ def test_provider_usage_groups_verified_subject_and_preserves_unknown(namespace,
                     created_at=now,
                 ))
 
-            def respond(_request):
+            def respond(_request, *, attempts=attempts):
                 if len(attempts) == 1:
                     return httpx.Response(503, json={"error": {"message": "synthetic unavailable"}})
                 return httpx.Response(200, json={
