@@ -304,6 +304,17 @@ the node2 TLS `/health/ready` endpoint. To retire this fixture, disable and
 stop the corpus unit, then the relay unit, and remove the installed files.
 The relay uses loopback listeners and a fixed first-node dependency address.
 
+### Rebuilt PostgreSQL standby restart
+
+On the isolated node2, verify that `zebra-e1-f04-rebuilt-standby` has the
+`ca-ha-03-e1-20261102` owner label and is in recovery on its original
+`zebra-e1-f04-standby-data` volume. Enable Docker restart for that read-only
+replica with `sudo docker update --restart unless-stopped zebra-e1-f04-rebuilt-standby`.
+After a named VM stop/start, verify a changed boot ID, the same container
+and volume, `pg_is_in_recovery()`, and zero replay gap on the source.
+Promotion candidates and fenced writers use restart policy `no`.
+To roll back the replica startup setting, apply `--restart no` to the same container.
+
 ### Worker incarnation recovery and VM restart
 
 The active incarnation-enabled Workers use host identity directories under
