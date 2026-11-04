@@ -152,8 +152,7 @@ class CommandWakeupConsumer:
         required_scope_mode: RequiredScopeMode | None = None,
     ) -> PickupOutcome:
         if not self._slots.acquire(blocking=False):
-            # No handoff was attempted. Keep the scanner on this command.
-            raise _Busy
+            return PickupOutcome.DEFERRED
         slot_started = monotonic()
         scheduled = False
         try:

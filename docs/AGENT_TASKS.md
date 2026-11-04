@@ -37698,3 +37698,5 @@ CA-HA-03 F-02 fallback slot saturation follow-up (Luke Ding/Codex, existing
 In Progress branch/worktree): own command_wakeup_consumer.py and the existing
 consumer regression. Verify whether refusal before handoff advances the scan
 cursor and makes earlier ready commands wait behind later scope sequences.
+The slot-refusal cursor candidate is retired after three loaded misses; see the
+E1 slot-cursor evidence and WORKLOG before selecting a recovered-prefix approach.
