@@ -37842,3 +37842,8 @@ CA-HA-03 raw SSE preflight socket reuse (same owner and branch). Own
 stream_v2_http.py and native source-tail regressions. Reuse one bounded
 callback socket on the legacy preflight path with fresh transactions,
 retaining signed-cursor negotiation and the existing authority checks.
+
+CA-HA-03 legacy raw SSE native snapshot (same owner and branch). Own
+stream_v2_http.py, stream_v2_authority.py and the native source-tail
+regression. Bind the existing proof snapshot to exact native adapters
+when no V2 reader is configured, preserving extension and cursor behavior.
