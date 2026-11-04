@@ -37870,3 +37870,8 @@ unknown-version and explicit cutover checks fail-closed.
 CA-HA-03 execution-only Worker imports (same owner and branch). Own Worker
 package exports, loop.py, worker_loop_service.py and workspace smoke regression.
 Defer the legacy command consumer until full Worker composition needs it.
+
+CA-HA-03 Worker command cutover round trips (same owner and branch). Own
+command_process_state.py and native command process composition regression.
+Read namespace rollout and the exact schema ledger in one read snapshot,
+retaining missing-schema and explicit-cutover checks.
