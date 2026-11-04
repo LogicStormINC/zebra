@@ -45,8 +45,11 @@ names = [
     "check_composition.py",
     "app.env",
 ]
+if local:
+    names.append("scheduler.env")
 if vm:
     names += [
+        "authority.env",
         "broker.env",
         "init.sql",
         "fake_model.py",
@@ -69,8 +72,11 @@ for name in ["ca.crt", "server.crt", "server.key", "model.crt", "model.key"] + (
 ):
     shutil.copyfile(source / "tls" / name, out / "tls" / name)
     (out / "tls" / name).chmod(0o600 if name.endswith(".key") else 0o644)
-if not vm:
-    (out / "broker.env").touch(mode=0o600)  # Inactive control profile still resolves env_file.
+# Inactive profiles still resolve env_file. No workload credential goes to the WAN bundle.
+for name in (("broker.env", "authority.env") if not vm else ()):
+    (out / name).touch(mode=0o600)
+if not local:
+    (out / "scheduler.env").touch(mode=0o600)
 env = {
     "E1_ROOT": root,
     "E1_IMAGE": args.image,

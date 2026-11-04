@@ -48,6 +48,14 @@ services:
       - ${E1_ROOT}/tls/ca.crt:/app/.venv/lib/python3.12/site-packages/certifi/cacert.pem:ro
       - workspaces:${E1_WORKSPACE_PATH}
       - /var/run/docker.sock:/var/run/docker.sock
+  scheduler:
+    <<: *app
+    profiles: [scheduler]
+    env_file:
+      - ${E1_ROOT}/app.env
+      - ${E1_ROOT}/scheduler.env
+    environment: {ZEBRA_SCHEDULER_ID: 'scheduler:${E1_WORKER_ID:?}'}
+    entrypoint: [python, -m, zebra_agent_scheduler.main]
   runtime-cleanup:
     <<: *app
     entrypoint: [python, -m, zebra_agent_worker.runtime_cleanup_service]
@@ -180,7 +188,7 @@ services:
     user: '0:0'
     cpus: .25
     mem_limit: 128m
-    env_file: []
+    env_file: ${E1_ROOT}/authority.env
     environment: {E1_PRINCIPALS_FILE: /fixtures/principals.json}
     entrypoint: [uvicorn, authority:app, --app-dir, /fixtures, --host, 0.0.0.0, --port, '28084']
     volumes:

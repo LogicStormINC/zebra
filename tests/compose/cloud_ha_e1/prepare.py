@@ -94,7 +94,8 @@ def main() -> None:
         server_reserved=3,
         external=4,
         execution_slots=4,
-        fleet=dict(api=2, worker=2, executor=8, cleanup=2, scheduler=1),
+        fleet=dict(api=2, worker=2, executor=8, cleanup=2, scheduler=2),
+        executor_limits=dict(pool=1, normal=2, read=1, control=1, probe=1),
     )
     env = {
         "ZEBRA_PROFILE": "cloud",
@@ -154,6 +155,7 @@ def main() -> None:
         "AWS_CA_BUNDLE": "/e1/ca.crt",
     }
     private(root / "app.env", "\n".join(f"{k}={v}" for k, v in env.items()) + "\n")
+    scheduler_secret = secrets.token_urlsafe(32)
     broker = {
         "ZEBRA_GRANT_BROKER_AUTHORITY_MODE": "generic",
         "ZEBRA_GRANT_BROKER_AUTHORITY_URL": "https://127.0.0.1:28444/authority",
@@ -161,11 +163,28 @@ def main() -> None:
         "ZEBRA_GRANT_BROKER_ORIGIN": "https://ha-e1.invalid",
         "ZEBRA_GRANT_BROKER_HOST_APP_ID": "ha-e1",
         "ZEBRA_GRANT_BROKER_NAMESPACE_ID": namespace,
-        "ZEBRA_GRANT_BROKER_ALLOWED_SCOPES": "agent.run,event.read,artifact.read,artifact.publish",
+        "ZEBRA_GRANT_BROKER_ALLOWED_SCOPES": (
+            "agent.run,event.read,artifact.read,artifact.publish,schedule.read,schedule.manage"
+        ),
+        "ZEBRA_GRANT_BROKER_WORKLOAD_IDENTITIES": "e1-scheduler",
+        "ZEBRA_GRANT_BROKER_WORKLOAD_SHARED_SECRET": scheduler_secret,
         "ZEBRA_GRANT_BROKER_PRIVATE_KEY_FILE": "/secrets/broker.key",
         "SSL_CERT_FILE": "/e1/ca.crt",
     }
     private(root / "broker.env", "\n".join(f"{k}={v}" for k, v in broker.items()) + "\n")
+    private(root / "authority.env", f"E1_SCHEDULER_SHARED_SECRET={scheduler_secret}\n")
+    issuer = broker["ZEBRA_GRANT_BROKER_ISSUER"]
+    scheduler = {
+        "ZEBRA_SCHEDULER_GRANT_ISSUER": issuer,
+        "ZEBRA_SCHEDULER_GRANT_AUDIENCE": "zebra",
+        "ZEBRA_SCHEDULER_GRANT_JWKS_URI": f"{issuer}/.well-known/jwks.json",
+        "ZEBRA_SCHEDULER_GRANT_EXCHANGE_URL": f"{issuer}/exchange",
+        "ZEBRA_SCHEDULER_ALLOWED_ORIGINS": broker["ZEBRA_GRANT_BROKER_ORIGIN"],
+        "ZEBRA_SCHEDULER_WORKLOAD_IDENTITY": broker["ZEBRA_GRANT_BROKER_WORKLOAD_IDENTITIES"],
+        "ZEBRA_SCHEDULER_WORKLOAD_SHARED_SECRET": scheduler_secret,
+    }
+    private(root / "scheduler.env", "\n".join(f"{k}={v}" for k, v in scheduler.items()) + "\n")
+
     private(
         root / "init.sql",
         f"CREATE ROLE ha_app LOGIN NOSUPERUSER PASSWORD '{values['pg_app']}';\n"

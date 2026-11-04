@@ -37730,3 +37730,7 @@ the lost removal response with real OCI and isolated PostgreSQL.
 CA-HA-03 F-09 Scheduler claimant loss proof (Luke Ding/Codex, existing
 In Progress branch/worktree). Own `test_postgres_task_schedules.py` for
 process death, natural expiry, recovery and stale settlement evidence.
+
+CA-HA-03 F-09 isolated Scheduler composition (Luke Ding/Codex, existing
+In Progress branch/worktree). Own E1 fixture authority, preparation, Compose
+bundle, authority self-check and README under `tests/compose/cloud_ha_e1/`.

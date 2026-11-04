@@ -38,7 +38,8 @@ Never print compose config, credentials, JWTs, raw AMQP bodies or private keys.
    `--build-arg ZEBRA_INSTALL_RABBITMQ=true`,1CPU/3GiB build limits. Record image IDs
    and source hashes. API/Worker runtime source must match the reviewed candidate.
 2. Run`prepare.py NEW_PRIVATE_DIRECTORY` once. It refuses overwrites and reuses
-   the existing Rabbit preparation helper. Run`check_authority.py` locally.
+   the existing Rabbit preparation helper. From the repository root, run
+   `python -m tests.compose.cloud_ha_e1.check_authority`.
 3. Run`bundle.py vm PREPARED NEW_OUTPUT --image sha256:...` and the corresponding
    `server` command. The mode0600 archives exclude the CA signing key and carry
    explicit TLS file owners. Preserve all original private preparation files.
@@ -356,3 +357,20 @@ belong to a suspended Task.
 Accept this configuration with a named isolated VM restart, both node
 timers, an old exact exit receipt and a new synthetic command on the
 restarted node. A healthy Docker process alone is insufficient evidence.
+
+
+### F-09 Scheduler fixture
+
+The new bundles reserve two Scheduler processes and reuse the private executor
+connection caps already measured on the corpus Workers. The optional
+`scheduler` profile runs the regular Scheduler entry point with a unique
+claimant per node. Stage it only on the two isolated OrbStack nodes, one process
+per node, with the existing node2 TLS loopback relay to the control Broker.
+The WAN bundle does not contain a workload credential.
+
+The fixture Broker and authority share a newly generated workload secret with
+both Schedulers. Only the first synthetic bearer account can request Schedule
+management rights. A Scheduler workload signature can exchange runtime rights
+only for that account. Deploy the fixture authority and Broker configuration
+together on the isolated control node and verify a fresh signed firing before
+injecting a fault. Existing prepared bundles and their receipts are retained.
