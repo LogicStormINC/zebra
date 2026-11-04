@@ -458,3 +458,45 @@ def test_live_scope_capacity_excludes_done_rows_but_sequence_keeps_history(dsn):
             "SELECT scope_sequence, status FROM session_command_pending ORDER BY scope_sequence"
         ).fetchall()
     assert rows == [(1, "done"), (2, "pending")]
+
+
+@pytest.mark.parametrize("enabled", [True, False, None])
+def test_rollout_checks_raw_bootstrap_only_when_disabled(dsn, enabled, monkeypatch):
+    from agent_storage.postgres import command_wakeup
+
+    session = _seed(dsn)
+    event = _command().model_copy(update={"session_id": session.session_id})
+    with psycopg.connect(dsn, row_factory=dict_row) as connection:
+        if enabled is not None:
+            connection.execute(
+                "INSERT INTO command_wakeup_rollouts(deployment_namespace,admission_enabled) "
+                "VALUES (%s,%s)", (NAMESPACE, enabled),
+            )
+        plans = []
+
+        class ExplainRollout:
+            def execute(self, statement, params):
+                plan = connection.execute("EXPLAIN (ANALYZE, FORMAT JSON) " + statement, params)
+                plans.append(plan.fetchone()["QUERY PLAN"][0]["Plan"])
+                return connection.execute(statement, params)
+
+        def stop_at_scope(*args):
+            raise RuntimeError("rollout query measured")
+
+        monkeypatch.setattr(command_wakeup, "_scope_from_binding", stop_at_scope)
+        if enabled:
+            with pytest.raises(RuntimeError, match="rollout query measured"):
+                command_wakeup.record_command_wakeup_in_transaction(
+                    ExplainRollout(), NAMESPACE, event
+                )
+        else:
+            command_wakeup.record_command_wakeup_in_transaction(ExplainRollout(), NAMESPACE, event)
+
+    pending = plans.copy()
+    marker_loops = 0
+    while pending:
+        node = pending.pop()
+        pending.extend(node.get("Plans", ()))
+        if node.get("Relation Name") == "session_events":
+            marker_loops += node["Actual Loops"]
+    assert bool(marker_loops) is not bool(enabled)

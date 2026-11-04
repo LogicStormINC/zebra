@@ -54,8 +54,8 @@ def record_command_wakeup_in_transaction(
                   COALESCE((to_jsonb(rollout)->>'reserved_control_outbox')::int,64)
                       AS reserved_control_outbox
            FROM command_wakeup_rollouts rollout
-           WHERE deployment_namespace = %s FOR SHARE), strict_task AS (
-             SELECT EXISTS (
+           WHERE deployment_namespace = %s FOR SHARE)
+           SELECT rollout.*, CASE WHEN rollout.admission_enabled THEN FALSE ELSE EXISTS (
                SELECT 1 FROM execution_segments target JOIN execution_segments source
                  ON source.deployment_namespace=target.deployment_namespace
                  AND source.task_id=target.task_id
@@ -64,8 +64,8 @@ def record_command_wakeup_in_transaction(
                  AND prepared.session_id=source.session_id AND prepared.event_type='task_prepared'
                WHERE target.deployment_namespace=%s AND target.session_id=%s
                  AND prepared.payload ? 'coverage_admission'
-             ) AS strict_task)
-           SELECT rollout.*,strict_task.strict_task FROM strict_task LEFT JOIN rollout ON TRUE""",
+             ) END AS strict_task
+           FROM (VALUES (1)) AS anchor(value) LEFT JOIN rollout ON TRUE""",
         (deployment_namespace, deployment_namespace, event.session_id),
     ).fetchone()
     from agent_storage.postgres.command_coverage_admission import (
