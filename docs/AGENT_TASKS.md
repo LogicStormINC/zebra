@@ -37875,3 +37875,7 @@ CA-HA-03 Worker command cutover round trips (same owner and branch). Own
 command_process_state.py and native command process composition regression.
 Read namespace rollout and the exact schema ledger in one read snapshot,
 retaining missing-schema and explicit-cutover checks.
+
+CA-HA-03 private executor exit diagnostics (same owner and branch). Own
+session_process.py. Record bounded exit status and receipt presence after
+supervision without changing interruption, cancellation or retry semantics.
