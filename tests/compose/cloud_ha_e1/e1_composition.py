@@ -1,5 +1,6 @@
 """Trusted E1-only operator factory. Business requests cannot select this module."""
 
+import os
 import re
 import runpy
 from dataclasses import replace
@@ -21,7 +22,9 @@ def counter_for(model, assembly):
         or model._api_key != "synthetic-only"
         or model._base_url != "https://api.deepseek.com"
         or model._model_name != "deepseek-v4-pro"
-        or assembly.bundle.manifest.scope.namespace_id != "ha-e1-20261102"
+        or assembly.bundle.manifest.scope.namespace_id != os.environ.get(
+            "ZEBRA_DEPLOYMENT_NAMESPACE", "ha-e1-20261102"
+        )
         or assembly.provider_profile.api_key_env != "ZEBRA_E2E_MODEL_API_KEY"
         or assembly.bundle.manifest.domains.model.parameters.max_output_tokens > 1024
     ):
