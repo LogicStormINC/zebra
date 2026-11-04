@@ -34,6 +34,28 @@ def _discover(dsn, lane, **kwargs):
     return discover_command_pickups(dsn, deployment_namespace=NAMESPACE, lane=lane, **kwargs)
 
 
+@pytest.mark.parametrize(("pickup_lane", "caller_lane", "expected"), [
+    ("execution", "normal", "read"),
+    ("control", "control", "control"),
+])
+def test_discovery_reserves_the_expected_connection_lane(
+    monkeypatch, pickup_lane, caller_lane, expected,
+):
+    from agent_storage.postgres import command_wakeup_pickup
+    from agent_storage.postgres.connection_capacity import capacity_lane, current_lane
+
+    class Database:
+        def connect_task_io(self):
+            assert current_lane() == expected
+            raise ConnectionError("connection probe reached")
+
+    monkeypatch.setattr(command_wakeup_pickup, "_database", lambda *_: Database())
+    with capacity_lane(caller_lane):
+        with pytest.raises(ConnectionError, match="connection probe reached"):
+            _discover("unused", pickup_lane)
+        assert current_lane() == caller_lane
+
+
 def test_global_keyset_finds_old_sessions_and_control_lane_ignores_run_backlog(dsn):
     first = _prepare(dsn)
     commands = [first]

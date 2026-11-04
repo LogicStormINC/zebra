@@ -13,6 +13,7 @@ from psycopg import sql
 
 from agent_storage.postgres.command_wakeup import _scope_from_binding, command_scope_key
 from agent_storage.postgres.command_wakeup_discovery import PendingCursor, _database, _limit
+from agent_storage.postgres.connection_capacity import capacity_lane, current_lane
 from agent_storage.postgres.events import read_event_in_transaction
 
 PickupLane = Literal["execution", "control"]
@@ -104,7 +105,11 @@ def discover_command_pickups(
             ).fetchall(),
         )
 
-    with _database(dsn, deployment_namespace).connect_task_io() as connection:
+    connection_lane = current_lane()
+    if lane == "execution" and connection_lane == "normal":
+        connection_lane = "read"
+    database = _database(dsn, deployment_namespace)
+    with capacity_lane(connection_lane), database.connect_task_io() as connection:
         if probing:
             assert after is not None
             probe_after = after.probe_scope_key
