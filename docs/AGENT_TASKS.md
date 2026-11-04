@@ -37819,3 +37819,9 @@ CA-HA-03 E1 executor exit ACK capacity (Luke Ding/Codex, existing In Progress
 branch/worktree). Use owned force_stop_executors.py and the existing native
 executor capacity regression. Retry only typed pre-connection permit refusal
 within a small bounded interval; preserve exact fence and unknown SQL outcomes.
+
+CA-HA-03 native Task SSE first-frame Segment hint (Luke Ding/Codex, existing
+In Progress branch/worktree). Own raw preflight in stream_v2_http.py, Task
+tail in session_streaming.py, and the native stream source-tail regression.
+Reuse the preflight Segment only for notification capture; retain fresh
+canonical source, privacy and rollover checks before delivering events.
