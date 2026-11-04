@@ -37847,3 +37847,8 @@ CA-HA-03 legacy raw SSE native snapshot (same owner and branch). Own
 stream_v2_http.py, stream_v2_authority.py and the native source-tail
 regression. Bind the existing proof snapshot to exact native adapters
 when no V2 reader is configured, preserving extension and cursor behavior.
+
+CA-HA-03 legacy numeric stream cursor highwater (same owner and branch).
+Own stream_v2_http.py, stream_v2_query.py, stream_v2_authority.py and native
+source-tail regression. Validate the raw cursor on the existing authorized
+proof snapshot while preserving the numeric parser and prior error contract.
