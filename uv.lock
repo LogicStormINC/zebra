@@ -121,14 +121,12 @@ version = "0.1.0"
 source = { editable = "packages/agent-orchestration" }
 dependencies = [
     { name = "agent-core" },
-    { name = "agent-tools" },
     { name = "pydantic" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "agent-core", editable = "packages/agent-core" },
-    { name = "agent-tools", editable = "packages/agent-tools" },
     { name = "pydantic", specifier = ">=2.11.7,<3.0.0" },
 ]
 
