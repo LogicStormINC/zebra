@@ -9,32 +9,38 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-from agent_core.domain.leases import LeaseLostError, WorkerLease
-from agent_storage import cloud_composition_from_environment
-from agent_storage.postgres.connection_pool import postgres_pool_scope
-from pydantic import TypeAdapter
-from zebra_agent_config import load_settings
-
-from zebra_agent_worker.claims import ClaimedSession
-from zebra_agent_worker.execution_finalization import ExecutedSession
-from zebra_agent_worker.execution_preparation import (
-    recover_fenced_session as recover_initial_session,
-)
-from zebra_agent_worker.execution_recovery import execute_claimed_with_stale_retry
-from zebra_agent_worker.loop import build_worker_loop_service
-from zebra_agent_worker.session_process import settings_digest
-
 logger = logging.getLogger(__name__)
 
 
 def main() -> None:
-    started = time.monotonic_ns()
     execute = len(sys.argv) > 1 and sys.argv[1] == "--execute"
     if sys.argv[1:] != ["--check"] and not execute:
         from agent_runtime.executor_supervisor import run
 
         run(Path(sys.argv[1]), Path(sys.argv[2]))
         return
+    if execute and sys.platform == "linux":
+        # Arm before Worker imports or reading private execution input.
+        from agent_runtime.executor_supervisor import parent_fence
+
+        parent_fence(int(sys.argv[4]))
+
+    from agent_core.domain.leases import LeaseLostError, WorkerLease
+    from agent_storage import cloud_composition_from_environment
+    from agent_storage.postgres.connection_pool import postgres_pool_scope
+    from pydantic import TypeAdapter
+    from zebra_agent_config import load_settings
+
+    from zebra_agent_worker.claims import ClaimedSession
+    from zebra_agent_worker.execution_finalization import ExecutedSession
+    from zebra_agent_worker.execution_preparation import (
+        recover_fenced_session as recover_initial_session,
+    )
+    from zebra_agent_worker.execution_recovery import execute_claimed_with_stale_retry
+    from zebra_agent_worker.loop import build_worker_loop_service
+    from zebra_agent_worker.session_process import settings_digest
+
+    started = time.monotonic_ns()
     check = sys.argv[1:] == ["--check"]
     settings = load_settings()
     if check:
@@ -45,10 +51,6 @@ def main() -> None:
     else:
         request_path, result_path = map(Path, sys.argv[2:4])
         request = json.loads(request_path.read_bytes())
-    if not check and sys.platform == "linux":
-        from agent_runtime.executor_supervisor import parent_fence
-
-        parent_fence(int(sys.argv[4]))
     if (
         settings.deployment != "cloud"
         or settings.storage_authority != "postgresql"

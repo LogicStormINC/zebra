@@ -37660,3 +37660,8 @@ post-restoration revision check and its evidence, preserving bounded reads.
 CA-HA-03 E1 execution input frontier read follow-up (Luke Ding/Codex, existing
 In Progress branch/worktree): own execution_inputs.py and the existing bounded
 query regression. Verify the canonical source ID in the same bounded head query.
+
+CA-HA-03 E1 early executor parent fence follow-up (Luke Ding/Codex, existing
+In Progress branch/worktree): own session_process.py, session_process_child.py
+and the existing session-process regression. Arm the Linux executor fence before
+Worker imports, retaining the current supervisor, private process and receipts.

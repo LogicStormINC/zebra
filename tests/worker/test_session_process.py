@@ -146,7 +146,9 @@ def test_initial_recovery_retries_one_lock_timeout_under_same_lease(repeated):
 
     from psycopg.errors import LockNotAvailable
     from zebra_agent_worker.bounded_session_recovery import SessionRecoveryPending
-    from zebra_agent_worker.session_process_child import recover_initial_session
+    from zebra_agent_worker.execution_preparation import (
+        recover_fenced_session as recover_initial_session,
+    )
 
     pending = SessionRecoveryPending("busy")
     pending.__cause__ = LockNotAvailable()
@@ -162,6 +164,23 @@ def test_initial_recovery_retries_one_lock_timeout_under_same_lease(repeated):
     assert (
         service.recover_session.call_args_list == [call(lease.session_id, worker_lease=lease)] * 2
     )
+
+
+@pytest.mark.skipif(sys.platform != "linux", reason="requires Linux parent fence")
+def test_child_rejects_missing_parent_before_worker_import(tmp_path):
+    import importlib.util
+
+    spec = importlib.util.find_spec("zebra_agent_worker.session_process_child")
+    assert spec is not None and spec.origin is not None
+    (tmp_path / "agent_core.py").write_text("raise RuntimeError('worker imports ran first')")
+    env = {**os.environ, "PYTHONPATH": os.pathsep.join((str(tmp_path), *sys.path))}
+    result = subprocess.run(
+        [sys.executable, spec.origin, "--execute", "unused", "unused", "0"],
+        env=env, capture_output=True, text=True, timeout=10,
+    )
+    assert result.returncode != 0
+    assert "executor parent fence unavailable" in result.stderr
+    assert "worker imports ran first" not in result.stderr
 
 
 def test_supervisor_parent_death_before_spawn_writes_only_exit_receipt(tmp_path, monkeypatch):

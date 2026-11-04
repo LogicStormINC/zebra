@@ -94,8 +94,7 @@ def execute_isolated(service: Any, request: dict[str, Any]) -> ExecutedSession:
         source, result = root / "request.json", root / "result.json"
         request["executor_command"] = [
             sys.executable,
-            "-m",
-            "zebra_agent_worker.session_process_child",
+            str(Path(__file__).with_name("session_process_child.py")),
             "--execute",
             str(source),
             str(result),
