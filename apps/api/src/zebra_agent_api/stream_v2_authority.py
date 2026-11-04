@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 from agent_core.application.turn_projection import current_turn
 from agent_core.domain.cloud_scope import OpaqueAuthorityScope
@@ -17,7 +17,51 @@ from agent_integrations.ag_ui.profiles import AgUiProjectionProfile
 from agent_integrations.redis_transient_discovery import TransientDescriptor, transient_lane
 from agent_integrations.run_stream_admission import load_run_stream_admission
 from agent_storage import ControlPlaneStores
+from agent_storage.live_event_store import PostCommitPublishingEventStore
+from agent_storage.postgres.database import PostgresDatabase
+from agent_storage.postgres.direct_control import PostgresDirectControl
+from agent_storage.postgres.events import PostgresEventStore
+from agent_storage.postgres.projections import PostgresProjectionStore
 from agent_storage.postgres.stream_proof_batch import StreamProofReader, StreamProofSnapshot
+
+if TYPE_CHECKING:
+    from zebra_agent_api.app import ZebraAgentApi
+
+
+def native_raw_snapshot_compatible(
+    api: "ZebraAgentApi", database: PostgresDatabase,
+) -> bool:
+    control, sessions, events = api.cloud_control, api.stores.sessions, api.stores.events
+    if type(events) is PostCommitPublishingEventStore:
+        method = events.read_session_highwater
+        if (
+            getattr(method, "__func__", method)
+            is not PostCommitPublishingEventStore._snapshot_native_highwater
+        ):
+            return False
+        events = events._event_store
+    if (
+        type(control) is not PostgresDirectControl
+        or not control.supports_binding_snapshot(database)
+        or type(sessions) is not PostgresProjectionStore
+        or type(events) is not PostgresEventStore
+    ):
+        return False
+    namespace_method = sessions.get_session_namespace
+    highwater_method = events.read_session_highwater
+    if (
+        getattr(namespace_method, "__func__", namespace_method)
+        is not PostgresProjectionStore._snapshot_native_namespace
+        or getattr(highwater_method, "__func__", highwater_method)
+        is not PostgresEventStore._snapshot_native_highwater
+    ):
+        return False
+    for source in (sessions._database, events._database):
+        if (source._dsn, source.deployment_namespace) != (
+            database._dsn, database.deployment_namespace
+        ):
+            return False
+    return True
 
 
 @dataclass(frozen=True, slots=True)

@@ -3,7 +3,6 @@
 import asyncio
 from pathlib import Path
 
-import psycopg
 import pytest
 from agent_core.domain.events import EventType
 from agent_core.domain.identifiers import TaskId
@@ -438,8 +437,9 @@ def test_agui_initial_snapshot_one_socket_and_native_override_fallback(owned, mo
         raw_request = request()
         raw_request.url.path = f"/tasks/{run.task_id}/stream"
 
-        def raw_preflight():
-            result = cloud_raw_stream_preflight(api.stores, raw_request.url.path)
+        def raw_preflight(proof=None):
+            assert proof is not None
+            result = cloud_raw_stream_preflight(api.stores, raw_request.url.path, proof=proof)
             return result if result.status_code != 200 else None
 
         with monkeypatch.context() as legacy:
@@ -448,11 +448,11 @@ def test_agui_initial_snapshot_one_socket_and_native_override_fallback(owned, mo
             with telemetry.installed():
                 result = asyncio.run(stream_v2_http.raw_response(
                     api, raw_request, database_path=Path("/unused"), preflight=raw_preflight,
+                    snapshot_preflight=raw_preflight,
                 ))
             assert result.status_code == 503 and b"stream_v2_unavailable" in result.body
-            if psycopg.pq.version() >= 170000:
-                sockets = sum(v for k, v in telemetry.calls.items() if k.endswith("/new_pg_socket"))
-                assert sockets == 1
+            sockets = sum(v for k, v in telemetry.calls.items() if k.endswith("/new_pg_socket"))
+            assert sockets == 1
 
         for name, route, expected in (
             ("task_id_for_session", "session", 409),
