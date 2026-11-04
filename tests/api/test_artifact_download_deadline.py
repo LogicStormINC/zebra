@@ -488,23 +488,43 @@ def native_media(native_media_dsn, tmp_path, native_objects):
         yield client, headers, task_id, str(reservation.artifact_id), event.sequence, objects
 
 
+@pytest.mark.parametrize("native_objects", ["stub", "minio"], indirect=True)
 def test_signed_http_attachment_reconciles_original_put(
     native_media, native_media_dsn, monkeypatch
 ):
     client, headers, _, _, _, objects = native_media
     writes = []
-    original_verify = objects.verify
+    committed_versions = []
+    put_sends = []
 
-    def lost_reply(request):
-        writes.append(request.expectation)
-        raise ArtifactObjectUnavailableError("simulated lost object reply")
+    if isinstance(objects, S3ArtifactObjectStore):
+        from botocore.exceptions import ReadTimeoutError  # type: ignore[import-untyped]
 
-    def verify(expectation):
-        assert writes == [expectation]
-        return original_verify(expectation)
+        raw = objects._client
+        original_put = raw.put_object
 
-    monkeypatch.setattr(objects, "put_if_absent", lost_reply, raising=False)
-    monkeypatch.setattr(objects, "verify", verify)
+        def lose_real_reply(**kwargs):
+            writes.append(kwargs)
+            reply = original_put(**kwargs)
+            assert reply["ResponseMetadata"]["HTTPStatusCode"] == 200
+            committed_versions.append(reply["VersionId"])
+            raise ReadTimeoutError(endpoint_url="isolated-media-test")
+
+        monkeypatch.setattr(raw, "put_object", lose_real_reply)
+        raw.meta.events.register("before-send.s3.PutObject", lambda **_: put_sends.append(True))
+    else:
+        original_verify = objects.verify
+
+        def lost_reply(request):
+            writes.append(request.expectation)
+            raise ArtifactObjectUnavailableError("simulated lost object reply")
+
+        def verify(expectation):
+            assert writes == [expectation]
+            return original_verify(expectation)
+
+        monkeypatch.setattr(objects, "put_if_absent", lost_reply, raising=False)
+        monkeypatch.setattr(objects, "verify", verify)
     response = client.post(
         "/tasks",
         headers=headers(),
@@ -526,11 +546,19 @@ def test_signed_http_attachment_reconciles_original_put(
     assert len(writes) == 1
     task_id = response.json()["task_id"]
     with psycopg.connect(native_media_dsn) as connection:
-        assert connection.execute(
-            "SELECT lifecycle_status FROM artifact_payload_metadata "
-            "WHERE deployment_namespace=%s AND session_id=%s AND artifact_id=%s",
-            ("native-media-forwarding", task_id, writes[0].artifact_id),
-        ).fetchall() == [("finalized",)]
+        rows = connection.execute(
+            "SELECT lifecycle_status,object_version,artifact_id FROM artifact_payload_metadata "
+            "WHERE deployment_namespace=%s AND session_id=%s",
+            ("native-media-forwarding", task_id),
+        ).fetchall()
+        assert len(rows) == 1 and rows[0][0] == "finalized"
+        if isinstance(objects, S3ArtifactObjectStore):
+            assert committed_versions == [rows[0][1]] and rows[0][1] != "null"
+            assert put_sends == [True]
+            assert writes[0]["IfNoneMatch"] == "*"
+            assert writes[0]["Key"].rsplit("/", 1)[-1] == str(rows[0][2])
+        else:
+            assert str(writes[0].artifact_id) == str(rows[0][2])
         assert connection.execute(
             "SELECT count(*) FROM session_events WHERE deployment_namespace=%s "
             "AND session_id=%s AND event_type='input_artifact_stored'",
