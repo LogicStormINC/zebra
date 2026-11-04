@@ -41,8 +41,18 @@ def backfill_task_event_positions(
         _lock_task(connection, namespace, task_id)
     task = connection.execute(
         """SELECT next_event_sequence,event_position_state,event_position_cursor,
-                  event_index_repair_cursor,event_index_repair_highwater
-           FROM agent_tasks WHERE deployment_namespace=%s AND task_id=%s""",
+                  event_index_repair_cursor,event_index_repair_highwater,
+                  CASE WHEN event_position_state='legacy' THEN GREATEST(
+                      COALESCE((SELECT e.task_sequence FROM session_events e
+                          WHERE e.deployment_namespace=t.deployment_namespace
+                            AND e.task_id=t.task_id
+                          ORDER BY e.task_sequence DESC LIMIT 1),-1),
+                      COALESCE((SELECT i.task_sequence FROM task_event_index i
+                          WHERE i.deployment_namespace=t.deployment_namespace
+                            AND i.task_id=t.task_id
+                          ORDER BY i.task_sequence DESC LIMIT 1),-1))+1
+                  END AS legacy_next_sequence
+           FROM agent_tasks t WHERE deployment_namespace=%s AND task_id=%s""",
         (namespace, task_id),
     ).fetchone()
     if task is None:
@@ -55,17 +65,7 @@ def backfill_task_event_positions(
     stored_phase = phase
     empty_index = False
     if phase == "legacy":
-        row = connection.execute(
-            """SELECT GREATEST(
-                COALESCE((SELECT task_sequence FROM session_events
-                    WHERE deployment_namespace=%s AND task_id=%s
-                    ORDER BY task_sequence DESC LIMIT 1),-1),
-                COALESCE((SELECT task_sequence FROM task_event_index
-                    WHERE deployment_namespace=%s AND task_id=%s
-                    ORDER BY task_sequence DESC LIMIT 1),-1))+1 AS next_sequence""",
-            (namespace, task_id, namespace, task_id),
-        ).fetchone()
-        next_sequence, phase = row["next_sequence"], "validating"
+        next_sequence, phase = task["legacy_next_sequence"], "validating"
         empty_index = (
             next_sequence == 0
             and task["event_index_repair_cursor"] == task["event_index_repair_highwater"] == -1
