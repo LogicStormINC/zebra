@@ -345,6 +345,15 @@ system identifier is shared by physical replicas, so it only proves
 cluster membership. The endpoint identity and leader timeline must
 come from the fenced topology.
 
+For E1, set `ZEBRA_HA_E1_RECEIPT_PROOF_SYSTEM_ID` and
+`ZEBRA_HA_E1_RECEIPT_PROOF_TIMELINE` alongside the single TLS proof DSN.
+Take the timeline from the fenced writer topology. The dedicated standby
+function requires an active WAL receiver on that timeline before comparing
+the exact row. It withholds the proof while the receiver is disconnected or
+switching timelines. The login role retains only function execution access.
+Provision the updated eight-argument fixture on the isolated writer before
+enabling its API configuration, then check the designated standby has replayed it.
+
 Acceptance requires the signed HTTP POST, original GET and
 termination cases during paused replay, then exact readback after
 replay. Repeat after a fenced promotion, with the previous proof

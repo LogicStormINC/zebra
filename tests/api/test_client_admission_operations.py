@@ -221,12 +221,26 @@ def test_atomic_first_run_rechecks_original_fence_after_rollback(monkeypatch, te
 
 
 def test_e1_receipt_proof_fails_closed_with_incomplete_configuration(monkeypatch):
+    from agent_storage.idempotency import new_idempotency_record
     from zebra_agent_api.e1_receipt_proof import confirmed, enabled
 
     monkeypatch.delenv("ZEBRA_HA_E1_RECEIPT_PROOF_DSN", raising=False)
     monkeypatch.delenv("ZEBRA_HA_E1_RECEIPT_PROOF_SYSTEM_ID", raising=False)
+    monkeypatch.delenv("ZEBRA_HA_E1_RECEIPT_PROOF_TIMELINE", raising=False)
     assert not enabled()
     assert confirmed("isolated", None)
-    monkeypatch.setenv("ZEBRA_HA_E1_RECEIPT_PROOF_SYSTEM_ID", "1")
+    monkeypatch.setenv("ZEBRA_HA_E1_RECEIPT_PROOF_TIMELINE", "2")
     assert enabled()
     assert not confirmed("isolated", None)
+
+    monkeypatch.delenv("ZEBRA_HA_E1_RECEIPT_PROOF_TIMELINE")
+    monkeypatch.setenv("ZEBRA_HA_E1_RECEIPT_PROOF_SYSTEM_ID", "1")
+    monkeypatch.setenv(
+        "ZEBRA_HA_E1_RECEIPT_PROOF_DSN",
+        "host=127.0.0.1 user=e1_receipt_reader sslmode=verify-full",
+    )
+    record = new_idempotency_record(
+        action="run", idempotency_key="key", request_hash="digest",
+        status_code=201, response_body={"sealed": "fixture"},
+    )
+    assert not confirmed("isolated", record)

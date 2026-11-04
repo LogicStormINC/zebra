@@ -37630,3 +37630,9 @@ In Progress branch/worktree): own PostgreSQL task_io.py and the existing
 test_postgres_task_io.py for initial connection attempts only. Reserve time
 for alternate endpoints within the same deadline. Keep TLS, writer-role
 selection, admission fencing and transaction no-replay semantics.
+
+CA-HA-03 F-04 receipt timeline follow-up (Luke Ding/Codex, existing In Progress
+branch/worktree): own e1_receipt_proof.py, standby_receipt_proof.sql, the
+existing client admission proof regression, check_receipt_timeline.sh, and
+the CA-HA-03 receipt runbook.
+Require the configured recovery timeline as part of the existing exact proof.

@@ -14,10 +14,11 @@ from psycopg.types.json import Jsonb
 
 _ENV = "ZEBRA_HA_E1_RECEIPT_PROOF_DSN"
 _IDENTITY = "ZEBRA_HA_E1_RECEIPT_PROOF_SYSTEM_ID"
+_TIMELINE = "ZEBRA_HA_E1_RECEIPT_PROOF_TIMELINE"
 
 
 def enabled() -> bool:
-    return _ENV in os.environ or _IDENTITY in os.environ
+    return any(key in os.environ for key in (_ENV, _IDENTITY, _TIMELINE))
 
 
 @lru_cache(maxsize=1)
@@ -34,11 +35,14 @@ def confirmed(namespace: str, record: IdempotencyRecord | None) -> bool:
         return False
     dsn = os.environ.get(_ENV, "")
     identity = os.environ.get(_IDENTITY, "")
+    timeline = os.environ.get(_TIMELINE, "")
     try:
         params = conninfo_to_dict(dsn)
         if (
             not identity.isascii()
             or not identity.isdecimal()
+            or not timeline.isascii()
+            or not timeline.isdecimal()
             or params.get("sslmode") != "verify-full"
             or params.get("user") != "e1_receipt_reader"
             or not params.get("host")
@@ -49,9 +53,10 @@ def confirmed(namespace: str, record: IdempotencyRecord | None) -> bool:
         connector = _connector(dsn, os.environ.get(PROFILE_ENV, ""))
         with capacity_lane("normal"), connector.connect(timeout_seconds=0.5) as connection:
             row = connection.execute(
-                """SELECT public.e1_confirm_receipt(%s,%s,%s,%s,%s,%s,%s) AS confirmed""",
+                """SELECT public.e1_confirm_receipt(%s,%s,%s,%s,%s,%s,%s,%s) AS confirmed""",
                 (
                     identity,
+                    timeline,
                     namespace,
                     record.action,
                     record.idempotency_key,
