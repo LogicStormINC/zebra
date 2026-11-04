@@ -37624,3 +37624,9 @@ Progress branch/worktree): own coverage_recovery_preparation.py in PostgreSQL
 storage and test_coverage_recovery_preparation.py. Skip the separate recovery
 snapshot for generation zero only. Preserve locked approval checks, stale
 generation handling, and every recovery proof for later generations.
+
+CA-HA-03 F-04 bounded alternate address follow-up (Luke Ding/Codex, existing
+In Progress branch/worktree): own PostgreSQL task_io.py and the existing
+test_postgres_task_io.py for initial connection attempts only. Reserve time
+for alternate endpoints within the same deadline. Keep TLS, writer-role
+selection, admission fencing and transaction no-replay semantics.

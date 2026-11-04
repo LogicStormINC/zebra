@@ -277,3 +277,34 @@ def test_confirmed_server_cancel_allows_bounded_savepoint_recovery(
             (1,),
             (2,),
         ]
+
+
+def test_half_open_first_address_leaves_time_for_writer(scratch: tuple[str, str]) -> None:
+    dsn, _ = scratch
+    params = conninfo_to_dict(dsn)
+    with socket.socket() as listener:
+        listener.bind(("127.0.0.1", 0))
+        listener.listen()
+        listener.settimeout(2)
+        accepted = threading.Event()
+        stop = threading.Event()
+
+        def stall() -> None:
+            with listener.accept()[0]:
+                accepted.set()
+                stop.wait(3)
+
+        thread = threading.Thread(target=stall)
+        thread.start()
+        try:
+            params.update(
+                host="127.0.0.1,127.0.0.1",
+                port=f"{listener.getsockname()[1]},{params['port']}",
+                target_session_attrs="read-write",
+            )
+            with task_io.TaskIoConnections(make_conninfo(**params)).connect() as connection:
+                assert connection.execute("SELECT 1 AS ready").fetchone() == {"ready": 1}
+            assert accepted.is_set()
+        finally:
+            stop.set()
+            thread.join(3)

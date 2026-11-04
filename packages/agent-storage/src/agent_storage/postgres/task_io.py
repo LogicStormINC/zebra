@@ -381,9 +381,16 @@ class TaskIoConnections:
         self, deadline: float, operation_deadline: float, client_cursor: bool, permit: Any
     ) -> TaskIoConnection:
         attempts = self._resolve(operation_deadline)
-        failure: psycopg.Error | None = None
-        for attempt in attempts:
-            milliseconds = max(1, int(_remaining(operation_deadline) * 1000))
+        failure: psycopg.Error | TimeoutError | None = None
+        for index, attempt in enumerate(attempts):
+            remaining = _remaining(operation_deadline)
+            addresses_left = len(attempts) - index
+            # ponytail: split the remaining connect time across addresses.
+            # A silent socket cannot consume the time reserved for its alternates.
+            connect_deadline = (
+                operation_deadline - remaining * (addresses_left - 1) / addresses_left
+            )
+            milliseconds = max(1, int(remaining * 1000))
             options = str(attempt.get("options") or "") + (
                 f" -c statement_timeout={milliseconds} -c lock_timeout={min(50, milliseconds)}"
             )
@@ -393,16 +400,15 @@ class TaskIoConnections:
                         TaskIoConnection._connect_gen(
                             make_conninfo("", **{**attempt, "options": options})
                         ),
-                        operation_deadline,
+                        connect_deadline,
                     ),
                     interval=0.01,
                 )
-            except psycopg.Error as exc:
+            except (psycopg.Error, TimeoutError) as exc:
                 failure = exc
+                if monotonic() >= operation_deadline:
+                    break
                 continue
-            except TimeoutError:
-                self._attempts = ()
-                raise
             if permit is not None:
                 permit.attach(connection)
             try:
