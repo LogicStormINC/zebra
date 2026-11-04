@@ -46,7 +46,8 @@ def read_task_header(
     ).fetchone()
     if row is None:
         return None
-    task_id = TaskId(row["task_id"])
+    if task_id is None:
+        task_id = TaskId(row["task_id"])
     if row["safety_terminal"]:
         # A control-plane terminal override is authoritative even when the
         # event projection is missing or stale: readers must always see a
