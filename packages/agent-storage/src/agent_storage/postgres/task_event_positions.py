@@ -27,12 +27,18 @@ def _lock_task(
 
 
 def backfill_task_event_positions(
-    connection: Any, namespace: str, task_id: TaskId, *, limit: int = POSITION_BATCH_LIMIT
+    connection: Any,
+    namespace: str,
+    task_id: TaskId,
+    *,
+    limit: int = POSITION_BATCH_LIMIT,
+    task_lock_held: bool = False,
 ) -> bool:
-    """One shared metadata budget; progress survives the caller's commit."""
+    """Backfill within the caller's transaction, reusing its exclusive Task lock if held."""
     if not 1 <= limit <= POSITION_BATCH_LIMIT:
         raise ValueError("Task position backfill limit must be between 1 and 256")
-    _lock_task(connection, namespace, task_id)
+    if not task_lock_held:
+        _lock_task(connection, namespace, task_id)
     task = connection.execute(
         """SELECT next_event_sequence,event_position_state,event_position_cursor,
                   event_index_repair_cursor,event_index_repair_highwater

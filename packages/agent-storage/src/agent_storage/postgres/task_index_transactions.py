@@ -354,4 +354,6 @@ def _sync_events_in_transaction(
     deployment_namespace: str,
     task_id: TaskId,
 ) -> bool:
-    return backfill_task_event_positions(connection, deployment_namespace, task_id)
+    return backfill_task_event_positions(
+        connection, deployment_namespace, task_id, task_lock_held=True
+    )

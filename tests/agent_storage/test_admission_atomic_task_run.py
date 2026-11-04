@@ -167,6 +167,7 @@ def test_atomic_initial_run_indexes_before_wakeup_and_rolls_back_on_rejection(
     rebuild = task_admission.rebuild_task_in_transaction
     indexed = []
     root_member_reads = []
+    task_locks = []
 
     def observe_rebuild(connection, namespace, session_id, **kwargs):
         class AdmissionConnection:
@@ -181,6 +182,8 @@ def test_atomic_initial_run_indexes_before_wakeup_and_rolls_back_on_rejection(
                 with connection.cursor(**options) as cursor:
                     class RebuildCursor:
                         def execute(self, statement, params):
+                            if "pg_advisory_xact_lock(hashtextextended(%s,61))" in statement:
+                                task_locks.append(params)
                             if ("SELECT created_at FROM session_projections" in statement
                                 or "FROM execution_segments WHERE" in statement
                                 or "LEFT JOIN execution_segments AS member" in statement):
@@ -196,6 +199,7 @@ def test_atomic_initial_run_indexes_before_wakeup_and_rolls_back_on_rejection(
     def reject(connection, namespace, event, *, is_new_admission):
         assert indexed == [event.session_id]
         assert len(root_member_reads) == 1
+        assert len(task_locks) == 1
         wake(connection, namespace, event, is_new_admission=is_new_admission)
         raise AtomicSurfaceAborted("controlled wakeup rollback")
 
