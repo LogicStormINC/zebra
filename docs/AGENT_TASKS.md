@@ -37682,3 +37682,9 @@ CA-HA-03 F-02 recovery socket sequencing follow-up (Luke Ding/Codex, existing
 In Progress branch/worktree): own command_wakeup_recovery.py and
 test_command_recovery_preflight.py. End the ordinary scan's deny-only
 transaction before native preparation, then recheck proof and fence at commit.
+
+CA-HA-03 F-02 heartbeat capacity follow-up (Luke Ding/Codex, existing In
+Progress branch/worktree): own lease_heartbeat.py and test_lease_heartbeat_deadline.py.
+Retry a locally refused database permit only within the existing native deadline.
+Also own the existing test_postgres_connection_capacity.py executor composition
+fixture to follow the early-fence entrypoint's lazy imports.

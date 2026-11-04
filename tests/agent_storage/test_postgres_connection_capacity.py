@@ -483,8 +483,11 @@ def test_real_private_child_factory_is_inside_its_budget_scope(
 ):
     from types import SimpleNamespace
 
+    import agent_storage
+    import zebra_agent_config
     from agent_storage.postgres.connection_capacity import PROFILE_ENV, capacity_for
     from agent_storage.postgres.task_io import TaskIoConnections
+    from zebra_agent_worker import loop, session_process
     from zebra_agent_worker import session_process_child as child
 
     role_dsn, value = budget_dsn
@@ -493,9 +496,9 @@ def test_real_private_child_factory_is_inside_its_budget_scope(
     monkeypatch.setattr(child.sys, "argv", ["child", "--check"])
     settings = SimpleNamespace(deployment="cloud", storage_authority="postgresql",
                                database_url=role_dsn)
-    monkeypatch.setattr(child, "load_settings", lambda: settings)
-    monkeypatch.setattr(child, "settings_digest", lambda settings: "test-digest")
-    monkeypatch.setattr(child, "cloud_composition_from_environment", lambda: object())
+    monkeypatch.setattr(zebra_agent_config, "load_settings", lambda: settings)
+    monkeypatch.setattr(session_process, "settings_digest", lambda settings: "test-digest")
+    monkeypatch.setattr(agent_storage, "cloud_composition_from_environment", lambda: object())
     sentinel = object()
     imported = child.importlib.import_module
 
@@ -513,7 +516,7 @@ def test_real_private_child_factory_is_inside_its_budget_scope(
         assert kwargs["cloud_worker_composition"] is sentinel
         return SimpleNamespace(_execution_service=object())
 
-    monkeypatch.setattr(child, "build_worker_loop_service", compose)
+    monkeypatch.setattr(loop, "build_worker_loop_service", compose)
     child.main()
     result = json.loads(capsys.readouterr().out)
     assert result["cloud_composition_ready"] and result["run_executed"] is False

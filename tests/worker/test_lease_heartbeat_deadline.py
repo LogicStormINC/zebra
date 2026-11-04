@@ -20,10 +20,13 @@ from psycopg.conninfo import conninfo_to_dict, make_conninfo
 from zebra_agent_worker.claims import SessionClaimService
 from zebra_agent_worker.lease_heartbeat import LeaseHeartbeat, LeaseHeartbeatError
 
+from tests.agent_storage.test_postgres_command_wakeup import dsn as heartbeat_dsn
+from tests.agent_storage.test_postgres_command_wakeup import postgres_dsn  # noqa: F401
 from tests.worker.test_bounded_session_recovery import NS, seed, service
 from tests.worker.test_bounded_session_recovery import native as native_fixture
 
 native = native_fixture
+dsn = heartbeat_dsn
 
 
 def test_native_claims_release_sql_has_its_own_deadline_without_heartbeat(native, monkeypatch):
@@ -264,3 +267,59 @@ def test_native_short_recovery_lock_retries_one_budget_and_keeps_checkpoint(nati
     assert not heartbeat._thread.is_alive()
     assert state.leases.get(state.session_id).checkpoint == 44
     claims.release_lease(updated)
+
+
+@pytest.mark.parametrize("permit_returns", [True, False])
+def test_native_heartbeat_retries_local_permit_refusal_with_original_fence(
+    dsn, monkeypatch, permit_returns
+):
+    import json
+
+    from agent_storage.postgres.capacity_profile import CapacityProfile
+    from agent_storage.postgres.connection_capacity import (
+        ConnectionBudget,
+        DatabaseCapacityExceeded,
+    )
+
+    from tests.agent_storage.test_postgres_command_wakeup import NAMESPACE
+    from tests.agent_storage.test_postgres_command_wakeup_handoff import _handoff, _prepare
+    from tests.agent_storage.test_postgres_connection_capacity import profile_data
+
+    current = _handoff(dsn, _prepare(dsn)).lease
+    assert current is not None
+    store = PostgresLeaseStore(dsn, deployment_namespace=NAMESPACE)
+    profile = CapacityProfile.parse(json.dumps({**profile_data(), "normal": 1}))
+    budget = ConnectionBudget(dsn, profile, "worker")
+    store._database._capacity = budget
+    claims = SessionClaimService(store, Mock())
+    heartbeat = LeaseHeartbeat(claims, current, lease_ttl_seconds=30)
+    if not permit_returns:
+        heartbeat._io_seconds = 0.05
+    permit = budget.acquire("normal")
+    connect = store._database.connect
+    deadlines = []
+
+    def observe():
+        deadlines.append(current_task_io_deadline())
+        try:
+            return connect()
+        except DatabaseCapacityExceeded:
+            if permit_returns:
+                permit.release()
+            raise
+
+    monkeypatch.setattr(store._database, "connect", observe)
+    try:
+        if permit_returns:
+            renewed = heartbeat.advance_checkpoint(current.checkpoint)
+            assert renewed.fence == current.fence
+            assert len(deadlines) == 2
+            assert budget.stats()["rejected"]["normal"] == 1
+        else:
+            with pytest.raises(DatabaseCapacityExceeded):
+                heartbeat.advance_checkpoint(current.checkpoint)
+            with pytest.raises(LeaseHeartbeatError):
+                heartbeat.require_owned()
+    finally:
+        permit.release()
+    assert deadlines[0] is not None and len(set(deadlines)) == 1
