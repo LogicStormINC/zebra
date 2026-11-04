@@ -184,6 +184,8 @@
 
 # CA-HA-03 — 资源预算、退避与技术namespace隔离
 
+- E1 Task 回填源尾与水位更新（实施前登记）：沿用 CA-HA-03 Owner、branch 和 worktree。Owned paths 为 packages/agent-storage/src/agent_storage/postgres/task_event_positions.py、tests/agent_storage/test_admission_atomic_task_run.py 和 WORKLOG.md。只合并尾部存在性判断和 Segment 水位写入，保留 Task 锁及有界回填。
+
 - E1 Task 事件位置水位读取（实施前登记）：沿用 CA-HA-03 Owner、branch 和 worktree。Owned paths 为 packages/agent-storage/src/agent_storage/postgres/task_event_positions.py、tests/agent_storage/test_admission_atomic_task_run.py 和 WORKLOG.md。仅合并 legacy 水位与状态读取，保留 Task 锁和校验。
 
 - E1 Task 同步复用已持有的锁（实施前登记）：沿用 CA-HA-03 Owner、branch 和 worktree。Owned paths 为 packages/agent-storage/src/agent_storage/postgres/{task_event_positions,task_index_transactions}.py、tests/agent_storage/test_admission_atomic_task_run.py 和 WORKLOG.md。重建和 Handoff 的事件位置同步复用同事务 Task 锁，独立回填照常获取。
