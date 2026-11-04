@@ -316,6 +316,48 @@ def read_event_in_transaction(
     return None if row is None else _event_from_row(row)
 
 
+_EVENT_INSERT = """INSERT INTO session_events (
+    deployment_namespace, event_id, session_id, sequence, event_type, payload,
+    actor, created_at, causation_id, correlation_id, idempotency_key, policy_version, model_profile
+) VALUES """
+_EVENT_PLACEHOLDERS = "(" + ", ".join(["%s"] * 13) + ")"
+
+
+def _event_values(namespace: str, event: SessionEvent) -> tuple[Any, ...]:
+    return (
+        namespace, event.event_id, event.session_id, event.sequence,
+        event.event_type.value, Jsonb(event.payload), event.actor.value, event.created_at,
+        event.causation_id, event.correlation_id, event.idempotency_key,
+        event.policy_version, event.model_profile,
+    )
+
+
+def append_task_bootstrap_in_transaction(
+    connection: Any, namespace: str, events: tuple[SessionEvent, ...]
+) -> tuple[SessionEvent, ...]:
+    # ponytail: batch only small, contiguous fresh roots. Legacy/retry semantics
+    # still use the exact single-event conflict classification.
+    if 1 < len(events) <= 16 and all(
+        event.session_id == events[0].session_id
+        and event.sequence == sequence
+        and event.idempotency_key is None
+        and event.event_type is not EventType.SESSION_COMMAND_ACCEPTED
+        for sequence, event in enumerate(events)
+    ):
+        created = connection.execute(
+            """INSERT INTO session_streams (deployment_namespace, session_id, current_version)
+            VALUES (%s, %s, %s) ON CONFLICT DO NOTHING RETURNING current_version""",
+            (namespace, events[0].session_id, events[-1].sequence),
+        ).fetchone()
+        if created is not None:
+            connection.execute(
+                _EVENT_INSERT + ", ".join([_EVENT_PLACEHOLDERS] * len(events)),
+                tuple(value for event in events for value in _event_values(namespace, event)),
+            )
+            return events
+    return tuple(append_event_in_transaction(connection, namespace, event) for event in events)
+
+
 def append_event_in_transaction(
     connection: Any,
     deployment_namespace: str,
@@ -343,28 +385,8 @@ def append_event_in_transaction(
             raise ValueError("session event id replayed with a conflicting payload")
         raise SessionEventSequenceConflictError("session event sequence already taken")
     connection.execute(
-        """
-        INSERT INTO session_events (
-            deployment_namespace, event_id, session_id, sequence,
-            event_type, payload, actor, created_at, causation_id,
-            correlation_id, idempotency_key, policy_version, model_profile
-        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        """,
-        (
-            deployment_namespace,
-            event.event_id,
-            event.session_id,
-            event.sequence,
-            event.event_type.value,
-            Jsonb(event.payload),
-            event.actor.value,
-            event.created_at,
-            event.causation_id,
-            event.correlation_id,
-            event.idempotency_key,
-            event.policy_version,
-            event.model_profile,
-        ),
+        _EVENT_INSERT + _EVENT_PLACEHOLDERS,
+        _event_values(deployment_namespace, event),
     )
     if (
         deferred_command_wakeups is not None

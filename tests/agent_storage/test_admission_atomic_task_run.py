@@ -101,13 +101,32 @@ def test_uncommitted_run_not_discoverable_stop_rolls_back_everything(isolated_mi
     assert not start_atomic_surface(store, op, "a" * 64, protocol=PROTOCOL)
 
 
-def test_committed_run_has_exact_persisted_identity_never_noncommit(isolated_migration_dsn):
+def test_committed_run_has_exact_persisted_identity_never_noncommit(
+    isolated_migration_dsn, monkeypatch,
+):
+    from agent_storage.postgres import task_admission
+
+    append = task_admission.append_task_bootstrap_in_transaction
+    statements = []
+
+    def observe_bootstrap(connection, namespace, events):
+        class Probe:
+            def execute(self, statement, params):
+                statements.append(statement)
+                return connection.execute(statement, params)
+
+        return append(Probe(), namespace, events)
+
+    monkeypatch.setattr(task_admission, "append_task_bootstrap_in_transaction", observe_bootstrap)
     store, op = setup(isolated_migration_dsn, PROTOCOL)
     enable(store)
     assert start_atomic_surface(store, op, "a" * 64, protocol=PROTOCOL)
     with atomic_surface_transaction(store, op, "a" * 64):
         effects(store)
         result(store, op)
+    assert len(statements) == 2
+    assert "INSERT INTO session_streams" in statements[0]
+    assert "INSERT INTO session_events" in statements[1]
     assert command_counts(store) == [1, 1]
     with store._database.connect() as c:
         event = c.execute(

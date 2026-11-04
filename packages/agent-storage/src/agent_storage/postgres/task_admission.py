@@ -26,7 +26,10 @@ from psycopg.types.json import Jsonb
 
 from agent_storage.postgres.command_wakeup import record_command_wakeup_in_transaction
 from agent_storage.postgres.database import PostgresDatabase
-from agent_storage.postgres.events import append_event_in_transaction
+from agent_storage.postgres.events import (
+    append_event_in_transaction,
+    append_task_bootstrap_in_transaction,
+)
 from agent_storage.postgres.projections import save_session_in_transaction
 from agent_storage.postgres.task_index_transactions import _lock_task, rebuild_task_in_transaction
 from agent_storage.postgres.task_io import TaskIoConnections
@@ -107,8 +110,8 @@ class PostgresTaskAdmissionTransaction:
             or request.workspace.current_sequence != bootstrap_events[-1].sequence
         ):
             raise ValueError("initial task command must remain unprojected until Worker pickup")
-        persisted_events = tuple(
-            append_event_in_transaction(connection, namespace, event) for event in bootstrap_events
+        persisted_events = append_task_bootstrap_in_transaction(
+            connection, namespace, bootstrap_events
         )
         save_session_in_transaction(connection, namespace, request.session)
         save_workspace_in_transaction(connection, namespace, request.workspace)
