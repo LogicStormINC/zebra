@@ -37777,3 +37777,8 @@ CA-HA-03 E1 bounded recorder ownership check (Luke Ding/Codex, existing In
 Progress branch/worktree). Own execution_events.py and test_bounded_recorder_tail.py
 for removing the duplicate ownership read immediately before the bounded tail's
 own read guard. Retain the unbounded/local check and the append/commit fence.
+
+CA-HA-03 E1 budget deadline poll (Luke Ding/Codex, existing In Progress
+branch/worktree). Use owned PostgreSQL worker_budget.py, worker_budget_queries.py
+and test_postgres_worker_budget.py. Check current binding and bounded ancestor
+deadline in one statement with the same fail-closed rules.

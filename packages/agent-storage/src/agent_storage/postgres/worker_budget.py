@@ -94,8 +94,10 @@ class PostgresWorkerBudgetStore:
         # also runs inside recorder transactions and after terminal writes for cleanup.
         with self._database.connect() as c:
             row = c.execute(
-                """SELECT b.deadline>clock_timestamp() AS active,clock_timestamp() AS now
-                   FROM worker_task_budgets b
+                "WITH lineage AS (" + q.ANCESTOR_DEADLINE_SQL + """)
+                   SELECT lineage.*, active.bound, clock_timestamp() AS now
+                   FROM lineage LEFT JOIN (
+                   SELECT true AS bound FROM worker_task_budgets b
                    JOIN agent_tasks t ON t.deployment_namespace=b.deployment_namespace
                      AND t.task_id=b.task_id
                    WHERE b.deployment_namespace=%s AND b.task_id=%s AND b.binding_digest=%s
@@ -103,8 +105,12 @@ class PostgresWorkerBudgetStore:
                      AND b.last_attempt=%s
                      AND b.binding_digest=(SELECT binding_digest FROM task_binding_snapshots
                        WHERE deployment_namespace=b.deployment_namespace AND task_id=b.task_id
-                       ORDER BY binding_revision DESC LIMIT 1)""",
+                       ORDER BY binding_revision DESC LIMIT 1)
+                   ) active ON true""",
                 (
+                    binding.task_id,
+                    self.namespace,
+                    self.namespace,
                     self.namespace,
                     binding.task_id,
                     binding.binding_digest,
@@ -114,12 +120,10 @@ class PostgresWorkerBudgetStore:
                     binding.attempt_number,
                 ),
             ).fetchone()
-            inherited = q.ancestor_deadline(c, self.namespace, binding.task_id)
-            if (
-                row is None
-                or not row["active"]
-                or (inherited is not None and inherited <= row["now"])
-            ):
+            if row is None:
+                raise WorkerBudgetError("Task deadline exceeded or binding moved")
+            deadline = q.validated_ancestor_deadline(row)
+            if not row["bound"] or deadline is None or deadline <= row["now"]:
                 raise WorkerBudgetError("Task deadline exceeded or binding moved")
 
     def check(self, binding: WorkerBudgetBinding) -> float:

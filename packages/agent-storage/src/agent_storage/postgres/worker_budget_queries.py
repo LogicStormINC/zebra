@@ -119,21 +119,25 @@ def child_charges(connection: Any, ns: str, task_id: Any) -> tuple[int, int, int
     return int(row["tokens"]), int(row["tools"]), int(row["seconds"])
 
 
-def ancestor_deadline(connection: Any, ns: str, task_id: Any) -> Any:
-    row = connection.execute(
-        """WITH RECURSIVE ancestors(task_id,depth) AS (
+ANCESTOR_DEADLINE_SQL = """WITH RECURSIVE ancestors(task_id,depth) AS (
           SELECT %s::uuid,0 UNION ALL
           SELECT l.parent_task_id,a.depth+1 FROM ancestors a JOIN subagent_delegation_links l
             ON l.deployment_namespace=%s AND l.child_task_id=a.task_id WHERE a.depth<32)
           SELECT min(b.deadline) AS deadline,max(a.depth) AS depth,
             count(*) FILTER (WHERE a.depth>0 AND b.task_id IS NULL) AS missing
           FROM ancestors a LEFT JOIN worker_task_budgets b
-            ON b.deployment_namespace=%s AND b.task_id=a.task_id""",
-        (task_id, ns, ns),
-    ).fetchone()
+            ON b.deployment_namespace=%s AND b.task_id=a.task_id"""
+
+
+def validated_ancestor_deadline(row: Any) -> Any:
     if row["depth"] >= 32 or row["missing"]:
         raise WorkerBudgetError("ancestor Task budget is missing or exceeds bounded lineage")
     return row["deadline"]
+
+
+def ancestor_deadline(connection: Any, ns: str, task_id: Any) -> Any:
+    row = connection.execute(ANCESTOR_DEADLINE_SQL, (task_id, ns, ns)).fetchone()
+    return validated_ancestor_deadline(row)
 
 
 def tools_confirmed(connection: Any, ns: str, task_id: Any) -> bool:

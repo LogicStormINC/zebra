@@ -245,6 +245,15 @@ def test_child_deadline_is_clamped_to_original_parent_and_recheck_tracks_narrowi
     )
     store.start(child_binding)
     assert 0 < store.check(child_binding) <= 3
+
+    from tests.stream_storage.telemetry import Telemetry, phase
+
+    telemetry = Telemetry()
+    with telemetry.installed(), phase("deadline"):
+        store.check_deadline(child_binding)
+    assert telemetry.calls["initial/deadline/sql:task"] == 1
+    with pytest.raises(WorkerBudgetError, match="binding moved"):
+        store.check_deadline(replace(child_binding, attempt_number=2))
     with database.connect() as c:
         c.execute(
             "UPDATE worker_task_budgets SET deadline=clock_timestamp()-interval '1 second' "
