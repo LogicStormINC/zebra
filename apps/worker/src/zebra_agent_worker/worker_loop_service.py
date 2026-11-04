@@ -23,7 +23,6 @@ from zebra_agent_worker.cloud_memory_recovery import (
     CloudMemoryFinalizationRecovery,
     recover_completed_cloud_memory,
 )
-from zebra_agent_worker.command_consumer import SessionCommandConsumer
 from zebra_agent_worker.execution import SessionExecutionService
 from zebra_agent_worker.execution_events import ExecutionInterrupted
 from zebra_agent_worker.execution_finalization import WorkerExecutionError
@@ -43,6 +42,7 @@ from zebra_agent_worker.worker_polling import (
 
 if TYPE_CHECKING:
     from zebra_agent_worker.ag_ui_projection_work import AgUiProjectionWorkService
+    from zebra_agent_worker.command_consumer import SessionCommandConsumer
     from zebra_agent_worker.runtime_gates import RuntimeGateWorker
 
 

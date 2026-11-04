@@ -66,3 +66,21 @@ def test_runtime_port_shape() -> None:
     assert result.succeeded is True
     assert result.exit_code == 0
     assert "ok" in result.stdout
+
+
+def test_execution_only_worker_imports_defer_legacy_consumer() -> None:
+    import subprocess
+    import sys
+
+    subprocess.run(
+        [sys.executable, "-c", """
+import sys
+from zebra_agent_worker.loop import build_worker_loop_service
+assert 'zebra_agent_worker.command_consumer' not in sys.modules
+from zebra_agent_worker import CommandConsumption, SessionCommandConsumer
+from zebra_agent_worker import command_consumer
+assert CommandConsumption is command_consumer.CommandConsumption
+assert SessionCommandConsumer is command_consumer.SessionCommandConsumer
+"""],
+        check=True,
+    )

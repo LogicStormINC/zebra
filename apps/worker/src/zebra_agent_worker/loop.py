@@ -30,7 +30,6 @@ from zebra_agent_worker.cloud_composition import CloudWorkerComposition, compose
 from zebra_agent_worker.cloud_memory_recovery import (
     CloudMemoryFinalizationRecovery,
 )
-from zebra_agent_worker.command_consumer import SessionCommandConsumer
 from zebra_agent_worker.control import SessionControlService
 from zebra_agent_worker.execution import SessionExecutionService
 from zebra_agent_worker.execution_composition import compose_recovery_titles
@@ -393,10 +392,11 @@ def build_worker_loop_service(
         command_binding_loader=task_binding_loader,
         command_scope_provider=active_authority_scope_provider,
     )
-    command_consumer = (
-        None
-        if migrated
-        else SessionCommandConsumer(
+    command_consumer = None
+    if not migrated:
+        from zebra_agent_worker.command_consumer import SessionCommandConsumer
+
+        command_consumer = SessionCommandConsumer(
             execution_stores,
             execution_service,
             control_service=control_service,
@@ -404,7 +404,6 @@ def build_worker_loop_service(
             command_sessions=command_sessions,
             next_command=None if command_sessions is None else command_sessions.next_command,
         )
-    )
     cloud_memory_recovery = None
     if cloud_memory_store is not None:
         assert active_namespace is not None
