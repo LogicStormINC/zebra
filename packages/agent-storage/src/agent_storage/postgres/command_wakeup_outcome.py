@@ -135,6 +135,8 @@ def command_outcome_from_row(
         if control["outcome"] == "requires_reconciliation":
             return "command_requires_reconciliation"
     if pending["status"] == "dead":
+        if pending["recovery_code"] == "requires_reconciliation":
+            return "command_requires_reconciliation"
         return (
             "command_recovery_exhausted"
             if pending["recovery_code"] == "recovery_exhausted"

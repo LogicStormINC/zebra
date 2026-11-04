@@ -183,6 +183,8 @@
 - Current receipt: docs/evidence/ca-baseline-gate-02/validation.json；最终完整test11672/0/3161skip、check全绿、真实PG5通过；本卡先前验证为当时历史记录，不覆盖旧证据。
 
 # CA-HA-03 — 资源预算、退避与技术namespace隔离
+
+- E1 对账原因读取补充（实施前登记）：沿用 CA-HA-03 Owner、branch 与 worktree。Owned paths 为 packages/agent-storage/src/agent_storage/postgres/command_wakeup_outcome.py、tests/agent_storage/test_postgres_command_wakeup_outcome.py 和 WORKLOG.md。复用现有对账错误码及原 Run 读取资格。
 - Status: In Progress（2026-11-02）；用户“继续”授权后从Ready领取；人类Owner Luke Ding，执行Codex；branch codex/ca-ha-03-budgets；独立worktree ca-ha-03-budgets/zebra-agent；基线56ae352a5。
 - E1 rebuilt publication（实施前登记）：沿用 CA-HA-03 Owner/branch/worktree。Owned paths：既有 tests/compose/cloud_ha_e1/e1_composition.py、authority.py 和 WORKLOG.md。仅对重建隔离命名空间启用签名及确定性计量，原发布证据保留。
 - E1 rebuilt PostgreSQL cutover（实施前登记）：沿用 CA-HA-03 Owner/branch/worktree。新增 Owned path tests/compose/cloud_ha_e1/switch_rebuilt_postgres.sh，用于受控切换隔离 PostgreSQL，不切换应用。
