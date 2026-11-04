@@ -184,6 +184,8 @@
 
 # CA-HA-03 — 资源预算、退避与技术namespace隔离
 
+- E1 准入全局锁内往返（实施前登记）：沿用 CA-HA-03 Owner、branch 和 worktree。Owned paths 为 packages/agent-storage/src/agent_storage/postgres/command_wakeup.py、tests/agent_storage/test_postgres_command_wakeup.py 和 WORKLOG.md。合并首次准入容量读取和待处理记录插入，保留锁顺序、控制预留、错误优先级与既有恢复校验。
+
 - E1 授权过期测试夹具（实施前登记）：沿用 CA-HA-03 Owner、branch 和 worktree。Owned paths 为 tests/api/test_task_resource_binding.py 和 WORKLOG.md。仅在该模块测试 Broker 夹具显式授权其制品读取用例需要的 scope，以运行实际资源绑定与过期断言。
 
 - E1 准入重复源检查（实施前登记）：沿用 CA-HA-03 Owner、branch 和 worktree。Owned paths 为 packages/agent-storage/src/agent_storage/postgres/command_wakeup.py、tests/agent_storage/test_postgres_command_wakeup.py 和 WORKLOG.md。仅跳过 native rollout 已启用时重复的 bootstrap marker 探测；保留关闭路径和现有严格校验。
