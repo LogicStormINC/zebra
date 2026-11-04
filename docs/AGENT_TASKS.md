@@ -37646,3 +37646,8 @@ CA-HA-03 API read inventory follow-up (Luke Ding/Codex, existing In Progress
 branch/worktree): own capacity_profile.py, database_budget.py, extension_reads.py,
 the existing capacity/API/Helm tests and database-budget chart schema/helper.
 Count the optional API-only read limit against peak replicas at every gate.
+
+CA-HA-03 E1 capacity-backoff follow-up (Luke Ding/Codex, existing In Progress
+branch/worktree): use the already-owned command_process.py, command_background.py
+and test_cloud_ha_polling.py. Keep local DB permit pressure on the existing
+bounded blocked cadence while retaining the existing error cadence for outages.

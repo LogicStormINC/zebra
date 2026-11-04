@@ -25,7 +25,12 @@ from agent_storage.postgres.command_wakeup_recovery_proof import CoverageRecover
 from agent_storage.postgres.connection_pool import postgres_context
 from zebra_agent_config import ZebraAgentSettings
 
-from zebra_agent_worker.command_background import background, outcome_state, safe_trace
+from zebra_agent_worker.command_background import (
+    background,
+    failure_state,
+    outcome_state,
+    safe_trace,
+)
 from zebra_agent_worker.command_process_state import CommandRecoverySweep, CommandWorkerCapability
 from zebra_agent_worker.runtime_factory import pin_cloud_engine
 from zebra_agent_worker.worker_health import WorkerHealth
@@ -400,7 +405,7 @@ class CommandWorkerProcess:
                             safe_trace(exc),
                         )
                         outcomes = (PickupOutcome.DEFERRED,)
-                        state = "error"
+                        state = failure_state(exc)
                     else:
                         state = outcome_state(outcomes)
                         if (

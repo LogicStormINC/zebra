@@ -75,7 +75,11 @@ def test_zero_interval_deferred_command_polling_cannot_spin(wired, monkeypatch):
     assert max(waits) >= 0.2
 
 
-def test_background_error_backoff_is_capped_and_stop_interrupts(monkeypatch, caplog):
+@pytest.mark.parametrize("capacity, ceiling", [(False, 5), (True, 1)])
+def test_background_error_backoff_is_capped_and_stop_interrupts(
+    monkeypatch, caplog, capacity, ceiling
+):
+    from agent_storage.postgres.connection_capacity import DatabaseCapacityExceeded
     from zebra_agent_worker.command_background import background
 
     waits = []
@@ -87,7 +91,8 @@ def test_background_error_backoff_is_capped_and_stop_interrupts(monkeypatch, cap
         attempts += 1
         if attempts == 24:
             stop.set()
-        raise RuntimeError("do-not-log-credentials")
+        error = DatabaseCapacityExceeded if capacity else RuntimeError
+        raise error("do-not-log-credentials")
 
     async def timeout(awaitable, seconds):
         waits.append(seconds)
@@ -97,10 +102,10 @@ def test_background_error_backoff_is_capped_and_stop_interrupts(monkeypatch, cap
     monkeypatch.setattr(asyncio, "wait_for", timeout)
     asyncio.run(background(action, stop=stop, interval=0.05))
     assert attempts == 24
-    assert all(0.05 <= wait <= 5 for wait in waits)
-    assert waits[-1] >= 4
+    assert all(0.05 <= wait <= ceiling for wait in waits)
+    assert waits[-1] >= 0.8 * ceiling
     assert "do-not-log-credentials" not in caplog.text
-    assert "RuntimeError" in caplog.text
+    assert ("DatabaseCapacityExceeded" if capacity else "RuntimeError") in caplog.text
 
 
 def test_local_blocked_loop_retains_existing_cadence(monkeypatch):

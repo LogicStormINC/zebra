@@ -5,6 +5,7 @@ import logging
 from collections.abc import Awaitable, Callable
 
 from agent_runtime.command_wakeup_consumer import PickupOutcome
+from agent_storage.postgres.connection_capacity import DatabaseCapacityExceeded
 
 from zebra_agent_worker.worker_polling import PollingDelay, PollingState
 
@@ -28,6 +29,10 @@ def outcome_state(outcomes: tuple[PickupOutcome, ...]) -> PollingState:
     return "blocked" if outcomes else "idle"
 
 
+def failure_state(exc: Exception) -> PollingState:
+    return "blocked" if isinstance(exc, DatabaseCapacityExceeded) else "error"
+
+
 async def background(
     action: Callable[[], Awaitable[object]], *, stop: asyncio.Event, interval: float,
 ) -> None:
@@ -38,7 +43,7 @@ async def background(
         except Exception as exc:
             logger.warning("command_background_tick_failed error_type=%s trace=%s",
                            type(exc).__name__, safe_trace(exc))
-            state: PollingState = "error"
+            state = failure_state(exc)
         else:
             state = outcome_state(result) if isinstance(result, tuple) else "progress"
         try:
