@@ -183,14 +183,21 @@ class ExecutionInputStore(WorkerProgressStoreMixin):
             if self._progress_postgres
             else "length(CAST(state_json AS BLOB))"
         )
-        # ponytail: the database gates body hydration by UTF-8 byte size; one
-        # snapshot/query retains the 1-MiB trust boundary without a second fetch.
+        source_scope = (
+            "source.deployment_namespace=head.deployment_namespace AND "
+            if self._progress_postgres else ""
+        )
+        # ponytail: one snapshot validates the bounded body and indexed frontier.
         row = self._progress_execute(
             connection,
             f"SELECT state_bytes,{byte_length} AS actual_bytes,through_sequence,last_event_id,"
             f"CASE WHEN state_bytes BETWEEN 1 AND {MAX_INPUT_BYTES} "
-            f"AND {byte_length}=state_bytes THEN state_json END AS state_json "
-            f"FROM execution_input_heads WHERE {WHERE}",
+            f"AND {byte_length}=state_bytes THEN state_json END AS state_json, "
+            "CASE WHEN last_event_id IS NOT NULL THEN "
+            f"(SELECT source.event_id FROM session_events source WHERE {source_scope}"
+            "source.task_id=head.task_id AND source.task_sequence=head.through_sequence) "
+            "END AS source_event_id "
+            f"FROM execution_input_heads head WHERE {WHERE}",
             key,
         ).fetchone()
         if row is None:
@@ -209,26 +216,11 @@ class ExecutionInputStore(WorkerProgressStoreMixin):
         if any(str(event.session_id) != key[2] for event in state.events):
             raise CheckpointConflict("execution input state crosses Session boundary")
         last = UUID(str(row["last_event_id"])) if row["last_event_id"] is not None else None
-        head = ExecutionInputHead(row["through_sequence"], state, last)
-        if last is not None:
-            source_where = "deployment_namespace=? AND " if self._progress_postgres else ""
-            values = (
-                (key[0], key[1], head.through_sequence)
-                if self._progress_postgres
-                else (
-                    key[1],
-                    head.through_sequence,
-                )
-            )
-            source = self._progress_execute(
-                connection,
-                f"SELECT event_id FROM session_events WHERE {source_where}"
-                "task_id=? AND task_sequence=?",
-                values,
-            ).fetchone()
-            if source is None or UUID(str(source["event_id"])) != last:
-                raise CheckpointConflict("execution input frontier conflicts with canonical source")
-        return head
+        if last is not None and (
+            row["source_event_id"] is None or UUID(str(row["source_event_id"])) != last
+        ):
+            raise CheckpointConflict("execution input frontier conflicts with canonical source")
+        return ExecutionInputHead(row["through_sequence"], state, last)
 
     def read(self, lease: WorkerLease) -> ExecutionInputHead:
         with self._progress_connection() as connection:

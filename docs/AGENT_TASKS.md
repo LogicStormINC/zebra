@@ -37656,3 +37656,7 @@ CA-HA-03 E1 input evidence snapshot follow-up (Luke Ding/Codex, existing
 In Progress branch/worktree): own existing execution_recovery.py and the
 execution input compaction regression. Use the same fenced head for the
 post-restoration revision check and its evidence, preserving bounded reads.
+
+CA-HA-03 E1 execution input frontier read follow-up (Luke Ding/Codex, existing
+In Progress branch/worktree): own execution_inputs.py and the existing bounded
+query regression. Verify the canonical source ID in the same bounded head query.
