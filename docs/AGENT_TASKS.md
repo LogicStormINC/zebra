@@ -37700,3 +37700,8 @@ consumer regression. Verify whether refusal before handoff advances the scan
 cursor and makes earlier ready commands wait behind later scope sequences.
 The slot-refusal cursor candidate is retired after three loaded misses; see the
 E1 slot-cursor evidence and WORKLOG before selecting a recovered-prefix approach.
+
+CA-HA-03 F-02 recovered fallback pickup follow-up (Luke Ding/Codex, existing
+In Progress branch and worktree). Owned paths for this slice include
+`packages/agent-storage/src/agent_storage/postgres/command_wakeup_pickup.py`
+and `tests/agent_storage/test_postgres_command_wakeup_pickup.py`.

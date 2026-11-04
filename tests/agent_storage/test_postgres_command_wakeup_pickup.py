@@ -1,6 +1,7 @@
 """Real PG lane discovery, frozen authority and consumer control isolation."""
 
 import asyncio
+from dataclasses import replace
 from datetime import UTC, datetime
 from threading import Event
 from uuid import uuid4
@@ -24,8 +25,8 @@ from tests.agent_storage.test_postgres_command_wakeup import dsn as _dsn_fixture
 from tests.agent_storage.test_postgres_command_wakeup import postgres_dsn as _pg_fixture
 from tests.agent_storage.test_postgres_command_wakeup_control import _body, _control, _intent
 from tests.agent_storage.test_postgres_command_wakeup_discovery import SCOPE
-from tests.agent_storage.test_postgres_command_wakeup_handoff import _prepare
-from tests.agent_storage.test_postgres_command_wakeup_recovery import _rows
+from tests.agent_storage.test_postgres_command_wakeup_handoff import _handoff, _prepare
+from tests.agent_storage.test_postgres_command_wakeup_recovery import _due, _recover, _rows
 
 dsn = _dsn_fixture
 postgres_dsn = _pg_fixture
@@ -94,6 +95,27 @@ def test_global_keyset_finds_old_sessions_and_control_lane_ignores_run_backlog(d
             (NAMESPACE,),
         ).fetchall()
     assert "command_pending_control_pickup" in str(plan)
+
+
+def test_fallback_revisits_approved_recovery_without_rewinding_forward_cursor(dsn):
+    recovered = _prepare(dsn)
+    [first] = _discover(dsn, "execution", batch_size=1, scope_mode="fallback")
+    _due(dsn)
+    assert _recover(dsn)[0].generation == 1
+    later = _intent(dsn, _seed(dsn).session_id, "run")
+    [retry] = _discover(
+        dsn, "execution", batch_size=1, scope_mode="fallback", after=first.cursor
+    )
+    assert retry.accepted_event_id == recovered.event_id
+    assert retry.cursor == replace(first.cursor, cycle_page=first.cursor.cycle_page + 1)
+    [forward] = _discover(
+        dsn, "execution", batch_size=1, scope_mode="fallback", after=retry.cursor
+    )
+    assert forward.accepted_event_id == later.event_id
+    assert _handoff(dsn, recovered).lease is not None
+    assert not _discover(
+        dsn, "execution", batch_size=1, scope_mode="fallback", after=forward.cursor
+    )
 
 
 def test_pickup_page_round_robins_scopes_before_second_command(dsn):

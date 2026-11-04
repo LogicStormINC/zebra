@@ -1,6 +1,6 @@
 """Bounded deployment-wide pending hints; authority comes from frozen binding."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime
 from typing import Any, Literal, cast
 from uuid import UUID
@@ -110,6 +110,44 @@ def discover_command_pickups(
         connection_lane = "read"
     database = _database(dsn, deployment_namespace)
     with capacity_lane(connection_lane), database.connect_task_io() as connection:
+        # An approval can make a previously scanned command runnable again.
+        # Alternate recovery pages with forward pages and keep the scope ring due.
+        if (
+            lane == "execution"
+            and scope_mode == "fallback"
+            and after is not None
+            and not probing
+            and after.cycle_page % 2 == 1
+        ):
+            recovered = connection.execute(
+                sql.SQL(
+                    """SELECT accepted_event_id
+                       FROM session_command_pending
+                       WHERE deployment_namespace=%s AND status='pending'
+                         AND command_kind IN {}
+                         AND current_generation>0
+                         AND (scope_sequence,created_at,accepted_event_id) <= (%s,%s,%s) {}
+                         AND NOT EXISTS (
+                             SELECT 1 FROM command_handoff_receipts r
+                             WHERE r.deployment_namespace =
+                                   session_command_pending.deployment_namespace
+                               AND r.scope_key=session_command_pending.scope_key
+                               AND r.command_id=session_command_pending.command_id
+                               AND (r.wake_generation=session_command_pending.current_generation
+                                    OR r.handled_event_id IS NOT NULL))
+                       ORDER BY scope_sequence,created_at,accepted_event_id LIMIT %s"""
+                ).format(sql.SQL(kinds), scope_filter),
+                (
+                    deployment_namespace,
+                    after.scope_sequence,
+                    after.created_at,
+                    after.accepted_event_id,
+                    batch_size,
+                ),
+            ).fetchall()
+            if recovered:
+                cursor = replace(after, cycle_page=after.cycle_page + 1)
+                return tuple(CommandPickup(row["accepted_event_id"], cursor) for row in recovered)
         if probing:
             assert after is not None
             probe_after = after.probe_scope_key
