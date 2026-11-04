@@ -37693,3 +37693,8 @@ CA-HA-03 F-02 isolated parent socket lifetime follow-up (Luke Ding/Codex,
 existing In Progress branch/worktree): own execution_recovery.py and existing
 test_execution_preflight_order.py. Restrict Run socket retention to the actual
 execution process while preserving parent completion recovery and lease checks.
+
+CA-HA-03 F-02 fallback slot saturation follow-up (Luke Ding/Codex, existing
+In Progress branch/worktree): own command_wakeup_consumer.py and the existing
+consumer regression. Verify whether refusal before handoff advances the scan
+cursor and makes earlier ready commands wait behind later scope sequences.

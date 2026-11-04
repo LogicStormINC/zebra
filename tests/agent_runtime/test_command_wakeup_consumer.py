@@ -470,3 +470,37 @@ def test_identity_and_retry_configuration_fail_before_pool_creation(field, value
     args[field] = value
     with pytest.raises(ValueError):
         runtime.CommandWakeupConsumer("unused", **args)
+
+
+def test_full_execution_lane_keeps_valid_command_at_the_scan_frontier(monkeypatch):
+    event, _, _ = _fixture(monkeypatch)
+    cursor = PendingCursor(datetime.now(UTC), event.event_id)
+    seen = []
+
+    def discover(*args, **kwargs):
+        seen.append(kwargs["after"])
+        return () if kwargs["after"] is not None else (CommandPickup(event.event_id, cursor),)
+
+    monkeypatch.setattr(runtime, "discover_command_pickups", discover)
+
+    async def scenario():
+        consumer = runtime.CommandWakeupConsumer(
+            "unused",
+            deployment_namespace="deployment",
+            owner="worker",
+            execute_claimed=lambda lease: None,
+            quarantine=_quarantine,
+            execution_slots=1,
+        )
+        try:
+            assert consumer._slots.acquire(blocking=False)
+            try:
+                await consumer.poll("execution")
+            finally:
+                consumer._slots.release()
+            assert await consumer.poll("execution") == (runtime.PickupOutcome.SCHEDULED,)
+            assert seen == [None, None]
+        finally:
+            await consumer.close()
+
+    asyncio.run(scenario())
