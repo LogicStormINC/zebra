@@ -496,3 +496,31 @@ def test_concurrent_suspend_supersedes_rearm_without_escaping(tmp_path: Path) ->
     assert all(
         event.payload.get("reason") != "awaiting_turn_rearm" for event in stored
     )
+
+
+def test_isolated_parent_does_not_hold_run_connections(monkeypatch):
+    from agent_storage.postgres.connection_scope import current_connection_scope
+    from zebra_agent_worker.claims import ClaimedSession
+    from zebra_agent_worker.execution_recovery import execute_claimed_with_stale_retry
+
+    claimed = ClaimedSession(
+        lease=SimpleNamespace(session_id="session"),
+        recovery=None,
+    )
+    service = SimpleNamespace(
+        _execution_namespace="cloud-test",
+        _settings=SimpleNamespace(storage_authority="postgresql", deployment="cloud"),
+        _execute_claimed_session_once=lambda *args, **kwargs: current_connection_scope(),
+    )
+    monkeypatch.setenv("ZEBRA_SESSION_PROCESS_FACTORY", "default")
+    monkeypatch.delenv("ZEBRA_SESSION_PROCESS_CHILD", raising=False)
+    monkeypatch.setattr("os.waitid", None, raising=False)
+    assert execute_claimed_with_stale_retry(
+        service, claimed, started_at=NOW, ownership_check=lambda: None
+    ) is None
+
+    monkeypatch.setenv("ZEBRA_SESSION_PROCESS_CHILD", "1")
+    child_scope = execute_claimed_with_stale_retry(
+        service, claimed, started_at=NOW, ownership_check=lambda: None
+    )
+    assert child_scope is not None and child_scope.task_io_only and child_scope.closed

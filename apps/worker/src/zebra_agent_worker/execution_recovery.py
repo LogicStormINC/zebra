@@ -48,6 +48,7 @@ from zebra_agent_worker.provider_continuation_execution import (
 )
 from zebra_agent_worker.recovery import RecoveredSession
 from zebra_agent_worker.session_handoff import recover_worker_handoff
+from zebra_agent_worker.session_process import process_factory
 from zebra_agent_worker.task_recovery import (
     RecoveredTask,
     recover_client_state_evidence,
@@ -117,6 +118,7 @@ def execute_claimed_with_stale_retry(
         with (
             postgres_connection_scope(task_io=True)
             if getattr(service, "_execution_namespace", None) is not None
+            and process_factory(service._settings) is None
             else nullcontext()
         ):
             result: ExecutedSession = service._execute_claimed_session_once(
