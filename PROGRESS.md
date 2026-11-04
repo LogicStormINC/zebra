@@ -8896,3 +8896,10 @@ Cloud Agent candidate adds authenticated `GET /model-options?definition_id=<uuid
 Explicit selection of a model available only in the effective release adopts the full release even when the remembered model is retained. Unchanged selection retains the previous release.
 
 Cloud command read-state preparation now pins the Worker lease with a shared row lock while advancing a derived checkpoint. Actual handoff and lease changes retain exclusive locks. A two-connection PostgreSQL regression reproduced the original contention and the command handoff suite passed after the change.
+
+Cloud Agent PR #266 now checks historical ScriptBundle artifacts at the producer
+commit in their manifest. The three unchanged contract directories still have
+working-tree byte checks. Current Bundle exports are checked against the live
+producer and schema. The four focused contract and configuration suites passed
+20 checks. The Backend quality workflow fetches the Git history used by the
+historical regression.

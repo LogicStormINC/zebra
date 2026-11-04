@@ -37367,3 +37367,9 @@ CA-P7-MODEL-01 first send binding owns initial model choice parsing, published s
 CA-P7-MODEL-DISCOVERY owns the authenticated business model options route and reuse of the published consumer binding.
 
 CA-P7-MODEL-DISCOVERY display labels owns optional digest-bound profile labels and old-profile serialization compatibility.
+
+CA-P7-MODEL-01 contract review follow-up (Active, Codex,
+`codex/ca-p7-model-registration`, PR #266): owns the ScriptBundle historical
+artifact regression and its Backend quality checkout. Verify the pinned
+producer bytes independently of current Bundle exports, and retain working-tree
+byte checks for the three unchanged contract directories.
