@@ -37852,3 +37852,8 @@ CA-HA-03 legacy numeric stream cursor highwater (same owner and branch).
 Own stream_v2_http.py, stream_v2_query.py, stream_v2_authority.py and native
 source-tail regression. Validate the raw cursor on the existing authorized
 proof snapshot while preserving the numeric parser and prior error contract.
+
+CA-HA-03 terminal fallback Outbox retirement (same owner and branch). Own
+the additive command_outbox_retirement_migration.py, migration catalog tail,
+and native command receipt regression. Provide a bounded explicit operator
+transaction under the scope rollout lock and preserve all envelope evidence.
