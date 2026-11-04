@@ -155,6 +155,9 @@ jobs:
           version: "0.11.12"
       - name: Install locked workspace
         run: uv sync --frozen --all-packages --group dev
+      - name: Install application smoke runtime
+        if: matrix.runner == 'application'
+        run: bash scripts/install-ci-gvisor.sh
       - name: Run real-service contract runner
         run: |
           mkdir -p "cloudline-evidence/${{ matrix.runner }}"
@@ -328,15 +331,7 @@ jobs:
       - name: Install locked workspace
         run: uv sync --frozen --all-packages --group dev
       - name: Install verified runsc release
-        run: |
-          arch="$(uname -m)"
-          release="https://storage.googleapis.com/gvisor/releases/release/latest/${arch}"
-          curl --fail --silent --show-error --location --remote-name "${release}/gvisor.tar.zstd"
-          curl --fail --silent --show-error --location --remote-name "${release}/gvisor.tar.zstd.sha512"
-          sha512sum --check gvisor.tar.zstd.sha512
-          sudo tar --zstd -xf gvisor.tar.zstd -C /usr/local/bin
-          sudo /usr/local/bin/runsc install
-          sudo systemctl restart docker
+        run: bash scripts/install-ci-gvisor.sh
       - name: Resolve smoke image digest
         run: |
           docker pull alpine:3.22

@@ -18,7 +18,8 @@ export ZEBRA_APPLICATION_NETWORK=zebra-application-test-dependencies
 export ZEBRA_PROFILE=cloud
 export ZEBRA_DATABASE_URL=postgresql://zebra:zebra-application-test-password@postgres:5432/zebra
 export ZEBRA_RUNTIME_CLASS=gvisor
-export ZEBRA_RUNTIME_IMAGE=zebra/runtime@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+export ZEBRA_RUNTIME_IMAGE=alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+export DEEPSEEK_API_KEY=application-smoke-boot-only
 export ZEBRA_RUNTIME_REQUIRE_WORKSPACE_QUOTA=true
 export ZEBRA_DEPLOYMENT_NAMESPACE=application-compose-test
 export ZEBRA_AUTHORITY_ISSUER=https://application-compose-test-authority.example
@@ -46,6 +47,7 @@ trap cleanup EXIT
 
 "${BASE_COMPOSE[@]}" config --quiet
 "${APP_COMPOSE[@]}" config --quiet
+docker pull --platform linux/amd64 "$ZEBRA_RUNTIME_IMAGE"
 "${BASE_COMPOSE[@]}" build minio
 "${BASE_COMPOSE[@]}" up --detach --wait postgres minio
 "${BASE_COMPOSE[@]}" run --rm minio-init
@@ -53,7 +55,13 @@ trap cleanup EXIT
 "${APP_COMPOSE[@]}" wait zebra-migrate
 "${APP_COMPOSE[@]}" run --rm --no-deps --entrypoint python zebra-migrate -c \
   'import os; from agent_storage import HostRegistryRecord, PostgresHostAuthorityStore; PostgresHostAuthorityStore(os.environ["ZEBRA_DATABASE_URL"], deployment_namespace=os.environ["ZEBRA_DEPLOYMENT_NAMESPACE"]).upsert_registry(HostRegistryRecord(host_app_id="application-compose-test", namespace_id="application-compose-test-namespace", issuer=os.environ["ZEBRA_AUTHORITY_ISSUER"], audience="zebra-application", jwks_uri="https://application-compose-test-authority.example/.well-known/jwks.json", allowed_origins=("https://application-compose.example",), algorithms=("RS256",), policy_version="application-compose-v1"))'
-"${APP_COMPOSE[@]}" up --detach --build --wait zebra-api zebra-worker
+"${APP_COMPOSE[@]}" up --detach --build --wait zebra-api zebra-worker || {
+  worker_id=$("${APP_COMPOSE[@]}" ps --all --quiet zebra-worker)
+  if [[ -n "$worker_id" ]]; then
+    docker inspect --format '{{json .State.Health}}' "$worker_id"
+  fi
+  exit 1
+}
 
 curl --fail --silent --show-error "http://127.0.0.1:${API_PORT}/health" >/dev/null
 "${APP_COMPOSE[@]}" exec -T zebra-api python -c \
