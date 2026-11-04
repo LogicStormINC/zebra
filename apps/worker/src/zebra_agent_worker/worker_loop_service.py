@@ -111,6 +111,7 @@ class WorkerLoopService:
         self._scan_ready_sessions = scan_ready_sessions
         self._cloud_polling = cloud_polling
         self._cloud_memory_recovery_thread: Thread | None = None
+        self._cloud_memory_recovery_at = 0.0
         self._memory_delivery = memory_delivery
         self._memory_delivery_thread: Thread | None = None
         self.migrated_run = migrated_run
@@ -317,7 +318,10 @@ class WorkerLoopService:
         batch_size: int,
         lease_ttl_seconds: int,
     ) -> None:
-        if self._cloud_memory_recovery is None:
+        if (
+            self._cloud_memory_recovery is None
+            or time.monotonic() < self._cloud_memory_recovery_at
+        ):
             return
         active = self._cloud_memory_recovery_thread
         if active is not None and active.is_alive():
@@ -326,8 +330,9 @@ class WorkerLoopService:
         # ponytail: finalization recovery is best-effort background work until
         # it has its own durable queue; it must never block RUN command polling.
         def recover() -> None:
+            progressed = False
             try:
-                recover_completed_cloud_memory(
+                progressed = recover_completed_cloud_memory(
                     worker_id=worker_id,
                     batch_size=batch_size,
                     lease_ttl_seconds=lease_ttl_seconds,
@@ -336,6 +341,10 @@ class WorkerLoopService:
                 )
             except Exception:
                 print("worker memory recovery failed", file=sys.stderr, flush=True)
+            finally:
+                if progressed is False:
+                    # Bound repeated empty scans across historical completions.
+                    self._cloud_memory_recovery_at = time.monotonic() + 1
 
         recovery_thread = Thread(
             target=postgres_context().run, args=(recover,),

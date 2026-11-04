@@ -37713,3 +37713,8 @@ existing In Progress branch/worktree). Own `command_wakeup_recovery.py` and
 CA-HA-03 scoped relay query follow-up (Luke Ding/Codex, existing In Progress
 branch/worktree). Own `command_wakeup_relay.py` and
 `test_postgres_command_wakeup_relay.py` for a scope-filtered claim query plan.
+
+CA-HA-03 memory recovery polling follow-up (Luke Ding/Codex, existing In
+Progress branch/worktree). Own `worker_loop_service.py`,
+`cloud_memory_recovery.py` and `test_cloud_memory_recovery.py` for bounded
+no-progress polling; preserve original completion receipts and recovery keys.
