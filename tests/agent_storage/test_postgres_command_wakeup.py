@@ -309,23 +309,24 @@ def test_future_producer_timestamp_does_not_delay_outbox(dsn):
 
 
 @pytest.mark.parametrize(
-    ("limit_column", "second_tenant", "code"),
+    ("scope_limit", "outbox_limit", "second_tenant", "code"),
     [
-        ("max_pending_per_scope", "tenant-a", "command_scope_capacity"),
-        ("max_unpublished_outbox", "tenant-b", "command_outbox_capacity"),
+        (1, 100, "tenant-a", "command_scope_capacity"),
+        (32, 1, "tenant-b", "command_outbox_capacity"),
+        (1, 1, "tenant-a", "command_outbox_capacity"),
     ],
 )
 def test_live_admission_capacity_is_atomic_and_preserves_canonical_stream(
-    dsn, limit_column, second_tenant, code
+    dsn, scope_limit, outbox_limit, second_tenant, code
 ):
     first = _seed(dsn)
     second = _seed(dsn, tenant=second_tenant)
     _enable(dsn)
     with psycopg.connect(dsn) as connection:
         connection.execute(
-            sql.SQL("UPDATE command_wakeup_rollouts SET {}=1, reserved_control_outbox=0").format(
-                sql.Identifier(limit_column)
-            )
+            "UPDATE command_wakeup_rollouts SET max_pending_per_scope=%s, "
+            "max_unpublished_outbox=%s, reserved_control_outbox=0",
+            (scope_limit, outbox_limit),
         )
     _store(dsn).append(_command(first.session_id, key="first"))
     before = _store(dsn).list_for_session(second.session_id)
@@ -337,11 +338,16 @@ def test_live_admission_capacity_is_atomic_and_preserves_canonical_stream(
     assert _counts(dsn) == (1, 1)
 
 
-def test_concurrent_live_admissions_share_one_scope_slot(dsn):
-    sessions = [_seed(dsn), _seed(dsn)]
+@pytest.mark.parametrize("global_limit", [False, True])
+def test_concurrent_live_admissions_share_one_slot(dsn, global_limit):
+    sessions = [_seed(dsn), _seed(dsn, tenant="tenant-b" if global_limit else "tenant-a")]
     _enable(dsn)
     with psycopg.connect(dsn) as connection:
-        connection.execute("UPDATE command_wakeup_rollouts SET max_pending_per_scope=1")
+        connection.execute(
+            "UPDATE command_wakeup_rollouts SET max_pending_per_scope=1, "
+            "max_unpublished_outbox=%s, reserved_control_outbox=0",
+            (1 if global_limit else 100,),
+        )
     barrier = Barrier(2)
 
     def admit(index):
@@ -354,7 +360,8 @@ def test_concurrent_live_admissions_share_one_scope_slot(dsn):
 
     with ThreadPoolExecutor(max_workers=2) as pool:
         outcomes = list(pool.map(admit, range(2)))
-    assert sorted(outcomes) == ["accepted", "command_scope_capacity"]
+    code = "command_outbox_capacity" if global_limit else "command_scope_capacity"
+    assert sorted(outcomes) == ["accepted", code]
     assert _counts(dsn) == (1, 1)
     assert (
         sum(

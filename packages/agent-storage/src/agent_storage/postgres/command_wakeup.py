@@ -22,6 +22,17 @@ from psycopg import Error as PsycopgError
 from psycopg.types.json import Jsonb
 from pydantic import ValidationError
 
+_CONTROL_COMMANDS = {
+    SessionCommandKind.CANCEL,
+    SessionCommandKind.STOP,
+    SessionCommandKind.SUSPEND,
+}
+_OUTBOX_AVAILABLE_SQL = """SELECT NOT EXISTS (
+    SELECT 1 FROM broker_outbox
+    WHERE deployment_namespace=%s AND status IN ('pending','publishing')
+    OFFSET %s LIMIT 1
+) AS available"""
+
 
 class CommandAdmissionCapacityError(RuntimeError):
     def __init__(self, code: str) -> None:
@@ -114,38 +125,34 @@ def record_command_wakeup_in_transaction(
         ):
             raise ValueError("command pending identity conflicts with canonical Event")
     else:
-        _check_outbox_capacity(
-            connection,
-            deployment_namespace,
-            kind,
-            max_unpublished_outbox=rollout["max_unpublished_outbox"],
-            reserved_control_outbox=rollout["reserved_control_outbox"],
-            global_lock_held=True,
+        control = kind in _CONTROL_COMMANDS
+        outbox_ceiling = rollout["max_unpublished_outbox"] - (
+            0 if control else rollout["reserved_control_outbox"]
         )
-        control = kind in {
-            SessionCommandKind.CANCEL,
-            SessionCommandKind.STOP,
-            SessionCommandKind.SUSPEND,
-        }
         kinds = "('cancel','stop','suspend')" if control else "('run','resume','message')"
         ceiling = rollout[
             "max_pending_control_per_scope" if control else "max_pending_per_scope"
         ]
-        inserted = connection.execute(
-            f"""INSERT INTO session_command_pending (
+        # Check global capacity first without another round trip under the locks.
+        admission = connection.execute(
+            f"""WITH outbox AS MATERIALIZED ({_OUTBOX_AVAILABLE_SQL}), inserted AS (
+               INSERT INTO session_command_pending (
                deployment_namespace, scope_key, scope_sequence, command_id, session_id,
                accepted_event_id, accepted_sequence, tenant_id, workspace_id, origin, command_kind
                ) SELECT %s,%s,COALESCE((
                    SELECT MAX(scope_sequence) FROM session_command_pending
                    WHERE deployment_namespace=%s AND scope_key=%s
                ),0)+1,%s,%s,%s,%s,%s,%s,%s,%s
-               WHERE NOT %s OR (
+               FROM outbox WHERE outbox.available AND (NOT %s OR (
                    SELECT count(*) FROM session_command_pending
                    WHERE deployment_namespace=%s AND scope_key=%s
                      AND status='pending' AND command_kind IN {kinds}
-               ) < %s
-               RETURNING command_id""",
+               ) < %s)
+               RETURNING command_id)
+               SELECT available, EXISTS (SELECT 1 FROM inserted) AS inserted FROM outbox""",
             (
+                deployment_namespace,
+                outbox_ceiling - 1,
                 deployment_namespace,
                 scope_key,
                 deployment_namespace,
@@ -164,7 +171,9 @@ def record_command_wakeup_in_transaction(
                 ceiling,
             ),
         ).fetchone()
-        if inserted is None:
+        if not admission["available"]:
+            raise CommandAdmissionCapacityError("command_outbox_capacity")
+        if not admission["inserted"]:
             raise CommandAdmissionCapacityError("command_scope_capacity")
     if (
         existing is not None
@@ -208,18 +217,13 @@ def _check_outbox_capacity(
             "SELECT pg_advisory_xact_lock(hashtextextended(%s, 49))",
             (f"{namespace}:command-global",),
         )
-    outbox_count = connection.execute(
-        """SELECT count(*) AS total FROM broker_outbox
-           WHERE deployment_namespace=%s AND status IN ('pending','publishing')""",
-        (namespace,),
-    ).fetchone()["total"]
-    control = kind in {
-        SessionCommandKind.CANCEL,
-        SessionCommandKind.STOP,
-        SessionCommandKind.SUSPEND,
-    }
-    execution_ceiling = max_unpublished_outbox - reserved_control_outbox
-    if outbox_count >= (max_unpublished_outbox if control else execution_ceiling):
+    ceiling = max_unpublished_outbox - (
+        0 if kind in _CONTROL_COMMANDS else reserved_control_outbox
+    )
+    available = connection.execute(
+        _OUTBOX_AVAILABLE_SQL, (namespace, ceiling - 1)
+    ).fetchone()["available"]
+    if not available:
         raise CommandAdmissionCapacityError("command_outbox_capacity")
 
 
