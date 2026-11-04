@@ -37866,3 +37866,7 @@ CA-HA-03 additive Outbox runtime readiness window (same owner and branch).
 Own migration_history_plan.py and branch-history regressions. Allow the exact
 pre-upgrade ledgers while staging current runtime code; keep checksum, gap,
 unknown-version and explicit cutover checks fail-closed.
+
+CA-HA-03 execution-only Worker imports (same owner and branch). Own Worker
+package exports, loop.py, worker_loop_service.py and workspace smoke regression.
+Defer the legacy command consumer until full Worker composition needs it.
