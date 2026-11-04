@@ -184,6 +184,8 @@
 
 # CA-HA-03 — 资源预算、退避与技术namespace隔离
 
+- E1 投影修复计划复用（实施前登记）：沿用 CA-HA-03 Owner、branch 和 worktree。Owned paths 为 packages/agent-storage/src/agent_storage/postgres/{projection_work,projection_work_repair_plan_migration,migration_catalog_tail}.py、tests/agent_storage/{projection_work_test_support,test_projection_repair_contention}.py 和 WORKLOG.md。仅新增前向迁移和调用，保留已有修复 SQL、锁与事务边界。独立 PostgreSQL 验证，旧二进制严格 schema 校验单独核实。
+
 - E1 模型连接中断 follow-up（实施前登记）：沿用 CA-HA-03 Owner、branch 与 worktree。Owned paths 为 packages/agent-core/src/agent_core/ports/worker_budget.py、packages/agent-integrations/src/agent_integrations/worker_budget.py、apps/worker/src/zebra_agent_worker/execution_errors.py、tests/agent_integrations/test_worker_budget_transport.py、tests/worker/test_reliability_boundaries.py 和 WORKLOG.md。只处理已有持久预留之后的传输中断及超时。
 
 - E1 对账原因读取补充（实施前登记）：沿用 CA-HA-03 Owner、branch 与 worktree。Owned paths 为 packages/agent-storage/src/agent_storage/postgres/command_wakeup_outcome.py、tests/agent_storage/test_postgres_command_wakeup_outcome.py 和 WORKLOG.md。复用现有对账错误码及原 Run 读取资格。
