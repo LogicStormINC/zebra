@@ -37879,3 +37879,5 @@ retaining missing-schema and explicit-cutover checks.
 CA-HA-03 private executor exit diagnostics (same owner and branch). Own
 session_process.py. Record bounded exit status and receipt presence after
 supervision without changing interruption, cancellation or retry semantics.
+Also own session_process_child.py for the initial recovery exception category
+at the existing pre-model boundary, without logging request or exception text.
