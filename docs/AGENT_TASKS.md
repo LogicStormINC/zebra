@@ -37746,3 +37746,7 @@ In Progress branch/worktree). Own `stream_v2_http.py` and
 CA-HA-03 F-09 stream snapshot Run header reuse (Luke Ding/Codex, existing
 In Progress branch/worktree). Own `stream_proof_batch.py` and
 `test_stream_proof_batch.py` for exact same-snapshot lookup reuse.
+
+CA-HA-03 bounded PostgreSQL event page lookup (Luke Ding/Codex, existing In
+Progress branch/worktree). Own PostgreSQL `task_event_pages.py` and
+`test_postgres_task_event_pages.py` for metadata round-trip reduction.
