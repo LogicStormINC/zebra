@@ -151,16 +151,16 @@ def backfill_task_event_positions(
             next_sequence += int(row["source_task"] is None)
             source_cursor = row["sequence"]
         limit -= max(len(rows), 1)  # Empty Segments also consume bounded work.
-        more = connection.execute(
-            """SELECT 1 FROM session_events WHERE deployment_namespace=%s AND session_id=%s
-               AND sequence>%s LIMIT 1""",
-            (namespace, member["session_id"], source_cursor),
-        ).fetchone()
         connection.execute(
-            """UPDATE execution_segments SET event_position_source_cursor=%s,
-                      event_position_source_ready=%s
-               WHERE deployment_namespace=%s AND session_id=%s""",
-            (source_cursor, more is None, namespace, member["session_id"]),
+            """UPDATE execution_segments AS segment
+               SET event_position_source_cursor=%s,
+                   event_position_source_ready=NOT EXISTS (
+                       SELECT 1 FROM session_events AS event
+                       WHERE event.deployment_namespace=segment.deployment_namespace
+                         AND event.session_id=segment.session_id AND event.sequence>%s
+                   )
+               WHERE segment.deployment_namespace=%s AND segment.session_id=%s""",
+            (source_cursor, source_cursor, namespace, member["session_id"]),
         )
         if _pending_segment(connection, namespace, task_id) is None:
             phase = "ready"

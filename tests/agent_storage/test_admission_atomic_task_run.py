@@ -169,6 +169,7 @@ def test_atomic_initial_run_indexes_before_wakeup_and_rolls_back_on_rejection(
     root_member_reads = []
     task_locks = []
     position_reads = []
+    source_tail_writes = []
 
     def observe_rebuild(connection, namespace, session_id, **kwargs):
         class AdmissionConnection:
@@ -188,6 +189,11 @@ def test_atomic_initial_run_indexes_before_wakeup_and_rolls_back_on_rejection(
                             if ('SELECT next_event_sequence,event_position_state' in statement
                                 or 'SELECT GREATEST(' in statement):
                                 position_reads.append(statement)
+                            if (
+                                "SELECT 1 FROM session_events WHERE" in statement
+                                or "UPDATE execution_segments" in statement
+                            ):
+                                source_tail_writes.append(statement)
                             if ("SELECT created_at FROM session_projections" in statement
                                 or "FROM execution_segments WHERE" in statement
                                 or "LEFT JOIN execution_segments AS member" in statement):
@@ -205,6 +211,7 @@ def test_atomic_initial_run_indexes_before_wakeup_and_rolls_back_on_rejection(
         assert len(root_member_reads) == 1
         assert len(task_locks) == 1
         assert len(position_reads) == 1
+        assert len(source_tail_writes) == 1
         wake(connection, namespace, event, is_new_admission=is_new_admission)
         raise AtomicSurfaceAborted("controlled wakeup rollback")
 
