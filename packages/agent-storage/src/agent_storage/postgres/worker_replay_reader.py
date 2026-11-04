@@ -201,21 +201,23 @@ def read_worker_events(
     result: list[SessionEvent] = []
     size = 0
     while after < highwater:
-        page = (
-            list(
-                read_session_page(
-                    connection, namespace, session_id, after, through=highwater
-                ).events
+        if types is None:
+            page = list(read_session_page(
+                connection, namespace, session_id, after, through=highwater
+            ).events)
+            exhausted = False
+        else:
+            page, exhausted = _typed_page(
+                connection, namespace, session_id, types, after, highwater
             )
-            if types is None
-            else _typed_page(connection, namespace, session_id, types, after, highwater)
-        )
         if not page:
             break
         size += sum(len(_encoded(event)) for event in page)
         if len(result) + len(page) > 2048 or size > 1_048_576:
             raise WorkerReplayLimitExceeded("exact Worker replay exceeds 2048 Events/1MiB")
         result.extend(page)
+        if exhausted:
+            break
         after = page[-1].sequence
     if authority is not None:
         assert_current_lease_fence(connection, namespace, session_id, authority.lease_fence)
@@ -235,7 +237,7 @@ def _typed_page(
     types: tuple[EventType, ...],
     after: int,
     through: int,
-) -> list[SessionEvent]:
+) -> tuple[list[SessionEvent], bool]:
     # Each type is an indexed seek with a bounded LIMIT BEFORE the merge/sort.
     # A broad event_type=ANY ORDER BY sequence can scan a whole old Session.
     metadata = connection.execute(
@@ -259,7 +261,7 @@ def _typed_page(
         positions.append(row["sequence"])
         size += bound
     if not positions:
-        return []
+        return [], True
     rows = connection.execute(
         f"SELECT {EVENT_COLUMNS} FROM session_events event "
         "WHERE deployment_namespace=%s AND session_id=%s AND sequence=ANY(%s::bigint[]) "
@@ -271,4 +273,5 @@ def _typed_page(
         map(len, map(_encoded, events))
     ) > size:
         raise ValueError("Worker evidence page conflicts with admission metadata")
-    return events
+    # A full or byte-trimmed page may leave more evidence below the captured head.
+    return events, len(positions) == len(metadata) < 256
