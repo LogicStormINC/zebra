@@ -325,7 +325,9 @@ def prepare_command_handoff(
     event_id: Any, generation: int,
 ) -> CoverageRecoveryCheck | None:
     """Select from native approval, then revalidate exact proof under pickup locks."""
-    normal = None if generation == 0 else connection.execute(
+    if generation == 0:
+        return check  # Initial handoff has no recovery approval to validate.
+    normal = connection.execute(
         """SELECT a.reason,a.coverage_proof,r.wake_generation AS picked_generation
            FROM command_recovery_attempts a LEFT JOIN command_handoff_receipts r
              ON r.deployment_namespace=a.deployment_namespace

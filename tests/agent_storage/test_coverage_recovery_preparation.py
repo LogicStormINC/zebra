@@ -47,9 +47,12 @@ def test_native_pickup_refuses_unsupported_or_misclassified_protocol(protocol, r
         prepare_command_handoff(check, conn, "fixture", "event", 1)
 
 
-def test_native_pickup_initial_generation_does_not_query_approval():
+def test_native_pickup_initial_generation_does_not_prepare_recovery():
     conn = Connection()
-    assert prepare_command_handoff(None, conn, "fixture", "event", 0) is None
+    check = SimpleNamespace(
+        prepare=lambda *args: pytest.fail("first pickup needs no recovery snapshot")
+    )
+    assert prepare_command_handoff(check, conn, "fixture", "event", 0) is check
     assert not conn.calls
 
 

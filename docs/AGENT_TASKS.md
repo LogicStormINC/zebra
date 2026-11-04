@@ -37618,3 +37618,9 @@ CA-HA-03 E1 scope admission history scan follow-up (Luke Ding/Codex, existing
 In Progress branch/worktree): own the existing command_wakeup.py and
 test_postgres_command_wakeup.py for the measured admission scan. Reuse the
 existing sequence and pending indexes with the same lock order and limits.
+
+CA-HA-03 E1 first pickup connection follow-up (Luke Ding/Codex, existing In
+Progress branch/worktree): own coverage_recovery_preparation.py in PostgreSQL
+storage and test_coverage_recovery_preparation.py. Skip the separate recovery
+snapshot for generation zero only. Preserve locked approval checks, stale
+generation handling, and every recovery proof for later generations.
