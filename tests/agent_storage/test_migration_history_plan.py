@@ -2,7 +2,10 @@
 
 from dataclasses import replace
 
-from agent_storage.postgres.migration_history_plan import migration_history_plan
+from agent_storage.postgres.migration_history_plan import (
+    migration_history_plan,
+    runtime_schema_matches,
+)
 from agent_storage.postgres.migrations import MIGRATIONS
 from agent_storage.postgres.runtime_gate_migration import RUNTIME_GATE_MIGRATION
 from agent_storage.postgres.runtime_gate_termination_migration import (
@@ -38,3 +41,14 @@ def test_unknown_checksum_does_not_enable_legacy_slot_mapping():
 def test_historical_prefix_catalog_remains_supported():
     prefix = tuple(m for m in MIGRATIONS if m.version <= 109)
     assert migration_history_plan({}, prefix) == prefix
+
+
+def test_additive_readiness_rejects_corrupt_or_noncontiguous_ledgers():
+    complete = {m.version: (m.name, m.checksum) for m in MIGRATIONS}
+    for version in (122, 123, 124, 125):
+        prefix = {v: row for v, row in complete.items() if v <= version}
+        assert runtime_schema_matches(prefix)
+        assert not runtime_schema_matches({**prefix, version: (prefix[version][0], "0" * 64)})
+        assert not runtime_schema_matches({**prefix, 126: ("unknown", "0" * 64)})
+    assert not runtime_schema_matches({v: row for v, row in complete.items() if v != 124})
+    assert not runtime_schema_matches({v: row for v, row in complete.items() if v <= 121})
