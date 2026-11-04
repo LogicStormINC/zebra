@@ -184,6 +184,8 @@
 
 # CA-HA-03 — 资源预算、退避与技术namespace隔离
 
+- E1 授权过期测试夹具（实施前登记）：沿用 CA-HA-03 Owner、branch 和 worktree。Owned paths 为 tests/api/test_task_resource_binding.py 和 WORKLOG.md。去掉测试签发时多余且不在既有 Broker 测试配置授权范围内的 scope，以运行实际资源绑定与过期断言。
+
 - E1 准入重复源检查（实施前登记）：沿用 CA-HA-03 Owner、branch 和 worktree。Owned paths 为 packages/agent-storage/src/agent_storage/postgres/command_wakeup.py、tests/agent_storage/test_postgres_command_wakeup.py 和 WORKLOG.md。仅跳过 native rollout 已启用时重复的 bootstrap marker 探测；保留关闭路径和现有严格校验。
 
 - E1 v122/v123 滚动过渡（实施前登记）：沿用 CA-HA-03 Owner、branch 和 worktree。Owned paths 为 packages/agent-storage/src/agent_storage/postgres/{migration_history_plan,migration_runner,worker_capability,projection_work,projection_work_io}.py、apps/worker/src/zebra_agent_worker/command_process_state.py、tests/agent_storage/{test_schema_readiness,test_projection_repair_contention,test_postgres_branch_history_upgrade}.py 和 WORKLOG.md。三个运行时门接受精确相邻账本；迁移执行器保持严格校验；旧 schema 沿用既有修复语句。
