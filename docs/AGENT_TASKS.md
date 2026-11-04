@@ -37722,3 +37722,7 @@ no-progress polling; preserve original completion receipts and recovery keys.
 CA-HA-03 canonical model/tool projection contention follow-up (Luke Ding/Codex,
 existing In Progress branch/worktree). Own `model_tool_projections.py` and
 `test_postgres_model_tool_projections.py` for the stream lock strength.
+
+CA-HA-03 E1-R F-08 cleanup fault proof (Luke Ding/Codex, existing In
+Progress branch/worktree). Own `test_command_runtime_cleanup_live.py` for
+the lost removal response with real OCI and isolated PostgreSQL.

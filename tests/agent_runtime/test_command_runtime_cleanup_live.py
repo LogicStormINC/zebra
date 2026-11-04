@@ -119,9 +119,11 @@ def engine(dsn):
 
 
 @pytest.mark.parametrize(
-    "case", ["created", "lost_created_write", "already_absent", "wrong_label", "direct_cancel"]
+    "case",
+    ["created", "lost_created_write", "already_absent", "wrong_label", "direct_cancel",
+     "lost_remove_response"],
 )
-def test_exact_cleanup_after_cancel_with_real_engine_and_database(dsn, engine, case):
+def test_exact_cleanup_after_cancel_with_real_engine_and_database(dsn, engine, case, monkeypatch):
     pinned, worker_dsn, create, call = engine
     lease = _setup(dsn)
     instances = _instances(dsn, lease, engine=pinned.identity)
@@ -152,12 +154,40 @@ def test_exact_cleanup_after_cancel_with_real_engine_and_database(dsn, engine, c
     else:
         command = _intent(dsn, lease.session_id, "cancel")
         _control(dsn, command)
+    removed = []
+    if case == "lost_remove_response":
+        runner = pinned._runner
+
+        def lose_remove_response(command, **kwargs):
+            result = runner(command, **kwargs)
+            if "rm" in command and command[-1] == container_id and result.returncode == 0:
+                removed.append(container_id)
+                raise subprocess.TimeoutExpired(command, kwargs["timeout"])
+            return result
+
+        monkeypatch.setattr(pinned, "_runner", lose_remove_response)
+
     cleanup_runtime_batch(
         worker_dsn,
         deployment_namespace=NAMESPACE,
         owner="live-cleanup",
         engine=pinned,
     )
+    if case == "lost_remove_response":
+        assert removed == [container_id]
+        assert not call("ps", "-aq", "--filter", f"id={container_id}").stdout.strip()
+        with psycopg.connect(dsn) as connection:
+            assert connection.execute("SELECT status FROM runtime_instances").fetchone() == (
+                "created",
+            )
+            assert connection.execute("SELECT status FROM command_runtime_cleanup").fetchone() == (
+                "pending",
+            )
+            connection.execute("UPDATE command_runtime_cleanup SET available_at=clock_timestamp()")
+        assert cleanup_runtime_batch(
+            worker_dsn, deployment_namespace=NAMESPACE, owner="verify-absence", engine=pinned
+        ) == 1
+        assert removed == [container_id]
     with psycopg.connect(dsn) as connection:
         status = connection.execute(
             "SELECT status FROM runtime_instances WHERE instance_id=%s",
