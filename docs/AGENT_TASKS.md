@@ -37837,3 +37837,8 @@ CA-HA-03 native Task SSE page and privacy dispatch (same owner and branch).
 Own session_streaming.py and existing native source-tail regressions. Reuse
 one bounded callback socket for the page and its subsequent privacy check,
 with separate transactions and the legacy path preserved.
+
+CA-HA-03 raw SSE preflight socket reuse (same owner and branch). Own
+stream_v2_http.py and native source-tail regressions. Reuse one bounded
+callback socket on the legacy preflight path with fresh transactions,
+retaining signed-cursor negotiation and the existing authority checks.
