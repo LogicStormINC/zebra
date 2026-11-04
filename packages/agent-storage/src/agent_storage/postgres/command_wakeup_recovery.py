@@ -112,30 +112,31 @@ def recover_command_batch(
         try:
             with database.connect() as connection:
                 connection.execute("SET LOCAL lock_timeout = '5s'")
+                deferred = _defer_active(connection, deployment_namespace, scope, row)
+            if deferred is not None:
+                results.append(deferred)
+                continue
+            # Release the scan transaction before native preparation borrows a socket.
+            prepared = prepare_command_recovery(
+                coverage_check, deployment_namespace, row["accepted_event_id"]
+            )
+            with database.connect() as connection:
+                connection.execute("SET LOCAL lock_timeout = '5s'")
                 results.append(
-                    _recover(
-                        connection, deployment_namespace, scope, row, coverage_check=coverage_check
-                    )
+                    _recover(connection, deployment_namespace, scope, row, coverage_check=prepared)
                 )
         except (CoverageRecoveryDeferred, QueryCanceled, LockNotAvailable):
             results.append(CommandRecovery(row["accepted_event_id"], 0, RecoveryStatus.DEFERRED))
     return tuple(results)
 
 
-def _recover(
-    connection: Any,
-    namespace: str,
-    scope: PrincipalScope,
-    candidate: dict[str, Any],
-    *,
-    coverage_check: CoverageRecoveryCheck | None = None,
-    continuation_fence: LeaseFence | None = None,
-) -> CommandRecovery:
+def _defer_active(
+    connection: Any, namespace: str, scope: PrincipalScope, candidate: dict[str, Any]
+) -> CommandRecovery | None:
     event_id = candidate["accepted_event_id"]
     session_id = SessionId(candidate["session_id"])
     if (
-        continuation_fence is None
-        and connection.execute(
+        connection.execute(
             """SELECT 1 FROM worker_leases AS lease
            JOIN control_plane_epochs AS authority USING (deployment_namespace)
            WHERE lease.deployment_namespace=%s AND lease.session_id=%s
@@ -147,7 +148,6 @@ def _recover(
     ):
         # Read-only hint avoids a new lock acquisition/release round for inactive
         # leases. It cannot defer anything: the locked conditional UPDATE must agree.
-        connection.execute("SAVEPOINT command_recovery_preflight")
         lock_session_lease_boundary(connection, namespace, session_id)
         _lock_epoch(connection, namespace)
         _lock_lease_and_clock(connection, namespace, session_id, update=True)
@@ -182,17 +182,23 @@ def _recover(
             ),
         ).fetchone()
         if deferred is not None:
-            connection.execute("RELEASE SAVEPOINT command_recovery_preflight")
             return CommandRecovery(
                 event_id, deferred["current_generation"], RecoveryStatus.DEFERRED
             )
-        # Release even locks taken before an UPDATE predicate recheck missed.
-        # Never prepare external proof while holding these lifecycle locks.
-        connection.execute("ROLLBACK TO SAVEPOINT command_recovery_preflight")
-        connection.execute("RELEASE SAVEPOINT command_recovery_preflight")
-    coverage_check = prepare_command_recovery(
-        coverage_check, namespace, event_id, continuation=continuation_fence is not None,
-    )
+    return None
+
+
+def _recover(
+    connection: Any,
+    namespace: str,
+    scope: PrincipalScope,
+    candidate: dict[str, Any],
+    *,
+    coverage_check: CoverageRecoveryCheck | None = None,
+    continuation_fence: LeaseFence | None = None,
+) -> CommandRecovery:
+    event_id = candidate["accepted_event_id"]
+    session_id = SessionId(candidate["session_id"])
     connection = prepared_recovery_connection(connection, coverage_check)
     lock_session_lease_boundary(connection, namespace, session_id)
     epoch = _lock_epoch(connection, namespace)
@@ -443,7 +449,9 @@ def continue_coverage_command(
         namespace,
         scope,
         row,
-        coverage_check=coverage_check,
+        coverage_check=prepare_command_recovery(
+            coverage_check, namespace, row["accepted_event_id"], continuation=True,
+        ),
         continuation_fence=fence,
     )
     if result.status is not RecoveryStatus.APPROVED:

@@ -37677,3 +37677,8 @@ existing PostgreSQL handoff regression. Only an accepted fenced handoff can
 advance the pending row's first recovery check to the lease expiry.
 The handoff file size boundary adds ownership of command_wakeup_receipts.py
 for moving its existing inbox verification, retaining the handoff import seam.
+
+CA-HA-03 F-02 recovery socket sequencing follow-up (Luke Ding/Codex, existing
+In Progress branch/worktree): own command_wakeup_recovery.py and
+test_command_recovery_preflight.py. End the ordinary scan's deny-only
+transaction before native preparation, then recheck proof and fence at commit.
