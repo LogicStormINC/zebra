@@ -4,6 +4,7 @@ import json
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from hashlib import sha256
+from time import monotonic, sleep
 from typing import Any
 
 import psycopg
@@ -11,7 +12,7 @@ from agent_core.domain.leases import LeaseLostError
 from psycopg.conninfo import conninfo_to_dict
 from psycopg.rows import dict_row
 
-from agent_storage.postgres.connection_capacity import Lane, connect
+from agent_storage.postgres.connection_capacity import DatabaseCapacityExceeded, Lane, connect
 from agent_storage.postgres.database import PostgresDatabase
 from agent_storage.postgres.force_stop_signal import STOP_ANCESTRY
 from agent_storage.postgres.leases import assert_current_lease_fence
@@ -106,7 +107,18 @@ def acknowledge_executor_incarnation(
 
 
 def acknowledge_executor(database: PostgresDatabase, sid: Any, fence: Any) -> None:
-    with _connection(database) as connection:
+    deadline = monotonic() + 0.25
+    while True:
+        try:
+            connection = _connection(database)
+            break
+        except DatabaseCapacityExceeded:
+            # ponytail: brief permit contention only; longer outages need durable receipt recovery.
+            remaining = deadline - monotonic()
+            if remaining <= 0:
+                raise
+            sleep(min(0.01, remaining))
+    with connection:
         # Registered older attempts may acknowledge their OWN exit after takeover;
         # they cannot attest the successor's exit or restore its revoked lease.
         if _receipt(connection, database.deployment_namespace, "executor_started", sid, fence):

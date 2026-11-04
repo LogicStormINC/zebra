@@ -37782,3 +37782,8 @@ CA-HA-03 E1 budget deadline poll (Luke Ding/Codex, existing In Progress
 branch/worktree). Use owned PostgreSQL worker_budget.py, worker_budget_queries.py
 and test_postgres_worker_budget.py. Check current binding and bounded ancestor
 deadline in one statement with the same fail-closed rules.
+
+CA-HA-03 E1 executor exit ACK capacity (Luke Ding/Codex, existing In Progress
+branch/worktree). Use owned force_stop_executors.py and the existing native
+executor capacity regression. Retry only typed pre-connection permit refusal
+within a small bounded interval; preserve exact fence and unknown SQL outcomes.

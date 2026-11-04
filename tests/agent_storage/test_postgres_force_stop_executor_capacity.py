@@ -106,3 +106,43 @@ def test_normal_saturation_refuses_monitor_without_claiming_exit_or_control(setu
     assert sum(database._capacity.stats()["active"].values()) == 0
     with database.connect() as c:
         assert not executors_exited(c, database.deployment_namespace, sid, None)
+
+
+def test_exit_ack_retries_after_control_permit_refusal(setup, monkeypatch):
+    from agent_storage.postgres import force_stop_executors
+
+    database, sid, fence = composed(setup)
+    permit = database._capacity.acquire("control")
+    waits = []
+
+    def release_on_wait(delay):
+        waits.append(delay)
+        permit.release()
+
+    monkeypatch.setattr(force_stop_executors, "sleep", release_on_wait)
+    try:
+        acknowledge_executor(database, sid, fence)
+    finally:
+        if not waits:
+            permit.release()
+    assert len(waits) == 1
+    with database.connect() as c:
+        assert executors_exited(c, database.deployment_namespace, sid, None)
+
+
+def test_exit_ack_stays_unconfirmed_if_control_permit_does_not_free(setup, monkeypatch):
+    from agent_storage.postgres import force_stop_executors
+    from agent_storage.postgres.connection_capacity import DatabaseCapacityExceeded
+
+    database, sid, fence = composed(setup)
+    permit = database._capacity.acquire("control")
+    ticks = iter([0.0, 0.0, 0.25])
+    monkeypatch.setattr(force_stop_executors, "monotonic", lambda: next(ticks))
+    monkeypatch.setattr(force_stop_executors, "sleep", lambda delay: None)
+    try:
+        with pytest.raises(DatabaseCapacityExceeded):
+            acknowledge_executor(database, sid, fence)
+    finally:
+        permit.release()
+    with database.connect() as c:
+        assert not executors_exited(c, database.deployment_namespace, sid, None)
