@@ -453,6 +453,20 @@ def test_agui_initial_snapshot_one_socket_and_native_override_fallback(owned, mo
             assert result.status_code == 503 and b"stream_v2_unavailable" in result.body
             sockets = sum(v for k, v in telemetry.calls.items() if k.endswith("/new_pg_socket"))
             assert sockets == 1
+            from agent_integrations import run_stream_admission
+
+            legacy.setattr(run_stream_admission, "load_run_stream_admission", lambda *_: None)
+            for kind, identifier in (("tasks", run.task_id), ("sessions", run.session_id)):
+                raw_request.url.path = f"/{kind}/{identifier}/stream"
+                for query, expected in (({}, 200), ({"after_sequence": str(2**63)}, 400)):
+                    raw_request.query_params = query
+                    response = asyncio.run(stream_v2_http.raw_response(
+                        api, raw_request, database_path=Path("/unused"),
+                        preflight=raw_preflight, snapshot_preflight=raw_preflight,
+                    ))
+                    assert response.status_code == expected
+                    if expected == 400:
+                        assert b"after_sequence exceeds" in response.body
 
         for name, route, expected in (
             ("task_id_for_session", "session", 409),

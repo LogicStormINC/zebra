@@ -18,6 +18,7 @@ from agent_integrations.redis_transient_discovery import TransientDescriptor, tr
 from agent_integrations.run_stream_admission import load_run_stream_admission
 from agent_storage import ControlPlaneStores
 from agent_storage.live_event_store import PostCommitPublishingEventStore
+from agent_storage.postgres.agent_tasks import PostgresAgentTaskStore
 from agent_storage.postgres.database import PostgresDatabase
 from agent_storage.postgres.direct_control import PostgresDirectControl
 from agent_storage.postgres.events import PostgresEventStore
@@ -62,6 +63,22 @@ def native_raw_snapshot_compatible(
         ):
             return False
     return True
+
+
+def legacy_snapshot_database(api: "ZebraAgentApi") -> PostgresDatabase | None:
+    tasks = api.stores.tasks
+    if (
+        api.stream_v2_reader is not None
+        or type(tasks) is not PostgresAgentTaskStore
+        or not tasks.stream_head_reads_compatible
+        or getattr(tasks.read_stream_source_head, "__func__", None)
+        is not PostgresAgentTaskStore._snapshot_native_source_head
+    ):
+        return None
+    database = tasks._database
+    if database.deployment_namespace != getattr(api.stores, "deployment_namespace", None):
+        return None
+    return database if native_raw_snapshot_compatible(api, database) else None
 
 
 @dataclass(frozen=True, slots=True)

@@ -16,7 +16,6 @@ from agent_integrations.ag_ui.checkpoint_plan import checkpoint_version
 from agent_integrations.ag_ui.profiles import AgUiProjectionProfile
 from agent_storage.postgres.agent_tasks import PostgresAgentTaskStore
 from agent_storage.postgres.connection_scope import postgres_connection_scope
-from agent_storage.postgres.database import PostgresDatabase
 from agent_storage.postgres.stream_proof_batch import StreamProofReader, StreamProofSnapshot
 from agent_storage.postgres.task_io import current_task_io_deadline
 from fastapi import Request
@@ -36,8 +35,10 @@ from zebra_agent_api.session_streaming import _deadline, tail_session_events, ta
 from zebra_agent_api.stream_v2_authority import (
     V2ReadAuthority,
     V2ReadBinding,
+    legacy_snapshot_database,
     native_raw_snapshot_compatible,
 )
+from zebra_agent_api.stream_v2_query import legacy_cursor_position
 from zebra_agent_api.stream_v2_query import source_query as source_query
 from zebra_agent_api.stream_v2_reader import V2StreamContext
 from zebra_agent_api.tenant_guard import task_access_response
@@ -81,23 +82,6 @@ def _raw_snapshot_authority(api: ZebraAgentApi) -> V2ReadAuthority | None:
     return authority if native_raw_snapshot_compatible(api, authority.proofs._database) else None
 
 
-def _legacy_snapshot_database(api: ZebraAgentApi) -> PostgresDatabase | None:
-    tasks = api.stores.tasks
-    if (
-        api.stream_v2_reader is not None
-        or prepare_v2 is not _native_agui_callbacks[1]
-        or type(tasks) is not PostgresAgentTaskStore
-        or not tasks.stream_head_reads_compatible
-        or getattr(tasks.read_stream_source_head, "__func__", None)
-        is not PostgresAgentTaskStore._snapshot_native_source_head
-    ):
-        return None
-    database = tasks._database
-    if database.deployment_namespace != getattr(api.stores, "deployment_namespace", None):
-        return None
-    return database if native_raw_snapshot_compatible(api, database) else None
-
-
 def prepare_v2(
     api: ZebraAgentApi,
     path: str,
@@ -129,7 +113,7 @@ def prepare_v2(
         if proof is not None:
             database = (
                 authority.proofs._database if authority is not None
-                else _legacy_snapshot_database(api)
+                else legacy_snapshot_database(api)
             )
             if database is None or (proof._database._dsn, proof._namespace) != (
                 database._dsn, database.deployment_namespace
@@ -382,14 +366,17 @@ async def raw_response(
 
     authority = _raw_snapshot_authority(api) if snapshot_preflight is not None else None
     proofs = authority.proofs if authority is not None else None
-    if proofs is None and snapshot_preflight is not None:
-        if (database := _legacy_snapshot_database(api)) is not None:
+    if proofs is None and snapshot_preflight is not None and (
+        prepare_v2 is _native_agui_callbacks[1]
+    ):
+        if (database := legacy_snapshot_database(api)) is not None:
             proofs = StreamProofReader(
                 database._dsn, deployment_namespace=database.deployment_namespace,
                 task_io_connections=database._task_io,
             )
 
-    type Prepared = ApiResponse | tuple[V2StreamContext, UUID, int, SessionId | None] | None
+    type Position = tuple[V2StreamContext | None, UUID, int, SessionId | None]
+    type Prepared = ApiResponse | JSONResponse | Position | None
 
     def prepare_context(proof: StreamProofSnapshot | None = None) -> Prepared:
         if "X-Zebra-AGUI-Profile" in request.headers or "X-Zebra-AGUI-Revision" in request.headers:
@@ -399,6 +386,9 @@ async def raw_response(
             if proof is not None
             else prepare_v2(api, request.url.path, query, host)
         )
+        if context is None and proof is not None and api.stream_v2_reader is None:
+            position = legacy_cursor_position(request, proof)
+            return position if isinstance(position, JSONResponse) else (None, *position)
         if isinstance(context, ApiResponse) or context is None:
             return context
         rewritten = source_query(api, context, query)
@@ -455,8 +445,8 @@ async def raw_response(
     )
     if isinstance(admitted, ApiResponse):
         return JSONResponse(status_code=admitted.status_code, content=admitted.body)
-    if admitted is None:
-        return None
+    if admitted is None or isinstance(admitted, JSONResponse):
+        return admitted
     context, resource, after, initial_wake_segment = admitted
     deadline = _deadline(getattr(host, "expires_at", None))
     options = dict(

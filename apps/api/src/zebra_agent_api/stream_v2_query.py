@@ -6,11 +6,15 @@ from collections.abc import Mapping
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from agent_core.domain.identifiers import SessionId
+from agent_core.domain.identifiers import SessionId, TaskId
 from agent_core.ports.stream_source_head import StreamObservationReadPort
 from agent_integrations.ag_ui import AgUiCursor
+from agent_storage.postgres.stream_proof_batch import StreamProofSnapshot
+from fastapi import Request
+from fastapi.responses import JSONResponse
 
 from zebra_agent_api.ag_ui_observation_binding import stream_negotiation_problem
+from zebra_agent_api.request_cursor import after_sequence
 from zebra_agent_api.responses import ApiResponse
 from zebra_agent_api.stream_v2_reader import V2StreamContext
 
@@ -88,3 +92,30 @@ def source_query(
         return _source_query(api, context, query, initial_metadata=initial_metadata)
     except ValueError:
         return stream_negotiation_problem(400, "invalid_cursor")
+
+def legacy_cursor_position(
+    request: Request, proof: StreamProofSnapshot,
+) -> tuple[UUID, int, SessionId | None] | JSONResponse:
+    after, error = after_sequence(request)
+    if error is not None:
+        return error
+    _, kind, raw_id, _ = request.url.path.split("/")
+    resource = UUID(raw_id)  # The authorized raw preflight already checked the path.
+    segment = None
+    if kind == "tasks":
+        header = proof.read_task_header(TaskId(resource), require_source_coverage=True)
+        if header is None:
+            return JSONResponse(status_code=404, content={"status": "not_found"})
+        highwater, segment = header.current_sequence, header.active_segment_id
+    else:
+        highwater = proof.read_session_highwater(SessionId(resource))
+    if after > highwater:
+        label = "Task" if kind == "tasks" else "Session"
+        return JSONResponse(
+            status_code=400,
+            content={
+                "status": "invalid_request",
+                "reason": f"after_sequence exceeds {label} highwater",
+            },
+        )
+    return resource, after, segment
