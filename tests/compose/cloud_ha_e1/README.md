@@ -322,6 +322,13 @@ Missing or mismatched old exit evidence requires explicit reconciliation.
 The periodic crash filter deliberately skips clean and SIGTERM exits, so
 planned boot startup requires its own entry point.
 
+Apply the same identity gate to an image replacement and to rollback. Compare
+the host-published container ID and start time with Docker, and verify the
+identity through the Worker's own parser before sending new commands. Before
+capacity or fault injection, require a fresh signed synthetic Task to reach
+`session_completed` on each Worker. A sealed 201 or a drained command can also
+belong to a suspended Task.
+
 Accept this configuration with a named isolated VM restart, both node
 timers, an old exact exit receipt and a new synthetic command on the
 restarted node. A healthy Docker process alone is insufficient evidence.
