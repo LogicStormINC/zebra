@@ -12,10 +12,9 @@ ROOT = Path("docs/contracts/script-bundle-validation")
 
 
 def test_exact_producer_exports_and_native_vectors():
-    assert json.loads((ROOT / "contract.json").read_bytes()) == native_script_bundle_contract()
-    assert (
-        json.loads((ROOT / "request.schema.json").read_bytes()) == ScriptBundle.model_json_schema()
-    )
+    contract = native_script_bundle_contract()
+    assert json.loads((ROOT / "contract.json").read_bytes()) == contract
+    assert json.loads((ROOT / "request.schema.json").read_bytes()) == contract["requestSchema"]
     for vector in json.loads((ROOT / "vectors.json").read_bytes()):
         raw = vector["raw"].encode()
         assert vector["inputDigest"] == "sha256:" + sha256(raw).hexdigest()

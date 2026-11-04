@@ -119,7 +119,9 @@ def test_old_actions_never_implicitly_allow_scripts_and_old_route_unchanged(prep
         )
 
 
-@pytest.mark.parametrize("case", ["digest", "lock", "plan", "source-field", "base-only", "scope"])
+@pytest.mark.parametrize(
+    "case", ["digest", "lock", "plan", "source-field", "base-only", "scope", "selectable-field"]
+)
 def test_hostile_or_unapproved_bundle(prepared, tmp_path, case):
     cfg, _, _, original, headers = prepared
     value = copy.deepcopy(original)
@@ -133,6 +135,8 @@ def test_hostile_or_unapproved_bundle(prepared, tmp_path, case):
         value["source"] = "DO_NOT_ECHO"
     elif case == "base-only":
         value = value["base_bundle"]
+    elif case == "selectable-field":
+        value["base_bundle"]["manifest"]["domains"]["model"]["parameters"]["selectable_models"] = []
     else:
         value["base_bundle"]["manifest"]["scope"]["product_id"] = "foreign"
         value["base_bundle"]["bundle_digest"] = json_digest(value["base_bundle"]["manifest"])

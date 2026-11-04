@@ -54,6 +54,9 @@ def _perform(
             return _error(409, "CONTRACT_MISMATCH")
         try:
             bundle = ScriptBundle.model_validate(load_bundle_json(raw))
+            parameters = bundle.base_bundle.manifest.domains.model.parameters
+            if "selectable_models" in parameters.model_fields_set:
+                raise ValueError("Script validation v1 requires a single-model Bundle")
         except (ValueError, TypeError, OverflowError, RecursionError):
             return _error(422, "SCRIPT_BUNDLE_REJECTED")
         if bundle.base_bundle.manifest.scope != initial.scope:

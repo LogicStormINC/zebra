@@ -4,6 +4,7 @@ from typing import Any
 
 from agent_core.domain.runtime_bundle import MAX_BUNDLE_BYTES
 from agent_core.domain.runtime_bundle_json import json_digest
+from agent_core.domain.runtime_bundle_types import SingleModelParameters
 from agent_core.domain.script_bundle import ScriptBundle
 
 CONTRACT = "script-bundle-validation/1"
@@ -13,9 +14,16 @@ HEADER = "x-runtime-script-bundle-contract"
 
 
 def native_script_bundle_contract() -> dict[str, Any]:
+    request_schema = ScriptBundle.model_json_schema()
+    # The published v1 Script validation contract embeds the single-model Bundle.
+    request_schema["$defs"]["ModelParameters"] = SingleModelParameters.model_json_schema(
+        ref_template="#/$defs/{model}"
+    )
+    request_schema["$defs"]["ModelParameters"].pop("$defs")
+    del request_schema["$defs"]["SelectableModel"]
     value: dict[str, Any] = {
         "contractVersion": CONTRACT,
-        "requestSchema": ScriptBundle.model_json_schema(),
+        "requestSchema": request_schema,
         "paths": {"contract": CONTRACT_PATH, "validation": VALIDATION_PATH},
         "requiredHeader": HEADER,
         "actions": ["script-bundle.contract.read", "script-bundle.validate"],
