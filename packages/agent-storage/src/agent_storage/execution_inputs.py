@@ -95,10 +95,14 @@ class ExecutionInputStore(WorkerProgressStoreMixin):
         # ponytail: share only initial pure reads; never retain this snapshot
         # across progress commits or replace the Worker's fresh final header.
         with self._progress_connection() as connection:
-            key = self._key(lease, connection)
-            header = read_task_header(connection, self._namespace, TaskId(UUID(key[1])))
-            if header is None or header.active_segment_id != lease.session_id:
+            header = read_task_header(
+                connection, self._namespace, member_session_id=lease.session_id
+            )
+            if header is None:
+                raise CheckpointNotReady("execution inputs require indexed Task membership")
+            if header.active_segment_id != lease.session_id:
                 raise CheckpointNotReady("execution inputs require current Task Segment")
+            key = self._namespace, str(header.task_id), str(lease.session_id), INPUT_VERSION
             return header, self._head(connection, key)
 
     @contextmanager

@@ -37766,3 +37766,9 @@ Progress branch/worktree). Own `execution_recovery.py` and
 CA-HA-03 pre-spawn supervisor exit proof (Luke Ding/Codex, existing In
 Progress branch/worktree). Own `executor_supervisor.py` and
 `test_session_process.py` for parent mismatch before executor spawn.
+
+CA-HA-03 E1 input preparation round trip (Luke Ding/Codex, existing In
+Progress branch/worktree). Own the existing PostgreSQL Task header reader,
+execution_inputs.py and test_execution_input_read_batch.py. Resolve namespace
+membership in the initial header statement while retaining the fresh final
+header and existing fenced checkpoint writes.

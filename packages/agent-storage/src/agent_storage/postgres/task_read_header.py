@@ -9,10 +9,28 @@ from agent_core.ports.task_replay import TaskReadHeader
 
 
 def read_task_header(
-    connection: Any, namespace: str, task_id: TaskId, *, require_source_coverage: bool = False
+    connection: Any,
+    namespace: str,
+    task_id: TaskId | None = None,
+    *,
+    member_session_id: SessionId | None = None,
+    require_source_coverage: bool = False,
 ) -> TaskReadHeader | None:
+    if (task_id is None) == (member_session_id is None):
+        raise ValueError("Task header requires exactly one lookup coordinate")
+    # Both predicates use the native namespace-qualified identity indexes.
+    parameters: tuple[object, ...]
+    if member_session_id is None:
+        coordinate = "t.task_id=%s"
+        parameters = (namespace, task_id)
+    else:
+        coordinate = (
+            "t.task_id=(SELECT task_id FROM execution_segments "
+            "WHERE deployment_namespace=%s AND session_id=%s)"
+        )
+        parameters = (namespace, namespace, member_session_id)
     row = connection.execute(
-        "SELECT t.active_segment_id,t.next_event_sequence,t.event_position_state,"
+        "SELECT t.task_id,t.active_segment_id,t.next_event_sequence,t.event_position_state,"
         "h.title,h.status,h.current_sequence AS active_segment_sequence,"
         "h.title_truncated,h.clarification_id,h.clarification_invalid,"
         "(o.kind IN ('dead_letter','watchdog','zombie_repair') AND NOT o.shadow) "
@@ -23,11 +41,12 @@ def read_task_header(
         "LEFT JOIN agent_safety_overrides o "
         "ON o.deployment_namespace=t.deployment_namespace "
         "AND o.session_id::text=t.active_segment_id::text "
-        "WHERE t.deployment_namespace=%s AND t.task_id=%s",
-        (namespace, task_id),
+        f"WHERE t.deployment_namespace=%s AND {coordinate}",
+        parameters,
     ).fetchone()
     if row is None:
         return None
+    task_id = TaskId(row["task_id"])
     if row["safety_terminal"]:
         # A control-plane terminal override is authoritative even when the
         # event projection is missing or stale: readers must always see a
