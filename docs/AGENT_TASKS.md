@@ -37966,3 +37966,7 @@ branch). Own agent_integrations/worker_budget.py, its existing transport
 regression and WORKLOG.md. Preserve exact reservation, per-output checks,
 absolute deadlines, final authorization and receipt handling. Bound checks
 for protocol lines that publish no content.
+
+Guarded streaming cadence evaluated with paired Session/fence model timings.
+Archived the transport change and regression after proving fewer in-wire
+checks but no whole-slot gain. The CA-HA-03 capacity gate remains open.
