@@ -80,7 +80,8 @@ Mac-owned SSH forwards and a single VM control/data plane; not storage/host-fail
 
 ## E1-A capacity handoff, 2026-11-05
 
-Scope of this handoff is the existing isolated E1 evidence and code inspection.
+The follow-up is authorized for the paired native reads, deterministic regressions
+and new synthetic E1-A tasks against an adjacent original baseline.
 
 - [x] Verify the clean ca-ha-03-budgets checkout and the final transaction-map artifact.
 - [x] Confirm the single synthetic Task has 222 transactions, 77 lease reads and
@@ -89,11 +90,11 @@ Scope of this handoff is the existing isolated E1 evidence and code inspection.
 - [x] Trace BudgetExecutionCheck -> original callback -> check_deadline.
 - [x] Compare installed and checkout budget code. Installed v126 uses two deadline
   queries in one transaction; the checkout combines them into one statement.
-- [ ] Review all callback routes and identify pure reads that can share an existing
+- [x] Review all callback routes and identify pure reads that can share an existing
   work unit without extending a transaction across writes, model I/O or effects.
-- [ ] Reproduce the chosen transaction count reduction with a deterministic check
+- [x] Reproduce the chosen transaction count reduction with a deterministic check
   and validate lease expiry, STOP, deadline, scope and rollback behavior.
-- [ ] Compare fresh same-seed candidate and adjacent original baseline at 4+4 slots,
+- [x] Compare fresh same-seed candidate and adjacent original baseline at 4+4 slots,
   5 Tasks/s and 256 SSE. Include all receipts, rejections and unknown outcomes.
 - [ ] After E1-A passes, run sustained load and cross-scope fairness, then finish
   the remaining E1-R matrix while keeping the prior F-02 state separate.
@@ -101,3 +102,13 @@ Scope of this handoff is the existing isolated E1 evidence and code inspection.
 Evidence is .artifacts/cloud-ha-e1/e1-a-v126-transaction-map-1793856413/transaction-map.json.
 Installed sources are session_process_child.py.installed and overlay/worker_budget.py
 in that directory. E1-A and the full HA objective remain incomplete.
+
+
+Paired-read result is local commit ac349add, with 59 focused regressions passing.
+Candidate commits per completed Task 173 versus 222 for the adjacent original.
+Mean whole-slot 8.261 versus 9.623 seconds; queue p95/p99 32.016/36.200 versus
+43.858/43.933 seconds. Candidate receipts 40 completed, 34 scope 429 and one
+unknown; control 36 completed, 38 scope 429 and one unknown. Both unknowns remain
+after one further original signed GET. All 75 offers are retained per arm.
+Evidence is .artifacts/cloud-ha-e1/e1-a-v126-ownership-unit-1793857758/adjacent-comparison.json.
+E1-A still fails. Sustained/fairness and full E1-R remain outstanding.
