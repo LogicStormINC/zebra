@@ -156,3 +156,9 @@ E1-A remains FAIL; no material gain or production-readiness claim. Evidence:
 - [ ] Separate slow SQL/server saturation from reset/acquire/transport waits and
   choose the next change from the largest measured whole-slot contributor.
 - [ ] Restore original roles and approvals, keep stopped cloned data/evidence.
+
+SQL attribution identified repeated empty Memory discovery (6,786 historical
+closed Sessions per empty scan), not a stable query-rewrite win. Next slice:
+- [ ] Reuse PollingDelay for capped cloud Memory idle/error discovery, reset on
+  progress; leave local/command cadence and durable receipts intact.
+- [ ] Deterministic backoff/cap/reset/error checks, then adjacent fixed E1-A.

@@ -38042,3 +38042,22 @@ main-thread SQL template, commit/reset/acquire wall/CPU/runnable wait and native
 server pg_stat_statements deltas. Fresh signed synthetic Tasks only, same 8 slots
 and 256 SSE; retain data/unknown/signatures, restore original roles, no production.
 Do not choose another transaction-count fix until this attribution is collected.
+
+SQL wait attribution is Review. Profile e1-a-sql-wait-profile-1793862510:
+all 40 new signed Tasks completed/model/ACK once; server memory discovery query
+601 calls, 38.536s of 72.288s accumulated statement execution (includes nested
+statements/background, not CPU share). Empty scan probes 6,786 closed Sessions.
+All 40 main totals retained; 31 complete SQL-site profiles, 9 incomplete due
+interleaved diagnostic log lines, explicitly excluded from site aggregates.
+Read-only set-based query rewrite had no stable gain. Exact original roles and
+approvals restored, clone stopped, workspace volumes precisely removed.
+
+CA-HA-03 cloud Memory empty-scan backoff. Ready, claimed In Progress by human
+owner lukeding, executor Codex, same branch/worktree. Own Worker
+worker_polling.py, worker_loop_service.py, tests/worker/test_cloud_memory_recovery.py,
+tests/worker/test_cloud_ha_polling.py, task_plan.md and WORKLOG.md. Reuse
+PollingDelay with a configured idle ceiling; cloud best-effort Memory discovery
+empty/blocked scans reach <=30s, reset on progress, errors stay <=5s; local and
+command/control cadence unchanged. Keep all durable recovery receipts and do not
+retry business execution. Add deterministic timing regressions; compare new
+signed Tasks against adjacent installed recorder-dedup control at fixed E1-A.
