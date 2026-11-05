@@ -38086,3 +38086,19 @@ Own isolated E1 diagnostic artifacts, task_plan.md and WORKLOG.md. Reuse current
 the retained clone and configured test DB from both native Worker environments.
 No source/runtime config edits, production, model calls or historical intent
 replay. Decide next preparation optimization from measured client/server cost.
+
+Preparation/transport attribution is Review: all40 stage logs analyzed; native
+constant-read probes show no material short-transaction win from proxy bypass
+to the SAME clone (isolation marker verified), so no routing change retained.
+Configured native DB latency is lower, but different server placement is not a
+matched capacity proof. Prioritize existing uninstalled bounded-read helpers.
+
+CA-HA-03 coherent preparation reads in E1. Ready, claimed In Progress by human
+owner lukeding, executor Codex, same branch/worktree. Own E1 artifact overlay/
+staging scripts, task_plan.md and WORKLOG.md. Reuse already committed
+7a462157/7f9d3ba3/5ce07e93/eb0721a9 and their existing regressions: source
+ExecutionInputStore+Task header membership read, native deadline query/helper,
+checked Run header store/Worker wiring. No new implementation or abstractions.
+Validate these six modules together on native scratch PG, then fresh signed
+Tasks and adjacent memory-backoff baseline at fixed 8-slot/5s/256 SSE E1-A.
+Preserve all signed/unknown evidence and immutable original source pins.

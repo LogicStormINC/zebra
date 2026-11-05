@@ -192,3 +192,13 @@ Evidence .artifacts/cloud-ha-e1/e1-a-memory-backoff-drain-1793865198/RESULTS.md.
   nodes through the configured test path and retained Mac-clone path.
 - [ ] Select the next whole-slot change from this evidence, preserving existing
   source pinning, data, receipts and production boundary.
+
+Transport result: direct clone IP and Mac-proxy short Task-I/O transactions
+were comparable on both nodes; no topology rewrite selected. A constant-read
+probe initially failed closed without process capacity composition, then used
+standard executor postgres_pool_scope. No Task data/model/intent mutation.
+
+Next coherent E1 composition reuses six existing bounded-read modules rather
+than new caching/transactions: input frontier+membership, native deadline query
+and helper, checked latest Run header + Worker recovery wiring. Existing native
+regressions precede adjacent fixed E1-A. No schema or production changes.
