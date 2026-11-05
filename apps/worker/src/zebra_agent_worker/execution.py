@@ -74,7 +74,14 @@ class SessionExecutionService(SessionExecutionComposition, SessionExecutionEntry
             if timing_enabled:
                 timing.append((stage, int((monotonic() - timing_started) * 1000)))
 
-        budget_check = BudgetExecutionCheck(ownership_check)
+        # A child may supply native read composition. Bind a new gate on every retry.
+        budget_check = (
+            BudgetExecutionCheck(
+                ownership_check.original, ownership_database=ownership_check.ownership_database,
+            )
+            if type(ownership_check) is BudgetExecutionCheck
+            else BudgetExecutionCheck(ownership_check)
+        )
         ownership_check = budget_check
         session_id = claimed.lease.session_id
         if completed := recover_committed_completion(self, claimed, ownership_check, started_at):

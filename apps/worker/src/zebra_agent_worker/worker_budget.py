@@ -1,5 +1,6 @@
 """Narrow execution gate. Storage commits each reservation before transport."""
 
+from contextlib import nullcontext
 from typing import Any
 
 import httpx
@@ -128,11 +129,23 @@ def task_budget_limits(binding: Any, task: Any) -> tuple[int, int, int]:
 class BudgetExecutionCheck:
     """One callback shared by existing recorder/runtime/network cancellation paths."""
 
-    def __init__(self, original: Any) -> None:
+    def __init__(self, original: Any, *, ownership_database: Any = None) -> None:
         self.original = original
+        self.ownership_database = ownership_database
         self.gate: TaskBudgetGate | None = None
 
     def __call__(self) -> None:
-        self.original()
-        if self.gate is not None:
-            self.gate.store.check_deadline(self.gate.binding)
+        from agent_storage.postgres.work_unit import postgres_work_unit
+        from agent_storage.postgres.worker_budget import PostgresWorkerBudgetStore
+
+        gate, database = self.gate, self.ownership_database
+        shared = (
+            database is not None and gate is not None
+            and type(gate.store) is PostgresWorkerBudgetStore
+            and gate.store._database._dsn == database._dsn
+            and gate.store.namespace == database.deployment_namespace
+        )
+        with postgres_work_unit(database) if shared else nullcontext():
+            self.original()
+            if gate is not None:
+                gate.store.check_deadline(gate.binding)

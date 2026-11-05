@@ -325,3 +325,34 @@ def test_budget_lock_retry_opens_fresh_phase_and_rechecks_binding(monkeypatch, s
     else:
         assert store.check(binding) == 3.0
     assert len(opened) == 2 and opened == closed
+
+
+def test_child_check_composition_binds_a_fresh_budget_on_each_execution(monkeypatch):
+    from datetime import UTC, datetime
+
+    from zebra_agent_worker import execution
+
+    calls, observed = [], []
+    database = object()
+    source = BudgetExecutionCheck(
+        lambda: calls.append("ownership"), ownership_database=database,
+    )
+    result = object()
+
+    def completed(service, claimed, check, started_at):
+        observed.append(check)
+        assert check.gate is None
+        check.gate = object()
+        return result
+
+    monkeypatch.setattr(execution, "recover_committed_completion", completed)
+    claimed = SimpleNamespace(lease=SimpleNamespace(session_id=uuid4()))
+    for _ in range(2):
+        assert execution.SessionExecutionService._execute_claimed_session_once(
+            SimpleNamespace(), claimed,
+            started_at=datetime.now(UTC), ownership_check=source,
+        ) is result
+    assert observed[0] is not observed[1] and source.gate is None
+    assert all(check.ownership_database is database for check in observed)
+    assert all(check.original is source.original for check in observed)
+    assert calls == []

@@ -28,6 +28,7 @@ def main() -> None:
     from agent_core.domain.leases import LeaseLostError, WorkerLease
     from agent_storage import cloud_composition_from_environment
     from agent_storage.postgres.connection_pool import postgres_pool_scope
+    from agent_storage.postgres.leases import PostgresLeaseStore
     from pydantic import TypeAdapter
     from zebra_agent_config import load_settings
 
@@ -39,6 +40,7 @@ def main() -> None:
     from zebra_agent_worker.execution_recovery import execute_claimed_with_stale_retry
     from zebra_agent_worker.loop import build_worker_loop_service
     from zebra_agent_worker.session_process import settings_digest
+    from zebra_agent_worker.worker_budget import BudgetExecutionCheck
 
     started = time.monotonic_ns()
     check = sys.argv[1:] == ["--check"]
@@ -110,8 +112,10 @@ def main() -> None:
                 (time.monotonic_ns() - composed) // 1_000_000,
             )
 
+        lease_store = service._claim_service._lease_store
+
         def require_owned() -> None:
-            current = service._claim_service._lease_store.get(lease.session_id)
+            current = lease_store.get(lease.session_id)
             if current is None or current.fence != lease.fence:
                 raise LeaseLostError("isolated executor fence revoked")
 
@@ -119,7 +123,12 @@ def main() -> None:
             service,
             claimed,
             started_at=datetime.fromisoformat(request["executed_at"]),
-            ownership_check=require_owned,
+            ownership_check=BudgetExecutionCheck(
+                require_owned,
+                ownership_database=(
+                    lease_store._database if type(lease_store) is PostgresLeaseStore else None
+                ),
+            ),
         )
         result_path.write_bytes(TypeAdapter(ExecutedSession).dump_json(result))
         if budget is not None and logger.isEnabledFor(logging.INFO):

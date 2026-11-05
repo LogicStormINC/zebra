@@ -499,3 +499,105 @@ def test_terminal_failed_task_requires_confirmed_tool_outcome(setup, metadata, c
         )
         with database.connect() as c:
             assert store.usage_reader(c, binding.task_id).tool_calls == 1
+
+
+@pytest.mark.parametrize("same_scope", [True, False])
+def test_isolated_ownership_deadline_pair_commits_once_only_for_same_scope(setup, same_scope):
+    from agent_storage import PostgresLeaseStore
+    from zebra_agent_worker.worker_budget import BudgetExecutionCheck, TaskBudgetGate
+
+    from tests.stream_storage.telemetry import Telemetry, phase
+
+    store, binding, database = started(setup)
+    leases = PostgresLeaseStore(database._dsn, deployment_namespace=store.namespace)
+
+    def owned():
+        current = leases.get(binding.session_id)
+        assert current is not None and current.fence == binding.fence
+
+    source = database if same_scope else PostgresDatabase(
+        database._dsn, deployment_namespace="foreign-scope",
+    )
+    check = BudgetExecutionCheck(owned, ownership_database=source)
+    check.gate = TaskBudgetGate(store, binding)
+    telemetry = Telemetry()
+    with telemetry.installed(), phase("paired"):
+        for _ in range(49):
+            check()
+    assert telemetry.calls["initial/paired/client_commit"] == (49 if same_scope else 98)
+
+
+@pytest.mark.parametrize("refusal", ["lease", "stop", "deadline", "binding"])
+def test_paired_poll_rechecks_fresh_authority_and_clears_failed_work_unit(setup, refusal):
+    from json import dumps
+
+    from agent_core.domain.leases import LeaseLostError
+    from agent_storage import PostgresLeaseStore
+    from agent_storage.postgres.safety_overrides import PostgresSafetyOverrideStore
+    from agent_storage.postgres.work_unit import borrow_work_unit
+    from zebra_agent_worker.worker_budget import BudgetExecutionCheck, TaskBudgetGate
+
+    store, binding, database = started(setup)
+    leases = PostgresLeaseStore(database._dsn, deployment_namespace=store.namespace)
+    seen = []
+
+    def owned():
+        seen.append("ownership")
+        current = leases.get(binding.session_id)
+        if current is None or current.fence != binding.fence:
+            raise LeaseLostError("revoked")
+
+    check = BudgetExecutionCheck(owned, ownership_database=database)
+    check.gate = TaskBudgetGate(store, binding)
+    check()
+    if refusal == "lease":
+        leases.release(binding.session_id, fence=binding.fence)
+    else:
+        with database.connect() as c:
+            if refusal == "stop":
+                PostgresSafetyOverrideStore(c).finalize(
+                    namespace=store.namespace, session_id=str(binding.session_id),
+                    kind="watchdog", reason="user_force_stop",
+                    diagnostics=dumps({
+                        "task_id":binding.task_id,"binding_digest":binding.binding_digest,
+                    }),
+                )
+            elif refusal == "deadline":
+                c.execute(
+                    "UPDATE worker_task_budgets SET deadline=clock_timestamp()-interval '1 second' "
+                    "WHERE deployment_namespace=%s AND task_id=%s",
+                    (store.namespace, binding.task_id),
+                )
+            else:
+                c.execute(
+                    "UPDATE worker_task_budgets SET last_attempt=last_attempt+1 "
+                    "WHERE deployment_namespace=%s AND task_id=%s",
+                    (store.namespace, binding.task_id),
+                )
+    expected = LeaseLostError if refusal in {"lease", "stop"} else WorkerBudgetError
+    with pytest.raises(expected):
+        check()
+    assert seen == ["ownership", "ownership"]
+    assert borrow_work_unit((database._dsn, store.namespace)) is None
+
+
+def test_paired_poll_sees_deadline_narrowed_between_its_two_reads(setup):
+    from agent_storage import PostgresLeaseStore
+    from zebra_agent_worker.worker_budget import BudgetExecutionCheck, TaskBudgetGate
+
+    store, binding, database = started(setup)
+    leases = PostgresLeaseStore(database._dsn, deployment_namespace=store.namespace)
+
+    def owned():
+        assert leases.get(binding.session_id).fence == binding.fence
+        with database.connect_task_io() as external:
+            external.execute(
+                "UPDATE worker_task_budgets SET deadline=clock_timestamp()-interval '1 second' "
+                "WHERE deployment_namespace=%s AND task_id=%s",
+                (store.namespace, binding.task_id),
+            )
+
+    check = BudgetExecutionCheck(owned, ownership_database=database)
+    check.gate = TaskBudgetGate(store, binding)
+    with pytest.raises(WorkerBudgetError, match="deadline"):
+        check()
