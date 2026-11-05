@@ -88,10 +88,16 @@ def main() -> None:
         composed = time.monotonic_ns()
         lease = WorkerLease.model_validate(request["lease"])
         # Parent alone owns heartbeat/release; avoid checkpoint races between processes.
-        claimed = ClaimedSession(
-            lease=lease,
-            recovery=recover_initial_session(service._recovery_service, lease),
-        )
+        try:
+            recovery = recover_initial_session(service._recovery_service, lease)
+        except Exception as error:
+            logger.warning(
+                "worker_executor_initial_recovery_failed session_id=%s fence=%s error=%s cause=%s",
+                lease.session_id, lease.fence.fencing_token,
+                type(error).__name__, type(error.__cause__).__name__,
+            )
+            raise
+        claimed = ClaimedSession(lease=lease, recovery=recovery)
 
         launch = os.environ.get("ZEBRA_SESSION_PROCESS_LAUNCH_NS", "")
         if launch.isascii() and launch.isdecimal() and len(launch) <= 20:

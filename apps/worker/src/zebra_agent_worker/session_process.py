@@ -142,7 +142,13 @@ def execute_isolated(service: Any, request: dict[str, Any]) -> ExecutedSession:
 
         with executor_monitor(database, sid) as cancelled:
             supervise(process, cancelled, on_exit=acknowledge)
-        if process.returncode != 0 or not result.exists():
+        result_present = result.exists()
+        if process.returncode != 0 or not result_present:
+            logger.warning(
+                "worker_executor_outcome_unknown session_id=%s fence=%s returncode=%s "
+                "result_present=%s",
+                sid, lease.fence.fencing_token, process.returncode, result_present,
+            )
             raise WorkerExecutorInterrupted("isolated executor outcome unknown")
         try:
             return TypeAdapter(ExecutedSession).validate_json(result.read_bytes())
