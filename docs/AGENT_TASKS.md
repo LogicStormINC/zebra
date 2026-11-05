@@ -37982,3 +37982,8 @@ fires after the combined write, before the unchanged final lease recheck.
 Worker projection pair candidate evaluated on fixed v126 capacity and archived
 with its native regressions. Excluded from the delivery branch because it did
 not demonstrate reduced whole-slot occupancy. E1-A remains open.
+
+CA-HA-03 scoped socket commit/reset pipeline (same owner lukeding and branch).
+Own postgres/connection_scope.py, existing native connection scope regressions,
+and WORKLOG.md. Use distinct protocol Sync boundaries and preserve commit
+outcome, reset isolation, timeout, cancellation and socket permit ownership.
