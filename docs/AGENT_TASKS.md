@@ -37905,3 +37905,8 @@ retaining epoch/stop ordering and absent-row acquisition semantics.
 CA-HA-03 portable force-stop executor receipt lookup (same owner and branch).
 Own postgres/force_stop_executors.py and the native force-stop recovery
 regression. Match the exact receipt-key prefix independently of DB collation.
+
+CA-HA-03 indexed force-stop receipt prefix (same owner and branch). Own
+the additive v126 receipt index, catalog and readiness compatibility,
+and migration history regressions. Preserve exact prefix and receipt
+semantics and keep the prior schemas valid for the rollout window.
