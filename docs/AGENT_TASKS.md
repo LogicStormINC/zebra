@@ -37891,3 +37891,8 @@ CA-HA-03 bounded global wakeup admission wait (same owner and branch). Own
 command_wakeup.py and test_postgres_command_wakeup.py for the isolated
 advisory wait regression. Preserve the existing Task IO deadline, lock
 order, scope-lock budget, and canonical admission transaction.
+
+CA-HA-03 typed Worker replay bounded page dispatch (same owner and branch).
+Own worker_replay_reader.py and its existing native bounded Worker replay
+regression. Fetch only admitted bodies with their bounds in one statement;
+preserve ordered canonical evidence, cumulative limits and both lease fences.
