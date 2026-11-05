@@ -38114,3 +38114,20 @@ task_plan.md and WORKLOG.md. Add bounded per-stage thread CPU/runnable/wall
 observations to the current memory-backoff execution/child overlays only; use
 fresh signed Tasks at fixed8 slots/5s/256SSE and natural Memory drain. No
 application source, schema, topology, production or historical intent replay.
+
+Preparation CPU attribution is Review:40 complete profiles; inputs742ms wall/
+65ms CPU, with195ms runnable wait and482ms other remainder. All40 known
+Tasks/model/ACK/Memory complete; one original receipt remains unknown after
+original signed GET, retained without replay. Lock sampler177/230 timed out;
+explicitly incomplete, restoration/cleanup completed separately.
+
+CA-HA-03 read-only canonical tail fencing. Ready, claimed In Progress by human
+owner lukeding, executor Codex, same branch/worktree. Own postgres/
+worker_replay_reader.py, tests/worker/test_bounded_recorder_tail.py,
+docs/CA-HA-03_resource_budgets.md, task_plan.md and WORKLOG.md. Tail pages are
+pure reads at captured highwater; reuse read_current_lease before/after in
+explicit READ COMMITTED READ ONLY rather than mutation-side FOR SHARE checks.
+Do not change mutation fencing or typed multi-page repeatable-read evidence.
+Prove no XID/read locks, concurrent release/epoch/expiry/token changes rejected
+before returning, force-stop and existing bounded replay/write regressions.
+Then matched fresh signed E1-A, preserve all receipts/data and original roles.
