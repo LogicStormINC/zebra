@@ -137,7 +137,14 @@ Evidence .artifacts/cloud-ha-e1/e1-a-ac349add-checked-header-1793859685/adjacent
 
 - [x] Confirm installed execution_events.py differs from checkout only in the
   already-fixed duplicate pre-tail ownership check (b8e0559c).
-- [ ] Extend native regression for revocation after tail read and before append.
-- [ ] Apply only the existing module guard in a fresh isolated E1 candidate,
+- [x] Extend native regression for revocation after tail read and before append.
+- [x] Apply only the existing module guard in a fresh isolated E1 candidate,
   compare with adjacent ac349add baseline, retain all occupancy/receipt evidence.
-- [ ] Restore exact original roles, bindings and stopped retained clones.
+- [x] Restore exact original roles, bindings and stopped retained clones.
+
+Existing b8e0559c guard reused; regression bfd04c5d (11 native passes, Ruff
+clean; first timing failure retained). Candidate 173->163 commits, complete
+slot mean 8.457625->8.288500 seconds, worse p95/p99. Both arms 40 completed,
+35 sealed scope 429, zero unknown, 40 exact ACKs and 256 SSE/zero early closes.
+E1-A remains FAIL; no material gain or production-readiness claim. Evidence:
+.artifacts/cloud-ha-e1/e1-a-ac349add-recorder-dedup-1793861657/RESULTS.md.

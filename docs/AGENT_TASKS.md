@@ -38025,3 +38025,11 @@ and isolated E1 artifact scripts. Reuse existing b8e0559c prepare guard rather
 than add a second implementation. Prove post-tail revocation still refuses append,
 then compare only that installed module against adjacent ac349add baseline.
 No production, historical receipt replay or original data changes.
+
+Installed recorder deduplication is Review at bfd04c5d. Existing b8e0559c
+implementation reused unchanged. Native regression 11 passes, old logic red;
+first timing-case failure retained. Adjacent same-seed comparison: 173->163
+commits, complete slot mean 8.457625->8.288500s; worse tails. Both 40 complete,
+35 sealed scope 429, zero unknown, 256 SSE/zero early closes. E1-A still FAIL.
+Both six-role original sets restored, approvals/source hashes verified, owned
+workspace volumes removed, stopped clone data and all signed evidence retained.
