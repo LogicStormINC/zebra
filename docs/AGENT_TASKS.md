@@ -38155,3 +38155,11 @@ more speculative local changes or expanded E1-R before capacity gap is closed.
 Preserve exact data/unknown/signature evidence and immutable original source pins;
 production remains untouched. Application owned paths are NOT expanded until
 the time bill selects a single primary scheme with quantitative justification.
+
+CA-HA-03 bounded capacity decision update: diagnosis complete, capacity still FAIL.
+450 issued/103 signed admitted/347 scope429; 103 completion/model/exactACK each once.
+All-attempt slot8.9243s; queue78.06949/106.57204s; PG2CPU saturation verified.
+Selected coordinated resource candidate (not installed/accepted); static CapacityProfile
+check306+7<=384. Need dedicated test resource qualification before one450-offer rerun;
+Worker steady/IO scaling remain unproven. Task stays In Progress; no expanded E1-R.
+Evidence .artifacts/cloud-ha-e1/e1-a-bounded-diagnostic-1793873558/RESULTS.md.
