@@ -37950,3 +37950,9 @@ semantics for other callers, exact fence and STOP proof, and all write guards.
 Paired authority polling evaluated on the same v126 seed and archived with its
 native regression. Excluded from the delivery branch because full-slot
 occupancy and admission did not improve. E1-A remains the milestone priority.
+
+CA-HA-03 native input page transaction (same owner lukeding and branch).
+Own agent_storage/execution_inputs.py, Worker execution_input_preparation.py,
+existing input frontier regressions and WORKLOG.md. Read the canonical page
+once inside the existing fenced advance transaction. Preserve legacy page
+validation, retry budgets, projection CAS, and final fresh header.
