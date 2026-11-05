@@ -16,7 +16,7 @@ from agent_core.ports.session_recovery import SessionEventPage
 from agent_core.ports.task_projection_checkpoints import CheckpointNotReady
 
 from agent_storage.postgres.database import PostgresDatabase
-from agent_storage.postgres.leases import assert_current_lease_fence
+from agent_storage.postgres.leases import assert_current_lease_fence, read_current_lease
 from agent_storage.postgres.session_recovery import read_session_page
 from agent_storage.postgres.task_io import TaskIoConnections, task_io_deadline
 from agent_storage.postgres.task_lineage import EVENT_COLUMNS
@@ -101,9 +101,10 @@ class PostgresWorkerReplayReader:
         if authority.deployment_namespace != namespace:
             raise LeaseLostError("Worker tail authority crosses namespace")
         with task_io_deadline(monotonic() + 2), self._database.connect_task_io() as connection:
-            assert_current_lease_fence(
-                connection, namespace, authority.session_id, authority.lease_fence
-            )
+            # ponytail: immutable captured tail; a fresh final MVCC check gates return.
+            # Mutations retain locked fencing; this read must not hold control locks.
+            connection.execute("SET TRANSACTION ISOLATION LEVEL READ COMMITTED READ ONLY")
+            self._tail_fence(connection, authority)
             source = connection.execute(
                 "SELECT current_version FROM session_streams "
                 "WHERE deployment_namespace=%s AND session_id=%s",
@@ -118,10 +119,15 @@ class PostgresWorkerReplayReader:
                 authority.expected_stream_revision,
                 through=source["current_version"] if through is None else through,
             )
-            assert_current_lease_fence(
-                connection, namespace, authority.session_id, authority.lease_fence
-            )
+            self._tail_fence(connection, authority)
             return page
+
+    def _tail_fence(self, connection: Any, authority: WorkerMutationAuthority) -> None:
+        current = read_current_lease(
+            connection, self._database.deployment_namespace, authority.session_id
+        )
+        if current is None or current.fence != authority.lease_fence:
+            raise LeaseLostError("Worker tail rejected by the current lease fence")
 
     def completion_events(self, authority: WorkerMutationAuthority) -> list[SessionEvent]:
         """Exact bounded lifecycle evidence; never prepare or read tool/model bodies."""
