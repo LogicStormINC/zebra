@@ -220,3 +220,26 @@ Task投影和binding等多个SQL位置；这是截止时间到达点，不是各
 证据unknown-diagnostic.py/json/output.json，原API日志offline-recovery/；脚本断言
 450个不同operation均单次到达及199条唯一失败关联，已运行通过。
 总体E1-A仍FAIL，HA目标未完成；不追加本宿主机容量负载，不改生产。
+
+## 2026-11-05 准入准备追踪补证：排他消费锁，不再归为纯CPU问题
+
+只读现有62个数据库采样，49个存在advisory等待，累计321个后端×采样，峰值9个。
+这不是等待秒数或CPU比例。采样没有锁键/阻塞PID，不能归因全部到某条锁。
+直接检查原api-source.tar（未使用当前checkout替代安装版本）：publication_consumer.py
+59–60行依次调用HostManagementStore.authorized和lock_definition；对应安装版
+host_management.py242行、publication.py87行均为排他pg_advisory_xact_lock。
+前者按管理binding、后者按Definition串行，且消费期间持锁完成Snapshot校验。
+因此“CPU不足为唯一/已确定主要根因”的表述收紧为：节点节流已证实，准入锁争用
+也有同时期证据与静态串行路径；两者贡献尚未分离。仅加CPU不能保证接纳5/s。
+
+不能直接删除锁或缓存当前权限/Release：撤权、审批轮换、发布切换、过期校验必须保留。
+下一可验证切片应先用原生PG的小型并发事务验证共享消费/排他发布合同：双消费者并行，
+审批或Release写者被读事务阻挡；写者完成后新读拒绝旧审批/取得新Release；到期拒绝；
+锁有相同deadline且无死锁/非预期锁序变化。只能在这些不变量成立且持锁成本可测后，
+决定是否扩大应用Owned paths做共享读取修复。当前不扩路径、不实现、不追加容量负载。
+该假设尚未证明能跨过完整占槽缺口，不能启动新的无边界优化轮次。
+
+lock-evidence.py已运行，断言62采样/321后端样本并核验三个冻结源码文件及精确锁调用。
+证据.artifacts/cloud-ha-e1/e1-a-resource-candidate-1793875018/lock-evidence.json；
+其源文件摘要与行号固定。原RESULTS.md及evidence-final.sha256保持不变。
+生产/服务状态未改，CA-HA-03及整体HA仍In Progress。
