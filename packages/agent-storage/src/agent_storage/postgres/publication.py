@@ -81,8 +81,11 @@ class PublicationStore:
         ).fetchone()
 
 
-def lock_definition(connection: Any, scope_key: tuple[str, str, Any]) -> None:
-    """Serialize evaluation writes and publication for exactly one Definition."""
+def lock_definition(
+    connection: Any, scope_key: tuple[str, str, Any], *, shared: bool = False
+) -> None:
+    """Concurrent consumers; exclusive evaluation/publication for one Definition."""
+    function = "pg_advisory_xact_lock_shared" if shared else "pg_advisory_xact_lock"
     connection.execute(
-        "SELECT pg_advisory_xact_lock(hashtextextended(%s,0))", ("publication:" + repr(scope_key),)
+        f"SELECT {function}(hashtextextended(%s,0))", ("publication:" + repr(scope_key),)
     )

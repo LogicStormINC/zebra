@@ -243,3 +243,18 @@ lock-evidence.py已运行，断言62采样/321后端样本并核验三个冻结�
 证据.artifacts/cloud-ha-e1/e1-a-resource-candidate-1793875018/lock-evidence.json；
 其源文件摘要与行号固定。原RESULTS.md及evidence-final.sha256保持不变。
 生产/服务状态未改，CA-HA-03及整体HA仍In Progress。
+
+## 2026-11-05 准入锁切片已完成本地验证，Review未部署
+
+四个应用文件最小修改：消费K1/K2共享锁，原生append_release补齐K2排他锁；其他写者
+排他默认值、授权/expiry复核和deadline不变。冻结源码逐字节匹配相邻基线acb7a85f。
+正式schema新8项并发/撤权/轮换/发布/超时/取消/到期检查通过；相关49通过，旧Registry
+另补5通过2基线同样失败；workspace mypy原版/候选同3项既有错误，ruff改动文件通过。
+一次新合成Task低负载前后对照：每侧24/24密封201、unknown0；准入p95/p99
+238.607/245.529→232.664/243.506ms；锁获取p95 26.573→0.951ms；持锁均值
+26.259→41.287ms；原GET各24个200，重叠STOP均202 requested（非清理完成）。
+准入p95仅改善2.49%，不足填平E1-A缺口；结束此优化方向，不追加零散优化/容量试跑。
+原数据、unknown、签名和失败探针保留，生产未动；临时PG精确回收。
+证据.artifacts/cloud-ha-e1/e1-a-resource-candidate-1793875018/lock-contract/RESULTS.md，
+comparison.json、locks.json、source-pins.json及正式回归日志。尚无达标配置证明，
+下一容量验证需独占CPU余量/近端PG/无父级节流/固定签名候选；E1-A/E1-R未跑，HA未完成。

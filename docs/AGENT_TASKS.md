@@ -38194,3 +38194,24 @@ CA-HA-03 2026-11-05资源复验仍FAIL：12CPU/12GiB、32槽，450发出；51已
 宿主机负载保护中止；未完成状态/签名保留，原六E1角色与两ready恢复，测试节点/PG停止。
 生产未改；本轮停止追加负载，完整E1-R未跑，里程碑3及HA仍In Progress。
 详见docs/CA-HA-03_capacity_decision.md及隔离artifact RESULTS.md；尚无达标配置/最低资源证明。
+
+CA-HA-03 admission lock slice (2026-11-05): Ready -> In Progress; human owner lukeding,
+executor Codex; existing codex/ca-ha-03-budgets worktree/branch, bounded user-authorized follow-up.
+First owned paths: tests/api/test_publication_consumer_concurrency.py; isolated E1 artifacts,
+WORKLOG.md/task_plan.md/docs/CA-HA-03_capacity_decision.md. Use formal migrations and native
+consumer/approval/publication calls. No production or full E1-A/R. App paths stay unexpanded
+until native concurrency checks establish the contract. Preserve all old unknown/evidence.
+
+CA-HA-03 lock slice owned paths expanded after seven formal-schema native protocol
+checks passed (lock-contract/prototype-full-final.log): apps/api/src/zebra_agent_api/
+publication_consumer.py; packages/agent-storage/src/agent_storage/postgres/
+{host_management,publication,agent_registry}.py; tests/api/test_publication_consumer_concurrency.py;
+PROGRESS.md and existing slice docs/evidence. Only opt-in shared consumption locks and
+exclusive native append_release; writers retain exclusive defaults. Human lukeding,
+executor Codex, same branch/task. No deadline expansion, authority caching or unknown replay.
+
+CA-HA-03 admission lock slice -> Review (local only): minimal four-source-file fix,
+8 new native schema regressions; paired24+24 signed nonexecuting Tasks all201/unknown0.
+Admissionp95 improves2.49%, insufficient to close E1-A gap; direction closed for this slice,
+no further micro-optimizations/load runs. See lock-contract/RESULTS.md. Overall03 In Progress,
+no production deploy or E1-A/R acceptance. Existing baseline failures explicitly retained.

@@ -9050,3 +9050,9 @@ CA-HA-03 2026-11-05资源复验仍FAIL：12CPU/12GiB、32槽，450发出；51已
 宿主机负载保护中止；未完成状态/签名保留，原六E1角色与两ready恢复，测试节点/PG停止。
 生产未改；本轮停止追加负载，完整E1-R未跑，里程碑3及HA仍In Progress。
 详见docs/CA-HA-03_capacity_decision.md及隔离artifact RESULTS.md；尚无达标配置/最低资源证明。
+
+CA-HA-03 2026-11-05：准入共享消费锁/排他Release写锁本地候选Review，未部署。
+正式schema8项新增合同回归通过；低负载24+24新Task均密封201/unknown0，
+准入p95仅改善2.49%，不够填平容量缺口。本方向到此收尾，不加压或扩展局部优化。
+原签名/unknown/数据保留，生产未动；E1-A/E1-R和里程碑3仍未通过。
+详见docs/CA-HA-03_capacity_decision.md及lock-contract/RESULTS.md。

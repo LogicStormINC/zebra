@@ -223,14 +223,14 @@ class HostManagementStore:
             return _snapshot(changed)
 
     @contextmanager
-    def authorized(self, trust: HostManagementTrust) -> Any:
+    def authorized(self, trust: HostManagementTrust, *, shared: bool = False) -> Any:
         """Hold the current approval and native binding lock through COMMIT."""
-        with self._locked(trust) as connection:
+        with self._locked(trust, shared=shared) as connection:
             self._authorize(connection, trust)
             yield connection
 
     @contextmanager
-    def _locked(self, trust: HostManagementTrust) -> Any:
+    def _locked(self, trust: HostManagementTrust, *, shared: bool = False) -> Any:
         remaining = (trust.expires_at - datetime.now(UTC)).total_seconds()
         if remaining <= 0:
             raise HostManagementExpired("Host management approval expired")
@@ -238,8 +238,9 @@ class HostManagementStore:
         with self._database.connect_task_io(deadline=deadline) as connection:
             # Metadata locks share the existing hard I/O deadline, including COMMIT.
             connection.execute("SELECT set_config('lock_timeout','0',true)")
+            function = "pg_advisory_xact_lock_shared" if shared else "pg_advisory_xact_lock"
             connection.execute(
-                "SELECT pg_advisory_xact_lock(hashtextextended(%s,0))",
+                f"SELECT {function}(hashtextextended(%s,0))",
                 (_canonical(self._binding(trust)),),
             )
             self._live(connection, trust)
