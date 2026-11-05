@@ -9043,3 +9043,10 @@ CA-P5-10 final design revision: initial full5 identity/context propagation failu
 CA-P5-09/10 combined final producer gates: make test11240 passed/3080 conditional skips, make check0 file-size violations/ruff/mypy1448/Eval30 passed; source hashes unchanged. Legacy real PG8 and original resource binding7 passed in exact-owned temporary PG (historical fixture replaced for isolation only; assertions unchanged). All owned temporary PG/anonymous volumes removed, no new volumes/networks;4 foreign-owner containers preserved. Source publication required before fresh consumer images; P5 not yet closed.
 
 CA-P5-08 verification resumed on9e91d75f after both producer gates passed and GitHub HTTPS remote verified. No code changes; consumer V22 uses new exact-source images in one environment. After cleanup compare frozen blobs and reuse current-turn full result if unchanged. Prior unknowns/data preserved; final S1 still pending.
+
+CA-HA-03 2026-11-05资源复验仍FAIL：12CPU/12GiB、32槽，450发出；51已验证201、
+5容量429、394unknown；37业务完成、44精确ACK；排队p95/p99=94.801/105.582s，
+登记→ACK均值14.010s(n44)。双节点父级CPU节流52%/66%，PG6CPU无节流。
+宿主机负载保护中止；未完成状态/签名保留，原六E1角色与两ready恢复，测试节点/PG停止。
+生产未改；本轮停止追加负载，完整E1-R未跑，里程碑3及HA仍In Progress。
+详见docs/CA-HA-03_capacity_decision.md及隔离artifact RESULTS.md；尚无达标配置/最低资源证明。

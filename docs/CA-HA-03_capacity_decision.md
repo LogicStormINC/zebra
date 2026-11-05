@@ -145,3 +145,55 @@ rejection. Original six test roles paused only during controlled run and restore
 in finally. Production, original Tasks/unknowns/signatures remain unchanged.
 Evidence:.artifacts/cloud-ha-e1/e1-a-resource-candidate-1793875018 and remote
 /home/ubuntu/.local/state/zebra-e1/e1-a-resource-candidate-1793875018. Task In Progress.
+
+## 2026-11-05 隔离资源复验结论：FAIL，停止本轮负载
+
+Owner lukeding；CA-HA-03 / codex/ca-ha-03-budgets。按用户自行决定资源的授权，
+实装 PG6CPU/4GiB＋两个逻辑节点各3CPU/4GiB，共12CPU/12GiB硬上限，32执行槽。
+同一物理宿主机，不是物理双机HA；跨架构逻辑恢复/重建索引和PG版本差异使其不能
+作为仅CPU变化的因果对照。32CPU/64GiB始终不是实测最低需求。
+
+- v2运行包发布成功：version cd8e94a6-e77a-4a92-98d1-f62cb7409e9d，
+  bundle sha256:d7a2207696e03cfada19d469fa38fa9dfa708d0b249a437d2003154fbe07922c，
+  trust revision2；原版本/签名证据保留。私有配置权限恢复600/UID65532，不放宽安全校验。
+- 第一个新预检保留unknown且不重发；新v2合成预检201、模型/完成/精确ACK各一次，
+  登记→ACK4.51746s。合成模型fixture，不是实际供应商验收。
+- 第一正式窗口错误地把API压到0.25CPU：450计划/347发出/103未发出，347回执
+  未解析成功、零已验证201；API节流周期100%。失败原始记录另存failed-api-quarter-run。
+  纠正API为2CPU，外层节点仍各3CPU，未修改Task预算，也没有覆盖原窗口。
+- 最后窗口450/450发出；AES-GCM及request_hash逐原intent核验得到51个201、5个429、
+  394个unknown。保留41个原GET文件；其余可用原POST密封回执核验。unknown不通过DB
+  状态冒充成功，不重发。51个已验证会话中37业务完成、41模型开始、44精确退出ACK，
+  command done44/pending7；退出ACK不等于业务成功。
+- 排队44个可观测样本，p95/p99=94.800879/105.581530s（另7个未启动，不能当零）。
+  登记→ACK44个完整单调时钟样本：平均14.009924s，p95/p99=18.658526/18.930204s。
+  全部已记录释放57次/51会话：每会话累计占槽均值15.189157s，p95/p99=22.755/23.183s；
+  这是保护中止后的有限释放样本，不证明所有命令完整排空。
+- 阶段样本均值：登记→子进程1.061s(n44)，子进程→组装0.462s(n43)，
+  组装→恢复0.914s(n43)，恢复→模型6.168s(n41)，模型3.053s(n37)，
+  返回→完成2.110s(n36)，完成→退出证明1.026s(n36)，证明→ACK0.143s(n44)。
+  各阶段覆盖集合不同，不能直接相加。稳态在已验证201集合内观察到接纳31、完成24、
+  ACK22；394个unknown尚未收敛，不能据此声称总体稳态完成吞吐。
+- 60个稳态资源样本：PG2.704/6CPU，零节流；node1/node2分别2.608/2.787CPU，
+  父级节流周期52.1%/66.3%；Worker1.944/2.119CPU。API约0.628/0.619CPU，零自身节流。
+  父级包含子进程，不能相加；本轮主要瓶颈为执行节点共享CPU配额/调度压力，
+  不能沿用旧PG2CPU饱和解释，也不能以此证明某个更大资源配置必然达标。
+- 256 SSE观察期零提前结束、2036 keepalive；保护停止后的连接行为不计入此前观察。
+- 宿主机连续10个5秒采样load>20触发保护（触发load25.7954，MemAvailable约15.35GiB，
+  diskfree约22.19GiB）；只停止本run节点与PG，未重启/修改生产。load包含配额等待，
+  不能单靠它推断生产受损。原回执查询/排空被中止，未知状态及7个pending保留。
+
+结论：该12CPU共享主机配置不能通过持续5/s、零容量拒绝与排队SLO；没有证明达标配置，
+也没有证明最低硬件需求。现有环境不能继续加压争取通过。下一次容量验证需要独占且
+有明确CPU余量的执行节点，保持近端PG，并先证明父级CPU节流消失；具体CPU下限尚缺
+无节流条件下的每任务服务需求测量。完整E1-R/跨scope公平性未执行，里程碑3不关闭。
+本轮不再追加微调、负载或故障矩阵。
+
+收尾：停止的节点直接离线提取日志，未重启Worker/daemon；仅PG短暂启动供BEGIN READ ONLY
+审计，随后停止。原六个E1角色ID核验恢复，两原入口/health/ready均ready。只删除本run
+已停止的本地导出副本容器及卷；原种子、原数据、unknown、签名和远端未完成状态保留。
+证据：.artifacts/cloud-ha-e1/e1-a-resource-candidate-1793875018/RESULTS.md，
+final-audit.json、final-phases.json、resources-summary.json、offline-recovery/、
+original-restored-final.tsv、publication-v2-pool-proof.json、evidence-final.sha256；
+原窗口corpus-rebuilt-approval-sse-256-1793886575与failed-api-quarter-run分别保留。
+远端保留：/home/ubuntu/.local/state/zebra-e1/e1-a-resource-candidate-1793875018。
