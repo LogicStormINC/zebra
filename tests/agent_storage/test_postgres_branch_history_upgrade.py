@@ -93,7 +93,7 @@ def test_live_runtime_schema_gates_cross_additive_repair_upgrade(postgres_dsn):
     dsn = make_conninfo(postgres_dsn, options=f"-c search_path={schema}")
     try:
         with psycopg.connect(dsn, row_factory=dict_row) as worker:
-            for version in (122, 123, 124, 125):
+            for version in (122, 123, 124, 125, 126):
                 catalog = tuple(m for m in MIGRATIONS if m.version <= version)
                 with patch("agent_storage.postgres.migration_runner.MIGRATIONS", catalog):
                     apply_postgres_migrations(dsn)

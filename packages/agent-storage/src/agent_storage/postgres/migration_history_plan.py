@@ -9,6 +9,9 @@ from agent_storage.postgres.command_outbox_capacity_index_migration import (
 from agent_storage.postgres.command_outbox_retirement_migration import (
     COMMAND_OUTBOX_RETIREMENT_MIGRATION,
 )
+from agent_storage.postgres.force_stop_receipt_index_migration import (
+    FORCE_STOP_RECEIPT_INDEX_MIGRATION,
+)
 from agent_storage.postgres.migration_types import Migration
 from agent_storage.postgres.migrations import MIGRATIONS
 from agent_storage.postgres.projection_work_repair_plan_migration import (
@@ -43,6 +46,7 @@ def runtime_schema_matches(
         PROJECTION_WORK_REPAIR_PLAN_MIGRATION,
         COMMAND_OUTBOX_RETIREMENT_MIGRATION,
         COMMAND_OUTBOX_CAPACITY_INDEX_MIGRATION,
+        FORCE_STOP_RECEIPT_INDEX_MIGRATION,
     )
     while plan and plan[-1] in optional_tail and plan[-1].version not in applied:
         plan = plan[:-1]

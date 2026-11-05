@@ -51,6 +51,9 @@ from agent_storage.postgres.execution_input_compaction_migration import (
     EXECUTION_INPUT_COMPACTION_MIGRATION,
 )
 from agent_storage.postgres.execution_inputs_migration import EXECUTION_INPUTS_MIGRATION
+from agent_storage.postgres.force_stop_receipt_index_migration import (
+    FORCE_STOP_RECEIPT_INDEX_MIGRATION,
+)
 from agent_storage.postgres.frontend_profile_management_migration import (
     FRONTEND_PROFILE_MANAGEMENT_MIGRATION,
 )
@@ -224,4 +227,5 @@ LATEST_MIGRATIONS = (
     PROJECTION_WORK_REPAIR_PLAN_MIGRATION,
     COMMAND_OUTBOX_RETIREMENT_MIGRATION,
     COMMAND_OUTBOX_CAPACITY_INDEX_MIGRATION,
+    FORCE_STOP_RECEIPT_INDEX_MIGRATION,
 )

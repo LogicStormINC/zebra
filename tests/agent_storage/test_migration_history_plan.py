@@ -45,10 +45,10 @@ def test_historical_prefix_catalog_remains_supported():
 
 def test_additive_readiness_rejects_corrupt_or_noncontiguous_ledgers():
     complete = {m.version: (m.name, m.checksum) for m in MIGRATIONS}
-    for version in (122, 123, 124, 125):
+    for version in (122, 123, 124, 125, 126):
         prefix = {v: row for v, row in complete.items() if v <= version}
         assert runtime_schema_matches(prefix)
         assert not runtime_schema_matches({**prefix, version: (prefix[version][0], "0" * 64)})
-        assert not runtime_schema_matches({**prefix, 126: ("unknown", "0" * 64)})
+        assert not runtime_schema_matches({**prefix, 127: ("unknown", "0" * 64)})
     assert not runtime_schema_matches({v: row for v, row in complete.items() if v != 124})
     assert not runtime_schema_matches({v: row for v, row in complete.items() if v <= 121})
