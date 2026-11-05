@@ -30,12 +30,14 @@ from agent_core.ports.worker_progress import (
     WorkerProgressState,
     WorkerProgressTimeout,
 )
+from agent_storage.postgres.agent_tasks import PostgresAgentTaskStore
 from agent_storage.postgres.connection_scope import postgres_connection_scope
 from agent_storage.postgres.task_io import task_io_deadline
 
 from zebra_agent_worker.commentary_recovery import repair_commentary
 from zebra_agent_worker.execution_events import ExecutionInterrupted
 from zebra_agent_worker.public_output_runtime import publication_lock
+from zebra_agent_worker.worker_budget import BudgetExecutionCheck
 
 
 @dataclass
@@ -71,8 +73,20 @@ class WorkerProgressRecovery:
             publication_lock(self._lock),
             postgres_connection_scope(bounded=True),
         ):
-            self.ownership_check()
-            run = self.tasks.read_latest_run_header(self.head.scope.task_id)
+            check = self.ownership_check
+            database = check.ownership_database if type(check) is BudgetExecutionCheck else None
+            if (
+                database is not None and isinstance(self.tasks, PostgresAgentTaskStore)
+                and self.tasks.stream_head_reads_compatible
+                and self.tasks._database._dsn == database._dsn
+                and self.tasks._database.deployment_namespace == database.deployment_namespace
+            ):
+                run = self.tasks.read_latest_run_header(
+                    self.head.scope.task_id, ownership_check=check,
+                )
+            else:
+                check()
+                run = self.tasks.read_latest_run_header(self.head.scope.task_id)
             if run.anchor is None or run.anchor.event_id != self.head.scope.anchor_event_id:
                 raise ExecutionInterrupted("Worker progress Run was superseded")
             limit = 256

@@ -1,7 +1,7 @@
 """Native scoped progress checkpoints; no historical hydration on observation."""
 
-from collections.abc import Iterator
-from contextlib import contextmanager
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager, nullcontext
 from hashlib import sha256
 from time import monotonic
 from typing import Any
@@ -74,7 +74,9 @@ class WorkerProgressStoreMixin:
     _database: Any
     _progress_postgres = False
 
-    def read_latest_run_header(self, task_id: TaskId) -> TaskRunHeader:
+    def read_latest_run_header(
+        self, task_id: TaskId, *, ownership_check: Callable[[], None] | None = None,
+    ) -> TaskRunHeader:
         # ponytail: the PostgreSQL metadata reader is one statement, so its
         # statement snapshot needs no separate transaction-isolation round trip.
         with (
@@ -85,14 +87,24 @@ class WorkerProgressStoreMixin:
                 from agent_storage.postgres.task_replay_headers import (
                     read_latest_run_header as postgres_read_latest_run_header,
                 )
+                from agent_storage.postgres.work_unit import postgres_transaction_work_unit
 
-                return postgres_read_latest_run_header(
-                    connection, self._database.deployment_namespace, task_id
-                )
+                with (
+                    postgres_transaction_work_unit(self._database, connection)
+                    if ownership_check is not None else nullcontext()
+                ):
+                    if ownership_check is not None:
+                        connection.execute("SET TRANSACTION READ ONLY")
+                        ownership_check()
+                    return postgres_read_latest_run_header(
+                        connection, self._database.deployment_namespace, task_id
+                    )
             from agent_storage.task_replay_headers import (
                 read_latest_run_header as sqlite_read_latest_run_header,
             )
 
+            if ownership_check is not None:
+                ownership_check()
             return sqlite_read_latest_run_header(connection, task_id)
 
     @contextmanager
