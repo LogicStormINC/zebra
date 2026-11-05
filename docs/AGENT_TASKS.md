@@ -38270,3 +38270,23 @@ Candidate owned paths to confirm on claim: postgres/{force_stop_recovery,command
 focused tests/agent_storage force-stop/queue regression, relevant task records.
 Require exact stop/command identity, concurrent admission safety, immutable original receipts;
 no direct cleanup of retained old rows or inference of handled from executor ACK.
+
+CA-HA-03-Q1: Ready -> In Progress (2026-11-06); human owner lukeding, executor Codex.
+Branch codex/ca-ha-03-q1-stop-capacity, existing ca-ha-03-budgets worktree; base2759b352.
+User explicitly authorizes this focused follow-up over frozen candidate; no E1-A/deployment.
+Owned paths: packages/agent-storage/src/agent_storage/postgres/force_stop_recovery.py,
+packages/agent-storage/src/agent_storage/postgres/command_wakeup_receipts.py;
+tests/agent_storage/test_postgres_force_stop_capacity.py; isolated new Q1 artifacts;
+docs/AGENT_TASKS.md, WORKLOG.md, task_plan.md, PROGRESS.md, docs/CA-HA-03_capacity_decision.md.
+Trace shared paths read-only before editing; expand ownership explicitly if proven necessary.
+New synthetic schema/data only. Preserve retained pending row, old Tasks/unknown/signatures.
+
+CA-HA-03-Q1 -> Review (local only, 2026-11-06). One application file changed; existing
+stop synchronization marks derived commands cancelled only after revoked lease/exact exits,
+never invents handled/control receipts. New8 + related79 passed, Linux1 skipped; frozen9-module
+composition8 passed. Scope replacement admission, pickup race, duplicate ACK/stop, rollback,
+real cleaner process interruption and local child exit covered. Original pending/receipts untouched;
+old293+37 evidence hashes unchanged. New testPG/volume reclaimed, data snapshots retained.
+Frozen source overlay only, no signed-package republication/push/deployment. E1-A/R paused
+for independent resources and later full runtime qualification; overallCA-HA-03 In Progress.
+Evidence force-stop-capacity-1793898506/RESULTS.md. Owned paths not expanded; receipts source untouched.

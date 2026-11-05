@@ -22479,3 +22479,20 @@ OrbStack Kube现可达但单节点10CPU/约15.66GiB，仍与Mac共享；两VM各
 无选定供应商/报价，不承诺成本或发起采购。PG复查后停止保留，生产未访问。
 容量E1-A/完整E1-R明确暂停，不用零散优化填时间。证据：
 .artifacts/cloud-ha-e1/test-tool-closeout-1793897286/RESULTS.md。
+
+## 2026-11-06 CA-HA-03-Q1 本地修复通过，候选待Review
+
+独立分支codex/ca-ha-03-q1-stop-capacity，唯一应用修改force_stop_recovery.synchronize：
+在原Session/lease/stream事务结清canonical终态后，仅在租约明确释放且现有精确退出
+证明满足时，将该Session前缀内pending置cancelled；不写handled，不改旧回执/结果。
+排队1→请求后1→0；运行中无ACK/错ACK保持1，精确ACK后0。单槽真实接纳检查证明
+名额可以再用一次，重复ACK/停止/恢复不多释放。领取并发、事务回滚与清理进程真实
+os._exit后的原机制恢复通过；真实本机子进程退出但缺持久ACK仍保持1。
+新增8项、相关79项通过，Linux专用1项在macOS跳过；冻结9相关模块组合再验8通过。
+ruff和修改模块mypy通过。这里只是存储/API组合及本机进程回归，不是完整Linux部署资格。
+原pending/unknown/签名未改，旧PG保持停止；原293+37证据摘要核对一致。新合成数据
+快照/日志保留，独立临时PG/卷精确回收。旧done记录不会自动回填；原行仍保留为证据。
+源码覆盖包与清单重新冻结，未重新签署/发布运行包，未推送或部署。独立资源仍阻塞
+容量验收，E1-A/E1-R继续暂停；整体HA未完成。
+证据.artifacts/cloud-ha-e1/force-stop-capacity-1793898506/RESULTS.md，
+capacity-and-recovery-results.json、fresh-regression-data/及FROZEN_CANDIDATE.json。
