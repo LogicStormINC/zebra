@@ -240,38 +240,45 @@ def _typed_page(
 ) -> tuple[list[SessionEvent], bool]:
     # Each type is an indexed seek with a bounded LIMIT BEFORE the merge/sort.
     # A broad event_type=ANY ORDER BY sequence can scan a whole old Session.
-    metadata = connection.execute(
-        "SELECT selected.sequence,selected.event_bytes_bound FROM unnest(%s::text[]) kind "
-        "CROSS JOIN LATERAL (SELECT sequence,event_bytes_bound FROM session_events "
-        "WHERE deployment_namespace=%s AND session_id=%s AND event_type=kind "
-        "AND sequence>%s AND sequence<=%s ORDER BY sequence LIMIT 256) selected "
-        "ORDER BY selected.sequence LIMIT 256",
-        ([event_type.value for event_type in types], namespace, session_id, after, through),
+    rows = connection.execute(
+        f"""WITH metadata AS MATERIALIZED (
+            SELECT selected.sequence,selected.event_bytes_bound FROM unnest(%s::text[]) kind
+            CROSS JOIN LATERAL (SELECT sequence,event_bytes_bound FROM session_events
+            WHERE deployment_namespace=%s AND session_id=%s AND event_type=kind
+            AND sequence>%s AND sequence<=%s ORDER BY sequence LIMIT 256) selected
+            ORDER BY selected.sequence LIMIT 256
+        ), budgeted AS (
+            SELECT sequence,event_bytes_bound,
+                sum(CASE WHEN event_bytes_bound > 0 THEN event_bytes_bound ELSE 1048577 END)
+                    OVER (ORDER BY sequence) AS page_bytes
+            FROM metadata
+        )
+        SELECT budgeted.sequence AS page_sequence,budgeted.event_bytes_bound,body.*
+        FROM budgeted LEFT JOIN LATERAL (
+            SELECT {EVENT_COLUMNS} FROM session_events event
+            WHERE budgeted.page_bytes<=1048576 AND event.deployment_namespace=%s
+              AND event.session_id=%s AND event.sequence=budgeted.sequence
+            OFFSET 0
+        ) body ON TRUE
+        ORDER BY budgeted.sequence""",
+        ([event_type.value for event_type in types], namespace, session_id, after, through,
+         namespace, session_id),
     ).fetchall()
-    positions: list[int] = []
+    events: list[SessionEvent] = []
     size = 0
-    for row in metadata:
+    for row in rows:
         bound = row["event_bytes_bound"]
         if type(bound) is not int or bound <= 0:
             raise CheckpointNotReady("Worker replay requires prepared Event byte bounds")
         if size + bound > 1_048_576:
-            if not positions:
+            if not events:
                 raise WorkerReplayLimitExceeded("canonical Worker evidence exceeds 1MiB/page")
             break
-        positions.append(row["sequence"])
+        if row["sequence"] != row["page_sequence"]:
+            raise ValueError("Worker evidence page conflicts with admission metadata")
+        events.append(SessionEvent.model_validate(row))
         size += bound
-    if not positions:
-        return [], True
-    rows = connection.execute(
-        f"SELECT {EVENT_COLUMNS} FROM session_events event "
-        "WHERE deployment_namespace=%s AND session_id=%s AND sequence=ANY(%s::bigint[]) "
-        "ORDER BY sequence",
-        (namespace, session_id, positions),
-    ).fetchall()
-    events = [SessionEvent.model_validate(row) for row in rows]
-    if [event.sequence for event in events] != positions or sum(
-        map(len, map(_encoded, events))
-    ) > size:
+    if sum(map(len, map(_encoded, events))) > size:
         raise ValueError("Worker evidence page conflicts with admission metadata")
     # A full or byte-trimmed page may leave more evidence below the captured head.
-    return events, len(positions) == len(metadata) < 256
+    return events, len(events) == len(rows) < 256

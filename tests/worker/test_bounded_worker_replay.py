@@ -100,7 +100,7 @@ def indexed(native):
     return native
 
 
-def test_native_completion_replay_skips_empty_query_after_short_tail(indexed, monkeypatch):
+def test_native_completion_replay_fetches_bounded_tail_in_one_query(indexed, monkeypatch):
     state = seed(indexed, 40)
     replace(
         indexed,
@@ -114,11 +114,13 @@ def test_native_completion_replay_skips_empty_query_after_short_tail(indexed, mo
         EventActor.HARNESS,
     )
     execute = TaskIoConnection.execute
-    metadata_reads = []
+    page_reads = []
 
     def traced(connection, query, *args, **kwargs):
-        if isinstance(query, str) and "selected.event_bytes_bound" in query:
-            metadata_reads.append(query)
+        if isinstance(query, str) and (
+            "selected.event_bytes_bound" in query or "sequence=ANY(%s::bigint[])" in query
+        ):
+            page_reads.append(query)
         return execute(connection, query, *args, **kwargs)
 
     monkeypatch.setattr(TaskIoConnection, "execute", traced)
@@ -128,7 +130,7 @@ def test_native_completion_replay_skips_empty_query_after_short_tail(indexed, mo
     )
     assert events[-1].sequence == 38
     assert events[-1].event_type is EventType.ANSWER_COMMITTED
-    assert len(metadata_reads) == 1
+    assert len(page_reads) == 1
 
 
 def snapshot(**changes):
