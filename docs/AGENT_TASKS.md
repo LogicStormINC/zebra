@@ -38163,3 +38163,27 @@ Selected coordinated resource candidate (not installed/accepted); static Capacit
 check306+7<=384. Need dedicated test resource qualification before one450-offer rerun;
 Worker steady/IO scaling remain unproven. Task stays In Progress; no expanded E1-R.
 Evidence .artifacts/cloud-ha-e1/e1-a-bounded-diagnostic-1793873558/RESULTS.md.
+
+## CA-HA-03 delegated resource candidate, 2026-11-05
+
+User delegated resource choice. The uninstalled32CPU/64GiB draft is not a minimum.
+Selected12CPU test cap on192.168.101.7: PG6CPU/4GiB plus two independent private
+Docker nodes, each3CPU/4GiB,16slots.32slots total;306+7 connections<=320.
+This is logical dual-node evidence on one physical host, not physical multi-host HA.
+Avoid cross-WAN DB transactions (measured TCP latency around160ms or more).
+Guard tracks existing85 containers, memory>=6GiB, disk>=12GiB and sustained load.
+Exact installed source snapshots plus d9 overlay retained. Source v126 copied via
+pg_dump/restore across architectures:1114740 events,17742Tasks,pending0 match.
+Logical restore/reindex and PG patch changes are explicit comparison limitations.
+Old stalled transport terminated only after checking remote progress/process state;
+checksum transfer completed, no business replay. OCI/config image IDs reconciled
+by identical layers/semantic config. Official DinD initialization enables nested
+memory/CPU cgroups with parent3CPU/4GiB limits; no host cgroup change.
+Both new nodes pass native counter/TLS and wrong key/client/namespace checks;
+zero Tasks executed during qualification. Isolated test bundle materialized and
+published:437a587a-a0c7-4c83-b477-9a62afdf7e7c,version0a432a2d-4c4f-4d19-92b5-b39a827116b9.
+Next: one fresh signed Task then one450-offer30s+60s window at5/s, zero capacity
+rejection. Original six test roles paused only during controlled run and restored
+in finally. Production, original Tasks/unknowns/signatures remain unchanged.
+Evidence:.artifacts/cloud-ha-e1/e1-a-resource-candidate-1793875018 and remote
+/home/ubuntu/.local/state/zebra-e1/e1-a-resource-candidate-1793875018. Task In Progress.

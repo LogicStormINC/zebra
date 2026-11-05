@@ -248,3 +248,27 @@ CA-HA-03/E1-A仍In Progress，完整E1-R不启动。下一步是独占资源就�
 384元数据通过；未连接DB/Task/模型。热点定位走已有索引，不新增索引。
 六原角色/两ready/原4+4槽/clone停止再次核验。32CPU/64GiB只是候选预留，
 不得当作最低需求或采购结论。仍缺隔离扩展实测，不宣称容量或HA完成。
+
+## CA-HA-03 delegated resource candidate, 2026-11-05
+
+User delegated resource choice. The uninstalled32CPU/64GiB draft is not a minimum.
+Selected12CPU test cap on192.168.101.7: PG6CPU/4GiB plus two independent private
+Docker nodes, each3CPU/4GiB,16slots.32slots total;306+7 connections<=320.
+This is logical dual-node evidence on one physical host, not physical multi-host HA.
+Avoid cross-WAN DB transactions (measured TCP latency around160ms or more).
+Guard tracks existing85 containers, memory>=6GiB, disk>=12GiB and sustained load.
+Exact installed source snapshots plus d9 overlay retained. Source v126 copied via
+pg_dump/restore across architectures:1114740 events,17742Tasks,pending0 match.
+Logical restore/reindex and PG patch changes are explicit comparison limitations.
+Old stalled transport terminated only after checking remote progress/process state;
+checksum transfer completed, no business replay. OCI/config image IDs reconciled
+by identical layers/semantic config. Official DinD initialization enables nested
+memory/CPU cgroups with parent3CPU/4GiB limits; no host cgroup change.
+Both new nodes pass native counter/TLS and wrong key/client/namespace checks;
+zero Tasks executed during qualification. Isolated test bundle materialized and
+published:437a587a-a0c7-4c83-b477-9a62afdf7e7c,version0a432a2d-4c4f-4d19-92b5-b39a827116b9.
+Next: one fresh signed Task then one450-offer30s+60s window at5/s, zero capacity
+rejection. Original six test roles paused only during controlled run and restored
+in finally. Production, original Tasks/unknowns/signatures remain unchanged.
+Evidence:.artifacts/cloud-ha-e1/e1-a-resource-candidate-1793875018 and remote
+/home/ubuntu/.local/state/zebra-e1/e1-a-resource-candidate-1793875018. Task In Progress.
