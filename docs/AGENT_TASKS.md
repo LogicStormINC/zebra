@@ -37946,3 +37946,7 @@ Worker execution.py, execution_recovery.py, session_process_child.py and
 worker_budget.py, existing native/Worker budget regressions and WORKLOG.md.
 Share one fresh read for the isolated executor's paired polls. Retain callback
 semantics for other callers, exact fence and STOP proof, and all write guards.
+
+Paired authority polling evaluated on the same v126 seed and archived with its
+native regression. Excluded from the delivery branch because full-slot
+occupancy and admission did not improve. E1-A remains the milestone priority.
