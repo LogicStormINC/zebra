@@ -38004,3 +38004,11 @@ Paired ownership/deadline work unit is Review at ac349add. Native regression and
 adjacent isolated E1-A comparison completed. Exactly 49 fewer commits per
 completed Task, with same-scope reads sharing the existing work unit. E1-A still
 fails its queue/capacity targets. Local only, original services restored.
+
+CA-HA-03 checked progress Run header. Ready, claimed In Progress by human owner
+lukeding, executor Codex, branch codex/ca-ha-03-budgets, this worktree.
+Own agent_storage/worker_progress.py, Worker progress_recovery.py,
+tests/agent_storage/test_postgres_worker_progress.py and existing Worker
+progress recovery regression, task_plan.md and WORKLOG.md. Join the native
+ownership/deadline check and latest Run header in one bounded read transaction.
+Keep default/custom reads and all page/append commits independent.
