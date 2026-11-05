@@ -37970,3 +37970,11 @@ for protocol lines that publish no content.
 Guarded streaming cadence evaluated with paired Session/fence model timings.
 Archived the transport change and regression after proving fewer in-wire
 checks but no whole-slot gain. The CA-HA-03 capacity gate remains open.
+
+CA-HA-03 Worker projection pair persistence (same owner lukeding and branch).
+Own postgres/projections.py, postgres/workspaces.py, postgres/workspace_projection_batch.py,
+existing native Workspace projection regression and WORKLOG.md. Consolidate
+the existing stream check and two monotonic projection writes on the fenced
+Worker paths, preserving canonical derivation and command receipt ordering.
+The existing native batch lease-expiry regression is also owned so its fault
+fires after the combined write, before the unchanged final lease recheck.
