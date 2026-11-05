@@ -37991,3 +37991,11 @@ outcome, reset isolation, timeout, cancellation and socket permit ownership.
 Scoped socket release pipeline evaluated with immediate same-seed control.
 Archived with its native regression. Excluded from the delivery branch because
 whole-slot time and admission receipt availability did not improve.
+
+CA-HA-03 paired ownership/deadline work unit. Ready, claimed In Progress by
+human owner lukeding, executor Codex, branch codex/ca-ha-03-budgets, this worktree.
+Owned paths are Worker worker_budget.py, execution.py, session_process_child.py,
+tests/worker/test_worker_budget.py and existing native budget regression,
+WORKLOG.md and task_plan.md. Reuse postgres_work_unit for the isolated native
+lease callback and its paired deadline read. Preserve default/custom callbacks,
+fresh retry gates, independent model reservation and commit boundaries.

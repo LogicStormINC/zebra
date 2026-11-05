@@ -77,3 +77,27 @@ Mac-owned SSH forwards and a single VM control/data plane; not storage/host-fail
     a NEW approval with --trust-revision4 (current exact trust3), exact scoped native
     CAS3->4, materialize/publish new Definition and NEW Task. No retries of old Tasks.
     Full E1/HA03/production HA still incomplete.
+
+## E1-A capacity handoff, 2026-11-05
+
+Scope of this handoff is the existing isolated E1 evidence and code inspection.
+
+- [x] Verify the clean ca-ha-03-budgets checkout and the final transaction-map artifact.
+- [x] Confirm the single synthetic Task has 222 transactions, 77 lease reads and
+  49 deadline checks. These counts describe this sampled Task.
+- [x] Trace child require_owned -> LeaseStore.get -> native lease/epoch/STOP read.
+- [x] Trace BudgetExecutionCheck -> original callback -> check_deadline.
+- [x] Compare installed and checkout budget code. Installed v126 uses two deadline
+  queries in one transaction; the checkout combines them into one statement.
+- [ ] Review all callback routes and identify pure reads that can share an existing
+  work unit without extending a transaction across writes, model I/O or effects.
+- [ ] Reproduce the chosen transaction count reduction with a deterministic check
+  and validate lease expiry, STOP, deadline, scope and rollback behavior.
+- [ ] Compare fresh same-seed candidate and adjacent original baseline at 4+4 slots,
+  5 Tasks/s and 256 SSE. Include all receipts, rejections and unknown outcomes.
+- [ ] After E1-A passes, run sustained load and cross-scope fairness, then finish
+  the remaining E1-R matrix while keeping the prior F-02 state separate.
+
+Evidence is .artifacts/cloud-ha-e1/e1-a-v126-transaction-map-1793856413/transaction-map.json.
+Installed sources are session_process_child.py.installed and overlay/worker_budget.py
+in that directory. E1-A and the full HA objective remain incomplete.
