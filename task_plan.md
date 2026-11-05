@@ -202,3 +202,15 @@ Next coherent E1 composition reuses six existing bounded-read modules rather
 than new caching/transactions: input frontier+membership, native deadline query
 and helper, checked latest Run header + Worker recovery wiring. Existing native
 regressions precede adjacent fixed E1-A. No schema or production changes.
+
+## 用户冻结的新推进边界，2026-11-05
+
+持续5/s、正常负载零容量拒绝；30s预热+60s稳态，queue p95<=2/p99<=5。
+所有429/超时/unknown/未发出均保留。见docs/CA-HA-03_capacity_decision.md。
+停止无量化跨缺口预期的局部优化；旧在途只读尾部对照已收尾，控制失败/
+缺失SSE和采样如实留档，六角色恢复、clone停止，未重放。
+
+下一步只执行一轮同期诊断，产出接纳→槽→业务→ACK→释放时间账单，
+最多两个主瓶颈；再选择一个有量化预期的主方案、一次容量复验。
+必须交付达标配置或具体原因/资源缺口，不以继续微调作为结果。
+正式诊断前先验证时钟闭合、采样完整性和纯观察开销；不追加业务优化。

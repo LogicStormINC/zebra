@@ -38131,3 +38131,27 @@ Do not change mutation fencing or typed multi-page repeatable-read evidence.
 Prove no XID/read locks, concurrent release/epoch/expiry/token changes rejected
 before returning, force-stop and existing bounded replay/write regressions.
 Then matched fresh signed E1-A, preserve all receipts/data and original roles.
+
+User steering,2026-11-05: stop local optimizations without a quantified gap-closing
+expectation. Explicit user freeze: sustained5 offers/s, normal-load capacity
+rejections not allowed;30s warmup+60s steady, queue p95<=2s/p99<=5s. Retain
+429/timeouts/unknown in the offered denominator. Existing15s windows are
+exploration, not acceptance.
+
+Readonly-tail implementation5143b2f9 remains Review (83 native regressions), not
+a capacity-qualified promotion. Old in-flight adjacent run was allowed to end:
+candidate40 complete,34 scope429,1unknown,8.42955s mean; control36 admitted,
+35complete,34scope429,5unknown,10.85389s mean, one unresolved failed Task and
+Memory drain timeout. Missing final control SSE observation and incomplete lock
+sampling are retained explicitly. Both original six-role sets restored, clones
+stopped/pending command0, exact owned workspace volumes removed. No replay.
+
+CA-HA-03 bounded capacity decision. Ready, claimed In Progress by human owner
+lukeding, executor Codex, same branch/worktree. Own docs/
+CA-HA-03_capacity_decision.md, task_plan.md, WORKLOG.md and isolated E1 diagnostic
+scripts/evidence. One bounded contemporaneous diagnostic/time bill, at most two
+main bottlenecks; then one primary repair/configuration, one capacity rerun. No
+more speculative local changes or expanded E1-R before capacity gap is closed.
+Preserve exact data/unknown/signature evidence and immutable original source pins;
+production remains untouched. Application owned paths are NOT expanded until
+the time bill selects a single primary scheme with quantitative justification.
