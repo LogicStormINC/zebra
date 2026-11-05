@@ -118,8 +118,9 @@ def test_saturated_execution_does_not_block_independent_control_tick(monkeypatch
     asyncio.run(scenario())
 
 
+@pytest.mark.parametrize("failed", [False, True])
 def test_cancelled_handoff_await_and_shutdown_keep_slot_until_real_execution_finishes(
-    monkeypatch, caplog
+    monkeypatch, caplog, failed
 ):
     caplog.set_level("INFO", logger=runtime.__name__)
     event, lease, body = _fixture(monkeypatch)
@@ -133,6 +134,8 @@ def test_cancelled_handoff_await_and_shutdown_keep_slot_until_real_execution_fin
     def execute(received):
         executing.set()
         assert allow_execute.wait(3)
+        if failed:
+            raise TimeoutError("private failure details")
 
     monkeypatch.setattr(runtime, "handoff_command", handoff)
 
@@ -175,6 +178,9 @@ def test_cancelled_handoff_await_and_shutdown_keep_slot_until_real_execution_fin
     session_id, fence, handoff_ms, held_ms = records[0].args
     assert (session_id, fence) == (lease.session_id, lease.fence.fencing_token)
     assert 0 <= handoff_ms <= held_ms
+    failures = [r for r in caplog.records if "command_execution_future_failed" in r.message]
+    assert [r.args for r in failures] == ([(session_id, fence, "TimeoutError")] if failed else [])
+    assert "private failure details" not in caplog.text
 
 
 @pytest.mark.parametrize("failure", ["schedule", "schedule_value", "database", "quarantine"])

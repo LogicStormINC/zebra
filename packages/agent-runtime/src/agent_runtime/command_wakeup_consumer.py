@@ -206,10 +206,16 @@ class CommandWakeupConsumer:
         self, lease: WorkerLease, slot_started: float, handed_off: float, future: Future[object]
     ) -> None:
         try:
-            if not future.cancelled():
-                future.exception()  # do not log model/credential exception text
+            error = None if future.cancelled() else future.exception()
         finally:
             self._slots.release()
+        if error is not None:
+            logger.warning(
+                "command_execution_future_failed session_id=%s fence=%s error_type=%s",
+                lease.session_id,
+                lease.fence.fencing_token,
+                type(error).__name__,
+            )
         if logger.isEnabledFor(logging.INFO):
             logger.info(
                 "command_execution_slot_released session_id=%s fence=%s handoff_ms=%s held_ms=%s",
