@@ -38061,3 +38061,20 @@ empty/blocked scans reach <=30s, reset on progress, errors stay <=5s; local and
 command/control cadence unchanged. Keep all durable recovery receipts and do not
 retry business execution. Add deterministic timing regressions; compare new
 signed Tasks against adjacent installed recorder-dedup control at fixed E1-A.
+
+Cloud Memory discovery backoff owned paths explicitly include
+docs/CA-HA-03_resource_budgets.md for the bounded discovery latency contract
+and immutable E1 source-pinning repair. Scope remains CA-HA-03; no milestone
+advancement, production deployment or historical Task replay.
+
+Cloud Memory discovery backoff is Review at d9ab05a0;18 deterministic tests,
+Ruff/mypy pass. Adjacent control/first/latest candidate full-slot means
+9.001900/7.148550/7.926775s. All40 attempts per arm included; control retains
+one storage-contention suspension, candidates40/40 complete. Latest naturally
+settles40/40 Memory receipts in21.932s; first candidate's16 pending retained.
+Repeated empty scans65->2 and7.631->.301s accumulated SQL in respective
+windows. E1-A still FAIL; no sustained/fairness/full E1-R or production claim.
+Pinned17 source files per node and recreated two stateless E1 Workers after
+mutable bind/helper skew; old containers stopped/configs retained, approvals
+unchanged, source hashes verified, six roles running. Latest expected-role
+list and full evidence are e1-a-memory-backoff-drain-1793865198.

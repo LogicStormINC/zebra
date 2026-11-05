@@ -151,14 +151,35 @@ E1-A remains FAIL; no material gain or production-readiness claim. Evidence:
 
 ## SQL wait attribution, 2026-11-05
 
-- [ ] Capture per-SQL client wall/CPU/runnable wait and native server execution
+- [x] Capture per-SQL client wall/CPU/runnable wait and native server execution
   deltas at low load and full E1-A load, retaining exact signed cohort outcomes.
-- [ ] Separate slow SQL/server saturation from reset/acquire/transport waits and
+- [x] Separate slow SQL/server saturation from reset/acquire/transport waits and
   choose the next change from the largest measured whole-slot contributor.
-- [ ] Restore original roles and approvals, keep stopped cloned data/evidence.
+- [x] Restore roles and approvals (two Worker IDs explicitly replaced with pinned baselines), keep stopped cloned data/evidence.
 
 SQL attribution identified repeated empty Memory discovery (6,786 historical
 closed Sessions per empty scan), not a stable query-rewrite win. Next slice:
-- [ ] Reuse PollingDelay for capped cloud Memory idle/error discovery, reset on
+- [x] Reuse PollingDelay for capped cloud Memory idle/error discovery, reset on
   progress; leave local/command cadence and durable receipts intact.
-- [ ] Deterministic backoff/cap/reset/error checks, then adjacent fixed E1-A.
+- [x] Deterministic backoff/cap/reset/error checks, then adjacent fixed E1-A.
+
+Memory backoff local implementation d9ab05a0: 18 deterministic tests, Ruff/mypy
+pass. SQL attribution isolated 601 Memory scans/38.536s; no SQL rewrite retained.
+Adjacent control / first candidate / natural-drain candidate full-slot means
+9.001900 / 7.148550 / 7.926775s; queue p95/p99 latest 30.675555/34.162657s.
+All 40 attempts counted per arm. All arms 40 sealed 201, 35 scope 429, zero
+unknown, 40 model starts/exact ACKs. Control has one retained storage-contention
+suspension; both candidates complete 40/40. Latest candidate naturally settles
+40/40 Memory receipts in 21.932s after main drain. Earlier candidate has 16
+unsettled Memory receipts retained in stopped data, not replayed or relabeled.
+
+Two original E1 Workers failed restore due mutable source/old helper skew; fixed
+by pinning 17 modules per node to immutable baseline bytes and recreating only
+the two stateless Workers. Old containers stopped/restart=no, configs retained;
+four other IDs unchanged, all approvals unchanged. Latest current role list is
+.artifacts/cloud-ha-e1/e1-a-memory-backoff-drain-1793865198/expected-roles.tsv.
+Both active pinned Worker hashes verified, six roles running, original APIs ready.
+Four new DB copies stopped/data retained, eight owned workspace tmpfs volumes
+precisely removed. Production untouched. E1-A still fails 1.6s/2s/5s gates; do
+not advance to sustained/fairness or expanded E1-R as a substitute for capacity.
+Evidence .artifacts/cloud-ha-e1/e1-a-memory-backoff-drain-1793865198/RESULTS.md.

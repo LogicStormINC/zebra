@@ -22172,3 +22172,71 @@ both original Worker recorder source hashes match the baseline. Both original
 API readiness ready. Clone v126/pending=0, both stopped/data retained. Four
 owned workspace tmpfs volumes precisely removed. Production and original
 business data/signatures/unknown evidence untouched.
+
+## CA-HA-03 SQL attribution and bounded Memory discovery, 2026-11-05
+
+Prior goal turn made progress: valid adjacent 173->163 transaction comparison
+showed no material whole-slot gain, redirecting work to synchronous waiting.
+New SQL diagnostics use fresh signed fixture Tasks only. All 40 main summaries
+are intact; 31/40 complete SQL-site profiles, 9 with 1-2 missing records from
+interleaved output, six malformed lines retained and excluded from site sums.
+The app pg_stat_statements delta includes nested/background execution: 601
+Memory-discovery calls/38.536s of 72.288s accumulated SQL time (not CPU share).
+Read-only EXPLAIN returns no candidates but probes 6,786 closed Sessions and
+filters 10,213 others. Warm correlated baseline 59.648/56.898ms versus set-based
+89.029/52.837ms: no stable SQL rewrite gain, so no SQL source or migration edit.
+
+Reuse PollingDelay (d9ab05a0) with configured cloud Memory idle ceiling 30s,
+80-100% jitter and progress reset/immediate next batch. Errors remain <=5s;
+local cadence remains 1s and command/control default idle cap 1s. No business
+retry, authority cache, fence/deadline or receipt changes. Deterministic red
+was 1s !=30s; green 18 tests; Ruff/mypy clean. WorkerLoopService is 490 lines.
+The recovery discovery ceiling includes later maintenance tick/query overhead;
+tighter background latency needs a durable wakeup queue.
+
+Fresh same-seed 4+4 slots, 5/s, 75 offers, 256 SSE, Worker/PG 2 CPU each.
+Control / first candidate / latest candidate whole-slot mean 9.001900 /
+7.148550 / 7.926775s; p95 12.513/8.221/10.757 and p99 12.769/8.488/11.246.
+Queue p95 35.533928/31.143304/30.675555, p99 38.128308/33.117628/34.162657.
+Every arm has 40 occupied attempts counted, 40 sealed201 +35 sealed scope429,
+zero unknown, 40 model starts and exact exit ACKs. Control completes39/40;
+remaining Task 9198d9bf-9407-49d2-9cb1-1502df871519 suspended on
+execution_storage_contention/LockNotAvailable after one model call; preserve,
+no replay. Candidates both complete40/40; successful Task commits remain163.
+All256 SSE remain open during each observation, 230 lock samples each.
+Memory scans65/3/2, service execution7.630795/.397007/.300525s; windows
+54.16/42.25/47.71s. Counts are not equal-duration rates. Mean gains20.59%
+and11.94% are short-window observations, not significance or capacity proof.
+
+First candidate at switchback has24/40 Memory recovery receipts,16 retained
+in stopped clone. Repeated candidate uses NEW Tasks and keeps Worker/SSE
+alive after unchanged capacity window: all40 Memory receipts naturally commit
+21.932s after main drain. Before-grace and after-grace SQL snapshots separate.
+No original business POST/model calls replayed; historical unknowns unchanged.
+
+Important E1 restoration defect: worker_loop_service.py was a mutable worktree
+bind while PollingDelay came from the older image. Source edit caused two
+original Worker restart failures after the successful first capacity window.
+Preserve original failed rollback and inspect evidence. Pinned17 modules/node
+to SHA256-named baseline files, original loop bytes, recreated only two
+stateless Workers; same image/env/volumes/approvals. Old containers retained
+stopped with restart=no. Four other role IDs unchanged. New Worker IDs
+5a7ba5d2d5ea1873ce8a732174895b208d5b171f72253da12b8950f3006b89c9
+and fc01f065c9db0019a04950fe4cf9077bee4f96d56b7f8a01b1cc8ebda07a6a07.
+Latest expected roles file is in the latest candidate directory. Both active
+Workers'17 source hashes verified; six roles running, approval hashes match,
+two APIs ready. Four new cloned DBs v126/pending command0 stopped/data kept;
+eight owned tmpfs workspace volumes removed. Production untouched.
+
+Evidence root .artifacts/cloud-ha-e1/:
+- e1-a-sql-wait-profile-1793862510/{SQL_FINDINGS.md,sql-profile.json,memory-plan-comparison.json}
+- e1-a-memory-backoff-candidate-1793863451/ (failed restore + repaired pinned baseline retained)
+- e1-a-memory-backoff-control-1793863451/ (one suspension retained)
+- e1-a-memory-backoff-drain-1793865198/{RESULTS.md,adjacent-comparison.json,memory-grace-result.json,pinned-source-final-verification.json}
+Native regression path is recorded by latest candidate regression-directory.txt.
+
+E1-A still FAIL: latest mean7.927s>1.6, queue30.676/34.163>2/5. Latest
+registration-to-first-model3.458s and model-return-to-complete/ACK1.305+.667s
+remain next whole-slot targets. Sustained load/cross-scope fairness/full E1-R
+are not accepted, and overall HA goal remains active. Do not hide failed
+control outcome, old pending Memory receipts or partial diagnostic profiles.

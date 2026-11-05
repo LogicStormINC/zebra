@@ -373,3 +373,32 @@ private-executor limits (`pool`, `normal`, `read`, `control`, `probe`).
 Omitting it charges and enforces the shared limits for executors as before.
 Helm and runtime charge the override for every peak executor, including rollout
 overlap, and still reserve server and external connections separately.
+
+## 2026-11-05：Memory 恢复空扫描与 E1 源码固定
+
+SQL 归因使用新签名合成任务，未调用真实模型供应商、未重放旧业务任务。
+在 6,786 个已关闭 Session 的保留副本上，Memory finalization recovery
+候选查询即使返回空结果仍逐 Session 探测 completion 与原恢复回执。
+满载诊断记录 601 次、38.536s 累计 SQL 时间；统计含后台和嵌套语句，
+不能当作 CPU 占比。改写 SQL 的只读对照没有稳定收益，未保留该改写。
+
+`d9ab05a0` 复用 PollingDelay：普通命令/控制默认空转上限仍 1s，错误
+仍 5s；仅 cloud Memory discovery 将连续空/无进展上限配置为 30s，
+保持 80%–100% 抖动。发现进展后重置并允许立即处理下一批。local
+Memory recovery 保留原 1s 节奏；持久化回执、fence、deadline 和业务
+执行不改变。连续空闲后，新待恢复项的发现可能等待最多约 30s 加维护
+tick 调度时间；该后台发现上限不代表 RUN 排队或控制请求 SLO。
+更紧的后台恢复延迟需要持久化唤醒队列，不以缓存授权或重发 unknown
+换取时延。确定性回归覆盖上限、进展重置、错误与 local 兼容。
+
+E1 原 Worker 的一部分源码直接绑定当前工作树，镜像内另一些模块
+固定，曾在恢复重启时因版本不一致退出。现将基线 `.py` 绑定文件复制到
+按 SHA256 命名的不可变副本，再重建两个无状态 Worker；旧容器停止
+保留，原镜像、环境、数据卷、审批配置保持。固定之前的 ID 不再作为
+当前 Worker ID；映射与原 inspect 留档。所有验收切换必须使用最新
+角色清单，并同时校验依赖模块哈希，不能把重启失败当作业务完成证明。
+原数据、历史 unknown 与签名证据不改写。
+
+证据：`.artifacts/cloud-ha-e1/e1-a-sql-wait-profile-1793862510/`、
+`e1-a-memory-backoff-candidate-1793863451/`、相邻 `...-control-1793863451/`。
+容量门槛仍以新实测为准；CA-HA-03 和整体 HA 不因本地回归通过而完成。
