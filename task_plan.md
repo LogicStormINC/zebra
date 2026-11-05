@@ -112,3 +112,23 @@ unknown; control 36 completed, 38 scope 429 and one unknown. Both unknowns remai
 after one further original signed GET. All 75 offers are retained per arm.
 Evidence is .artifacts/cloud-ha-e1/e1-a-v126-ownership-unit-1793857758/adjacent-comparison.json.
 E1-A still fails. Sustained/fairness and full E1-R remain outstanding.
+
+
+## ac349add follow-up, 2026-11-05
+
+- [x] Re-profile a fresh synthetic Task at the installed ac349add candidate baseline.
+  Its 173 commits include 50 work units, 28 unpaired lease reads, 18 progress
+  transactions and 13 latest Run header reads; 12 headers follow catch_up checks.
+- [x] Share only the configured native ownership/deadline check and latest Run
+  header in one read-only transaction, closing it before any page advance.
+- [x] Add native same-scope/custom fallback, Run supersession, write refusal and
+  independent page-write regressions. 58 focused tests passed, Ruff/mypy clean.
+- [x] Run fresh same-seed candidate and adjacent ac349add control, preserving every
+  receipt and every occupied attempt, including the control's two suspensions.
+- [ ] E1-A capacity and queue targets remain unmet; sustained/fairness and full E1-R
+  are still outstanding.
+
+Local implementation eb0721a9. Completed Task commits 173 to 161.
+All-admitted complete slot mean 7.8292 to 7.7545 seconds, an observed 0.95% change
+in one pair with different failure outcomes. No significant capacity gain claimed.
+Evidence .artifacts/cloud-ha-e1/e1-a-ac349add-checked-header-1793859685/adjacent-comparison.json.

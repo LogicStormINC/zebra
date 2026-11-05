@@ -38012,3 +38012,8 @@ tests/agent_storage/test_postgres_worker_progress.py and existing Worker
 progress recovery regression, task_plan.md and WORKLOG.md. Join the native
 ownership/deadline check and latest Run header in one bounded read transaction.
 Keep default/custom reads and all page/append commits independent.
+
+Checked progress Run header is Review at eb0721a9. Native regression and
+adjacent ac349add isolated comparison completed. Completed Task commits 173
+to 161; complete occupancy nearly unchanged in one pair. E1-A still fails.
+Original services restored and all candidate/control evidence retained.
