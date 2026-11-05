@@ -38078,3 +38078,11 @@ Pinned17 source files per node and recreated two stateless E1 Workers after
 mutable bind/helper skew; old containers stopped/configs retained, approvals
 unchanged, source hashes verified, six roles running. Latest expected-role
 list and full evidence are e1-a-memory-backoff-drain-1793865198.
+
+CA-HA-03 preparation and transport attribution. Ready, claimed In Progress by
+human owner lukeding, executor Codex, same codex/ca-ha-03-budgets worktree.
+Own isolated E1 diagnostic artifacts, task_plan.md and WORKLOG.md. Reuse current
+40-Task stage logs, then read-only SELECT1 and short-transaction timing against
+the retained clone and configured test DB from both native Worker environments.
+No source/runtime config edits, production, model calls or historical intent
+replay. Decide next preparation optimization from measured client/server cost.

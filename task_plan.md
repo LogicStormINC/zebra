@@ -183,3 +183,12 @@ Four new DB copies stopped/data retained, eight owned workspace tmpfs volumes
 precisely removed. Production untouched. E1-A still fails 1.6s/2s/5s gates; do
 not advance to sustained/fairness or expanded E1-R as a substitute for capacity.
 Evidence .artifacts/cloud-ha-e1/e1-a-memory-backoff-drain-1793865198/RESULTS.md.
+
+## Preparation/transport attribution, 2026-11-05
+
+- [x] Read all40 retained preparation marks: inputs812.9ms, context authority
+  append227.1ms + refresh235.8ms, selection append170.4ms + refresh219.6ms.
+- [ ] Compare read-only SQL/short-transaction client latency from both Worker
+  nodes through the configured test path and retained Mac-clone path.
+- [ ] Select the next whole-slot change from this evidence, preserving existing
+  source pinning, data, receipts and production boundary.
