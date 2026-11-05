@@ -37930,3 +37930,8 @@ CA-HA-03 ordinary Worker model ledger round trips (same owner and branch).
 Own postgres/worker_budget.py, its native budget regression and WORKLOG.md.
 Combine transaction-local setup and paired ledger writes. Preserve independent
 pre-send commit, unknown refusal, exact receipt checks and final budget fence.
+
+CA-HA-03 ordinary Worker post-lock authority reads (same owner and branch).
+Own postgres/worker_budget_queries.py, the native Worker budget regression and
+WORKLOG.md. Read the clock, STOP ancestry and delegation status in one fresh
+snapshot after the existing locks. Preserve the shared STOP proof and refusal rules.
