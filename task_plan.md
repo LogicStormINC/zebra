@@ -243,3 +243,8 @@ CA-HA-03/E1-A仍In Progress，完整E1-R不启动。下一步是独占资源就�
 证据：`.artifacts/cloud-ha-e1/e1-a-bounded-diagnostic-1793873558/RESULTS.md`；原密封回执
 `.artifacts/cloud-ha-e1/corpus-rebuilt-approval-sse-256-1793873711/`。
 六角色ID/绑定/ready恢复、pending0、clone停止、两个owner workspace卷精确回收。
+
+资源候选补核查完成：两原Worker纯配置入口接受16槽/batch16/306连接，256旧PG拒绝，
+384元数据通过；未连接DB/Task/模型。热点定位走已有索引，不新增索引。
+六原角色/两ready/原4+4槽/clone停止再次核验。32CPU/64GiB只是候选预留，
+不得当作最低需求或采购结论。仍缺隔离扩展实测，不宣称容量或HA完成。

@@ -97,3 +97,27 @@ CA-HA-03/E1-A仍In Progress，完整E1-R不启动。下一步是独占资源就�
 证据：`.artifacts/cloud-ha-e1/e1-a-bounded-diagnostic-1793873558/RESULTS.md`；原密封回执
 `.artifacts/cloud-ha-e1/corpus-rebuilt-approval-sse-256-1793873711/`。
 六角色ID/绑定/ready恢复、pending0、clone停止、两个owner workspace卷精确回收。
+
+## CA-HA-03 资源候选只读补核查，2026-11-05
+
+这是前一轮容量诊断的只读补核查，不是第二轮450请求容量试验。
+
+- 从原停止的保留clone，以ha_app角色、READ ONLY、3s statement timeout取得两个
+  热点定位谓词的ANALYZE/BUFFERS计划：接纳定位Index Only Scan/已有覆盖索引，
+  event identity Index Scan/主键；执行0.336/0.189ms。不能据此证明UPDATE/触发器便宜，
+  也不能以它替代负载实测。没有发现这两个谓词缺索引的证据，故未添加新索引。
+- session_events实存约111.8万行、37个索引；只记录事实，不能把索引数直接当根因。
+- 两台真实Worker里分别运行纯load_settings/CapacityProfile检查：候选16槽、batch16、
+  fleet306连接均可解析；旧PG256元数据被拒绝，候选PG384元数据通过。
+  未发起DB连接/Task/model，不代表签名准入或部署验收。
+- 原Worker运行环境仍各4槽；原六角色ID/running和两API ready再次核验；clone停止。
+- 32CPU/64GiB是候选预留估算，不是已证明的最小配置或硬件采购结论。
+  当前缺口仍是隔离的扩展实测（包括Worker稳态CPU、WAL/IO、slot与吞吐伸缩性）。
+  未安装主要配置、未执行容量复验、不推进完整E1-R，HA目标未完成。
+
+证据：hotspot-read-plan-summary.json、hotspot-read-plans.jsonl、
+event-storage-inspection-verified.tsv、native-config-check.json、
+config-followup-restoration.json。既有evidence.sha256保留；新增证据见
+followup-evidence.sha256，未改写旧容量结果/回执/unknown/签名。
+
+目录：`.artifacts/cloud-ha-e1/e1-a-bounded-diagnostic-1793873558`。
