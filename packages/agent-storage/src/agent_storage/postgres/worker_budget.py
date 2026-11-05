@@ -33,8 +33,10 @@ class PostgresWorkerBudgetStore:
         if borrow_work_unit((self._database._dsn, self.namespace)) is not None:
             raise WorkerBudgetError("Worker budget requires independent committed phases")
         with self._database.connect() as connection:
-            connection.execute("SET LOCAL lock_timeout='500ms'")
-            connection.execute("SET LOCAL statement_timeout='3000ms'")
+            connection.execute(
+                """SELECT set_config('lock_timeout','500ms',true),
+                          set_config('statement_timeout','3000ms',true)"""
+            )
             with postgres_transaction_work_unit(self._database, connection):
                 yield connection
 
@@ -154,25 +156,21 @@ class PostgresWorkerBudgetStore:
                 raise WorkerBudgetError("exact request has unknown original; observe, never resend")
             child_tokens, _, _ = q.child_charges(c, self.namespace, binding.task_id)
             changed = c.execute(
-                """UPDATE worker_task_budgets SET charged_tokens=charged_tokens+%s
-                   WHERE deployment_namespace=%s AND task_id=%s
-                   AND charged_tokens+%s+%s<=max_model_tokens RETURNING task_id""",
+                """WITH charged AS (
+                       UPDATE worker_task_budgets SET charged_tokens=charged_tokens+%s
+                       WHERE deployment_namespace=%s AND task_id=%s
+                       AND charged_tokens+%s+%s<=max_model_tokens
+                       RETURNING deployment_namespace,task_id
+                   )
+                   INSERT INTO worker_model_reservations
+                   SELECT deployment_namespace,task_id,%s,%s,%s,%s,%s,%s,%s,%s,NULL
+                   FROM charged RETURNING reservation_id""",
                 (
                     reservation.token_bound,
                     self.namespace,
                     binding.task_id,
                     reservation.token_bound,
                     child_tokens,
-                ),
-            ).fetchone()
-            if changed is None:
-                raise WorkerBudgetError("Task cumulative model token ceiling exceeded")
-            c.execute(
-                """INSERT INTO worker_model_reservations
-                   VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,NULL)""",
-                (
-                    self.namespace,
-                    binding.task_id,
                     reservation.reservation_id,
                     request.request_digest,
                     binding.session_id,
@@ -182,7 +180,9 @@ class PostgresWorkerBudgetStore:
                     request.output_cap,
                     request.counter_contract,
                 ),
-            )
+            ).fetchone()
+            if changed is None:
+                raise WorkerBudgetError("Task cumulative model token ceiling exceeded")
             q.remaining(c, self.namespace, binding)
         return reservation
 
@@ -219,14 +219,19 @@ class PostgresWorkerBudgetStore:
                     raise WorkerBudgetError("immutable provider receipt conflict")
                 return
             c.execute(
-                """UPDATE worker_model_reservations SET receipt=%s WHERE deployment_namespace=%s
-                   AND task_id=%s AND reservation_id=%s""",
-                (Jsonb(receipt), self.namespace, binding.task_id, reservation.reservation_id),
-            )
-            c.execute(
-                """UPDATE worker_task_budgets SET charged_tokens=charged_tokens-%s
-                   WHERE deployment_namespace=%s AND task_id=%s""",
-                (reservation.token_bound - total, self.namespace, binding.task_id),
+                """WITH settled AS (
+                       UPDATE worker_model_reservations SET receipt=%s
+                       WHERE deployment_namespace=%s AND task_id=%s AND reservation_id=%s
+                       RETURNING deployment_namespace,task_id
+                   )
+                   UPDATE worker_task_budgets AS budget
+                   SET charged_tokens=budget.charged_tokens-%s FROM settled
+                   WHERE budget.deployment_namespace=settled.deployment_namespace
+                     AND budget.task_id=settled.task_id""",
+                (
+                    Jsonb(receipt), self.namespace, binding.task_id, reservation.reservation_id,
+                    reservation.token_bound - total,
+                ),
             )
             q.remaining(c, self.namespace, binding)
 

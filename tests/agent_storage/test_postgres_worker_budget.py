@@ -6,6 +6,7 @@ from hashlib import sha256
 from multiprocessing import get_context
 from uuid import uuid4
 
+import psycopg
 import pytest
 from agent_core.ports.worker_budget import ModelRequestBudget, WorkerBudgetError
 from agent_storage.postgres.database import PostgresDatabase
@@ -78,12 +79,29 @@ def test_task_key_unknown_survives_attempt_and_restart(setup):
         assert store.usage_reader(c, binding.task_id) is None
 
 
-def test_exact_receipt_idempotent_conflict_and_new_send_charge(setup):
+def test_exact_receipt_idempotent_conflict_and_new_send_charge(setup, monkeypatch):
     store, binding, database = started(setup)
+    statements = []
+    execute = psycopg.Connection.execute
+
+    def trace(connection, query, *args, **kwargs):
+        if isinstance(query, str) and any(marker in query for marker in (
+            "lock_timeout", "statement_timeout", "INSERT INTO worker_model_reservations",
+            "UPDATE worker_model_reservations", "UPDATE worker_task_budgets",
+        )):
+            statements.append(query)
+        return execute(connection, query, *args, **kwargs)
+
+    monkeypatch.setattr(psycopg.Connection, "execute", trace)
     first = store.reserve_model(binding, request())
+    assert len(statements) == 2
+    statements.clear()
     usage = {"prompt_tokens": 12, "completion_tokens": 3, "total_tokens": 15}
     store.settle_model(binding, first, usage, "provider-1")
+    assert len(statements) == 2
+    statements.clear()
     store.settle_model(binding, first, usage, "provider-1")
+    assert len(statements) == 1
     with pytest.raises(WorkerBudgetError, match="receipt conflict"):
         store.settle_model(binding, first, usage, "provider-other")
     next_binding = replace(binding, attempt_number=2)
