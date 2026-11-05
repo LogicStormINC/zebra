@@ -399,3 +399,23 @@ VM2；GET/控制lane仍共享API CPU，不宣称独占物理资源或CPU预留�
 原六角色/绑定哈希/两ready恢复；新候选容器和tmpfs卷精确回收，失败DB停止保留。
 容量边界/5/s配置仍未测得，不申请猜测CPU数量；生产/旧unknown/签名均未改。
 证据.artifacts/cloud-ha-e1/execution-resource-measurement-1793890154/RESULTS.md；offline-audit已运行通过。03及整体HA仍In Progress。
+
+## 2026-11-06 执行资格修复与1/2/4有界测量完成（未达容量验收）
+
+隔离安装错误已定位：旧baseline pin绑定33410，而新PG为33413。安全异常元数据回归
+冷/暖两分支通过；原生新包v2通过兼容校验，旧快照保持拒绝。另对原测试Rabbit应用
+备份Mnesia后stop_app/start_app恢复，无reset或凭据轮换；不归为子进程根因。
+实际测量使用逐Task native冷启动，不用warm-fork。并发1两窗口0.229/0.226完成/s，
+完整占槽3.234/3.339s；并发2为0.397/s、3.673s；并发4为0.626/s、4.414s。
+并发4毛CPU/Task Worker2.535s、PG1.793s，Worker叶级17.19%周期节流，父级未见节流。
+曲线随并发增长，但短批次不能证明持续容量；guest时钟未同步，未给排队SLO。
+19个新Task均签名201、准入unknown0，17个模型/业务各完成一次，19个精确ACK各一次；
+全部失败和编排错误保留：两次GET503中止、一轮脚本失败后额外5个新Task、错误Run范围
+强停403及ready前502。无旧任务POST重发。Task范围强停完成退出和资源释放，但仅启动阶段；
+仍保留pending_live1、active_leases0，未删除或宣称排空。原六角色/绑定/ready恢复，
+六临时容器和两再生tmpfs精确回收，PG容器/数据停止保留，生产未操作。
+下一条件为专用完整父级预算环境；约32可分配同等CPU/32GiB/32槽仅规划候选，非最低需求
+或达标证明。本机10核无法验证此配置，不向共享生产宿主机继续加压。
+不追加局部优化，不跑450或完整E1-R。13a8de6c仍本地Review，CA-HA-03/整体HA仍In Progress。
+证据.artifacts/cloud-ha-e1/execution-qualification-1793892399/RESULTS.md，
+all-task-audit.json、measurement-analysis.json、resource-estimate.json及final-resource-audit.json。

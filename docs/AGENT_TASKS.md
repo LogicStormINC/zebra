@@ -38229,3 +38229,21 @@ CA-HA-03资源测量slice：单个全新签名Task准入201，但完整执行预
 原六E1/绑定/ready恢复，临时运行资源精确回收，失败数据停止保留。应用代码未改，
 13a8de6c仍本地Review未部署。阻塞为执行资格/夹具原异常信息缺失；HA仍In Progress。
 证据.artifacts/cloud-ha-e1/execution-resource-measurement-1793890154/RESULTS.md。
+
+CA-HA-03 execution qualification follow-up: Ready -> In Progress; Owner lukeding,
+executor Codex, existing branch/worktree. User authorized safe exception metadata,
+frozen-install/native-dependency checks, one fresh synthetic execution qualification,
+then existing bounded1/2/4 stages and independent force-stop probe if qualified.
+Owned paths remain isolated qualification/measurement fixtures plus task_plan.md,
+WORKLOG.md, PROGRESS.md, this registry and docs/CA-HA-03_capacity_decision.md.
+No application paths expanded; no DB optimization/refactor/450/E1-R/production.
+Use native per-Task process startup for measurement, warm-fork only a fixture regression.
+
+CA-HA-03 execution qualification follow-up -> Review (local fixture/evidence only).
+2026-11-06: old baseline transport pin fixed by native new publication, safe error regression2 passed.
+Native cold execution1/2/4 completed; finite rate .226-.229/.397/.626 per second, not sustained5/s.
+All19 fresh signed receipts retained;17 business completions,19 exactACK, startup force-stop closed.
+Two GET503 and runner/setup failures retained; final pending1/leases0, no oldPOST replay.
+Original6 roles/bindings restored; candidate6/tmpfs2 reclaimed; clonedDB stopped retained.
+Evidence execution-qualification-1793892399/RESULTS.md. No source changes or production deployment.
+CA-HA-03 remains In Progress, resource-qualified E1-A and fullE1-R remain blocked on dedicated capacity.
