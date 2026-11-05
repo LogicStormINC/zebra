@@ -37987,3 +37987,7 @@ CA-HA-03 scoped socket commit/reset pipeline (same owner lukeding and branch).
 Own postgres/connection_scope.py, existing native connection scope regressions,
 and WORKLOG.md. Use distinct protocol Sync boundaries and preserve commit
 outcome, reset isolation, timeout, cancellation and socket permit ownership.
+
+Scoped socket release pipeline evaluated with immediate same-seed control.
+Archived with its native regression. Excluded from the delivery branch because
+whole-slot time and admission receipt availability did not improve.
