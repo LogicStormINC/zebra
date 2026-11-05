@@ -38102,3 +38102,15 @@ checked Run header store/Worker wiring. No new implementation or abstractions.
 Validate these six modules together on native scratch PG, then fresh signed
 Tasks and adjacent memory-backoff baseline at fixed 8-slot/5s/256 SSE E1-A.
 Preserve all signed/unknown evidence and immutable original source pins.
+
+Coherent preparation reads in E1 is Review, existing70 native tests pass.
+Candidate40/40 completed at7.547600s mean/151 commits, adjacent control42/42
+at7.386976s/163 commits; both natural Memory drains complete. No capacity
+gain established, so do not promote the read composition as performance baseline.
+
+CA-HA-03 preparation CPU/wait attribution. Ready, claimed In Progress by human
+owner lukeding, executor Codex, same branch/worktree. Own E1 diagnostic overlays,
+task_plan.md and WORKLOG.md. Add bounded per-stage thread CPU/runnable/wall
+observations to the current memory-backoff execution/child overlays only; use
+fresh signed Tasks at fixed8 slots/5s/256SSE and natural Memory drain. No
+application source, schema, topology, production or historical intent replay.
