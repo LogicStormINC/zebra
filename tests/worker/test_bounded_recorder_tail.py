@@ -177,11 +177,16 @@ def test_prepare_checks_ownership_once_before_bounded_tail(checkpoint_dsn):
     target._ownership_check = Mock(side_effect=check)
     args = (EventType.RUNTIME_CLEANUP_FAILED, EventActor.SYSTEM,
             {"target": "runtime", "error_type": "probe", "attempt_number": 1})
-    assert target.prepare(*args).sequence == 10
+    prepared = target.prepare(*args)
+    assert prepared.sequence == 10
     target._ownership_check.assert_called_once()
     read.assert_called_once()
 
     state.leases.release(state.session_id, fence=state.lease.fence)
+    with pytest.raises(LeaseLostError, match="ownership revoked"):
+        target.append_event(prepared)
+    target._worker_projection_transaction.commit_worker_event.assert_not_called()
+    assert target.session.current_sequence == 9
     with pytest.raises(LeaseLostError, match="ownership revoked"):
         target.prepare(*args)
     read.assert_called_once()
