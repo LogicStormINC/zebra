@@ -37896,3 +37896,8 @@ CA-HA-03 typed Worker replay bounded page dispatch (same owner and branch).
 Own worker_replay_reader.py and its existing native bounded Worker replay
 regression. Fetch only admitted bodies with their bounds in one statement;
 preserve ordered canonical evidence, cumulative limits and both lease fences.
+
+CA-HA-03 post-lock lease clock round trip (same owner and branch). Own
+postgres/leases.py and test_postgres_lease_clock.py for the shared lease-row
+read. Sample the database clock after acquiring the row lock in one query,
+retaining epoch/stop ordering and absent-row acquisition semantics.
