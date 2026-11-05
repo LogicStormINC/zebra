@@ -37915,3 +37915,8 @@ CA-HA-03 Worker projection snapshot read (same owner and branch). Own
 postgres/workspaces.py and its native Worker commit regression. Read the
 canonical Session and Workspace projections in one database snapshot before
 existing revision, content, and receipt checks.
+
+CA-HA-03 Worker execution failure correlation (same owner and branch). Own
+agent_runtime/command_wakeup_consumer.py, its existing consumer regression and
+WORKLOG.md. Correlate failed futures to their durable Session and fence without
+including exception text or changing the recovery decision.
