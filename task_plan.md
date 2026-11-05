@@ -148,3 +148,11 @@ slot mean 8.457625->8.288500 seconds, worse p95/p99. Both arms 40 completed,
 35 sealed scope 429, zero unknown, 40 exact ACKs and 256 SSE/zero early closes.
 E1-A remains FAIL; no material gain or production-readiness claim. Evidence:
 .artifacts/cloud-ha-e1/e1-a-ac349add-recorder-dedup-1793861657/RESULTS.md.
+
+## SQL wait attribution, 2026-11-05
+
+- [ ] Capture per-SQL client wall/CPU/runnable wait and native server execution
+  deltas at low load and full E1-A load, retaining exact signed cohort outcomes.
+- [ ] Separate slow SQL/server saturation from reset/acquire/transport waits and
+  choose the next change from the largest measured whole-slot contributor.
+- [ ] Restore original roles and approvals, keep stopped cloned data/evidence.

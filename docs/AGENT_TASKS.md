@@ -38033,3 +38033,12 @@ commits, complete slot mean 8.457625->8.288500s; worse tails. Both 40 complete,
 35 sealed scope 429, zero unknown, 256 SSE/zero early closes. E1-A still FAIL.
 Both six-role original sets restored, approvals/source hashes verified, owned
 workspace volumes removed, stopped clone data and all signed evidence retained.
+
+CA-HA-03 SQL wait attribution. Ready, claimed In Progress by human owner
+lukeding, executor Codex, same codex/ca-ha-03-budgets branch/worktree. Own
+isolated .artifacts/cloud-ha-e1 diagnostic scripts, task_plan.md, WORKLOG.md.
+Profile unchanged execution semantics at the installed recorder-dedup baseline:
+main-thread SQL template, commit/reset/acquire wall/CPU/runnable wait and native
+server pg_stat_statements deltas. Fresh signed synthetic Tasks only, same 8 slots
+and 256 SSE; retain data/unknown/signatures, restore original roles, no production.
+Do not choose another transaction-count fix until this attribution is collected.
