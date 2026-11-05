@@ -37939,3 +37939,10 @@ snapshot after the existing locks. Preserve the shared STOP proof and refusal ru
 Post-lock authority-read candidate evaluated and archived in the E1-A
 evidence. It is excluded from the delivery branch because the fixed-load
 comparison did not demonstrate lower full-slot occupancy.
+
+CA-HA-03 isolated Worker deadline and lease polling (same owner lukeding and
+branch). Own postgres/leases.py, postgres/worker_budget.py and its queries,
+Worker execution.py, execution_recovery.py, session_process_child.py and
+worker_budget.py, existing native/Worker budget regressions and WORKLOG.md.
+Share one fresh read for the isolated executor's paired polls. Retain callback
+semantics for other callers, exact fence and STOP proof, and all write guards.
