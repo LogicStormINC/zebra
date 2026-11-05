@@ -38247,3 +38247,26 @@ Two GET503 and runner/setup failures retained; final pending1/leases0, no oldPOS
 Original6 roles/bindings restored; candidate6/tmpfs2 reclaimed; clonedDB stopped retained.
 Evidence execution-qualification-1793892399/RESULTS.md. No source changes or production deployment.
 CA-HA-03 remains In Progress, resource-qualified E1-A and fullE1-R remain blocked on dedicated capacity.
+
+CA-HA-03 test-tool closeout: Ready -> In Progress (2026-11-06).
+Human owner lukeding / executor Codex; branch codex/ca-ha-03-budgets, existing worktree.
+Freeze13a8de6c installed candidate/package-v2/config/native cold startup. No performance changes.
+Owned paths: tests/compose/cloud_ha_e1/{run_execution_measurement.py,check_execution_measurement.py,README.md};
+new isolated closeout artifacts; docs/AGENT_TASKS.md, task_plan.md, WORKLOG.md, PROGRESS.md,
+docs/CA-HA-03_capacity_decision.md. Application/storage paths are read-only.
+Scope: checked preparation-before-execution entry, bounded receipt observer regression,
+read-only retained pending/stop/capacity investigation, independent resource inventory.
+No new Tasks, oldPOST replay, direct row cleanup, production access/load, E1-A or E1-R.
+
+CA-HA-03 test-tool closeout -> Review (local only): checked preparation entry and offline
+regressions passed; zero newTasks. Frozen native installed source/DB prove stopped Task
+still occupies1/32 scope admission slots; not deleted or falsely attributed as handled.
+Dedicated resource allocation/cost remains unavailable; reachable OrbStack Kube is shared10CPU.
+E1-A/E1-R paused. Evidence test-tool-closeout-1793897286/RESULTS.md. Overall03 In Progress.
+
+CA-HA-03-Q1 — Ready, unclaimed: reconcile force-stopped command derived capacity.
+Separate follow-up branch required before implementation; current candidate stays frozen.
+Candidate owned paths to confirm on claim: postgres/{force_stop_recovery,command_wakeup_receipts}.py,
+focused tests/agent_storage force-stop/queue regression, relevant task records.
+Require exact stop/command identity, concurrent admission safety, immutable original receipts;
+no direct cleanup of retained old rows or inference of handled from executor ACK.

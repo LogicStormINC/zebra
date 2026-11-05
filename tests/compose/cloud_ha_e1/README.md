@@ -374,3 +374,36 @@ management rights. A Scheduler workload signature can exchange runtime rights
 only for that account. Deploy the fixture authority and Broker configuration
 together on the isolated control node and verify a fresh signed firing before
 injecting a fault. Existing prepared bundles and their receipts are retained.
+
+### Checked execution-measurement entry (CA-HA-03)
+
+Run preparation and execution through `run_execution_measurement.py` with the
+repository `.venv/bin/python`, never as two unchecked shell commands. It uses
+that same interpreter for dependency checks and both stages; a preparation
+failure exits before the execution stage. Pass `--prepare`, `--execute` and
+`--evidence` with the reviewed isolated scripts and their existing evidence
+directory. The scripts must validate their own run ownership and configuration;
+this entry does not allocate resources or authorize a load run. Do not rerun
+historical artifact scripts or replay original Task POSTs.
+
+Offline regression (no service or Task creation):
+
+```sh
+.venv/bin/python tests/compose/cloud_ha_e1/check_execution_measurement.py \
+  --fixture .artifacts/cloud-ha-e1/execution-qualification-1793892399/measure.py
+.venv/bin/python tests/compose/cloud_ha_e1/signed_load.py
+```
+
+The regression executes the frozen observer's actual `read_original` function
+with the native signed-receipt reader and a fake transport: 16 finite callers,
+one active receipt query, all503 observations retained, no Task POST/retry.
+The fixture keeps the existing receipt=1 budget and8s HTTP deadline. A503 is
+an observation failure; the original POST evidence remains authoritative.
+`--legacy` deliberately reproduces the old preparation failure and must fail.
+
+Capacity acceptance is paused pending dedicated resources and the derived
+queue issue documented in `docs/CA-HA-03_capacity_decision.md`. The retained
+stopped Task has a canonical cancelled session and no lease, but its pending
+command still consumes one scope admission slot. Do not delete it or infer a
+handled command from a physical executor ACK. Startup stop proof does not cover
+model/tool blocking stops or complete E1-R acceptance.
