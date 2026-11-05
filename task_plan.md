@@ -132,3 +132,12 @@ Local implementation eb0721a9. Completed Task commits 173 to 161.
 All-admitted complete slot mean 7.8292 to 7.7545 seconds, an observed 0.95% change
 in one pair with different failure outcomes. No significant capacity gain claimed.
 Evidence .artifacts/cloud-ha-e1/e1-a-ac349add-checked-header-1793859685/adjacent-comparison.json.
+
+## Installed recorder follow-up, 2026-11-05
+
+- [x] Confirm installed execution_events.py differs from checkout only in the
+  already-fixed duplicate pre-tail ownership check (b8e0559c).
+- [ ] Extend native regression for revocation after tail read and before append.
+- [ ] Apply only the existing module guard in a fresh isolated E1 candidate,
+  compare with adjacent ac349add baseline, retain all occupancy/receipt evidence.
+- [ ] Restore exact original roles, bindings and stopped retained clones.

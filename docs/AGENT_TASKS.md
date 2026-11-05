@@ -38017,3 +38017,11 @@ Checked progress Run header is Review at eb0721a9. Native regression and
 adjacent ac349add isolated comparison completed. Completed Task commits 173
 to 161; complete occupancy nearly unchanged in one pair. E1-A still fails.
 Original services restored and all candidate/control evidence retained.
+
+CA-HA-03 installed recorder ownership deduplication. Ready, claimed In Progress
+by human owner lukeding, executor Codex, branch codex/ca-ha-03-budgets, this
+worktree. Own tests/worker/test_bounded_recorder_tail.py, task_plan.md, WORKLOG.md
+and isolated E1 artifact scripts. Reuse existing b8e0559c prepare guard rather
+than add a second implementation. Prove post-tail revocation still refuses append,
+then compare only that installed module against adjacent ac349add baseline.
+No production, historical receipt replay or original data changes.
