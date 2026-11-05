@@ -37978,3 +37978,7 @@ the existing stream check and two monotonic projection writes on the fenced
 Worker paths, preserving canonical derivation and command receipt ordering.
 The existing native batch lease-expiry regression is also owned so its fault
 fires after the combined write, before the unchanged final lease recheck.
+
+Worker projection pair candidate evaluated on fixed v126 capacity and archived
+with its native regressions. Excluded from the delivery branch because it did
+not demonstrate reduced whole-slot occupancy. E1-A remains open.
