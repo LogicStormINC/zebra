@@ -37901,3 +37901,7 @@ CA-HA-03 post-lock lease clock round trip (same owner and branch). Own
 postgres/leases.py and test_postgres_lease_clock.py for the shared lease-row
 read. Sample the database clock after acquiring the row lock in one query,
 retaining epoch/stop ordering and absent-row acquisition semantics.
+
+CA-HA-03 portable force-stop executor receipt lookup (same owner and branch).
+Own postgres/force_stop_executors.py and the native force-stop recovery
+regression. Match the exact receipt-key prefix independently of DB collation.
