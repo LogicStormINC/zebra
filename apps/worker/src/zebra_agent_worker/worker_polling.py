@@ -10,10 +10,13 @@ PollingState = Literal["progress", "idle", "blocked", "error"]
 class PollingDelay:
     """Back off discovery only; this never retries an execution or control intent."""
 
-    def __init__(self, base: float) -> None:
+    def __init__(self, base: float, *, idle_ceiling: float = 1) -> None:
         if type(base) not in (int, float) or not math.isfinite(base) or base < 0:
             raise ValueError("worker idle interval must be finite and non-negative")
-        self._base = base
+        if (type(idle_ceiling) not in (int, float)
+            or not math.isfinite(idle_ceiling) or idle_ceiling < 0.05):
+            raise ValueError("worker idle ceiling must be finite and at least 0.05s")
+        self._base, self._idle_ceiling = base, idle_ceiling
         self._state: PollingState = "progress"
         self._streak = 0
 
@@ -26,9 +29,9 @@ class PollingDelay:
             return self._base
         self._streak = min(16, self._streak + 1)
         # ponytail: one local streak per lane, not a second scheduler. Keep idle/
-        # blocked discovery <=1s at normal cadence; errors <=5s. Explicit slower
+        # blocked discovery defaults to <=1s; errors <=5s. Explicit slower
         # operator cadence stays authoritative; capacity/SLO proof belongs to03B.
-        ceiling = min(max(self._base, 5 if state == "error" else 1),
+        ceiling = min(max(self._base, 5 if state == "error" else self._idle_ceiling),
                       max(0.05, self._base) * 2 ** self._streak)
         return uniform(max(0.05, self._base, ceiling * 0.8), ceiling)
 

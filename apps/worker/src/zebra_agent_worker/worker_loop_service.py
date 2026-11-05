@@ -112,6 +112,7 @@ class WorkerLoopService:
         self._cloud_polling = cloud_polling
         self._cloud_memory_recovery_thread: Thread | None = None
         self._cloud_memory_recovery_at = 0.0
+        self._cloud_memory_polling = PollingDelay(0.5, idle_ceiling=30)
         self._memory_delivery = memory_delivery
         self._memory_delivery_thread: Thread | None = None
         self.migrated_run = migrated_run
@@ -330,7 +331,7 @@ class WorkerLoopService:
         # ponytail: finalization recovery is best-effort background work until
         # it has its own durable queue; it must never block RUN command polling.
         def recover() -> None:
-            progressed = False
+            progressed, failed = False, False
             try:
                 progressed = recover_completed_cloud_memory(
                     worker_id=worker_id,
@@ -340,10 +341,17 @@ class WorkerLoopService:
                     projection_store=self._projection_store,
                 )
             except Exception:
+                failed = True
                 print("worker memory recovery failed", file=sys.stderr, flush=True)
             finally:
-                if progressed is False:
-                    # Bound repeated empty scans across historical completions.
+                if self._cloud_polling:
+                    # ponytail: best-effort idle discovery <=30s. A durable wakeup
+                    # queue is needed for tighter recovery latency at large history.
+                    delay = self._cloud_memory_polling.next(
+                        "error" if failed else "progress" if progressed else "idle"
+                    )
+                    self._cloud_memory_recovery_at = time.monotonic() + (0 if progressed else delay)
+                elif progressed is False:
                     self._cloud_memory_recovery_at = time.monotonic() + 1
 
         recovery_thread = Thread(
