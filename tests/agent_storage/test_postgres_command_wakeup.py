@@ -3,7 +3,8 @@
 import os
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, timedelta
-from threading import Barrier
+from threading import Barrier, Timer
+from time import monotonic
 from types import SimpleNamespace
 from uuid import uuid4
 
@@ -18,10 +19,14 @@ from agent_core.contracts.session_commands import SessionCommand, SessionCommand
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.ports.task_admission_transaction import TaskAdmissionRequest
 from agent_storage import PostgresEventStore, PostgresProjectionStore, apply_postgres_migrations
+from agent_storage.postgres import command_wakeup
 from agent_storage.postgres.client_effects import _append_client_event
-from agent_storage.postgres.command_wakeup import CommandAdmissionCapacityError
+from agent_storage.postgres.command_wakeup import (
+    CommandAdmissionCapacityError,
+)
 from agent_storage.postgres.events import append_event_in_transaction
 from agent_storage.postgres.task_admission import PostgresTaskAdmissionTransaction
+from agent_storage.postgres.task_io import task_io_deadline
 from psycopg import sql
 from psycopg.conninfo import make_conninfo
 from psycopg.rows import dict_row
@@ -335,6 +340,35 @@ def test_live_admission_capacity_is_atomic_and_preserves_canonical_stream(
             _command(second.session_id, sequence=before[-1].sequence + 1, key="second")
         )
     assert _store(dsn).list_for_session(second.session_id) == before
+    assert _counts(dsn) == (1, 1)
+
+
+def test_bounded_run_survives_brief_global_wakeup_wait(dsn):
+    session = _seed(dsn)
+    _enable(dsn)
+    event = _command(session.session_id, key="brief-global-wait")
+    with (
+        psycopg.connect(dsn) as holder,
+        psycopg.connect(dsn, row_factory=dict_row) as waiter,
+    ):
+        holder.execute(
+            "SELECT pg_advisory_xact_lock(hashtextextended(%s,49))",
+            (f"{NAMESPACE}:command-global",),
+        )
+        waiter.execute("SET LOCAL lock_timeout='50ms'")
+        pending: list[SessionEvent] = []
+        append_event_in_transaction(waiter, NAMESPACE, event, deferred_command_wakeups=pending)
+        assert len(pending) == 1
+        release = Timer(0.080, holder.commit)
+        release.start()
+        try:
+            with task_io_deadline(monotonic() + 2):
+                command_wakeup.record_command_wakeup_in_transaction(
+                    waiter, NAMESPACE, pending[0], is_new_admission=True
+                )
+        finally:
+            release.join()
+        assert waiter.execute("SHOW lock_timeout").fetchone() == {"lock_timeout": "50ms"}
     assert _counts(dsn) == (1, 1)
 
 
