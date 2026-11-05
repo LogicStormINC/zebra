@@ -324,3 +324,19 @@ ruff和修改模块mypy通过。这里只是存储/API组合及本机进程回�
 容量验收，E1-A/E1-R继续暂停；整体HA未完成。
 证据.artifacts/cloud-ha-e1/force-stop-capacity-1793898506/RESULTS.md，
 capacity-and-recovery-results.json、fresh-regression-data/及FROZEN_CANDIDATE.json。
+
+## 2026-11-06 资源决策：容量验收受环境阻塞
+
+Q1修复线结束追加开发，应用f20b56a3及原源码/签名证据冻结不变；尚未重签或部署。
+资源方案选择AWS us-east-1 Linux ARM64按需：2×c7g.8xlarge（各32CPU/64GiB）
+＋独立c7g.xlarge控制/负载节点（4CPU/8GiB），同AZ spread、双PG与明确父子预算。
+总68CPU/136GiB含备库/控制/宿主余量，不是5/s最低需求证明。数据盘2×500GiB gp3，
+各6000IOPS/250MiB/s；三系统盘各64GiB。48小时含准备/验收/导出，网络和磁盘实测待资源。
+下载AWS官方2026-11-04价目核实EC2费率：1.16/h×2＋0.145/h；公开存储/网络费率
+估算税前48h129.86美元，含至多7天快照约143.77美元，建议预留180美元税前；
+地域EBS正式报价/税费仍未核验，不是已授权支出或保证账单。报价与公式可复算。
+本机无云CLI/账户配置/凭据；账户净剩余额度、AZ库存、支付与实际启动均未核验，
+已落实独立实例0。未购置/建环境/跑Task/改生产。不在阻塞期间继续局部优化或安装器开发。
+资源/签包/单任务执行及强停名额释放→E1-A→完整E1-R的核验命令、旧入口限制与停点
+已写入docs/CA-HA-03_resource_decision.md。里程碑3仍In Progress，不能关闭。
+证据.artifacts/cloud-ha-e1/resource-decision-1793899843/，cost-and-allocation.json及官方价目JSON。

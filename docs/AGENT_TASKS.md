@@ -38290,3 +38290,19 @@ old293+37 evidence hashes unchanged. New testPG/volume reclaimed, data snapshots
 Frozen source overlay only, no signed-package republication/push/deployment. E1-A/R paused
 for independent resources and later full runtime qualification; overallCA-HA-03 In Progress.
 Evidence force-stop-capacity-1793898506/RESULTS.md. Owned paths not expanded; receipts source untouched.
+
+CA-HA-03-RD1 — Ready -> In Progress (2026-11-06); human owner lukeding / executor Codex.
+Branch codex/ca-ha-03-resource-decision, existing worktree; frozen applicationf20b56a3 untouched.
+Documentation/evidence only: docs/CA-HA-03_resource_decision.md, docs/AGENT_TASKS.md,
+PROGRESS.md, WORKLOG.md, task_plan.md, docs/CA-HA-03_capacity_decision.md; new resource-decision artifacts.
+Scope: independent resource specification, primary-source price/cost verification, account/availability
+boundaries, exact resumption gates/commands. No implementation, account changes, spending, Task load,
+re-signing, provisioning or production access. If allocation unavailable, record environment block and stop.
+
+CA-HA-03-RD1 -> Review: documented primary-source compute prices,48h pretax143.77 estimate
+including7day snapshots,proposed180 pretax budget;no spend authorized. Planned2×32CPU/64GiB
+ARM64 data nodes +4CPU/8GiB control node. Actual allocated0;account quota/AZ inventory/payment
+unverified and unavailable locally. Capacity acceptance explicitly ENVIRONMENT BLOCKED.
+Q1 remains localReview with no further fixes; applicationf20b56a3 unchanged. No provisioning,
+package signing, E1-A/R or production access. Resume gates/commands and fixture limitations in
+docs/CA-HA-03_resource_decision.md; evidence resource-decision-1793899843/. Milestone3 remains open.
