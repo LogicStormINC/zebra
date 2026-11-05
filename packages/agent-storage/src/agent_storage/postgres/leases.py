@@ -189,16 +189,20 @@ def _lock_epoch(connection: Any, namespace: str) -> UUID | None:
 def _lock_lease_and_clock(
     connection: Any, namespace: str, session_id: SessionId, *, update: bool
 ) -> tuple[dict[str, Any] | None, datetime]:
+    # Materialize the locked row before sampling time. A timestamp predicate
+    # inside the locking SELECT could be evaluated before the row-lock wait.
     row = connection.execute(
-        sql.SQL("""SELECT * FROM worker_leases
-                   WHERE deployment_namespace = %s AND session_id = %s FOR {}""").format(
+        sql.SQL("""WITH locked AS MATERIALIZED (
+                       SELECT * FROM worker_leases
+                       WHERE deployment_namespace = %s AND session_id = %s FOR {}
+                   )
+                   SELECT locked.*, clock_timestamp() AS now
+                   FROM (VALUES (1)) AS anchor(value) LEFT JOIN locked ON TRUE""").format(
             sql.SQL("UPDATE" if update else "SHARE")
         ), (namespace, session_id),
     ).fetchone()
-    # A WHERE clock_timestamp() predicate can be evaluated BEFORE waiting for
-    # the row lock. This separate statement samples time only AFTER acquiring it.
-    now: datetime = connection.execute("SELECT clock_timestamp() AS now").fetchone()["now"]
-    return row, now.astimezone(UTC)
+    now: datetime = row.pop("now")
+    return (row if row["session_id"] is not None else None), now.astimezone(UTC)
 
 
 def _active(row: dict[str, Any], epoch: UUID | None, now: datetime) -> bool:
