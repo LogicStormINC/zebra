@@ -37956,3 +37956,7 @@ Own agent_storage/execution_inputs.py, Worker execution_input_preparation.py,
 existing input frontier regressions and WORKLOG.md. Read the canonical page
 once inside the existing fenced advance transaction. Preserve legacy page
 validation, retry budgets, projection CAS, and final fresh header.
+
+Native input page transaction evaluated on the fixed v126 E1-A workload.
+Archived with its regression. The candidate did not demonstrate lower input
+preparation or slot occupancy, so it is excluded from the delivery branch.
