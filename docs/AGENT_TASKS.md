@@ -37910,3 +37910,8 @@ CA-HA-03 indexed force-stop receipt prefix (same owner and branch). Own
 the additive v126 receipt index, catalog and readiness compatibility,
 and migration history regressions. Preserve exact prefix and receipt
 semantics and keep the prior schemas valid for the rollout window.
+
+CA-HA-03 Worker projection snapshot read (same owner and branch). Own
+postgres/workspaces.py and its native Worker commit regression. Read the
+canonical Session and Workspace projections in one database snapshot before
+existing revision, content, and receipt checks.
