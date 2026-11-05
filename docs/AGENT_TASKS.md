@@ -37935,3 +37935,7 @@ CA-HA-03 ordinary Worker post-lock authority reads (same owner and branch).
 Own postgres/worker_budget_queries.py, the native Worker budget regression and
 WORKLOG.md. Read the clock, STOP ancestry and delegation status in one fresh
 snapshot after the existing locks. Preserve the shared STOP proof and refusal rules.
+
+Post-lock authority-read candidate evaluated and archived in the E1-A
+evidence. It is excluded from the delivery branch because the fixed-load
+comparison did not demonstrate lower full-slot occupancy.
