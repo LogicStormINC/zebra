@@ -37960,3 +37960,9 @@ validation, retry budgets, projection CAS, and final fresh header.
 Native input page transaction evaluated on the fixed v126 E1-A workload.
 Archived with its regression. The candidate did not demonstrate lower input
 preparation or slot occupancy, so it is excluded from the delivery branch.
+
+CA-HA-03 guarded model stream authorization cadence (same owner lukeding and
+branch). Own agent_integrations/worker_budget.py, its existing transport
+regression and WORKLOG.md. Preserve exact reservation, per-output checks,
+absolute deadlines, final authorization and receipt handling. Bound checks
+for protocol lines that publish no content.
