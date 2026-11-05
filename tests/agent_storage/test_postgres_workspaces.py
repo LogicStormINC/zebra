@@ -53,6 +53,7 @@ def workspace_namespace(postgres_dsn: str) -> Generator[str]:
 def test_worker_commit_atomically_persists_event_and_primary_projections(
     postgres_dsn: str,
     workspace_namespace: str,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     session_id = new_session_id()
     created, prepared = _events(session_id)
@@ -61,6 +62,17 @@ def test_worker_commit_atomically_persists_event_and_primary_projections(
     workspace = rebuild_workspace([created, prepared])
     store = _store(postgres_dsn, workspace_namespace)
 
+    projection_reads = []
+    execute = psycopg.Connection.execute
+
+    def traced(connection, query, *args, **kwargs):
+        if isinstance(query, str) and query.lstrip().startswith("SELECT") and (
+            "FROM session_projections" in query or "FROM workspace_projections" in query
+        ):
+            projection_reads.append(query)
+        return execute(connection, query, *args, **kwargs)
+
+    monkeypatch.setattr(psycopg.Connection, "execute", traced)
     stored = store.commit_worker_event(
         prepared,
         session,
@@ -68,6 +80,7 @@ def test_worker_commit_atomically_persists_event_and_primary_projections(
         authority=_authority(workspace_namespace, lease, expected_revision=0),
     )
 
+    assert len(projection_reads) == 1
     assert stored.event == prepared
     assert stored.session == session
     assert stored.workspace == workspace

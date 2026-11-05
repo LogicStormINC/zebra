@@ -32,7 +32,7 @@ from agent_storage.postgres.events import (
 )
 from agent_storage.postgres.leases import assert_current_lease_fence
 from agent_storage.postgres.projections import (
-    get_session_in_transaction,
+    _session_from_row,
     save_session_in_transaction,
 )
 from agent_storage.postgres.task_io import TaskIoConnections
@@ -234,15 +234,20 @@ class PostgresWorkspaceProjectionStore(
         workspace: WorkspaceProjection,
     ) -> tuple[Session, WorkspaceProjection, bool]:
         namespace = self._database.deployment_namespace
-        current_session = get_session_in_transaction(connection, namespace, event.session_id)
-        if current_session is None:
+        row = connection.execute(
+            """SELECT row_to_json(s) AS session,row_to_json(w) AS workspace
+               FROM session_projections s LEFT JOIN workspace_projections w
+                 USING(deployment_namespace,session_id)
+               WHERE s.deployment_namespace=%s AND s.session_id=%s""",
+            (namespace, event.session_id),
+        ).fetchone()
+        if row is None:
             raise PostgresWorkspaceProjectionConflictError(
                 "worker projection commit requires an existing Session projection"
             )
-        current_workspace = get_workspace_in_transaction(
-            connection,
-            namespace,
-            event.session_id,
+        current_session = _session_from_row(row["session"])
+        current_workspace = (
+            _workspace_from_row(row["workspace"]) if row["workspace"] is not None else None
         )
         if current_session.current_sequence == event.sequence:
             if current_workspace is None or current_workspace.current_sequence != event.sequence:
