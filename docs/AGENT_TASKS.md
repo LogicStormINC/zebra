@@ -37881,3 +37881,8 @@ session_process.py. Record bounded exit status and receipt presence after
 supervision without changing interruption, cancellation or retry semantics.
 Also own session_process_child.py for the initial recovery exception category
 at the existing pre-model boundary, without logging request or exception text.
+
+CA-HA-03 S3 client startup composition (same owner and branch). Own
+artifact_object_reads.py, runtime_composition.py, and the native object read
+bounds regression. Reuse S3 service metadata while constructing the distinct
+write and bounded read clients sequentially in cloud composition.
