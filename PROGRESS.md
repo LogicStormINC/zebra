@@ -9056,3 +9056,9 @@ CA-HA-03 2026-11-05：准入共享消费锁/排他Release写锁本地候选Revie
 准入p95仅改善2.49%，不够填平容量缺口。本方向到此收尾，不加压或扩展局部优化。
 原签名/unknown/数据保留，生产未动；E1-A/E1-R和里程碑3仍未通过。
 详见docs/CA-HA-03_capacity_decision.md及lock-contract/RESULTS.md。
+
+CA-HA-03资源测量slice：单个全新签名Task准入201，但完整执行预检suspended，
+模型开始/完成0/0、精确退出ACK1；按边界停止，未进入阶梯或强停，尚无容量结论。
+原六E1/绑定/ready恢复，临时运行资源精确回收，失败数据停止保留。应用代码未改，
+13a8de6c仍本地Review未部署。阻塞为执行资格/夹具原异常信息缺失；HA仍In Progress。
+证据.artifacts/cloud-ha-e1/execution-resource-measurement-1793890154/RESULTS.md。

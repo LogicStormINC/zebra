@@ -385,3 +385,17 @@ lock-evidence.py已运行，断言62采样/321后端样本并核验三个冻结�
 证据.artifacts/cloud-ha-e1/e1-a-resource-candidate-1793875018/lock-contract/RESULTS.md，
 comparison.json、locks.json、source-pins.json及正式回归日志。尚无达标配置证明，
 下一容量验证需独占CPU余量/近端PG/无父级节流/固定签名候选；E1-A/E1-R未跑，HA未完成。
+
+## 2026-11-05 完整执行资源测量：预检失败，未进入阶梯
+
+只操作本机隔离环境。候选13a8de6c＋原d9安装overlay；PG3CPU/3GiB在Docker VM，
+Worker3CPU/3GiB＋cleanup0.5CPU在根4CPU/8GiB的VM1，API1CPU/1GiB在另一根4CPU
+VM2；GET/控制lane仍共享API CPU，不宣称独占物理资源或CPU预留。
+新副本签名包版本d0da96c7-8c34-4b76-8f28-e58567d38935；只发1个新预检，
+201及原GET核验通过，但model_started0/completed0/suspended1（executor_process_interrupted）。
+登记/精确退出ACK各1，失败登记→ACK0.750468s、持槽1.527743s，不能作为成功占槽。
+按停止条件不发剩余15任务，不跑1/2/4阶梯或强停探针。warm-fork夹具吞掉原异常，
+另有RabbitMQError但未证明根因；下一步先补异常元数据及原生依赖资格，无业务重放。
+原六角色/绑定哈希/两ready恢复；新候选容器和tmpfs卷精确回收，失败DB停止保留。
+容量边界/5/s配置仍未测得，不申请猜测CPU数量；生产/旧unknown/签名均未改。
+证据.artifacts/cloud-ha-e1/execution-resource-measurement-1793890154/RESULTS.md；offline-audit已运行通过。03及整体HA仍In Progress。

@@ -38215,3 +38215,17 @@ CA-HA-03 admission lock slice -> Review (local only): minimal four-source-file f
 Admissionp95 improves2.49%, insufficient to close E1-A gap; direction closed for this slice,
 no further micro-optimizations/load runs. See lock-contract/RESULTS.md. Overall03 In Progress,
 no production deploy or E1-A/R acceptance. Existing baseline failures explicitly retained.
+
+CA-HA-03 full-execution resource measurement slice: Ready -> In Progress,
+Owner lukeding / executor Codex, existing branch/worktree. User authorized local isolation,
+full synthetic execution with bounded1/2/4 concurrency, no450-load/noE1R/no production.
+Owned paths: isolated execution-resource-measurement artifacts; task_plan.md/WORKLOG.md,
+PROGRESS.md/docs/CA-HA-03_capacity_decision.md and this registry. No application changes.
+Freeze13a8de6c four-file fix over exact d9 installed overlay; at most16new synthetic Tasks,
+stop escalating on unknown/backlog/throttle/protection, preserve all originals and receipts.
+
+CA-HA-03资源测量slice：单个全新签名Task准入201，但完整执行预检suspended，
+模型开始/完成0/0、精确退出ACK1；按边界停止，未进入阶梯或强停，尚无容量结论。
+原六E1/绑定/ready恢复，临时运行资源精确回收，失败数据停止保留。应用代码未改，
+13a8de6c仍本地Review未部署。阻塞为执行资格/夹具原异常信息缺失；HA仍In Progress。
+证据.artifacts/cloud-ha-e1/execution-resource-measurement-1793890154/RESULTS.md。
