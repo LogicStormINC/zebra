@@ -37920,3 +37920,8 @@ CA-HA-03 Worker execution failure correlation (same owner and branch). Own
 agent_runtime/command_wakeup_consumer.py, its existing consumer regression and
 WORKLOG.md. Correlate failed futures to their durable Session and fence without
 including exception text or changing the recovery decision.
+
+CA-HA-03 bounded executor registration connection acquisition (same owner and
+branch). Own postgres/force_stop_executors.py, its existing native capacity
+regression and WORKLOG.md. Reuse the exit ACK permit wait for registration;
+preserve the control lane, fence checks and single transaction.
