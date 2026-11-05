@@ -22369,3 +22369,26 @@ final-audit.json、final-phases.json、resources-summary.json、offline-recovery
 original-restored-final.tsv、publication-v2-pool-proof.json、evidence-final.sha256；
 原窗口corpus-rebuilt-approval-sse-256-1793886575与failed-api-quarter-run分别保留。
 远端保留：/home/ubuntu/.local/state/zebra-e1/e1-a-resource-candidate-1793875018。
+
+## 2026-11-05 停载后原证据追踪：unknown不是提交未到达
+
+本轮只读本地离线日志，未启动节点/数据库、未发HTTP请求或新Task。
+最终450个原operation在两API访问日志均有且仅有一次POST：112个HTTP200、338个HTTP503。
+HTTP200中只有56个最终可验证密封结果（51接纳＋5拒绝）；另56个仍unknown，
+加338个503组成394个unknown。因此生成器/SSH观察中断不能解释全部未知结果，
+HTTP200不能等同接纳。
+按精确operation匹配199条atomic first Run失败里程碑，全为TimeoutError；其中198个
+属于最终unknown，另1个已由原回执恢复为密封结果。其余196个unknown没有该里程碑，
+不可用相邻日志代替关联或强行定位。generic unknown日志无operation ID，未逐任务归因。
+198个可关联unknown中prepare阶段耗时中位1492ms、fence1550ms；189个进入事务，
+transaction_entered中位1558ms；dispatch_return中位1861ms（局部起点晚于外层2s起点）。
+多数已在进入原子业务事务前耗尽大部分2s总预算。失败栈涉及idempotency、event、
+Task投影和binding等多个SQL位置；这是截止时间到达点，不是各SQL CPU成本排名。
+结合PG零配额节流与执行节点父级节流，现有证据不足以把某条查询或锁定为单一根因，
+也不足以安全放宽deadline、移除授权复核或自动重发unknown。
+停止后原GET收集仅41文件，最后ConnectError与节点被保护停止一致；这是回执收敛缺口，
+不改写已存POST结果。需要在下一可承载测试环境证明独立原GET/控制预算，不能把当前
+51个signed集合中的完成数当作450个operation的全局完成吞吐。
+证据unknown-diagnostic.py/json/output.json，原API日志offline-recovery/；脚本断言
+450个不同operation均单次到达及199条唯一失败关联，已运行通过。
+总体E1-A仍FAIL，HA目标未完成；不追加本宿主机容量负载，不改生产。
