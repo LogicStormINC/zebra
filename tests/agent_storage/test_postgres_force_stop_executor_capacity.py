@@ -25,7 +25,7 @@ from tests.agent_storage.test_postgres_worker_budget import started
 dsn, setup = shared_dsn, shared_setup
 
 
-def composed(setup):
+def composed(setup, *, register=True):
     _, binding, database = started(setup)
     values = profile_data()
     values["control"] = 1
@@ -33,7 +33,8 @@ def composed(setup):
         database._dsn, CapacityProfile.parse(json.dumps(values)), "worker"
     )
     sid = UUID(binding.task_id)
-    register_executor(database, sid, binding.fence)
+    if register:
+        register_executor(database, sid, binding.fence)
     return database, sid, binding.fence
 
 
@@ -108,10 +109,11 @@ def test_normal_saturation_refuses_monitor_without_claiming_exit_or_control(setu
         assert not executors_exited(c, database.deployment_namespace, sid, None)
 
 
-def test_exit_ack_retries_after_control_permit_refusal(setup, monkeypatch):
+@pytest.mark.parametrize("operation", [register_executor, acknowledge_executor])
+def test_executor_receipt_retries_after_control_permit_refusal(setup, monkeypatch, operation):
     from agent_storage.postgres import force_stop_executors
 
-    database, sid, fence = composed(setup)
+    database, sid, fence = composed(setup, register=operation is acknowledge_executor)
     permit = database._capacity.acquire("control")
     waits = []
 
@@ -121,11 +123,13 @@ def test_exit_ack_retries_after_control_permit_refusal(setup, monkeypatch):
 
     monkeypatch.setattr(force_stop_executors, "sleep", release_on_wait)
     try:
-        acknowledge_executor(database, sid, fence)
+        operation(database, sid, fence)
     finally:
         if not waits:
             permit.release()
     assert len(waits) == 1
+    if operation is register_executor:
+        acknowledge_executor(database, sid, fence)
     with database.connect() as c:
         assert executors_exited(c, database.deployment_namespace, sid, None)
 

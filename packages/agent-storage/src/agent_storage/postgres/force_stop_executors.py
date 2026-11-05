@@ -32,6 +32,19 @@ def _connection(
     )
 
 
+def _executor_receipt_connection(database: PostgresDatabase) -> psycopg.Connection[dict[str, Any]]:
+    deadline = monotonic() + 0.25
+    while True:
+        try:
+            return _connection(database)
+        except DatabaseCapacityExceeded:
+            # ponytail: wait only for a local permit; longer outages need durable recovery.
+            remaining = deadline - monotonic()
+            if remaining <= 0:
+                raise
+            sleep(min(0.01, remaining))
+
+
 @contextmanager
 def executor_monitor(database: PostgresDatabase, sid: Any) -> Iterator[Callable[[], bool]]:
     connection: psycopg.Connection[dict[str, Any]] | None = None
@@ -70,7 +83,7 @@ def executor_key(sid: Any, fence: Any) -> str:
 def register_executor(
     database: PostgresDatabase, sid: Any, fence: Any, *, incarnation: dict[str, str] | None = None
 ) -> None:
-    with _connection(database) as connection:
+    with _executor_receipt_connection(database) as connection:
         connection.execute("SET LOCAL lock_timeout='250ms'")
         assert_current_lease_fence(connection, database.deployment_namespace, sid, fence)
         if not _save(connection, database.deployment_namespace, "executor_started", sid, fence):
@@ -107,18 +120,7 @@ def acknowledge_executor_incarnation(
 
 
 def acknowledge_executor(database: PostgresDatabase, sid: Any, fence: Any) -> None:
-    deadline = monotonic() + 0.25
-    while True:
-        try:
-            connection = _connection(database)
-            break
-        except DatabaseCapacityExceeded:
-            # ponytail: brief permit contention only; longer outages need durable receipt recovery.
-            remaining = deadline - monotonic()
-            if remaining <= 0:
-                raise
-            sleep(min(0.01, remaining))
-    with connection:
+    with _executor_receipt_connection(database) as connection:
         # Registered older attempts may acknowledge their OWN exit after takeover;
         # they cannot attest the successor's exit or restore its revoked lease.
         if _receipt(connection, database.deployment_namespace, "executor_started", sid, fence):
