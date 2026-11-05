@@ -37886,3 +37886,8 @@ CA-HA-03 S3 client startup composition (same owner and branch). Own
 artifact_object_reads.py, runtime_composition.py, and the native object read
 bounds regression. Reuse S3 service metadata while constructing the distinct
 write and bounded read clients sequentially in cloud composition.
+
+CA-HA-03 bounded global wakeup admission wait (same owner and branch). Own
+command_wakeup.py and test_postgres_command_wakeup.py for the isolated
+advisory wait regression. Preserve the existing Task IO deadline, lock
+order, scope-lock budget, and canonical admission transaction.
