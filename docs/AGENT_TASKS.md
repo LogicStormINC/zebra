@@ -38310,6 +38310,12 @@ apps/worker/src/zebra_agent_worker/session_process_child.py and its focused
 tests/worker/test_session_process.py regression. Keep the budget and authorization
 checks unchanged. Joint qualification only, Tauri excluded, no production or E1 runs.
 
+CA-HA-03-Q1 joint probe follow-up: confirmed pre-wire TypeError in the existing
+guarded tool-schema scan. Own the one predicate in
+packages/agent-integrations/src/agent_integrations/worker_budget.py and its
+focused test_worker_budget_transport.py regressions. Reuse the frozen exact
+fix without changing budget, DNS or provider safety policy.
+
 CA-HA-03-RD1 — Ready -> In Progress (2026-11-06); human owner lukeding / executor Codex.
 Branch codex/ca-ha-03-resource-decision, existing worktree; frozen applicationf20b56a3 untouched.
 Documentation/evidence only: docs/CA-HA-03_resource_decision.md, docs/AGENT_TASKS.md,
