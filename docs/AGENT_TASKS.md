@@ -38316,6 +38316,11 @@ packages/agent-integrations/src/agent_integrations/worker_budget.py and its
 focused test_worker_budget_transport.py regressions. Reuse the frozen exact
 fix without changing budget, DNS or provider safety policy.
 
+CA-HA-03-Q1 Broker review follow-up: user authorizes the shared API fixture
+tests/api/test_task_resource_binding.py on PR #268 to match the signer contract.
+Preserve application signer/HTTP guards and the qualified runtime source. Run
+affected suites and independent static/release gates; no full Backend retries.
+
 CA-HA-03-RD1 — Ready -> In Progress (2026-11-06); human owner lukeding / executor Codex.
 Branch codex/ca-ha-03-resource-decision, existing worktree; frozen applicationf20b56a3 untouched.
 Documentation/evidence only: docs/CA-HA-03_resource_decision.md, docs/AGENT_TASKS.md,
