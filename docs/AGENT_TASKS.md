@@ -38348,3 +38348,10 @@ CA-HA-03-AF1 → Review. Exact baseline and candidate reproduced the same
 18 records. Fixture-only repairs passed all 17 affected cases on each.
 Application source remains frozen at f327a05d. Full capacity and independent
 node qualification remain blocked on resources and the fixed signed run package.
+
+### CA-HA-06-F05 — Raw SSE durable fallback after Redis loss
+
+- Ready → In Progress. Human owner lukeding, branch `codex/ca-ha-06-f05-sse-fallback`.
+- Narrow follow-up to the F-05 single-host dependency contract. Existing low-load evidence qualifies the reproduction. Formal HA and capacity gates remain open.
+- Owned paths: `apps/api/src/zebra_agent_api/session_streaming.py`, `tests/api/test_raw_stream_redis_fallback.py`, private F-05 acceptance artifacts, this task card.
+- Review. PostgreSQL regression reproduces delayed raw Task/Session replay on the frozen base and passes after separating notification retry from durable polling. F-05 joined rerun is still required for release acceptance.

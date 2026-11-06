@@ -33,7 +33,7 @@ from zebra_agent_api.task_api import is_user_task_event, serialize_task_event
 
 _POLL_SECONDS = 0.05
 _KEEPALIVE_SECONDS = 15.0
-_FALLBACK_SECONDS = 1.0
+_DURABLE_POLL_MAX_SECONDS = 2.0
 _MAX_STREAM_SECONDS = 1800.0
 # awaiting_turn keeps a conversation Task stream open between Turns (ADR-026).
 _ACTIVE_STATUSES = frozenset(
@@ -93,6 +93,12 @@ class StreamWake:
         self.backoff = 1.0
         self.reconcile_at = monotonic() + 30.0
 
+    def _notification_failed(self) -> None:
+        self.cursor = None
+        if self.cloud:
+            self.retry_at = monotonic() + min(30.0, self.backoff * uniform(0.9, 1.1))
+            self.backoff = min(30.0, self.backoff * 2)
+
     async def capture(self) -> None:
         if self.fanout is None or self.namespace is None or monotonic() < self.retry_at:
             return
@@ -114,7 +120,7 @@ class StreamWake:
                 session_id=self.session_id,
             )
         except Exception:
-            self.cursor, self.retry_at = None, monotonic() + _FALLBACK_SECONDS
+            self._notification_failed()
 
     async def _wait_backoff(self, keepalive_seconds: float) -> bool:
         assert self.fallback_until is not None
@@ -143,7 +149,7 @@ class StreamWake:
                         ),
                     )
                     changed = positions[key] != self.cursor.value
-                    self.cursor = LiveEventCursor(positions[key], stream_ref=key)
+                    self.cursor, self.backoff = LiveEventCursor(positions[key], stream_ref=key), 1.0
                     if changed or monotonic() >= self.reconcile_at:
                         self.reconcile_at = monotonic() + 30
                         return True
@@ -184,11 +190,15 @@ class StreamWake:
                     return True
                 return False
             except Exception:
-                self.cursor, self.retry_at = None, monotonic() + _FALLBACK_SECONDS
-        # ponytail: bounded degraded polling also recovers lost/trimmed Redis hints.
-        delay = min(30.0, self.backoff * uniform(0.9, 1.1)) if self.cloud else _POLL_SECONDS
-        self.backoff = min(30.0, self.backoff * 2)
-        self.retry_at = self.fallback_until = monotonic() + delay
+                self._notification_failed()
+        # Redis reconnect backoff must not delay authoritative reads by the same amount.
+        if self.cloud and self.fanout is not None and self.namespace is not None:
+            delay = min(_DURABLE_POLL_MAX_SECONDS, self.backoff * uniform(0.9, 1.1))
+        else:
+            delay = min(30.0, self.backoff * uniform(0.9, 1.1)) if self.cloud else _POLL_SECONDS
+            self.backoff = min(30.0, self.backoff * 2)
+            self.retry_at = monotonic() + delay
+        self.fallback_until = monotonic() + delay
         return await self._wait_backoff(keepalive_seconds)
 
 
