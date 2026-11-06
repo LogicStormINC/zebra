@@ -26,7 +26,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 test("migrates the legacy no-network default to trusted read-only Web access", async ({ page }) => {
-  await expect(page.getByRole("button", { name: "网络: 本地可信网络" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /^任务配置：.*本地可信网络$/ })).toBeVisible();
 });
 
 test("shows the resolved Runtime class and no-silent-fallback policy", async ({ page }) => {
@@ -61,9 +61,8 @@ test("stops a running stream without a late completion", async ({ page, request 
   await submit(page, "E2E_STOP_STREAM cancel before the provider finishes");
   const sessionId = await activeSessionId(page);
   await expect.poll(async () => (await session(request, sessionId)).current_sequence).toBeGreaterThanOrEqual(4);
-  await expect(page.locator('[aria-label="停止任务"] button')).toBeVisible();
-
-  await page.locator('[aria-label="停止任务"] button').click();
+  await page.getByRole("button", { name: "会话操作" }).click();
+  await page.getByRole("menuitem", { name: "取消会话" }).click();
   await expect.poll(async () => (await session(request, sessionId)).status).toBe("cancelled");
   await expect(page.getByText("已停止", { exact: true })).toBeVisible();
 
@@ -85,7 +84,7 @@ test("continues a completed task through an invisible internal Segment", async (
   const secondSessionId = await activeSessionId(page);
 
   expect(secondSessionId).toBe(firstSessionId);
-  expect((await session(request, firstSessionId)).status).toBe("completed");
+  await expect.poll(async () => (await session(request, firstSessionId)).status).toBe("completed");
   const internal = await request.get(`${API_URL}/internal/tasks/${firstSessionId}/segments`, { headers: AUTH_HEADERS });
   expect(internal.ok()).toBeTruthy();
   expect((await internal.json()).segments).toHaveLength(2);
@@ -98,8 +97,10 @@ test("executes a local command without an approval interruption", async ({ page 
   await expect(page.getByText("Agent 需要人工确认")).not.toBeVisible();
 });
 
-test("renders a provider failure as a recoverable suspended operator state", async ({ page }) => {
+test("renders a provider failure as a recoverable suspended operator state", async ({ page, request }) => {
   await submit(page, "E2E_FAILURE browser failure");
+  const sessionId = await activeSessionId(page);
+  await expect.poll(async () => (await session(request, sessionId)).status).toBe("suspended");
   await expect(page.getByText("任务已暂停", { exact: true })).toBeVisible();
   await expect(page.getByText("已暂停", { exact: true }).first()).toBeVisible();
 });
@@ -111,10 +112,12 @@ async function submit(page: Page, prompt: string) {
 }
 
 async function activeSessionId(page: Page): Promise<string> {
-  return page.evaluate(() => {
+  const readSessionId = () => page.evaluate(() => {
     const raw = localStorage.getItem("zebra-agent-desktop.operator-config");
     return raw ? String(JSON.parse(raw).sessionId ?? "") : "";
   });
+  await expect.poll(readSessionId).not.toBe("");
+  return readSessionId();
 }
 
 async function assistantMarkers(page: Page, prefix: string): Promise<string[]> {

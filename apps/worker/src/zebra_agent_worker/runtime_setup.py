@@ -8,7 +8,7 @@ from agent_core.domain.artifact_payloads import ArtifactPayloadWrite
 from agent_core.domain.identifiers import ArtifactId, SessionId
 from agent_core.ports.agent_tasks import AgentTaskPort
 from agent_core.ports.artifact_payload_store import ArtifactPayloadStorePort
-from agent_core.ports.runtime import RuntimeHandle, RuntimePort
+from agent_core.ports.runtime import RuntimeClass, RuntimeHandle, RuntimePort
 from agent_runtime import SetupPhasePlan, SetupPhaseRunner
 from agent_runtime.deferred import DeferredRuntime
 from agent_security import SetupDownload, SetupEgressGateway, TemporarySetupCredential
@@ -37,9 +37,7 @@ class PreparedRuntime:
     compatible_authority_digests: tuple[str, ...] = ()
 
 
-def runtime_session_ids(
-    task_store: AgentTaskPort | None, session_id: SessionId
-) -> tuple[str, ...]:
+def runtime_session_ids(task_store: AgentTaskPort | None, session_id: SessionId) -> tuple[str, ...]:
     if task_store is None:
         return ()
     task = task_store.ensure_for_session(session_id)
@@ -92,7 +90,8 @@ def build_prepared_runtime(
                 attempt_number=attempt_number,
             ).digest
             for compatible_session_id in compatible_session_ids
-            if compatible_session_id != str(session_id)
+            if settings.runtime.runtime_class != RuntimeClass.TRUSTED_LOCAL.value
+            and compatible_session_id != str(session_id)
         )
         return runtime, PreparedRuntime(
             handle=prepared.handle,

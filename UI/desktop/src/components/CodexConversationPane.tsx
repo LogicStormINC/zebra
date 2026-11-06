@@ -205,7 +205,7 @@ export function CodexConversationPane(props: CodexConversationPaneProps) {
           <Button aria-label={locale.runtimeSettings} className={styles.actionButton} icon={<SettingOutlined />} onClick={props.onOpenSettings} type="default" />
           <Button className={styles.actionButton} icon={<ReloadOutlined />} onClick={props.onRefreshConversation} type="default" />
           <Dropdown menu={{ items: sessionMenuItems }} trigger={["click"]}>
-            <Button className={styles.actionButton} icon={<EllipsisOutlined />} type="default" />
+            <Button aria-label={locale.sessionActions} className={styles.actionButton} icon={<EllipsisOutlined />} type="default" />
           </Dropdown>
         </div>
       </header>

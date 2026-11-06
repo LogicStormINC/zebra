@@ -1,10 +1,13 @@
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
+from agent_core.domain.identifiers import new_session_id
 from agent_core.ports.runtime import RuntimeClass
 from agent_runtime import LocalRuntime, OciRuntime, OsSandboxRuntime
 from zebra_agent_config import ApiSettings, ModelSettings, RuntimeSettings, ZebraAgentSettings
 from zebra_agent_worker.runtime_factory import build_runtime
+from zebra_agent_worker.runtime_setup import build_prepared_runtime
 
 
 def _settings(runtime: RuntimeSettings) -> ZebraAgentSettings:
@@ -31,6 +34,25 @@ def test_runtime_factory_preserves_trusted_local_compatibility(tmp_path: Path) -
     )
 
     assert isinstance(runtime, LocalRuntime)
+
+
+def test_trusted_local_preparation_with_earlier_task_session(tmp_path: Path) -> None:
+    runtime, prepared = build_prepared_runtime(
+        _settings(RuntimeSettings()),
+        tmp_path / "sessions.sqlite",
+        workspace_root=tmp_path,
+        network_profile="full-trusted-local",
+        session_id=new_session_id(),
+        attempt_number=1,
+        artifact_store=None,
+        created_at=datetime.now(UTC),
+        compatible_session_ids=(str(new_session_id()),),
+    )
+    try:
+        assert isinstance(runtime, LocalRuntime)
+        assert prepared.compatible_authority_digests == ()
+    finally:
+        runtime.destroy(prepared.handle)
 
 
 def test_runtime_factory_builds_immutable_gvisor_spec(tmp_path: Path) -> None:

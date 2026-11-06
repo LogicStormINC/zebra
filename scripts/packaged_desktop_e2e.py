@@ -167,7 +167,12 @@ class PackagedApp:
         deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:
             try:
-                return self._element(using, selector)
+                element = self._element(using, selector)
+                displayed = request_json(
+                    "GET", f"{DRIVER_URL}/session/{self.session_id}/element/{element}/displayed"
+                )
+                if displayed.get("value") is True:
+                    return element
             except AssertionError:
                 pass
             time.sleep(0.25)
@@ -247,6 +252,8 @@ class PackagedApp:
               apiBaseUrl: arguments[0], authToken: 'e2e-token', sessionId: '',
               userId: '', tenantId: ''
             }));
+            // This fixture writes current configuration, after the legacy migration.
+            localStorage.setItem('zebra-agent-desktop.trusted-local-default-v1', '1');
             localStorage.setItem('zebra-agent-desktop.task-launch-config', JSON.stringify({
               workspace: arguments[1], policyProfile: 'workspace_write',
               toolProfile: 'coding', networkProfile: 'none', networkAllowlist: [],
@@ -377,7 +384,10 @@ def run(application: Path, evidence_path: Path, screenshot_path: Path) -> None:
             stop_session_id,
             lambda session: int(session.get("current_sequence", 0)) >= 4,
         )
-        app.click_aria("停止任务")
+        app.click_aria("会话操作")
+        cancel_item = "//li[@role='menuitem' and normalize-space(.)='取消会话']"
+        app.wait_element("xpath", cancel_item)
+        app.click("xpath", cancel_item)
         wait_for_session(stop_session_id, lambda session: session.get("status") == "cancelled")
         app.wait_body("已停止")
         stop_events = wait_for_stream_event(stop_session_id, "session_cancelled")
@@ -395,21 +405,33 @@ def run(application: Path, evidence_path: Path, screenshot_path: Path) -> None:
         )
         assert session["workspace"]["runtime_name"] == "os-sandbox"
         app.refresh()
-        app.wait_body("Runtime")
-        app.wait_element(
-            "css selector",
-            '[data-testid="runtime-name"][data-runtime-name="os-sandbox"]',
+        app.wait_body("APPROVAL_COMPLETE")
+        app.wait_element("css selector", '[role="tab"][aria-selected="true"]')
+        app.click("xpath", "//button[@role='tab' and normalize-space(.)='上下文']")
+        runtime_marker = '[data-testid="runtime-name"]'
+        observed_runtime = app.execute(
+            """
+            const marker = document.querySelector(arguments[0]);
+            if (!marker) return null;
+            marker.scrollIntoView();
+            return { label: marker.textContent, runtime: marker.dataset.runtimeName };
+            """,
+            runtime_marker,
+        )
+        assert observed_runtime == {"label": "os-sandbox", "runtime": "os-sandbox"}, (
+            f"packaged Runtime marker mismatch: {observed_runtime!r}"
         )
         steps.append("approval-real-runtime")
 
         app.submit("E2E_FAILURE packaged failure")
-        app.wait_body("任务已暂停", timeout=40)
-        app.wait_body("已暂停")
+        paused_status = "//span[@aria-live='polite' and normalize-space(.)='已暂停']"
+        app.wait_element("xpath", paused_status, timeout=40)
         failure_session_id = app.wait_active_session_id()
         failure_session = request_json(
             "GET", f"{API_URL}/tasks/{failure_session_id}", headers=AUTH_HEADERS
         )
         assert failure_session["status"] == "suspended"
+        wait_for_stream_event(failure_session_id, "session_suspended")
         steps.append("failure-visible")
 
         stop_process(api)
@@ -419,7 +441,7 @@ def run(application: Path, evidence_path: Path, screenshot_path: Path) -> None:
         app.refresh()
         app.wait_body("本地运行时已连接", timeout=20)
         app.wait_body("E2E_FAILURE packaged failure", timeout=20)
-        app.wait_body("任务已暂停")
+        app.wait_element("xpath", paused_status)
         recovered_session = request_json(
             "GET", f"{API_URL}/tasks/{failure_session_id}", headers=AUTH_HEADERS
         )

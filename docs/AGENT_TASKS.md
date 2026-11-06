@@ -1,3 +1,9 @@
+# CA-P7-LOCAL-RUNTIME-AUTHORITY
+
+- Owner Luke Ding / Codex. Base 56ae352a. Branch codex/ca-p7-local-runtime-authority.
+- Owned paths: Worker runtime_setup.py its focused runtime factory regression, scripts/packaged_desktop_e2e.py, and Desktop streaming test, shared mock provider, and conversation menu labels.
+- Acceptance: trusted-local preparation with a prior Task session succeeds and has no compatible sandbox digests. Hard runtime validation remains in force.
+
 # ERP-AUTH-CLOUD-EXPORT-20261102
 - Status: Done; exact source export and static gates verified; integrated for cloud-agent/GitHub.
 - Created Ready then claimed In Progress; owner Luke Ding / Codex.
