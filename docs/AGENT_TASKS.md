@@ -38297,6 +38297,14 @@ exact exit ACK and pending 1 -> 0. Draft PR #267 targets cloud-agent with 34 foc
 PostgreSQL tests passing. Production pending. E1-A/E1-R remain blocked on isolated
 resources; milestone 3 remains In Progress. Evidence: q1-amd64-build/stop-read-recheck/.
 
+CA-HA-03-Q1 review follow-up: user-authorized additional owned application path
+packages/agent-storage/src/agent_storage/postgres/force_stop_executors.py for exact
+receipt matching. PR #267 remains in Review. Prefix predicate is a correctness
+dependency; index migration stays separate. The cloud-agent Broker currently
+requires a Run binding and rejects Task-wide stop authority at exchange. Resolve
+the Broker dependency and validate the resulting online composition before a
+merge decision. Frozen qualification, production and E1-A/E1-R states are separate.
+
 CA-HA-03-RD1 — Ready -> In Progress (2026-11-06); human owner lukeding / executor Codex.
 Branch codex/ca-ha-03-resource-decision, existing worktree; frozen applicationf20b56a3 untouched.
 Documentation/evidence only: docs/CA-HA-03_resource_decision.md, docs/AGENT_TASKS.md,
