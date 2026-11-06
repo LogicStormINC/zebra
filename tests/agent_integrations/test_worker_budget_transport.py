@@ -279,3 +279,28 @@ def test_normal_generic_stream_requests_provider_usage_on_actual_wire():
     )
     assert result.assistant_message.content == "ok"
     assert len(gateway.worker_budget.settled) == 1
+
+
+def test_native_present_schema_type_property_is_not_media_input():
+    from agent_tools.builtin.present import content_present_contract
+
+    gateway = _gateway(lambda _: pytest.fail("inspection must not send"))
+    gateway.model_request_budget = _proof
+    body = {
+        "max_tokens": 5, "messages": [],
+        "tools": [{"type": "function", "function": {
+            "name": "content__present", "parameters": {
+                "type": "object", "properties": content_present_contract.argument_properties,
+            },
+        }}],
+    }
+    proof = inspect_request(gateway, body)
+    assert proof.output_cap == 5 and not gateway.worker_budget.reserved
+
+
+@pytest.mark.parametrize("schema_type", [["string", "null"], {"type": "string"}])
+def test_schema_union_and_type_field_do_not_crash_inspection(schema_type):
+    gateway = _gateway(lambda _: pytest.fail("inspection must not send"))
+    gateway.model_request_budget = _proof
+    body = {"max_tokens": 5, "tools": [{"type": schema_type}]}
+    assert inspect_request(gateway, body).output_cap == 5
