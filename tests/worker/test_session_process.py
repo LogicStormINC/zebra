@@ -122,3 +122,30 @@ def test_execution_receipt_roundtrip_preserves_body_and_identity(tmp_path, monke
     assert restored == result
     assert restored.session.session_id == session
     assert restored.attempt_result.metadata["assistant_message"] == "Worker completed the session."
+
+
+def test_cold_child_uses_native_model_transport(monkeypatch):
+    from contextlib import nullcontext
+    from pathlib import Path
+
+    from zebra_agent_worker import session_process_child as child_entry
+
+    settings = SimpleNamespace(
+        deployment="cloud", storage_authority="postgresql", database_url="postgresql://test"
+    )
+    cloud = object()
+
+    def build(**kwargs):
+        assert kwargs["database_path"] == Path(settings.database_url)
+        assert kwargs["cloud_composition"] is cloud
+        assert kwargs.get("model_http_client") is None
+        return SimpleNamespace(_execution_service=object())
+
+    monkeypatch.setattr(sys, "argv", ["session_process_child", "--check"])
+    monkeypatch.setenv("ZEBRA_SESSION_PROCESS_FACTORY", "default")
+    monkeypatch.setattr(child_entry, "load_settings", lambda: settings)
+    monkeypatch.setattr(child_entry, "settings_digest", lambda _: "settings")
+    monkeypatch.setattr(child_entry, "cloud_composition_from_environment", lambda: cloud)
+    monkeypatch.setattr(child_entry, "postgres_pool_scope", lambda _: nullcontext())
+    monkeypatch.setattr(child_entry, "build_worker_loop_service", build)
+    child_entry.main()
