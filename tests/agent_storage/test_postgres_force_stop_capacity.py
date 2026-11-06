@@ -152,7 +152,7 @@ def test_running_stop_retains_capacity_until_exact_ack_and_repeats_are_idempoten
     )
 
 
-@pytest.mark.parametrize("collation", ["C", "en-US-x-icu"])
+@pytest.mark.parametrize("collation", ["C", "en-US-x-icu", "icu-nondeterministic"])
 def test_exact_exit_receipt_is_independent_of_collation(dsn, collation):
     event = _prepare(dsn)
     sid = event.session_id
@@ -160,16 +160,24 @@ def test_exact_exit_receipt_is_independent_of_collation(dsn, collation):
     stops = PostgresForceStops(dsn, deployment_namespace=NAMESPACE)
     key = executor_key(sid, fence)
     with psycopg.connect(dsn, row_factory=dict_row) as connection:
+        source = "en-US-x-icu" if collation == "icu-nondeterministic" else collation
         available = connection.execute(
-            "SELECT 1 FROM pg_collation WHERE collname=%s", (collation,)
+            "SELECT 1 FROM pg_collation WHERE collname=%s", (source,)
         ).fetchone()
         if available is None:
             pytest.skip(f"PostgreSQL collation {collation} is unavailable")
+        identifier = sql.Identifier("pg_catalog", collation)
+        if collation == "icu-nondeterministic":
+            connection.execute(
+                "CREATE COLLATION q1_icu (provider=icu, locale='und-u-ks-level1', "
+                "deterministic=false)"
+            )
+            identifier = sql.Identifier("q1_icu")
         connection.execute(
             sql.SQL(
                 "ALTER TABLE control_plane_idempotency_records "
                 "ALTER COLUMN idempotency_key TYPE text COLLATE {}"
-            ).format(sql.Identifier("pg_catalog", collation))
+            ).format(identifier)
         )
     register_executor(stops.database, sid, fence)
     with psycopg.connect(dsn, row_factory=dict_row) as connection:
