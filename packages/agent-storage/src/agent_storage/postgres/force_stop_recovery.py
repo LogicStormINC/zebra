@@ -209,17 +209,28 @@ class PostgresForceStopRecovery:
                     save_session_in_transaction(connection, self.namespace, state.session)
                     if state.workspace is not None:
                         save_workspace_in_transaction(connection, self.namespace, state.workspace)
-                    return  # repair projections; retain committed outcomes and content
-                operation = uuid5(NAMESPACE_URL, f"force-terminal:{data['operation_id']}:{sid}")
-                cancel_in_transaction(
-                    connection,
-                    self.namespace,
-                    state,
-                    lease,
-                    now,
-                    operation_id=operation,
-                    command=False,
-                )
+                else:
+                    operation = uuid5(NAMESPACE_URL, f"force-terminal:{data['operation_id']}:{sid}")
+                    cancel_in_transaction(
+                        connection,
+                        self.namespace,
+                        state,
+                        lease,
+                        now,
+                        operation_id=operation,
+                        command=False,
+                    )
+                # Cancellation is not a handled Worker boundary. Retain its receipts,
+                # and release capacity only after revocation and exact executor exits.
+                if (lease is None or lease["released_at"] is not None) and executors_exited(
+                    connection, self.namespace, sid, lease
+                ):
+                    connection.execute(
+                        """UPDATE session_command_pending SET status='cancelled'
+                        WHERE deployment_namespace=%s AND session_id=%s AND status='pending'
+                          AND accepted_sequence<=%s""",
+                        (self.namespace, sid, state.through_sequence),
+                    )
 
     def finish(
         self,

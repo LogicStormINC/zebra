@@ -80,14 +80,19 @@ def acknowledge_executor(database: PostgresDatabase, sid: Any, fence: Any) -> No
 
 
 def executors_exited(connection: Any, namespace: str, sid: Any, lease: Any) -> bool:
+    # ponytail: exact prefix matching is independent of database collation.
+    # Retain the native equality for the receipt primary-key lookup, then require
+    # exact key equality even with a nondeterministic column collation.
+    # If receipt history outgrows the cleanup deadline, add a prefix index.
     rows = connection.execute(
         """SELECT s.response_body, e.response_body AS exited
         FROM control_plane_idempotency_records s LEFT JOIN control_plane_idempotency_records e
           ON e.deployment_namespace=s.deployment_namespace AND e.action='executor_exit'
           AND e.idempotency_key=s.idempotency_key
+          AND e.idempotency_key COLLATE "C"=s.idempotency_key
         WHERE s.deployment_namespace=%s AND s.action='executor_started'
-          AND s.idempotency_key>=%s AND s.idempotency_key<%s""",
-        (namespace, f"{sid}:", f"{sid};"),
+          AND starts_with(s.idempotency_key COLLATE "C",%s)""",
+        (namespace, f"{sid}:"),
     ).fetchall()
     if any(row["exited"] != row["response_body"] for row in rows):
         return False
