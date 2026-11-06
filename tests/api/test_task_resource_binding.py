@@ -29,7 +29,7 @@ def broker():
 def verified(broker, *, thread=THREAD, run="bootstrap:opaque", now=None, resources=None):
     key, settings = broker
     token = mint_grant(
-        settings,
+        replace(settings, allowed_scopes=(*settings.allowed_scopes, "artifact.read")),
         key,
         ExchangeRequest("zebra", thread, run, ("agent.run", "event.read", "artifact.read")),
         TrenchViewer(user_id="user-a", workspace_id="workspace-a", active_source_ids=frozenset()),
