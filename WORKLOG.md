@@ -22526,3 +22526,13 @@ schema 121。一次新任务获得真实 Broker 授权，POST 202，在线终态
 精确 ACK 与名额归零已核对。WorkerBudgetError 在强停受理前结束模型阶段，
 队列行已为 done，模型调用中强停仍待验。先核验原生子进程的可信计数及传输组合。
 生产保持原状，E1-A/E1-R 暂停。证据在 q1-amd64-build/pr-delivery/da9a5734-broker/。
+
+## 2026-11-06 CA-HA-03-Q1 联合强停通过
+
+#267 a487cb4e 与 #268 1e0f1868 在固定 amd64 组合上使用新签名包。
+冷子进程改用原生预算传输，复用已有 schema 类型谓词修复；未改预算与授权合同。
+仅最终一条新任务到达隔离模型，强停受理时模型仍未返回。在线终态 5.580 秒，
+精确 ACK、租约释放、原命令 cancelled、同 scope 待处理 1→0、无 handled 证据。
+跨 Task 404、带 Run 403；旧失败证据保留。定向 88 与 Broker 96 通过。
+合并建议 #268 先于 #267，Backend 未得到通过结论前保持草稿。Tauri 排除。
+未部署生产，E1-A/E1-R 继续暂停。证据 q1-amd64-build/pr-delivery/a487cb4e-broker/。
