@@ -35,7 +35,7 @@ class GrantMintError(ValueError):
 class ExchangeRequest:
     audience: str
     thread_id: str
-    run_id: str
+    run_id: str | None
     scopes: tuple[str, ...]
     resource_refs: tuple[tuple[str, str], ...] = ()
 
@@ -45,7 +45,10 @@ class ExchangeRequest:
             raise GrantMintError("request_body_invalid")
         audience = _text(body.get("audience"), "audience")
         thread_id = _text(body.get("threadId"), "threadId")
-        run_id = _text(body.get("runId"), "runId")
+        control = body.get("taskControl", False)
+        if type(control) is not bool or control and "runId" in body:
+            raise GrantMintError("task_control_invalid")
+        run_id = None if control else _text(body.get("runId"), "runId")
         raw_scopes = body.get("scopes")
         if not isinstance(raw_scopes, list) or not raw_scopes or len(raw_scopes) > 64:
             raise GrantMintError("scopes_invalid")
@@ -53,6 +56,8 @@ class ExchangeRequest:
         if len(set(scopes)) != len(scopes):
             raise GrantMintError("scopes_duplicated")
         resource_refs = _resource_refs(body.get("resourceRefs", []))
+        if control and (scopes != ("agent.run",) or resource_refs):
+            raise GrantMintError("task_control_invalid")
         return cls(
             audience=audience,
             thread_id=thread_id,
@@ -62,6 +67,8 @@ class ExchangeRequest:
         )
 
     def enforce(self, settings: BrokerSettings) -> None:
+        if self.run_id is None and (self.scopes != ("agent.run",) or self.resource_refs):
+            raise GrantMintError("task_control_invalid")
         if self.audience != settings.audience:
             raise GrantMintError("audience_mismatch")
         unknown = [scope for scope in self.scopes if scope not in settings.allowed_scopes]
@@ -85,6 +92,7 @@ def mint_grant(
     jti: str | None = None,
     expires_at: datetime | None = None,
 ) -> str:
+    request.enforce(settings)
     issued_at = now or datetime.now(UTC)
     grant_id = jti or str(uuid4())
     deadline = issued_at + timedelta(seconds=settings.ttl_seconds)
@@ -105,7 +113,7 @@ def mint_grant(
         "workspace_ref": viewer.workspace_id or settings.workspace_ref,
         "resource_refs": [
             {"type": "thread", "id": request.thread_id},
-            {"type": "run", "id": request.run_id},
+            *([{"type": "run", "id": request.run_id}] if request.run_id is not None else []),
             {"type": "principal", "id": viewer.user_id},
             *(
                 {"type": resource_type, "id": resource_id}
