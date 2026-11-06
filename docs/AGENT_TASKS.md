@@ -38305,6 +38305,11 @@ requires a Run binding and rejects Task-wide stop authority at exchange. Resolve
 the Broker dependency and validate the resulting online composition before a
 merge decision. Frozen qualification, production and E1-A/E1-R states are separate.
 
+CA-HA-03-Q1 review follow-up: user-authorized child transport correction in
+apps/worker/src/zebra_agent_worker/session_process_child.py and its focused
+tests/worker/test_session_process.py regression. Keep the budget and authorization
+checks unchanged. Joint qualification only, Tauri excluded, no production or E1 runs.
+
 CA-HA-03-RD1 — Ready -> In Progress (2026-11-06); human owner lukeding / executor Codex.
 Branch codex/ca-ha-03-resource-decision, existing worktree; frozen applicationf20b56a3 untouched.
 Documentation/evidence only: docs/CA-HA-03_resource_decision.md, docs/AGENT_TASKS.md,
