@@ -1,3 +1,12 @@
+# CA-P7-CI-FIXTURES
+
+- Owner Luke Ding / Codex. Base 56ae352a. Branch codex/ca-p7-ci-fixtures. Status: Review.
+- Owned paths: tests/compose/application/run-smoke.sh, scripts/benchmark_command_scan.py and tests/agent_storage/test_postgres_{leases,effect_faults}.py.
+- Acceptance: reproduce both inherited failures, then verify the real command scan and lease suite on an isolated PostgreSQL.
+- Actual: d544e87f passed 16 PostgreSQL lease tests and the default 10/100/1000 scan workload in run-native-ci-fixtures-002. The positive control explicitly selects the original candidate. Owned resources were cleaned.
+- Full cloud-faults pytest selection: efb19dff passed 40 tests in run-native-ci-fixtures-004 on an isolated PostgreSQL. This uses the four CI test files with run-owned resources instead of the fixed Compose project. Cleanup passed.
+- Application smoke configuration: 56ae352a reproduced missing socket GID and 9c6855fd rendered the worker group equal to the mounted socket GID on the Ubuntu acceptance host. Two static smoke contracts passed. No services were started for this check.
+
 # ERP-AUTH-CLOUD-EXPORT-20261102
 - Status: Done; exact source export and static gates verified; integrated for cloud-agent/GitHub.
 - Created Ready then claimed In Progress; owner Luke Ding / Codex.
