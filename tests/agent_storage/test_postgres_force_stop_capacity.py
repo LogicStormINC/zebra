@@ -13,10 +13,17 @@ from agent_runtime.process_supervision import supervise_process
 from agent_storage.postgres import force_stop_recovery
 from agent_storage.postgres.command_wakeup import CommandAdmissionCapacityError
 from agent_storage.postgres.command_wakeup_pickup import discover_command_pickups
-from agent_storage.postgres.force_stop_executors import executor_monitor, register_executor
+from agent_storage.postgres.force_stop_executors import (
+    executor_key,
+    executor_monitor,
+    executors_exited,
+    register_executor,
+)
 from agent_storage.postgres.force_stop_recovery import PostgresForceStopRecovery
 from agent_storage.postgres.force_stops import PostgresForceStops
 from agent_storage.postgres.leases import lock_session_lease_boundary
+from psycopg import sql
+from psycopg.rows import dict_row
 from zebra_agent_api import RouteAdapter
 
 from tests.agent_storage.test_command_wakeup import _command
@@ -143,6 +150,57 @@ def test_running_stop_retains_capacity_until_exact_ack_and_repeats_are_idempoten
         len([e for e in _rows(dsn, "session_events") if e["event_type"] == "session_cancelled"])
         == 1
     )
+
+
+@pytest.mark.parametrize("collation", ["C", "en-US-x-icu"])
+def test_exact_exit_receipt_is_independent_of_collation(dsn, collation):
+    event = _prepare(dsn)
+    sid = event.session_id
+    fence = _handoff(dsn, event).lease.fence
+    stops = PostgresForceStops(dsn, deployment_namespace=NAMESPACE)
+    key = executor_key(sid, fence)
+    with psycopg.connect(dsn, row_factory=dict_row) as connection:
+        available = connection.execute(
+            "SELECT 1 FROM pg_collation WHERE collname=%s", (collation,)
+        ).fetchone()
+        if available is None:
+            pytest.skip(f"PostgreSQL collation {collation} is unavailable")
+        connection.execute(
+            sql.SQL(
+                "ALTER TABLE control_plane_idempotency_records "
+                "ALTER COLUMN idempotency_key TYPE text COLLATE {}"
+            ).format(sql.Identifier("pg_catalog", collation))
+        )
+    register_executor(stops.database, sid, fence)
+    with psycopg.connect(dsn, row_factory=dict_row) as connection:
+        lease = connection.execute("SELECT * FROM worker_leases").fetchone()
+        assert lease is not None
+
+        def insert_receipt(action, receipt_key, wrong_body=False):
+            connection.execute(
+                """INSERT INTO control_plane_idempotency_records
+                SELECT deployment_namespace, %s, %s, request_hash, status_code,
+                       CASE WHEN %s THEN '{}'::jsonb ELSE response_body END, created_at
+                FROM control_plane_idempotency_records
+                WHERE deployment_namespace=%s AND action='executor_started'
+                  AND idempotency_key=%s""",
+                (action, receipt_key, wrong_body, NAMESPACE, key),
+            )
+
+        insert_receipt("executor_started", f"{sid}0:nearby")
+        insert_receipt(
+            "executor_exit",
+            executor_key(sid, fence.model_copy(update={"fencing_token": fence.fencing_token + 1})),
+        )
+        assert not executors_exited(connection, NAMESPACE, sid, lease)
+        insert_receipt("executor_exit", key, wrong_body=True)
+        assert not executors_exited(connection, NAMESPACE, sid, lease)
+        connection.execute(
+            "DELETE FROM control_plane_idempotency_records WHERE action='executor_exit'"
+        )
+    stops.acknowledge_executor(sid, fence)
+    with psycopg.connect(dsn, row_factory=dict_row) as connection:
+        assert executors_exited(connection, NAMESPACE, sid, lease)
 
 
 def test_lease_without_registered_executor_is_not_exit_evidence(dsn):
