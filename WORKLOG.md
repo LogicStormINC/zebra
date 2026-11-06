@@ -22512,3 +22512,8 @@ Q1修复线结束追加开发，应用f20b56a3及原源码/签名证据冻结不
 资源/签包/单任务执行及强停名额释放→E1-A→完整E1-R的核验命令、旧入口限制与停点
 已写入docs/CA-HA-03_resource_decision.md。里程碑3仍In Progress，不能关闭。
 证据.artifacts/cloud-ha-e1/resource-decision-1793899843/，cost-and-allocation.json及官方价目JSON。
+
+## 2026-11-06 CA-HA-03-Q1 交付
+
+草稿 PR #267 仅包含原修复和回归。云分支回归 34 通过。冻结镜像在线
+强停功能资格完成，生产待部署。E1-A/E1-R 等待独立资源，详见容量决策文档。

@@ -38291,6 +38291,12 @@ Frozen source overlay only, no signed-package republication/push/deployment. E1-
 for independent resources and later full runtime qualification; overallCA-HA-03 In Progress.
 Evidence force-stop-capacity-1793898506/RESULTS.md. Owned paths not expanded; receipts source untouched.
 
+CA-HA-03-Q1 -> Review (2026-11-06): isolated amd64 online functional qualification
+complete. Linux 9 passed; POST 202, GET 200 with fresh Task scope, 403 with Run scope,
+exact exit ACK and pending 1 -> 0. Draft PR #267 targets cloud-agent with 34 focused
+PostgreSQL tests passing. Production pending. E1-A/E1-R remain blocked on isolated
+resources; milestone 3 remains In Progress. Evidence: q1-amd64-build/stop-read-recheck/.
+
 CA-HA-03-RD1 — Ready -> In Progress (2026-11-06); human owner lukeding / executor Codex.
 Branch codex/ca-ha-03-resource-decision, existing worktree; frozen applicationf20b56a3 untouched.
 Documentation/evidence only: docs/CA-HA-03_resource_decision.md, docs/AGENT_TASKS.md,

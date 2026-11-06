@@ -340,3 +340,16 @@ Q1修复线结束追加开发，应用f20b56a3及原源码/签名证据冻结不
 资源/签包/单任务执行及强停名额释放→E1-A→完整E1-R的核验命令、旧入口限制与停点
 已写入docs/CA-HA-03_resource_decision.md。里程碑3仍In Progress，不能关闭。
 证据.artifacts/cloud-ha-e1/resource-decision-1793899843/，cost-and-allocation.json及官方价目JSON。
+
+## 2026-11-06 CA-HA-03-Q1 功能验证完成，容量验收仍阻塞
+
+冻结 amd64 候选在隔离环境通过 Linux 回归（9 项）及一个新合成任务的在线强停复验。
+模型请求开始后强停返回 202。独立签发 Task 级读取授权的 GET 返回 200，Run 级授权仍返回
+403。在线确认执行停止、租约撤销、沙箱清理和同步完成。精确退出 ACK 一条，scope
+待处理数 1 → 0。6.025 秒是本次从发出 POST 起的观测，尚未验收完整停止时延要求。
+原 403、离线证据、旧签名及 unknown 保留。冻结清单和校验索引见
+`.artifacts/cloud-ha-e1/remote-host-qualification/q1-amd64-build/stop-read-recheck/`。
+
+修复与回归通过草稿 PR #267 送审，目标分支 `cloud-agent`，其隔离 PostgreSQL 回归
+34 项通过。修复尚未部署生产。独立容量资源待落实，E1-A 继续暂停，通过后才恢复
+完整 E1-R。里程碑 3 仍为 In Progress。
