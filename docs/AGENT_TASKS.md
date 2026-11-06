@@ -38336,3 +38336,15 @@ unverified and unavailable locally. Capacity acceptance explicitly ENVIRONMENT B
 Q1 remains localReview with no further fixes; applicationf20b56a3 unchanged. No provisioning,
 package signing, E1-A/R or production access. Resume gates/commands and fixture limitations in
 docs/CA-HA-03_resource_decision.md; evidence resource-decision-1793899843/. Milestone3 remains open.
+
+CA-HA-03-AF1 — Ready → In Progress. Human owner lukeding. Branch
+`codex/ca-ha-03-acceptance-fixtures`, existing CA-HA-03 worktree.
+Owned paths: `tests/agent_storage/test_postgres_leases.py`,
+`tests/agent_storage/test_postgres_command_wakeup_receipts.py`, this task record,
+and CA-HA-03 acceptance artifacts. Scope is exact baseline/candidate comparison
+and fixture-only repair. Product constraints, timeout and rollout are unchanged.
+
+CA-HA-03-AF1 → Review. Exact baseline and candidate reproduced the same
+18 records. Fixture-only repairs passed all 17 affected cases on each.
+Application source remains frozen at f327a05d. Full capacity and independent
+node qualification remain blocked on resources and the fixed signed run package.

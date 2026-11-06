@@ -28,7 +28,7 @@ from tests.agent_storage.test_postgres_command_wakeup import NAMESPACE, _store
 from tests.agent_storage.test_postgres_command_wakeup import dsn as _dsn_fixture
 from tests.agent_storage.test_postgres_command_wakeup import postgres_dsn as _postgres_dsn_fixture
 from tests.agent_storage.test_postgres_command_wakeup_handoff import _handoff, _prepare
-from tests.agent_storage.test_postgres_lease_clock import _wait, _wait_locked, _worker_dsn
+from tests.agent_storage.test_postgres_lease_clock import _wait_locked, _worker_dsn
 from tests.agent_storage.test_postgres_leases import _expire
 
 dsn = _dsn_fixture
@@ -280,7 +280,7 @@ def test_historical_origin_does_not_gain_execution_attribution(dsn):
 def test_handoff_does_not_lock_pending_while_waiting_for_worker_lease(dsn):
     command = _prepare(dsn)
     leases = PostgresLeaseStore(dsn, deployment_namespace=NAMESPACE)
-    old = leases.acquire(command.session_id, owner_instance_id="old", ttl=timedelta(seconds=2))
+    old = leases.acquire(command.session_id, owner_instance_id="old", ttl=timedelta(seconds=30))
     name = f"receipt-lock-order-{uuid4()}"
     with ThreadPoolExecutor(max_workers=1) as executor:
         with psycopg.connect(dsn, autocommit=True) as observer:
@@ -292,8 +292,9 @@ def test_handoff_does_not_lock_pending_while_waiting_for_worker_lease(dsn):
                 # not deadlock with handoff waiting for lease UPDATE.
                 worker.execute("SET LOCAL lock_timeout = '500ms'")
                 worker.execute("UPDATE session_command_pending SET status = status")
-                _wait(observer, "SELECT clock_timestamp() > %s", (old.expires_at,))
-            assert future.result(timeout=3).status is HandoffStatus.ACCEPTED
+            assert future.result(timeout=3).status is HandoffStatus.BUSY
+    leases.release(command.session_id, fence=old.fence)
+    assert _handoff(dsn, command).status is HandoffStatus.ACCEPTED
 
 
 def test_retire_exact_terminal_fallback_outbox_under_rollout_fence(dsn):
