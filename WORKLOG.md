@@ -22634,3 +22634,10 @@ receipts-rabbit/。
 
 四次尝试+发现留档（RESULTS-f02-attempt.md）：DLQ-churn 缺口（0.25s×5 ≪ 30s TTL）、
 worker-id 租约键雷区、fallback 重驱孤儿成功。三轮正式化开放，工具就绪。
+
+
+## 2026-11-08 F-02 架构澄清与工具收尾
+
+读全 command_wakeup_recovery：dead=设计（可用性换证明）；安全点→世代恢复 gen+1；
+DLQ churn 降级为观测项；无需产品修复。arm 安全点驱动+扩展控制器就绪（/f02 挂载、
+supervisor 覆盖、source 参数、唯一代 id）。重叠运行残渣致三轮未收，留待复位后单跑。
