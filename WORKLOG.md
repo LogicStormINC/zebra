@@ -22590,3 +22590,10 @@ d94f53de 全链 14 事件在 Redis 中断 3.026s 内由真实 Worker 持久化�
 outbox 不丢、8 分钟自愈。七次失败尝试均夹具/驱动侧，逐次留档。矩阵同步修正 Redis 轮
 "Rabbit 未承载投递"的事实。证据 f05-worker-mac-602e2afa/RESULTS-rabbit.md 与
 receipts-rabbit/。
+
+
+## 2026-11-08 F-05 对象存储故障一轮闭环（续 Redis/Rabbit 轮）
+
+产品端口级两场景通过：读降级有界+恢复同版本；线级 PUT 应答丢失对账唯一版本/幂等/异字
+节拒绝。MinIO tmpfs 数据卷缺陷修复为持久 bind（同 Rabbit 类），桶+版本化原凭据重建。
+至此 F-05 三子域各一轮闭环，均待三轮正式化。证据 f05-worker-mac-602e2afa/RESULTS-objects.md。

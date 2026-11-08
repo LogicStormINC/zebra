@@ -1,3 +1,7 @@
+## 2026-11-08 — F-05 对象存储子项一轮闭环（读降级 + 未知写对账）
+
+产品自有 S3 工件端口对真实 MinIO 完成两个场景各一轮：中断期 verify/版本验证读 0.13-0.29s 有界失败，恢复后同版本精确读回；SigV4 签名的条件 PUT 在线级丢弃应答后，经 IfNoneMatch→verify→版本读对账为唯一版本，重试幂等，异字节拒绝。MinIO /data tmpfs 夹具缺陷（与 Rabbit 同类，stop/start 即清空）修复为持久卷。F-05 三个子域（Redis/Rabbit/对象）各有一轮闭环，均未达三轮正式化；E1-A 容量与独立节点仍为整体阻塞。证据 `.artifacts/cloud-ha-e1/f05-worker-mac-602e2afa/RESULTS-objects.md`。
+
 ## 2026-11-08 — F-05 Rabbit 子项一轮闭环（broker 真实承载命令投递）
 
 经产品 `command_delivery_scope_rollouts` 行将 scope 门控到 broker 后，Rabbit 真实承载命令投递并完成三个故障场景各一轮：执行中真实 `docker restart` 恰一次完成；outbox 原信封同 message_id 重投零业务效果（事件数、executor、publish_attempts 全不变）；提交期中断下命令按门控等待（无回退误拾取），relay 以 unconfirmed 退避重试第 7 次恢复发布并恰一次完成。期间发现并修复夹具缺陷（Rabbit 数据目录为 tmpfs，重启即丢失用户/vhost/队列；产品在全状态丢失+重置备下 8 分钟自愈，留档为超模型观察）。另修正：Redis 轮命令实为回退扫描送达。证据 `.artifacts/cloud-ha-e1/f05-worker-mac-602e2afa/RESULTS-rabbit.md`。
@@ -9186,3 +9190,14 @@ tmpfs（重启即丢失全部状态），改为持久 bind 并以原凭据重新
 尝试全部为夹具/驱动侧问题并逐次留档，无产品改动。边界：各场景单轮、共享宿主、单成员
 quorum、RB 为同信封重发而非未 ack 重投窗口；对象存储子项与三轮正式化仍缺；E1-A 容量
 与独立节点仍是整体阻塞。证据 f05-worker-mac-602e2afa/RESULTS-rabbit.md。
+
+
+## 2026-11-08 F-05 对象存储故障一轮闭环（602e2afa）
+
+通过 agent_storage.runtime_composition 以产品真实 S3ArtifactObjectStore 端口对 MinIO 验证：
+OA 中断降级有界（0.13-0.29s 快速失败）且恢复同版本读回；OB 线级 PUT 应答丢失（签名请求
+发送后即断开 socket）由 put_if_absent 的 IfNoneMatch→verify→版本验证读对账为唯一版本，
+重试同版本幂等，同身份异字节被 ConflictError 拒绝。MinIO /data 原为 128MiB tmpfs，受控
+stop/start 即清空（docker events 证实同容器 kill→die→start），与 Rabbit 同类夹具缺陷，
+修复为持久 bind 并以原凭据重建桶与版本化；尝试 1 的降级证据（已有界通过）保留。
+组件级单轮边界如实记录；正式三轮与任务级工件发布路径未覆盖。
