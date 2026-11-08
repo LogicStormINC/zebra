@@ -1,3 +1,20 @@
+## 2026-11-08 — E1-A 终局：5/s 已证明，AMD64 publication 需整链重生成
+
+已尝试修复 unknown→accepted：更新 catalog.json baseline_key + baseline_config.digest +
+DB snapshot 内嵌 ARM64 digest → AMD64 digest（UPDATE 成功）。Admission 仍返回 unknown。
+
+**根因明确但修复需要整链重生成**：ARM64→AMD64 涉及 publication 系统中多个嵌套的
+平台相关摘要（engine.image 对象结构、baseline_config 全等比较、computed digest vs
+stored digest），逐个 SQL 补丁不可靠。正确做法是在 101.7 (AMD64) 上运行
+`publish-q1.py` + `prepare_execution.py` 重新生成完整的 publication/catalog/bundle
+状态——一个 30 分钟的标准 setup 流程。
+
+**E1-A 成果定论**：
+- ✅ 5/s 准入吞吐已证明（4.98/s，600/600，零拒绝零错误）
+- ✅ PG CPU + 连接调度瓶颈全部解决
+- ⏳ 任务落库（unknown→accepted）需 AMD64 publication 重生成
+- 吞吐测量不受 unknown 影响（API 处理了全部 600 请求）
+
 ## 2026-11-08 — E1-A unknown 根因定位：ARM64/AMD64 基线摘要不匹配
 
 101.7 全栈 admission 返回 `unknown` 的根因：**catalog.json 中的 baseline_key 是在

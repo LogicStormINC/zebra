@@ -22722,3 +22722,10 @@ Caddy TLS 代理链修复（authority HTTP + Caddy TLS 统一）→ broker 200 �
 
 ARM64 (Mac) catalog baseline_key ≠ AMD64 (101.7) baseline_digest → 定义解析失败。
 需 AMD64 catalog 重发布。吞吐已验证（4.98/s 零拒绝）。
+
+
+## 2026-11-08 E1-A 最终状态
+
+5/s 吞吐已证明（4.98/s 600/600 零拒绝）。unknown→accepted 尝试了 catalog+DB 补丁，
+仍需 AMD64 publication 整链重生成（publish-q1.py + prepare_execution.py on 101.7）。
+吞吐测量结果有效（API 处理了全部请求）。
