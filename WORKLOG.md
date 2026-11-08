@@ -22597,3 +22597,9 @@ receipts-rabbit/。
 产品端口级两场景通过：读降级有界+恢复同版本；线级 PUT 应答丢失对账唯一版本/幂等/异字
 节拒绝。MinIO tmpfs 数据卷缺陷修复为持久 bind（同 Rabbit 类），桶+版本化原凭据重建。
 至此 F-05 三子域各一轮闭环，均待三轮正式化。证据 f05-worker-mac-602e2afa/RESULTS-objects.md。
+
+
+## 2026-11-08 F-05 三轮正式化完成
+
+三子域×三轮全过、最差值留档（RESULTS-three-rounds.md + f05-three-rounds-summary.json）。
+控制器补 ready 自愈与可重入；一轮因 pkill 误杀监视器失败后重跑通过并留档。

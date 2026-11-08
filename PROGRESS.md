@@ -1,3 +1,12 @@
+## 2026-11-08 — F-05 三轮正式化完成（三子域全过，保留最差值）
+
+按验收门槛对 F-05 三个故障子域完成三轮重复，全部通过：Redis 真实 Worker 全链（live 尾最差
+2.175s/32s，离线重放最差 245.5ms，回执相等×3）；Rabbit（RA 首发×3 真实重启恰一次、RB 同
+message_id 重投零效果×3、RC 门控等待+第7次重试恢复×3）；对象（降级最差 0.301s/30s，恢复
+2.84s 同版本，未知写唯一版本/幂等/异字节拒绝×3）。F-05 达成共享宿主拓扑上的正式通过；
+负载 E1-R、256-SSE 与物理故障域仍以 E1-A 容量和独立计算节点为前置。证据
+`.artifacts/cloud-ha-e1/f05-worker-mac-602e2afa/RESULTS-three-rounds.md`。
+
 ## 2026-11-08 — F-05 对象存储子项一轮闭环（读降级 + 未知写对账）
 
 产品自有 S3 工件端口对真实 MinIO 完成两个场景各一轮：中断期 verify/版本验证读 0.13-0.29s 有界失败，恢复后同版本精确读回；SigV4 签名的条件 PUT 在线级丢弃应答后，经 IfNoneMatch→verify→版本读对账为唯一版本，重试幂等，异字节拒绝。MinIO /data tmpfs 夹具缺陷（与 Rabbit 同类，stop/start 即清空）修复为持久卷。F-05 三个子域（Redis/Rabbit/对象）各有一轮闭环，均未达三轮正式化；E1-A 容量与独立节点仍为整体阻塞。证据 `.artifacts/cloud-ha-e1/f05-worker-mac-602e2afa/RESULTS-objects.md`。
@@ -9201,3 +9210,12 @@ OA 中断降级有界（0.13-0.29s 快速失败）且恢复同版本读回；OB 
 stop/start 即清空（docker events 证实同容器 kill→die→start），与 Rabbit 同类夹具缺陷，
 修复为持久 bind 并以原凭据重建桶与版本化；尝试 1 的降级证据（已有界通过）保留。
 组件级单轮边界如实记录；正式三轮与任务级工件发布路径未覆盖。
+
+
+## 2026-11-08 F-05 三轮正式化（602e2afa）
+
+三个子域各补两轮（第1轮沿用当日已记录的通过轮），全部结构化断言通过并汇总最差值：
+Redis live 尾 2.175s、离线重放 245.5ms；Rabbit RA 首发确认、RB 零效果、RC 第7次恢复（三轮
+一致，退避节奏确定性的）；对象降界 0.301s、恢复 2.84s。过程附注：Redis 控制器补 ready
+自愈；一次自伤（pkill 模式误杀全部监视器）导致 Rabbit 第2轮首次尝试失败，控制器恢复后
+重跑通过，失败样本保留于 receipts-rabbit-round2-failed-controller/。
