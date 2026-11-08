@@ -1,3 +1,13 @@
+## 2026-11-08 — F-08 正式化尝试未通过，登记三项发现
+
+三轮正式化准备就绪后第 1 轮暴露停链路异常，今日不计任何轮次通过。发现：①worker 容器
+restart 后 executor incarnation（PID ns 钉定）必须重签，否则全部任务安全挂起（已实测
+重签即恢复，生产 runbook 必须纳入）；②broker 消费者 DEFER 循环零日志可观测性缺口 +
+accepted-未执行 handoff 不会被恢复线重驱（DUPLICATE 短路）；③cancel 202 后 executor
+6s 内退出但命令永挂 pending、stop 记录消失（/stop 与 /cancel 均 404）——需干净复现定性
+（本轮含操作侧清理竞态）。F-08 维持既有低负载通过；F-01/F-02 未启动。证据
+`.artifacts/cloud-ha-e1/f05-worker-mac-602e2afa/RESULTS-f08-attempt.md`。
+
 ## 2026-11-08 — F-05 三轮正式化完成（三子域全过，保留最差值）
 
 按验收门槛对 F-05 三个故障子域完成三轮重复，全部通过：Redis 真实 Worker 全链（live 尾最差
@@ -9219,3 +9229,12 @@ Redis live 尾 2.175s、离线重放 245.5ms；Rabbit RA 首发确认、RB 零�
 一致，退避节奏确定性的）；对象降界 0.301s、恢复 2.84s。过程附注：Redis 控制器补 ready
 自愈；一次自伤（pkill 模式误杀全部监视器）导致 Rabbit 第2轮首次尝试失败，控制器恢复后
 重跑通过，失败样本保留于 receipts-rabbit-round2-failed-controller/。
+
+
+## 2026-11-08 F-08 正式化尝试与发现登记（602e2afa）
+
+驱动与工具就绪（operator.sh 透传 E1_PRINCIPAL_INDEX、基线计数断言、失败自清理）。第 1 轮：
+202 接受、executor 6.0s 退出（10s 预算内）但命令未终态化且 stop 记录 404；含操作侧
+release 竞态，登记为待干净复现的排查项。过程另证：worker restart 后 incarnation 重签
+（PID ns）即恢复执行；DEFER→DLQ 无日志；孤儿 handoff（diagnostic-probe）DUPLICATE 短路
+且恢复线不重驱，inbox FK 持有状态。两个 pending 命令（9b83c4bf、9cf8af92）原样保留。

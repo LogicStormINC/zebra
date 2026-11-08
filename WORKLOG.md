@@ -22603,3 +22603,10 @@ receipts-rabbit/。
 
 三子域×三轮全过、最差值留档（RESULTS-three-rounds.md + f05-three-rounds-summary.json）。
 控制器补 ready 自愈与可重入；一轮因 pkill 误杀监视器失败后重跑通过并留档。
+
+
+## 2026-11-08 F-08 正式化尝试（未通过）与三项发现
+
+工具链就绪；第 1 轮 cancel 后命令永挂 + stop 404（executor 已 6s 退出），操作侧清理竞态
+参与，需干净复现。incarnation 重签、DEFER 可观测性、孤儿 handoff 重驱三项发现登记。
+证据 f05-worker-mac-602e2afa/RESULTS-f08-attempt.md。
