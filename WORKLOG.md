@@ -22563,3 +22563,20 @@ AG-UI 检查点回放存在长耗时，剩余 CI-only 失败待归因。未重�
 强停达成 cancelled/ACK/名额 1→0；回退组合在线终态及 ACK 通过、名额归零，
 但命令 dead/terminal_or_dead，严格回退门槛未通过。未验证生产规模停机时间及
 schema 121 兼容回退，未申请生产部署。证据 merged-8457efc6/rehearsal-117-121/。
+
+## 2026-11-08 F-05 真实 Worker Redis 中断闭环（602e2afa）
+
+接续 11-07 中断点：查询 API 层降级合同已过（f05-mac-query-602e2afa/
+RESULTS.md），剩余为真实 Worker 全链路样本。复用 24h 存活拓扑（共享
+netns 的 PG/Redis/Rabbit/S3/Broker/Authority、f327a05d Worker、只读
+引擎身份代理 23751）。修复两处夹具问题后一次通过：API 镜像
+session_streaming.py 为 0600/属主 zebra，须按查询阶段方式以 root 运行；
+API 需挂载 /state（publication/catalog），缺失时 prepare 阶段解析失败
+返回 unknown 回执，该失败样本原样保留（receipts-attempt1-api-mount-missing/）。
+驱动 config/f05_redis_probe.py + 宿主控制监视器 control-watcher.py
+（redis-ready/stop/start fsync 应答，停后 1.2s 放行模型）。结果：任务
+d94f53de 全链 14 事件在 Redis 中断 3.026s 内由真实 Worker 持久化，
+既有 SSE 1.921s 补齐至 session_completed，中断期新 SSE 186.6ms 精确重放，
+原回执逐字节相等，命令 done、scope_pending=0、租约释放、executor_exit
+在案；查询 API 同容器 ID/PID 全程未重启。F-05 剩余：Rabbit 故障注入下
+确认/重投/恢复、对象存储降级与未知写对账。证据 f05-worker-mac-602e2afa/。

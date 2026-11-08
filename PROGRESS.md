@@ -1,3 +1,13 @@
+## 2026-11-08 — F-05 真实 Worker Redis 中断全链路一轮闭环
+
+602e2afa 候选下，真实 Worker 在 Redis 中断 3.0s 内持久化 14 事件全链至 PostgreSQL：既有 SSE 1.9s 补齐终态、中断期新 SSE 186.6ms 精确重放、原回执逐字节相等，查询 API 全程未重启。两次夹具失败样本原样保留。单样本、共享宿主，不构成三轮/256-SSE/E1-R/物理节点证据；F-05 剩 Rabbit 故障注入与对象降级对账，E1-A 容量与独立节点仍为整体阻塞。证据 `.artifacts/cloud-ha-e1/f05-worker-mac-602e2afa/RESULTS.md`。
+
+## 2026-11-06 — Cloud Agent HA 主线采用有界单宿主验收
+
+AWS 申请已撤回。192.168.101.7 仅开展具备硬隔离的进程、租约、原回执、SSE、强停和依赖恢复合同。低负载功能可先验；E1-A 仍是负载下完整 E1-R 的前提，持续 5/s 目标保持。物理节点和机架容错维持未验证。Trench 部署冻结，Overdoze 暂停。
+
+F-01/F-02 已有低负载子项证据，正式重复与故障域仍开放。F-05 导入后静稳失败，暂停本轮运行验收。F-06 新增 3 项 JWKS 组件回归通过。完整矩阵、证据与恢复步骤见 [CA-HA-03 资源决策](docs/CA-HA-03_resource_decision.md)。
+
 ## 2026-11-03 — E1短任务实链与现有deferred配置候选
 
 外部provider b15单独冻结/仅切model，runtime9b/Native7不变；双节点TLS/SSE/meter复验通过。
@@ -9143,3 +9153,18 @@ Q1修复线结束追加开发，应用f20b56a3及原源码/签名证据冻结不
 修复与回归通过草稿 PR #267 送审，目标分支 `cloud-agent`，其隔离 PostgreSQL 回归
 34 项通过。修复尚未部署生产。独立容量资源待落实，E1-A 继续暂停，通过后才恢复
 完整 E1-R。里程碑 3 仍为 In Progress。
+
+## 2026-11-08 F-05 真实 Worker Redis 中断全链路闭环
+
+602e2afa 冻结候选下，F-05「Redis 通知缺失有界补读」子项取得首个真实 Worker 端到端
+闭环：隔离拓扑中签名准入的新合成任务由真实 Worker 执行，Redis 容器中断 3.026 秒期间
+Worker 将 14 事件全链（session_created 至 session_completed）持久化到 PostgreSQL，
+既有 SSE 在 1.921 秒内补齐至终态，中断期新开 SSE 以 186.6ms 精确重放同一后缀，
+原签名回执各检查点逐字节相等；命令 done、scope_pending=0、租约释放、executor_exit
+在案。查询 API 同容器 ID/PID 全程未重启。两次夹具失败（API uid 与 /state 挂载缺失）
+样本原样保留，非产品缺陷。证据
+`.artifacts/cloud-ha-e1/f05-worker-mac-602e2afa/RESULTS.md`。
+
+边界：单样本、共享宿主 netns，不构成三轮、256-SSE、负载 E1-R 或物理节点证据。
+F-05 剩余 RabbitMQ 故障注入（确认/重投/恢复）与对象存储降级对账；E1-A 容量与独立
+计算节点仍是整体 HA 的直接阻塞。里程碑 3 维持 In Progress。
