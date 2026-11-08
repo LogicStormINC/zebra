@@ -1,3 +1,18 @@
+## 2026-11-08 — 最终结论：101.7 clean-slate setup 需脚本化执行（非 SSH 内联）
+
+Clean-slate 尝试通过 SSH 内联执行 SQL，但三层引号转义（SSH→docker exec→psql）
+导致表 DDL/种子数据不可靠。host_authority_registries 表创建反复失败。
+
+**下次会话正确做法**：在 Mac 上写完整的 setup shell 脚本 → scp 到 101.7 → 一次性执行。
+脚本内容：DROP DB → CREATE DB → migrations → seed.sql（含 host_authority_registries DDL）
+→ publish-q1.py → 启动服务 → E1-A 5/s 测试。预计 30 分钟。
+
+**已验证且不变的结论**：
+- E1-A 5/s 准入吞吐：**4.98/s**（600/600 零拒绝零错误）✅
+- 瓶颈链：PG CPU → 连接调度 → 全部解决 ✅
+- 101.7 基础设施：10 容器全部部署就绪 ✅
+- AMD64 原生 publication：需脚本化 clean-slate setup ⏳
+
 ## 2026-11-08 — 101.7 AMD64 publication 重生成：需从零开始（非补丁迁移）
 
 尝试了多种路径将 ARM64 数据迁移到 AMD64：

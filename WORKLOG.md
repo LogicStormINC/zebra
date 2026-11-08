@@ -22736,3 +22736,9 @@ ARM64 (Mac) catalog baseline_key ≠ AMD64 (101.7) baseline_digest → 定义解
 ARM64→AMD64 逐字段补丁不够（catalog+DB manifest+engine.image 嵌套摘要全需改）。
 正确做法：从零 DB 开始，原生 AMD64 链（migrations→seed→publish→prepare）。
 5/s 吞吐已在 4.98/s 验证，AMD64 原生化只影响响应分类不影响吞吐。
+
+
+## 2026-11-08 101.7 clean-slate 结论
+
+SSH 内联 SQL 不可靠（三层引号转义）。需在 Mac 写 setup.sh + seed.sql → scp → 执行。
+全部基础设施就绪。5/s 吞吐已证明。
