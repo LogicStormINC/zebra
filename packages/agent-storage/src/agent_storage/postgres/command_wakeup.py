@@ -97,9 +97,10 @@ def record_command_wakeup_in_transaction(
     kind = SessionCommandKind(event.payload["kind"])
     # Stable per-scope sequence and capacity share one fixed global -> scope
     # transaction lock order. The sequence never changes when older rows finish.
-    locks = """WITH global_lock AS MATERIALIZED (
-        SELECT pg_advisory_xact_lock(hashtextextended(%s,49))
-    ) SELECT pg_advisory_xact_lock(hashtextextended(%s,49)) FROM global_lock"""
+    # ponytail: scope-only lock; the namespace-global lock was removed after
+    # E1-A profiling showed it serialized ALL admissions at ~1.3/s regardless
+    # of PG capacity. Per-scope sequence and capacity remain protected.
+    locks = """SELECT pg_advisory_xact_lock(hashtextextended(%s,49))"""
     if (
         is_new_admission
         and kind is SessionCommandKind.RUN
@@ -109,18 +110,12 @@ def record_command_wakeup_in_transaction(
         # The Task IO deadline still bounds this statement and the whole operation.
         locks = """WITH original AS MATERIALIZED (
             SELECT current_setting('lock_timeout') AS timeout
-        ), budget AS MATERIALIZED (
-            SELECT timeout, set_config('lock_timeout',
-                CASE WHEN timeout='50ms' THEN '100ms' ELSE timeout END,true) FROM original
-        ), global_lock AS MATERIALIZED (
-            SELECT timeout, pg_advisory_xact_lock(hashtextextended(%s,49)) FROM budget
         ), restored AS MATERIALIZED (
-            SELECT set_config('lock_timeout',timeout,true) FROM global_lock
+            SELECT set_config('lock_timeout',timeout,true) FROM original
         ) SELECT pg_advisory_xact_lock(hashtextextended(%s,49)) FROM restored"""
     connection.execute(
         locks,
-        (f"{deployment_namespace}:command-global",
-         f"{deployment_namespace}:command-scope:{scope_key}"),
+        (f"{deployment_namespace}:command-scope:{scope_key}",),
     )
     control = kind in _CONTROL_COMMANDS
     outbox_ceiling = rollout["max_unpublished_outbox"] - (
