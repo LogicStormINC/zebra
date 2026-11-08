@@ -1,3 +1,11 @@
+## 2026-11-08 — 准入全局锁移除：多 principal +19%，单 principal 瓶颈确认为事务查询量
+
+移除 command_wakeup.insert_command_outbox 的 namespace 级全局咨询锁（保留 scope 键锁）。
+多 principal（2×2.5/s）吞吐 1.32→**1.57/s**（+19%）；单 principal 不变（scope 锁内事务
+~50 查询 × 15ms = 750ms 持锁 = 1.33/s 封顶）。**剩余瓶颈：准入事务查询数 50→10 可达
+~7/s**，属产品结构变更（批量合并 SELECT/INSERT），非锁调优。回归 227 全过（1 个
+预存 GrantMintError 不受影响）。分支 codex/fix-e1a-admission-deserialize，提交 8215d73c。
+
 ## 2026-11-08 — E1-A 最终定位：准入串行锁是 5/s 硬上限（产品级约束）
 
 4 worker × 0.5s 轮询 + PG 3.0 CPU：**零容量拒绝、158/158 全部完成、占槽 2.01s**（最优
@@ -9405,3 +9413,10 @@ Mac load 12.2/10 核已过载。298 unknown 为准入路径 PG 事务超时。
 443 unknown = 准入超时（task_io_deadline 2s）。158 sessions 全部完成 = 执行路径不是瓶颈。
 准入串行化来自 execute_atomic_surface 的咨询锁：所有准入共享一把锁 → 吞吐上限 =
 1/0.760s = 1.32/s。5/s 需准入交易 ≤200ms 或去串行化。这是独立于基础设施的产品级约束。
+
+
+## 2026-11-08 准入锁实验数据
+
+单 principal：156/600 接受（26%），1.3/s（全局锁移除前后不变——scope 锁是串行点）。
+多 principal（0+1 各 2.5/s）：188/600（31%），1.57/s（+19%）。156/156 全完成、占槽 ~2s。
+诊断链：全局锁（已移除）→ scope 锁（保留，正确性需要）→ **事务内 ~50 查询**（待批量化）。

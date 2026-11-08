@@ -22660,3 +22660,9 @@ F-08 四域正式化齐。证据 RESULTS-f02.md。
 
 PG CPU ✓（0.6→3.0）→ 轮询噪音 ✓（12→4 worker）→ **准入锁串行化 ✗**（产品级）。
 158/158 完成、占槽 2.01s、零拒绝；但 1.32/s 上限由单一咨询锁决定。
+
+
+## 2026-11-08 准入锁去串行化实验
+
+分支 codex/fix-e1a-admission-deserialize（8215d73c）：移除全局锁、保留 scope 键锁。
+API 容器 overlay 测试。多 principal +19%；单 principal 需事务查询批量化（50→10）。
