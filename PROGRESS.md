@@ -1,3 +1,18 @@
+## 2026-11-08 — 最终收档：E1-A 5/s 已证明，101.7 setup 需直接 SSH 操作
+
+101.7 clean-slate setup 通过 SSH 脚本化尝试多轮，反复遇到：
+① Python 一行式语法错误（SSH 引号转义）② DB 权限不足（ha_app 无 CREATE）
+③ 表 DDL 未生效（seed 文件路径）④ API 因 schema 不完整崩溃。
+
+**根本原因**：多层 SSH→Docker→Python→SQL 的引号和权限链在脚本化时不可靠。
+**正确做法**：下次会话直接 SSH 到 101.7 交互式操作，或用 docker-compose 编排。
+
+**不变的成果**：
+- E1-A 5/s 准入吞吐：**4.98/s**（600/600 零拒绝零错误）✅
+- F-01/02/05/08 四域三轮正式化 ✅
+- 产品修复 2 个 + 基础设施 10 容器 + 仓库规范化 ✅
+- 42 commits 在 worktree + 1 在主仓库
+
 ## 2026-11-08 — 最终结论：101.7 clean-slate setup 需脚本化执行（非 SSH 内联）
 
 Clean-slate 尝试通过 SSH 内联执行 SQL，但三层引号转义（SSH→docker exec→psql）

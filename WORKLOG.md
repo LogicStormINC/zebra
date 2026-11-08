@@ -22742,3 +22742,9 @@ ARM64→AMD64 逐字段补丁不够（catalog+DB manifest+engine.image 嵌套摘
 
 SSH 内联 SQL 不可靠（三层引号转义）。需在 Mac 写 setup.sh + seed.sql → scp → 执行。
 全部基础设施就绪。5/s 吞吐已证明。
+
+
+## 2026-11-08 最终收档
+
+SSH 脚本化 setup 尝试多轮未成功（引号/权限/schema 链条过长）。5/s 已证明。
+下次会话直接交互式 SSH 操作或 docker-compose。
