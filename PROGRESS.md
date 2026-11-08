@@ -1,3 +1,12 @@
+## 2026-11-08 — F-02 安全点接管三轮正式化通过
+
+硬复位操作面后单次干净跑通：每轮武装持有者（/f02/arm 屏障使 handoff 已接受而 executor
+未启=设计安全点）→ SIGKILL → 无武装替换者（含 incarnation 重签）→ 世代恢复批准 gen+1 →
+新 fence 同 Task/Run 30.1-30.7s（预算 120s）×3；恰一次完成×3（completed=1/models=1/done）；
+旧 fence 经产品提交路径 LeaseLostError 拒绝×3；模型线恰一次到达。至此 F-01/F-02/F-05/F-08
+四个故障域在本拓扑全部完成正式化。剩余：物理节点/负载域（E1-A 前置）与开放发现①②。
+证据 `.artifacts/cloud-ha-e1/f05-worker-mac-602e2afa/RESULTS-f02.md`。
+
 ## 2026-11-08 — F-02 接管正式化未达成；架构澄清：dead 为设计行为，无需产品修复
 
 驱动/控制器完备（kill+替换容器+incarnation 重签+健康等待），接管机制被观测到成功一次
@@ -9317,3 +9326,10 @@ recover_original 对未知 operation 的非 JSON 响应以 ValueError 守卫（�
 天然取代 DLQ 旧消息——churn 发现降级为可观测性/效率项，非正确性缺口。结论：无需产品修
 复。安全点驱动与控制器已就绪，剩余失败模式为重叠运行的操作残渣；下次会话硬复位后单次
 干净跑三轮。
+
+
+## 2026-11-08 F-02 三轮细节（602e2afa）
+
+kill→替换就绪 2.2-2.4s；接管 30.62/30.67/30.10s（租约 TTL 到期+世代恢复的确定性节奏）；
+fence 1→2×3；completed/models/cmd=done 恰一次×3；wire arrivals=1×3；旧 fence
+LeaseLostError×3。工具链终版：每轮先装武装持有者（修复第2轮起持有者未武装的问题）。

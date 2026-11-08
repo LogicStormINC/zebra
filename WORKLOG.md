@@ -22641,3 +22641,9 @@ worker-id 租约键雷区、fallback 重驱孤儿成功。三轮正式化开放�
 读全 command_wakeup_recovery：dead=设计（可用性换证明）；安全点→世代恢复 gen+1；
 DLQ churn 降级为观测项；无需产品修复。arm 安全点驱动+扩展控制器就绪（/f02 挂载、
 supervisor 覆盖、source 参数、唯一代 id）。重叠运行残渣致三轮未收，留待复位后单跑。
+
+
+## 2026-11-08 F-02 三轮通过
+
+安全点（武装屏障）×3：接管 ~30s、新 fence、恰一次完成、旧 fence 拒绝。F-01/F-02/F-05/
+F-08 四域正式化齐。证据 RESULTS-f02.md。
