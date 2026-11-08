@@ -22754,3 +22754,9 @@ SSH 脚本化 setup 尝试多轮未成功（引号/权限/schema 链条过长）
 
 DB/migrations/seed/PgBouncer/API 全部就绪。Publication 因 ARM64 catalog 不匹配 AMD64 
 baseline 而 BUNDLE_ASSEMBLY_REFUSED。需运行 prepare_execution.py 重生成 AMD64 catalog。
+
+
+## 2026-11-08 101.7 历史性突破
+
+31 任务首次获得 ACCEPTED (201) 响应！Publication→Broker→API→PG 全链路通。
+Worker 在运行但未消费任务（fallback scan 待查）。4.97/s 吞吐。

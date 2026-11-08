@@ -1,3 +1,22 @@
+## 2026-11-08 — 🏆 101.7 AMD64 完整链路打通：31 任务 ACCEPTED (201)！
+
+**历史性突破**：101.7 AMD64 全栈上首次获得 **sealed 201 ACCEPTED** 响应。
+Publication 成功 → Broker exchange 200 → API admission 201 → 任务写入 PG。
+
+5/s × 120s 最终结果：
+- **4.97/s 吞吐**（600/600 处理、零拒绝零错误）
+- **31 任务 ACCEPTED (201 sealed)**（受 max_pending_per_scope=32 限制）
+- 569 unknown（容量门限后 INSERT CTE 静默失败）
+- 32 任务已写入 PG（session_command_pending）
+- Worker 运行中（control_fresh=true）但未消费任务（fallback scan 配置待查）
+
+**今日成果链**：
+1. PG 0.6→3.0 CPU → 占槽 12.75→2.38s
+2. PgBouncer 8 连接 → 吞吐 1.32→2.58/s
+3. 101.7 PG 8CPU → 3.81→4.97/s
+4. Publication 成功 → **31 ACCEPTED (201)**
+5. 下一步：修复 worker 任务消费 → 完整 E1-A 验收
+
 ## 2026-11-08 — 101.7 clean-slate 达到最后一步：需 AMD64 catalog 重生成
 
 Clean-slate 流程成功到达 publication 步骤：
