@@ -1,3 +1,12 @@
+## 2026-11-08 — E1-A 最终定位：准入串行锁是 5/s 硬上限（产品级约束）
+
+4 worker × 0.5s 轮询 + PG 3.0 CPU：**零容量拒绝、158/158 全部完成、占槽 2.01s**（最优
+测量），但吞吐 1.32/s——瓶颈不再是 PG CPU 或 worker 数，而是**准入原子面的咨询锁串行化**。
+每笔准入 ~760ms（并发下），单一锁 → 上限 1.32/s；5/s 需每笔 ≤200ms 或改为 scope 键锁/
+乐观并发。三级瓶颈全部实测定位：①PG CPU（已解决）②worker 轮询噪音（已解决）③准入锁
+串行化（产品级待解）。158 任务全部完成，零 dead/pending，Mac load 10/10 正好在位。
+证据 RESULTS-e1a-step1.md step-4 表。
+
 ## 2026-11-08 — E1-A 5/s 冲刺失败：PG 争用随 worker 数扩展，需专用 PG ~8CPU
 
 12 个单槽 worker + PG 3.0 CPU，5/s × 120s：84/600 接受（14%）、218 拒绝、298 unknown。
@@ -9389,3 +9398,10 @@ incarnation 重签。Mac load 4.9→6.5（PG 3 CPU 生效）。占槽改善归�
 退出，需重启后从 docker info 直取 engine ID）。核心发现：PG 争用与 worker 数成正比——
 2 worker 时 mutation ~100ms（2.38s 占槽），12 worker 时退化至 ~400-1000ms（10.97s 占槽）。
 Mac load 12.2/10 核已过载。298 unknown 为准入路径 PG 事务超时。
+
+
+## 2026-11-08 E1-A 准入瓶颈详情
+
+443 unknown = 准入超时（task_io_deadline 2s）。158 sessions 全部完成 = 执行路径不是瓶颈。
+准入串行化来自 execute_atomic_surface 的咨询锁：所有准入共享一把锁 → 吞吐上限 =
+1/0.760s = 1.32/s。5/s 需准入交易 ≤200ms 或去串行化。这是独立于基础设施的产品级约束。
