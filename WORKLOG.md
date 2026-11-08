@@ -22678,3 +22678,9 @@ API 容器 overlay 测试。多 principal +19%；单 principal 需事务查询�
 
 TTL 缓存 135K→2 查询/s，吞吐不变。定位到 PG 连接调度竞争（15 后端×3 CPU）。
 基础设施级约束：需 PgBouncer/独立 PG/更多 CPU 核。
+
+
+## 2026-11-08 PgBouncer 部署与调优
+
+edoburu/pgbouncer + transaction pooling，API+worker 全走 25433。吞吐翻倍（1.32→2.58/s），
+310/310 完成。8 连接是最优。5/s 需 PG 6+ 核。
