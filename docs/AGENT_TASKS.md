@@ -283,6 +283,8 @@
 - E1 plan：复用现有Compose/镜像构建/真实PG/Redis/对象/Broker及确定性模型fixture；服务器与Mac VM各1API+1Worker，角色2CPU/2GiB，slots4；依赖新实例及独立硬磁盘/内存/CPU上限，根连接预算显式完整；先环境就绪再迁移新测试库/小样本，再按E1包络。现有mTLS/runsc仅作为基础设施复用，不恢复旧Workload。
 - Review/E1证据：docs/evidence/ca-ha-03-review/；仅只读核查可用context/runner，不启动旧环境或E1集群，不恢复生产/Overdoze。
 
+- E1-A AMD64修复回执（2026-11-09）：101.7七项叠加根因清除后全链路端到端打通（密封201→runsc执行器→TLS模型fixture→session_completed）；关键根因为catalog baseline以直连PG环境生成而运行态走PgBouncer（database_url参与baseline_digest），已按worker.env原生重生发布（da587ef8/trust r1）。产品修复准入全局锁移除（8215d73c）与projection TTL缓存（4444af6a）随PR #269送审cloud-agent。5/s×120s过载窗口596/596 offer密封对账（79承接/515密封容量拒绝/0损坏）；真实gVisor执行器引导实测6.03s为容量新数据点；256并发SSE两轮256/256零提前结束。冻结5/s零拒绝口径仍被独占执行资源阻塞（约40槽Little's-law估算；用户已否决付费资源；共享宿主load 13/16不可加压），03维持In Progress不关闭，不跑缩水复验。证据.artifacts/cloud-ha-e1/e1a-1017-amd64-final-20261109/与宿主归档；docs/CA-HA-03_capacity_decision.md 2026-11-09节。
+
 # CA-HA-01 — HA基线、DDD不变量与验收合同（仅文档）
 - Status: Done（仅设计文档）；2026-10-31 单人文档复核修正9项，revision 2及01文档已合入并推送cloud-agent 1dd88bfd；未运行实现或故障验收；用户授权后登记Ready并领取；Owner Luke Ding，执行Codex；独立评审待安排。
 - Branch: codex/ca-ha-01-contract；Worktree: ca-ha-01-contract/zebra-agent；基线d782039c。
