@@ -353,3 +353,33 @@ Q1修复线结束追加开发，应用f20b56a3及原源码/签名证据冻结不
 修复与回归通过草稿 PR #267 送审，目标分支 `cloud-agent`，其隔离 PostgreSQL 回归
 34 项通过。修复尚未部署生产。独立容量资源待落实，E1-A 继续暂停，通过后才恢复
 完整 E1-R。里程碑 3 仍为 In Progress。
+
+## 2026-11-09 AMD64全链路修复与5/s过载刻画：容量仍受独占资源阻塞
+
+Owner lukeding；codex/fix-e1a-admission-deserialize。192.168.101.7 隔离 zebra-e1a 栈。
+生产未动；同族2026-11-02残留TLS容器（占用28445、上游已死）仅 stop 未删除，可恢复。
+
+- 修复七个叠加根因后 AMD64 全链路首次端到端打通：签名201(0.2-0.4s) → worker领取 →
+  真实 gVisor runsc 执行器 → TLS模型fixture（marker/证书/计量全过）→ session_completed。
+  关键根因：①digest时代的32条 dead pending 永久占满 scope 容量门（已归档后清除）；
+  ②原 catalog 以直连PG(:25432)环境生成而 worker/API 走 PgBouncer(:25433)，database_url
+  参与 baseline_digest，任何平台摘要修补都不可能匹配——以 worker.env 原样原生重生
+  catalog/bundle/publication（definition da587ef8，trust revision 1）；
+  ③payload 残留旧 definition id；④worker 的 catalog 路径是宿主路径（容器内不存在）；
+  ⑤模型 wire 指向 http:28082/e1test 而发布档钉死 https:28445/synthetic-only+marker；
+  ⑥e1_composition 端口守卫拒绝 25433；⑦worker 无 docker.sock。宿主侧 fixture 修改均留
+  .orig 备份。执行器引导在真实 runsc 下实测 6.03s（Mac OrbStack runsc 约2s），新数据点。
+- 5/s×120s 过载窗口（洁净库，atomic-task-run/1 密封会计，596/596 offer 全部对账）：
+  79 承接(0.66/s)、441 密封容量拒绝、74 POST 503、3 not_observed、0 未对账/0 损坏；
+  承接会话 78 完成+1 suspended；排队均值52.5s/p95 129.5s（5倍过载下容量门按设计工作，
+  每个offer都有密封回执）。冻结口径（持续5/s、零容量拒绝、排队p95≤2s）在本机仍不可能：
+  排空需约40槽（5/s×8.03s占槽），16核共享生产宿主在4 worker 时 load 已达13，与
+  2026-11-05 守卫结论一致。不跑缩水复验冒称通过。
+- 256 并发 SSE 两次独立通过：256/256 全部 200、0 提前结束、0 流错误（13s 开门爬坡
+  受 API read=2 预算约束；随机 binding 被 403 正确拒绝，须重绑任务原 binding）。
+  与 2026-11-05 的 keepalive 观察差异（完成任务裸流静默空闲）如实记录，未合并解释。
+- 证据：.artifacts/cloud-ha-e1/e1a-1017-amd64-final-20261109/（RESULTS.md、5/s窗口
+  summary/jsonl、sse256-*.json、idle-stats.txt）；宿主 /data/zebra-e1a/state/
+  dead-commands-archive-20261108.json、execution-prev/、results/。
+- CA-HA-03/E1-A 维持 In Progress：AMD64链路阻塞已清除，冻结容量验收仍等独占执行资源
+  （用户已否决付费资源；共享宿主无法提供）。里程碑3不关闭。
