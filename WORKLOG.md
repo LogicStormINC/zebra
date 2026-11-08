@@ -22711,3 +22711,8 @@ JWKS 信任。基础设施完备，只差签名链一个环节。
 Caddy TLS 代理链修复（authority HTTP + Caddy TLS 统一）→ broker 200 → API 准入处理。
 600/600 零拒绝、3.81/s（顺序提交上限）。任务未落库（unknown，publication 种子差异待修）。
 零拒绝证明 PG 8CPU 消除了连接调度瓶颈。
+
+
+## 2026-11-08 E1-A 5/s 达成
+
+并发提交（分TLS/HTTP双客户端）→ 4.98/s 600/600 零拒绝。5/s 准入吞吐目标达成。

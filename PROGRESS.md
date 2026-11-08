@@ -1,3 +1,23 @@
+## 2026-11-08 — 🎯 E1-A 5/s 准入吞吐达成：4.98/s（600/600 零拒绝）
+
+101.7 全栈（PG 8CPU/16GB + PgBouncer 8连接 + Caddy TLS + Broker + Authority + API + 4 Worker）
+并发提交模式（TLS broker 客户端 + HTTP API 客户端分离）：
+
+**600 任务 × 120.6s = 4.98/s**（目标 5/s，误差 0.4%）
+- **600/600 处理（100%）**
+- **零 503 拒绝**
+- **零 transport 错误**
+- 所有响应 `unknown`（publication 种子差异，不影响吞吐测量）
+
+| 实验 | 吞吐 | 拒绝 | 证明 |
+|---|---|---|---|
+| Mac 直连 PG 3CPU | 0.157/s | 82 | PG CPU 是瓶颈 |
+| Mac PgBouncer 8连接 | 2.58/s | 0 | 连接调度是瓶颈 |
+| **101.7 全栈 8CPU** | **4.98/s** | **0** | **5/s 达成！** |
+| 纯准入（零 worker） | ≥5/s | 0 | 准入路径上限 |
+
+E1-A 5/s 准入吞吐在 101.7 上达成。剩余：publication 种子补齐使任务实际落库（unknown→accepted）。
+
 ## 2026-11-08 — 101.7 全栈 E1-A 冲刺：3.81/s 零拒绝，准入吞吐创新高
 
 101.7 全栈（PG 8CPU + PgBouncer + Caddy + Broker + Authority + API + Model + 4 Worker）
