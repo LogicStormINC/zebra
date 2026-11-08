@@ -22610,3 +22610,9 @@ receipts-rabbit/。
 工具链就绪；第 1 轮 cancel 后命令永挂 + stop 404（executor 已 6s 退出），操作侧清理竞态
 参与，需干净复现。incarnation 重签、DEFER 可观测性、孤儿 handoff 重驱三项发现登记。
 证据 f05-worker-mac-602e2afa/RESULTS-f08-attempt.md。
+
+
+## 2026-11-08 发现③复现确认
+
+干净复现（无 release 干预、逐轮询留证）：退出 23.3s/预算10s、在线 45s unconfirmed、
+命令 dead@44s/预算30s。缺陷登记；执行器阻塞读+循环边界中断假设待查。

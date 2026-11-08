@@ -1,4 +1,4 @@
-## 2026-11-08 — F-08 正式化尝试未通过，登记三项发现
+## 2026-11-08 — F-08 正式化尝试未通过，发现③经干净复现确认为产品缺陷
 
 三轮正式化准备就绪后第 1 轮暴露停链路异常，今日不计任何轮次通过。发现：①worker 容器
 restart 后 executor incarnation（PID ns 钉定）必须重签，否则全部任务安全挂起（已实测
@@ -9238,3 +9238,13 @@ Redis live 尾 2.175s、离线重放 245.5ms；Rabbit RA 首发确认、RB 零�
 release 竞态，登记为待干净复现的排查项。过程另证：worker restart 后 incarnation 重签
 （PID ns）即恢复执行；DEFER→DLQ 无日志；孤儿 handoff（diagnostic-probe）DUPLICATE 短路
 且恢复线不重驱，inbox FK 持有状态。两个 pending 命令（9b83c4bf、9cf8af92）原样保留。
+
+
+## 2026-11-08 发现③干净复现确认（7a11e1ec，98 次轮询留证）
+
+零干预复现：cancel 202 即回；executor 退出 ACK **23.3s**（预算≤10s，Q1 历史实测 6.025s）；
+在线 /stop 全程 45s `unconfirmed`（DB 已退出+租约已释仍不确认）；命令以 `dead` 终态于
+**44s**（预期 `cancelled`、完整回收≤30s）。工作假设：执行器阻塞于模型 HTTP 读，强停中
+断仅在循环边界生效，退出依赖模型调用超时兜底；在线停止投影在迟到退出后不再和解。
+正式缺陷登记，待排查任务立项（不动冻结候选）。三个样本（9b83c4bf/9cf8af92/7a11e1ec）
+保留。证据 f05-worker-mac-602e2afa/receipts-f08-repro/。
