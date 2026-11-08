@@ -66,32 +66,32 @@ No deployment or production migrations. Overdoze Native pins remain unchanged.
 - [x] Native 全量门禁、SDK；Overdoze 固定发布源码验收独立推进。
 - [x] 更新 Native 证据并准备受控提交推送；不部署、不生产迁移、不合并 main。
 
-CA-P3-02Z: claimed Luke Ding; explicit React same-Run revision, reuse V/Y; Review; fresh make test 11075 passed/3052 conditional skips and make check passed after filesystem recovery; SDK check/158 tests and6 focused React cases passed. Candidate Chromium/WebKit actual new React owner capture -> BFF original GET/current mapping -> zero-HTTP adoption -> current heartbeat/unmount passed. Runtime/Worker/core SDK/schema unchanged; final published-source consumer separate. No second Worker/new Run claim. See docs/CA-P3-02Z_react_surface_revision.md.
+CA-P3-02Z: claimed Luke Ding; explicit React same-Run revision, reuse V/Y; Review; fresh make test 11075 passed/3052 conditional skips and make check passed after filesystem recovery; SDK check/158 tests and6 focused React cases passed. Candidate Chromium/WebKit actual new React owner capture -> BFF original GET/current mapping -> zero-HTTP adoption -> current heartbeat/unmount passed. Runtime/Worker/core SDK/schema unchanged; final published-source consumer separate. No second Worker/new Run claim. See docs/tasks/CA-P3-02Z_react_surface_revision.md.
 
-CA-P3-02Y: claimed Luke Ding; public atomic-surface revision contract acceptance, no production Native change; Review; fresh make test 11075 passed/3052 conditional skips; make check passed; unchanged SDK check/156 tests passed. Candidate Chromium/WebKit React first Worker/UI terminal then explicit same-Run Native revision, lost-reply two-BFF GET-only/current mapping CAS passed. Native production/SDK unchanged; final published-source consumer evidence separate. See docs/CA-P3-02Y_explicit_surface_revision.md.
+CA-P3-02Y: claimed Luke Ding; public atomic-surface revision contract acceptance, no production Native change; Review; fresh make test 11075 passed/3052 conditional skips; make check passed; unchanged SDK check/156 tests passed. Candidate Chromium/WebKit React first Worker/UI terminal then explicit same-Run Native revision, lost-reply two-BFF GET-only/current mapping CAS passed. Native production/SDK unchanged; final published-source consumer evidence separate. See docs/tasks/CA-P3-02Y_explicit_surface_revision.md.
 
-CA-P3-02X: claimed Luke Ding; React explicit capture/adopt, existing W protocol; implementation/full gates and React candidate passed; scoped publication checked separately. See docs/CA-P3-02X_react_initial_ui.md.
+CA-P3-02X: claimed Luke Ding; React explicit capture/adopt, existing W protocol; implementation/full gates and React candidate passed; scoped publication checked separately. See docs/tasks/CA-P3-02X_react_initial_ui.md.
 
-CA-P3-02W: claimed Luke Ding; atomic initial UI/Readable/RUN, old protocols retained; implementation/full gates/45 PG-API/153 SDK tests and new/old candidate joints passed; published-source consumer remains separate. See docs/CA-P3-02W_initial_ui_run.md.
+CA-P3-02W: claimed Luke Ding; atomic initial UI/Readable/RUN, old protocols retained; implementation/full gates/45 PG-API/153 SDK tests and new/old candidate joints passed; published-source consumer remains separate. See docs/tasks/CA-P3-02W_initial_ui_run.md.
 
-CA-P3-02V: claimed Luke Ding; reuse published U, fresh Native full gates/focused PG and candidate positive Worker joint passed; final published-source consumer acceptance remains separate. See docs/CA-P3-02V_task_run_worker.md.
+CA-P3-02V: claimed Luke Ding; reuse published U, fresh Native full gates/focused PG and candidate positive Worker joint passed; final published-source consumer acceptance remains separate. See docs/tasks/CA-P3-02V_task_run_worker.md.
 
-CA-P3-02U: claimed Luke Ding; first RUN admission only, never post-commit Worker noncommit proof. Boundary in docs/CA-P3-02U_atomic_task_run.md; Native full gates and40 focused passed; candidate joint passed; publication and fixed-source consumer joint separately recorded.
+CA-P3-02U: claimed Luke Ding; first RUN admission only, never post-commit Worker noncommit proof. Boundary in docs/tasks/CA-P3-02U_atomic_task_run.md; Native full gates and40 focused passed; candidate joint passed; publication and fixed-source consumer joint separately recorded.
 
 # CA-P3-02T current task
 
-Claimed Luke Ding, codex/ca-p3-02t-atomic-task-termination; see docs/CA-P3-02T_atomic_task_termination.md.
+Claimed Luke Ding, codex/ca-p3-02t-atomic-task-termination; see docs/tasks/CA-P3-02T_atomic_task_termination.md.
 1. Boundary/claim complete.
 2. Implement atomic Task protocol and storage/HTTP checks.
 3. Full Native gates complete; candidate joint passed. Publish Native, then separately pin/revalidate consumer; scoped push authorized.
 
 ## CA-P3-02S：已开始的原子Surface准入终止（验证通过，Review）
 
-make test 11060 passed/3045 conditional skips; make check1408 types/30eval; API14 and real owned PG16 focused passed. Started atomic-surface candidate Chromium/WebKit passed; published-source consumer joint is separate. 新atomic-surface/1仅open/mount，同PG业务效果/原收据同事务，提交点STOP门禁；持执行锁时pending无证明，退出且STOP/无原子收据才证明，提交先胜只恢复原结果。旧started/部分提交/Task创建不升级，不重发/重领/清pending。真实PG30项及候选双浏览器联合通过；完整门禁通过，发布后固定源消费者联合另记。见[正式边界](docs/CA-P3-02S_atomic_surface_termination.md)。
+make test 11060 passed/3045 conditional skips; make check1408 types/30eval; API14 and real owned PG16 focused passed. Started atomic-surface candidate Chromium/WebKit passed; published-source consumer joint is separate. 新atomic-surface/1仅open/mount，同PG业务效果/原收据同事务，提交点STOP门禁；持执行锁时pending无证明，退出且STOP/无原子收据才证明，提交先胜只恢复原结果。旧started/部分提交/Task创建不升级，不重发/重领/清pending。真实PG30项及候选双浏览器联合通过；完整门禁通过，发布后固定源消费者联合另记。见[正式边界](docs/tasks/CA-P3-02S_atomic_surface_termination.md)。
 
 ## CA-P3-02R：派发前终止证明（验证通过，Review）
 
-make test 11059 passed/3036 conditional skips; make check1406 types/30eval; API13 and real owned PG7 focused passed. Pre-dispatch candidate Chromium/WebKit passed; published-source consumer joint is separate. 已核对N/Q依赖；证明仅限新pre-dispatch/1原请求，持久start/terminate第一写者门闩。已开始、旧claim、无claim、超时无非提交证明；unknown不重发、不领取Controller、不清pending。边界及验收见[正式设计](docs/CA-P3-02R_admission_termination.md)。保留历史/原收据/Coverage，无部署/生产迁移。
+make test 11059 passed/3036 conditional skips; make check1406 types/30eval; API13 and real owned PG7 focused passed. Pre-dispatch candidate Chromium/WebKit passed; published-source consumer joint is separate. 已核对N/Q依赖；证明仅限新pre-dispatch/1原请求，持久start/terminate第一写者门闩。已开始、旧claim、无claim、超时无非提交证明；unknown不重发、不领取Controller、不清pending。边界及验收见[正式设计](docs/tasks/CA-P3-02R_admission_termination.md)。保留历史/原收据/Coverage，无部署/生产迁移。
 
 # CA-P3-02O 当前切片
 
@@ -131,26 +131,26 @@ make test 11059 passed/3036 conditional skips; make check1406 types/30eval; API1
 
 # CA-P3-02M — 业务 OIDC 与签名云准入（Review）
 
-[正式方案与边界](docs/CA-P3-02M_signed_cloud.md)；[证据](docs/evidence/ca-p3-02m/validation.json)。
+[正式方案与边界](docs/tasks/CA-P3-02M_signed_cloud.md)；[证据](docs/evidence/ca-p3-02m/validation.json)。
 复用 L/G-D；新增隔离 IdP/Broker/cloud Runtime 组合根，实际 TLS RS256/PKCE、两个共享 PG BFF、单次 code/Agent family、unknown不重兑，签名 Task/Run/Session/Controller 与当前业务/Profile 拒绝联合通过。
 make test10971通过/3022条件跳过（1169.80s），make check通过（1393类型文件/30eval）。
 生产 Python/schema/SDK/旧合同/历史/Coverage保持；真实产品参数尚缺，未验证供应商 IdP/业务账户/浏览器SDK与此云链路同次验收、模型/生产HA。无部署/生产迁移/npm发布/主线整合。
 
 # CA-P3-02L — 认证回调与 Runtime 生命周期（Review）
 
-[正式方案与交互](docs/CA-P3-02L_auth_lifecycle.md)。复用K，增加本地epoch/取消围栏与显式启停，凭据留在BFF，unknown不自动重试。
+[正式方案与交互](docs/tasks/CA-P3-02L_auth_lifecycle.md)。复用K，增加本地epoch/取消围栏与显式启停，凭据留在BFF，unknown不自动重试。
 make test10971通过/3022条件跳过（1201.65s）、make check、SDK151及实际平台/独立业务PG/原生HTTP双浏览器通过；Go24个race包通过，4610旧文件保持。 [证据](docs/evidence/ca-p3-02l/validation.json)。生产IdP/签名云准入仍独立。
 无Python/schema/旧合同/历史/Coverage变更，不部署/生产迁移/npm发布。
 
 # CA-P3-02K 同源业务认证 SDK
 
 已核对 J/G-A/G-B；认领独立分支，实现严格状态/不持有凭据/持久原操作定位/只读恢复/显式退出。
-Python、原合同、历史及 Coverage 不变；完整make test/check、SDK145和双浏览器联合验收通过，4601旧文件保持；状态Review，限定提交推送，无主线整合/部署/生产迁移。 [正式合同与交互](docs/CA-P3-02K_bff_auth.md)
+Python、原合同、历史及 Coverage 不变；完整make test/check、SDK145和双浏览器联合验收通过，4601旧文件保持；状态Review，限定提交推送，无主线整合/部署/生产迁移。 [正式合同与交互](docs/tasks/CA-P3-02K_bff_auth.md)
 
 # CA-P3-02J — 跨设备待对账与人工处置（Review）
 
 复用H收据/I原映射，新增可选资源收件箱SDK；unknown无自动重发/清除，人工处置独立CAS审计。原生生产Python/schema/历史/Coverage不变。
-[方案与交互](docs/CA-P3-02J_request_discovery.md)；make test 10971通过/3022条件跳过（1220.28s），make check通过（1393类型文件/30eval）；SDK139、React18/19与双浏览器矩阵、新跨设备及旧恢复联合验收通过；3768保护文件未变。 [证据](docs/evidence/ca-p3-02j/validation.json)。无部署/生产迁移/npm发布/主线整合。
+[方案与交互](docs/tasks/CA-P3-02J_request_discovery.md)；make test 10971通过/3022条件跳过（1220.28s），make check通过（1393类型文件/30eval）；SDK139、React18/19与双浏览器矩阵、新跨设备及旧恢复联合验收通过；3768保护文件未变。 [证据](docs/evidence/ca-p3-02j/validation.json)。无部署/生产迁移/npm发布/主线整合。
 
 # CA-P3-02I
 
@@ -1021,7 +1021,7 @@ Branch: `codex/react-media-content-01`; isolated worktree:
    acceptance item and record any external publication/deployment boundary.
 
 Detailed decision:
-`docs/ADR-CLIENT-02_Durable多媒体内容面.md`.
+`docs/adr/ADR-CLIENT-02_Durable多媒体内容面.md`.
 
 # Prior task — CLOUD-MEMORY-AUTONOMY-01 natural cross-session Memory (2026-09-27)
 

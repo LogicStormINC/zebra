@@ -4,19 +4,19 @@
 
 2026-10-27：[产品 Plugin 准入公开合同](docs/CA-P4-01_plugin_admission.md)，原生校验/受信目录发布/当前撤销与原GET；不授予安装或执行。
 
-2026-10-26：[Host 写后读取](docs/CA-P3-03G_host_read_freshness.md)，修复 qualified resource 下的重复读取误拒绝，保留完成证明门禁。
+2026-10-26：[Host 写后读取](docs/tasks/CA-P3-03G_host_read_freshness.md)，修复 qualified resource 下的重复读取误拒绝，保留完成证明门禁。
 
-2026-10-26：[业务BFF Surface SDK](docs/CA-P3-03F_surface_sdk.md)，显式提交/原GET/映射安装与只读恢复；不自动挂载或RUN。
+2026-10-26：[业务BFF Surface SDK](docs/tasks/CA-P3-03F_surface_sdk.md)，显式提交/原GET/映射安装与只读恢复；不自动挂载或RUN。
 
-2026-10-26：[业务BFF原消息恢复SDK](docs/CA-P3-03E_message_sdk.md)，显式同源提交、未知保留与原GET；不自动挂载/执行。
+2026-10-26：[业务BFF原消息恢复SDK](docs/tasks/CA-P3-03E_message_sdk.md)，显式同源提交、未知保留与原GET；不自动挂载/执行。
 
-2026-10-26：[原消息条件挂载合同](docs/CA-P3-03D_message_surface_anchor.md)，显式新协议、原GET与Surface专属STOP证明，旧协议保持。
+2026-10-26：[原消息条件挂载合同](docs/tasks/CA-P3-03D_message_surface_anchor.md)，显式新协议、原GET与Surface专属STOP证明，旧协议保持。
 
-2026-10-23：[审批原操作与Controller当前性合同](docs/CA-P3-02O_approval_operations.md)，业务BFF跨副本恢复的Native公开前置。
+2026-10-23：[审批原操作与Controller当前性合同](docs/tasks/CA-P3-02O_approval_operations.md)，业务BFF跨副本恢复的Native公开前置。
 
-2026-10-23：[Client Action Worker兼容说明](docs/CA-P3-02N_client_tool_compatibility.md)：已发布可选描述/schema只在模型展示处补缺省，审批、原合同及历史/Coverage保持。
+2026-10-23：[Client Action Worker兼容说明](docs/tasks/CA-P3-02N_client_tool_compatibility.md)：已发布可选描述/schema只在模型展示处补缺省，审批、原合同及历史/Coverage保持。
 
-2026-10-22增量：[SDK/BFF Readable值命令](docs/CA-P3-02G_readable_submit.md)，显式版本和原生准入；参考联合验收与生产身份/HA边界见正式证据。
+2026-10-22增量：[SDK/BFF Readable值命令](docs/tasks/CA-P3-02G_readable_submit.md)，显式版本和原生准入；参考联合验收与生产身份/HA边界见正式证据。
 
 ![Zebra Agent](./assets/logo.png)
 
@@ -68,7 +68,7 @@ uses explicit v3 snapshots and a separately versioned script extension; old cont
 [Scoped native script package validation](docs/SCRIPT_VALIDATION.md) adds pure ABI/digest/syntax
 checks with independent authority; it neither executes source nor approves publication.
 Bundle1 and the pinned P2 scoped HTTP contracts retain their original unsupported script boundary;
-script execution requires the explicit new reader and approvals. Legacy history/Coverage stays intact; [UI Effect authorization](docs/CA-P3-02B_effect_authority.md) checks cloud reads and receipts; [BFF browser SDK](docs/CA-P3-02C_bff_browser.md) keeps native secrets server-side; [native mount metadata](docs/CA-P3-02D_surface_metadata.md) synchronizes binding facts; [synchronized SDK mounts](docs/CA-P3-02E_sdk_surface_sync.md) consume public facts through a trusted BFF.
+script execution requires the explicit new reader and approvals. Legacy history/Coverage stays intact; [UI Effect authorization](docs/tasks/CA-P3-02B_effect_authority.md) checks cloud reads and receipts; [BFF browser SDK](docs/tasks/CA-P3-02C_bff_browser.md) keeps native secrets server-side; [native mount metadata](docs/tasks/CA-P3-02D_surface_metadata.md) synchronizes binding facts; [synchronized SDK mounts](docs/tasks/CA-P3-02E_sdk_surface_sync.md) consume public facts through a trusted BFF.
 
 ## License
 
@@ -765,7 +765,7 @@ Child 直接传父 Task 的 Credential、Network profile 或 capability；这些
 - 本地 profile 行为不变，Cloud profile 的辅助 Context 受 2048-token 预算。
 
 完整设计与失败语义见
-[ADR-025](./docs/ADR-025_Cloud_Context_Inheritance.md)。
+[ADR-025](./docs/adr/ADR-025_Cloud_Context_Inheritance.md)。
 
 ## Operator Entry
 
@@ -773,15 +773,15 @@ Start with [docs/operator_runbook.md](./docs/operator_runbook.md).
 
 Focused references:
 
-- service boundary: [docs/ADR-012_Zebra_Agent_Runtime微服务与外部业务边界.md](./docs/ADR-012_Zebra_Agent_Runtime微服务与外部业务边界.md)
+- service boundary: [docs/adr/ADR-012_Zebra_Agent_Runtime微服务与外部业务边界.md](./docs/adr/ADR-012_Zebra_Agent_Runtime微服务与外部业务边界.md)
 - Embedded target: [docs/Zebra Embedded 生产级目标架构.md](./docs/Zebra%20Embedded%20生产级目标架构.md)
-- CopilotKit/AG-UI boundary: [docs/ADR-015_Zebra_Embedded与CopilotKit_AGUI边界.md](./docs/ADR-015_Zebra_Embedded与CopilotKit_AGUI边界.md)
+- CopilotKit/AG-UI boundary: [docs/adr/ADR-015_Zebra_Embedded与CopilotKit_AGUI边界.md](./docs/adr/ADR-015_Zebra_Embedded与CopilotKit_AGUI边界.md)
 - Embedded task roadmap: [docs/Zebra Embedded与Trench实施任务拆解_v1.0.md](./docs/Zebra%20Embedded与Trench实施任务拆解_v1.0.md)
 - production Runtime: [docs/生产级Runtime实施方案_v1.0.md](./docs/生产级Runtime实施方案_v1.0.md)
 - context lifecycle: [docs/上下文生命周期与混合压缩架构方案_v1.0.md](./docs/上下文生命周期与混合压缩架构方案_v1.0.md)
 - context continuity and governed memory v1.1: [docs/上下文连续性与治理记忆改进方案_v1.1.md](./docs/上下文连续性与治理记忆改进方案_v1.1.md)
-- Cloud Context consumption and child inheritance: [docs/ADR-025_Cloud_Context_Inheritance.md](./docs/ADR-025_Cloud_Context_Inheritance.md)
-- Task continuity and internal Segments: [docs/ADR-013_用户任务连续性与内部执行分段.md](./docs/ADR-013_用户任务连续性与内部执行分段.md)
+- Cloud Context consumption and child inheritance: [docs/adr/ADR-025_Cloud_Context_Inheritance.md](./docs/adr/ADR-025_Cloud_Context_Inheritance.md)
+- Task continuity and internal Segments: [docs/adr/ADR-013_用户任务连续性与内部执行分段.md](./docs/adr/ADR-013_用户任务连续性与内部执行分段.md)
 - automatic rollover roadmap: [docs/透明Context_Segment与自动Rollover实施方案_v1.0.md](./docs/透明Context_Segment与自动Rollover实施方案_v1.0.md)
 - historical handoff safety contract: [docs/阶段性Session_Handoff与短线程链架构方案_v1.0.md](./docs/阶段性Session_Handoff与短线程链架构方案_v1.0.md)
 - DeepSeek profiles: [docs/DeepSeek_V4_模型适配与专项优化方案_v1.0.md](./docs/DeepSeek_V4_模型适配与专项优化方案_v1.0.md)
@@ -813,18 +813,18 @@ Scoped read-only Runtime management is documented in [RUNTIME_MANAGEMENT](docs/R
 
 Scoped publisher/consumer HTTP and native gate evidence: [publication management](docs/PUBLICATION_MANAGEMENT.md).
 
-Readable values use the existing AG-UI command and [bound native admission](docs/CA-P3-02F_readable_admission.md). The SDK value-submission adapter remains a separate slice; historical command recovery and Coverage stay intact.
+Readable values use the existing AG-UI command and [bound native admission](docs/tasks/CA-P3-02F_readable_admission.md). The SDK value-submission adapter remains a separate slice; historical command recovery and Coverage stay intact.
 
 ## CA-P3-02H 命令收据前置
 
-[当前授权收据查询](docs/CA-P3-02H_command_receipts.md)补齐 unknown 的原生只读观察；BFF 持久对账和 SDK 恢复独立后续，不关闭 P3。
+[当前授权收据查询](docs/tasks/CA-P3-02H_command_receipts.md)补齐 unknown 的原生只读观察；BFF 持久对账和 SDK 恢复独立后续，不关闭 P3。
 
 ## CA-P3-02I 原请求与恢复
 
-[当前合同与恢复流程](docs/CA-P3-02I_command_recovery.md)：原 Segment 可选前置条件、共享业务日志、SDK 持久标识和只读对账；不关闭完整 P3。
+[当前合同与恢复流程](docs/tasks/CA-P3-02I_command_recovery.md)：原 Segment 可选前置条件、共享业务日志、SDK 持久标识和只读对账；不关闭完整 P3。
 
-原业务效果跨 Run 协调见 [CA-P3-03A](docs/CA-P3-03A_original_effect_receipts.md)：历史收据不代表当前 UI 执行，unknown 不重发。
+原业务效果跨 Run 协调见 [CA-P3-03A](docs/tasks/CA-P3-03A_original_effect_receipts.md)：历史收据不代表当前 UI 执行，unknown 不重发。
 
-[Task-message 原收据查询](docs/CA-P3-03B_task_message_receipts.md)：原GET不重发，missing不是非提交证明。
+[Task-message 原收据查询](docs/tasks/CA-P3-03B_task_message_receipts.md)：原GET不重发，missing不是非提交证明。
 
-[显式v2原消息坐标](docs/CA-P3-03C_message_coordinates.md)：保存源Event归属，不从当前header补猜。
+[显式v2原消息坐标](docs/tasks/CA-P3-03C_message_coordinates.md)：保存源Event归属，不从当前header补猜。

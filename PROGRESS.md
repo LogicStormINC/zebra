@@ -285,7 +285,7 @@ canonical route writes/locks; typed storage/authority failure pauses without
 replay; shared AG-UI maps new reasons to Run interruption while preserving
 completed Turns. No schema or business dependency added. Native PG/Redis168
 and actual HTTP/SDK33 pass with zero skips; focused recovery109 passed/2 existing
-conditional skips; make check passed. [Scope, evidence and HA limits](docs/CLOUD_RELIABILITY_2026-10-28.md).
+conditional skips; make check passed. [Scope, evidence and HA limits](docs/reports/CLOUD_RELIABILITY_2026-10-28.md).
 ERP custom105 deployment stays under its separate repair task. No production
 restart/migration, model/search request, original Run mutation or failover claim.
 
@@ -299,7 +299,7 @@ checkpoint while exact ACK/closed bounds remain enforced. Native152/SDK stream32
 (no skips), SDK174, typecheck and make check pass. Original Runs/services and dirty
 primary checkout preserved; no model/search/deployment. Full make test11216passed,
 3082conditional skips,0failed. Local cloud-agent integration authorized/completed; see
-`docs/AGUI_CLOUD_INTEGRATION_2026-10-28.md` for boundaries and local integration.
+`docs/reports/AGUI_CLOUD_INTEGRATION_2026-10-28.md` for boundaries and local integration.
 
 # 2026-10-28 — Authorized P4 cloud-agent integration
 
@@ -349,7 +349,7 @@ partial assessment and delivery context; reset scopes and stable file/media unio
 corrected.397 core/63 overlapping focused no-model checks pass. Idle Trench API-only
 production rollout53fc3ba0; original Turn data, Worker/Search/MCP preserved. No model
 or search calls. Local review branch pending integration; details in
-`docs/AGUI_LONG_SESSION_2026-10-28.md`.
+`docs/reports/AGUI_LONG_SESSION_2026-10-28.md`.
 
 # Latest production repair: service-tool sandbox dependency (2026-10-28)
 
@@ -362,7 +362,7 @@ Python digest replaces missing pin.84 checks, old/new network-none image pair,
 actual gVisor/quota scratch and live Worker no-model checks passed. Worker only
 updated; schema105, all original Turns and Search/MCP unchanged. Subsequent one authorized real-page Run completed:6model rounds/16successful
 read tools/0retries,44.896s; history preparation0, refresh retained answer without
-rerun. Original Run/services unchanged. Source awaits integration. See docs/CLOUD_RUNTIME_READINESS_2026-10-28.md.
+rerun. Original Run/services unchanged. Source awaits integration. See docs/reports/CLOUD_RUNTIME_READINESS_2026-10-28.md.
 
 # Latest production repair: canonical persistence budget (2026-10-28)
 
@@ -376,7 +376,7 @@ Only idle Worker updated. Original failed candidate preserved; other services/
 Search/MCP/cooldown unchanged. One user-authorized normal-page high/Flash/v2 Run
 completed with1model/0tools/0retries in6.942s admission→terminal; refresh retained
 answer without another executor call. No second sample. Source awaits maintainer
-integration; no push/main merge. See docs/CLOUD_PROGRESS_BUDGET_2026-10-28.md.
+integration; no push/main merge. See docs/reports/CLOUD_PROGRESS_BUDGET_2026-10-28.md.
 
 # Latest production repair: Redis / terminal observation (2026-10-24)
 
@@ -390,7 +390,7 @@ unchanged,0search. No Worker/frontend/Search/MCP restart or schema change.
 Source awaits maintainer integration, no push/main merge. Conversation later
 soft-deleted; deletion preserved, no authenticated page acceptance claimed.
 Lock incident narrowed to post-model storage path; exact SQL/holder absent from
-retained logs, not claimed fixed. See docs/CLOUD_REDIS_OBSERVER_2026-10-24.md.
+retained logs, not claimed fixed. See docs/reports/CLOUD_REDIS_OBSERVER_2026-10-24.md.
 
 # 2026-10-22 — Production Turn authority reuse and terminal projection repaired
 
@@ -408,7 +408,7 @@ Only Trench API/frontend changed, same configuration/security; Zebra API/Worker,
 10GiB mount/Search/MCP/cooldown/protected events unchanged.0models/search/newRun/replay.
 No new real-model successor acceptance claimed. The already deployed HTTP checksum
 baseline is also committed to prevent source-only rebuild regression. Details:
-docs/CLOUD_TURN_ADMISSION_COMMENTARY_2026-10-22.md. Local integration only/no push.
+docs/reports/CLOUD_TURN_ADMISSION_COMMENTARY_2026-10-22.md. Local integration only/no push.
 
 # 2026-10-22 — Production workspace hard quota repaired on second disk
 
@@ -427,7 +427,7 @@ Search/MCP/cooldown and protected/original Run events unchanged,0new model/searc
 requests. Original failed Runs remain failed, no automatic rerun. Backup preserved.
 Mount RequiredBy Docker fail-closes boot; rollback removes/reloads that dependency
 before unmounting to avoid stopping other services. See
- docs/CLOUD_WORKSPACE_QUOTA_2026-10-22.md. Local integration only, no GitHub push.
+ docs/reports/CLOUD_WORKSPACE_QUOTA_2026-10-22.md. Local integration only, no GitHub push.
 
 # 2026-10-22 — Production workspace startup loading repaired
 
@@ -452,7 +452,7 @@ workspace reconciled ready. Protected4Session hashes,high/v2,Search/MCP/config/c
 and stable service identities unchanged. Preexisting trench-caddy/pgAdmin restart
 loops recorded separately, not repaired. No Trench source edit/model/page E2E/push.
 Browser control unavailable; final proof is native snapshot and durable sync.
-Receipt/rollback: docs/CLOUD_WORKSPACE_LOADING_2026-10-22.md. Historical notes follow.
+Receipt/rollback: docs/reports/CLOUD_WORKSPACE_LOADING_2026-10-22.md. Historical notes follow.
 
 # 2026-10-21 — Production Plugin configuration restored
 
@@ -473,96 +473,96 @@ Paired API/Worker config activation after idle guards, healthy, same source/imag
 other inspected services/Search/config/cooldown/global proxy and four protected
 Session event hashes exact. Temporary env files removed. No image build/migration,
 original Run replay, normal-user installation, full-suite/model E2E or GitHub push.
-Evidence and rollback: docs/CLOUD_PLUGIN_PRODUCTION_2026-10-21.md. Historical notes follow.
+Evidence and rollback: docs/reports/CLOUD_PLUGIN_PRODUCTION_2026-10-21.md. Historical notes follow.
 # CA-P3-03G Host 写后读取
 
-[共享新鲜度修复](docs/CA-P3-03G_host_read_freshness.md)：qualified resource 与裸参数键不匹配导致重复读取误拒绝。仅允许按新 mutation epoch 重新观察；资源/版本/后置条件完成门禁保持。31定向、完整make test11143通过/3067条件跳过、make check/30eval及SDK173/check通过；不部署/迁移/改原收据或Coverage。
+[共享新鲜度修复](docs/tasks/CA-P3-03G_host_read_freshness.md)：qualified resource 与裸参数键不匹配导致重复读取误拒绝。仅允许按新 mutation epoch 重新观察；资源/版本/后置条件完成门禁保持。31定向、完整make test11143通过/3067条件跳过、make check/30eval及SDK173/check通过；不部署/迁移/改原收据或Coverage。
 
 # CA-P3-03F 显式Surface SDK
 
-[合同](docs/CA-P3-03F_surface_sdk.md)。173 SDK测试和check通过；两阶段定位符/先存后单POST，unknown只读恢复。Native完整make test/check通过；固定源消费者AD另记。
+[合同](docs/tasks/CA-P3-03F_surface_sdk.md)。173 SDK测试和check通过；两阶段定位符/先存后单POST，unknown只读恢复。Native完整make test/check通过；固定源消费者AD另记。
 
 # CA-P3-03E 显式BFF消息SDK
 
-[合同](docs/CA-P3-03E_message_sdk.md)。SDK已实现先持久定位符/一次POST、discover和原GET恢复；165 SDK测试和check通过，Native完整make test/check通过。Python/Worker/原生数据合同不变，平台AB-B固定源联合单列。
+[合同](docs/tasks/CA-P3-03E_message_sdk.md)。SDK已实现先持久定位符/一次POST、discover和原GET恢复；165 SDK测试和check通过，Native完整make test/check通过。Python/Worker/原生数据合同不变，平台AB-B固定源联合单列。
 
 # CA-P3-03D 原消息条件挂载
 
-[正式合同](docs/CA-P3-03D_message_surface_anchor.md)。原生atomic-message-surface/1在同PG事务内检查原收据、源Event及stream tail，并原子消费/挂载/封存结果。22真实PG与46 API、全量make test/check及SDK check158通过。原消息日志/SDK生产恢复仍为AB-B；不宣称RUN/Worker取消。
+[正式合同](docs/tasks/CA-P3-03D_message_surface_anchor.md)。原生atomic-message-surface/1在同PG事务内检查原收据、源Event及stream tail，并原子消费/挂载/封存结果。22真实PG与46 API、全量make test/check及SDK check158通过。原消息日志/SDK生产恢复仍为AB-B；不宣称RUN/Worker取消。
 
 # CA-P3-03C 原消息坐标
 
-[显式v2合同](docs/CA-P3-03C_message_coordinates.md)。31定向API通过，全量make test/check、8真实PG和SDK check158通过；原坐标不随header漂移，不证明提交时锚点CAS。
+[显式v2合同](docs/tasks/CA-P3-03C_message_coordinates.md)。31定向API通过，全量make test/check、8真实PG和SDK check158通过；原坐标不随header漂移，不证明提交时锚点CAS。
 
 # CA-P3-03B Task-message receipt prerequisite
 
-[公开只读合同](docs/CA-P3-03B_task_message_receipts.md)。19 API/7真实PG通过，全量make test/check和SDK check158通过；原收据缺失不证明非提交，生产BFF恢复是AB后续。
+[公开只读合同](docs/tasks/CA-P3-03B_task_message_receipts.md)。19 API/7真实PG通过，全量make test/check和SDK check158通过；原收据缺失不证明非提交，生产BFF恢复是AB后续。
 
 # CA-P3-03A 原业务效果协调
 
-[合同与边界](docs/CA-P3-03A_original_effect_receipts.md)。全量 make test/check、49 定向/13 真实 PG 与 SDK check/158 测试通过；原收据只证明历史结果，不推断新业务意图。
+[合同与边界](docs/tasks/CA-P3-03A_original_effect_receipts.md)。全量 make test/check、49 定向/13 真实 PG 与 SDK check/158 测试通过；原收据只证明历史结果，不推断新业务意图。
 
 # CA-P3-02Z verified / Review
-See [CA-P3-02Z](docs/CA-P3-02Z_react_surface_revision.md). Explicit React revision capture/adoption; Review; fresh make test 11075 passed/3052 conditional skips and make check passed after filesystem recovery; SDK check/158 tests and6 focused React cases passed. Candidate Chromium/WebKit actual new React owner capture -> BFF original GET/current mapping -> zero-HTTP adoption -> current heartbeat/unmount passed. Runtime/Worker/core SDK/schema unchanged; final published-source consumer separate. No second Worker/new Run claim.
+See [CA-P3-02Z](docs/tasks/CA-P3-02Z_react_surface_revision.md). Explicit React revision capture/adoption; Review; fresh make test 11075 passed/3052 conditional skips and make check passed after filesystem recovery; SDK check/158 tests and6 focused React cases passed. Candidate Chromium/WebKit actual new React owner capture -> BFF original GET/current mapping -> zero-HTTP adoption -> current heartbeat/unmount passed. Runtime/Worker/core SDK/schema unchanged; final published-source consumer separate. No second Worker/new Run claim.
 
 # CA-P3-02Y verified / Review
-See [CA-P3-02Y](docs/CA-P3-02Y_explicit_surface_revision.md). Explicit same-Run revision prerequisite; Review; fresh make test 11075 passed/3052 conditional skips; make check passed; unchanged SDK check/156 tests passed. Candidate Chromium/WebKit React first Worker/UI terminal then explicit same-Run Native revision, lost-reply two-BFF GET-only/current mapping CAS passed. Native production/SDK unchanged; final published-source consumer evidence separate.
+See [CA-P3-02Y](docs/tasks/CA-P3-02Y_explicit_surface_revision.md). Explicit same-Run revision prerequisite; Review; fresh make test 11075 passed/3052 conditional skips; make check passed; unchanged SDK check/156 tests passed. Candidate Chromium/WebKit React first Worker/UI terminal then explicit same-Run Native revision, lost-reply two-BFF GET-only/current mapping CAS passed. Native production/SDK unchanged; final published-source consumer evidence separate.
 
 # CA-P3-02X verified / Review
-See [CA-P3-02X](docs/CA-P3-02X_react_initial_ui.md). Explicit React preparation, existing Native contract; Review; fresh make test 11075 passed/3052 conditional skips; make check passed; SDK check and156 tests passed, focused React4 passed. Candidate packed React Chromium/WebKit same initial TaskRun/Readable/Worker/approval/DOM/receipt/terminal and real owner unmount passed. Python/Worker/storage/core SDK unchanged; published-source consumer result recorded separately.
+See [CA-P3-02X](docs/tasks/CA-P3-02X_react_initial_ui.md). Explicit React preparation, existing Native contract; Review; fresh make test 11075 passed/3052 conditional skips; make check passed; SDK check and156 tests passed, focused React4 passed. Candidate packed React Chromium/WebKit same initial TaskRun/Readable/Worker/approval/DOM/receipt/terminal and real owner unmount passed. Python/Worker/storage/core SDK unchanged; published-source consumer result recorded separately.
 
 # CA-P3-02W verified / Review
-See [CA-P3-02W](docs/CA-P3-02W_initial_ui_run.md). Initial UI/Readable/RUN commit boundary fixed; Review; make test 11075 passed/3052 conditional skips; make check passed;45 focused real-PG/API cases (no skips); SDK full check and 153 tests passed. Candidate Chromium/WebKit same NEW initial UI/Readable/RUN -> Worker/approval/DOM/receipt/terminal and v5 rollback passed; old SDK/UI/U compatibility candidate passed. Published-source consumer acceptance recorded separately.
+See [CA-P3-02W](docs/tasks/CA-P3-02W_initial_ui_run.md). Initial UI/Readable/RUN commit boundary fixed; Review; make test 11075 passed/3052 conditional skips; make check passed;45 focused real-PG/API cases (no skips); SDK full check and 153 tests passed. Candidate Chromium/WebKit same NEW initial UI/Readable/RUN -> Worker/approval/DOM/receipt/terminal and v5 rollback passed; old SDK/UI/U compatibility candidate passed. Published-source consumer acceptance recorded separately.
 
 # CA-P3-02V full gates complete / Review
-See [CA-P3-02V](docs/CA-P3-02V_task_run_worker.md). Admission, Worker result and termination proof are separate; Review; fresh make test 11072 passed/3050 conditional skips; make check passed; 40 focused real-PG/API cases passed without skips; candidate Chromium/WebKit new protocol canonical RUN to actual Worker terminal answer passed. Final published-source consumer joint is separate.
+See [CA-P3-02V](docs/tasks/CA-P3-02V_task_run_worker.md). Admission, Worker result and termination proof are separate; Review; fresh make test 11072 passed/3050 conditional skips; make check passed; 40 focused real-PG/API cases passed without skips; candidate Chromium/WebKit new protocol canonical RUN to actual Worker terminal answer passed. Final published-source consumer joint is separate.
 
 # CA-P3-02U validation complete / Review
 
-See [CA-P3-02U](docs/CA-P3-02U_atomic_task_run.md). Atomic Task/RUN admission boundary fixed before code; Review; make test 11072 passed/3050 conditional skips; make check passed; 40 focused (26 API +14 real PG), no skips; candidate Chromium/WebKit atomic Task joint passed. Published-source consumer joint remains separate.
+See [CA-P3-02U](docs/tasks/CA-P3-02U_atomic_task_run.md). Atomic Task/RUN admission boundary fixed before code; Review; make test 11072 passed/3050 conditional skips; make check passed; 40 focused (26 API +14 real PG), no skips; candidate Chromium/WebKit atomic Task joint passed. Published-source consumer joint remains separate.
 
 # CA-P3-02T validation complete / Review
 
-See [CA-P3-02T](docs/CA-P3-02T_atomic_task_termination.md). Atomic Task proof boundary fixed before implementation; Review; make test 11066 passed/3048 conditional skips; make check passed; 32 focused (20 API +12 real PG), no skips; candidate Chromium/WebKit atomic Task joint passed. Published-source consumer joint remains separate.
+See [CA-P3-02T](docs/tasks/CA-P3-02T_atomic_task_termination.md). Atomic Task proof boundary fixed before implementation; Review; make test 11066 passed/3048 conditional skips; make check passed; 32 focused (20 API +12 real PG), no skips; candidate Chromium/WebKit atomic Task joint passed. Published-source consumer joint remains separate.
 
 ## CA-P3-02S：已开始的原子Surface准入终止（验证通过，Review）
 
-make test 11060 passed/3045 conditional skips; make check1408 types/30eval; API14 and real owned PG16 focused passed. Started atomic-surface candidate Chromium/WebKit passed; published-source consumer joint is separate. 新atomic-surface/1仅open/mount，同PG业务效果/原收据同事务，提交点STOP门禁；持执行锁时pending无证明，退出且STOP/无原子收据才证明，提交先胜只恢复原结果。旧started/部分提交/Task创建不升级，不重发/重领/清pending。真实PG30项及候选双浏览器联合通过；完整门禁通过，发布后固定源消费者联合另记。见[正式边界](docs/CA-P3-02S_atomic_surface_termination.md)。
+make test 11060 passed/3045 conditional skips; make check1408 types/30eval; API14 and real owned PG16 focused passed. Started atomic-surface candidate Chromium/WebKit passed; published-source consumer joint is separate. 新atomic-surface/1仅open/mount，同PG业务效果/原收据同事务，提交点STOP门禁；持执行锁时pending无证明，退出且STOP/无原子收据才证明，提交先胜只恢复原结果。旧started/部分提交/Task创建不升级，不重发/重领/清pending。真实PG30项及候选双浏览器联合通过；完整门禁通过，发布后固定源消费者联合另记。见[正式边界](docs/tasks/CA-P3-02S_atomic_surface_termination.md)。
 
 ## CA-P3-02R：派发前终止证明（验证通过，Review）
 
-make test 11059 passed/3036 conditional skips; make check1406 types/30eval; API13 and real owned PG7 focused passed. Pre-dispatch candidate Chromium/WebKit passed; published-source consumer joint is separate. 已核对N/Q依赖；证明仅限新pre-dispatch/1原请求，持久start/terminate第一写者门闩。已开始、旧claim、无claim、超时无非提交证明；unknown不重发、不领取Controller、不清pending。边界及验收见[正式设计](docs/CA-P3-02R_admission_termination.md)。保留历史/原收据/Coverage，无部署/生产迁移。
+make test 11059 passed/3036 conditional skips; make check1406 types/30eval; API13 and real owned PG7 focused passed. Pre-dispatch candidate Chromium/WebKit passed; published-source consumer joint is separate. 已核对N/Q依赖；证明仅限新pre-dispatch/1原请求，持久start/terminate第一写者门闩。已开始、旧claim、无claim、超时无非提交证明；unknown不重发、不领取Controller、不清pending。边界及验收见[正式设计](docs/tasks/CA-P3-02R_admission_termination.md)。保留历史/原收据/Coverage，无部署/生产迁移。
 
 # CA-P3-02O — 审批原操作及当前 Controller 公开查询
 
-为OD-P3-01L补齐当前授权精确原操作GET、原子决定/投影/继续执行及Controller观察；复用既有PG事件唯一键/短事务，无新表或迁移。[合同](docs/CA-P3-02O_approval_operations.md)。API13/真实PG3专项及最终make test11046通过/3029条件跳过、make check1403类型文件/30eval均通过；旧接口/历史/原收据/Coverage保留，无部署/生产迁移/主线整合。
+为OD-P3-01L补齐当前授权精确原操作GET、原子决定/投影/继续执行及Controller观察；复用既有PG事件唯一键/短事务，无新表或迁移。[合同](docs/tasks/CA-P3-02O_approval_operations.md)。API13/真实PG3专项及最终make test11046通过/3029条件跳过、make check1403类型文件/30eval均通过；旧接口/历史/原收据/Coverage保留，无部署/生产迁移/主线整合。
 
 # CA-P3-02N — Client Action Worker 兼容前置
 
-OD-P3-01K同次联合暴露可选描述/schema转换、审批响应重建吞命令及继续执行空Run三个衔接问题；修复共享入口，原合同/摘要/严格Run与审批/历史/Coverage保持。准备增量113仅作用后续header，独享PG21项/本地89专项已通过。[方案](docs/CA-P3-02N_client_tool_compatibility.md)。最终make test11039通过/3026条件跳过、make check1400类型文件/30eval通过；文件边界修正后完整重跑，无部署/生产迁移/主线整合。
+OD-P3-01K同次联合暴露可选描述/schema转换、审批响应重建吞命令及继续执行空Run三个衔接问题；修复共享入口，原合同/摘要/严格Run与审批/历史/Coverage保持。准备增量113仅作用后续header，独享PG21项/本地89专项已通过。[方案](docs/tasks/CA-P3-02N_client_tool_compatibility.md)。最终make test11039通过/3026条件跳过、make check1400类型文件/30eval通过；文件边界修正后完整重跑，无部署/生产迁移/主线整合。
 
 # CA-P3-01F — 可信脚本 Eval 与公开v3绑定（Review）
 
-[正式合同及修正边界](docs/CA-P3-01F_trusted_script_eval.md)；[最终证据](docs/evidence/ca-p3-01f/final-validation.json)。实际只读无网络脚本评分、共享原unknown和原子证据收据；补齐生成schema数组约束及公开v3准入Snapshot摘要，Worker严格检查、v1/v2和历史数据不降级。最终make test11019通过/3022条件跳过（1191.37秒）、make check1399类型文件/30eval通过，41专项通过。4649既有文件保持，仅session_queue.py修正新v3绑定；初版11016全量与中断复验保留为历史记录。Overdoze实际16项候选完整联合通过，最终发布SHA验收由OD-P3-02D独立记录。限定功能分支提交推送；无部署/生产迁移/main合并，Coverage保持。
+[正式合同及修正边界](docs/tasks/CA-P3-01F_trusted_script_eval.md)；[最终证据](docs/evidence/ca-p3-01f/final-validation.json)。实际只读无网络脚本评分、共享原unknown和原子证据收据；补齐生成schema数组约束及公开v3准入Snapshot摘要，Worker严格检查、v1/v2和历史数据不降级。最终make test11019通过/3022条件跳过（1191.37秒）、make check1399类型文件/30eval通过，41专项通过。4649既有文件保持，仅session_queue.py修正新v3绑定；初版11016全量与中断复验保留为历史记录。Overdoze实际16项候选完整联合通过，最终发布SHA验收由OD-P3-02D独立记录。限定功能分支提交推送；无部署/生产迁移/main合并，Coverage保持。
 
 # CA-P3-01E — 纯 ScriptBundle 校验（Review）
 
-[正式合同和边界](docs/CA-P3-01E_script_bundle_validation.md)。D物化创建Version，不能替代草稿纯校验；C只检单包，本片新增显式script-bundle-validation/1，复用原生模型/catalog与有界传输，新增动作需显式批准，不自动扩旧凭据。56专项及完整门禁通过：make test11002通过/3022条件跳过（1166.10s），make check1396类型文件/30eval通过。[证据](docs/evidence/ca-p3-01e/validation.json)记录socket/Schema/零执行与HA边界。无源码执行、Registry写入或新表；Go消费者另片，保留旧合同/历史/Coverage，未部署/生产迁移/主线整合。
+[正式合同和边界](docs/tasks/CA-P3-01E_script_bundle_validation.md)。D物化创建Version，不能替代草稿纯校验；C只检单包，本片新增显式script-bundle-validation/1，复用原生模型/catalog与有界传输，新增动作需显式批准，不自动扩旧凭据。56专项及完整门禁通过：make test11002通过/3022条件跳过（1166.10s），make check1396类型文件/30eval通过。[证据](docs/evidence/ca-p3-01e/validation.json)记录socket/Schema/零执行与HA边界。无源码执行、Registry写入或新表；Go消费者另片，保留旧合同/历史/Coverage，未部署/生产迁移/主线整合。
 
 # CA-P3-01D — 脚本 Bundle 公开发布前置（Review）
 
-[合同与边界](docs/CA-P3-01D_script_publication.md) · [验证证据](docs/evidence/ca-p3-01d/validation.json)。最终make test10985通过/3022条件跳过（1117.01s），make check1394类型文件/30eval通过，29专项通过；Overdoze26个race包及make check通过（74既有警告）。新增显式script-publication/1渠道，复用现有原生装配/精确发布者引用、Registry事务/CAS/原操作收据与可信Eval门禁；旧P2公开合同/历史/Coverage不改。Go消费者下一片，前端mock保持；无部署/生产迁移/主线整合。
+[合同与边界](docs/tasks/CA-P3-01D_script_publication.md) · [验证证据](docs/evidence/ca-p3-01d/validation.json)。最终make test10985通过/3022条件跳过（1117.01s），make check1394类型文件/30eval通过，29专项通过；Overdoze26个race包及make check通过（74既有警告）。新增显式script-publication/1渠道，复用现有原生装配/精确发布者引用、Registry事务/CAS/原操作收据与可信Eval门禁；旧P2公开合同/历史/Coverage不改。Go消费者下一片，前端mock保持；无部署/生产迁移/主线整合。
 
 # CA-P3-02M — 业务 OIDC 与签名云准入（Review）
 
-[正式方案与边界](docs/CA-P3-02M_signed_cloud.md)；[证据](docs/evidence/ca-p3-02m/validation.json)。
+[正式方案与边界](docs/tasks/CA-P3-02M_signed_cloud.md)；[证据](docs/evidence/ca-p3-02m/validation.json)。
 复用 L/G-D；新增隔离 IdP/Broker/cloud Runtime 组合根，实际 TLS RS256/PKCE、两个共享 PG BFF、单次 code/Agent family、unknown不重兑，签名 Task/Run/Session/Controller 与当前业务/Profile 拒绝联合通过。
 make test10971通过/3022条件跳过（1169.80s），make check通过（1393类型文件/30eval）。
 生产 Python/schema/SDK/旧合同/历史/Coverage保持；真实产品参数尚缺，未验证供应商 IdP/业务账户/浏览器SDK与此云链路同次验收、模型/生产HA。无部署/生产迁移/npm发布/主线整合。
 
 # CA-P3-02L — 认证回调与 Runtime 生命周期（Review）
 
-[正式方案与交互](docs/CA-P3-02L_auth_lifecycle.md)。复用K，增加本地epoch/取消围栏与显式启停，凭据留在BFF，unknown不自动重试。
+[正式方案与交互](docs/tasks/CA-P3-02L_auth_lifecycle.md)。复用K，增加本地epoch/取消围栏与显式启停，凭据留在BFF，unknown不自动重试。
 make test10971通过/3022条件跳过（1201.65s）、make check、SDK151及实际平台/独立业务PG/原生HTTP双浏览器通过；Go24个race包通过，4610旧文件保持。 [证据](docs/evidence/ca-p3-02l/validation.json)。生产IdP/签名云准入仍独立。
 无Python/schema/旧合同/历史/Coverage变更，不部署/生产迁移/npm发布。
 
@@ -570,36 +570,36 @@ make test10971通过/3022条件跳过（1201.65s）、make check、SDK151及实�
 
 依赖J与G-A/G-B，新增无凭据认证状态/显式刷新退出/原操作marker及只读恢复。
 过期Access保留业务授权CAS元数据但阻止bootstrap。Python/schema/历史/Coverage保持。
-[正式合同和交互](docs/CA-P3-02K_bff_auth.md)。make test 10971通过/3022条件跳过（1244.42s），make check/SDK145及实际平台HTTP+独立业务PG双浏览器通过，4601旧文件保持。 [证据](docs/evidence/ca-p3-02k/validation.json)。不部署/生产迁移/npm发布/主线整合。
+[正式合同和交互](docs/tasks/CA-P3-02K_bff_auth.md)。make test 10971通过/3022条件跳过（1244.42s），make check/SDK145及实际平台HTTP+独立业务PG双浏览器通过，4601旧文件保持。 [证据](docs/evidence/ca-p3-02k/validation.json)。不部署/生产迁移/npm发布/主线整合。
 
 # CA-P3-02J — 跨设备待对账与人工处置（Review）
 
 复用H收据/I原映射，新增可选资源收件箱SDK；unknown无自动重发/清除，人工处置独立CAS审计。原生生产Python/schema/历史/Coverage不变。
-[方案与交互](docs/CA-P3-02J_request_discovery.md)；make test 10971通过/3022条件跳过（1220.28s），make check通过（1393类型文件/30eval）；SDK139、React18/19与双浏览器矩阵、新跨设备及旧恢复联合验收通过；3768保护文件未变。 [证据](docs/evidence/ca-p3-02j/validation.json)。无部署/生产迁移/npm发布/主线整合。
+[方案与交互](docs/tasks/CA-P3-02J_request_discovery.md)；make test 10971通过/3022条件跳过（1220.28s），make check通过（1393类型文件/30eval）；SDK139、React18/19与双浏览器矩阵、新跨设备及旧恢复联合验收通过；3768保护文件未变。 [证据](docs/evidence/ca-p3-02j/validation.json)。无部署/生产迁移/npm发布/主线整合。
 
 # CA-P3-02I（Review）
 
 已核对 H 公开收据和 G SDK；显式恢复1、原请求标识持久化和只读对账已实现；业务BFF事实在自有DB，不接mock。补可选原Segment前置条件，保留原Runtime/原生key，未知不重发。
 
-最终make test 10971通过/3022条件跳过（1230.21s），make check通过（1393类型文件、30eval）；SDK verify136及双浏览器/双Go进程/重启/原生收据联合验收通过，3757保护文件不变。[正式方案](docs/CA-P3-02I_command_recovery.md) · [证据](docs/evidence/ca-p3-02i/validation.json)。原生schema/历史/Worker/Coverage不变；生产IdP/完整模型/HA、跨设备发现及非提交证明仍后续。不部署/生产迁移/npm发布/主线整合。按授权限定提交推送，实际SHA另核验。
+最终make test 10971通过/3022条件跳过（1230.21s），make check通过（1393类型文件、30eval）；SDK verify136及双浏览器/双Go进程/重启/原生收据联合验收通过，3757保护文件不变。[正式方案](docs/tasks/CA-P3-02I_command_recovery.md) · [证据](docs/evidence/ca-p3-02i/validation.json)。原生schema/历史/Worker/Coverage不变；生产IdP/完整模型/HA、跨设备发现及非提交证明仍后续。不部署/生产迁移/npm发布/主线整合。按授权限定提交推送，实际SHA另核验。
 
 # CA-P3-02H — 命令接纳收据只读对账前置（Review）
 
 G之后先补P3 unknown的原生可授权、定点只读观察；使用原Segment/幂等键与现有索引，不创建状态表或放开重发。SDK/BFF持久恢复后续独立消费。
 
-最终 make test 10970通过/3022条件跳过（1171.24s），make check通过（1393类型文件、30eval）；定向22通过/1可选PG跳过，独享PG17另跑5通过。3838个既有代码/SDK/合同/证据/Coverage保护文件未变。[正式方案](docs/CA-P3-02H_command_receipts.md) · [证据](docs/evidence/ca-p3-02h/validation.json)。整次PG读取共享两秒预算；首次全量轮次因补齐该预算而中止，最终完整重跑单独计入。按授权限定提交推送，远端SHA由交付回执核验；无部署、生产迁移或主线整合。
+最终 make test 10970通过/3022条件跳过（1171.24s），make check通过（1393类型文件、30eval）；定向22通过/1可选PG跳过，独享PG17另跑5通过。3838个既有代码/SDK/合同/证据/Coverage保护文件未变。[正式方案](docs/tasks/CA-P3-02H_command_receipts.md) · [证据](docs/evidence/ca-p3-02h/validation.json)。整次PG读取共享两秒预算；首次全量轮次因补齐该预算而中止，最终完整重跑单独计入。按授权限定提交推送，远端SHA由交付回执核验；无部署、生产迁移或主线整合。
 
 # CA-P3-02G — SDK/BFF Readable值提交（Review）
 
 基于已发布fb72ef6f的原生准入合同，复用挂载调度和持久命令，显式协商值提交；不新增Go执行代理、原生表或自动重试，旧模式/历史/Coverage保留。
 
-最终make test10949通过/3021条件跳过（1244.07s），make check通过；SDK verify131、双浏览器各3值命令及原有2动作/收据/恢复链通过。2318生产/旧合同/Coverage保护文件与94 SDK/验收输入保持。见[正式方案](docs/CA-P3-02G_readable_submit.md)和[证据](docs/evidence/ca-p3-02g/validation.json)。环境中断运行排除，最终完整门禁重跑；按授权限定提交推送，实际远端SHA以交付回执核验。
+最终make test10949通过/3021条件跳过（1244.07s），make check通过；SDK verify131、双浏览器各3值命令及原有2动作/收据/恢复链通过。2318生产/旧合同/Coverage保护文件与94 SDK/验收输入保持。见[正式方案](docs/tasks/CA-P3-02G_readable_submit.md)和[证据](docs/evidence/ca-p3-02g/validation.json)。环境中断运行排除，最终完整门禁重跑；按授权限定提交推送，实际远端SHA以交付回执核验。
 
 # CA-P3-02F — Readable原生准入（Review）
 
 已核对E后AG-UI现有state/持久命令/Context路径，先补当前Session/挂载绑定与脱敏恢复，不创建新上传接口或Go执行代理。SDK值提交另片；保留旧模式/历史/Coverage，不部署迁移。
 
-最终 make test10949通过/3021条件跳过（1199.57s），make check通过；定向60通过/1条件跳过，独享PG另跑4通过/零跳过。936个保护文件未变。见[正式方案](docs/CA-P3-02F_readable_admission.md)与[证据](docs/evidence/ca-p3-02f/validation.json)。按授权限定提交推送，远端SHA由交付回执核验。
+最终 make test10949通过/3021条件跳过（1199.57s），make check通过；定向60通过/1条件跳过，独享PG另跑4通过/零跳过。936个保护文件未变。见[正式方案](docs/tasks/CA-P3-02F_readable_admission.md)与[证据](docs/evidence/ca-p3-02f/validation.json)。按授权限定提交推送，远端SHA由交付回执核验。
 
 # CA-P3-02E — SDK挂载同步（Review）
 
@@ -609,7 +609,7 @@ G之后先补P3 unknown的原生可授权、定点只读观察；使用原Segmen
 
 最终make test10914passed/3020条件跳过（1309.26s），make check通过；SDK verify125项、包审计、React18/19消费和双浏览器/Next hydration通过。
 实际HTTP/PG/Worker gateway双浏览器各2动作/2回执/2恢复命令，回执replay/新binding/秘密隔离/撤销拒绝通过。
-3,042既有Python/合同/证据/Coverage文件未变。见[正式方案](docs/CA-P3-02E_sdk_surface_sync.md)与[证据](docs/evidence/ca-p3-02e/validation.json)。
+3,042既有Python/合同/证据/Coverage文件未变。见[正式方案](docs/tasks/CA-P3-02E_sdk_surface_sync.md)与[证据](docs/evidence/ca-p3-02e/validation.json)。
 按授权限定提交推送；生产Go Broker/IdP/共享CAS和完整Worker harness仍独立验收。
 
 # CA-P3-02D — 原生挂载摘要与绑定同步（Review）
@@ -618,7 +618,7 @@ G之后先补P3 unknown的原生可授权、定点只读观察；使用原Segmen
 同名action的UI revision变化应同步新的mounted snapshot，持久层须在短Session锁内复核收窄。
 最终make test10914passed/3020条件跳过（1135.58秒），make check通过（mypy1388/eval30）。
 API56passed/1条件、独享PG62passed/零跳过；3669源码和414旧SDK/合同/Coverage文件无漂移，其中280Coverage保持。
-[正式方案](docs/CA-P3-02D_surface_metadata.md) · [证据](docs/evidence/ca-p3-02d/validation.json)。
+[正式方案](docs/tasks/CA-P3-02D_surface_metadata.md) · [证据](docs/evidence/ca-p3-02d/validation.json)。
 前轮漏更新旧能力列表严格断言已修正，最终完整复验另记，不把失败/中断轮次计为通过。
 按授权准备限定提交推送，远端SHA由交付回执核验；管理前端mock/历史/Coverage保持。
 实际SDK/BFF应用同步结果及成对浏览器联调仍后续；无部署/迁移/主线整合。
@@ -630,7 +630,7 @@ SDK新增mode=bff，浏览器只有公共绑定事实，原生HostGrant/Session 
 同源相对路径/方法/头/JSON大小/5秒期限限制、真实connecting/ready/unavailable/stopped订阅，
 旧DI必填secret类型和legacy配置/SSE保持；修复Provider配置更换后旧runtime继续轮询。
 Observer只续Session不误申领Controller；当前控制权/Task/Effect/Receipt权威仍在原生，Go无执行代理。
-[方案与边界](docs/CA-P3-02C_bff_browser.md) · [制品](docs/contracts/bff-browser-sdk/contract.json)。
+[方案与边界](docs/tasks/CA-P3-02C_bff_browser.md) · [制品](docs/contracts/bff-browser-sdk/contract.json)。
 最终SDK verify117passed/零跳过，包/React18-19消费/Chromium-WebKit/Next hydration通过；
 根make test10906passed/3014条件跳过（1181.02秒），make check通过（mypy1388/eval30）。
 2941Python/合同输入、76已验证SDK源码和280Coverage文件无漂移；[证据](docs/evidence/ca-p3-02c/validation.json)。
@@ -642,7 +642,7 @@ Observer只续Session不误申领Controller；当前控制权/Task/Effect/Receip
 2026-10-22；从已发布8715d225独立继续，先核对实际SDK/BFF/Effect依赖。
 Effect列表/详情/回执统一复用当前Task/Run、线程、主体、issuer/namespace/scope检查；
 本地兼容、原生Controller fence/expiry/revision/收据幂等与原子恢复命令保持，无迁移。
-[正式方案](docs/CA-P3-02B_effect_authority.md) · [语义制品](docs/contracts/client-effect-authority/contract.json)。
+[正式方案](docs/tasks/CA-P3-02B_effect_authority.md) · [语义制品](docs/contracts/client-effect-authority/contract.json)。
 原生专项32项和真实独享PG18项通过/零跳过；最终make test10906passed/3014条件跳过，make check通过。
 3435输入和280Coverage源码/测试零漂移；[证据](docs/evidence/ca-p3-02b/validation.json)区分条件跳过与实际PG。
 按授权提交推送独立分支，实际远端SHA由交付回执核验。
@@ -661,7 +661,7 @@ Effect列表/详情/回执统一复用当前Task/Run、线程、主体、issuer/
 [evidence](docs/evidence/ca-p3-02a/validation.json)保留中断/旧夹具失败及最终通过记录。
 修复显式stores factory和旧夹具，补历史共享App保护：旧operator绑定与产品撤销共享App锁，
 存在其它Host/namespace引用则拒绝新的范围写入；不删除旧绑定/能力，历史收据仍可只读对账。
-[正式方案与合同](docs/CA-P3-02A_frontend_admission.md)明确一次性credential丢失/部分提交、当前观察和后续UI/HA边界。
+[正式方案与合同](docs/tasks/CA-P3-02A_frontend_admission.md)明确一次性credential丢失/部分提交、当前观察和后续UI/HA边界。
 Overdoze使用公开HTTPS与generic Broker串联真实Task/Session/mount/Controller；Go不访问原生数据库。
 前端mock、历史数据/Coverage均保持；无部署、生产迁移或主线整合。
 
@@ -1065,7 +1065,7 @@ No model/search/Run acceptance; Plugin production switch remains false. Search,
 Exa/Yahoo/MCP, global proxy, protected original events/high/v2/data retained.
 RSS upstream ingestion errors remain an explicit operational observation, so this
 is version/deployment acceptance, not a full-business-health claim. See
-docs/CLOUD_VERSION_SYNC_2026-10-20.md for source provenance and rollback.
+docs/reports/CLOUD_VERSION_SYNC_2026-10-20.md for source provenance and rollback.
 
 ## 2026-10-20 - CLOUD-YAHOO-EGRESS-20261020
 
@@ -1079,7 +1079,7 @@ image/settings/cache/Exa cooldown retained. One NBOPC native tool acceptance:
 No models/new Runs/original replay/global proxy or Trench logic changes;
 other service identities, original event hashes/high/stream-v2 retained.
 This closes retrieval recovery, not a statistical/page/model performance claim.
-See docs/CLOUD_YAHOO_EGRESS_2026-10-20.md for active override and rollback boundary.
+See docs/reports/CLOUD_YAHOO_EGRESS_2026-10-20.md for active override and rollback boundary.
 
 ## 2026-10-20 - CLOUD-RUNTIME-REPAIR-20261020
 
@@ -1094,7 +1094,7 @@ configuration, Search/TLS/Broker identities and Exa state are retained. No model
 or original Run replay. One NBOPC native search reached Yahoo but failed after
 6049.68ms with search_incomplete/upstream five-second timeout; no automatic
 repeat. Search E2E/recall acceptance remains open, not complete. See
-docs/CLOUD_RUNTIME_REPAIR_2026-10-20.md for proof boundaries and rollback.
+docs/reports/CLOUD_RUNTIME_REPAIR_2026-10-20.md for proof boundaries and rollback.
 
 ## 2026-10-20 - Trench baseline archived; generic Cloud branch inherited
 
@@ -1108,7 +1108,7 @@ worktree directories preserved. Both redundant remote settings/media refs remove
 No source/configuration/migration/restart/deployment, model/search or MCP calls.
 Runtime readiness remains bounded by existing evidence; the next generic Cloud/
 management task must be separately claimed. See
-docs/CLOUD_TRENCH_ARCHIVE_2026-10-20.md for frozen identities and remaining gates.
+docs/reports/CLOUD_TRENCH_ARCHIVE_2026-10-20.md for frozen identities and remaining gates.
 
 ## 2026-10-18 - CLOUD-RECOVERY-VERIFICATION-03
 
@@ -8602,10 +8602,10 @@ Trench/prompt/rounds/reuse change,push or remote deploy. Real-page speedup remai
 unmeasured. See docs/CLOUD_MCP_PREPARE_TIMING.md.
 
 ## CA-P3-02P 原 Task/surface 操作（2026-10-23）
-复用PG不可变claim/result，当前Host/Task/Profile授权及加密原响应；原UUID GET只观察，不重发/重领Controller。候选跨BFF三处丢响应联合通过，make test11056通过/3031条件跳过、make check1404类型/30eval通过；发布后消费者固定pin证据另记；[合同](docs/CA-P3-02P_admission_operations.md)。既有部分提交窗口仍保留unknown，无迁移/部署/历史或Coverage重写。
+复用PG不可变claim/result，当前Host/Task/Profile授权及加密原响应；原UUID GET只观察，不重发/重领Controller。候选跨BFF三处丢响应联合通过，make test11056通过/3031条件跳过、make check1404类型/30eval通过；发布后消费者固定pin证据另记；[合同](docs/tasks/CA-P3-02P_admission_operations.md)。既有部分提交窗口仍保留unknown，无迁移/部署/历史或Coverage重写。
 
 ## CA-P3-02Q 原准入只读观察（2026-10-24）
-P之后追加原claim/result只读观察，不输出凭据，不推断当前Controller或非提交证明。API/真实PG及消费者实际挂载后丢原收据候选通过；完整make test11057通过/3032条件跳过、check1404类型/30eval通过，[合同](docs/CA-P3-02Q_admission_observation.md)。原unknown不重发/不接管，旧数据/收据/Coverage保留，无迁移/部署。
+P之后追加原claim/result只读观察，不输出凭据，不推断当前Controller或非提交证明。API/真实PG及消费者实际挂载后丢原收据候选通过；完整make test11057通过/3032条件跳过、check1404类型/30eval通过，[合同](docs/tasks/CA-P3-02Q_admission_observation.md)。原unknown不重发/不接管，旧数据/收据/Coverage保留，无迁移/部署。
 
 ## 2026-10-28 SOURCE-STATUS-SUMMARY-20261028
 
@@ -8638,12 +8638,12 @@ pass. Exact candidate and live Worker no-model checks pass. Idle Worker-only ima
 requests/answers/status and protected Task facts unchanged; Search/MCP/cooldown/API
 unchanged. No model/search/newRun/replay, GitHub push or whole-repo gate claim.
 Remaining boundaries: other aggregate/outer COMMIT paths, non-TimeoutError faults,
-full DB outage and historical lock holder. See docs/WORKER_COMMIT_CONFIRMATION_2026-10-28.md.
+full DB outage and historical lock holder. See docs/reports/WORKER_COMMIT_CONFIRMATION_2026-10-28.md.
 
 - 2026-10-28 APPROVAL-BRIDGE-20261028: exact Cloud Task/Run approval and original
   observer continuation implemented; no policy bypass. Deterministic no-model
   checks pass. Production acceptance preserves the original undecided approval.
-  See `docs/APPROVAL_BRIDGE_2026-10-28.md` for v108 and deployment boundaries.
+  See `docs/reports/APPROVAL_BRIDGE_2026-10-28.md` for v108 and deployment boundaries.
 
 - 2026-10-28 APPROVAL-BRIDGE follow-up: production user-clicked approval proved
   exactly-once/original Run but exposed expired frozen Host binding before Worker
@@ -8659,7 +8659,7 @@ full DB outage and historical lock holder. See docs/WORKER_COMMIT_CONFIRMATION_2
 浏览器长历史单独通过。1000Turn/20000事件分页、反馈／建议、正文分片保持完整；
 近1MiB正文真实编码／HTTP断线／双数据库通过。修复审批误用控制grant和多回执丢失；
 无模型／搜索／业务重跑，无Worker/Search/MCP重启。没有声称无限缓存或模型供应商零故障。
-详见docs/AGUI_LONG_SESSION_2026-10-28.md；一键门禁位于tests/conformance/agui_long_session/run.sh。
+详见docs/reports/AGUI_LONG_SESSION_2026-10-28.md；一键门禁位于tests/conformance/agui_long_session/run.sh。
 
 ### CLOUD-FULL-CAPABILITY compatibility checkpoint (2026-10-29)
 Native source now preserves published disabled-guard Bundle baselines and avoids
