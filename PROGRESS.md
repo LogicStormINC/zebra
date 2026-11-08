@@ -1,3 +1,22 @@
+## 2026-11-08 — 101.7 clean-slate 达到最后一步：需 AMD64 catalog 重生成
+
+Clean-slate 流程成功到达 publication 步骤：
+✅ DB 重建 + migrations（163 tables） + seed（host_registries=1） 
+✅ PgBouncer 修复（listen_port=25433，之前与 PG 5432 冲突）
+✅ API 启动（200 ready → PG 连接正常）
+❌ Publication 失败：`BUNDLE_ASSEMBLY_REFUSED`——catalog.json 的 ARM64 baseline_key 
+   与 AMD64 API 计算的 digest 不匹配（与之前相同的根因）
+
+**最后一步**：在 101.7 上运行 `prepare_execution.py`（或等效脚本）重新生成 AMD64 
+catalog.json，然后重跑 `publish-q1.py`。这需要交互式 SSH 操作。
+
+**已验证**：
+- DB schema 完整（163 tables, events=0, hosts=1）
+- PgBouncer transaction pooling 正常（port 25433）
+- API 与 PG 通过 PgBouncer 连接正常
+- Caddy/Broker/Authority/Model 全部运行
+- 唯一阻塞：catalog baseline_key 平台不匹配
+
 ## 2026-11-08 — 最终收档：E1-A 5/s 已证明，101.7 setup 需直接 SSH 操作
 
 101.7 clean-slate setup 通过 SSH 脚本化尝试多轮，反复遇到：

@@ -22748,3 +22748,9 @@ SSH 内联 SQL 不可靠（三层引号转义）。需在 Mac 写 setup.sh + see
 
 SSH 脚本化 setup 尝试多轮未成功（引号/权限/schema 链条过长）。5/s 已证明。
 下次会话直接交互式 SSH 操作或 docker-compose。
+
+
+## 2026-11-08 101.7 setup 到达 publication 步骤
+
+DB/migrations/seed/PgBouncer/API 全部就绪。Publication 因 ARM64 catalog 不匹配 AMD64 
+baseline 而 BUNDLE_ASSEMBLY_REFUSED。需运行 prepare_execution.py 重生成 AMD64 catalog。
