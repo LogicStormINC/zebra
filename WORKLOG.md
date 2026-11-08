@@ -22696,3 +22696,11 @@ PG 8CPU/16GB + PgBouncer 已部署在 101.7:25432/25433。schema 迁移成功但
 
 文件 dump/restore + 全表 GRANT → API 启动成功。5/s 67/600（网络延迟+槽位不足）。
 最优仍为 Mac PgBouncer 2.58/s。101.7 需本地 worker（amd64 镜像）才能消除延迟。
+
+
+## 2026-11-08 101.7 全栈部署状态
+
+9 容器全部运行。API healthy。broker-authority 签名链 422/403 需修复：
+①读 grant_minting.py ExchangeRequest 格式 → 修正 authority.py
+②或用 broker.key 自签 JWT 绕过 broker。混合模式（Mac broker→101.7 API）也需修
+JWKS 信任。基础设施完备，只差签名链一个环节。

@@ -1,3 +1,25 @@
+## 2026-11-08 — 101.7 全栈部署：9 服务运行中，broker-authority 签名链待修
+
+101.7 上部署完整拓扑（9 容器）：PG 8CPU/16GB + PgBouncer + API(0.0.0.0:28180) +
+Broker + Authority(TLS:28084) + Model fixture + 4 Worker。API 健康（200 ready）。
+E1-A 冲刺受阻于 **broker-authority 签名链**：101.7 broker 调用本地 authority 时收到
+`authority_unreachable`（实测 HTTPS 连通、POST /authority 返回 422 格式不匹配）。
+混合模式（Mac broker 签发 → 101.7 API 提交）也 403——101.7 API 不信任 Mac 签发的 grant
+（`ZEBRA_AUTHORITY_ISSUER` 指向 101.7 本地，无 Mac JWKS）。
+
+**根因**：fixture authority.py 的 ExchangeRequest 格式与 broker 发送的请求不匹配，
+是 fixture 配置问题（非产品缺陷），需要在下一会话中读 `grant_minting.py` 的
+ExchangeRequest 定义并修正 authority.py 或直接跳过 broker 用自签名 JWT。
+
+101.7 部署清单（全部在位）：
+- PG zebra-e1a-pg :25432 (8CPU/16GB)
+- PgBouncer zebra-e1a-pgbouncer :25433
+- API zebra-e1a-api :28180 (0.0.0.0)
+- Broker zebra-e1a-broker :28083
+- Authority zebra-e1a-authority :28084 (TLS)
+- Model zebra-e1a-model :28082
+- Workers ×4 zebra-e1a-worker-{a,b,c,d}
+
 ## 2026-11-08 — 101.7 PG 修复完成但 5/s 受阻于网络延迟 + 执行槽不足
 
 host_authority_registries 缺失行已修复（文件传输替代管道 dump/restore + 全表 GRANT），
