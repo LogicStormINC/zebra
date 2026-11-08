@@ -1,3 +1,11 @@
+## 2026-11-08 — E1-A PG CPU 提额：占槽 12.75→2.38s（-81%），5/s 底线收窄至 12 槽
+
+PG 从 0.6 CPU/768 MiB 提至 3.0 CPU/3 GiB（shared_buffers 32→128 MB）后，同一 1/s × 120s 阶梯：
+**109/120 接受（91%）**、**零容量拒绝**、占槽均值 **2.38s/p95 2.55s**（原 12.75/13.8s，-81%）。
+吞吐从 0.157/s 升至 **0.84/s**（同 2 槽）。PG CPU 是 THE 瓶颈——5/s 所需槽数从 64 收窄至
+**12 槽**（12 个单槽 worker，或解决基线摘要约束后 2×6 槽）。Mac 负载 6.5/10，余量充足。
+证据 RESULTS-e1a-step1.md 对照表 + receipts-e1a-step1-pg3/。
+
 ## 2026-11-08 — E1-A Mac 首轮阶梯测量：1/s 即饱和，获得干净资源底线数据
 
 Mac 本机（M1 Max 10核/32GiB，负载≤5/10，内存 63% 空闲）运行冻结候选（602e2afa/f327a05d），
@@ -9354,3 +9362,12 @@ LeaseLostError×3。工具链终版：每轮先装武装持有者（修复第2�
 e1a-recap.sh（API 1.2CPU + 双 worker 原env + 各 incarnation）。预算槽位扩展尝试
 （execution_slots=8）因基线摘要链路断裂（CapacityProfile→baseline_digest→
 INCOMPATIBLE_RUNTIME_BUNDLE）而回退到原 env 单槽方案。资格预检通过（全链 ~14s）。
+
+
+## 2026-A PG 提额详情
+
+PG 容器重建：direct postgres 启动（绕过 docker-entrypoint 的 initdb 检测——ext4 循环挂载
+后 PGDATA 非空触发 initdb 报错），3.0 CPU/3 GiB/128MB shared_buffers。全部 netns 服务同批
+重启（redis/rabbit/objects/proxy/authority/broker/model/engine-readonly/api/cleanup/双 worker），
+incarnation 重签。Mac load 4.9→6.5（PG 3 CPU 生效）。占槽改善归因：PG 变更操作从 400-1200ms
+降至 ~100ms（无 slow_worker_mutation 日志）。
