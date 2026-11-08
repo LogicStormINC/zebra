@@ -1,3 +1,16 @@
+## 2026-11-08 — E1-A Mac 首轮阶梯测量：1/s 即饱和，获得干净资源底线数据
+
+Mac 本机（M1 Max 10核/32GiB，负载≤5/10，内存 63% 空闲）运行冻结候选（602e2afa/f327a05d），
+双 worker（原 env、各 1 执行槽）+ API 1.2CPU + PG 0.6CPU（原封未动）：
+120 任务 @1/s → **30 接受 / 82 容量拒绝(503) / 8 unknown**（首 503 在第 8 个）。
+占槽均值 **12.75s**（无竞争单任务 ~2-4s；双 worker 下 slow_worker_mutation 400-1200ms/次）。
+吞吐上限 = 2槽/12.75s = **0.157/s**（目标 5/s）。容量门正确工作（max_pending=32）。
+三个拓扑约束：①PG 0.6CPU 是最大杠杆（全网共享 netns 的每次变更 5-10× 变慢）；
+②execution_slots=1 冻结在基线摘要里——改 budget JSON → CapacityProfile → 触发
+INCOMPATIBLE_RUNTIME_BUNDLE（需重新发布 bundle 或 N 个单槽 worker）；
+③Mac 本身不是瓶颈。5/s 所需槽数：64（当前占槽）/ 15（若占槽降至 3s）。
+证据 RESULTS-e1a-step1.md + receipts-e1a-*。
+
 ## 2026-11-08 — F-02 安全点接管三轮正式化通过
 
 硬复位操作面后单次干净跑通：每轮武装持有者（/f02/arm 屏障使 handoff 已接受而 executor
@@ -9333,3 +9346,11 @@ recover_original 对未知 operation 的非 JSON 响应以 ValueError 守卫（�
 kill→替换就绪 2.2-2.4s；接管 30.62/30.67/30.10s（租约 TTL 到期+世代恢复的确定性节奏）；
 fence 1→2×3；completed/models/cmd=done 恰一次×3；wire arrivals=1×3；旧 fence
 LeaseLostError×3。工具链终版：每轮先装武装持有者（修复第2轮起持有者未武装的问题）。
+
+
+## 2026-11-08 E1-A 阶梯 1 详情
+
+驱动 config/e1a_step_probe.py + 分析器 e1a_analyze.py + 守卫 e1a-guard.sh；拓扑重配脚本
+e1a-recap.sh（API 1.2CPU + 双 worker 原env + 各 incarnation）。预算槽位扩展尝试
+（execution_slots=8）因基线摘要链路断裂（CapacityProfile→baseline_digest→
+INCOMPATIBLE_RUNTIME_BUNDLE）而回退到原 env 单槽方案。资格预检通过（全链 ~14s）。
