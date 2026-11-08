@@ -22622,3 +22622,9 @@ receipts-rabbit/。
 
 根因为环境缺 cleanup 角色（synchronize 独占者）；误读 23.3s 已更正为 2.68s。三轮最差
 195ms/2875ms/5723ms。cleanup 角色写入停合同前置。证据 RESULTS-f08.md。
+
+
+## 2026-11-08 F-01 六轮正式化通过
+
+提交前×3 零部分写入；提交后×3 sealed 恢复恰一次（GET 最差103ms）；API SIGKILL RTO 最差
+7.9s/10连续探测/回执相等。证据 RESULTS-f01.md。

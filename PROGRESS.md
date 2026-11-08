@@ -1,3 +1,12 @@
+## 2026-11-08 — F-01 六轮正式化通过（提交边界两侧 + API 死亡恢复）
+
+线级丢弃准入 POST 响应，客户端仅以原 GET 和解、永不重发：提交前断开×3 全部零部分写入；
+提交后断开（发送后0.5s）×3 全部恢复唯一 sealed 201 回执且任务恰一次执行（单模型调用、
+完成、回执逐字节相等，GET 最差 103ms/预算 1s）；查询 API SIGKILL→重启，10 连续 ready+业务
+GET 探测 RTO 最差 7.9s（预算 60s），恢复前后 sealed 回执逐字节相等。证据
+`.artifacts/cloud-ha-e1/f05-worker-mac-602e2afa/RESULTS-f01.md`。负载包络 p99 与双 API/LB
+仍待 E1-A 后。F-02 接管正式化为该项域内剩余。
+
 ## 2026-11-08 — F-08 三轮正式化通过（发现③定性为缺失 cleanup 角色）
 
 复现任务逐轮询重析+worker 日志证实：停快速路径一直达标（退出 ACK+租约释放 2.68s）；此前
@@ -9270,3 +9279,11 @@ runtime_cleanup_service 进程（资源计划六角色之一）→ 拓扑缺失�
 cleanup.env+只读引擎代理，0.1CPU/256MiB）后：三条陈旧 override 清账（9cf8af92 →
 cancelled+synchronized），复现轮 exit 2715ms/cancelled+在线全绿 4102ms，正式三轮最差
 回执 195ms/退出 2875ms/结算 5723ms 全部预算内。矩阵 F-08 行更新。
+
+
+## 2026-11-08 F-01 正式化细节（602e2afa）
+
+驱动 f01_atomic_probe.py：原始 TLS socket 发送签名准入请求后不读响应即断开；立即断开=
+提交前分支（unknown），发送后 0.5s 断开=提交后分支（sealed，服务端已提交而客户端无回执）。
+两分支各三轮全过；API kill/start 控制器 f01-control-watcher.py，轮间标记清理。过程修正：
+recover_original 对未知 operation 的非 JSON 响应以 ValueError 守卫（沿用原 f01 驱动惯例）。
