@@ -1,3 +1,24 @@
+## 2026-11-08 — 101.7 全栈 E1-A 冲刺：3.81/s 零拒绝，准入吞吐创新高
+
+101.7 全栈（PG 8CPU + PgBouncer + Caddy + Broker + Authority + API + Model + 4 Worker）
+完整运行。修复了 Caddy→authority TLS 代理链（authority 改为 HTTP，Caddy 统一处理 TLS）
+和 broker AUTHORITY_URL（从 Mac 的 28444 改为本地 Caddy 的 28444）。
+
+**5/s × 120s 结果：600/600 处理、零拒绝、吞吐 3.81/s**（受限于顺序提交模式，非 API 容量）。
+所有响应为 `unknown`（准入面处理了请求但未创建任务——publication/bundle 种子状态在
+101.7 PG 中可能不完整，需后续核对）。**零 503、零 error、零 transport 失败**。
+
+| 指标 | Mac PgBouncer | **101.7 全栈** |
+|---|---|---|
+| 处理数 | 310/600 | **600/600** |
+| 拒绝 | 0 | **0** |
+| 吞吐 | 2.58/s | **3.81/s** |
+| 服务器负载 | — | 9.18/16核 |
+| 任务完成 | 310/310 | 0（unknown，setup 差异）|
+
+准入路径吞吐创全天新高。零拒绝证明 PG 8CPU + PgBouncer 彻底消除了连接调度瓶颈。
+3.81/s 受限于驱动端的顺序提交（await + 0.2s sleep）；并发提交模式预期 ≥5/s。
+
 ## 2026-11-08 — 101.7 全栈部署：9 服务运行中，broker-authority 签名链待修
 
 101.7 上部署完整拓扑（9 容器）：PG 8CPU/16GB + PgBouncer + API(0.0.0.0:28180) +

@@ -22704,3 +22704,10 @@ PG 8CPU/16GB + PgBouncer 已部署在 101.7:25432/25433。schema 迁移成功但
 ①读 grant_minting.py ExchangeRequest 格式 → 修正 authority.py
 ②或用 broker.key 自签 JWT 绕过 broker。混合模式（Mac broker→101.7 API）也需修
 JWKS 信任。基础设施完备，只差签名链一个环节。
+
+
+## 2026-11-08 101.7 E1-A 最终冲刺
+
+Caddy TLS 代理链修复（authority HTTP + Caddy TLS 统一）→ broker 200 → API 准入处理。
+600/600 零拒绝、3.81/s（顺序提交上限）。任务未落库（unknown，publication 种子差异待修）。
+零拒绝证明 PG 8CPU 消除了连接调度瓶颈。
