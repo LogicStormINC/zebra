@@ -22628,3 +22628,9 @@ receipts-rabbit/。
 
 提交前×3 零部分写入；提交后×3 sealed 恢复恰一次（GET 最差103ms）；API SIGKILL RTO 最差
 7.9s/10连续探测/回执相等。证据 RESULTS-f01.md。
+
+
+## 2026-11-08 F-02 接管尝试收档
+
+四次尝试+发现留档（RESULTS-f02-attempt.md）：DLQ-churn 缺口（0.25s×5 ≪ 30s TTL）、
+worker-id 租约键雷区、fallback 重驱孤儿成功。三轮正式化开放，工具就绪。

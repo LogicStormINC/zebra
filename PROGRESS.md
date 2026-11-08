@@ -1,3 +1,14 @@
+## 2026-11-08 — F-02 接管正式化未达成，登记 DLQ-churn 产品缺口
+
+驱动/控制器完备（kill+替换容器+incarnation 重签+健康等待），接管机制被观测到成功一次
+（ce5d41d6 由替换 worker 完成），但确定性三轮未达成。核心新发现：持有者 SIGKILL 后命令
+唤醒在 ~3s 内被 0.25s 重投节奏耗尽 delivery-limit 5 进 DLQ（租约 TTL 30s），broker 门控
+下 fallback 无法捡起 → 接管停滞、命令被标 dead；候选缓解：requeue_delay≥TTL/5（现无旋
+钮）/delivery-limit 感知 BUSY/恢复扫描加 DLQ 重驱。次要：租约 owner 键为 worker-id 字符
+串（替换命名雷区）；孤儿命令经 fallback 重驱最终推进（陈旧 host 授权被正确拒绝）。
+四次尝试留档，F-02 维持历史低负载通过状态。证据
+`.artifacts/cloud-ha-e1/f05-worker-mac-602e2afa/RESULTS-f02-attempt.md`。
+
 ## 2026-11-08 — F-01 六轮正式化通过（提交边界两侧 + API 死亡恢复）
 
 线级丢弃准入 POST 响应，客户端仅以原 GET 和解、永不重发：提交前断开×3 全部零部分写入；
@@ -9287,3 +9298,11 @@ cancelled+synchronized），复现轮 exit 2715ms/cancelled+在线全绿 4102ms�
 提交前分支（unknown），发送后 0.5s 断开=提交后分支（sealed，服务端已提交而客户端无回执）。
 两分支各三轮全过；API kill/start 控制器 f01-control-watcher.py，轮间标记清理。过程修正：
 recover_original 对未知 operation 的非 JSON 响应以 ValueError 守卫（沿用原 f01 驱动惯例）。
+
+
+## 2026-11-08 F-02 尝试细节
+
+尝试1 broker 门控+重投 churn（产品缺口登记）；尝试2 陈旧标记杀控制器（已守护）；
+尝试3 孤儿重驱占槽（放行排干，scope 首次 0 pending）；尝试4 worker-id 撞名使断言不可
+满足但机制成功（唯一代 id 修复）；尝试5 基础设施全绿但命令 dead 而非重驱（差异未定位，
+开放式）。为 F-02 尝试移除 broker 门控（F-05 broker 证据为已收档阶段）。
