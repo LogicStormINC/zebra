@@ -22684,3 +22684,9 @@ TTL 缓存 135K→2 查询/s，吞吐不变。定位到 PG 连接调度竞争（
 
 edoburu/pgbouncer + transaction pooling，API+worker 全走 25433。吞吐翻倍（1.32→2.58/s），
 310/310 完成。8 连接是最优。5/s 需 PG 6+ 核。
+
+
+## 2026-11-08 101.7 PG 部署
+
+PG 8CPU/16GB + PgBouncer 已部署在 101.7:25432/25433。schema 迁移成功但缺 2 表
+（165 vs 163）→ API Host Grant origins 校验失败。回退 Mac PG。需后续补齐 setup。

@@ -1,3 +1,18 @@
+## 2026-11-08 — 101.7 专用 PG 部署：部分完成，API 启动受阻于 2 张缺失表
+
+192.168.101.7（16核/31GiB/440G）部署 PG 17.5（8 CPU/16GB/2GB shared_buffers/256 conn）
++ PgBouncer transaction pooling（8 连接）。schema 迁移 + 种子数据完成（163 表 vs Mac 165）。
+API 启动失败于 `Host Grant origins must contain unique exact HTTPS origins`——根因是
+101.7 数据库缺少 Mac 上由原始 setup 脚本（initialize.py/publish-q1.py）创建的 2 张表，
+导致 Host Grant 授权器返回异常 origins 列表。已识别为可修复的 setup 缺口：
+①从 Mac PG pg_dump 识别缺失表 DDL ②在 101.7 上创建 ③重测 API 启动。
+当前已回退到 Mac PG + PgBouncer（2.58/s）的稳定工作配置。
+
+101.7 部署成果（保留在位，待后续会话补齐 setup）：
+- PG 容器 zebra-e1a-pg（8 CPU/16GB，端口 25432）
+- PgBouncer 容器 zebra-e1a-pgbouncer（transaction pooling，端口 25433）
+- schema + 种子数据已迁移
+
 ## 2026-11-08 — PgBouncer 部署：吞吐 1.32→2.58/s（+96%），5/s 需更多 PG CPU
 
 PgBouncer 1.26.1 transaction pooling（端口 25433），API + 4 worker 全走 PgBouncer→PG（15→8 后端）。
