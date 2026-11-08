@@ -1,3 +1,7 @@
+## 2026-11-08 — F-05 Rabbit 子项一轮闭环（broker 真实承载命令投递）
+
+经产品 `command_delivery_scope_rollouts` 行将 scope 门控到 broker 后，Rabbit 真实承载命令投递并完成三个故障场景各一轮：执行中真实 `docker restart` 恰一次完成；outbox 原信封同 message_id 重投零业务效果（事件数、executor、publish_attempts 全不变）；提交期中断下命令按门控等待（无回退误拾取），relay 以 unconfirmed 退避重试第 7 次恢复发布并恰一次完成。期间发现并修复夹具缺陷（Rabbit 数据目录为 tmpfs，重启即丢失用户/vhost/队列；产品在全状态丢失+重置备下 8 分钟自愈，留档为超模型观察）。另修正：Redis 轮命令实为回退扫描送达。证据 `.artifacts/cloud-ha-e1/f05-worker-mac-602e2afa/RESULTS-rabbit.md`。
+
 ## 2026-11-08 — F-05 真实 Worker Redis 中断全链路一轮闭环
 
 602e2afa 候选下，真实 Worker 在 Redis 中断 3.0s 内持久化 14 事件全链至 PostgreSQL：既有 SSE 1.9s 补齐终态、中断期新 SSE 186.6ms 精确重放、原回执逐字节相等，查询 API 全程未重启。两次夹具失败样本原样保留。单样本、共享宿主，不构成三轮/256-SSE/E1-R/物理节点证据；F-05 剩 Rabbit 故障注入与对象降级对账，E1-A 容量与独立节点仍为整体阻塞。证据 `.artifacts/cloud-ha-e1/f05-worker-mac-602e2afa/RESULTS.md`。
@@ -9168,3 +9172,17 @@ Worker 将 14 事件全链（session_created 至 session_completed）持久化�
 边界：单样本、共享宿主 netns，不构成三轮、256-SSE、负载 E1-R 或物理节点证据。
 F-05 剩余 RabbitMQ 故障注入（确认/重投/恢复）与对象存储降级对账；E1-A 容量与独立
 计算节点仍是整体 HA 的直接阻塞。里程碑 3 维持 In Progress。
+
+
+## 2026-11-08 F-05 Rabbit 故障一轮闭环（602e2afa）
+
+Rabbit 子项三个场景在同一冻结组合下各完成一轮结构化验证：RA 真实重启（AMQP 39s 恢复）
+中执行的任务恰一次完成且原回执相等；RB 以 outbox 原始信封字节同 message_id 重发，
+消费端 ack 后零业务效果（模型调用仍为 1、事件数不变、outbox 不重发）；RC 提交期 broker
+完全停止，命令按 broker 门控等待、relay 退避重试（unconfirmed 结算 6 次），恢复后第 7
+次发布成功、恰一次完成。期间修复夹具缺陷：Rabbit 容器 /var/lib/rabbitmq 原为 192MiB
+tmpfs（重启即丢失全部状态），改为持久 bind 并以原凭据重新置备；产品在超模型的全状态
+丢失窗口内行为正确（outbox 不丢、退避重试、消费者被动恢复、8 分钟后自愈）。七次失败
+尝试全部为夹具/驱动侧问题并逐次留档，无产品改动。边界：各场景单轮、共享宿主、单成员
+quorum、RB 为同信封重发而非未 ack 重投窗口；对象存储子项与三轮正式化仍缺；E1-A 容量
+与独立节点仍是整体阻塞。证据 f05-worker-mac-602e2afa/RESULTS-rabbit.md。

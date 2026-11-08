@@ -22580,3 +22580,13 @@ d94f53de 全链 14 事件在 Redis 中断 3.026s 内由真实 Worker 持久化�
 原回执逐字节相等，命令 done、scope_pending=0、租约释放、executor_exit
 在案；查询 API 同容器 ID/PID 全程未重启。F-05 剩余：Rabbit 故障注入下
 确认/重投/恢复、对象存储降级与未知写对账。证据 f05-worker-mac-602e2afa/。
+
+
+## 2026-11-08 F-05 Rabbit 故障一轮闭环（续 Redis 轮）
+
+门控 scope 到 broker 后跑通 RA/RB/RC：真实重启中恰一次完成、原信封重投零效果、提交期
+中断第 7 次重试恢复。夹具缺陷两处修复留档：Rabbit tmpfs 数据卷（改持久 bind+原凭据重
+置备）、宿主控制器单次标记不可重入（改幂等再武装）。产品在全状态丢失超模型窗口内
+outbox 不丢、8 分钟自愈。七次失败尝试均夹具/驱动侧，逐次留档。矩阵同步修正 Redis 轮
+"Rabbit 未承载投递"的事实。证据 f05-worker-mac-602e2afa/RESULTS-rabbit.md 与
+receipts-rabbit/。
