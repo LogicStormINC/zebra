@@ -87,8 +87,16 @@ class PostgresTaskProjectionWorkStore(TaskProjectionWorkPort):
         if scope.anchor_event_id is None:
             raise CheckpointConflict("projection-work scope requires an executable anchor")
 
+    _enabled_cache_ttl: float = 30.0  # E1-A: 135K queries/s eliminated by TTL cache
+
     def _enabled(self, connection: _WorkConnection) -> bool:
-        return (
+        import time as _time
+
+        now = _time.monotonic()
+        cached = getattr(self, "_enabled_cache", None)
+        if cached is not None and cached[0] > now - self._enabled_cache_ttl:
+            return cached[1]
+        result = (
             connection.execute(
                 "SELECT 1 FROM task_projection_work_projectors WHERE deployment_namespace=%s "
                 "AND projector_version=%s AND enabled=1",
@@ -96,6 +104,8 @@ class PostgresTaskProjectionWorkStore(TaskProjectionWorkPort):
             ).fetchone()
             is not None
         )
+        self._enabled_cache = (now, result)
+        return result
 
     def enable_projection_work(self) -> None:
         with self._connect(write=True) as connection:
