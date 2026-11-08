@@ -1,3 +1,13 @@
+## 2026-11-08 — E1-A 5/s 冲刺失败：PG 争用随 worker 数扩展，需专用 PG ~8CPU
+
+12 个单槽 worker + PG 3.0 CPU，5/s × 120s：84/600 接受（14%）、218 拒绝、298 unknown。
+占槽回升至 **10.97s**（2 worker 时 2.38s → 12 worker 时退回 PG 0.6 水平）。
+两个复合因素：①冻结候选每任务 ~200+ PG 语句，5/s 需 ~1000 TPS（Mac 共享 netns PG 不可达）；
+②12×0.8+PG3+API1.2 ≈ 15 逻辑 CPU > 10 物理核，调度器抖动。
+**结论：E1-A 5/s 在单 Mac 上不可达**——需专用 PG ≥8 CPU 或产品级 PG 交互优化。
+实测底线已明确：PG CPU 是唯一扩展瓶颈；5/s 需 PG 持续 ~1000 TPS。
+证据 RESULTS-e1a-step1.md 全表。
+
 ## 2026-11-08 — E1-A PG CPU 提额：占槽 12.75→2.38s（-81%），5/s 底线收窄至 12 槽
 
 PG 从 0.6 CPU/768 MiB 提至 3.0 CPU/3 GiB（shared_buffers 32→128 MB）后，同一 1/s × 120s 阶梯：
@@ -9371,3 +9381,11 @@ PG 容器重建：direct postgres 启动（绕过 docker-entrypoint 的 initdb �
 重启（redis/rabbit/objects/proxy/authority/broker/model/engine-readonly/api/cleanup/双 worker），
 incarnation 重签。Mac load 4.9→6.5（PG 3 CPU 生效）。占槽改善归因：PG 变更操作从 400-1200ms
 降至 ~100ms（无 slow_worker_mutation 日志）。
+
+
+## 2026-11-08 E1-A 5/s 冲刺详情
+
+12 worker（c..l 各 0.8CPU/768 MiB）+ incarnation 重签（engine-readonly 代理在 PG 重建期间
+退出，需重启后从 docker info 直取 engine ID）。核心发现：PG 争用与 worker 数成正比——
+2 worker 时 mutation ~100ms（2.38s 占槽），12 worker 时退化至 ~400-1000ms（10.97s 占槽）。
+Mac load 12.2/10 核已过载。298 unknown 为准入路径 PG 事务超时。
