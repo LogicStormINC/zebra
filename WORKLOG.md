@@ -22672,3 +22672,9 @@ API 容器 overlay 测试。多 principal +19%；单 principal 需事务查询�
 
 纯准入（零 worker）5/s × 60s = 300/300 100%——准入路径不是瓶颈。瓶颈 = worker 后台
 轮询噪音（~35 查询/tick/worker）。解决方案：多槽 worker / 后台批量化 / PG 分离。
+
+
+## 2026-11-08 projection 缓存实验
+
+TTL 缓存 135K→2 查询/s，吞吐不变。定位到 PG 连接调度竞争（15 后端×3 CPU）。
+基础设施级约束：需 PgBouncer/独立 PG/更多 CPU 核。
