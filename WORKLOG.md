@@ -22760,3 +22760,8 @@ baseline 而 BUNDLE_ASSEMBLY_REFUSED。需运行 prepare_execution.py 重生成 
 
 31 任务首次获得 ACCEPTED (201) 响应！Publication→Broker→API→PG 全链路通。
 Worker 在运行但未消费任务（fallback scan 待查）。4.97/s 吞吐。
+
+
+## 2026-11-08 Worker 消费诊断
+epoch 空→插入后 worker 开始拾取。RetryableWorkerSetupError=ARM64/AMD64 baseline。
+prepare_execution.py 成功但输出文件未到宿主机（volume mount 问题）。需交互式操作。

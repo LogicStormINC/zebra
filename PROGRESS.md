@@ -1,3 +1,22 @@
+## 2026-11-08 — Worker 消费链诊断：epoch 修复 + baseline digest 是最后一关
+
+**已修复**：
+- PostgresControlPlaneEpochError：control_plane_epochs 表空 → 插入 epoch 行 ✅
+- Worker 开始拾取命令（fence=3→4，recovery generation 推进）✅
+
+**当前阻塞**：
+- Worker 执行失败 RetryableWorkerSetupError（bundle_assembly baseline digest 不匹配）
+- 根因：ARM64 catalog vs AMD64 worker settings
+- prepare_execution.py 输出 "prepared: true" 但文件未持久化到宿主机（Docker volume mount 问题）
+
+**下次会话最后一步**：
+1. SSH 到 101.7 交互式操作
+2. 运行 prepare_execution.py（确保文件写入宿主机）
+3. 将 AMD64 catalog 替换 ARM64 版本
+4. 重跑 publish-q1.py（清空 host_management_approvals 后）
+5. 重启 workers → 验证消费
+6. E1-A 5/s 完整验收
+
 ## 2026-11-08 — 🏆 101.7 AMD64 完整链路打通：31 任务 ACCEPTED (201)！
 
 **历史性突破**：101.7 AMD64 全栈上首次获得 **sealed 201 ACCEPTED** 响应。
