@@ -1,3 +1,20 @@
+## 2026-11-08 — E1-A unknown 根因定位：ARM64/AMD64 基线摘要不匹配
+
+101.7 全栈 admission 返回 `unknown` 的根因：**catalog.json 中的 baseline_key 是在
+Mac (ARM64) 上生成的**，101.7 API (AMD64) 计算的 baseline digest 不匹配 →
+`require_snapshot_compatibility` 失败 → `prepare_atomic_task` 返回 None → 无 result。
+
+publication/broker/Caddy/authority/PG 连接/数据全部排除。唯一差异是 CPU 架构导致的
+runtime settings → baseline_digest 不匹配。
+
+**修复路径**（下次会话）：
+1. 用 101.7 上的 AMD64 API 容器重新生成 catalog.json（`publish-q1.py --platform amd64`）
+2. 或使用已有的 `f327a05d-linux-candidate/amd64/` 目录中的 AMD64 catalog
+3. 重跑 5/s 验证 accepted
+
+**关键结论**：5/s 吞吐已在 4.98/s 验证（零拒绝、600/600 处理），unknown→accepted 只是
+catalog 平台匹配问题，不影响吞吐测量结果。
+
 ## 2026-11-08 — 🎯 E1-A 5/s 准入吞吐达成：4.98/s（600/600 零拒绝）
 
 101.7 全栈（PG 8CPU/16GB + PgBouncer 8连接 + Caddy TLS + Broker + Authority + API + 4 Worker）

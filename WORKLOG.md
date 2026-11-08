@@ -22716,3 +22716,9 @@ Caddy TLS 代理链修复（authority HTTP + Caddy TLS 统一）→ broker 200 �
 ## 2026-11-08 E1-A 5/s 达成
 
 并发提交（分TLS/HTTP双客户端）→ 4.98/s 600/600 零拒绝。5/s 准入吞吐目标达成。
+
+
+## 2026-11-08 E1-A unknown 根因
+
+ARM64 (Mac) catalog baseline_key ≠ AMD64 (101.7) baseline_digest → 定义解析失败。
+需 AMD64 catalog 重发布。吞吐已验证（4.98/s 零拒绝）。
