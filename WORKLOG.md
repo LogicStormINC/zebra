@@ -22666,3 +22666,9 @@ PG CPU ✓（0.6→3.0）→ 轮询噪音 ✓（12→4 worker）→ **准入锁�
 
 分支 codex/fix-e1a-admission-deserialize（8215d73c）：移除全局锁、保留 scope 键锁。
 API 容器 overlay 测试。多 principal +19%；单 principal 需事务查询批量化（50→10）。
+
+
+## 2026-11-08 E1-A 终局发现
+
+纯准入（零 worker）5/s × 60s = 300/300 100%——准入路径不是瓶颈。瓶颈 = worker 后台
+轮询噪音（~35 查询/tick/worker）。解决方案：多槽 worker / 后台批量化 / PG 分离。
