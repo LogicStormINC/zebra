@@ -22616,3 +22616,9 @@ receipts-rabbit/。
 
 干净复现（无 release 干预、逐轮询留证）：退出 23.3s/预算10s、在线 45s unconfirmed、
 命令 dead@44s/预算30s。缺陷登记；执行器阻塞读+循环边界中断假设待查。
+
+
+## 2026-11-08 F-08 三轮通过 + 发现③定性收口
+
+根因为环境缺 cleanup 角色（synchronize 独占者）；误读 23.3s 已更正为 2.68s。三轮最差
+195ms/2875ms/5723ms。cleanup 角色写入停合同前置。证据 RESULTS-f08.md。

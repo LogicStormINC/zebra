@@ -1,3 +1,14 @@
+## 2026-11-08 — F-08 三轮正式化通过（发现③定性为缺失 cleanup 角色）
+
+复现任务逐轮询重析+worker 日志证实：停快速路径一直达标（退出 ACK+租约释放 2.68s）；此前
+"23.3s" 为时间线抽样误读，已更正。真实根因：Mac 拓扑自 11-07 起缺六角色中的 cleanup
+（runtime_cleanup_service 独立进程独占 stop synchronize 阶段）——缺失时 watchdog 永停
+requested/attempts=0、在线 /stop 永久 unconfirmed、命令被失败路径标 dead。补齐容器后三条
+陈旧 override 秒级清账，F-08 三轮全过：最差 回执 195ms（≤2s）/退出 2875ms（≤10s）/结算
+5723ms（≤30s），在线 stopped/revoked/cleaned/synchronized ×3。发现①（incarnation 重签）
+与②（DEFER 可观测性/孤儿重驱）仍开放。证据
+`.artifacts/cloud-ha-e1/f05-worker-mac-602e2afa/RESULTS-f08.md`。
+
 ## 2026-11-08 — F-08 正式化尝试未通过，发现③经干净复现确认为产品缺陷
 
 三轮正式化准备就绪后第 1 轮暴露停链路异常，今日不计任何轮次通过。发现：①worker 容器
@@ -9248,3 +9259,14 @@ release 竞态，登记为待干净复现的排查项。过程另证：worker re
 断仅在循环边界生效，退出依赖模型调用超时兜底；在线停止投影在迟到退出后不再和解。
 正式缺陷登记，待排查任务立项（不动冻结候选）。三个样本（9b83c4bf/9cf8af92/7a11e1ec）
 保留。证据 f05-worker-mac-602e2afa/receipts-f08-repro/。
+
+
+## 2026-11-08 F-08 三轮正式化通过（602e2afa + cleanup 角色）
+
+排查链：executor_exit 回执无错误码 → 预算 120s 排除 → 租约时间戳（释放 6s）→ worker 日志
+（中断 2.5s）→ 逐轮询重析（退出实际 poll6=2.68s，纠正误读）→ watchdog diagnostics 停在
+requested/attempts=0 → 定位 synchronize 独属 force_stop_recovery 循环 → 其宿主为独立
+runtime_cleanup_service 进程（资源计划六角色之一）→ 拓扑缺失该容器。补齐（worker 镜像+
+cleanup.env+只读引擎代理，0.1CPU/256MiB）后：三条陈旧 override 清账（9cf8af92 →
+cancelled+synchronized），复现轮 exit 2715ms/cancelled+在线全绿 4102ms，正式三轮最差
+回执 195ms/退出 2875ms/结算 5723ms 全部预算内。矩阵 F-08 行更新。
