@@ -22690,3 +22690,9 @@ edoburu/pgbouncer + transaction pooling，API+worker 全走 25433。吞吐翻倍
 
 PG 8CPU/16GB + PgBouncer 已部署在 101.7:25432/25433。schema 迁移成功但缺 2 表
 （165 vs 163）→ API Host Grant origins 校验失败。回退 Mac PG。需后续补齐 setup。
+
+
+## 2026-11-08 101.7 PG 最终修复
+
+文件 dump/restore + 全表 GRANT → API 启动成功。5/s 67/600（网络延迟+槽位不足）。
+最优仍为 Mac PgBouncer 2.58/s。101.7 需本地 worker（amd64 镜像）才能消除延迟。

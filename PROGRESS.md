@@ -1,3 +1,15 @@
+## 2026-11-08 — 101.7 PG 修复完成但 5/s 受阻于网络延迟 + 执行槽不足
+
+host_authority_registries 缺失行已修复（文件传输替代管道 dump/restore + 全表 GRANT），
+API 成功启动于 101.7 PG。5/s 结果：67/600（旧数据清理后）——不如 Mac PgBouncer（310/600）。
+
+原因分析：①Mac→101.7 LAN 延迟 ~1-2ms/query × 50 queries/task = 50-100ms 额外延迟；
+②4 worker × 1 slot = 4 并发执行（~2/s 消费）远低于 5/s 输入；③旧测试数据残留影响。
+**根本问题**：worker 必须在 101.7 本地运行以消除网络延迟，这需要 amd64 worker 镜像。
+
+当前最优结果保持：**Mac PgBouncer 2.58/s（310/600 接受，310/310 完成）**。
+101.7 PG（8 CPU/16 GB）+ PgBouncer 已就绪，需后续在 101.7 本地部署 worker。
+
 ## 2026-11-08 — 101.7 专用 PG 部署：部分完成，API 启动受阻于 2 张缺失表
 
 192.168.101.7（16核/31GiB/440G）部署 PG 17.5（8 CPU/16GB/2GB shared_buffers/256 conn）
