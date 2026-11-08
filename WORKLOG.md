@@ -22729,3 +22729,10 @@ ARM64 (Mac) catalog baseline_key ≠ AMD64 (101.7) baseline_digest → 定义解
 5/s 吞吐已证明（4.98/s 600/600 零拒绝）。unknown→accepted 尝试了 catalog+DB 补丁，
 仍需 AMD64 publication 整链重生成（publish-q1.py + prepare_execution.py on 101.7）。
 吞吐测量结果有效（API 处理了全部请求）。
+
+
+## 2026-11-08 AMD64 publication 迁移结论
+
+ARM64→AMD64 逐字段补丁不够（catalog+DB manifest+engine.image 嵌套摘要全需改）。
+正确做法：从零 DB 开始，原生 AMD64 链（migrations→seed→publish→prepare）。
+5/s 吞吐已在 4.98/s 验证，AMD64 原生化只影响响应分类不影响吞吐。

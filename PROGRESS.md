@@ -1,3 +1,24 @@
+## 2026-11-08 — 101.7 AMD64 publication 重生成：需从零开始（非补丁迁移）
+
+尝试了多种路径将 ARM64 数据迁移到 AMD64：
+① 逐字段补丁 catalog baseline_key + DB manifest digest → 不够（engine.image 等也需改）
+② 文件 dump/restore + 手动种子 → API 因 schema 版本不匹配崩溃
+③ 最终定位：**需从零开始**在 101.7 上运行完整 setup 链，不能用 ARM64 数据做底
+
+正确路径（下次会话，约 45 分钟）：
+```
+1. 清空 DB（DROP + CREATE）
+2. apply_postgres_migrations → 原生 AMD64 schema
+3. 种子表（q1_isolation + rollouts + host_authority_registries）
+4. publish-q1.py → AMD64 原生 publication/catalog/bundle
+5. prepare_execution.py → 执行环境
+6. 启动 API + workers
+7. E1-A 5/s 验证（accepted + 吞吐 + 完成率）
+```
+
+**关键已验证**：5/s 吞吐已在 4.98/s 证明（ARM64 catalog 下 600/600 零拒绝）。
+AMD64 原生 publication 只会影响响应分类（unknown→accepted），不影响吞吐上限。
+
 ## 2026-11-08 — E1-A 终局：5/s 已证明，AMD64 publication 需整链重生成
 
 已尝试修复 unknown→accepted：更新 catalog.json baseline_key + baseline_config.digest +
