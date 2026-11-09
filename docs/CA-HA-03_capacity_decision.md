@@ -383,3 +383,28 @@ Owner lukeding；codex/fix-e1a-admission-deserialize。192.168.101.7 隔离 zebr
   dead-commands-archive-20261108.json、execution-prev/、results/。
 - CA-HA-03/E1-A 维持 In Progress：AMD64链路阻塞已清除，冻结容量验收仍等独占执行资源
   （用户已否决付费资源；共享宿主无法提供）。里程碑3不关闭。
+
+## 2026-11-09 空闲维护成本修复：fleet 空闲 ~108% → ~40% 单核
+
+同卡同branch（5aa6cf1c）。101.7 实测 4 worker 完全空闲（零任务）画像定位两项产品缺陷：
+
+- StreamHintRelay 失败结算 1s 重试：live fanout（Redis）不可用时变成永久 claim/settle
+  打转（84 tx/s，仅因 101.7 无 Redis 而暴露；等价于 Redis 故障域内的持续 DB 放大）。
+  修复：发布失败保留 claim，由 30s 租约到期承担有界重试；成功路径不变。
+  契约测试同步更新（test_publish_failure_keeps_claim_for_lease_recovery）。
+- AgUiProjectionWorkService 10Hz 空转 + 每拍重跑 bootstrap（对 projector 配置行 FOR UPDATE）：
+  fleet ~294 空闲事务/s。修复：bootstrap 完成后 60s 复查 + 空闲时区间倍增至 1s 上限、
+  有进展即回落。连同 4444af6a 的 _enabled() 30s TTL 一并部署验证。
+
+| 层 | 修复前 | 修复后 |
+| --- | --- | --- |
+| PG | 35.6%（峰值74%） | 21.3% |
+| PgBouncer | 15.8% | 3.9% |
+| 每 worker | 12-17% | ~3.9% |
+
+部署验证：perf2-5aa6cf1c-amd64（f327a05d + 三文件 delta；settings 未变故 baseline 链不重建），
+密封 201 → runsc 执行器 → session_completed 全链路复验通过；回归测试
+36+341+1 全绿。对容量判定的影响：40 worker 的空闲底盘从 ~10.8 核降至 ~4 核，
+共享宿主上的 40 槽不再数学上不可行（仍受生产负载与 8s/任务执行成本约束，不据此宣称可达标）。
+遗留观察：PG 21% 空闲仍偏高（疑 autovacuum/残余轮询，未定论）。PG 空闲证据：
+idle-before.txt / idle-after.txt / idle-after2.txt（本机 .artifacts 同目录随 RESULTS 归档）。
