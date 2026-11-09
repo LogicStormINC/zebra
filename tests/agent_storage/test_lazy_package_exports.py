@@ -8,8 +8,12 @@ import subprocess
 import sys
 
 HEAVY_MODULES = (
-    "agent_storage.postgres",
+    # The postgres subpackage root itself is now lazy-cheap; its adapters
+    # and every other heavyweight module must stay unloaded.
     "agent_storage.postgres_composition",
+    "agent_storage.postgres.agent_registry",
+    "agent_storage.postgres.agent_tasks",
+    "agent_storage.postgres.leases",
     "agent_storage.artifact_objects",
     "agent_storage.memories",
     "agent_storage.projections",
@@ -27,7 +31,8 @@ def _run(code: str) -> str:
 
 def test_root_import_does_not_load_heavy_submodules():
     out = _run(
-        "import sys, agent_storage;"
+        "import sys, agent_storage, agent_storage.postgres as pg;"
+        "assert pg.__doc__; "
         "print(','.join(m for m in sys.modules if m.startswith('agent_storage.')))"
     )
     loaded = {m.strip() for m in out.split(",") if m.strip()}
