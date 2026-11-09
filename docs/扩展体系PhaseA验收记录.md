@@ -3,7 +3,7 @@
 > 状态:**EXT Phase A 已全部完成并合并到 main(`de4fac7`,2026-07-21)。**
 > 范围:EXT-0 契约 + EXT-SKILL-01..05 + EXT-MCP-01/02/06(共 7 PR)。Plugin/Hook/Marketplace Locked,待私有云 GA。
 > 源方案:`zebra-agent-ext-plan-docs/docs/Skill_MCP_Plugin扩展体系优化升级方案_v1.0.md`。
-> 架构契约:`docs/ADR-014_扩展体系架构.md`;状态机契约 `docs/扩展体系状态机与契约_v1.0.md`;威胁模型 `docs/extension_threat_model.md`。
+> 架构契约:`docs/adr/ADR-014_扩展体系架构.md`;状态机契约 `docs/扩展体系状态机与契约_v1.0.md`;威胁模型 `docs/extension_threat_model.md`。
 
 ## 1. 逐卡落地与合并点
 

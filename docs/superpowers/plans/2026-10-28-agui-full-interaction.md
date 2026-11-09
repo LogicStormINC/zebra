@@ -318,7 +318,7 @@ Trench T1 在其自身环境执行 focused API、完整 toc-frontend test/lint/b
 - [生命周期](https://docs.ag-ui.com/spec/1.0/events/lifecycle)、[工具](https://docs.ag-ui.com/spec/1.0/events/tool-calls)：工具END、取消、usage与关闭语义。
 - [处理模型](https://docs.ag-ui.com/spec/1.0/basic/processing)、[标准传输](https://docs.ag-ui.com/spec/1.0/basic/transports/http-sse)：未知/已知错误、管线顺序及标准不提供续读。
 - [中断](https://docs.ag-ui.com/spec/1.0/basic/patterns/interrupt-resume)、[子Agent](https://docs.ag-ui.com/concepts/subagents)、[能力](https://docs.ag-ui.com/spec/1.0/basic/capabilities)：连续性和声明边界。
-- 既有仓库文档：`docs/AGUI_CLOUD_INTEGRATION_2026-10-28.md`、`docs/AGUI_LONG_SESSION_2026-10-28.md`、`docs/CLOUD_STREAM_SDK_PERFORMANCE.md`。历史测试结果未在本轮重跑，不作为新方案已通过的证据。
+- 既有仓库文档：`docs/reports/AGUI_CLOUD_INTEGRATION_2026-10-28.md`、`docs/reports/AGUI_LONG_SESSION_2026-10-28.md`、`docs/CLOUD_STREAM_SDK_PERFORMANCE.md`。历史测试结果未在本轮重跑，不作为新方案已通过的证据。
 
 
 方案审查：独立 reviewer 首轮指出5项实质问题（旧投影前置隔离、标准Frontend Tool往返、完整resume覆盖、门禁依赖、新测试入口），均已修订；复审通过。该结论仅针对方案，不代表实现、性能或部署验收。

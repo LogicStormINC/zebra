@@ -7,7 +7,7 @@
 > `zebra-agent-worker`、迁移头为 v23、AG-UI stream 以 `active_segment_id`
 > 为边界、`host_tool_*` 仍为部署级全局配置，均属实。
 >
-> 架构决策已登记为 `docs/ADR-017_Agent_Layer边界与多Host接入.md`；
+> 架构决策已登记为 `docs/adr/ADR-017_Agent_Layer边界与多Host接入.md`；
 > 实施卡以 `AL-PLAN-01` 预留表登记于 `docs/AGENT_TASKS.md`，全部 `Locked`，
 > 激活前必须按仓库规则冻结 owner、branch 与 Owned paths。
 

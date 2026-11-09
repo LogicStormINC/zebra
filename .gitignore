@@ -21,3 +21,8 @@ UI/**/dist/
 UI/**/src-tauri/target/
 docker/trench-acceptance.env
 docker/web-search/secrets/
+
+# hygiene: never track macOS/desktop noise or stale tool state
+.DS_Store
+**/.DS_Store
+/.pdm-python

@@ -175,4 +175,4 @@ clarification 和 task plan projection。除非实现证明前端无法稳定关
   因此遵循 API 最小化原则，没有扩大 API、存储、Policy 或 HITL 合同。
 - 16 项桌面检查、Node 22 生产构建、1312 项后端测试、`make check`、1512px
   与 900px 浏览器验收和截图设计 QA 均通过；详细证据见根目录
-  `design-qa.md`。
+  `docs/reports/design-qa.md`。

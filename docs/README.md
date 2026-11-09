@@ -8,6 +8,28 @@ explicit composition only; normal Worker budget enforcement remains a03C prerequ
 
 # Zebra Agent Docs Guide
 
+## Where New Documents Go (2026-11-08 normalization)
+
+New files land in the matching category directory, never flat at `docs/` root.
+The `docs/` root is a legacy flat archive from earlier phases — read-only;
+move a file only together with a reference rewrite in the same change.
+
+| Directory | Content | Naming rule |
+|---|---|---|
+| `adr/` | Architecture Decision Records | `ADR-<nn>_<topic>.md`, immutable once accepted |
+| `tasks/` | Task cards for parallel work | `<TASK-ID>_<slug>.md` |
+| `product/` | PRDs, page specs, product contracts | `<Product>_<artifact>_v<n>.md` |
+| `reports/` | Dated verification/QA/session reports | `<TOPIC>_YYYY-MM-DD.md` |
+| `contracts/` | Normative interface contracts | unchanged |
+| `architecture/` | Long-form architecture documents | unchanged |
+| `runbooks/` | Operational runbooks | unchanged |
+| `evidence/` | Evidence indexes pointing into `.artifacts/` | unchanged |
+| `superpowers/` | Skill-assisted plans and specs | unchanged |
+
+Existing root files referenced from `AGENTS.md` (the architecture/RACI sources,
+`AGENT_TASKS.md`, the active `CLOUD_HIGH_AVAILABILITY_*` and
+`CA-HA-03_resource_decision.md` mainline documents) stay in place.
+
 ## Product Plugin admission
 
 [CA-P4-01 public contract and proof boundaries](CA-P4-01_plugin_admission.md) ·
@@ -31,7 +53,7 @@ Use these files for implementation, task claiming, collaboration, and phase prog
 - `实施任务拆解与阶段验收.md`: historical Phase 0-8 dependency and acceptance baseline
 - `02_Codex-like工程Agent平台_多人协作任务分配与RACI_v1.0.md`: collaboration model, ownership, and review rules
 - `AGENT_TASKS.md`: current executable task registry
-- `ADR-016_Agent_Definition控制面与版本发布边界.md`: accepted Agent Definition
+- `adr/ADR-016_Agent_Definition控制面与版本发布边界.md`: accepted Agent Definition
   metadata authority, Task/Attempt snapshot separation, release and migration
   contract; implementation remains task-gated
 - `DeepSeek_V4_模型适配与专项优化方案_v1.0.md`: implemented `DS-OPT-01`

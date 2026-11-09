@@ -782,7 +782,7 @@
 - Human owner: Luke Ding; executor: Codex; target: cloud-agent.
 - Branch/worktree: codex/agui-g0-contract-20261028; trench-spin-sync-20261028/zebra-agent.
 - Dependency: approved plan d083c558, based on cloud-agent d15fe9f6.
-- Owned paths: docs/ADR-015_Zebra_Embedded与CopilotKit_AGUI边界.md;
+- Owned paths: docs/adr/ADR-015_Zebra_Embedded与CopilotKit_AGUI边界.md;
   docs/AGUI_STANDARD_DURABLE_CONTRACT.md; tests/conformance/agui_contract/;
   docs/AGENT_TASKS.md; PROGRESS.md; WORKLOG.md; approved implementation plan checkboxes.
 - Scope: freeze official schema/catalog, real legacy wire/cursor goldens, versions,
@@ -820,21 +820,21 @@
 # CLOUD-CONTINUATION-EPOCHS-20261028 — Stale recovery isolation
 - Status: Done;2d8edcc7 fast-forward integrated into local cloud-agent;159 focused,325 native/33 SDK and118 native sibling tests passed, zero skips; make check passed. No push/deployment. Created Ready and claimed before code on integrated34a81a31,2026-10-28.
 - Human owner: Luke Ding; executor Codex; branch codex/cloud-continuation-epochs-20261028; worktree cloud-plugin-plan-01/zebra-agent; target cloud-agent.
-- Owned paths: apps/worker/src/zebra_agent_worker/{continuation_boundaries,approved_continuation,clarification_continuation,child_wakeup_continuation}.py; tests/worker/test_continuation_epochs.py; tests/conformance/agui_long_session/run.sh; docs/CLOUD_RELIABILITY_2026-10-28.md; docs/AGENT_TASKS.md; PROGRESS.md; WORKLOG.md.
+- Owned paths: apps/worker/src/zebra_agent_worker/{continuation_boundaries,approved_continuation,clarification_continuation,child_wakeup_continuation}.py; tests/worker/test_continuation_epochs.py; tests/conformance/agui_long_session/run.sh; docs/reports/CLOUD_RELIABILITY_2026-10-28.md; docs/AGENT_TASKS.md; PROGRESS.md; WORKLOG.md.
 - Scope: investigate and minimally isolate stale approval/clarification/child continuations across newer control and Turn boundaries, including receipts arriving before attempt-start markers. Preserve current valid continuation and uncertain execution protections; no new abstraction, schema or retry policy.
 - Acceptance: reproduce old behavior offline, focused combination/long-history and existing continuation tests, native PostgreSQL/Redis/HTTP SDK gate and make check. Local integration only. No model/search, original Run changes, deployment, Search/MCP restart, permission/lease/cancel bypass or high/v2 changes.
 
 # CLOUD-RELIABILITY-BOUNDARIES-20261028 — Post-delivery, receipt and repair boundaries
 - Status: Done;8055ce7d fast-forward integrated into local cloud-agent; final native235/SDK33 zero skips, full suite11267/3092 conditional skips, make check passed; no push/deployment. Created Ready on integrated2d913e52 and claimed before code,2026-10-28.
 - Human owner: Luke Ding; executor Codex; branch codex/cloud-reliability-boundaries-20261028; worktree cloud-plugin-plan-01/zebra-agent; target cloud-agent authorized.
-- Owned paths: apps/worker/src/zebra_agent_worker/{completion_recovery,client_effect_continuation,client_effect_resume}.py; packages/agent-storage/src/agent_storage/postgres/{projection_work,projection_work_repair,client_effect_recovery}.py; focused tests/worker/test_reliability_boundaries.py and tests/agent_storage/test_projection_repair_contention.py, test_client_effect_recovery.py; tests/conformance/agui_long_session/run.sh; docs/CLOUD_RELIABILITY_2026-10-28.md; docs/AGENT_TASKS.md; PROGRESS.md; WORKLOG.md.
+- Owned paths: apps/worker/src/zebra_agent_worker/{completion_recovery,client_effect_continuation,client_effect_resume}.py; packages/agent-storage/src/agent_storage/postgres/{projection_work,projection_work_repair,client_effect_recovery}.py; focused tests/worker/test_reliability_boundaries.py and tests/agent_storage/test_projection_repair_contention.py, test_client_effect_recovery.py; tests/conformance/agui_long_session/run.sh; docs/reports/CLOUD_RELIABILITY_2026-10-28.md; docs/AGENT_TASKS.md; PROGRESS.md; WORKLOG.md.
 - Scope: preserve only proven complete post-answer storage faults; reject late receipt wakeups across pause/Turn/control boundaries; commit bounded scalar repair progress between headers and release route locks before source reads. Reuse existing contracts, no schema/dependency or business adapter changes.
 - Acceptance: combination red/green and real isolated PostgreSQL concurrency, existing recovery/native gates and static checks. No model/search requests, original Run changes, production deployment, Search/MCP restart, authority/lease/cancel bypass or high/v2 changes.
 
 # CLOUD-RELIABILITY-20261028 — Shared runtime failure isolation and recovery
 - Status: Done; integrated into local cloud-agent as193e8dfa; native gate168/SDK33 with zero skips, focused recovery109/2 conditional skips and make check passed; created Ready and claimed before implementation, 2026-10-28.
 - Human owner: Luke Ding; executor: Codex; branch codex/cloud-reliability-20261028; worktree cloud-plugin-plan-01/zebra-agent; integration target cloud-agent explicitly authorized.
-- Owned paths: packages/agent-storage/src/agent_storage/postgres/projection_work.py; apps/worker/src/zebra_agent_worker/execution_errors.py and shared recovery/loop modules if explicitly listed before edit; sdks/typescript/packages/client-core/src/ and tests/ shared Run/Turn observation; corresponding tests/agent_storage, tests/worker, tests/conformance/agui_long_session; docs/CLOUD_RELIABILITY_2026-10-28.md; docs/AGENT_TASKS.md; PROGRESS.md; WORKLOG.md.
+- Owned paths: packages/agent-storage/src/agent_storage/postgres/projection_work.py; apps/worker/src/zebra_agent_worker/execution_errors.py and shared recovery/loop modules if explicitly listed before edit; sdks/typescript/packages/client-core/src/ and tests/ shared Run/Turn observation; corresponding tests/agent_storage, tests/worker, tests/conformance/agui_long_session; docs/reports/CLOUD_RELIABILITY_2026-10-28.md; docs/AGENT_TASKS.md; PROGRESS.md; WORKLOG.md.
 - Owned paths addendum before edits: packages/agent-integrations/src/agent_integrations/ag_ui/interrupts.py and tests/agent_integrations/test_ag_ui_infrastructure_recovery.py for shared suspension projection; no ERP adapter files.
 - Owned paths addendum: tests/api/test_agui_long_session_wire.py generates actual infrastructure-suspension frames for the existing native HTTP/SDK gate.
 - Scope: avoid redundant healthy-route repair locks; explicit infrastructure/auth/provider failure classification with no automatic execution retry; reuse generic scoped recovery, preserve final facts, bound long-session/fault behavior. Any additional module recorded before edit.
@@ -929,43 +929,43 @@
 - Acceptance: inspect merged Worker recovery and workspace error handling; workspace I/O self-check, focused recovery/freshness regressions, full make test/check, source ancestry and retained-file hashes; publish cloud-agent after all gates.
 # CA-P3-03G — Host read-after-write freshness
 - Status: Review; make test11143 passed/3067 conditional skips, make check/30eval,31 focused andSDK173/check passed; fixed-source consumer separately. Created Ready/claimed before code 2026-10-26. Human owner Luke Ding; executor Codex; branch codex/ca-p3-03g-host-read-freshness from published F d5f45311. Paired OD-P3-CLOSEOUT; no main integration.
-- Owned paths: packages/agent-core/src/agent_core/harness/tool_freshness.py; tests/agent_core/test_host_read_freshness.py; docs/CA-P3-03G_host_read_freshness.md; docs/evidence/ca-p3-03g/; docs/{AGENT_TASKS.md,实施任务拆解与阶段验收.md}; PROGRESS.md; README.md; WORKLOG.md; task_plan.md.
+- Owned paths: packages/agent-core/src/agent_core/harness/tool_freshness.py; tests/agent_core/test_host_read_freshness.py; docs/tasks/CA-P3-03G_host_read_freshness.md; docs/evidence/ca-p3-03g/; docs/{AGENT_TASKS.md,实施任务拆解与阶段验收.md}; PROGRESS.md; README.md; WORKLOG.md; task_plan.md.
 - Boundary before code: all three serial/concurrent loop-guard callers reuse the same helper. Qualified mutation resource keys cannot be matched against bare argument names. Permit one fresh read per mutation epoch when qualified resources are present; actual authorization and matching resource/version/postcondition still govern execution and completion. No write retry, no unknown retry, no old proof/hash/data/Coverage rewrite.
 - Acceptance: deterministic read/write/read across matching/foreign/stale/version/postcondition and repeated-read epochs, existing quality tests, complete make test/check/SDK; publish then consumer source pin and actual Host Tool business CAS/UI/Worker acceptance. No deployment/production migrations/main/npm/HA claims.
 # CA-P3-03F — Explicit business-BFF Surface SDK
 - Status: Review; full make test/check,SDK check173 and actual packaged Surface SDK/Go facade/Worker candidate passed; published-source consumer separately AD. Created Ready/claimed before code2026-10-26. Human owner Luke Ding; executor Codex; branch codex/ca-p3-03f-surface-sdk from published E247ac351. Paired OD-P3-01AD, continuing stacked work; no main integration.
-- Owned paths: sdks/typescript/packages/client-core/{src/,tests/}; sdks/typescript/package.json; docs/CA-P3-03F_surface_sdk.md; docs/evidence/ca-p3-03f/; docs/{AGENT_TASKS.md,实施任务拆解与阶段验收.md}; README.md; PROGRESS.md; WORKLOG.md; task_plan.md.
+- Owned paths: sdks/typescript/packages/client-core/{src/,tests/}; sdks/typescript/package.json; docs/tasks/CA-P3-03F_surface_sdk.md; docs/evidence/ca-p3-03f/; docs/{AGENT_TASKS.md,实施任务拆解与阶段验收.md}; README.md; PROGRESS.md; WORKLOG.md; task_plan.md.
 - Boundary BEFORE code: standalone same-origin Surface SDK, strict public metadata/current binding DTO; persist only locator/stage before explicit submit/install. Surface unknown only original GET receipt; install unknown only read-only installed observation; discover/recreate no POST or overwrite other unknown. No secret/body/metadata storage, auto Controller/RUN/adoption or Native Python/schema/Worker changes; legacy unaffected.
 - Acceptance: deterministic persistence/phase/loss/strict DTO/metadata/role denial/no secret, SDK full check/tests and root make test/check; source publication then pinned AD actual SDK/public Go/Native condition/current mapping/Worker plus old consumers separately. Preserve mock/history/receipts/Coverage; no deploy/production migration/main/npm/HA.
 # CA-P3-03E — Explicit business-BFF message recovery SDK
 - Status: Review; full make test/check,SDK check165 and actual packaged SDK/Go facade/Worker candidate passed; published-source consumer separately AB-B. Created Ready/claimed before code2026-10-26. Human owner Luke Ding; executor Codex; branch codex/ca-p3-03e-message-sdk from published D bd348909. User continuing paired stacked work; no main integration.
-- Owned paths: sdks/typescript/packages/client-core/{src/,tests/}; sdks/typescript/package.json; docs/CA-P3-03E_message_sdk.md; docs/evidence/ca-p3-03e/; docs/{AGENT_TASKS.md,实施任务拆解与阶段验收.md}; README.md; PROGRESS.md; WORKLOG.md; task_plan.md.
+- Owned paths: sdks/typescript/packages/client-core/{src/,tests/}; sdks/typescript/package.json; docs/tasks/CA-P3-03E_message_sdk.md; docs/evidence/ca-p3-03e/; docs/{AGENT_TASKS.md,实施任务拆解与阶段验收.md}; README.md; PROGRESS.md; WORKLOG.md; task_plan.md.
 - Boundary BEFORE code: explicit same-origin BFF message SDK, bounded strict DTO and local durable locator before one POST; storage/network failure retains unknown, reload/discovery only explicit GET; no automatic POST/new intent/Controller. Body/credentials remain BFF; SDK no authority. Version1 browser contract belongs Overdoze AB-B consuming fixed Native message-v2/conditional surface, Python/storage/Worker/contracts unchanged. Old client/React/mock/history/original receipts/Coverage unchanged.
 - Acceptance: deterministic SDK persistence/unknown/reload/discovery/strict response/redirection/no secret, SDK full check/tests, full make test/check; scoped source publication then OD AB-B pinned-source actual SDK/Go/BFF/OIDC/signed Native/Worker and legacy compatibility separate. No deploy/production migration/main/npm/production HA.
 # CA-P3-03D — Original-message conditional atomic surface admission
 - Status: Review; full make test/check, SDK check158,46 API/22 real PG and actual two-browser BFF/SDK/Worker candidate passed; fixed published-source consumer separate. Created Ready/claimed before code2026-10-26. Human owner Luke Ding; executor Codex; branch codex/ca-p3-03d-message-anchor-admission from published C537bb579; explicit user continuing stacked work, no main integration.
-- Owned paths: apps/api/src/zebra_agent_api/{client_admission_operations.py,client_admission_atomic.py,client_admission_termination.py,client_admission_message.py}; packages/agent-storage/src/agent_storage/postgres/message_surface_anchor.py; tests/api/test_message_surface_admission.py; tests/agent_storage/test_message_surface_anchor.py; docs/CA-P3-03D_message_surface_anchor.md; docs/evidence/ca-p3-03d/; docs/{AGENT_TASKS.md,实施任务拆解与阶段验收.md}; README.md; PROGRESS.md; WORKLOG.md; task_plan.md.
+- Owned paths: apps/api/src/zebra_agent_api/{client_admission_operations.py,client_admission_atomic.py,client_admission_termination.py,client_admission_message.py}; packages/agent-storage/src/agent_storage/postgres/message_surface_anchor.py; tests/api/test_message_surface_admission.py; tests/agent_storage/test_message_surface_anchor.py; docs/tasks/CA-P3-03D_message_surface_anchor.md; docs/evidence/ca-p3-03d/; docs/{AGENT_TASKS.md,实施任务拆解与阶段验收.md}; README.md; PROGRESS.md; WORKLOG.md; task_plan.md.
 - Boundary BEFORE code: opt-in atomic-message-surface/1 only surface_mount, separately parsed original_message reference (original key/hash/Event/Segment/sequence), old DTO/digests unchanged. Same exact PG ports and outer fence transaction; membership-scoped Segment stream lock -> existing Task61 lock -> canonical active Task/readiness/source and original v2 receipt match/tail revision. Guard conflict persists sealed409 without dispatch; valid source consumed at most once by new protocol in existing scoped KV with surface/result in same transaction. No new schema/legacy receipt mutation/new operation retry/Controller reclaim.
 - Proof: current authority rechecks and original GET-only remain; new message-surface-termination version6 reuses atomic STOP/fence, proves only this surface operation's absent commit, not original message/RUN/Worker/external cancellation. Known409 result is a committed rejection receipt, not termination/noncommit proof. Old protocols unchanged; no global legacy-participant uniqueness or production HA claim.
 - Acceptance: API red/green DTO/eligibility/old hash, real PG mismatch/no effects/external append and pointer competition/one consumer/original result recovery/STOP rollback/known rejection, full make test/check/SDK and fixed public paired joint. Preserve original histories/receipts/Coverage/mocks/unrelated work; no deploy/production migration/main merge/npm.
 
 # CA-P3-03C — Opt-in original message Event/Segment coordinates
 - Status: Review; full make test/check and SDK check158 passed;12 old-code reds/31 API/8 real PG and actual public v2 source-coordinate Chromium-WebKit candidate passed; final published consumer evidence separate. Created Ready/claimed before code2026-10-26. Published B4be21b8e/AA58fd6a3 audited; explicit user continuation allows stacked prerequisite, not main integration. Human owner Luke Ding; executor Codex; branch codex/ca-p3-03c-message-coordinates.
-- Owned paths: apps/api/src/zebra_agent_api/{app.py,task_api.py,task_routes.py,task_session_api.py,task_message_receipts.py,task_message_contract.py}; tests/api/test_task_message_coordinates.py; tests/agent_storage/test_task_message_coordinate_read.py; docs/CA-P3-03C_message_coordinates.md; docs/evidence/ca-p3-03c/; docs/{AGENT_TASKS.md,实施任务拆解与阶段验收.md}; PROGRESS.md; WORKLOG.md; task_plan.md; README.md.
+- Owned paths: apps/api/src/zebra_agent_api/{app.py,task_api.py,task_routes.py,task_session_api.py,task_message_receipts.py,task_message_contract.py}; tests/api/test_task_message_coordinates.py; tests/agent_storage/test_task_message_coordinate_read.py; docs/tasks/CA-P3-03C_message_coordinates.md; docs/evidence/ca-p3-03c/; docs/{AGENT_TASKS.md,实施任务拆解与阶段验收.md}; PROGRESS.md; WORKLOG.md; task_plan.md; README.md.
 - Boundary BEFORE code: X-Zebra-Task-Message-Receipt-Version:2 opt-in on existing POST/GET. Only actual append's stored Event supplies message_coordinates={event_id,segment_id,segment_sequence} before original receipt persistence; legacy/default responses unchanged. V2 GET reports only valid stored coordinates, never current header/history scan or old-record backfill. Historical/partial/missing/malformed coordinates remain unavailable/unknown. Unsupported version/invalid v2 key fails before writes. Old GET1 returns original byte-equivalent body; no schema/new retry/intent/Controller authority.
 - Acceptance: red-green explicit coordinates and later successor changes, current same-Segment advancement, legacy/tamper/missing/failure/auth/version negatives; real PG independent-process original read/unchanged rows; both make test/check/SDK and fixed published consumer joint. Exact current-head compare is an observation only, not atomic mount CAS/cancellation/noncommit proof; production BFF/SDK still next dependent slice.
 
 # CA-P3-03B — Original Task-message receipt observation
 - Status: Review; full make test/check and SDK check158 passed;19 focused API/7 real PG passed; candidate lost-followup-reply GET-only/Unicode/Worker Chromium-WebKit passed; fixed published consumer evidence separate. Created Ready and claimed before code2026-10-26. Dependency published CA-P3-03A119fbf4f and OD-P3-01Za8fac7fc; user continuing authorizes this stacked prerequisite, no main integration.
 - Human owner Luke Ding; executor Codex; branch codex/ca-p3-03b-task-message-receipts.
-- Owned paths: apps/api/src/zebra_agent_api/{task_routes.py,task_message_receipts.py}; tests/api/test_task_message_receipts.py; tests/agent_storage/test_task_message_receipt_read.py; docs/CA-P3-03B_task_message_receipts.md; docs/evidence/ca-p3-03b/; docs/{AGENT_TASKS.md,实施任务拆解与阶段验收.md}; README.md; PROGRESS.md; WORKLOG.md; task_plan.md.
+- Owned paths: apps/api/src/zebra_agent_api/{task_routes.py,task_message_receipts.py}; tests/api/test_task_message_receipts.py; tests/agent_storage/test_task_message_receipt_read.py; docs/tasks/CA-P3-03B_task_message_receipts.md; docs/evidence/ca-p3-03b/; docs/{AGENT_TASKS.md,实施任务拆解与阶段验收.md}; README.md; PROGRESS.md; WORKLOG.md; task_plan.md.
 - DDD/boundary BEFORE code: public GET /tasks/{task}/messages/receipt reads only the existing Task-message idempotency record by original Idempotency-Key in the current deployment namespace, under current Task/Host/principal authorization. Return original status/body/request hash; caller must compare exact original input digest. Missing receipt is not_observed/unknown, never noncommit proof; storage outage503, no projection maintenance or POST/rollover/retry/Controller reclaim. No POST/key semantics change, schema/dependency/new-intent API or cancellation proof.
 - Acceptance: red-green API original receipt/missing/error/bounds/auth negatives, immutable SQLite and real PG reads/current namespace and cross-process recovery; both repositories make test/check, exact published producer consumer contract and lost-followup-reply GET-only Chromium/WebKit joint. Full durable BFF followup journal/SDK recovery remains next independent consumer task; private fixture is not production recovery/HA.
 
 # CA-P3-03A — Original client-effect receipt coordination on business-identical replay
 - Status: Review; make test/check passed;49 focused/13 real PG/SDK check158 tests passed; red2 old-code failures reproduced first. Same-item actual Worker candidate Chromium/WebKit passed; fixed published-source consumer acceptance recorded separately. Created Ready and claimed before code2026-10-26. Dependency published Zd93385bd and Overdoze main6ce9507/Y; user explicitly authorizes paired Z root-cause repair, not Native main integration.
 - Human owner Luke Ding; executor Codex; branch codex/ca-p3-03a-original-effect-receipts; isolated clean baseline worktree, parallel dirty worktrees untouched.
-- Owned paths: packages/agent-control-plane/src/agent_control_plane/client_effects.py; packages/agent-core/src/agent_core/ports/client_effect_receipts.py; packages/agent-tools/src/agent_tools/{effect_guard.py,effect_guard_support.py,legacy_effect_guard.py}; packages/agent-storage/src/agent_storage/postgres/{client_effects.py,client_effect_receipt_read.py}; apps/worker/src/zebra_agent_worker/{client_tool_gateway.py,client_effect_original_result.py,worker_tool_gateway.py}; tests/{agent_tools/test_effect_original_reuse.py,worker/test_client_effect_original_reuse.py,agent_storage/test_client_effect_original_read.py}; docs/CA-P3-03A_original_effect_receipts.md; docs/evidence/ca-p3-03a/; docs/{AGENT_TASKS.md,实施任务拆解与阶段验收.md}; PROGRESS.md; WORKLOG.md; task_plan.md; README.md (contract entry).
+- Owned paths: packages/agent-control-plane/src/agent_control_plane/client_effects.py; packages/agent-core/src/agent_core/ports/client_effect_receipts.py; packages/agent-tools/src/agent_tools/{effect_guard.py,effect_guard_support.py,legacy_effect_guard.py}; packages/agent-storage/src/agent_storage/postgres/{client_effects.py,client_effect_receipt_read.py}; apps/worker/src/zebra_agent_worker/{client_tool_gateway.py,client_effect_original_result.py,worker_tool_gateway.py}; tests/{agent_tools/test_effect_original_reuse.py,worker/test_client_effect_original_reuse.py,agent_storage/test_client_effect_original_read.py}; docs/tasks/CA-P3-03A_original_effect_receipts.md; docs/evidence/ca-p3-03a/; docs/{AGENT_TASKS.md,实施任务拆解与阶段验收.md}; PROGRESS.md; WORKLOG.md; task_plan.md; README.md (contract entry).
 - Boundary BEFORE code: keep Task business identity/ledger keys. Legacy and fenced reused deferred results use the same narrow read-only resolution hook. Validate original Effect/receipt IDs, request digest, task/action/arguments/current allowed contract; succeeded/failed terminal receipts are historical observations rebound to current ToolCall ID, never current-UI execution proof. Missing/pending/mismatched/storage-unavailable results become explicit unknown without deferred wait or dispatch; recheck Worker ownership after read. Never schedule/resume another Effect or mutate original ledger/receipt.
 - Explicit intent: new Run/UUID/UI revision is not new business authority. No new intent, replay or retry API is implemented; a fresh same-side-effect execution requires a future authenticated immutable business-intent contract. Credentials stay BFF; preserve old data, snapshots, receipts/Coverage. No schema/dependency/deploy/production migration/main merge/npm.
 - Acceptance: red-green legacy/fenced reuse guard, Worker receipt success/failure/unknown/tamper/current contract/owner-loss checks; real namespace-scoped PG read and unchanged receipt/event rows; same-item cross-Run actual Worker joint + old consumers; both repository make test/check and published source pin/explicit evidence/commit/push.
@@ -973,7 +973,7 @@
 # CA-P3-02Z — Explicit React same-Run Surface revision adoption
 - Status: Review; fresh make test 11075 passed/3052 conditional skips and make check passed after filesystem recovery; SDK check/158 tests and6 focused React cases passed. Candidate Chromium/WebKit actual new React owner capture -> BFF original GET/current mapping -> zero-HTTP adoption -> current heartbeat/unmount passed. Runtime/Worker/core SDK/schema unchanged; final published-source consumer separate. No second Worker/new Run claim. Created Ready and claimed before code; dependencies audited 2026-10-26: published V6c544bb0/Y38c4711b; user-authorized stacked continuation, not main integration.
 - Human owner Luke Ding; executor Codex; branch codex/ca-p3-02z-react-surface-revision.
-- Owned paths: sdks/typescript/packages/react/{src/,tests/,README.md}; docs/CA-P3-02Z_react_surface_revision.md; docs/evidence/ca-p3-02z/; docs/{AGENT_TASKS.md,实施任务拆解与阶段验收.md}; PROGRESS.md; WORKLOG.md; task_plan.md.
+- Owned paths: sdks/typescript/packages/react/{src/,tests/,README.md}; docs/tasks/CA-P3-02Z_react_surface_revision.md; docs/evidence/ca-p3-02z/; docs/{AGENT_TASKS.md,实施任务拆解与阶段验收.md}; PROGRESS.md; WORKLOG.md; task_plan.md.
 - Boundary BEFORE code: new explicit React owner after old owner unmount; reuse initial committed capture/typed registry/lifecycle. New useZebraSurfaceRevision pins immutable prior public config/metadata and exposes its preparation surface plus explicit adoption from public config, constructing only the real new runtime. Require same BFF base/Task/Run/Client/binding/Profile, next UI revision, greater binding revision/new digest and no action authority expansion. BFF exact original mount/GET-only recovery/current mapping precedes adoption; SDK adoption makes no mount/Controller request. Late/unmounted/changed page fails closed. No automatic resurrection, multi-Run, old Provider upgrade, Python/core SDK/Worker/schema/Go production change or new dependency.
 - DDD: React owns ephemeral committed UI and real runtime lifetime; BFF owns encrypted originals/auth/CAS/current mapping; Native owns Profile/Surface/Controller, original results and Worker. Credentials stay BFF. Unknown never automatic resend/new UUID/reclaim; new explicit authorized revision may rotate fence once, recovery never does.
 - Acceptance: StrictMode/capture-once/immutable prior and next-target checks, duplicate/late/stale/drift/unmount regressions, SDK check/full tests. Packed actual React Chromium/WebKit first Worker/UI terminal -> new committed revision page and new Readable capture -> one BFF mount/lost reply/two-replica restart original GET/current mapping CAS -> real SDK local adoption/current poll/owner unmount; same-source old core flow. Both make test/check, docs/evidence/scoped push. Preserve mock/history/original receipts/Coverage; no deploy/production migration/main merge/npm/production HA claim. New revision input is captured locally; no second Worker/new Run execution claim.
@@ -981,7 +981,7 @@
 # CA-P3-02Y — Durable explicit same-Run Surface revision prerequisite
 - Status: Review; fresh make test 11075 passed/3052 conditional skips; make check passed; unchanged SDK check/156 tests passed. Candidate Chromium/WebKit React first Worker/UI terminal then explicit same-Run Native revision, lost-reply two-BFF GET-only/current mapping CAS passed. Native production/SDK unchanged; final published-source consumer evidence separate. Created Ready and claimed before code; dependencies audited 2026-10-25: published U8a7e0d5/X7b5f8482; user-authorized stacked continuation, not main integration.
 - Human owner Luke Ding; executor Codex; branch codex/ca-p3-02y-explicit-surface-revision.
-- Owned paths: docs/CA-P3-02Y_explicit_surface_revision.md; docs/evidence/ca-p3-02y/; docs/{AGENT_TASKS.md,实施任务拆解与阶段验收.md}; PROGRESS.md; WORKLOG.md; task_plan.md.
+- Owned paths: docs/tasks/CA-P3-02Y_explicit_surface_revision.md; docs/evidence/ca-p3-02y/; docs/{AGENT_TASKS.md,实施任务拆解与阶段验收.md}; PROGRESS.md; WORKLOG.md; task_plan.md.
 - Boundary BEFORE code: atomic Task/Surface/RUN at admission revision1 may advance directly to explicit surface_mount of the exact same Runtime/Thread/Task/Run and original encrypted credential. Preserve legacy task/open/mount ancestry. Validate current authority/CAS and known successful original; pending/unknown blocks new UUID or changed input. One authorized new mount dispatch then original GET-only across BFF replicas/restart. No automatic rebind/reclaim, new Run, React revision lifecycle or cancellation claim. This prerequisite fixes a traced BFF ancestry mismatch before broader SDK multi-Run work.
 - DDD: BFF owns encrypted originals and mapping CAS; Native owns Surface/Profile/Controller and immutable original results. Reuse atomic-surface/1, public Client Surface metadata and existing Native APIs; no schema/Worker/Python/React/core SDK change or new dependency. Credentials stay BFF.
 - Acceptance: deterministic shared-PG ancestry/negative/CAS/unknown tests, actual React first Run -> Worker/approval/UI/terminal followed by explicit same-Run native revision, lost reply/new-operation refusal/two BFF restart/GET-only/current mapping and original receipt preservation. Same-source old core flow, both make test/check, SDK baseline and formal evidence. Preserve mock/history/receipts/Coverage; no deploy/production migration/main merge/npm/production HA claim.
@@ -989,7 +989,7 @@
 # CA-P3-02X — Explicit React initial Surface consumer
 - Status: Review; fresh make test 11075 passed/3052 conditional skips; make check passed; SDK check and156 tests passed, focused React4 passed. Candidate packed React Chromium/WebKit same initial TaskRun/Readable/Worker/approval/DOM/receipt/terminal and real owner unmount passed. Python/Worker/storage/core SDK unchanged; published-source consumer result recorded separately. Created Ready and claimed before code 2026-10-25. Dependencies audited: published T01e23b2/W5947d3a1; user-authorized stacked continuation, not merged main.
 - Human owner Luke Ding; executor Codex; branch codex/ca-p3-02x-react-initial-ui.
-- Owned paths: sdks/typescript/packages/react/{src/,tests/,README.md}; docs/CA-P3-02X_react_initial_ui.md; docs/evidence/ca-p3-02x/; docs/{AGENT_TASKS.md,实施任务拆解与阶段验收.md}; PROGRESS.md; WORKLOG.md; task_plan.md.
+- Owned paths: sdks/typescript/packages/react/{src/,tests/,README.md}; docs/tasks/CA-P3-02X_react_initial_ui.md; docs/evidence/ca-p3-02x/; docs/{AGENT_TASKS.md,实施任务拆解与阶段验收.md}; PROGRESS.md; WORKLOG.md; task_plan.md.
 - Boundary BEFORE code: React preparation Hooks register actual typed handlers/Readable values in a committed UI before explicit capture. Reuse core prepare/adopt and native atomic-task-run-surface/1 v5; no Python/Go production protocol, storage or Worker change. Capture once; unknown uses original BFF GET, never another capture/automatic bootstrap/remount/Controller reclaim. StrictMode transient cleanup cannot dispatch or stop a later live instance. Registration/value drift after capture fails closed; explicit UI revision and multi-Run belong later tasks.
 - DDD: React owns ephemeral page registration/lifecycle; BFF retains current identity/CAS/encrypted original and credentials; Native owns authorization/immutable Task/Surface/RUN/receipts/Worker. No dummy Runtime/identity or remote call before user action. Old Provider/Hooks keep legacy behavior; new initial Hooks are explicit opt-in.
 - Acceptance: StrictMode setup-cleanup, duplicate registration, immutable state, capture-once, schema validation, stale/late response and real unmount; actual packed React Chromium/WebKit SDK/OIDC/BFF same initial TaskRun -> Worker approval/UI/receipt/terminal and original GET-only recovery; same-source old core consumer regression. Both make test/check, SDK full check/test, docs/evidence then scoped push. Preserve mock/history/original receipts/Coverage; no deploy/production migration/main merge/npm/production HA claim.
@@ -997,7 +997,7 @@
 # CA-P3-02W — Initial SDK Readable/Surface and Task/RUN atomic admission
 - Status: Review; make test 11075 passed/3052 conditional skips; make check passed;45 focused real-PG/API cases (no skips); SDK full check and 153 tests passed. Candidate Chromium/WebKit same NEW initial UI/Readable/RUN -> Worker/approval/DOM/receipt/terminal and v5 rollback passed; old SDK/UI/U compatibility candidate passed. Published-source consumer acceptance recorded separately. Created Ready and claimed before code 2026-10-24. Dependencies: published S65ce92c/V1dba5fd6 and U atomic Task/RUN; user-authorized stacked continuation, not merged main.
 - Human owner Luke Ding; executor Codex; branch codex/ca-p3-02w-initial-ui-run.
-- Owned paths: packages/agent-storage/src/agent_storage/postgres/{database,agent_tasks,task_admission,projections}.py; apps/api/src/zebra_agent_api/{client_admission*.py,session_queue.py}; sdks/typescript/packages/client-core/src/; sdks/typescript/packages/client-core/tests/; tests/{api/test_client_admission*,agent_storage/test_admission*}; docs/CA-P3-02W_initial_ui_run.md; docs/evidence/ca-p3-02w/; docs/{AGENT_TASKS.md,实施任务拆解与阶段验收.md}; PROGRESS.md; WORKLOG.md; task_plan.md.
+- Owned paths: packages/agent-storage/src/agent_storage/postgres/{database,agent_tasks,task_admission,projections}.py; apps/api/src/zebra_agent_api/{client_admission*.py,session_queue.py}; sdks/typescript/packages/client-core/src/; sdks/typescript/packages/client-core/tests/; tests/{api/test_client_admission*,agent_storage/test_admission*}; docs/tasks/CA-P3-02W_initial_ui_run.md; docs/evidence/ca-p3-02w/; docs/{AGENT_TASKS.md,实施任务拆解与阶段验收.md}; PROGRESS.md; WORKLOG.md; task_plan.md.
 - Boundary BEFORE code: new opt-in atomic-task-run-surface/1. SDK prepares handlers/names and bounded Readable values before Task submit. Native uses same PG transaction for Task/bootstrap/binding, current published Profile/Surface/Controller, redacted initial Client State in sole first RUN, wakeup and sealed original result; no Worker/model/network under lock. Worker only sees committed ready input, no new Worker wait/timeout/retry mechanism. SDK adopts original public metadata without mount/reclaim; credentials stay encrypted in BFF original journal. Old protocols/receipts unchanged.
 - Dependency trace BEFORE storage edit: load_task_binding opens an independent readonly connection and cannot see this same-transaction Task. Trace confirms the same issue in get_task/get_session/get_session_namespace. Expand owned paths database.py, task_admission.py and projections.py; connect_task_io explicitly opts in via join_work_unit only for native Task/Session lookup adapters; readonly proof/header snapshots keep their existing independent default (approval regression exposed why implicit joining is unsafe); enlist only an already-owned exact DSN/namespace/thread unit, retain ordinary readonly snapshot behavior and add real PG regression.
 - DDD: Native owns execution snapshots/atomicity/current authorization/Controller; BFF owns exact original intention and CAS/recovery; SDK owns browser handlers and input capture. Unknown only original GET across replicas/restart; never resend/new UUID/reclaim. Abort rolls back Task/Surface/RUN with original result; committed never means Worker cancelled/noncommit. Exclude preparation manifest/audit/claim/STOP; reject attachments/MCP/workspace allocation/Coverage execution.
@@ -1006,7 +1006,7 @@
 # CA-P3-02V — Committed Task/RUN to Worker positive joint acceptance
 - Status: Review; fresh make test 11072 passed/3050 conditional skips; make check passed; 40 focused real-PG/API cases passed without skips; candidate Chromium/WebKit new protocol canonical RUN to actual Worker terminal answer passed. Final published-source consumer joint is separate. Created Ready and claimed before code 2026-10-24. Dependencies: published R6b7e84e/U6e197f0; explicit user-authorized stacked continuation, not merged main.
 - Human owner Luke Ding; executor Codex; branch codex/ca-p3-02v-task-run-worker.
-- Owned paths: docs/CA-P3-02V_task_run_worker.md; docs/evidence/ca-p3-02v/; docs/{AGENT_TASKS.md,实施任务拆解与阶段验收.md}; PROGRESS.md; WORKLOG.md; task_plan.md.
+- Owned paths: docs/tasks/CA-P3-02V_task_run_worker.md; docs/evidence/ca-p3-02v/; docs/{AGENT_TASKS.md,实施任务拆解与阶段验收.md}; PROGRESS.md; WORKLOG.md; task_plan.md.
 - Boundary BEFORE code: reuse atomic-task-run/1 without new production protocol/schema. One original encrypted BFF Task+RUN request, lost reply and GET-only recovery across replicas/restart; committed canonical RUN consumed by actual SessionCommandConsumer/Worker, exact Task/Run/command and terminal answer. Queued receipt is admission only; terminal execution facts separately observed; post-commit termination only committed/non_commit=false, never cancellation or external-effect absence. Keep prior precommit rollback scenario. No unknown resend/new UUID/Controller reclaim; credentials stay BFF.
 - DDD: business BFF owns intent/current identity/CAS/receipt recovery; Native owns command consumption/leases/events/results. Owned controlled model may answer prompt-only for this new Task; existing SDK Readable/UI approval flow remains independently checked, not substituted for new protocol Worker proof. No direct execute call, fake receipt or event insertion. No production changes unless a traced defect requires a separately expanded claim.
 - Acceptance: full gates both repositories, published-source frozen joint in Chromium/WebKit, exact original receipt preserved after Worker and postcommit termination. Preserve mock/history/original receipts/Coverage; no deployment/production migration/main merge/npm/HA claim.
@@ -1014,7 +1014,7 @@
 # CA-P3-02U — Atomic Task plus initial RUN admission
 - Status: Review; make test 11072 passed/3050 conditional skips; make check passed; 40 focused (26 API +14 real PG), no skips; candidate Chromium/WebKit atomic Task joint passed. Published-source consumer joint remains separate. Created Ready and claimed before code 2026-10-24. Dependencies audited: published T3c4009f7/Q5c4e93f; user-authorized stacked continuation, dependencies not merged main.
 - Human owner: Luke Ding; executor: Codex; branch codex/ca-p3-02u-atomic-task-run.
-- Owned paths: apps/api/src/zebra_agent_api/{client_admission*.py,session_queue.py,coverage_http_admission.py}; packages/agent-storage/src/agent_storage/postgres/admission_atomic_surface.py; tests/{api/test_client_admission*,agent_storage/test_admission*}; docs/CA-P3-02U_atomic_task_run.md; docs/evidence/ca-p3-02u/; docs/{AGENT_TASKS.md,实施任务拆解与阶段验收.md}; PROGRESS.md; WORKLOG.md; task_plan.md.
+- Owned paths: apps/api/src/zebra_agent_api/{client_admission*.py,session_queue.py,coverage_http_admission.py}; packages/agent-storage/src/agent_storage/postgres/admission_atomic_surface.py; tests/{api/test_client_admission*,agent_storage/test_admission*}; docs/tasks/CA-P3-02U_atomic_task_run.md; docs/evidence/ca-p3-02u/; docs/{AGENT_TASKS.md,实施任务拆解与阶段验收.md}; PROGRESS.md; WORKLOG.md; task_plan.md.
 - Boundary BEFORE code: new atomic-task-run/1 only task_create execute=true, exact signed Run resource frozen in original. Task/bootstrap/projections/binding/first RUN command/native PG wakeup and sealed receipt share commit. STOP wins before commit: after execution lock released, prove this admission did not commit. Commit wins: committed, never Worker stopped/noncommit; cancellation/compensation of already-running/external effects remains unsupported. Reject attachments/MCP/allocation/Coverage execution; old protocols never upgraded. Preparation manifest/audit/claim/STOP excluded. No automatic resend, new UUID, pending clearance or Controller reclaim.
 - DDD: Native owns Task/RUN/Worker authority and proof; BFF owns encrypted original intent, shared CAS and independently authorized one termination POST then GET-only recovery. Credentials stay BFF; existing Worker only sees committed commands; reuse native transaction and queue contracts, no new coordinator/queue/dependency/schema.
 - Acceptance: real PG committed/uncommitted command visibility and wakeup rollback, stop/commit/error, exact Run/auth/version guards; fixed published-source SDK/OIDC/signed cloud/same-run Worker Chromium/WebKit joint; both make test/check, formal evidence and scoped push. Preserve mock/history/original receipts/Coverage; no deployment/production migration/main merge/npm/production HA claim.
@@ -1022,14 +1022,14 @@
 # CA-P3-02T — Atomic non-executing Task admission and termination
 - Status: Review; make test 11066 passed/3048 conditional skips; make check passed; 32 focused (20 API +12 real PG), no skips; candidate Chromium/WebKit atomic Task joint passed. Published-source consumer joint remains separate. Created Ready and claimed before code 2026-10-24. Dependencies audited: published S8f44e5af/P302d9922; user-authorized stacked continuation, dependencies not merged main.
 - Human owner: Luke Ding; executor: Codex; branch codex/ca-p3-02t-atomic-task-termination.
-- Owned paths: apps/api/src/zebra_agent_api/{client_admission*.py,task_api.py}; packages/agent-storage/src/agent_storage/postgres/admission_atomic_surface.py; tests/{api/test_client_admission*,agent_storage/test_admission*}; docs/CA-P3-02T_atomic_task_termination.md; docs/evidence/ca-p3-02t/; docs/{AGENT_TASKS.md,实施任务拆解与阶段验收.md}; PROGRESS.md; WORKLOG.md; task_plan.md.
+- Owned paths: apps/api/src/zebra_agent_api/{client_admission*.py,task_api.py}; packages/agent-storage/src/agent_storage/postgres/admission_atomic_surface.py; tests/{api/test_client_admission*,agent_storage/test_admission*}; docs/tasks/CA-P3-02T_atomic_task_termination.md; docs/evidence/ca-p3-02t/; docs/{AGENT_TASKS.md,实施任务拆解与阶段验收.md}; PROGRESS.md; WORKLOG.md; task_plan.md.
 - Boundary before code: new atomic-task/1 only task_create execute=false; reuse native atomic Task admission, exact same-PG adapters and frozen authority; reject Workspace allocation, attachments/MCP and Coverage/Worker execution. Prepare definition/manifest before effect locks; audit/manifest/claim/stop excluded. Business Task/Session/events/projections/index/binding plus sealed result share commit fence. Active lock=pending; durable STOP plus free execution lock and absent atomic result=noncommit, never absence alone. Old protocols and unknown unchanged.
 - DDD: Native owns effects and proof; BFF freezes protocol in encrypted original intent, shared CAS and one termination POST with GET-only unknown recovery. Credentials remain BFF. No automatic resend/new UUID/pending clearance/Controller reclaim.
 - Validation: actual PG atomicity/stop/commit/crash, strict public HTTP and current authority, both make test/check; fixed published producer joint where feasible; docs/evidence/scoped push. Preserve frontend mock/history/original receipts/Coverage. No deployment/production migration/main merge/npm/HA claim.
 
 # CA-P3-02S — Started atomic surface termination and non-commit proof
 - Status: Review; make test 11060 passed/3045 conditional skips; make check1408 types/30eval; API14 and real owned PG16 focused passed. Started atomic-surface candidate Chromium/WebKit passed; published-source consumer joint is separate. Created Ready, dependency audit and claimed before code2026-10-24. Human owner Luke Ding; executor Codex; branch codex/ca-p3-02s-atomic-surface-termination. User-authorized stacked continuation from published O93c6244/R543d8c89; dependencies not merged main, no main integration.
-- Owned paths: apps/api/src/zebra_agent_api/client_admission*.py; packages/agent-storage/src/agent_storage/postgres/{idempotency.py,admission_dispatch_fence.py,admission_atomic_surface.py}; tests/{api/test_client_admission*,agent_storage/test_admission*}; docs/CA-P3-02S_atomic_surface_termination.md; docs/evidence/ca-p3-02s/; docs/{AGENT_TASKS.md,实施任务拆解与阶段验收.md}; PROGRESS.md; WORKLOG.md; task_plan.md.
+- Owned paths: apps/api/src/zebra_agent_api/client_admission*.py; packages/agent-storage/src/agent_storage/postgres/{idempotency.py,admission_dispatch_fence.py,admission_atomic_surface.py}; tests/{api/test_client_admission*,agent_storage/test_admission*}; docs/tasks/CA-P3-02S_atomic_surface_termination.md; docs/evidence/ca-p3-02s/; docs/{AGENT_TASKS.md,实施任务拆解与阶段验收.md}; PROGRESS.md; WORKLOG.md; task_plan.md.
 - Boundary fixed before implementation: new explicit atomic-surface/1 open/mount only, exact same Native PG adapters/namespace. All surface effects and sealed original result commit atomically; durable stop competes at the same original claim commit fence. Probe requires execution-row lock ownership and durable stop plus absence of atomic result; active transaction/unknown returns pending without proof. Existing old/pre-dispatch started/partial commits and Task creation are unsupported, never upgraded. No external I/O under transaction locks, bounded2s PG/short NOWAIT probes; no thread kill, lease expiry inference or synthetic receipts.
 - DDD: Native alone owns transaction/stop/proof; BFF freezes protocol in encrypted original intent and reuses O shared one-shot termination intent, independent authority and GET-only recovery. Stop/claim/audit writes excluded from business non-commit. No pending clearance, automatic resend/new UUID or Controller reclaim; preserve mock/history/receipts/Coverage.
 - Acceptance: actual PG effect rollback/result atomicity, start-stop-commit races, crash/disconnect/independent-process and denied/current auth; public signed HTTP/SDK/BFF joint where feasible, fixed published producer, both make test/check; docs/evidence and scoped push. No deployment/production migration/main merge/npm/production HA claim.
@@ -1037,7 +1037,7 @@
 # CA-P3-02R — Safe pre-dispatch termination and non-commit proof
 - Status: Review; make test 11059 passed/3036 conditional skips; make check1406 types/30eval; API13 and real owned PG7 focused passed. Pre-dispatch candidate Chromium/WebKit passed; published-source consumer joint is separate. Created Ready, dependency audit and claimed before code2026-10-24. Human owner Luke Ding; executor Codex; branch codex/ca-p3-02r-admission-termination, from published Q880cdadc. User-authorized stacked continuation; dependencies not merged main, no main integration.
 - Dependencies: OD-P3-01N/CA-P3-02Q immutable claims/results and business review. Current protocol lacks an execution fence; missing receipts are never non-commit evidence.
-- Owned paths: apps/api/src/zebra_agent_api/client_admission*.py; packages/agent-storage/src/agent_storage/postgres/{idempotency.py,admission_dispatch_fence.py}; tests/{api/test_client_admission*,agent_storage/test_admission*}; docs/CA-P3-02R_admission_termination.md; docs/evidence/ca-p3-02r/; docs/{AGENT_TASKS.md,实施任务拆解与阶段验收.md}; PROGRESS.md; WORKLOG.md; task_plan.md.
+- Owned paths: apps/api/src/zebra_agent_api/client_admission*.py; packages/agent-storage/src/agent_storage/postgres/{idempotency.py,admission_dispatch_fence.py}; tests/{api/test_client_admission*,agent_storage/test_admission*}; docs/tasks/CA-P3-02R_admission_termination.md; docs/evidence/ca-p3-02r/; docs/{AGENT_TASKS.md,实施任务拆解与阶段验收.md}; PROGRESS.md; WORKLOG.md; task_plan.md.
 - Proof boundary fixed before code: only new opt-in pre-dispatch/1 claims participate in a durable start-versus-terminate fence serialized on the original claim row. Termination wins before dispatch: exact original cannot dispatch and non-commit is proven for this admission only. Started, legacy, absent claim, timeout, lost response and partial commits never prove non-commit; never forcibly stop active dispatch or reconstruct receipts. No network under lock. No automatic resend, new UUID, pending clearance or Controller reclaim even with proof.
 - DDD/acceptance: Native owns fence/proof; BFF owns independently authorized original termination intent, shared persistence/current business identity and GET-only unknown recovery. Credentials remain BFF. Real PG races/restart and HTTP negative/public joint checks; both make test/check, docs/evidence and scoped push. Preserve mock/history/receipts/Coverage; no deployment, production migration, main merge/npm/production HA claim.
 
@@ -1045,7 +1045,7 @@
 
 - Status: Review; make test11057 passed/3032 conditional skips, make check1404 types/30eval; API11 and real owned PG3 passed. Published-source consumer joint recorded separately. Created Ready, dependencies audited and claimed before code2026-10-24. Human owner Luke Ding; executor Codex; branch codex/ca-p3-02q-admission-observation, from published Pce46a7e5. User-authorized stacked continuation; dependencies unmerged main, no main integration.
 - Dependencies: M/P encrypted original intent/result, State/CAS and native exact claim/result. Missing result is not non-commit proof. Native Q supplies read-only scoped observation; N owns business review records, not execution facts.
-- Owned paths: apps/api/src/zebra_agent_api/client_admission_operations.py; tests/{api/test_client_admission_operations.py,agent_storage/test_admission_operation_receipts.py}; docs/CA-P3-02Q_admission_observation.md; docs/evidence/ca-p3-02q/; docs/{AGENT_TASKS.md,实施任务拆解与阶段验收.md}; PROGRESS.md; WORKLOG.md; task_plan.md.
+- Owned paths: apps/api/src/zebra_agent_api/client_admission_operations.py; tests/{api/test_client_admission_operations.py,agent_storage/test_admission_operation_receipts.py}; docs/tasks/CA-P3-02Q_admission_observation.md; docs/evidence/ca-p3-02q/; docs/{AGENT_TASKS.md,实施任务拆解与阶段验收.md}; PROGRESS.md; WORKLOG.md; task_plan.md.
 - DDD/invariants: observations are bounded original facts, never reconstruction from current Controller. Business owner-filtered discovery and separately authorized manual handling with actor/CAS/append-only audit; all unknowns remain pending after escalate/acknowledge_unknown. No native POST, retry, key replacement, controller reclaim, receipt fabrication or silent clearance. Expired/unavailable native authority is unobservable, not failure proof. Preserve mock/history/original receipts/Coverage.
 - Acceptance: current-denial/forged observations, real shared PG CAS/late original receipt race/cross-process manual recovery, actual public signed HTTP where feasible; both repositories make test/check, formal docs/evidence and scoped commit/push. No deployment, production migration, main merge, npm publication or production HA claim.
 
@@ -1053,14 +1053,14 @@
 
 - Status: Review; make test11056 passed/3031 conditional skips; make check1404 types/30eval/file gate3418 zero violations; API/real owned PG12 passed. Producer publication and downstream pinned M joint recorded separately. Created Ready, dependency audit and claim before code2026-10-23. Human owner Luke Ding; executor Codex; branch codex/ca-p3-02p-admission-operation-receipts. Explicit user-authorized stacked continuation from published L/O; dependencies not merged main, no main integration.
 - Dependencies: L shared encrypted mappings/current authorization and O native receipts. Existing Task idempotency cannot recover credential-bearing mount; legacy surface may partially commit and rotates Controller fence. Register P prerequisite before M consumes it.
-- Owned paths: apps/api/src/zebra_agent_api/{client_admission_operations.py,client_runtime_routes.py}; tests/api/test_client_admission_operations.py; tests/agent_storage/test_admission_operation_receipts.py; docs/CA-P3-02P_admission_operations.md; docs/evidence/ca-p3-02p/; docs/{AGENT_TASKS.md,实施任务拆解与阶段验收.md}; PROGRESS.md; WORKLOG.md; task_plan.md.
+- Owned paths: apps/api/src/zebra_agent_api/{client_admission_operations.py,client_runtime_routes.py}; tests/api/test_client_admission_operations.py; tests/agent_storage/test_admission_operation_receipts.py; docs/tasks/CA-P3-02P_admission_operations.md; docs/evidence/ca-p3-02p/; docs/{AGENT_TASKS.md,实施任务拆解与阶段验收.md}; PROGRESS.md; WORKLOG.md; task_plan.md.
 - DDD/invariants: Native owns Task/session/Controller and exact original receipts; business BFF owns scoped admission intent, CAS, encrypted original request/response and current business authorization. Commit unknown before one POST; duplicate/new UUID cannot bypass pending. GET only original receipt, never remount/reclaim Controller/recreate Task; absence or partial commit remains unknown. No shared native SQL in Go. Credentials remain BFF; bounded storage/HTTP/locks, no network under locks; historical data/receipts/Coverage/mock retained.
 - Acceptance: shared PG concurrency, cross-process/restart and lost-response recovery at Task/open/mount; exact request binding/current denials/immutable receipt; both repositories make test/check; formal documents and scoped commit/push. No deployment, production migration, main merge or npm publication.
 
 # CA-P3-02O — Exact client approval operation receipts
 
 - Status: Review; final make test11046 passed/3029 conditional skips, make check1403 type files/30eval, API13 and real owned PG3 focused passed. First full run capability exact-dictionary failure retained; final rerun after explicit zero-version assertion/reject regression passed. Published-source consumer joint recorded separately by L. Created Ready and claimed before implementation2026-10-23. Human owner Luke Ding; executor Codex; branch codex/ca-p3-02o-approval-operation-receipts from published N047fad79. User requests paired BFF original-operation recovery; K exposed missing exact original approval receipt. No main/cloud-agent integration.
-- Owned paths: packages/agent-core/src/agent_core/ports/client_approval_operations.py; packages/agent-storage/src/agent_storage/postgres/{client_approval_operations.py,events.py}; apps/api/src/zebra_agent_api/{client_approval_operations.py,api_approval_control_mixin.py,routes.py,api_status_mixin.py}; tests/api/{test_client_approval_operations.py,test_runtime_capabilities.py}; tests/agent_storage/test_client_approval_operations.py; docs/CA-P3-02O_approval_operations.md; docs/evidence/ca-p3-02o/; docs/AGENT_TASKS.md; docs/实施任务拆解与阶段验收.md; PROGRESS.md; README.md; WORKLOG.md; task_plan.md.
+- Owned paths: packages/agent-core/src/agent_core/ports/client_approval_operations.py; packages/agent-storage/src/agent_storage/postgres/{client_approval_operations.py,events.py}; apps/api/src/zebra_agent_api/{client_approval_operations.py,api_approval_control_mixin.py,routes.py,api_status_mixin.py}; tests/api/{test_client_approval_operations.py,test_runtime_capabilities.py}; tests/agent_storage/test_client_approval_operations.py; docs/tasks/CA-P3-02O_approval_operations.md; docs/evidence/ca-p3-02o/; docs/AGENT_TASKS.md; docs/实施任务拆解与阶段验收.md; PROGRESS.md; README.md; WORKLOG.md; task_plan.md.
 - Scope update before compatibility-test edit2026-10-23: full test caught exact capability dictionary missing new explicit zero-version field. Add test_runtime_capabilities.py, preserve exact equality and SQLite disable; add explicit reject transaction/no-full-history regression before final full rerun.
 - Dependency/DDD: preserve N continuation and legacy approval endpoints. Native owns approval decision/wakeup/projections and exact receipt; BFF owns business authorization and scoped reference intent, never native tables. Reuse Event unique key, bounded index reads and existing PostgreSQL short transaction work unit; no new schema/migration or generic operation engine.
 - Invariants: bind exact Task/Run/Segment/Client/expected revision and operation to receipt; current Host/Profile/session/Controller for write, current scoped authority for reads; one atomic decision+projection+continuation commit under bounded stream lock, GET never repairs/retries, absence remains unknown. Legacy history/receipts/Coverage untouched.
@@ -1072,14 +1072,14 @@
 - Dependencies: published FrontendCapabilityProfile/ClientActionContract permits omitted/blank descriptions and omitted object schema metadata; strict ModelToolDefinition requires nonblank description/object type/properties. Current authorized binding/Profile/risk and Worker composition remain authoritative.
 - Scope update before approval edits2026-10-23: real same-run grant exposed approval response ensure_for_session rebuilding an already mapped Task and projecting resume before discovery. Reuse known task_id_for_session, preserving legacy fallback. Extend owned paths to apps/api/src/zebra_agent_api/api_approval_control_mixin.py and tests/worker/test_command_consumer.py. Interrupted description-only full run is excluded; final full gates after joint/root fixes.
 - Scope update before continuation/header edits2026-10-23: exact joint also exposes generic approval resume treated as a new null Run. Add trusted harness-only approval-resume continuation marker, preserve strict canonical Run checks, derive new future scalar headers via additive PG113 and atomic SQLite trigger upgrade without row rewrites. Extend owned paths: apps/api/src/zebra_agent_api/command_submission.py; packages/agent-integrations/src/agent_integrations/ag_ui/task_run_binding.py; packages/agent-storage/src/agent_storage/task_replay_header_schema.py; packages/agent-storage/src/agent_storage/postgres/{approval_resume_migration.py,migration_catalog_tail.py,task_replay_headers.py}; tests/agent_storage/{test_approval_resume_compatibility.py,test_task_replay_headers.py,test_scalar_task_replay_headers.py,test_branch_migration_catalog.py}; tests/agent_integrations/{test_ag_ui_projection.py,test_approval_resume_binding.py}; tests/api/test_approval_api_app.py. Old migration definitions/checksums immutable, old User approval commands unmodified; no production migration. Final gates only after these shared fixes.
-- Owned paths: apps/worker/src/zebra_agent_worker/client_tool_gateway.py; tests/worker/test_client_tool_gateway.py; docs/CA-P3-02N_client_tool_compatibility.md; docs/evidence/ca-p3-02n/; docs/AGENT_TASKS.md; PROGRESS.md; WORKLOG.md; task_plan.md; README.md; docs/实施任务拆解与阶段验收.md.
+- Owned paths: apps/worker/src/zebra_agent_worker/client_tool_gateway.py; tests/worker/test_client_tool_gateway.py; docs/tasks/CA-P3-02N_client_tool_compatibility.md; docs/evidence/ca-p3-02n/; docs/AGENT_TASKS.md; PROGRESS.md; WORKLOG.md; task_plan.md; README.md; docs/实施任务拆解与阶段验收.md.
 - DDD: repair only existing Worker anti-corruption conversion. Supply deterministic model presentation fallbacks without mutating published contracts/digests/Run binding/Effect payloads; preserve explicit schema constraints and explicit descriptions, USER_INTERACTION approval, current authority, original receipts/history/Coverage. No new aggregate, endpoint or dependency; additive forward-only PG113/atomic SQLite trigger upgrade only, no production migration.
 - Acceptance: reproduce optional metadata/default schema crash, verify nonmutation/explicit constraints/risk through actual shared Worker gateway; full make test/check plus Overdoze same-run business SDK/approval/UI Effect/Worker and current-denial/unknown original recovery; formal docs and scoped commit/push. No deployment, production migration or main merge.
 
 # CA-P3-01F — Trusted script Eval and public v3 snapshot binding
 
 - Status: Review; final corrected source5c0a6d87: make test11019 passed/3022 conditional skips (1191.37s), make check1399 type files/30eval, focused41 passed. Exported schema cardinality and public v3 Snapshot binding repaired with regressions; Worker strict check/v1/v2 preserved. Initial full11016 result and interrupted schema-only rerun retained separately in evidence.4649 existing files unchanged, one existing source fix plus five planning/log paths. Downstream actual16-case candidate passed; final published-pin joint receipt belongs to OD-P3-02D. Created Ready and claimed before code2026-10-23. Human owner Luke Ding, executor Codex; branch codex/ca-p3-01f-trusted-script-eval from published E416f6d8, no main integration.
-- Owned paths: apps/api/src/zebra_agent_api/session_queue.py; tests/api/test_script_snapshot_binding.py; packages/agent-runtime/src/agent_runtime/native_script_eval.py; packages/agent-storage/src/agent_storage/postgres/script_evaluation.py; apps/worker/src/zebra_agent_worker/script_evaluation.py; tests/agent_runtime/test_native_script_eval.py; tests/agent_storage/test_script_evaluation.py; docs/CA-P3-01F_trusted_script_eval.md; docs/contracts/native-script-evaluation/; docs/evidence/ca-p3-01f/; docs/AGENT_TASKS.md, PROGRESS.md, WORKLOG.md, task_plan.md; docs/实施任务拆解与阶段验收.md.
+- Owned paths: apps/api/src/zebra_agent_api/session_queue.py; tests/api/test_script_snapshot_binding.py; packages/agent-runtime/src/agent_runtime/native_script_eval.py; packages/agent-storage/src/agent_storage/postgres/script_evaluation.py; apps/worker/src/zebra_agent_worker/script_evaluation.py; tests/agent_runtime/test_native_script_eval.py; tests/agent_storage/test_script_evaluation.py; docs/tasks/CA-P3-01F_trusted_script_eval.md; docs/contracts/native-script-evaluation/; docs/evidence/ca-p3-01f/; docs/AGENT_TASKS.md, PROGRESS.md, WORKLOG.md, task_plan.md; docs/实施任务拆解与阶段验收.md.
 - Scope update before binding edits2026-10-23: joint acceptance exposed public v3 Task ceiling storing definition_digest while native scripts require snapshot_digest. Repair the shared admission producer for v3 only; leave Worker strict check, old v1/v2 and history unchanged. Interrupted the schema-only full rerun for this necessary source change; final full gates required after both fixes.
 - Dependencies: published A/B/C/D/E script ABI/catalog/2/Definition3/Registry and worker sandbox composition. User explicitly authorizes next work on published dependency branches before main integration. Old public contract/source pins stay immutable.
 - DDD: Native EvalOperation owns original exact Version+Definition+private suite/config digest, unknown claim and one terminal receipt. Native deterministic evaluator executes every approved effect-free binding in isolated runner against private fixed cases; it computes passed, never accepts a caller boolean. Registry stores derived evidence; Go only consumes evidenceId through unchanged D.
@@ -1089,7 +1089,7 @@
 # CA-P3-01E — Pure scoped ScriptBundle validation
 
 - Status: Review; final make test11002 passed/3022 conditional skips (1166.10s), make check1396 type files/30eval and56 focused checks passed; platform26 race packages passed, pin/check follows producer publication. Authorized scoped source delivery follows, remote receipt separate. Created Ready and claimed before implementation2026-10-23. Human owner Luke Ding; executor Codex. Branch codex/ca-p3-01e-script-bundle-validation, isolated published D b78a4ee4 base. User-authorized stacked continuation, no main/cloud-agent integration.
-- Owned paths: apps/api/src/zebra_agent_api/script_bundle_validation.py,script_bundle_contract.py,bundle_management_config.py,host_registry_management.py,validation_transport.py; tests/api/test_script_bundle_validation.py,test_script_bundle_validation_process.py; tests/test_script_bundle_validation_contract.py; docs/contracts/script-bundle-validation/; docs/CA-P3-01E_script_bundle_validation.md; docs/evidence/ca-p3-01e/; docs/AGENT_TASKS.md,PROGRESS.md,WORKLOG.md,task_plan.md; docs/实施任务拆解与阶段验收.md.
+- Owned paths: apps/api/src/zebra_agent_api/script_bundle_validation.py,script_bundle_contract.py,bundle_management_config.py,host_registry_management.py,validation_transport.py; tests/api/test_script_bundle_validation.py,test_script_bundle_validation_process.py; tests/test_script_bundle_validation_contract.py; docs/contracts/script-bundle-validation/; docs/tasks/CA-P3-01E_script_bundle_validation.md; docs/evidence/ca-p3-01e/; docs/AGENT_TASKS.md,PROGRESS.md,WORKLOG.md,task_plan.md; docs/实施任务拆解与阶段验收.md.
 - Dependencies/DDD: native B ScriptBundle/catalog2/assembly and D scoped publication are published. Draft validation must never materialize a Version or emulate Python semantics in Go. Reuse existing scoped read-only approval, native domain parser/catalog, bounded transport; no new aggregate/settings/table/migration/dependency.
 - Invariants: additive script-bundle-validation/1 and explicit script-bundle.contract.read/script-bundle.validate opt-in within private BundleManagementApproval; old Bundle1 and package C contracts/actions remain unchanged. Exact full scope, raw input/outer/base/assembly/catalog digest facts, no source upload/response/execution or Eval/Worker/Release/Coverage authority; current private authorization/catalog checked before response, no durable mutation.
 - Resources: 8 retained slots per protocol/instance, body limit262144/200ms, response1s; no DB/network/sandbox in validator, no automatic retries or readiness/HA claims. Prefix mounting uses shared transport dispatch fix for all existing callers with regressions.
@@ -1099,7 +1099,7 @@
 
 - Status: Review; final make test10985 passed/3022 conditional skips, make check1394 type files/30eval and29 focused checks passed; unchanged platform26 race packages/make check passed with74 inherited warnings. Local validation complete; authorized scoped source delivery follows, remote receipt separate. Created Ready and claimed before implementation 2026-10-23. Human owner Luke Ding; executor Codex. Branch codex/ca-p3-01d-script-publication; isolated stacked worktree on published M934d66b8. No main/cloud-agent integration.
 - Dependencies: P2 publication receipts/current publisher approval; P3 B ScriptBundle/Definition3/Worker and C package validation. Reuse native resolve_bundle_assembly, registry materialization/publication and shared receipt/CAS; no new domain aggregate or migration.
-- Owned paths: apps/api/src/zebra_agent_api/publication_management.py,publication_service.py,script_publication_contract.py; tests/api/test_script_publication.py; tests/test_script_publication_contract.py; tests/worker/test_native_script_control.py (existing cancellation assertion: accept either revoked lease or observed cancellation, keep no-late-receipt/session checks); docs/contracts/script-publication/; docs/CA-P3-01D_script_publication.md; docs/evidence/ca-p3-01d/; docs/AGENT_TASKS.md; PROGRESS.md; WORKLOG.md; task_plan.md; docs/实施任务拆解与阶段验收.md.
+- Owned paths: apps/api/src/zebra_agent_api/publication_management.py,publication_service.py,script_publication_contract.py; tests/api/test_script_publication.py; tests/test_script_publication_contract.py; tests/worker/test_native_script_control.py (existing cancellation assertion: accept either revoked lease or observed cancellation, keep no-late-receipt/session checks); docs/contracts/script-publication/; docs/tasks/CA-P3-01D_script_publication.md; docs/evidence/ca-p3-01d/; docs/AGENT_TASKS.md; PROGRESS.md; WORKLOG.md; task_plan.md; docs/实施任务拆解与阶段验收.md.
 - Invariants: additive explicit script-publication/1 route/header, immutable old P2 contract; exact base+script references and approved catalog/2/source, full scope/current shared approval, trusted Eval bound to Definition3; no source upload/execution, fake Eval, universal publisher or business Host publication authority. Cross-channel operation receipts cannot be substituted. Unknown uses original operation read/replay, no blind retry.
 - Concurrency: reuse per-Definition PG transaction/CAS and current approval locks; share bounded publisher admission slots across both routes. Catalog resolution is bounded local private input; no network or sandbox inside transaction. Explicit private approval remains operator-owned, API startup does not DDL.
 - Acceptance: actual owned PostgreSQL HTTP materialize/publish/receipt/CAS and negative grants/catalog/Eval/scope/contract/channel/current approval, existing P2 and script Worker/snapshot regressions; full make test/check in both repos, frozen old contracts/history/Coverage/mock; docs and scoped commit/push only. Platform asset-to-configuration intent, actual new HTTP-to-Worker combined run, gVisor and production HA are later evidence.
@@ -1107,7 +1107,7 @@
 # CA-P3-02M — Business OIDC and signed cloud admission acceptance
 
 - Status: Review; native make test10971 passed/3022 skips, make check1393 mypy/30eval; isolated OIDC/shared PG/two BFF/generic Broker/signed cloud lifecycle passed; 4624 baseline files unchanged. Real product/vendor IdP/production HA unverified. Ready dependency audit/claim before code2026-10-23. Human owner Luke Ding; executor Codex. Branch codex/ca-p3-02m-signed-cloud; isolated stacked worktree from published G-D0547c2b / L760fcfb9, no main integration. User delegated protocol/config choices.
-- Owned paths: tests/acceptance/business_cloud_*.py; tests/api/test_business_cloud_*.py; docs/CA-P3-02M_signed_cloud.md; docs/contracts/business-cloud/; docs/evidence/ca-p3-02m/; docs/AGENT_TASKS.md,PROGRESS.md,WORKLOG.md,task_plan.md; docs/实施任务拆解与阶段验收.md.
+- Owned paths: tests/acceptance/business_cloud_*.py; tests/api/test_business_cloud_*.py; docs/tasks/CA-P3-02M_signed_cloud.md; docs/contracts/business-cloud/; docs/evidence/ca-p3-02m/; docs/AGENT_TASKS.md,PROGRESS.md,WORKLOG.md,task_plan.md; docs/实施任务拆解与阶段验收.md.
 - Dependency/decision: OIDC Authorization Code+PKCE with issuer/audience/signature/nonce/auth_time validation via maintained Go OIDC library; explicit client auth mode, no code exchange retries. Reuse G-D LoginIntent/G-B encrypted sessions and existing public E2A/Broker/RS256/Host/Profile/Task/Session/Controller contracts. No vendor lock or Runtime execution changes.
 - DDD: business authentication attempt owns original state/browser binding/provider-config identity/encrypted PKCE+nonce/expiry and pending→unknown→verified. Business owns IdP and issuer/sub→platform identity mapping; LoginIntent owns platform issuance, Runtime owns signed admission. No credential in browser/intent logs.
 - Invariants: shared durable claim before code exchange, no takeover or unknown code replay; nonce/PKCE/issuer/audience exact; only original verified observation recovery. Tokens remain BFF, native grant/signing authority remains Python; bounded resources, short DB transactions, no network lock.
@@ -1116,7 +1116,7 @@
 # CA-P3-02L — Verified business login callbacks and authenticated Runtime lifecycle
 
 - Status: Review; make test10971 passed/3022 conditional skips (1201.65s), make check1393 mypy/30 eval passed; SDK151/package/React18+19/Next/browser matrix and paired platform HTTP/business PG/native mount+Controller Chromium/WebKit passed;4610 old files unchanged. No main integration. Created Ready and claimed before code2026-10-22 after published G-Cec4bb07 / Kc023fa58 dependency audit. Human owner Luke Ding; executor Codex. Branch codex/ca-p3-02l-auth-lifecycle; isolated stacked worktree, no main integration.
-- Owned paths: sdks/typescript/packages/client-core/src/auth_lifecycle.ts,index.ts; sdks/typescript/packages/client-core/tests/auth-lifecycle.test.ts; sdks/typescript/scripts/auth-lifecycle-browser.mjs; sdks/typescript/package.json; docs/CA-P3-02L_auth_lifecycle.md; docs/contracts/auth-lifecycle/; docs/evidence/ca-p3-02l/; docs/AGENT_TASKS.md,PROGRESS.md,WORKLOG.md,task_plan.md; docs/实施任务拆解与阶段验收.md.
+- Owned paths: sdks/typescript/packages/client-core/src/auth_lifecycle.ts,index.ts; sdks/typescript/packages/client-core/tests/auth-lifecycle.test.ts; sdks/typescript/scripts/auth-lifecycle-browser.mjs; sdks/typescript/package.json; docs/tasks/CA-P3-02L_auth_lifecycle.md; docs/contracts/auth-lifecycle/; docs/evidence/ca-p3-02l/; docs/AGENT_TASKS.md,PROGRESS.md,WORKLOG.md,task_plan.md; docs/实施任务拆解与阶段验收.md.
 - DDD: business owns IdP verification and immutable identity mapping. LoginIntent owns fixed verified callback ID/scope/credential Session/key/platform/expected revision and durable unknown/completed receipt; CredentialSession remains G-B authority, tokens/family remain platform authority. SDK owns local lifecycle epoch, never execution or authentication authority.
 - Invariants: fresh current business callback authorization before/after I/O; durable unique claim BEFORE exactly one Issue; unknown never reissues, reconciliation observes exact original Install only. No token in intent/browser. Short bounded DB transactions/no network lock. Runtime stops before refresh/retire and on denied/unknown; aborted/late bootstrap or mount cannot resurrect old Runtime; restart explicit with fresh config/fences.
 - Acceptance: real platform public identity HTTP/separate business PG, callback duplicates/independent processes/failure/reopen/owner/CAS, actual native HTTP mount/lifecycle with packaged SDK in Chromium/WebKit; both full make test/check and SDK verify; frozen legacy files/contracts/mock/history/Coverage and exact source proof, docs/tasks and scoped commit/push. Business IdP verification is an adapter fixture unless actual provider supplied; no production HA/IdP/model claim, deploy/production migration/npm publish.
@@ -1124,7 +1124,7 @@
 # CA-P3-02K — Same-origin business authentication facade and SDK
 
 - Status: Review; make test 10971 passed/3022 conditional skips (1244.42s), make check passed (1393 mypy/30 eval/3393 size files); SDK145, package/React18/19/Next/browser matrix and paired actual platform HTTP/separate business PG Chromium/WebKit passed;4601 baseline files unchanged. No main integration. Ready dependency audit and claim before code 2026-10-22. Human owner Luke Ding; executor Codex. Branch codex/ca-p3-02k-bff-auth; isolated stacked worktree, no main integration.
-- Owned paths: sdks/typescript/packages/client-core/src/bff_auth.ts,index.ts; sdks/typescript/packages/client-core/tests/bff-auth.test.ts; sdks/typescript/scripts/bff-auth-browser.mjs; sdks/typescript/package.json; docs/CA-P3-02K_bff_auth.md; docs/contracts/bff-auth/; docs/evidence/ca-p3-02k/; docs/AGENT_TASKS.md,PROGRESS.md,WORKLOG.md,task_plan.md; docs/实施任务拆解与阶段验收.md.
+- Owned paths: sdks/typescript/packages/client-core/src/bff_auth.ts,index.ts; sdks/typescript/packages/client-core/tests/bff-auth.test.ts; sdks/typescript/scripts/bff-auth-browser.mjs; sdks/typescript/package.json; docs/tasks/CA-P3-02K_bff_auth.md; docs/contracts/bff-auth/; docs/evidence/ca-p3-02k/; docs/AGENT_TASKS.md,PROGRESS.md,WORKLOG.md,task_plan.md; docs/实施任务拆解与阶段验收.md.
 - Dependencies: published G-A94885ce / G-B4b11b8a and SDK J4e629a5a. Platform public identity1 and BFF encrypted shared CredentialSession remain authority; no Python endpoint/schema changes.
 - DDD: HTTP facade translates safe DTOs to existing BFF application use cases; business owns current login/cookie/mapping. SDK has opaque operation locators only. No browser Token/identity override or Issue endpoint.
 - Invariants: fixed same origin/current business resolution, CSRF guard and bounded ingress; GET never rotates/issues, mutations CAS and original op receipts via G-B. Unknown blocks new refresh/bootstrap, only original read reconciliation; explicit retirement is separate. Credentials remain BFF. Initial install/fresh reauthentication remains trusted business server flow, no automatic Issue retry.
@@ -1133,7 +1133,7 @@
 # CA-P3-02J — Cross-device unknown request discovery and manual handling
 
 - Status: Review; make test 10971通过/3022条件跳过（1220.28s），make check通过（1393类型文件/30eval）；SDK139、React18/19与双浏览器矩阵、新跨设备及旧恢复联合验收通过；3768保护文件未变。 Ready dependency audit and claim before code2026-10-22. Human owner Luke Ding; executor Codex. One isolated codex/ca-p3-02j-request-discovery branch/worktree; stacked on published E b710e4a / I be4b442c. No main integration.
-- Owned paths: sdks/typescript/packages/client-core/src/request_discovery.ts,index.ts; sdks/typescript/packages/client-core/tests/request-discovery.test.ts; sdks/typescript/scripts/request-discovery-browser.mjs; sdks/typescript/package.json; docs/CA-P3-02J_request_discovery.md; docs/contracts/request-discovery/; docs/evidence/ca-p3-02j/; docs/AGENT_TASKS.md,PROGRESS.md,WORKLOG.md,task_plan.md; docs/实施任务拆解与阶段验收.md.
+- Owned paths: sdks/typescript/packages/client-core/src/request_discovery.ts,index.ts; sdks/typescript/packages/client-core/tests/request-discovery.test.ts; sdks/typescript/scripts/request-discovery-browser.mjs; sdks/typescript/package.json; docs/tasks/CA-P3-02J_request_discovery.md; docs/contracts/request-discovery/; docs/evidence/ca-p3-02j/; docs/AGENT_TASKS.md,PROGRESS.md,WORKLOG.md,task_plan.md; docs/实施任务拆解与阶段验收.md.
 - Dependencies: published receipt1 and immutable BFF original mapping/SDK recovery1. No new native execution endpoint or Python/schema change. Reuse original Session/Target receipt lookup, no credential substitution.
 - DDD: business journal owns scoped request discovery; separate append-only manual disposition records CAS/audit, never change native admission status. Current subject/resource listing authority and separate explicit handling permission; resource-scoped inbox independent of current device Task/bootstrap. Unknown including handled stays blocking, no automatic or manual replay path.
 - Acceptance: bounded owner-filtered keyset pages, explicit additive business-only initialization, CAS/current authorization/concurrency/restart/negative tests with owned PG; SDK strict response/read-only discovery/manual action tests and browser flow; both repositories make test/check; preserve management/mock/history/Coverage/old contracts. Update formal docs/evidence and commit/push; no deploy/production migration/npm publish.
@@ -1142,7 +1142,7 @@
 
 - Status: Review; 最终make test 10971通过/3022条件跳过（1230.21s），make check通过（1393类型文件、30eval）；SDK verify136及双浏览器/双Go进程/重启/原生收据联合验收通过，3757保护文件不变。 Ready claim before code2026-10-22. Human owner Luke Ding; executor Codex. Published H be9f7cd2 dependency; authorized stacked continuation, no main integration.
 - Branch codex/ca-p3-02i-command-recovery; one isolated worktree.
-- Owned paths: apps/api/src/zebra_agent_api/ag_ui_command.py,api_status_mixin.py; tests/api/test_command_segment_precondition.py,test_runtime_capabilities.py; sdks/typescript/packages/contracts/src/index.ts; sdks/typescript/packages/client-core/src/index.ts,runtime_configuration.ts,bff_transport.ts,readable_commands.ts,command_recovery.ts; sdks/typescript/packages/client-core/tests/command-recovery.test.ts; sdks/typescript/packages/react/src/index.ts; sdks/typescript/packages/react/tests/command-recovery.test.tsx; sdks/typescript/package.json; sdks/typescript/packages/react/README.md; sdks/typescript/scripts/command-recovery-browser.mjs,native-surface-bff.mjs; docs/CA-P3-02I_command_recovery.md; docs/contracts/sdk-command-recovery/; docs/evidence/ca-p3-02i/; docs/AGENT_TASKS.md,PROGRESS.md,WORKLOG.md,task_plan.md,README.md; docs/实施任务拆解与阶段验收.md.
+- Owned paths: apps/api/src/zebra_agent_api/ag_ui_command.py,api_status_mixin.py; tests/api/test_command_segment_precondition.py,test_runtime_capabilities.py; sdks/typescript/packages/contracts/src/index.ts; sdks/typescript/packages/client-core/src/index.ts,runtime_configuration.ts,bff_transport.ts,readable_commands.ts,command_recovery.ts; sdks/typescript/packages/client-core/tests/command-recovery.test.ts; sdks/typescript/packages/react/src/index.ts; sdks/typescript/packages/react/tests/command-recovery.test.tsx; sdks/typescript/package.json; sdks/typescript/packages/react/README.md; sdks/typescript/scripts/command-recovery-browser.mjs,native-surface-bff.mjs; docs/tasks/CA-P3-02I_command_recovery.md; docs/contracts/sdk-command-recovery/; docs/evidence/ca-p3-02i/; docs/AGENT_TASKS.md,PROGRESS.md,WORKLOG.md,task_plan.md,README.md; docs/实施任务拆解与阶段验收.md.
 - DDD: browser markers are non-authoritative per-session request locators; business BFF journal owns immutable requests/dispatch uniqueness; Runtime owns admission. Reuse H receipt1; dependency audit found AG-UI chooses current Segment. Add optional original Segment precondition + capability1 before SDK/BFF delivery; no schema or Coverage changes.
 - Invariants: opt-in recovery1; persist opaque key before POST, strict bounded markers/no values or credentials; unknown blocks commands/remount across reload; reconciliation GET only/no resubmit, accepted only original commandId, absence retains unknown; current bootstrap/mount required after resolution, no old fence resurrection. Storage failure fails closed. Existing modes unchanged.
 - Acceptance: meaningful reload/unknown/persistence/strict input/concurrency negatives; SDK verify and browser recovery; both full gates and preservation; documents/tasks and scoped push. Production IdP/HA/model remain unclaimed. No deploy/production migration/npm publish.
@@ -1151,7 +1151,7 @@
 
 - Status: Review; 最终 make test 10970通过/3022条件跳过（1171.24s），make check通过（1393类型文件、30eval）；定向22通过/1可选PG跳过，独享PG17另跑5通过。3838个既有代码/SDK/合同/证据/Coverage保护文件未变。 Ready claim before code2026-10-22. Human owner Luke Ding; executor Codex. Published G1e66659d dependency; authorized stacked continuation, no main/cloud-agent integration.
 - Branch codex/ca-p3-02h-command-receipts.
-- Owned paths: packages/agent-core/src/agent_core/ports/client_command_receipts.py; packages/agent-storage/src/agent_storage/client_command_receipts.py,sqlite.py; packages/agent-storage/src/agent_storage/postgres/client_command_receipts.py,events.py; apps/api/src/zebra_agent_api/ag_ui_command_receipts.py,routes.py,api_status_mixin.py; tests/api/test_client_command_receipts.py,test_runtime_capabilities.py; tests/agent_storage/test_client_command_receipts.py; docs/CA-P3-02H_command_receipts.md; docs/contracts/client-command-receipts/; docs/evidence/ca-p3-02h/; docs/AGENT_TASKS.md,PROGRESS.md,WORKLOG.md,task_plan.md,README.md; docs/实施任务拆解与阶段验收.md.
+- Owned paths: packages/agent-core/src/agent_core/ports/client_command_receipts.py; packages/agent-storage/src/agent_storage/client_command_receipts.py,sqlite.py; packages/agent-storage/src/agent_storage/postgres/client_command_receipts.py,events.py; apps/api/src/zebra_agent_api/ag_ui_command_receipts.py,routes.py,api_status_mixin.py; tests/api/test_client_command_receipts.py,test_runtime_capabilities.py; tests/agent_storage/test_client_command_receipts.py; docs/tasks/CA-P3-02H_command_receipts.md; docs/contracts/client-command-receipts/; docs/evidence/ca-p3-02h/; docs/AGENT_TASKS.md,PROGRESS.md,WORKLOG.md,task_plan.md,README.md; docs/实施任务拆解与阶段验收.md.
 - Dependency/DDD: P3 unknown/recovery remains after G; add minimal native prerequisite before BFF durable reconciliation, not P4. Reuse accepted SessionCommand events, current Session/Task/Run authority, indexed Task-to-Segment membership and event idempotency uniqueness. No new aggregate/table/migration/Go hot path/SDK changes.
 - Invariants: original Segment header and exact existing key; current credential/signed cloud principal/current agent.run and exact Task/Run on both sides of I/O. Header-only indexed projection excludes message/state/credentials; only admission1 commands for exact ClientSession. Missing/uncommitted/legacy observation is not_observed, never proof of noncommit or permission to resend. Historical receipt is admission only, not execution, completion or business outcome. Read observations not cross-store linearizable revocation.
 - Acceptance: red/green actual API SQLite persist/reopen, index/query boundaries, two-reader real owned PG, unauthorized/namespace/resource/closed/dependency/malformed negatives; full make test/check; old SDK/contracts/history/Coverage preserved. Formal docs/tasks and scoped commit/push. BFF persistence/SDK unknown reconnect/full model/business IdP/HA remain later. No deploy/production migration/npm publish.
@@ -1160,7 +1160,7 @@
 
 - Status: Review; final make test10949passed/3021skipped, check/SDK131/joint two-browser passed;2318 protected and94 frozen inputs unchanged. Ready claim recorded;  dependency verified published fb72ef6f before code2026-10-22. Human owner Luke Ding; executor Codex.
 - Branch codex/ca-p3-02g-readable-submit; isolated stacked continuation from published F; no main/cloud-agent integration.
-- Owned paths: sdks/typescript/packages/contracts/src/index.ts; sdks/typescript/packages/client-core/src/index.ts,runtime_configuration.ts,bff_transport.ts,readable_commands.ts; sdks/typescript/packages/react/src/index.ts; sdks/typescript/packages/client-core/tests/readable-commands.test.ts; sdks/typescript/packages/react/tests/readable-commands.test.tsx; sdks/typescript/package.json; sdks/typescript/packages/react/README.md; sdks/typescript/scripts/native-readable-browser.mjs,native-readable-bff.mjs; tests/acceptance/native_readable_server.py; tests/acceptance/native_surface_server.py (opt-in reuse of existing fixture); sdks/typescript/scripts/native-surface-browser.mjs,native-surface-bff.mjs (opt-in reusable acceptance path); docs/CA-P3-02G_readable_submit.md; docs/contracts/sdk-readable-commands/; docs/evidence/ca-p3-02g/; docs/AGENT_TASKS.md,PROGRESS.md,WORKLOG.md,task_plan.md,README.md; docs/实施任务拆解与阶段验收.md.
+- Owned paths: sdks/typescript/packages/contracts/src/index.ts; sdks/typescript/packages/client-core/src/index.ts,runtime_configuration.ts,bff_transport.ts,readable_commands.ts; sdks/typescript/packages/react/src/index.ts; sdks/typescript/packages/client-core/tests/readable-commands.test.ts; sdks/typescript/packages/react/tests/readable-commands.test.tsx; sdks/typescript/package.json; sdks/typescript/packages/react/README.md; sdks/typescript/scripts/native-readable-browser.mjs,native-readable-bff.mjs; tests/acceptance/native_readable_server.py; tests/acceptance/native_surface_server.py (opt-in reuse of existing fixture); sdks/typescript/scripts/native-surface-browser.mjs,native-surface-bff.mjs (opt-in reusable acceptance path); docs/tasks/CA-P3-02G_readable_submit.md; docs/contracts/sdk-readable-commands/; docs/evidence/ca-p3-02g/; docs/AGENT_TASKS.md,PROGRESS.md,WORKLOG.md,task_plan.md,README.md; docs/实施任务拆解与阶段验收.md.
 - Dependencies: native client-state-admission/1 and surface metadata/1 already published; existing Hook only names/revision. Reuse SDK runtime mount scheduling/jobs, same-origin BFF, native command CAS/events/Worker recovery. No native production Python/schema edits or Go hot path.
 - DDD/invariants: opt-in BFF clientStateVersion1 + synchronized mounts; values owned by mounted readables, immutable bounded JSON per command, no localStorage persistence. Native canonical digest/redaction remains authority. Trusted BFF authenticates business/Origin/current resource, derives exact native coordinates from private mapping; public hints do not grant rights. Commands use explicit CAS/idempotency, one attempt, unknown is not success. Mount waits for in-flight command; old modes unchanged.
 - Acceptance: red/green lifecycle/registration/JSON/secret/route/stale/error/unknown tests; packaged React18/19 and browser SDK verification; actual Chromium/WebKit Cookie reference BFF -> native HTTP/real PG registry + real SQLite commands -> reopened Worker Context/empty clear. Explicit fixture identity/local authority, not production IdP/shared CAS BFF/model or HA certification. Full make test/check, old contracts/history/Coverage preserved; docs/tasks and scoped push. No deployment/production migration/npm publication.
@@ -1169,7 +1169,7 @@
 
 - Status: Review; final make test10949passed/3021skipped, make check and owned PG4passed;936 protected files unchanged. Ready claim recorded;  dependency audit and claim before code2026-10-22. Human owner Luke Ding; executor Codex.
 - Branch codex/ca-p3-02f-readable-admission; published61e2cb21 base; authorized stacked continuation, no main/cloud-agent integration.
-- Owned paths: apps/api/src/zebra_agent_api/ag_ui_command.py,ag_ui_client_state.py,api_status_mixin.py; packages/agent-core/src/agent_core/domain/client_context.py; packages/agent-control-plane/src/agent_control_plane/agui_client_admission.py; tests/api/test_agui_bound_client_state.py,test_runtime_capabilities.py; tests/agent_context/test_client_state_context.py; tests/worker/test_client_state_recovery.py; packages/agent-integrations/src/agent_integrations/ag_ui/client_state_projection.py; tests/agent_integrations/test_client_state_projection.py (explicit empty-state clearing); tests/agent_storage/test_client_state_jsonb.py (owned read-only JSONB roundtrip); docs/CA-P3-02F_readable_admission.md; docs/contracts/client-state-admission/; docs/evidence/ca-p3-02f/; docs/AGENT_TASKS.md,PROGRESS.md,WORKLOG.md,task_plan.md,README.md; docs/实施任务拆解与阶段验收.md.
+- Owned paths: apps/api/src/zebra_agent_api/ag_ui_command.py,ag_ui_client_state.py,api_status_mixin.py; packages/agent-core/src/agent_core/domain/client_context.py; packages/agent-control-plane/src/agent_control_plane/agui_client_admission.py; tests/api/test_agui_bound_client_state.py,test_runtime_capabilities.py; tests/agent_context/test_client_state_context.py; tests/worker/test_client_state_recovery.py; packages/agent-integrations/src/agent_integrations/ag_ui/client_state_projection.py; tests/agent_integrations/test_client_state_projection.py (explicit empty-state clearing); tests/agent_storage/test_client_state_jsonb.py (owned read-only JSONB roundtrip); docs/tasks/CA-P3-02F_readable_admission.md; docs/contracts/client-state-admission/; docs/evidence/ca-p3-02f/; docs/AGENT_TASKS.md,PROGRESS.md,WORKLOG.md,task_plan.md,README.md; docs/实施任务拆解与阶段验收.md.
 - Reuse/DDD: existing AG-UI command state, Profile schema, native ClientSession/RunBinding, current Task authority, durable command and Worker Context recovery; no new upload endpoint, aggregate, database, Go proxy or SDK mode. Snapshot is untrusted interaction input, never business authority or Coverage proof.
 - Invariants: explicit clientStateVersion1 binds actual credential/current principal/Profile/UI/mount/binding and declared readables/tools; cloud mounted state cannot bypass with missing/old version. Local legacy/headless remains compatible. Strict finite/bounded JSON before redaction; one shared native sanitizer; only redacted snapshot persists and sentinel survives recovery, raw secrets still rejected. No latest-profile fallback in bound mode.
 - Consistency: current registry/Task observations before immutable command admission, existing command CAS/idempotency/authorization own commit; not cross-store linearizable revocation or latest UI guarantee. No long locks/network/extra state writer.
@@ -1179,7 +1179,7 @@
 
 - Status: Review; final make test10914passed/3020skipped and make check passed; SDK125 and actual Chromium/WebKit native PG acceptance passed. Ready claim before code2026-10-22. Human owner Luke Ding; executor Codex.
 - Branch codex/ca-p3-02e-sdk-surface-sync; isolated publishedD d85a613c base; authorized stacked continuation, no main/cloud-agent merge.
-- Owned paths: sdks/typescript/packages/contracts/src/index.ts; sdks/typescript/packages/client-core/src/index.ts,runtime_configuration.ts,runtime_transport.ts,runtime_mount.ts,surface_metadata.ts,client_surface.ts; packages/client-core/tests/surface-sync.test.ts (SDK relative); sdks/typescript/package.json; sdks/typescript/packages/react/README.md; sdks/typescript/scripts/native-surface-browser.mjs,native-surface-bff.mjs; tests/acceptance/native_surface_server.py; docs/CA-P3-02E_sdk_surface_sync.md; docs/contracts/sdk-surface-sync/; docs/evidence/ca-p3-02e/; docs/AGENT_TASKS.md,PROGRESS.md,WORKLOG.md,task_plan.md,README.md; docs/实施任务拆解与阶段验收.md.
+- Owned paths: sdks/typescript/packages/contracts/src/index.ts; sdks/typescript/packages/client-core/src/index.ts,runtime_configuration.ts,runtime_transport.ts,runtime_mount.ts,surface_metadata.ts,client_surface.ts; packages/client-core/tests/surface-sync.test.ts (SDK relative); sdks/typescript/package.json; sdks/typescript/packages/react/README.md; sdks/typescript/scripts/native-surface-browser.mjs,native-surface-bff.mjs; tests/acceptance/native_surface_server.py; docs/tasks/CA-P3-02E_sdk_surface_sync.md; docs/contracts/sdk-surface-sync/; docs/evidence/ca-p3-02e/; docs/AGENT_TASKS.md,PROGRESS.md,WORKLOG.md,task_plan.md,README.md; docs/实施任务拆解与阶段验收.md.
 - Dependencies/DDD: use published native client-surface-metadata/1 and unchanged C legacy/BFF adapter. Session/RunBinding/fence/receipt remain native authority; SDK consumes only public facts and existing recovery state. No new identity token, Go hot path, aggregate/state machine, native production Python changes or schema migration.
 - Invariants: explicit surfaceMetadataVersion1; pause new effects/polls/heartbeat for serialized mount; bounded drain of old work/receipts before rotating server fence, unknown receipts survive and block mutation. Strict bounded public metadata validates exact profile/UI/binding/map, rejects secrets, atomically updates existing runtime coordinates, no old digest action after remount. Timeout/malformed/unknown mount disconnects without automatic retry/release. Old modes/DI/SSE retained.
 - Acceptance: red/green SDK lifecycle/hostile metadata/unknown/drain/recovery tests, full SDK verify with existing browser matrix; actual Chromium/WebKit + native HTTP/real PG + Worker ClientToolGateway/atomic receipts via isolated reference BFF, server-only credentials and persisted local test mapping. This is local native compatibility authority, not real product IdP/Go Broker or production multi-replica BFF/Worker harness/model E2E. Full root make test/check, frozen Python/history/Coverage/old contracts, formal docs/evidence/tasks, scoped commit/push. Mock untouched; no deploy/migration/npm publication.
@@ -1189,7 +1189,7 @@
 - Status: Review; final make test10914passed/3020conditions and make check passed; API56/1 and ownedPG62/zero skips;3669source and414old SDK/contracts/Coverage files unchanged. Dependency audit/Ready claim before code2026-10-22. Human owner Luke Ding; executor Codex.
 - Branch codex/ca-p3-02d-surface-metadata; isolated worktree based on publisheda1635a9c. User continuation authorizes stacked dependency work, no main/cloud-agent merge.
 - Dependencies: CA-P3-02A/B/C published admission/current Effect authority/BFF SDK. Missing canonical public action digest map; unchanged action names retain stale mounted snapshot in binding; service read checks alone cannot enforce concurrent remount narrowing.
-- Owned paths: packages/agent-core/src/agent_core/domain/client_capabilities.py,client_run_bindings.py; packages/agent-core/src/agent_core/ports/client_session_registry.py; packages/agent-control-plane/src/agent_control_plane/client_admission.py; packages/agent-storage/src/agent_storage/postgres/client_sessions.py; apps/api/src/zebra_agent_api/client_sessions.py,client_surface.py,api_status_mixin.py; tests/api/test_client_surface_metadata.py,test_runtime_capabilities.py (new additive capability expectation only); tests/agent_storage/test_client_surface_sync_postgres.py; docs/CA-P3-02D_surface_metadata.md; docs/contracts/client-surface-metadata/; docs/evidence/ca-p3-02d/; docs/AGENT_TASKS.md,PROGRESS.md,WORKLOG.md,task_plan.md,README.md; docs/实施任务拆解与阶段验收.md.
+- Owned paths: packages/agent-core/src/agent_core/domain/client_capabilities.py,client_run_bindings.py; packages/agent-core/src/agent_core/ports/client_session_registry.py; packages/agent-control-plane/src/agent_control_plane/client_admission.py; packages/agent-storage/src/agent_storage/postgres/client_sessions.py; apps/api/src/zebra_agent_api/client_sessions.py,client_surface.py,api_status_mixin.py; tests/api/test_client_surface_metadata.py,test_runtime_capabilities.py (new additive capability expectation only); tests/agent_storage/test_client_surface_sync_postgres.py; docs/tasks/CA-P3-02D_surface_metadata.md; docs/contracts/client-surface-metadata/; docs/evidence/ca-p3-02d/; docs/AGENT_TASKS.md,PROGRESS.md,WORKLOG.md,task_plan.md,README.md; docs/实施任务拆解与阶段验收.md.
 - DDD: immutable Profile owns canonical action contracts; Session owns mounted snapshot, RunBinding owns narrowing revisions, Controller remains existing lease. Reuse services/ports/transactions, no new aggregate, credential, schema, SDK facade or Go execution state.
 - Invariants: action digests come from exact native Profile and only allowed actions; returned UI/snapshot/binding facts must match. Same names with new snapshot advance binding revision; repeated exact mount keeps binding revision and existing fence rotation semantics. Store serializes same Session mount/binding updates and rechecks narrowing/current snapshot; stale conflicts fail closed, old historical rows remain readable.
 - Resources: short per-Session row lock, at most1s lock wait with shorter operator timeout retained; no network under locks, no global lock or queue. Composite mount/bind/lease remains separate commits and unknown response is not retry-safe credential recovery; native receipts still own atomic authority. No cross-request linearizability/HA claim.
@@ -1200,7 +1200,7 @@
 - Status: Review; make test10906passed/3014conditions and make check passed; SDK verify117passed/zero skips with Chromium/WebKit/Next. Python/contracts2941, verified SDK76 and Coverage280 files unchanged. Dependency audit/Ready claim before code2026-10-22. Human owner Luke Ding; executor Codex.
 - Branch codex/ca-p3-02c-bff-browser; isolated worktree from published0aa6e558. Authorized stacked continuation; no main/cloud-agent merge.
 - Dependencies: CA-P3-02A/B current native admission/Effect authority, existing React hooks and core runtime. Existing config requires raw native Session/fence in browser and polling masks failures as empty/ready; Readable has no public value upload, kept separate.
-- Owned paths: sdks/typescript/packages/contracts/src/index.ts; packages/client-core/src/index.ts,runtime_configuration.ts,bff_transport.ts,runtime_transport.ts,receipt_transport.ts and tests/bff-browser.test.ts (all SDK-relative); sdks/typescript/packages/react/src/index.ts,tests/bff-provider.test.tsx; sdks/typescript/package.json; sdks/typescript/scripts/react-browser-matrix.mjs,bff-browser-fixture.mjs; sdks/typescript/packages/client-core/README.md,packages/react/README.md; docs/CA-P3-02C_bff_browser.md; docs/contracts/bff-browser-sdk/; docs/evidence/ca-p3-02c/; docs/AGENT_TASKS.md,PROGRESS.md,WORKLOG.md,task_plan.md,README.md; docs/实施任务拆解与阶段验收.md.
+- Owned paths: sdks/typescript/packages/contracts/src/index.ts; packages/client-core/src/index.ts,runtime_configuration.ts,bff_transport.ts,runtime_transport.ts,receipt_transport.ts and tests/bff-browser.test.ts (all SDK-relative); sdks/typescript/packages/react/src/index.ts,tests/bff-provider.test.tsx; sdks/typescript/package.json; sdks/typescript/scripts/react-browser-matrix.mjs,bff-browser-fixture.mjs; sdks/typescript/packages/client-core/README.md,packages/react/README.md; docs/tasks/CA-P3-02C_bff_browser.md; docs/contracts/bff-browser-sdk/; docs/evidence/ca-p3-02c/; docs/AGENT_TASKS.md,PROGRESS.md,WORKLOG.md,task_plan.md,README.md; docs/实施任务拆解与阶段验收.md.
 - DDD: browser lifecycle/transport is an SDK adapter over existing Effect handler/dedupe/receipt machinery, never native execution/Controller authority. BFF must authenticate current business/Agent identity and keep server mapping/HostGrant/native credential/fence; role and all browser IDs remain hints/locators.
 - Invariants: explicit opt-in BFF config without dummy/raw native secrets; same-origin scoped relative prefix, reject redirects/foreign routes/credential headers; cookie authentication stays business-owned. Original secret-based config and SSE remain compatible; new BFF v1 polling only. Failures cannot become ready/empty success, current invalidation stops effects; receipts retry same effect/key/result, no re-execution on unknown.
 - Resources: reuse native stores/contracts; bounded per-runtime poll/heartbeat,5s BFF request deadline and existing5receipt attempts; no shared-state/HA claim or Go model/tool hot path. No new dependency, Python storage/model/Coverage changes or migrations.
@@ -1211,7 +1211,7 @@
 - Status: Review; make test10906passed/3014conditions and make check passed; focused32/0 and ownedPG18/0;3435inputs/280Coverage files stable. Created Ready -> In Progress before code2026-10-22. Human owner Luke Ding; executor Codex.
 - Branch codex/ca-p3-02b-effect-authority; isolated worktree from published8715d225; authorized stacked continuation, no main/cloud-agent merge.
 - Dependencies: CA-P3-02A verified subject/Task/Run admission. Audit found pending-effect list/detail/receipt paths only checked ClientSession, not current effect Task/Run authority. Fix this shared native boundary before browser SDK acceptance.
-- Owned paths: apps/api/src/zebra_agent_api/client_effect_receipts.py,client_runtime_routes.py; tests/api/test_client_effect_authority.py,test_client_effect_authority_postgres.py; tests/api/test_client_effect_agui_stream.py (affected fixture corrections only); docs/CA-P3-02B_effect_authority.md; docs/contracts/client-effect-authority/; docs/evidence/ca-p3-02b/; docs/AGENT_TASKS.md,PROGRESS.md,WORKLOG.md,task_plan.md,README.md; docs/实施任务拆解与阶段验收.md.
+- Owned paths: apps/api/src/zebra_agent_api/client_effect_receipts.py,client_runtime_routes.py; tests/api/test_client_effect_authority.py,test_client_effect_authority_postgres.py; tests/api/test_client_effect_agui_stream.py (affected fixture corrections only); docs/tasks/CA-P3-02B_effect_authority.md; docs/contracts/client-effect-authority/; docs/evidence/ca-p3-02b/; docs/AGENT_TASKS.md,PROGRESS.md,WORKLOG.md,task_plan.md,README.md; docs/实施任务拆解与阶段验收.md.
 - DDD: reuse immutable ClientEffectRequest task_id/run_id and existing native task_access_response/receipt service/atomic port. No new aggregate, storage state machine, migration, or Go execution authority.
 - Invariants: authenticated current subject plus exact current signed Task/Run/thread/issuer/namespace before exposing effects or submitting/replaying receipts; filter list before serialization, deny unknown/cross-resource details, dependency errors fail closed. Local compatibility, historical receipts, existing Controller fence and immutable request digests remain.
 - Concurrency: read at most existing50 pending items; reuse one authorization per distinct resource/request, no external network/DB locks or authorization cache across requests. Existing receipt transaction owns fence/expiry/idempotency; current signed grant has explicit residual validity window.
@@ -1222,7 +1222,7 @@
 - Status: Review; final make test10874passed/3008existing dependency skips and make check passed2026-10-22; focused77passed/2conditions plus ownedPG45passed/zero skips;3074inputs and280Coverage files preserved. Created Ready and claimed before code2026-10-22. Human owner Luke Ding; executor Codex.
 - Branch codex/ca-p3-02a-frontend-admission; isolated worktree from published CA-P3-01C f154f5d1. Explicit continuation authorizes stacked dependencies, no main/cloud-agent merge.
 - Dependency audit: OD-P3-01A260f1fd registers only identity_bound. Existing operator Profile routes, native Profile/ClientSession/RunBinding/Controller and generic Broker are reusable; product-scoped Profile current read/write and verified subject matching are missing.
-- Owned paths: apps/api/src/zebra_agent_api/factory.py; tests/agent_storage/test_branch_migration_catalog.py; packages/agent-control-plane/src/agent_control_plane/frontend_profiles.py; apps/api/src/zebra_agent_api/host_registry_config.py,host_registry_management.py,frontend_profile_management.py,client_sessions.py,client_grant_auth.py,client_runtime_routes.py,client_surface.py; packages/agent-storage/src/agent_storage/postgres/client_capabilities.py,frontend_profile_management.py,frontend_profile_management_migration.py,migration_catalog_tail.py; tests/api/test_frontend_profile_management.py,test_client_surface_open.py,test_client_host_subject.py,test_client_runtime_api.py,test_client_surface.py,test_client_run_namespace.py; tests/agent_storage/test_frontend_profile_management.py; docs/contracts/frontend-profile-management/; docs/CA-P3-02A_frontend_admission.md; docs/AGENT_TASKS.md,PROGRESS.md,WORKLOG.md,task_plan.md; docs/实施任务拆解与阶段验收.md; docs/evidence/ca-p3-02a/.
+- Owned paths: apps/api/src/zebra_agent_api/factory.py; tests/agent_storage/test_branch_migration_catalog.py; packages/agent-control-plane/src/agent_control_plane/frontend_profiles.py; apps/api/src/zebra_agent_api/host_registry_config.py,host_registry_management.py,frontend_profile_management.py,client_sessions.py,client_grant_auth.py,client_runtime_routes.py,client_surface.py; packages/agent-storage/src/agent_storage/postgres/client_capabilities.py,frontend_profile_management.py,frontend_profile_management_migration.py,migration_catalog_tail.py; tests/api/test_frontend_profile_management.py,test_client_surface_open.py,test_client_host_subject.py,test_client_runtime_api.py,test_client_surface.py,test_client_run_namespace.py; tests/agent_storage/test_frontend_profile_management.py; docs/contracts/frontend-profile-management/; docs/tasks/CA-P3-02A_frontend_admission.md; docs/AGENT_TASKS.md,PROGRESS.md,WORKLOG.md,task_plan.md; docs/实施任务拆解与阶段验收.md; docs/evidence/ca-p3-02a/.
 - DDD: native Profile owns immutable bytes/lifecycle/binding; scoped management is an adapter over existing FrontendProfileService and PostgreSQL transaction work unit. Current approved product/environment/Host/App with separate actions; no universal operator token in Go. Native retains Session/Task/Run/fence authority.
 - Invariants: explicit exact approved Profile, immutable product ownership, CAS/atomic durable receipt/audit, current approval before replay and read; current availability is an observation, never admission. Verified Host subject must match client user; expired Host cannot create/use sessions. No browser-held HostGrant; legacy shared Apps block new scoped writes, and legacy binding shares the App lock to prevent cross-Host lifecycle effects.
 - Concurrency/recovery: bounded existing8slots/5s request, short Host/App scope transaction, no network under locks; existing legacy/current Profile and Controller behavior/history/Coverage preserved. Lost credential responses are unknown, never blindly reopened; no new controller state machine.
@@ -1341,7 +1341,7 @@
   tests/agent_runtime/test_service_deferred_runtime.py;
   tests/agent_runtime/test_oci_runtime.py; tests/worker/test_runtime_preflight.py;
   tests/worker/test_runtime_failure_classification.py;
-  docs/CLOUD_RUNTIME_READINESS_2026-10-28.md; this registry; PROGRESS.md; WORKLOG.md;
+  docs/reports/CLOUD_RUNTIME_READINESS_2026-10-28.md; this registry; PROGRESS.md; WORKLOG.md;
   .artifacts/cloud-runtime-readiness-20261028/.
 - Scope: eliminate spurious sandbox dependency for bounded service tools, verify
   pinned local image in readiness, prevent implicit cloud image pull, classify
@@ -5015,7 +5015,7 @@ does not authorize production code, migrations or activation of its successor.
   Vega-Lite package, and a sandboxed MCP Apps host boundary. Owned Zebra paths:
   `sdks/typescript/**`, the narrowly related Artifact HTTP adapter and AG-UI
   projection under `apps/api/**` and `packages/agent-integrations/**`, focused
-  API/integration tests, `docs/ADR-CLIENT-02_*`, this registry, `task_plan.md`,
+  API/integration tests, `docs/adr/ADR-CLIENT-02_*`, this registry, `task_plan.md`,
   `PROGRESS.md`, `WORKLOG.md`, and `findings.md`. Paired Trench ownership is
   limited to its packaged SDK artifacts, Strategy projection/render adapter,
   BFF Artifact proxy, focused tests and task records. Constraints: PostgreSQL
@@ -5454,7 +5454,7 @@ does not authorize production code, migrations or activation of its successor.
   plus narrow settings exports/wiring, PostgreSQL control-plane delivery-scope
   composition, Worker Memory composition/maintenance/materialization modules,
   focused config/integration/storage/Worker tests, environment templates,
-  `docs/ADR-027_Redis_Agent_Memory_Adapter.md`, this registry, `PROGRESS.md`,
+  `docs/adr/ADR-027_Redis_Agent_Memory_Adapter.md`, this registry, `PROGRESS.md`,
   and `WORKLOG.md`. The old Mem0 adapter and
   ADR-018 denial are not modified. Live Redis Cloud contract execution requires
   separately supplied endpoint, Store ID, API key and explicit data-export
@@ -7658,7 +7658,7 @@ does not authorize production code, migrations or activation of its successor.
   `In Progress` on `codex/cloud-provider-cont-pg-01`; only its registered Owned
   paths and migration v13 are authorized.
 - `CLIENT-ADR-01` is `Review` on `codex/client-adr-01`. It freezes the Client
-  Integration Plane V1 architecture (`docs/ADR-CLIENT-01_Client_Integration_
+  Integration Plane V1 architecture (`docs/adr/ADR-CLIENT-01_Client_Integration_
   Plane.md`) and registers the 22-card Client Integration Plane Board below:
   browser access lands through Host BFF with published Frontend Capability
   Profiles, one-controller fenced Client Sessions and PostgreSQL-durable
@@ -8397,7 +8397,7 @@ read-only Trench vertical slice.
   `test_control_plane_boundaries.py`, workspace `pyproject.toml` members,
   `agent-storage`/`agent-integrations` pyprojects and their orchestration
   adapter imports, import rewrites in orchestration-affected tests,
-  `docs/ADR-021_Orchestration包边界与agent-orchestration拆分.md`,
+  `docs/adr/ADR-021_Orchestration包边界与agent-orchestration拆分.md`,
   `README.md` package line, this card and `PROGRESS.md`.
 
 #### Acceptance
@@ -9955,7 +9955,7 @@ new commits.
 - Depends on: Gate 0 canonical quality review commit `109ec4e4`
 - Branch: `codex/arch-config-boundary-01`
 - Worktree: `/Users/lukeding/.codex/worktrees/arch-config-boundary-01/zebra-agent`
-- Owned paths: `docs/ADR-021_配置边界与Provider-neutral输入合同.md`,
+- Owned paths: `docs/adr/ADR-021_配置边界与Provider-neutral输入合同.md`,
   `tests/config/test_package_dependency_boundaries.py`, this task card, and
   the focused status in `PROGRESS.md`
 
@@ -10084,7 +10084,7 @@ needs. It must not read environment/config aggregates or import `apps/config`.
   commits `fe200bb6` and `f1d27669`
 - Branch: `codex/cloud-deploy-profile-con-01`
 - Worktree: `/Users/lukeding/.codex/worktrees/cloud-deploy-profile-con-01/zebra-agent`
-- Owned paths: `docs/ADR-022_Deployment_Profile矩阵与权威轴合同.md`,
+- Owned paths: `docs/adr/ADR-022_Deployment_Profile矩阵与权威轴合同.md`,
   `tests/config/test_profile_contract.py`,
   `tests/test_cloud_api_worker_profile_composition.py`,
   `apps/config/src/zebra_agent_config/settings.py`, this task card, and the
@@ -10190,7 +10190,7 @@ CI and test keep lazy SQLite compatibility.
   `packages/agent-core/src/agent_core/contracts/__init__.py`,
   `packages/agent-core/src/agent_core/domain/events.py`,
   `tests/agent_core/test_session_command_contract.py`,
-  `docs/ADR-023_Stateless_Command与Revision合同.md`, this task card, and the
+  `docs/adr/ADR-023_Stateless_Command与Revision合同.md`, this task card, and the
   focused status in `PROGRESS.md`
 
 #### Goal
@@ -10333,7 +10333,7 @@ Route cloud stop/cancel/suspend/resume controls through the durable command
   `packages/agent-storage/src/agent_storage/live_event_store.py`,
   `packages/agent-storage/src/agent_storage/__init__.py`,
   `tests/agent_storage/test_live_event_publication_contract.py`,
-  `docs/ADR-024_Event提交后实时发布合同.md`, this task card, and the focused
+  `docs/adr/ADR-024_Event提交后实时发布合同.md`, this task card, and the focused
   status in `PROGRESS.md`
 
 #### Goal
@@ -11757,7 +11757,7 @@ storage. Explicit cloud composition remains fail closed at application startup.
 
 ## Client Integration Plane Board
 
-Architecture authority: `docs/ADR-CLIENT-01_Client_Integration_Plane.md`
+Architecture authority: `docs/adr/ADR-CLIENT-01_Client_Integration_Plane.md`
 (`CLIENT-ADR-01`). Gate order: 领域契约 → PostgreSQL 持久化 → Client
 Admission → 前端状态注入 → Durable Client Effect → Worker
 suspend/resume → React SDK → 多前端一致性测试 → Trench 试点. React Hook
@@ -11777,7 +11777,7 @@ PostgreSQL card activates（三张迁移卡不能共用同一 migration version�
   `main@efd4e293` sync point, working mainline `cloud-agent`
 - Branch: `codex/client-adr-01`
 - Worktree: `/Users/lukeding/.codex/worktrees/client-adr-01/zebra-agent`
-- Owned paths: `docs/ADR-CLIENT-01_Client_Integration_Plane.md` (new),
+- Owned paths: `docs/adr/ADR-CLIENT-01_Client_Integration_Plane.md` (new),
   `docs/AGENT_TASKS.md` (this board plus the Current Board entry),
   `task_plan.md`, `PROGRESS.md`, `findings.md`
 - Docs-only: no production code, migration, Docker Compose, environment
@@ -12663,7 +12663,7 @@ Handler 只执行一次。
 - Branch: `zebra-cloud-trench`
 - Owned paths:
   `docs/Zebra Embedded 生产级目标架构.md`,
-  `docs/ADR-015_Zebra_Embedded与CopilotKit_AGUI边界.md` (new),
+  `docs/adr/ADR-015_Zebra_Embedded与CopilotKit_AGUI边界.md` (new),
   `docs/Zebra Embedded与Trench实施任务拆解_v1.0.md` (new),
   `docs/Codex-like工程Agent平台最终架构设计_v1.0.md`,
   `docs/AGENT_TASKS.md`, `PROGRESS.md`, `README.md`, `task_plan.md`,
@@ -13728,7 +13728,7 @@ provider mappings can make logical reset safe without provider enumeration.
   `MEM-MEM0-RESET-ALT-01` verdict `B/PARTIAL`; no other task dependency.
 - Branch: `codex/mem-provider-del-compliance-01`
 - Worktree: `../zebra-mem-provider-del-compliance-01`
-- Owned paths: `docs/ADR-018_Memory Provider Deletion Compliance Contract.md`,
+- Owned paths: `docs/adr/ADR-018_Memory Provider Deletion Compliance Contract.md`,
   `tests/specs/test_memory_provider_deletion_compliance.py`, and governance
   updates in `docs/AGENT_TASKS.md`, `task_plan.md`, `PROGRESS.md`, `findings.md`
   and `WORKLOG.md`.
@@ -13793,7 +13793,7 @@ provider mappings can make logical reset safe without provider enumeration.
   It has no dependency on the blocked Mem0 reset Spike or its consumer.
 - Branch: `codex/mem-pg-native-admission-spike-01`
 - Worktree: `../zebra-mem-pg-native-admission-spike-01`
-- Owned paths: `docs/ADR-019_PostgreSQL_Native_Memory_Backend_Admission.md`,
+- Owned paths: `docs/adr/ADR-019_PostgreSQL_Native_Memory_Backend_Admission.md`,
   `tests/agent_storage/test_postgres_native_memory_admission.py`,
   `tests/compose/postgres_native_memory_admission/`, and governance updates in
   `docs/AGENT_TASKS.md`, `task_plan.md`, `PROGRESS.md` and `WORKLOG.md`.
@@ -15926,7 +15926,7 @@ external membership.
 - Branch: `codex/cloud-art-obj-con-01`
 - Depends on: `CLOUD-AGG-FENCE-CON-01` and the reviewed
   `CLOUD-COMPOSE-INFRA-01` MinIO dependency baseline
-- Owned paths: `docs/ADR-017_Artifact对象存储与元数据权威边界.md`,
+- Owned paths: `docs/adr/ADR-017_Artifact对象存储与元数据权威边界.md`,
   `docs/Zebra Embedded 生产级目标架构.md`,
   `docs/CLOUD_Worker_Aggregate_Fencing_路径盘点_v1.0.md`,
   `docs/Zebra Embedded与Trench实施任务拆解_v1.0.md`, `PROGRESS.md`,
@@ -16073,7 +16073,7 @@ external membership.
   `CLOUD-AGG-CTX-ADMIN-PG-01`
 - Branch: `codex/cloud-context-con-01`
 - Worktree: `../zebra-agent-context-contract`
-- Owned paths: `docs/ADR-020_Context_Materialization_Boundary.md`,
+- Owned paths: `docs/adr/ADR-020_Context_Materialization_Boundary.md`,
   `packages/agent-core/src/agent_core/domain/context_materialization.py` (new),
   `packages/agent-core/src/agent_core/ports/context_materialization.py` (new),
   their Core exports, `tests/agent_core/test_context_materialization.py` (new),
@@ -16187,7 +16187,7 @@ external membership.
   `CTX-TURN-CMD-01`, `CTX-TURN-WORKER-01`, `CTX-TURN-FINALIZE-01`,
   `CTX-TURN-CONTEXT-01`, `CTX-TURN-API-01`
 - Owned paths:
-  `docs/ADR-026_Turn_Lifecycle.md` (new),
+  `docs/adr/ADR-026_Turn_Lifecycle.md` (new),
   `packages/agent-core/src/agent_core/domain/identifiers.py`,
   `packages/agent-core/src/agent_core/domain/events.py`,
   `packages/agent-core/src/agent_core/domain/sessions.py`,
@@ -16250,7 +16250,7 @@ external membership.
   `CTX-MEM-01`, `CTX-HO-01C` and `SUBAGENT-CLOUD-CUTOVER-01`
 - Owned paths:
   `docs/AGENT_TASKS.md`,
-  `docs/ADR-025_Cloud_Context_Inheritance.md` (new),
+  `docs/adr/ADR-025_Cloud_Context_Inheritance.md` (new),
   `packages/agent-core/src/agent_core/domain/context_materialization.py`,
   `packages/agent-core/src/agent_core/domain/context_inheritance.py` (new),
   `packages/agent-core/src/agent_core/domain/subagent_delegation.py`,
@@ -30092,7 +30092,7 @@ boundaries.
 - browser acceptance passed at `1512x800` and `900x800`: deterministic tool
   grouping, failed-attempt disclosure, retry evidence, native details toggling,
   zero horizontal overflow, and zero console warnings or errors
-- screenshot comparison and findings are recorded in root `design-qa.md`
+- screenshot comparison and findings are recorded in root `docs/reports/design-qa.md`
 - existing durable API event fields were sufficient, so no API contract or
   backend implementation change was introduced
 - merged to `main` through PR `#133`
@@ -30867,7 +30867,7 @@ changing the current default of same-Session compaction or activating runtime be
 - Suggested role: `ARCHITECTURE / CONTEXT / DESKTOP / QA`
 - Depends on: merged `CTX-HO-01E`, merged `CTX-LC-01`, explicit maintainer decision
 - Branch: `codex/ctx-seg-01-task-runtime`
-- Owned paths: `docs/ADR-013_用户任务连续性与内部执行分段.md`,
+- Owned paths: `docs/adr/ADR-013_用户任务连续性与内部执行分段.md`,
   `docs/透明Context_Segment与自动Rollover实施方案_v1.0.md`,
   `docs/阶段性Session_Handoff与短线程链架构方案_v1.0.md`,
   `docs/Codex-like工程Agent平台最终架构设计_v1.0.md`,
@@ -31408,7 +31408,7 @@ external model network with a deterministic local streaming provider.
 - Depends on: current Agent Runtime and cloud target architecture
 - Branch: `codex/arch-svc-boundary-01`
 - Merged PR: `#166` (`fa10fa0`)
-- Owned paths: `docs/ADR-012_Zebra_Agent_Runtime微服务与外部业务边界.md`,
+- Owned paths: `docs/adr/ADR-012_Zebra_Agent_Runtime微服务与外部业务边界.md`,
   `docs/Codex-like工程Agent平台最终架构设计_v1.0.md`,
   `docs/单机与云平台Runtime目标架构方案_v1.0.md`,
   `docs/01_Codex-like工程Agent平台_任务拆解与阶段验收标准_v1.0.md`,
@@ -31777,7 +31777,7 @@ child only after an explicit valid `agent.research` call with a diagnostic reaso
   `tests/worker/test_execution_finalization.py`,
   `docs/Codex-like工程Agent平台最终架构设计_v1.0.md`,
   `docs/自适应Agent循环与预算治理方案_v1.0.md`,
-  `docs/ADR-013_用户任务连续性与内部执行分段.md`, `docs/AGENT_TASKS.md`,
+  `docs/adr/ADR-013_用户任务连续性与内部执行分段.md`, `docs/AGENT_TASKS.md`,
   `README.md`, `PROGRESS.md`, `task_plan.md`, `findings.md`, `WORKLOG.md`
 
 #### Goal
@@ -31976,7 +31976,7 @@ governance, remote MCP, declarative Plugins, Hooks, and a later marketplace.
 ## Extension System (EXT) Task Board
 
 Extension control-plane for Skill, MCP, Plugin, Hook, and Marketplace. Authority
-source: `docs/ADR-014_扩展体系架构.md`, `docs/扩展体系状态机与契约_v1.0.md`,
+source: `docs/adr/ADR-014_扩展体系架构.md`, `docs/扩展体系状态机与契约_v1.0.md`,
 `docs/plugin_manifest.schema.json`, `docs/extension_threat_model.md`. Plugin/Hook/
 Marketplace remain `Locked` pending private-cloud GA and maintainer activation.
 
@@ -31987,7 +31987,7 @@ Marketplace remain `Locked` pending private-cloud GA and maintainer activation.
 - Suggested role: `DOC / CORE`
 - Depends on: explicit maintainer request (`EXT-PLAN-01` baseline verified)
 - Branch: `codex/ext-0-architecture-contract`
-- Owned paths: `docs/ADR-014_扩展体系架构.md`,
+- Owned paths: `docs/adr/ADR-014_扩展体系架构.md`,
   `docs/扩展体系状态机与契约_v1.0.md`, `docs/plugin_manifest.schema.json`,
   `docs/extension_threat_model.md`, `docs/AGENT_TASKS.md`, `PROGRESS.md`
 
@@ -32521,7 +32521,7 @@ turning it into executable architecture before the focused ADR is approved.
 - Suggested role: `ARCH / PM`
 - Depends on: `main@bb3a1bce`；方案文档
   `docs/cloud-agent构建实施方案.md`，架构决策登记为
-  `docs/ADR-017_Agent_Layer边界与多Host接入.md`
+  `docs/adr/ADR-017_Agent_Layer边界与多Host接入.md`
 - Owned paths: 方案文档、ADR-017、本预留表和 `PROGRESS.md` 快照；不含
   任何实现路径
 
@@ -32557,7 +32557,7 @@ Plane，逻辑边界先行于微服务拆分），并把 16 张实施卡以 `Loc
 ## Agent Definition V2 Task Board
 
 Direction source: `docs/Zebra Agent Runtime Upgrade Proposal v2.0.md`.
-Decision source: `docs/ADR-016_Agent_Definition控制面与版本发布边界.md`.
+Decision source: `docs/adr/ADR-016_Agent_Definition控制面与版本发布边界.md`.
 
 Execution rule: `AGENT-AUTH-SNAPSHOT-01` is `Done`; no implementation task is
 currently active. A maintainer must explicitly activate a registered `Locked`
@@ -32607,7 +32607,7 @@ every successful run left an APFS volume mounted on the host.
 - Branch: `codex/agent-def-adr-01`
 - Worktree: `../zebra-agent-agent-def-adr-01`
 - Depends on: accepted Runtime v2 direction
-- Owned paths: `docs/ADR-016_Agent_Definition控制面与版本发布边界.md`,
+- Owned paths: `docs/adr/ADR-016_Agent_Definition控制面与版本发布边界.md`,
   `docs/Codex-like工程Agent平台最终架构设计_v1.0.md`,
   `docs/Zebra Agent Runtime Upgrade Proposal v2.0.md`, `docs/README.md`,
   `docs/AGENT_TASKS.md`, `PROGRESS.md`, `task_plan.md`
@@ -36012,7 +36012,7 @@ WEB-MODEL-LIMIT-01 audit amendment before edit: add packages/agent-core/src/agen
 
 - Status: Done (local implementation/activation); no-model acceptance passed2026-10-17; one high/v2 real-page sample2026-10-18 completed without autonomous delegation, so researcher business execution remains unverified; no remote push/deployment.
 - Human owner: Luke Ding; executor Codex; branch/worktree codex/cloud-research-web-01 / zebra-agent; integration target cloud-agent-trench (local only).
-- Owned paths: packages/agent-core/src/agent_core/domain/tool_profiles.py; packages/agent-runtime/src/agent_runtime/{harness,research,research_context}.py; apps/worker/src/zebra_agent_worker/tool_gateway_runtime.py; packages/agent-storage/src/agent_storage/postgres/{research_web_profile_migration,migration_catalog_tail}.py; tests/agent_runtime/test_research_web_authority.py(new); tests/agent_storage/test_tool_profile_constraint_migration.py (update latest-profile assertion for new migration); tests/agent_storage/test_branch_migration_catalog.py (bounded catalog version update for v104; previous assertion already omitted v103); docs/ADR-025_Cloud_Context_Inheritance.md; docs/AGENT_TASKS.md; PROGRESS.md; WORKLOG.md; private .artifacts/cloud-research-web-01/.
+- Owned paths: packages/agent-core/src/agent_core/domain/tool_profiles.py; packages/agent-runtime/src/agent_runtime/{harness,research,research_context}.py; apps/worker/src/zebra_agent_worker/tool_gateway_runtime.py; packages/agent-storage/src/agent_storage/postgres/{research_web_profile_migration,migration_catalog_tail}.py; tests/agent_runtime/test_research_web_authority.py(new); tests/agent_storage/test_tool_profile_constraint_migration.py (update latest-profile assertion for new migration); tests/agent_storage/test_branch_migration_catalog.py (bounded catalog version update for v104; previous assertion already omitted v103); docs/adr/ADR-025_Cloud_Context_Inheritance.md; docs/AGENT_TASKS.md; PROGRESS.md; WORKLOG.md; private .artifacts/cloud-research-web-01/.
 - Scope: Cloud durable researcher receives search-only profile and search-endpoint domain allowlist only when parent durable tool/network permission permits it. Preserve read-only/depth1/capability narrowing/current fresh authority/SSRF/DNS/cancellation; no prompt authority, local behavior expansion, fetch, provider routing, Trench or service changes. Yahoo default/Exa fast/cooldown/fallback unchanged.
 - Acceptance: no-model/no-external-request security regressions for allowed/denied parent profiles, endpoint mismatch, child durable admission/replay, actual gateway schemas/policy, depth limit, unauthorized calls, local compatibility; additive PostgreSQL constraint migration validated in isolation. No service activation or production migration in this slice.
 
@@ -36857,7 +36857,7 @@ old payloads remain byte-compatible by excluding None. No database migration.
 - Branch: codex/cloud-trench-archive-20261020; reuse the clean
   cloud-plugin-plan-01/zebra-agent worktree from06578c09.
 - Owned paths: this card; PROGRESS.md; WORKLOG.md;
-  docs/CLOUD_TRENCH_ARCHIVE_2026-10-20.md; private task artifacts under
+  docs/reports/CLOUD_TRENCH_ARCHIVE_2026-10-20.md; private task artifacts under
   .artifacts/cloud-trench-archive-20261020/ in the primary checkout.
 - Scope: record the accepted source/runtime and paired Trench baseline, add
   immutable annotated archive tags, fast-forward cloud-agent from the complete
@@ -36898,7 +36898,7 @@ old payloads remain byte-compatible by excluding None. No database migration.
 - Human owner Luke Ding; executor Codex; branch codex/cloud-workspace-loading-20261022,
   reused clean cloud-plugin-plan-01 checkout from8ee49ec1; local target cloud-agent.
 - Owned paths: this card, PROGRESS.md, WORKLOG.md,
-  docs/CLOUD_WORKSPACE_LOADING_2026-10-22.md,
+  docs/reports/CLOUD_WORKSPACE_LOADING_2026-10-22.md,
   packages/agent-runtime/src/agent_runtime/workspace_provisioner.py,
   apps/worker/src/zebra_agent_worker/execution_recovery.py,
   tests/worker/test_coverage_task_recovery.py,
@@ -36945,7 +36945,7 @@ old payloads remain byte-compatible by excluding None. No database migration.
   reused clean cloud-plugin-plan-01 worktree from cloud-agent703c3c03. Production
   stays on accepted6bca5053 images; do not deploy generic Runtime changes.
 - Owned paths: this card, PROGRESS.md, WORKLOG.md,
-  docs/CLOUD_PLUGIN_PRODUCTION_2026-10-21.md, optional existing Plugin config/
+  docs/reports/CLOUD_PLUGIN_PRODUCTION_2026-10-21.md, optional existing Plugin config/
   regressions only if a demonstrated shared defect requires an explicit amendment;
   private .artifacts/cloud-plugin-prod-20261021/ and production
   /home/ubuntu/releases/20261021-plugin-production/.
@@ -36975,7 +36975,7 @@ old payloads remain byte-compatible by excluding None. No database migration.
   negative checks pass. Synthetic Task bootstrap only, then cancelled,0accepted
   commands/model/tool/search/MCP calls. Search/cooldown/proxy/original events exact.
   Production MCP credentials/worker remain disabled; no actual-model E2E claimed.
-  See docs/CLOUD_PLUGIN_PRODUCTION_2026-10-21.md.
+  See docs/reports/CLOUD_PLUGIN_PRODUCTION_2026-10-21.md.
 
 ### CLOUD-VERSION-SYNC-20261020 — complete committed production source alignment
 
@@ -36985,7 +36985,7 @@ old payloads remain byte-compatible by excluding None. No database migration.
   codex/cloud-version-sync-20261020; reused clean cloud-plugin-plan-01 worktree
   from 6bca5053. Local integration target cloud-agent; archive refs unchanged.
 - Owned paths: this card, PROGRESS.md, WORKLOG.md,
-  docs/CLOUD_VERSION_SYNC_2026-10-20.md, private packaging/evidence under
+  docs/reports/CLOUD_VERSION_SYNC_2026-10-20.md, private packaging/evidence under
   .artifacts/cloud-version-sync-20261020/ and production
   /home/ubuntu/releases/20261020-version-sync/. Build only committed Zebra
   cloud-agent and Trench main source. No feature/product source changes.
@@ -37031,7 +37031,7 @@ old payloads remain byte-compatible by excluding None. No database migration.
 - Branch: codex/cloud-yahoo-egress-20261020; reused clean cloud-plugin-plan-01
   worktree from ed871829; local target cloud-agent, archive refs unchanged.
 - Initial owned paths: this card, PROGRESS.md, WORKLOG.md,
-  docs/CLOUD_YAHOO_EGRESS_2026-10-20.md and private evidence/scripts under
+  docs/reports/CLOUD_YAHOO_EGRESS_2026-10-20.md and private evidence/scripts under
   .artifacts/cloud-yahoo-egress-20261020/. Amend exact production/test paths
   after tracing the demonstrated cause, before implementation.
 - Scope: distinguish proxy CONNECT, target TLS and upstream response timing;
@@ -37075,7 +37075,7 @@ old payloads remain byte-compatible by excluding None. No database migration.
   5results/official rank2. No model/Run replay/Exa probe/global proxy mutation.
   Original Session/source/runtime and all non-Search service identities retained;
   Search settings/cache/cooldown retained. Proof and active release override:
-  docs/CLOUD_YAHOO_EGRESS_2026-10-20.md. No page/statistical performance claim.
+  docs/reports/CLOUD_YAHOO_EGRESS_2026-10-20.md. No page/statistical performance claim.
 
 ### CLOUD-RUNTIME-REPAIR-20261020 — Search, clarification and truthful delivery
 
@@ -37095,7 +37095,7 @@ old payloads remain byte-compatible by excluding None. No database migration.
   required; Worker clarification_continuation.py,continuation_dispatch.py and
   child_wakeup_continuation.py shared provider-safe recovery seam; integrations
   ag_ui/interrupts.py and projection.py; focused existing/new tests for these
-  paths; this card,PROGRESS.md,WORKLOG.md,docs/CLOUD_RUNTIME_REPAIR_2026-10-20.md;
+  paths; this card,PROGRESS.md,WORKLOG.md,docs/reports/CLOUD_RUNTIME_REPAIR_2026-10-20.md;
   task private artifacts .artifacts/cloud-runtime-repair-20261020/. Amend exact
   paths before any additional production edit.
 - Scope/order: restore native web.search for the explicitly configured trusted
@@ -37129,7 +37129,7 @@ old payloads remain byte-compatible by excluding None. No database migration.
 - Status: Done (2026-10-22; approved second-disk migration validated and locally integrated).
 - Human owner Luke Ding; executor Codex; branch codex/cloud-workspace-quota-20261022;
   worktree cloud-plugin-plan-01, base aed0f7bf; target cloud-agent, no push.
-- Owned paths: this card, docs/CLOUD_WORKSPACE_QUOTA_2026-10-22.md, WORKLOG.md,
+- Owned paths: this card, docs/reports/CLOUD_WORKSPACE_QUOTA_2026-10-22.md, WORKLOG.md,
   PROGRESS.md, private .artifacts/cloud-workspace-quota-20261022/ and matching
   remote release directory. Expand explicitly before any source change.
 - Scope: Session83042ed6 has one successful model response, then a local files.list
@@ -37160,7 +37160,7 @@ old payloads remain byte-compatible by excluding None. No database migration.
   in paired clean cloud-plugin-plan-01 Zebra/Trench worktrees; targets cloud-agent
   and Trench main, preserving unrelated primary dirty work; no GitHub push.
 - Owned paths: this card, PROGRESS.md, WORKLOG.md,
-  docs/CLOUD_TURN_ADMISSION_COMMENTARY_2026-10-22.md; private same-task .artifacts/;
+  docs/reports/CLOUD_TURN_ADMISSION_COMMENTARY_2026-10-22.md; private same-task .artifacts/;
   Trench services/api/src/trench_api/trench_ai_zebra_contract.py,
   tests/api/test_trench_ai_zebra_contract.py, tests/api/test_trench_ai_zebra_runtime.py;
   toc-frontend/src/lib/strategy-ordered-items.ts, strategy-coverage-report.ts,
@@ -37227,7 +37227,7 @@ old payloads remain byte-compatible by excluding None. No database migration.
 - Human owner Luke Ding; executor Codex; branch codex/cloud-redis-observer-20261024
   in paired cloud-plugin-plan-01 worktrees; targets Zebra cloud-agent / Trench main.
 - Owned paths: this card, PROGRESS.md, WORKLOG.md,
-  docs/CLOUD_REDIS_OBSERVER_2026-10-24.md, private .artifacts/cloud-redis-observer-20261024/;
+  docs/reports/CLOUD_REDIS_OBSERVER_2026-10-24.md, private .artifacts/cloud-redis-observer-20261024/;
   Trench services/api/src/trench_api/trench_ai_turn_dispatcher.py,
   trench_ai_turn_transient.py and trench_ai_strategy_runtime_types.py in same directory;
   tests/api/test_trench_ai_turn_dispatcher*.py
@@ -37255,7 +37255,7 @@ old payloads remain byte-compatible by excluding None. No database migration.
   one authorized high/v2 normal-page Run passed; awaiting maintainer integration).
 - Human owner Luke Ding; executor Codex; branch codex/cloud-progress-budget-20261028,
   paired cloud-plugin-plan-01 Zebra worktree, no push/main merge.
-- Owned paths: this card, PROGRESS.md, WORKLOG.md, docs/CLOUD_PROGRESS_BUDGET_2026-10-28.md,
+- Owned paths: this card, PROGRESS.md, WORKLOG.md, docs/reports/CLOUD_PROGRESS_BUDGET_2026-10-28.md,
   private .artifacts/cloud-progress-budget-20261028/;
   packages/agent-core/src/agent_core/harness/public_output_lifecycle.py,
   packages/agent-core/src/agent_core/harness/model_response_progress.py,
@@ -37275,7 +37275,7 @@ old payloads remain byte-compatible by excluding None. No database migration.
 - Authorized single real page: conv_1793154759026_9a4ea0, Runf0e03834; completed,
  1accepted command/1model(high/Flash/v2)/0tools/0retries,6.942s admission→terminal.
   Refresh preserves answer, model count remains1. Normal suggestions POST1.
-  Evidence and rollback: docs/CLOUD_PROGRESS_BUDGET_2026-10-28.md.
+  Evidence and rollback: docs/reports/CLOUD_PROGRESS_BUDGET_2026-10-28.md.
 
 
 ### SOURCE-STATUS-SUMMARY-20261028 — Optional Host source status batch
@@ -37300,7 +37300,7 @@ old payloads remain byte-compatible by excluding None. No database migration.
   packages/agent-storage/src/agent_storage/postgres/workspaces.py and worker_commit_confirmation.py;
   apps/worker/src/zebra_agent_worker/execution_errors.py;
   tests/agent_storage/test_worker_commit_confirmation.py; tests/worker/test_commit_confirmation_errors.py;
-  this card, PROGRESS.md, WORKLOG.md, docs/WORKER_COMMIT_CONFIRMATION_2026-10-28.md; private task artifacts.
+  this card, PROGRESS.md, WORKLOG.md, docs/reports/WORKER_COMMIT_CONFIRMATION_2026-10-28.md; private task artifacts.
 - Scope: one read confirmation after TimeoutError, exact event/projections/stream/fence,
   existing1MiB/parent deadline, no repeated writes. Unknown confirmation suspends with
   retryable=false; no new model/search, original replay, broad retry/error changes.
@@ -37313,7 +37313,7 @@ old payloads remain byte-compatible by excluding None. No database migration.
 - Owned paths: apps/api/src/zebra_agent_api/task_approval.py (new), task_routes.py;
   packages/agent-storage/src/agent_storage/postgres/task_approval.py (new);
   tests/api/test_task_approval.py, tests/agent_storage/test_task_approval.py (new);
-  this registry, PROGRESS.md, WORKLOG.md, docs/APPROVAL_BRIDGE_2026-10-28.md;
+  this registry, PROGRESS.md, WORKLOG.md, docs/reports/APPROVAL_BRIDGE_2026-10-28.md;
   .artifacts/approval-bridge-20261028/.
 - Scope: exact original Task/Run/approval identity, atomic idempotent decision and
   resume command; existing policy unchanged. Paired Trench BFF/UI wiring.
@@ -37336,7 +37336,7 @@ Scope: expiry during human approval must renew from fresh verified Host authorit
   in paired cloud-plugin-plan-01 worktrees, based on accepted approval repair.
 - Owned paths: new focused tests/api/test_agui_long_session*.py; existing AG-UI/v2/approval
   regression tests only when a reproduced issue requires them; this registry,
-  PROGRESS.md, WORKLOG.md, docs/AGUI_LONG_SESSION_2026-10-28.md, private artifacts.
+  PROGRESS.md, WORKLOG.md, docs/reports/AGUI_LONG_SESSION_2026-10-28.md, private artifacts.
 - Scope: trace all AG-UI boundaries and finite safety matrix; native isolated PostgreSQL,
   wire/reconnect/approval/cancellation/terminal, long-history/page/large-body restore
   and paired Trench functional checks. No provider/search/original Run replay,
@@ -37380,7 +37380,7 @@ the compatibility entry point. Required file-size split, no new abstraction/sche
 - Owned paths: merged repair files; conflict resolution in task_routes.py, migration_catalog_tail.py;
   tests/conformance/agui_long_session/, tests/api/test_agui_long_session_wire.py;
   sdks/typescript/packages/client-core/src/sse_stream.ts and focused stream tests;
-  docs/AGUI_CLOUD_INTEGRATION_2026-10-28.md, task registry, PROGRESS.md, WORKLOG.md.
+  docs/reports/AGUI_CLOUD_INTEGRATION_2026-10-28.md, task registry, PROGRESS.md, WORKLOG.md.
 - Reuse existing generic SDK recovery; remove mandatory Trench checkout, Python, UI and database
   dependencies from the core gate. Business ORM/history/UI remains in external Host adapters.
 - Native PostgreSQL/Redis plus real Cloud wire into generic SDK acceptance; preserve authorization,

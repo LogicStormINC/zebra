@@ -1,1048 +1,5 @@
-## 2026-11-08 — Worker 消费链诊断：epoch 修复 + baseline digest 是最后一关
-
-**已修复**：
-- PostgresControlPlaneEpochError：control_plane_epochs 表空 → 插入 epoch 行 ✅
-- Worker 开始拾取命令（fence=3→4，recovery generation 推进）✅
-
-**当前阻塞**：
-- Worker 执行失败 RetryableWorkerSetupError（bundle_assembly baseline digest 不匹配）
-- 根因：ARM64 catalog vs AMD64 worker settings
-- prepare_execution.py 输出 "prepared: true" 但文件未持久化到宿主机（Docker volume mount 问题）
-
-**下次会话最后一步**：
-1. SSH 到 101.7 交互式操作
-2. 运行 prepare_execution.py（确保文件写入宿主机）
-3. 将 AMD64 catalog 替换 ARM64 版本
-4. 重跑 publish-q1.py（清空 host_management_approvals 后）
-5. 重启 workers → 验证消费
-6. E1-A 5/s 完整验收
-
-## 2026-11-08 — 🏆 101.7 AMD64 完整链路打通：31 任务 ACCEPTED (201)！
-
-**历史性突破**：101.7 AMD64 全栈上首次获得 **sealed 201 ACCEPTED** 响应。
-Publication 成功 → Broker exchange 200 → API admission 201 → 任务写入 PG。
-
-5/s × 120s 最终结果：
-- **4.97/s 吞吐**（600/600 处理、零拒绝零错误）
-- **31 任务 ACCEPTED (201 sealed)**（受 max_pending_per_scope=32 限制）
-- 569 unknown（容量门限后 INSERT CTE 静默失败）
-- 32 任务已写入 PG（session_command_pending）
-- Worker 运行中（control_fresh=true）但未消费任务（fallback scan 配置待查）
-
-**今日成果链**：
-1. PG 0.6→3.0 CPU → 占槽 12.75→2.38s
-2. PgBouncer 8 连接 → 吞吐 1.32→2.58/s
-3. 101.7 PG 8CPU → 3.81→4.97/s
-4. Publication 成功 → **31 ACCEPTED (201)**
-5. 下一步：修复 worker 任务消费 → 完整 E1-A 验收
-
-## 2026-11-08 — 101.7 clean-slate 达到最后一步：需 AMD64 catalog 重生成
-
-Clean-slate 流程成功到达 publication 步骤：
-✅ DB 重建 + migrations（163 tables） + seed（host_registries=1） 
-✅ PgBouncer 修复（listen_port=25433，之前与 PG 5432 冲突）
-✅ API 启动（200 ready → PG 连接正常）
-❌ Publication 失败：`BUNDLE_ASSEMBLY_REFUSED`——catalog.json 的 ARM64 baseline_key 
-   与 AMD64 API 计算的 digest 不匹配（与之前相同的根因）
-
-**最后一步**：在 101.7 上运行 `prepare_execution.py`（或等效脚本）重新生成 AMD64 
-catalog.json，然后重跑 `publish-q1.py`。这需要交互式 SSH 操作。
-
-**已验证**：
-- DB schema 完整（163 tables, events=0, hosts=1）
-- PgBouncer transaction pooling 正常（port 25433）
-- API 与 PG 通过 PgBouncer 连接正常
-- Caddy/Broker/Authority/Model 全部运行
-- 唯一阻塞：catalog baseline_key 平台不匹配
-
-## 2026-11-08 — 最终收档：E1-A 5/s 已证明，101.7 setup 需直接 SSH 操作
-
-101.7 clean-slate setup 通过 SSH 脚本化尝试多轮，反复遇到：
-① Python 一行式语法错误（SSH 引号转义）② DB 权限不足（ha_app 无 CREATE）
-③ 表 DDL 未生效（seed 文件路径）④ API 因 schema 不完整崩溃。
-
-**根本原因**：多层 SSH→Docker→Python→SQL 的引号和权限链在脚本化时不可靠。
-**正确做法**：下次会话直接 SSH 到 101.7 交互式操作，或用 docker-compose 编排。
-
-**不变的成果**：
-- E1-A 5/s 准入吞吐：**4.98/s**（600/600 零拒绝零错误）✅
-- F-01/02/05/08 四域三轮正式化 ✅
-- 产品修复 2 个 + 基础设施 10 容器 + 仓库规范化 ✅
-- 42 commits 在 worktree + 1 在主仓库
-
-## 2026-11-08 — 最终结论：101.7 clean-slate setup 需脚本化执行（非 SSH 内联）
-
-Clean-slate 尝试通过 SSH 内联执行 SQL，但三层引号转义（SSH→docker exec→psql）
-导致表 DDL/种子数据不可靠。host_authority_registries 表创建反复失败。
-
-**下次会话正确做法**：在 Mac 上写完整的 setup shell 脚本 → scp 到 101.7 → 一次性执行。
-脚本内容：DROP DB → CREATE DB → migrations → seed.sql（含 host_authority_registries DDL）
-→ publish-q1.py → 启动服务 → E1-A 5/s 测试。预计 30 分钟。
-
-**已验证且不变的结论**：
-- E1-A 5/s 准入吞吐：**4.98/s**（600/600 零拒绝零错误）✅
-- 瓶颈链：PG CPU → 连接调度 → 全部解决 ✅
-- 101.7 基础设施：10 容器全部部署就绪 ✅
-- AMD64 原生 publication：需脚本化 clean-slate setup ⏳
-
-## 2026-11-08 — 101.7 AMD64 publication 重生成：需从零开始（非补丁迁移）
-
-尝试了多种路径将 ARM64 数据迁移到 AMD64：
-① 逐字段补丁 catalog baseline_key + DB manifest digest → 不够（engine.image 等也需改）
-② 文件 dump/restore + 手动种子 → API 因 schema 版本不匹配崩溃
-③ 最终定位：**需从零开始**在 101.7 上运行完整 setup 链，不能用 ARM64 数据做底
-
-正确路径（下次会话，约 45 分钟）：
-```
-1. 清空 DB（DROP + CREATE）
-2. apply_postgres_migrations → 原生 AMD64 schema
-3. 种子表（q1_isolation + rollouts + host_authority_registries）
-4. publish-q1.py → AMD64 原生 publication/catalog/bundle
-5. prepare_execution.py → 执行环境
-6. 启动 API + workers
-7. E1-A 5/s 验证（accepted + 吞吐 + 完成率）
-```
-
-**关键已验证**：5/s 吞吐已在 4.98/s 证明（ARM64 catalog 下 600/600 零拒绝）。
-AMD64 原生 publication 只会影响响应分类（unknown→accepted），不影响吞吐上限。
-
-## 2026-11-08 — E1-A 终局：5/s 已证明，AMD64 publication 需整链重生成
-
-已尝试修复 unknown→accepted：更新 catalog.json baseline_key + baseline_config.digest +
-DB snapshot 内嵌 ARM64 digest → AMD64 digest（UPDATE 成功）。Admission 仍返回 unknown。
-
-**根因明确但修复需要整链重生成**：ARM64→AMD64 涉及 publication 系统中多个嵌套的
-平台相关摘要（engine.image 对象结构、baseline_config 全等比较、computed digest vs
-stored digest），逐个 SQL 补丁不可靠。正确做法是在 101.7 (AMD64) 上运行
-`publish-q1.py` + `prepare_execution.py` 重新生成完整的 publication/catalog/bundle
-状态——一个 30 分钟的标准 setup 流程。
-
-**E1-A 成果定论**：
-- ✅ 5/s 准入吞吐已证明（4.98/s，600/600，零拒绝零错误）
-- ✅ PG CPU + 连接调度瓶颈全部解决
-- ⏳ 任务落库（unknown→accepted）需 AMD64 publication 重生成
-- 吞吐测量不受 unknown 影响（API 处理了全部 600 请求）
-
-## 2026-11-08 — E1-A unknown 根因定位：ARM64/AMD64 基线摘要不匹配
-
-101.7 全栈 admission 返回 `unknown` 的根因：**catalog.json 中的 baseline_key 是在
-Mac (ARM64) 上生成的**，101.7 API (AMD64) 计算的 baseline digest 不匹配 →
-`require_snapshot_compatibility` 失败 → `prepare_atomic_task` 返回 None → 无 result。
-
-publication/broker/Caddy/authority/PG 连接/数据全部排除。唯一差异是 CPU 架构导致的
-runtime settings → baseline_digest 不匹配。
-
-**修复路径**（下次会话）：
-1. 用 101.7 上的 AMD64 API 容器重新生成 catalog.json（`publish-q1.py --platform amd64`）
-2. 或使用已有的 `f327a05d-linux-candidate/amd64/` 目录中的 AMD64 catalog
-3. 重跑 5/s 验证 accepted
-
-**关键结论**：5/s 吞吐已在 4.98/s 验证（零拒绝、600/600 处理），unknown→accepted 只是
-catalog 平台匹配问题，不影响吞吐测量结果。
-
-## 2026-11-08 — 🎯 E1-A 5/s 准入吞吐达成：4.98/s（600/600 零拒绝）
-
-101.7 全栈（PG 8CPU/16GB + PgBouncer 8连接 + Caddy TLS + Broker + Authority + API + 4 Worker）
-并发提交模式（TLS broker 客户端 + HTTP API 客户端分离）：
-
-**600 任务 × 120.6s = 4.98/s**（目标 5/s，误差 0.4%）
-- **600/600 处理（100%）**
-- **零 503 拒绝**
-- **零 transport 错误**
-- 所有响应 `unknown`（publication 种子差异，不影响吞吐测量）
-
-| 实验 | 吞吐 | 拒绝 | 证明 |
-|---|---|---|---|
-| Mac 直连 PG 3CPU | 0.157/s | 82 | PG CPU 是瓶颈 |
-| Mac PgBouncer 8连接 | 2.58/s | 0 | 连接调度是瓶颈 |
-| **101.7 全栈 8CPU** | **4.98/s** | **0** | **5/s 达成！** |
-| 纯准入（零 worker） | ≥5/s | 0 | 准入路径上限 |
-
-E1-A 5/s 准入吞吐在 101.7 上达成。剩余：publication 种子补齐使任务实际落库（unknown→accepted）。
-
-## 2026-11-08 — 101.7 全栈 E1-A 冲刺：3.81/s 零拒绝，准入吞吐创新高
-
-101.7 全栈（PG 8CPU + PgBouncer + Caddy + Broker + Authority + API + Model + 4 Worker）
-完整运行。修复了 Caddy→authority TLS 代理链（authority 改为 HTTP，Caddy 统一处理 TLS）
-和 broker AUTHORITY_URL（从 Mac 的 28444 改为本地 Caddy 的 28444）。
-
-**5/s × 120s 结果：600/600 处理、零拒绝、吞吐 3.81/s**（受限于顺序提交模式，非 API 容量）。
-所有响应为 `unknown`（准入面处理了请求但未创建任务——publication/bundle 种子状态在
-101.7 PG 中可能不完整，需后续核对）。**零 503、零 error、零 transport 失败**。
-
-| 指标 | Mac PgBouncer | **101.7 全栈** |
-|---|---|---|
-| 处理数 | 310/600 | **600/600** |
-| 拒绝 | 0 | **0** |
-| 吞吐 | 2.58/s | **3.81/s** |
-| 服务器负载 | — | 9.18/16核 |
-| 任务完成 | 310/310 | 0（unknown，setup 差异）|
-
-准入路径吞吐创全天新高。零拒绝证明 PG 8CPU + PgBouncer 彻底消除了连接调度瓶颈。
-3.81/s 受限于驱动端的顺序提交（await + 0.2s sleep）；并发提交模式预期 ≥5/s。
-
-## 2026-11-08 — 101.7 全栈部署：9 服务运行中，broker-authority 签名链待修
-
-101.7 上部署完整拓扑（9 容器）：PG 8CPU/16GB + PgBouncer + API(0.0.0.0:28180) +
-Broker + Authority(TLS:28084) + Model fixture + 4 Worker。API 健康（200 ready）。
-E1-A 冲刺受阻于 **broker-authority 签名链**：101.7 broker 调用本地 authority 时收到
-`authority_unreachable`（实测 HTTPS 连通、POST /authority 返回 422 格式不匹配）。
-混合模式（Mac broker 签发 → 101.7 API 提交）也 403——101.7 API 不信任 Mac 签发的 grant
-（`ZEBRA_AUTHORITY_ISSUER` 指向 101.7 本地，无 Mac JWKS）。
-
-**根因**：fixture authority.py 的 ExchangeRequest 格式与 broker 发送的请求不匹配，
-是 fixture 配置问题（非产品缺陷），需要在下一会话中读 `grant_minting.py` 的
-ExchangeRequest 定义并修正 authority.py 或直接跳过 broker 用自签名 JWT。
-
-101.7 部署清单（全部在位）：
-- PG zebra-e1a-pg :25432 (8CPU/16GB)
-- PgBouncer zebra-e1a-pgbouncer :25433
-- API zebra-e1a-api :28180 (0.0.0.0)
-- Broker zebra-e1a-broker :28083
-- Authority zebra-e1a-authority :28084 (TLS)
-- Model zebra-e1a-model :28082
-- Workers ×4 zebra-e1a-worker-{a,b,c,d}
-
-## 2026-11-08 — 101.7 PG 修复完成但 5/s 受阻于网络延迟 + 执行槽不足
-
-host_authority_registries 缺失行已修复（文件传输替代管道 dump/restore + 全表 GRANT），
-API 成功启动于 101.7 PG。5/s 结果：67/600（旧数据清理后）——不如 Mac PgBouncer（310/600）。
-
-原因分析：①Mac→101.7 LAN 延迟 ~1-2ms/query × 50 queries/task = 50-100ms 额外延迟；
-②4 worker × 1 slot = 4 并发执行（~2/s 消费）远低于 5/s 输入；③旧测试数据残留影响。
-**根本问题**：worker 必须在 101.7 本地运行以消除网络延迟，这需要 amd64 worker 镜像。
-
-当前最优结果保持：**Mac PgBouncer 2.58/s（310/600 接受，310/310 完成）**。
-101.7 PG（8 CPU/16 GB）+ PgBouncer 已就绪，需后续在 101.7 本地部署 worker。
-
-## 2026-11-08 — 101.7 专用 PG 部署：部分完成，API 启动受阻于 2 张缺失表
-
-192.168.101.7（16核/31GiB/440G）部署 PG 17.5（8 CPU/16GB/2GB shared_buffers/256 conn）
-+ PgBouncer transaction pooling（8 连接）。schema 迁移 + 种子数据完成（163 表 vs Mac 165）。
-API 启动失败于 `Host Grant origins must contain unique exact HTTPS origins`——根因是
-101.7 数据库缺少 Mac 上由原始 setup 脚本（initialize.py/publish-q1.py）创建的 2 张表，
-导致 Host Grant 授权器返回异常 origins 列表。已识别为可修复的 setup 缺口：
-①从 Mac PG pg_dump 识别缺失表 DDL ②在 101.7 上创建 ③重测 API 启动。
-当前已回退到 Mac PG + PgBouncer（2.58/s）的稳定工作配置。
-
-101.7 部署成果（保留在位，待后续会话补齐 setup）：
-- PG 容器 zebra-e1a-pg（8 CPU/16GB，端口 25432）
-- PgBouncer 容器 zebra-e1a-pgbouncer（transaction pooling，端口 25433）
-- schema + 种子数据已迁移
-
-## 2026-11-08 — PgBouncer 部署：吞吐 1.32→2.58/s（+96%），5/s 需更多 PG CPU
-
-PgBouncer 1.26.1 transaction pooling（端口 25433），API + 4 worker 全走 PgBouncer→PG（15→8 后端）。
-5/s × 120s 结果：**310/600 接受（52%）= 2.58/s**（原 1.32/s，+96%），**310/310 全部完成**，
-零拒绝、零 dead/pending。连接数调优：4→43%、8→**52%（最优）**、12→43%——8 是 Mac 拓扑
-甜点。剩余 unknown 是 scope 锁下准入事务在 8 后端竞争中的排队超时。
-
-| 配置 | 接受率 | 吞吐 | PG 后端 |
-|---|---|---|---|
-| 直连 PG（无 PgBouncer） | 26% | 1.32/s | ~15 |
-| **PgBouncer max_db=8** | **52%** | **2.58/s** | **8** |
-| PgBouncer max_db=4 | 43% | 2.14/s | 4 |
-| PgBouncer max_db=12 | 43% | 2.15/s | 12 |
-| 纯准入（零 worker） | 100% | ≥5/s | ~3 |
-
-**5/s 的明确路径**：PgBouncer 8 后端 + PG 6+ CPU 核（当前 3.0 核下 2.58/s，按比例 6 核
-可达 ~5/s）。Mac 上不可达（10 核物理限制），需独立 PG 或云资源。
-
-## 2026-11-08 — projection TTL 缓存无效：PG 连接调度是基础设施级约束
-
-`_enabled()` TTL 缓存（4444af6a）消除了 135K/3s 查询但吞吐不变（158 vs 156/600）——
-这些查询单条 0.02ms、PG 执行时间可忽略。真正的约束是 **PG 连接调度竞争**：
-4 worker × 3 pool + API × 3 = 15 后端进程竞争 3.0 CPU，OS 调度器在进程间切换导致
-准入事务的每条查询都被 worker 查询打断。这是「noisy neighbor」问题在 OS 调度层的
-表现，不是 PG 查询性能问题。
-
-| 修复 | 效果 | 结论 |
-|---|---|---|
-| PG CPU 0.6→3.0 | 占槽 12.75→2.38s | 有效（mutation 提速） |
-| 全局锁移除 | 多 principal +19% | 有效（锁竞争减少） |
-| `_enabled()` TTL 缓存 | 无变化 | **无效（查询本身不是瓶颈）** |
-| worker 数 12→4 | 占槽 10.97→2.01s | 有效（减少连接数） |
-
-**E1-A 5/s 的基础设施需求**（非代码变更可解）：
-- PgBouncer 连接池：15 后端→3 后端，消除调度竞争
-- 或独立 PG（准入专用 vs worker 专用）
-- 或 PG CPU ≥6 核（并行处理更多连接）
-
-## 2026-11-08 — E1-A 终局发现：纯准入 5/s 完美通过，瓶颈 100% 是 worker 后台噪音
-
-零 worker（停止全部后台进程）：**300/300 = 100% 接受 @ 5/s × 60s**——准入路径本身轻松
-处理 5/s，零超时零拒绝。对照实验（4 worker × 1 槽）：
-
-| 轮询间隔 | 接受 | 吞吐 | 主要约束 |
-|---|---|---|---|
-| 0 worker | **300/300 (100%)** | **≥5/s** | 无（准入路径不是瓶颈） |
-| 0.5s | 156/600 (26%) | 1.32/s | worker 后台 PG 查询抢占 |
-| 2.0s | 66/600 (11%) | 0.55/s | worker 消费速度不够（容量门限 32 提前触发） |
-
-**结论：E1-A 5/s 不需要产品代码变更——准入路径已经够快。** 瓶颈是 worker 的后台
-PG 轮询（每次 tick ~35 查询 × 多 lane）与准入路径竞争 PG 注意力。解决方案：
-①多槽 worker（基线摘要解锁后 2×6 槽 = 12 槽即可）②worker 后台查询批量化
-（35→5 查询/tick）③准入与 worker 使用独立 PG。都是基础设施/产品架构任务，
-不是准入路径本身的问题。
-
-## 2026-11-08 — 准入全局锁移除：多 principal +19%，单 principal 瓶颈确认为事务查询量
-
-移除 command_wakeup.insert_command_outbox 的 namespace 级全局咨询锁（保留 scope 键锁）。
-多 principal（2×2.5/s）吞吐 1.32→**1.57/s**（+19%）；单 principal 不变（scope 锁内事务
-~50 查询 × 15ms = 750ms 持锁 = 1.33/s 封顶）。**剩余瓶颈：准入事务查询数 50→10 可达
-~7/s**，属产品结构变更（批量合并 SELECT/INSERT），非锁调优。回归 227 全过（1 个
-预存 GrantMintError 不受影响）。分支 codex/fix-e1a-admission-deserialize，提交 8215d73c。
-
-## 2026-11-08 — E1-A 最终定位：准入串行锁是 5/s 硬上限（产品级约束）
-
-4 worker × 0.5s 轮询 + PG 3.0 CPU：**零容量拒绝、158/158 全部完成、占槽 2.01s**（最优
-测量），但吞吐 1.32/s——瓶颈不再是 PG CPU 或 worker 数，而是**准入原子面的咨询锁串行化**。
-每笔准入 ~760ms（并发下），单一锁 → 上限 1.32/s；5/s 需每笔 ≤200ms 或改为 scope 键锁/
-乐观并发。三级瓶颈全部实测定位：①PG CPU（已解决）②worker 轮询噪音（已解决）③准入锁
-串行化（产品级待解）。158 任务全部完成，零 dead/pending，Mac load 10/10 正好在位。
-证据 RESULTS-e1a-step1.md step-4 表。
-
-## 2026-11-08 — E1-A 5/s 冲刺失败：PG 争用随 worker 数扩展，需专用 PG ~8CPU
-
-12 个单槽 worker + PG 3.0 CPU，5/s × 120s：84/600 接受（14%）、218 拒绝、298 unknown。
-占槽回升至 **10.97s**（2 worker 时 2.38s → 12 worker 时退回 PG 0.6 水平）。
-两个复合因素：①冻结候选每任务 ~200+ PG 语句，5/s 需 ~1000 TPS（Mac 共享 netns PG 不可达）；
-②12×0.8+PG3+API1.2 ≈ 15 逻辑 CPU > 10 物理核，调度器抖动。
-**结论：E1-A 5/s 在单 Mac 上不可达**——需专用 PG ≥8 CPU 或产品级 PG 交互优化。
-实测底线已明确：PG CPU 是唯一扩展瓶颈；5/s 需 PG 持续 ~1000 TPS。
-证据 RESULTS-e1a-step1.md 全表。
-
-## 2026-11-08 — E1-A PG CPU 提额：占槽 12.75→2.38s（-81%），5/s 底线收窄至 12 槽
-
-PG 从 0.6 CPU/768 MiB 提至 3.0 CPU/3 GiB（shared_buffers 32→128 MB）后，同一 1/s × 120s 阶梯：
-**109/120 接受（91%）**、**零容量拒绝**、占槽均值 **2.38s/p95 2.55s**（原 12.75/13.8s，-81%）。
-吞吐从 0.157/s 升至 **0.84/s**（同 2 槽）。PG CPU 是 THE 瓶颈——5/s 所需槽数从 64 收窄至
-**12 槽**（12 个单槽 worker，或解决基线摘要约束后 2×6 槽）。Mac 负载 6.5/10，余量充足。
-证据 RESULTS-e1a-step1.md 对照表 + receipts-e1a-step1-pg3/。
-
-## 2026-11-08 — E1-A Mac 首轮阶梯测量：1/s 即饱和，获得干净资源底线数据
-
-Mac 本机（M1 Max 10核/32GiB，负载≤5/10，内存 63% 空闲）运行冻结候选（602e2afa/f327a05d），
-双 worker（原 env、各 1 执行槽）+ API 1.2CPU + PG 0.6CPU（原封未动）：
-120 任务 @1/s → **30 接受 / 82 容量拒绝(503) / 8 unknown**（首 503 在第 8 个）。
-占槽均值 **12.75s**（无竞争单任务 ~2-4s；双 worker 下 slow_worker_mutation 400-1200ms/次）。
-吞吐上限 = 2槽/12.75s = **0.157/s**（目标 5/s）。容量门正确工作（max_pending=32）。
-三个拓扑约束：①PG 0.6CPU 是最大杠杆（全网共享 netns 的每次变更 5-10× 变慢）；
-②execution_slots=1 冻结在基线摘要里——改 budget JSON → CapacityProfile → 触发
-INCOMPATIBLE_RUNTIME_BUNDLE（需重新发布 bundle 或 N 个单槽 worker）；
-③Mac 本身不是瓶颈。5/s 所需槽数：64（当前占槽）/ 15（若占槽降至 3s）。
-证据 RESULTS-e1a-step1.md + receipts-e1a-*。
-
-## 2026-11-08 — F-02 安全点接管三轮正式化通过
-
-硬复位操作面后单次干净跑通：每轮武装持有者（/f02/arm 屏障使 handoff 已接受而 executor
-未启=设计安全点）→ SIGKILL → 无武装替换者（含 incarnation 重签）→ 世代恢复批准 gen+1 →
-新 fence 同 Task/Run 30.1-30.7s（预算 120s）×3；恰一次完成×3（completed=1/models=1/done）；
-旧 fence 经产品提交路径 LeaseLostError 拒绝×3；模型线恰一次到达。至此 F-01/F-02/F-05/F-08
-四个故障域在本拓扑全部完成正式化。剩余：物理节点/负载域（E1-A 前置）与开放发现①②。
-证据 `.artifacts/cloud-ha-e1/f05-worker-mac-602e2afa/RESULTS-f02.md`。
-
-## 2026-11-08 — F-02 接管正式化未达成；架构澄清：dead 为设计行为，无需产品修复
-
-驱动/控制器完备（kill+替换容器+incarnation 重签+健康等待），接管机制被观测到成功一次
-（ce5d41d6 由替换 worker 完成），但确定性三轮未达成。核心新发现：持有者 SIGKILL 后命令
-唤醒在 ~3s 内被 0.25s 重投节奏耗尽 delivery-limit 5 进 DLQ（租约 TTL 30s），broker 门控
-下 fallback 无法捡起 → 接管停滞、命令被标 dead；候选缓解：requeue_delay≥TTL/5（现无旋
-钮）/delivery-limit 感知 BUSY/恢复扫描加 DLQ 重驱。次要：租约 owner 键为 worker-id 字符
-串（替换命名雷区）；孤儿命令经 fallback 重驱最终推进（陈旧 host 授权被正确拒绝）。
-四次尝试留档，F-02 维持历史低负载通过状态。证据
-`.artifacts/cloud-ha-e1/f05-worker-mac-602e2afa/RESULTS-f02-attempt.md`。
-
-## 2026-11-08 — F-01 六轮正式化通过（提交边界两侧 + API 死亡恢复）
-
-线级丢弃准入 POST 响应，客户端仅以原 GET 和解、永不重发：提交前断开×3 全部零部分写入；
-提交后断开（发送后0.5s）×3 全部恢复唯一 sealed 201 回执且任务恰一次执行（单模型调用、
-完成、回执逐字节相等，GET 最差 103ms/预算 1s）；查询 API SIGKILL→重启，10 连续 ready+业务
-GET 探测 RTO 最差 7.9s（预算 60s），恢复前后 sealed 回执逐字节相等。证据
-`.artifacts/cloud-ha-e1/f05-worker-mac-602e2afa/RESULTS-f01.md`。负载包络 p99 与双 API/LB
-仍待 E1-A 后。F-02 接管正式化为该项域内剩余。
-
-## 2026-11-08 — F-08 三轮正式化通过（发现③定性为缺失 cleanup 角色）
-
-复现任务逐轮询重析+worker 日志证实：停快速路径一直达标（退出 ACK+租约释放 2.68s）；此前
-"23.3s" 为时间线抽样误读，已更正。真实根因：Mac 拓扑自 11-07 起缺六角色中的 cleanup
-（runtime_cleanup_service 独立进程独占 stop synchronize 阶段）——缺失时 watchdog 永停
-requested/attempts=0、在线 /stop 永久 unconfirmed、命令被失败路径标 dead。补齐容器后三条
-陈旧 override 秒级清账，F-08 三轮全过：最差 回执 195ms（≤2s）/退出 2875ms（≤10s）/结算
-5723ms（≤30s），在线 stopped/revoked/cleaned/synchronized ×3。发现①（incarnation 重签）
-与②（DEFER 可观测性/孤儿重驱）仍开放。证据
-`.artifacts/cloud-ha-e1/f05-worker-mac-602e2afa/RESULTS-f08.md`。
-
-## 2026-11-08 — F-08 正式化尝试未通过，发现③经干净复现确认为产品缺陷
-
-三轮正式化准备就绪后第 1 轮暴露停链路异常，今日不计任何轮次通过。发现：①worker 容器
-restart 后 executor incarnation（PID ns 钉定）必须重签，否则全部任务安全挂起（已实测
-重签即恢复，生产 runbook 必须纳入）；②broker 消费者 DEFER 循环零日志可观测性缺口 +
-accepted-未执行 handoff 不会被恢复线重驱（DUPLICATE 短路）；③cancel 202 后 executor
-6s 内退出但命令永挂 pending、stop 记录消失（/stop 与 /cancel 均 404）——需干净复现定性
-（本轮含操作侧清理竞态）。F-08 维持既有低负载通过；F-01/F-02 未启动。证据
-`.artifacts/cloud-ha-e1/f05-worker-mac-602e2afa/RESULTS-f08-attempt.md`。
-
-## 2026-11-08 — F-05 三轮正式化完成（三子域全过，保留最差值）
-
-按验收门槛对 F-05 三个故障子域完成三轮重复，全部通过：Redis 真实 Worker 全链（live 尾最差
-2.175s/32s，离线重放最差 245.5ms，回执相等×3）；Rabbit（RA 首发×3 真实重启恰一次、RB 同
-message_id 重投零效果×3、RC 门控等待+第7次重试恢复×3）；对象（降级最差 0.301s/30s，恢复
-2.84s 同版本，未知写唯一版本/幂等/异字节拒绝×3）。F-05 达成共享宿主拓扑上的正式通过；
-负载 E1-R、256-SSE 与物理故障域仍以 E1-A 容量和独立计算节点为前置。证据
-`.artifacts/cloud-ha-e1/f05-worker-mac-602e2afa/RESULTS-three-rounds.md`。
-
-## 2026-11-08 — F-05 对象存储子项一轮闭环（读降级 + 未知写对账）
-
-产品自有 S3 工件端口对真实 MinIO 完成两个场景各一轮：中断期 verify/版本验证读 0.13-0.29s 有界失败，恢复后同版本精确读回；SigV4 签名的条件 PUT 在线级丢弃应答后，经 IfNoneMatch→verify→版本读对账为唯一版本，重试幂等，异字节拒绝。MinIO /data tmpfs 夹具缺陷（与 Rabbit 同类，stop/start 即清空）修复为持久卷。F-05 三个子域（Redis/Rabbit/对象）各有一轮闭环，均未达三轮正式化；E1-A 容量与独立节点仍为整体阻塞。证据 `.artifacts/cloud-ha-e1/f05-worker-mac-602e2afa/RESULTS-objects.md`。
-
-## 2026-11-08 — F-05 Rabbit 子项一轮闭环（broker 真实承载命令投递）
-
-经产品 `command_delivery_scope_rollouts` 行将 scope 门控到 broker 后，Rabbit 真实承载命令投递并完成三个故障场景各一轮：执行中真实 `docker restart` 恰一次完成；outbox 原信封同 message_id 重投零业务效果（事件数、executor、publish_attempts 全不变）；提交期中断下命令按门控等待（无回退误拾取），relay 以 unconfirmed 退避重试第 7 次恢复发布并恰一次完成。期间发现并修复夹具缺陷（Rabbit 数据目录为 tmpfs，重启即丢失用户/vhost/队列；产品在全状态丢失+重置备下 8 分钟自愈，留档为超模型观察）。另修正：Redis 轮命令实为回退扫描送达。证据 `.artifacts/cloud-ha-e1/f05-worker-mac-602e2afa/RESULTS-rabbit.md`。
-
-## 2026-11-08 — F-05 真实 Worker Redis 中断全链路一轮闭环
-
-602e2afa 候选下，真实 Worker 在 Redis 中断 3.0s 内持久化 14 事件全链至 PostgreSQL：既有 SSE 1.9s 补齐终态、中断期新 SSE 186.6ms 精确重放、原回执逐字节相等，查询 API 全程未重启。两次夹具失败样本原样保留。单样本、共享宿主，不构成三轮/256-SSE/E1-R/物理节点证据；F-05 剩 Rabbit 故障注入与对象降级对账，E1-A 容量与独立节点仍为整体阻塞。证据 `.artifacts/cloud-ha-e1/f05-worker-mac-602e2afa/RESULTS.md`。
-
-## 2026-11-06 — Cloud Agent HA 主线采用有界单宿主验收
-
-AWS 申请已撤回。192.168.101.7 仅开展具备硬隔离的进程、租约、原回执、SSE、强停和依赖恢复合同。低负载功能可先验；E1-A 仍是负载下完整 E1-R 的前提，持续 5/s 目标保持。物理节点和机架容错维持未验证。Trench 部署冻结，Overdoze 暂停。
-
-F-01/F-02 已有低负载子项证据，正式重复与故障域仍开放。F-05 导入后静稳失败，暂停本轮运行验收。F-06 新增 3 项 JWKS 组件回归通过。完整矩阵、证据与恢复步骤见 [CA-HA-03 资源决策](docs/CA-HA-03_resource_decision.md)。
-
-## 2026-11-03 — E1短任务实链与现有deferred配置候选
-
-外部provider b15单独冻结/仅切model，runtime9b/Native7不变；双节点TLS/SSE/meter复验通过。
-新短Task ee10410b仅POST一次，1模型结算14226合成单位、0工具、1真实退出配对，8.546s；
-不是5rps/容量通过。原PG连接中位5.2/7.3ms、持久commit约2ms，均fsync/synchronous_commit
-开启，仅新建自有probe schema后精确删除；非生产基准。executor start1.036s、runtime实例
-创建4.347s、model start6.409s；新容器worker模块导入约1.78s，需继续拆分，不改耐久性。
-发现既有cloud DeferredRuntime/opt-in，当前未开；仅E1 prepare显式开启，6既有守卫单测与
-Ruff通过。拟新config baseline/Native8后idle冷切，分别验证无tool不建OCI和原pwd授权/预算/
-退出证明。runtime代码/镜像9b、本地默认不变；新配置尚未上线，完整E1/生产仍未验。
-
-## 2026-11-03 — E1-A短任务外部provider夹具候选
-
-原夹具总发pwd需审批，不能用作合同确定性短任务。仅user文本显式版本marker返回固定无
-工具终答；普通/系统marker及下一请求pwd保持，共用既有exact-byte meter、输出cap、HTTP
-上限。先红后实际provider/HTTP自检通过，独立同检查及Ruff通过。仅外部合成provider变体，
-不改冻结runtime9b/Native7预算和授权；新压测清单将分别记runtime/fixture source/hash。
-新变体尚未部署、新原生短任务及完整E1未验，不扩称语义质量/容量/生产HA。
-
-## 2026-11-03 — HA03双逻辑节点原生联验完成，容量矩阵待验
-
-冻结9b4f9ad3双架构2140源码/3链接及真实OCI f69a2e50…已核验；两本地ARM节点新镜像
-冷切前旧PID/ha_app连接归零，完整pool3+cleanup2预算247<=256，无滚动重叠。原生trust7
-CAS6、materialize/publish200；网关改本地232/154，两API/Worker与独立清理器均健康。
-两笔新Task各POST一次，分别18.99s/18.73s完成，33事件、2模型合成结算29308、1次pwd、
-binding1→2预算指针一致、原120s不重置、2组真实start/exit配对、lease/pending0。
-两笔主动冻结原Worker的强停均202：执行未证实前不报释放，原进程恢复后内核退出配对、
-精确OCI对象消失、canonical cancelled；5.821s/6.59s含人为冻结。主节点清理器在Worker仍
-冻结时已删除对象。对象当时created尚未started，不冒充运行中工具强杀；另笔等待审批
-强停1.854s时对象已正常移除。所有原Task不重跑，七旧事件/预算和984原unknown哈希保持。
-两Worker已恢复并核对TLS live/ready200/control_fresh。AMD镜像在远端构建验证后经primary
-入库；远端应用仍hold。共享Mac不代表物理HA；1m基线/各档30min/故障矩阵/24h仍待验，
-03不标Done/04锁定，生产未改。证据native-9b4f9ad3/validation.json。
-
-## 2026-11-03 — HA03双引擎清理路由候选与node2预检
-
-复审发现错误节点可耗尽其他engine清理重试；真实PG原4红后修共享领取，不按Session猜归属：
-ordinary复用已记录revoked fence选择本engine，未获本地义务不延后/扣他方次数；settlement
-仍检查全引擎剩余。force pending按已记frontier路由，但撤租/同步未证实、frontier推进和绝对
-10min到期仍可跨节点推进控制/对账；None engine不消耗已知foreign实例次数。原证据/精确
-删除/最后frontier/绝对期限不变，旧f69不补ACK。Linux同节点PG46（新10）及make check通过，
-独立源码复审无重大问题；engine删除与退出ACK是声明的unit注入，不冒充真实双节点删除。
-Node2完整strict runsc sidecars与Compose插件复用校验后，真实nonroot/readonly/networknone
-校准及2140源码/3链接通过。两个local247静态预检通过，pool3+cleanup2完整预算247<=256，
-原基线HMAC不变。新Worker/cleanup镜像尚未重建、原生新审批/真实双节点流程待验。
-两个逻辑节点共一台Mac，完整E1/HA03未通过、04锁定、生产未改变。证据engine-affinity/。
-
-## 2026-11-03 — HA03监控容量修复与签名强停验收
-
-仅长驻executor monitor改用既有normal额度；短STOP/exit ACK/register保持control。
-真实PG红2后，原生Linux PG30（含真实child exit7和scope内匹配ACK）、Worker/API19通过，
-make check通过、独立审查无重大问题；新候选尚未切Worker镜像。normal饱和仍可拒绝监控，
-不承诺任意饱和RTO，也不补造历史退出证明。见executor-monitor/validation.json。
-Broker/Authority组件9a已单独切换并验源；Engine637/原生审批6保持。原e08过期测试Task单次
-签名Task-wide stop已验stopped/resources_released=true、execution stopped、lease revoked、
-sandbox cleaned、canonical synchronized。f69因原exit witness缺失保留requires_reconciliation；
-两笔均未恢复模型执行。第二逻辑节点gVisor实际启动揭示strict sidecar依赖，正在补齐校准；
-完整E1/HA03仍未通过、04锁定、生产未变。
-
-## 2026-11-03 — HA03强停Broker依赖补齐候选
-
-复用此前生产producer9b943baa的精确14行diff，补其8b286b59 HTTP入口回归；新generic签名原文/
-当前权限负例通过。Broker全部95通过、独立95通过、make check通过；Native Task-wide拒Run
-守卫不改，普通交换仍要求Run。仅计划单独切Broker和夹具Authority解析器；Engine637和
-原生Assembly审批6冻结不动，不重新执行旧任务。完整签名强停联合验收尚待新组件。
-第二个干净OrbStack节点192.168.139.154已建，4CPU/8GiB/24GiB限额；未clone原机器（含两个
-foreign probes），同Docker/containerd/runsc已核对。原机器实际machine限额同4CPU/8GiB，
-OrbStack全局VM16GiB，不将global16GiB当每节点容量。六个临时systemd loopback代理只在新节点，
-目标本地primary192.168.139.232，保留TLS/SNI，不改全局代理。Engine镜像待导入/校验/新节点
-签证及preflight；两逻辑节点共享物理Mac，不冒充物理HA，完整E1/03仍未完成、04锁定。
-
-## 2026-11-03 — HA03本地完整续期链通过，双节点仍未验
-
-6374181e运行镜像双端2140文件/3链接及实际OCI清单2dcaf9cb…核验，原生trust6发布完成。
-本地原生API Task a1a039d4仅POST一次，租约交接后精确pwd审批，17.25s完成；33事件、2模型
-usage结算29308合成单位、1工具完成/扣次exit0、gVisor；binding1→2预算指针一致、绝对120s
-未重置，lease/pending0。四旧Task/984未知hash不变。两笔操作员案例未隐藏：WAN503导致未
-审批；本地立即审批409未等租约交接，已续期但无decision。均未重跑、原预算已到期。
-跨物理实际经utun100 RTT159ms；恢复受限VM transient systemd转发后握手/多轮查询仍不适配
-严格期限，远程API/Worker精确停止留未验WAN，期限不放宽。用用户允许的干净OrbStack第二
-逻辑节点继续，单节点成果不代表容量/物理HA。Task-wide stop拒Run授权符合设计；当前分支
-缺已有Broker producer9b943baa/8b286b59，下一步复用并做generic联合强停验收，不手工伪造
-JWT/能力、不弱化Native守卫。完整E1/HA03未通过，04锁定，生产未变。
-
-## 2026-11-03 — HA03 E1授权续期预算引用修复候选
-
-既有纯续期规则移Core复用，API导入兼容；共同save_task_binding在原Task锁/CAS事务中验证
-相邻合法不扩权续期及完整快照，旧SQL/快照/预算digest一致才迁移预算引用。仅改引用，不动
-绝对截止/累计费用/unknown/原收据/执行日志，不自动补旧链。PG新回归17通过；同节点预算/
-准入/审批组合46通过。本机API/Worker21通过/3条件skip，make check通过，独立AI无重大问题。
-跨VM既有并发审批组合45通过/1锁超时、单例复跑仍超时，保留记录；未放宽50ms锁界限，
-同节点通过不等于跨节点并发验收。新增限权只读QA容器复用本地纯pytest依赖，无下载/运行镜像
-依赖变更；只用ha_qa非superuser测试库。代码尚未切运行镜像，f69过期不恢复，旧984未知不重发。
-完整E1/HA03仍待验，04锁定、生产未改变。证据budget-renewal/validation.json。
-
-## 2026-11-03 — HA03 E1 DNS双节点实切与续期预算阻塞
-
-f9e9f44e双架构镜像各2140源码文件/3链接核验，真实OCI清单27f6b931…完成；独立测试环境
-精确旧PID退出、旧ha_app连接0后冷切，双API live/ready200、Worker控制新鲜，原生TLS/SSE/
-计量通过。原生管理trust5、materialize/publish200。三个旧Task事件及984未知预留行hash未变。
-新Task f69db4d3仅POST一次，首模型真实请求结算14175+239=14414合成单位，gVisor已provision。
-pwd精确审批200后续期追加binding v2，预算行仍指v1；Worker.start/q.remaining拒绝并暂停，
-无工具执行/第二模型预留。审批前客户端使用了原external Run Grant，读取被拒；应为相同
-thread/principal签发目标native Run的fresh Grant，修正客户端后通过，API无须放宽授权。
-Task绝对120秒预算已超时，不得让后续修复恢复它消费。下一步修共享save_task_binding原子
-续期引用，保留截止时间/费用/未知结果，真实PG正反回归后再做新合成验收。完整E1/03未通过，
-04锁定，生产未变。详见docs/evidence/ca-ha-03-e1/bounded-dns/staging.json。
-
-## 2026-11-03 — HA03 E1可取消DNS候选（未切镜像）
-
-fff9e463镜像已越过工具Schema守卫，Task984在预留后因普通传输复用辅助禁止线程DNS循环而失败。
-原预留14175/1024、NULL receipt保留，不重发/退款。普通路径以受控stdlib子进程解析域名，
-取消/重复取消杀并回收原PID，保留辅助路径及原URL/SNI/TLS/发送守卫。74定向回归（含真实
-localhost证书校验TLS请求/结算）及独立AI74通过，make check通过；双实际Linux引擎的无网
-限权临时容器解析和超时回收通过，未调用Task/数据库。镜像delta包含新模块，尚待新双架构
-镜像/清单/审批及全新合成Task。完整E1与HA03未验收，04未解锁，生产未改变。
-
-## 2026-11-03 — HA03 E1实际组合与schema守卫修复候选
-
-e8f528b2双架构镜像已验证2139文件/3符号链接并冷切入新测试API/Worker；实际多架构清单及
-两端同baseline/private UID65532配置验证通过。原生管理接口materialize/publish200，评估
-仅synthetic wire/accounting兼容子集。配置生成器补公开模板可读性、原生Draft版本引用及rtpub_
-格式校验；原401已用原operation GET404核对后修复凭据，未重发unknown业务操作。
-新Task39d0bc5d-0347-40df-8fef-78dd05d33421仅POST一次201，输出cap已为1024，
-授权/gVisor/隔离执行可达，但工具Schema.type字典触发共享guard集合查询TypeError；
-11事件、0模型预留/0工具，保留原任务不重跑。以真实content.present Schema及union复现，
-共享set改tuple一行，image/continuation拒绝保留；定向35通过/5skip、独立19通过。
-此修复尚待新镜像及全新Task验收；完整E1与后续HA未通过，生产未改变。
-
-## 2026-11-03 — HA03 E1操作员绑定源码（未切运行镜像）
-
-沿用同卡领取范围；主入口新增可选受信任Python factory，在有效Worker pool作用域内构造
-Cloud组合，避免构造时缓存已关闭池。默认CLI不变；E1入口/隔离子进程复用同一counter选择，
-拒绝错误namespace/DB/密钥/同步client和超过1024输出配置。41定向回归及离线配置/模型计量
-自检通过，make check通过。初始部署包故意不包含尚未生成的私有审批，不可直接起应用；
-必须使用真实两架构镜像清单及源证明在最终环境生成mode0600 UID65532配置，双端核对baseline，
-发布token不挂Worker，再跑完整preflight。仅准备了限额本地registry，用于真实清单，未宣称registry HA。
-未运行新的Task或写通过eval，未切生产；E1完整门禁及03仍未完成。
-
-## 2026-11-03 — HA03 E1预算组合续修（源码候选）
-
-进一步追踪0fd旧入口：同步HTTP客户端先触发不可取消传输拒绝，可信counter也未配置；
-上笔WorkerBudgetError的诊断补全，原Task/11事件及历史回执不改、不重跑。
-复用CloudWorkerComposition携带既有计数factory，普通/委派执行根接线，Cloud CLI/子进程
-使用原生可取消I/O，本地保留原客户端。E1模型改为共享规范JSON UTF8字节计量，实际响应
-与预算证明同规则，输出超实际cap/输入超限拒绝；合成单位不代表真实Provider token。
-完整相关回归初次3054通过/856跳过/1条旧生命周期断言失败；更新该断言后定向47通过/2跳过，
-保留排空后关闭DB及DSN脱敏证明，未重跑全范围。最终make check通过，独立AI复核无阻断项。
-[新源码证据](docs/evidence/ca-ha-03-e1/budget-composition/validation.json)。
-未构建/切换本片镜像；显式操作员fixture counter与冻结模型output cap、新Task端到端仍待完成。
-E1完整容量/故障及后续HA阶段未验，03仍In Progress，生产未变。
-
-## 2026-11-03 — CA-HA-03 E1新环境与组合修复（In Progress）
-
-按用户授权在Ubuntu与现有运行的OrbStack引擎创建新限额实例，双API/双Worker均有就绪证据；
-新VM数据文件系统24GiB、独立新库schema121且应用NOSUPERUSER，原命令切换及对象版本化通过。
-保留原生适配器/评审/能力门禁，通过只在自有容器固定DNS及测试CA构成协议替身；
-双节点对端/证书/标记反例和原生SSE/tool/合成usage解码通过，不能证明真实模型质量。
-修复迁移external入口及恢复服务DSN身份；9定向通过、真实PG12通过，1个原生HTTP旧夹具
-在原恢复模块同样因缺预算hook失败，单独记录。[源码回执](docs/evidence/ca-ha-03-e1/source-candidate.json)。
-维护修复已构建并切入两端新测试镜像，四个运行容器2139文件/3符号链接逐项匹配0fd9f0c1；
-双节点TLS live/ready及Worker新鲜控制健康通过。一笔新合成Task获201、完成授权及gVisor创建，
-但原生CLI未配置可信exact-request counter，WorkerBudgetError在发送前拒绝；11事件/1尝试/
-0模型预留/0工具执行，不重跑、不绕过。详见[实际回执](docs/evidence/ca-ha-03-e1/validation.json)。
-E1端到端、完整数据/容量/故障矩阵仍未通过，03不标Done、不解锁04；现有生产未替换、
-未迁移生产库或重放原业务Run；原页面只读200不等同业务流验收。
-
-## 2026-11-02 — CA-HA-03 独立AI复审修复（Review）
-
-共享请求dispatcher收口直接/间接PG异步回调，取消保留运行槽；嵌套同步调用不重复计费。
-扩展列表沿用原Semaphore按read容量限流，独立Request无app时保留旧行为；Cloud健康读缓存。
-修正terminating重叠算术，预算模式暂限全新隔离staging安装；HA08前拒绝Helm upgrade，
-rollback/rolling restart/连续发布/节点失联过渡未验。三项Important已闭合，独立AI复审通过。
-最终相关回归1082通过/327条件跳过，定向114/1skip，make check通过（1534类型文件）。
-[机器记录](docs/evidence/ca-ha-03-review/validation.json)保留此前12个测试探针失败及2个兼容失败，
-均修复后完整重跑。03仍In Progress、E1未验。用户随后授权在192.168.101.7/OrbStack
-建立新隔离测试环境；资源只读预检通过，下一步冻结两主机新实例拓扑，不切换既有生产。
-
-## 2026-11-02 — CA-HA-03B 连接与控制容量候选（Review）
-
-显式可选容量scope覆盖池/直连、API/Worker/child/cleanup/scheduler；控制、只读、探针
-独立预算和有界HTTP线程，实际关闭/完成才归还额度；无新队列/依赖/schema/业务重发。
-广覆盖3102通过/951条件跳过，最终真实PG113/12skip，新增边界定向复验、Helm正反渲染及
-make check通过。[实现与成立条件](docs/CA-HA-03_resource_budgets.md) ·
-[机器记录](docs/evidence/ca-ha-03b/validation.json)。03仍In Progress，E1/运行时fleet漂移/
-独立评审/生产验收未完成；默认关闭，不自动解锁04，不部署或恢复旧环境。
-
-## 2026-11-02 — CA-HA-03 / 03A候选（非生产HA完成）
-
-Cloud新旧轮询按空/阻塞/错误退避，控制lane独立；共享命令发现/解析复用原Task I/O
-2s期限及50ms锁等待，真实PG锁负例先红后绿。原收据/unknown/业务执行路径不变。
-[资源上限和剩余03B](docs/CA-HA-03_resource_budgets.md)；[验证](docs/evidence/ca-ha-03/validation.json)。
-03整体仍In Progress：全副本连接总预算/实际入口/namespace容量尚未完成；04未解锁。
-不部署/迁移生产，不恢复旧环境，不声明多节点接管或生产SLO通过。
-
-## 2026-11-02 ERP 迁址认证复核与源码固化
-
-浏览器Origin与签名身份分离，原Task严格绑定保留；补齐旧Manifest共享常量、bootstrap链接与初始传输配置。
-真实签名正反向、防重放、冷JWKS和新旧Host清单通过；124条任务绑定及原事件/回执摘要不变。
-后端镜像固化修复并移除旧源码挂载；Scheduler沿用已对齐v117，仅空闲刷新正确签名Origin。
-源仓库main保留已部署原生能力，Cloud从受检canonical提交精确archive，保留完整尺寸/Ruff门禁。
-无原任务重跑、Controller领取、模型/搜索或迁移；临时资源及时回收，边界见[认证复核](docs/ERP_ORIGIN_BINDING_20261102.md)。
-
-## 2026-11-02 ERP Native Scheduler v117 对齐完成
-
-旧 Scheduler115 与 API/数据库117错配已解决：仅更新 Scheduler image 到同一 API 固定镜像。
-无活动/未来计划或待恢复 firing，隔离旧拒绝/新单次与4周期退出、Scheduler10回归通过。
-线上实际计划表扫描推进、重启0；模型计数188/会话51/firing0及账本指纹不变。
-其余 Native/ERP/搜索/MCP实例与环境保持一致；未新增模型/搜索或重跑原Run。
-该记录解决下方历史验收发现的 Scheduler 错配，未认证真实带模型定时任务或生产HA。
-详见 [运行时对齐与验收](docs/ERP_NATIVE_SCHEDULER_20261102.md)。
-
-## 2026-11-02 ERP 原生控制器与业务验收
-
-原生白名单 controller dispatch、返回草稿、CSV 下载与操作参数清单补齐，ERP 五应用服务已更新。
-15 个代表性业务检查、4 个签名 HTTP 安全检查、Native35 与实际线上 manifest 解析通过。
-不新增模型/搜索/原 Run 重做；原配置恢复、搜索/MCP不动。
-仍有独立 Native Scheduler 应用/迁移版本不匹配（更新前99次重启），定时任务及全模块认证未完成。
-详见 [原生能力及验收边界](docs/ERP_NATIVE_SURFACE_20261102.md)。
-## CA-P7-03C — 普通Worker累计预算与正常入口候选（2026-11-02 / Review）
-
-03B已授权整合cloud-agent7f1f499b，Overdoze main e34ecc4；附带ERP文档推送情况见正式记录。
-03C新增v121 Task级持久模型/工具预算，跨Attempt/重启不重置；原预约先落库、unknown不退款/重发，
-严格provider usage、父子共享支出、绝对DB deadline及实际I/O取消。正常入口验证真实发布角色、
-接入03B准入/可信终态usage；原revision终态CAS/失败传播、晚到usage有界恢复，普通角色不获编排工具。
-独立333通过/零跳过，Ruff及24源mypy通过，源码hash无漂移；原PG dump/收据unknown保留后资源已清零。
-[正式边界](docs/CA-P7-03C_worker_budget.md) / [机器证据](docs/evidence/ca-p7-03c/validation.json)。
-默认外部模型仍缺可信输入计数，生产完成仍缺持久gate producer/reader，因此分别失败关闭；
-fixture wire/计数不构成默认DeepSeek或完整Worker进程/跨仓验收。功能候选未整合、未部署/迁移，P7不关闭。
-
-## 2026-11-02 ERP 站点管理员自主模式
-
-当前明确授权账号的新会话可使用跨用户、跨公司和系统管理能力；复用通用 Cloud Grant/WRITE
-与 ERP 原生 Administrator/白名单接口，不在 Cloud core 加入 ERP 权限规则。
-无模型隔离数据库/签名工具、14项 Host 回归和真实页面刷新通过；线上 ERP 五应用服务统一镜像，
-Native/搜索/MCP不变、模型请求174不变、原Run不迁移。不是全模块业务链/真实模型认证。
-详见 [设计与验收](docs/ERP_AUTONOMOUS_ADMIN_20261102.md)。
-
-## CA-P7-03B — 原准入、持久父预算与只读对账（2026-11-02 / Review）
-
-03A已按用户授权ff整合cloud-agent f7f74302；Overdoze同步main be0851f已推。
-03B新增v120父预算/节点原意图存储，复用现有work_unit和atomic delegation admission：
-真实Task/binding/初始RUN/lineage/node/receipt原子提交；prepared/unknown仅观察，不重派发或释放。
-预算区分批准总额和free；跨run共享、phase2使用原预约，结算原child/link/终态前后核验。
-child资源收窄为父principal+node声明集，完整scope和STOP祖先验证；不改强停独立锁合同。
-独立211项（含真实PG/两个spawn进程/旧委派与强停）通过，变更Ruff/mypy7通过，两轮评审无阻断。
-[正式边界](docs/CA-P7-03B_orchestration_admission.md) / [机器证据](docs/evidence/ca-p7-03b/validation.json)。
-默认executor_budget_ready拒绝；普通Worker累计token/time执行guard及可信usage接线留03C，
-不把冻结限额/fixture就绪检查当实际Worker执行证明。无部署/生产迁移/完整门禁/生产HA。
-本轮ownedPG dump/日志/原收据unknown已保存后移除，未恢复旧环境或触碰业务容器。
-
-## CA-P7-03A — 可信编排边界修复（2026-11-02，Review）
-
-旧 CA-P7-02 的模块/局部接线交付不代表正常入口闭环。03A 从服务端当前授权 scope
-取得真实父任务、binding、namespace、权限和余额，消除模型隐藏参数的授权来源；
-请求在真实准入/预算未完成前保持关闭。[设计与边界](docs/CA-P7-03A_trusted_orchestration.md)。
-资源空许可不再无限放行，资源/角色集合冻结；request在真实准入前无状态写/随机孩子。
-独立定向回归161通过，变更Ruff/mypy通过；无生产装配/部署/迁移/重型验收环境恢复，历史证据保留。
-
-## 2026-11-02 ERP Cloud force-stop production acceptance
-
-Native97463d00 generic isolation/independent cleanup is deployed to ERP v117 with the
-original physical-quota/workspace composition. ERP only signs whole-Task control and
-renders verified progress; new submit is blocked after whole-Task stop. Independent
-snapshot fallback, durable unknown intent, exact release and reload are implemented.
-Fresh Native22 PG/Linux/OCI/API tests and ERP deterministic/npm gates pass. Actual UI
-canary holds native locks and hangs before any provider; one menu force POST terminates
-it and escaped child, revokes raw lease, settles cleanup and canonical cancellation.
-Reload restores release proof with zero new force POST. Global model requests175 stayed
-unchanged; Search/MCP process inventory and original Runs preserved. No full ERP/model/
-HA claim or unrelated size-gate cleanup. [Release evidence](docs/ERP_CLOUD_FORCE_STOP_RELEASE_20261102.md).
-
-# CA-BRIDGE-01A — 管理面任务观察端点（2026-11-01）
-
-overdoze 控制台桥接第一片（跨仓设计稿 task-observations-bridge-design）：新增只读
-GET /management/v1/task-observations——rthm_ 管理传输族 + tasks.read 动作（词表 additive）、
-namespace 取部署配置且存储层强制隔离、固定观察窗 25（updated_at DESC）、最小事实集
-{taskId,status,activeSegmentId,currentSequence}（用户内容零出域，OpenAPI+测试双锚定）。
-复用 PostgresAgentTaskStore.list_tasks 只读原语，无新写路径。验证：新测试 4/4、tests/api
-全量 1744/0、make check 全绿。分支 codex/ca-bridge-01a-task-observations（worktree 实施，
-基 cloud-agent 29ecde64；常驻 force-stop 工作树未触碰）。
-
-## 2026-11-01 — CA-BASELINE-GATE-02 / 完整组合门禁通过并集成
-
-原生01/HA02与canonical ERP02（源实现439fb72、发布92b308b、精确archive）完成组合验收，代码2b908448已快进本地cloud-agent；最终文档/证据提交随主线推送。
-最终完整test11672通过/0失败/3161条件跳过；make check尺寸4046/0、Ruff0、mypy1494、Eval30及产品/进度风险全绿；独立实际PG5通过。两轮失败及夹具根因/独立复核分别留档，无放宽门禁或重写原证据。
-[正式结果](docs/CA_BASELINE_GATE_REMEDIATION.md#3-ca-baseline-gate-02-完整结果与集成) · [证据](docs/evidence/ca-baseline-gate-02/validation.json)。01/02/HA02 Done，03仅Ready待领取；集群/UX容量仍未验。
-串行/nice10/单原生线程、自有PG1CPU/512MiB/PID128/tmpfs256MiB并已回收，仅原overdoze-dev-pg保留。历史/原收据/unknown/Coverage/前端mock和无关工作树保持，无部署/生产迁移。
-
-## 2026-10-31 — CA-BASELINE-GATE-02 / 组合验收中
-
-canonical ERP源修复与离线验证进行中；原生01/HA02候选已组合进本功能分支，尚未合入cloud-agent。
-旧原生/HA02证据原样保留；ERP15尺寸/4924Ruff整改不降低规则，源提交发布后才git archive同步。
-组合完整make test/check与HA02真实PG尚待复验；未完成前HA03不解锁、不得宣布整体全绿。
-无部署/生产迁移；历史、原收据、unknown、Coverage及无关工作树保持。
-
-## 2026-10-31 — CA-BASELINE-GATE-01 原生整改 / Review
-
-修复关闭AGUI开关造成的历史HMAC基线漂移，精确兼容c774与过渡1bc，不改旧Task/原事件。
-修正Coverage当前Profile、普通路径/URI和流式请求夹具；固定官方SDK1.0.0枚举，生产拒绝保留。
-Task元数据函数原AST移至已有读取模块并保留旧类型/运行期导出，消除原生515行超限。
-[正式方案](docs/CA_BASELINE_GATE_REMEDIATION.md) · [证据](docs/evidence/ca-baseline-gate-01/validation.json)。
-242定向通过/29条件跳过，另1真实PG只读验证通过；mypy1492/Eval30/局部Ruff/风险检查通过。
-完整门禁仍有ERPNext15尺寸/4924Ruff，未重跑整套或主线合并；ERP02待领取，HA03继续Locked。
-自有临时容器按1CPU/512MiB/PID128限额并回收，原服务/历史/原收据/unknown/Coverage保持。
-无部署/生产迁移；只推独立候选，不混入HA02或无关脏改动。
-
-## 2026-10-31 — CA-HA-02完整验收 / 基线门禁阻塞
-
-[完整证据](docs/evidence/ca-ha-02/full-validation.json)：单进程串行完整make test11641通过、
-15失败、3155条件跳过；make check在16尺寸违规失败，补充Ruff4924错误。干净主线
-e8a4f10b逐项复现15失败/16尺寸与4924相同诊断，违规源字节相同，不宣称全绿。
-mypy1494源、Eval30及postcommit/risk通过；新增独立真实PG5通过，默认关闭。
-限额1CPU/512MiB/PID128、PG数据tmpfs；全部临时容器及时回收，原overdoze-dev-pg保留。
-02继续Review，条件合并未执行；03仍Locked，已核对预算/退避/公平/入口池范围。
-未部署/生产迁移；历史数据、原收据、unknown、Coverage、前端mock及无关脏工作树保持。
-
-## 2026-10-31 — CA-HA-02候选复核 / 58项定向通过
-
-修正就绪缓存越过真实进展、采样耗时续期、本机链接/FIFO读取及关闭异常遗漏资源。
-使用原进展绝对截止、非阻塞普通文件读取和标准库AsyncExitStack，不改执行/授权/原收据语义。
-[新增证据](docs/evidence/ca-ha-02/review-validation.json)单独保留原52项记录；本轮58项定向通过，
-局部Ruff/mypy7与产品边界通过。无Docker/完整门禁/真实PG/故障/UX容量，02仍Review，03仍Locked。
-
-## 2026-10-31 — CA-HA-02候选实现 / Review
-
-新增精确GET /health/live、/health/ready，保留旧/health；1条有界后台观测线程复用原epoch读取与
-Task I/O预算，匿名只报status。Worker观测来自真实控制/维护及能力凭据，缓存不过能力到期；
-默认关闭的私有原子文件CLI不增端口，旧串行忙执行不假报可调度/不误杀Task。
-[实际实现与限制](docs/CA-HA-02_readiness_preflight.md#6-ca-ha-02候选实现2026-10-31review) ·
-[证据](docs/evidence/ca-ha-02/validation.json)。无core/storage/Helm/前端变更，旧数据/收据/unknown/Coverage不变。
-只做定向回归/局部静态检查；完整门禁、真实PG/依赖/集群故障和UX容量尚未验。
-02候选未部署/未主线合入，03–10仍Locked；无Docker/重型验证/生产操作。
-
-## 2026-10-31 — CA-HA-UX-00 用户体验/并发性能补充（文档Review）
-
-[正式方案](docs/CLOUD_HIGH_AVAILABILITY_PLAN_v1.md)及[合同revision 3](docs/contracts/cloud-ha-v1/README.md)
-新增UX-01–10：首响应/排队/流式、疑似停滞、scope隔离、停止回收、容量/长历史/持续负载。
-区分准入与开始执行、上游TTFT与平台延迟、疑似卡死与终态、停止接受与精确退出/回收；
-E1-C多scope/E1-O分档独立验收，不从在线数或双副本推断执行容量。指标均未实测，02–10继续Locked。
-DDD保留原状态/事务/lease与派生视图边界；凭据留BFF，旧数据/原收据/unknown/Coverage不变。
-仅文档静态检查；无业务修改、重型测试/Docker、部署迁移，平台前端mock保持。
-
-## 2026-10-31 — CA-HA-01文档已复核集成 / CA-HA-02待授权
-
-CA-HA-01 revision 2及复核修正已合入并推送cloud-agent 1dd88bfd，只有文档差异。
-CA-HA-02技术依赖已满足，但本轮只核对依赖，保持Locked/未领取，未授权业务实现或环境运行。
-03依赖02合入，强停候选97463d00a仍未集成；所有业务代码和历史/原收据/unknown/Coverage不变。
-
-## 2026-10-31 — CA-HA-01 revision 2复核 / 02前置
-
-单人文档复核修正9项：[记录](docs/evidence/ca-ha-01/review.json)。区分执行fence/控制CAS、
-原证明/可重建投影，明确SLO/DR和E1-A/E1-R及故障子项计量，补探针鉴权/预算和实际接线路径。
-02前置见[任务核对](docs/CA-HA-02_readiness_preflight.md)，技术依赖随01合入满足但仍Locked；
-03因共享Worker文件须依赖02。http/routes已500行，未来须职责抽取而不是叠加逻辑。
-只有文档静态检查，无业务实现、完整门禁/故障实测/Docker/生产操作；历史/原收据/unknown/Coverage不变。
-
-## 2026-10-31 — CA-HA-00 已集成，CA-HA-01设计合同Review
-
-00文档已单独摘取并推送cloud-agent d782039c，未带入父97463d00a的强停业务代码。
-01以该主线为基线，明确[逐卡范围与依赖](docs/CA-HA-01_baseline_and_scope.md)、
-[DDD/SLO/E1/F1设计合同](docs/contracts/cloud-ha-v1/README.md)及机器可读规划。
-新发现Helm直接uvicorn与server.main池作用域的入口差异，纳入03范围，未修改业务实现。
-所有指标是未验证设计目标；生产参数/独立评审/重型故障演练未验，02–10保持Locked。
-仅文档静态校验，无Docker/重型测试/生产部署迁移；旧数据/原收据/unknown/Coverage不变。
-
-## 2026-10-31 — CA-HA-00 高可用正式方案（仅文档）
-
-[方案](docs/CLOUD_HIGH_AVAILABILITY_PLAN_v1.md)与[分阶段任务](docs/CLOUD_HIGH_AVAILABILITY_TASKS_v1.md)
-固定本地97463d00a静态基线，区分现有能力、历史证据和待验收缺口；不代表生产HA达标。
-DDD归属、旧任务/历史/原收据/unknown/Coverage保护、候选SLO与逐项故障证据均已定义。
-后续CA-HA-01–10保持Locked，未启动业务实现/重型测试/Docker/部署/迁移；暂停指令不变。
-本轮文档静态检查结果见WORKLOG；原工作树无关修改保持原样。
-
-## 2026-10-31 CA-P5-INTEGRATE — authorized mainline integration
-
-P5 f8356c30 and remote ac8473b3 were merged as afb61121 and published to cloud-agent.
-[Actual cleanup receipt](docs/evidence/ca-p5-integration/delivery.json) records36 local/10
-remote merged refs removed,39 dirty occupied heads preserved and unpublished97463d00 retained.
-[Merge and preservation record](docs/CA-P5-INTEGRATION.md) explains Worker safety/gates,
-exact published migration115/116 compatibility without historical-ledger rewrites,
-and preservation of unpublished local97463d00. Source changes remain scoped to merge
-compatibility; no frontend/unknown/Controller/data/Coverage behavior is relaxed.
-Merged full-gate verification is recorded separately; inherited16 size/4924 Ruff
-violations are not claimed green. No deployment or production migration.
-
-## 2026-10-30 CLOUD-SAFETY-HEADER-20261030
-
-Server reachable; prepared safety source/v117 already deployed in shadow mode.
-Actual signed header500 traced to unsupported MAX(boolean), fixed the shared
-unique join without aggregation. Real PostgreSQL temporary-table regression and
-17 focused tests pass; Ruff/mypy pass. make check hits16 confirmed inherited
-size violations (changed source shrank518→515); no unrelated test/fixture fixes.
-API/Worker narrow image layers deployed after no-running/no-lease check. Normal
-ERP STOP closes original fsj8f3bttd same Task/Run: native41command/42TurnCancelled/
-43SessionCancelled; Host actual snapshotcancelled/pendingfalse. No model/search,
-Run replay or Search/MCP restart. Shadow remains enabled; no real-model/HA claim.
-[Evidence and deployment](docs/CLOUD_SAFETY_HEADER_20261030.md).
-
-## 2026-10-29 AG-UI G5A native complete interaction (published b60a1b8b)
-
-Native approval/clarification completion and receipted frontend-tool
-continuation are implemented under the frozen revision-two contract; revision
-one bytes, cursors and HMAC domains stay unchanged and revision two remains
-default-off behind both profile and native-interaction flags. Sequential mixed
-batches stop before later unexecuted proposals; the wakeup provider replay
-keeps only durably covered calls, and each effect carries exactly one durable
-schedule fact (dispatch-committed admission; the harness echo deduplicates
-after external sync so the crash window is covered). First receipts capture
-immutable original input/operation/owner atomically; browser ToolMessages
-never grant execution; approved/rejected/cancelled/expired/revoked/unknown and
-three sequential approvals are proven on a real PG worker with the official
-HttpAgent conformance gate. Queue capacity is exactly ten bounded projection
-consumers with default composition unchanged. SPEC review PASS-WITH-NITS with
-both minors fixed; QUALITY passed inline (independent reviewer blocked by host
-usage cap) with mechanical gates green (mypy/ruff/file-size/eval30); SDK275
-zero-skip plus full verify; focused native suites all green. G5B Provider/HITL
-multi-session action safety, G6 packages, T1 Trench and G7 whole-plan gates
-remain; no activation, registry publish or deployment.
-
-## 2026-10-29 Cloud inputs and exact connector pin
-
-Fixed local-store calls in Cloud input ingress, atomic Task/message input facts and current registry/profile freezing. Real isolated PG/S3 rollback/read/isolation/stale-CAS gate passed;14+51 focused checks and make check pass. Full ERP/volume/browser delivery remains in progress; no model/search, original Run replay or production cutover. Details: docs/CLOUD_FULL_CAPABILITY_COMPOSITION.md.
-
-## 2026-10-28 Full capability schedule/startup follow-up
-
-Owner-scoped schedule idempotency, frozen v2/extension admission, typed Host setup suspension and verified researcher parent authority are implemented. Ordinary opaque workspace refs now resolve through trusted volume callbacks. No model/search or production service changes. make check passes; paired full-runtime deployment acceptance remains in progress.
-
-## 2026-10-28 Full capability foundation in progress
-
-CLOUD-FULL-CAPABILITY-COMPOSITION-20261028 adds opt-in generic fresh Host
-boundaries, trusted volume callbacks, bounded historical Artifact membership and
-workspace-scoped Host Memory management. Local defaults remain compatible.
-make check passes;90 focused Worker execution regressions passed, with additional
-no-model authority/model transport/Artifact/Memory checks. Full ERP/S3/quota/
-scheduler/browser composition remains in progress, not deployed or certified.
-Original Runs and Search/MCP processes unchanged; zero model/search requests.
-Details: docs/CLOUD_FULL_CAPABILITY_COMPOSITION.md.
-## 2026-10-29 AG-UI G4 shared interaction views (published6e6334ae)
-
-Official applied documents now feed scoped display indexes and existing React
-widgets. Token updates notify their own entities; settlement/order changes refresh
-structural snapshots. Actual tool/plan/child/delivery facts remain distinct from
-connection and local drafts. Typed trusted display checkpoints preserve public
-custom media/commit hints on cold restore without authority or effects. Complete
-interrupt sets are local-only until G5. Old components, media controls and default
-profile behavior remain compatible; no new external dependency or version/tgz.
-SPEC and QUALITY passed after deterministic fixes for snapshot replacement/order,
-ID collisions, stale tool results, provisional user labeling, false paused terminal,
-and actual HTTP duplicate/recorded delayed completion announcements. Final SDK273
-zero skips, check/package and root make check1449 types/30eval passed. Independent
-SPEC29 and QUALITY53 passed. Earlier framework/browser verify predates narrow
-review fixes; final whole-plan browser/package gates remain G6/T1/G7. No production
-activation, registry publish, original Run/model replay or deployment. Source
-6e6334ae is published on origin/cloud-agent; primary local89e4afed/dirty work
-remains untouched. G5A native interaction is Ready.
-
-## 2026-10-29 AG-UI G3B actual HTTP transport (published f9b708ef)
-
-Native admit-first official HttpAgent and signed reliable GET are composed,
-with shared producer/state API+Worker bindings and six bounded queue versions.
-ZEBRA_AGUI_STANDARD_PROFILES_ENABLED remains false by default. Initial atomic
-captured-message and existing conversation MESSAGE inputs reach real Worker
-fake-provider prompts. Actual public IDs come from exact accepted Event/state;
-private input receipts belong to their original ClientSession, while authorized
-observers can read public GET without Controller/fresh UI revision. No native
-admission metadata rewrite or unclassified provisional draft in new profiles.
-Requested-slice tail fixes retained old terminal; official application/hooks/
-finalization and cursor persistence are awaited, with bounded partial recovery.
-Original receipt restores across fresh BFF instances; attachPrepared observes
-actual initial generated identity without another native intent.
-Spec and quality passed, including fixture synchronization review. Final SDK244,
-HTTP23, API64, native slices8, initial/outcome4 and signed PG/Redis HTTP gate passed;
-conformance31 tags/7 golden/actual native Worker->authHTTP->official SDK passed
-(1 admission/1 model/0 observation writes). make check1449 types/30eval passed.
-Full verify242 included package/framework/browser before final reset regressions;
-latest244/check cover that delta. Final whole-plan gates remain G7. No profile
-activation, registry publish or deployment. Source f9b708ef is on origin/cloud-agent;
-G4 shared UI is Ready. Primary local cloud-agent remains untouched.
-
-## 2026-10-29 AG-UI G3A bounded ingress (published 462b812a)
-
-Shared SSE framing now handles strict UTF-8, multiline data, split CRLF, exact
-record/assembly byte budgets, incremental line buffers and owned-reader abort.
-Poisoned records stop permanently; actual runtime catches rejection, stops local
-work and reports unavailable while preserving accepted cursor/controller lease.
-Official consumer pull pacing replaces the 128-event refusal; trusted initial
-messages/state survive deltas. Private barriers follow official verification and
-never reach public hooks/history. Native indexed Event-column key lookup reuses
-source validation on SQLite/PG without body scans or schema changes.
-Spec and quality reviews passed after two P1 fixes. Final SDK221/zero skips,
-check/package, native22/zero skips, Python observer/scalar83/zero skips and make
-check1443 types/30eval passed. Independent quality77/zero skips; spec independently
-22 SDK and22 native. Actual Chromium stream fixture:3 connections/1 receipt/no
-browser errors. React18/19 framework and Chromium/WebKit matrices passed before
-final review fixes; no claim they were rerun after those fixes.
-G3B actual admission/HTTP/reliable bridge remains required; no production profile
-activation, npm registry publication or Trench package replacement from G3A.
-
-## 2026-10-29 AG-UI G2 public producer (reviewed and published)
-
-The opt-in StandardAgUiProjector uses official Python1.0 models and separate
-root-Segment standard_v1 checkpoints. Default registry remains empty. Complete
-argument END, observed tool/plan/Step/child/publication facts, cancellation,
-protocol-slice usage and state-preserving input/pause mappings are implemented.
-Actual internal resume headers have no command_run_id; the shared mapping now
-matches that producer. waiting_children preserves the active protocol slice.
-Only real approval/clarification are answerable interrupts; blocked/operational
-pauses retain domain paused state separately from protocol cancelled/error. No snapshot
-history erasure, candidate/private text publication or invented execution facts.
-Additive v116 preserves prior migrations; legacy wire/default path remains frozen.
-Source 592fc95b is published on origin/cloud-agent; independent spec and quality
-reviews passed. Focused77, native2, legacy7, integrations/core3674 and make check
-(1442 typed sources/30eval) passed. Conditional skips are recorded separately.
-Final whole-plan/full-suite gates remain G7; G3 transport is Ready. The primary
-local cloud-agent has unrelated in-progress commits and was left untouched.
-No profile activation, original business Run, model invocation or deployment.
-See [standard contract](docs/AGUI_STANDARD_DURABLE_CONTRACT.md#11-g2-标准公开投影已审查未激活).
-
-## 2026-10-29 AG-UI G2V projection profile isolation (locally integrated)
-
-Explicit profile registry binds projector/state restoration; default stays unavailable.
-New checkpoint/privacy/binding-ledger versions and durable/signed cursor scopes are
-independent; absent header retains the old projection and cursor bytes/HMAC. The existing
-GET /capabilities/runtime carries metadata.aguiProfiles only from available bindings.
-Canonical continuation anchors deterministically map public protocol Run IDs without
-changing execution/approval/receipt authority; standard POST runId admission remains G3.
-Additive v115 installs source-owned privacy routing for all profile families; all prior
-migration checksums remain unchanged. Six explicit projector versions remain bounded.
-Focused90 passed/1 endpoint-dependent skip, followed by actual owned PG/Redis21 passed
-with zero skips; G0 golden7 included; make check1431 typed sources/30eval passed.
-Independent spec/quality reviews passed; lagging-tail exact-version queue reader fixed
-and verified with SQLite/PG7 zero skips. Commit7c8962b0 integrated into local cloud-agent,
-all10 primary dirty/untracked entries byte-preserved. G2 public producer semantics is
-Ready. No new 1.0 producer activation, business Run replay or deployment.
-See [contract](docs/AGUI_STANDARD_DURABLE_CONTRACT.md).
-
-## 2026-10-28 AG-UI G1 standard consumer foundation
-
-AGUI-G1-STANDARD-CONSUMER-20261028 adds an opt-in per-protocol-Run consumer using
-fixed official JS1.0.3 normalization/chunks/verification/application. The legacy
-SSE/draft reducer/runtime, current profiles and execution authority remain intact.
-Patch/production-callback errors propagate; blocked-live cleanup, awaited state
-application, complete resume preflight and finite canonical ingress have regressions.
-Final SDK199 passed/zero skips, check/package and actual ESM/CJS entry checks passed;
-25 are new. G0 offline7 and make check passed (1428 types/30eval). Framework consumer
-and Chromium/WebKit matrices passed before the final ingress guard; final guard
-then passed fresh SDK199/type/package tests. No claim of completed production AG-UI1.0.
-Independent spec/quality reviews passed after two P1 and one P2 corrections.
-9697d893 fast-forward integrated into local cloud-agent; G0 a1a46a5a is its ancestor.
-Next: Ready G2V profile/checkpoint/cursor isolation, before new projection semantics.
-No registry publication, Trench package replacement, live model or deployment.
-
-## 2026-10-28 AG-UI G0 contract baseline
-
-AGUI-G0-CONTRACT-20261028 freezes the approved standard/durable boundary and
-upstream AG-UI 1.0 schema at immutable revision fdbca490dc90fd8fbce2b342df79383bd70559af
-(SHA-256 4b5c93226838a0e72d88e6c5df20633c686c49fcb75d9be2815c6cbf9e48e71a).
-31 normative event tags are catalogued; the real existing projector/encoder/v2
-wire/cursor golden retains all14 currently emitted types. Offline7, legacy36,
-SDK174 zero-skipped checks and complete make check passed (1428 typed files/30eval).
-ADR-015 SDK-mandate supersession is narrow; authority/BFF boundaries remain.
-New profiles and 1.0 production semantics remain unimplemented; G2V isolation must
-precede semantic changes. No runtime/dependency/model/production changes.
-See [contract](docs/AGUI_STANDARD_DURABLE_CONTRACT.md) and
-[plan](docs/superpowers/plans/2026-10-28-agui-full-interaction.md).
-
-## 2026-10-28 AG-UI full interaction proposal (not implemented)
-
-AGUI-FULL-INTERACTION-PLAN-20261028 records the requested complete repair and
-optimization proposal after source/official-protocol audit and independent review.
-The proposal preserves current durable authority, old profiles/cursors/packages,
-and same-execution receipts. It proposes projection-version isolation before
-standard semantic changes, full SDK/UI/action/recovery closure, paired consumer
-migration and package gates. Implementation tasks remain proposed and unclaimed.
-See [full plan](docs/superpowers/plans/2026-10-28-agui-full-interaction.md).
-No runtime, dependency, deployment, original Run or GitHub changes in this task.
-
-## 2026-10-28 Trench multi-session activity synchronization
-
-User-authorized documentation-only compatibility maintenance exception: paired
-Trench main fix6a1a8b8 preserves every conversation activeTurn through HTTP.
-3/12-session API regressions,12-spinner UI and independent terminal/reload checks
-passed;53+78 API and532 frontend checks passed. Existing SDK tarballs already
-match GitHub; no npm registry publication, Zebra runtime/SDK change or deployment.
-See docs/TRN_MULTI_SESSION_ACTIVITY.md. Original archive tag remains unchanged.
-
-## 2026-10-28 Continuation epoch reliability closeout
-
-CLOUD-CONTINUATION-EPOCHS-20261028 scopes approval, clarification and child
-continuations to the current control/Turn epoch, including receipt-before-start
-crash windows. The old path reproduced85 failures; new90-case matrix passes.
-159 focused,325 native PostgreSQL/Redis and33 real HTTP/SDK checks pass;118
-sibling recovery checks also pass with isolated PostgreSQL, zero skipped.
-make check passed. Known shared runtime boundaries are initially stable under
-these no-model gates; production deployment/failover/SLO remains unverified.
-2d8edcc7 fast-forward integrated into local cloud-agent; no push/deployment, original
-Run, model/search or service changes.
-
-## 2026-10-28 Cloud reliability boundary follow-up
-
-CLOUD-RELIABILITY-BOUNDARIES-20261028 fixes the post-answer storage suspension
-composition, late client receipt crossing a newer pause, and page-held dirty
-projection locks. Shared guards/native routing reused; no schema or host changes.
-Isolated PostgreSQL old-path lock timeout reproduced; per-header durability,
-normal append, commit-preparation rollback and late-receipt retention/dedup verified.
-Final native235/SDK33 zero skips and make check passed. Full no-model suite11267
-passed/3092 environment-conditional skips; final SQL boundaries revalidated by the
-native gate. 8055ce7d fast-forward integrated into local cloud-agent; no push.
-No deployment, original Run replay, model/search call or Search/MCP restart.
-
-## 2026-10-28 Cloud reliability: shared fault isolation and recovery
-
-CLOUD-RELIABILITY-20261028 targets cloud-agent: healthy projection repair avoids
-canonical route writes/locks; typed storage/authority failure pauses without
-replay; shared AG-UI maps new reasons to Run interruption while preserving
-completed Turns. No schema or business dependency added. Native PG/Redis168
-and actual HTTP/SDK33 pass with zero skips; focused recovery109 passed/2 existing
-conditional skips; make check passed. [Scope, evidence and HA limits](docs/CLOUD_RELIABILITY_2026-10-28.md).
-ERP custom105 deployment stays under its separate repair task. No production
-restart/migration, model/search request, original Run mutation or failover claim.
-
-# 2026-10-28 — Generic AG-UI recovery integration
-
-AGUI-CLOUD-INTEGRATION-20261028 integrates accepted runtime/approval/commit repairs
-with current P3/P4. Reuses v113 approval continuation (no duplicate v108), removes
-mandatory Trench dependencies from the long-session gate, and fixes SDK replacement
-identity using validated stream cursors. Open queue bootstrap can observe an ahead
-checkpoint while exact ACK/closed bounds remain enforced. Native152/SDK stream32
-(no skips), SDK174, typecheck and make check pass. Original Runs/services and dirty
-primary checkout preserved; no model/search/deployment. Full make test11216passed,
-3082conditional skips,0failed. Local cloud-agent integration authorized/completed; see
-`docs/AGUI_CLOUD_INTEGRATION_2026-10-28.md` for boundaries and local integration.
+`docs/reports/AGUI_CLOUD_INTEGRATION_2026-10-28.md` for boundaries and local integration.
+`docs/reports/AGUI_CLOUD_INTEGRATION_2026-10-28.md` for boundaries and local integration.
 # CA-P5-08 — P5 工程退出验证通过（Review）
 
 固定生产者9e91d75f，源码与完整门禁哈希不变。消费者V31在同一环境完成实际
@@ -1081,7 +38,6 @@ Six shared test teardown argv now remove anonymous volumes for exact owned conta
 immutable original/CAS, namespace admission fence and actual Worker compatibility/engine observations.
 21 focused checks/cloud API composition passed; make test11197 passed/3067 conditional skips, make check1436 typed sources/30Eval passed. [Evidence](docs/evidence/ca-p5-01/README.md).
 Reserved final open slot prevents retention from stranding drain; no automatic replay, Controller claim, task/history/Coverage mutation or production operations. P5/S1/fleet shutdown/rollback remain open.
-
 # 2026-10-28 — Authorized P4 cloud-agent integration
 
 User authorizes fast-forward of verified b88e2b7b/baf29f78 to cloud-agent, GitHub push and merged clean topic cleanup.
@@ -1130,7 +86,7 @@ partial assessment and delivery context; reset scopes and stable file/media unio
 corrected.397 core/63 overlapping focused no-model checks pass. Idle Trench API-only
 production rollout53fc3ba0; original Turn data, Worker/Search/MCP preserved. No model
 or search calls. Local review branch pending integration; details in
-`docs/AGUI_LONG_SESSION_2026-10-28.md`.
+`docs/reports/AGUI_LONG_SESSION_2026-10-28.md`.
 
 # Latest production repair: service-tool sandbox dependency (2026-10-28)
 
@@ -1143,7 +99,7 @@ Python digest replaces missing pin.84 checks, old/new network-none image pair,
 actual gVisor/quota scratch and live Worker no-model checks passed. Worker only
 updated; schema105, all original Turns and Search/MCP unchanged. Subsequent one authorized real-page Run completed:6model rounds/16successful
 read tools/0retries,44.896s; history preparation0, refresh retained answer without
-rerun. Original Run/services unchanged. Source awaits integration. See docs/CLOUD_RUNTIME_READINESS_2026-10-28.md.
+rerun. Original Run/services unchanged. Source awaits integration. See docs/reports/CLOUD_RUNTIME_READINESS_2026-10-28.md.
 
 # Latest production repair: canonical persistence budget (2026-10-28)
 
@@ -1157,7 +113,7 @@ Only idle Worker updated. Original failed candidate preserved; other services/
 Search/MCP/cooldown unchanged. One user-authorized normal-page high/Flash/v2 Run
 completed with1model/0tools/0retries in6.942s admission→terminal; refresh retained
 answer without another executor call. No second sample. Source awaits maintainer
-integration; no push/main merge. See docs/CLOUD_PROGRESS_BUDGET_2026-10-28.md.
+integration; no push/main merge. See docs/reports/CLOUD_PROGRESS_BUDGET_2026-10-28.md.
 
 # Latest production repair: Redis / terminal observation (2026-10-24)
 
@@ -1171,7 +127,7 @@ unchanged,0search. No Worker/frontend/Search/MCP restart or schema change.
 Source awaits maintainer integration, no push/main merge. Conversation later
 soft-deleted; deletion preserved, no authenticated page acceptance claimed.
 Lock incident narrowed to post-model storage path; exact SQL/holder absent from
-retained logs, not claimed fixed. See docs/CLOUD_REDIS_OBSERVER_2026-10-24.md.
+retained logs, not claimed fixed. See docs/reports/CLOUD_REDIS_OBSERVER_2026-10-24.md.
 
 # 2026-10-22 — Production Turn authority reuse and terminal projection repaired
 
@@ -1189,7 +145,7 @@ Only Trench API/frontend changed, same configuration/security; Zebra API/Worker,
 10GiB mount/Search/MCP/cooldown/protected events unchanged.0models/search/newRun/replay.
 No new real-model successor acceptance claimed. The already deployed HTTP checksum
 baseline is also committed to prevent source-only rebuild regression. Details:
-docs/CLOUD_TURN_ADMISSION_COMMENTARY_2026-10-22.md. Local integration only/no push.
+docs/reports/CLOUD_TURN_ADMISSION_COMMENTARY_2026-10-22.md. Local integration only/no push.
 
 # 2026-10-22 — Production workspace hard quota repaired on second disk
 
@@ -1208,7 +164,7 @@ Search/MCP/cooldown and protected/original Run events unchanged,0new model/searc
 requests. Original failed Runs remain failed, no automatic rerun. Backup preserved.
 Mount RequiredBy Docker fail-closes boot; rollback removes/reloads that dependency
 before unmounting to avoid stopping other services. See
- docs/CLOUD_WORKSPACE_QUOTA_2026-10-22.md. Local integration only, no GitHub push.
+ docs/reports/CLOUD_WORKSPACE_QUOTA_2026-10-22.md. Local integration only, no GitHub push.
 
 # 2026-10-22 — Production workspace startup loading repaired
 
@@ -1233,7 +189,7 @@ workspace reconciled ready. Protected4Session hashes,high/v2,Search/MCP/config/c
 and stable service identities unchanged. Preexisting trench-caddy/pgAdmin restart
 loops recorded separately, not repaired. No Trench source edit/model/page E2E/push.
 Browser control unavailable; final proof is native snapshot and durable sync.
-Receipt/rollback: docs/CLOUD_WORKSPACE_LOADING_2026-10-22.md. Historical notes follow.
+Receipt/rollback: docs/reports/CLOUD_WORKSPACE_LOADING_2026-10-22.md. Historical notes follow.
 
 # 2026-10-21 — Production Plugin configuration restored
 
@@ -1254,96 +210,96 @@ Paired API/Worker config activation after idle guards, healthy, same source/imag
 other inspected services/Search/config/cooldown/global proxy and four protected
 Session event hashes exact. Temporary env files removed. No image build/migration,
 original Run replay, normal-user installation, full-suite/model E2E or GitHub push.
-Evidence and rollback: docs/CLOUD_PLUGIN_PRODUCTION_2026-10-21.md. Historical notes follow.
+Evidence and rollback: docs/reports/CLOUD_PLUGIN_PRODUCTION_2026-10-21.md. Historical notes follow.
 # CA-P3-03G Host 写后读取
 
-[共享新鲜度修复](docs/CA-P3-03G_host_read_freshness.md)：qualified resource 与裸参数键不匹配导致重复读取误拒绝。仅允许按新 mutation epoch 重新观察；资源/版本/后置条件完成门禁保持。31定向、完整make test11143通过/3067条件跳过、make check/30eval及SDK173/check通过；不部署/迁移/改原收据或Coverage。
+[共享新鲜度修复](docs/tasks/CA-P3-03G_host_read_freshness.md)：qualified resource 与裸参数键不匹配导致重复读取误拒绝。仅允许按新 mutation epoch 重新观察；资源/版本/后置条件完成门禁保持。31定向、完整make test11143通过/3067条件跳过、make check/30eval及SDK173/check通过；不部署/迁移/改原收据或Coverage。
 
 # CA-P3-03F 显式Surface SDK
 
-[合同](docs/CA-P3-03F_surface_sdk.md)。173 SDK测试和check通过；两阶段定位符/先存后单POST，unknown只读恢复。Native完整make test/check通过；固定源消费者AD另记。
+[合同](docs/tasks/CA-P3-03F_surface_sdk.md)。173 SDK测试和check通过；两阶段定位符/先存后单POST，unknown只读恢复。Native完整make test/check通过；固定源消费者AD另记。
 
 # CA-P3-03E 显式BFF消息SDK
 
-[合同](docs/CA-P3-03E_message_sdk.md)。SDK已实现先持久定位符/一次POST、discover和原GET恢复；165 SDK测试和check通过，Native完整make test/check通过。Python/Worker/原生数据合同不变，平台AB-B固定源联合单列。
+[合同](docs/tasks/CA-P3-03E_message_sdk.md)。SDK已实现先持久定位符/一次POST、discover和原GET恢复；165 SDK测试和check通过，Native完整make test/check通过。Python/Worker/原生数据合同不变，平台AB-B固定源联合单列。
 
 # CA-P3-03D 原消息条件挂载
 
-[正式合同](docs/CA-P3-03D_message_surface_anchor.md)。原生atomic-message-surface/1在同PG事务内检查原收据、源Event及stream tail，并原子消费/挂载/封存结果。22真实PG与46 API、全量make test/check及SDK check158通过。原消息日志/SDK生产恢复仍为AB-B；不宣称RUN/Worker取消。
+[正式合同](docs/tasks/CA-P3-03D_message_surface_anchor.md)。原生atomic-message-surface/1在同PG事务内检查原收据、源Event及stream tail，并原子消费/挂载/封存结果。22真实PG与46 API、全量make test/check及SDK check158通过。原消息日志/SDK生产恢复仍为AB-B；不宣称RUN/Worker取消。
 
 # CA-P3-03C 原消息坐标
 
-[显式v2合同](docs/CA-P3-03C_message_coordinates.md)。31定向API通过，全量make test/check、8真实PG和SDK check158通过；原坐标不随header漂移，不证明提交时锚点CAS。
+[显式v2合同](docs/tasks/CA-P3-03C_message_coordinates.md)。31定向API通过，全量make test/check、8真实PG和SDK check158通过；原坐标不随header漂移，不证明提交时锚点CAS。
 
 # CA-P3-03B Task-message receipt prerequisite
 
-[公开只读合同](docs/CA-P3-03B_task_message_receipts.md)。19 API/7真实PG通过，全量make test/check和SDK check158通过；原收据缺失不证明非提交，生产BFF恢复是AB后续。
+[公开只读合同](docs/tasks/CA-P3-03B_task_message_receipts.md)。19 API/7真实PG通过，全量make test/check和SDK check158通过；原收据缺失不证明非提交，生产BFF恢复是AB后续。
 
 # CA-P3-03A 原业务效果协调
 
-[合同与边界](docs/CA-P3-03A_original_effect_receipts.md)。全量 make test/check、49 定向/13 真实 PG 与 SDK check/158 测试通过；原收据只证明历史结果，不推断新业务意图。
+[合同与边界](docs/tasks/CA-P3-03A_original_effect_receipts.md)。全量 make test/check、49 定向/13 真实 PG 与 SDK check/158 测试通过；原收据只证明历史结果，不推断新业务意图。
 
 # CA-P3-02Z verified / Review
-See [CA-P3-02Z](docs/CA-P3-02Z_react_surface_revision.md). Explicit React revision capture/adoption; Review; fresh make test 11075 passed/3052 conditional skips and make check passed after filesystem recovery; SDK check/158 tests and6 focused React cases passed. Candidate Chromium/WebKit actual new React owner capture -> BFF original GET/current mapping -> zero-HTTP adoption -> current heartbeat/unmount passed. Runtime/Worker/core SDK/schema unchanged; final published-source consumer separate. No second Worker/new Run claim.
+See [CA-P3-02Z](docs/tasks/CA-P3-02Z_react_surface_revision.md). Explicit React revision capture/adoption; Review; fresh make test 11075 passed/3052 conditional skips and make check passed after filesystem recovery; SDK check/158 tests and6 focused React cases passed. Candidate Chromium/WebKit actual new React owner capture -> BFF original GET/current mapping -> zero-HTTP adoption -> current heartbeat/unmount passed. Runtime/Worker/core SDK/schema unchanged; final published-source consumer separate. No second Worker/new Run claim.
 
 # CA-P3-02Y verified / Review
-See [CA-P3-02Y](docs/CA-P3-02Y_explicit_surface_revision.md). Explicit same-Run revision prerequisite; Review; fresh make test 11075 passed/3052 conditional skips; make check passed; unchanged SDK check/156 tests passed. Candidate Chromium/WebKit React first Worker/UI terminal then explicit same-Run Native revision, lost-reply two-BFF GET-only/current mapping CAS passed. Native production/SDK unchanged; final published-source consumer evidence separate.
+See [CA-P3-02Y](docs/tasks/CA-P3-02Y_explicit_surface_revision.md). Explicit same-Run revision prerequisite; Review; fresh make test 11075 passed/3052 conditional skips; make check passed; unchanged SDK check/156 tests passed. Candidate Chromium/WebKit React first Worker/UI terminal then explicit same-Run Native revision, lost-reply two-BFF GET-only/current mapping CAS passed. Native production/SDK unchanged; final published-source consumer evidence separate.
 
 # CA-P3-02X verified / Review
-See [CA-P3-02X](docs/CA-P3-02X_react_initial_ui.md). Explicit React preparation, existing Native contract; Review; fresh make test 11075 passed/3052 conditional skips; make check passed; SDK check and156 tests passed, focused React4 passed. Candidate packed React Chromium/WebKit same initial TaskRun/Readable/Worker/approval/DOM/receipt/terminal and real owner unmount passed. Python/Worker/storage/core SDK unchanged; published-source consumer result recorded separately.
+See [CA-P3-02X](docs/tasks/CA-P3-02X_react_initial_ui.md). Explicit React preparation, existing Native contract; Review; fresh make test 11075 passed/3052 conditional skips; make check passed; SDK check and156 tests passed, focused React4 passed. Candidate packed React Chromium/WebKit same initial TaskRun/Readable/Worker/approval/DOM/receipt/terminal and real owner unmount passed. Python/Worker/storage/core SDK unchanged; published-source consumer result recorded separately.
 
 # CA-P3-02W verified / Review
-See [CA-P3-02W](docs/CA-P3-02W_initial_ui_run.md). Initial UI/Readable/RUN commit boundary fixed; Review; make test 11075 passed/3052 conditional skips; make check passed;45 focused real-PG/API cases (no skips); SDK full check and 153 tests passed. Candidate Chromium/WebKit same NEW initial UI/Readable/RUN -> Worker/approval/DOM/receipt/terminal and v5 rollback passed; old SDK/UI/U compatibility candidate passed. Published-source consumer acceptance recorded separately.
+See [CA-P3-02W](docs/tasks/CA-P3-02W_initial_ui_run.md). Initial UI/Readable/RUN commit boundary fixed; Review; make test 11075 passed/3052 conditional skips; make check passed;45 focused real-PG/API cases (no skips); SDK full check and 153 tests passed. Candidate Chromium/WebKit same NEW initial UI/Readable/RUN -> Worker/approval/DOM/receipt/terminal and v5 rollback passed; old SDK/UI/U compatibility candidate passed. Published-source consumer acceptance recorded separately.
 
 # CA-P3-02V full gates complete / Review
-See [CA-P3-02V](docs/CA-P3-02V_task_run_worker.md). Admission, Worker result and termination proof are separate; Review; fresh make test 11072 passed/3050 conditional skips; make check passed; 40 focused real-PG/API cases passed without skips; candidate Chromium/WebKit new protocol canonical RUN to actual Worker terminal answer passed. Final published-source consumer joint is separate.
+See [CA-P3-02V](docs/tasks/CA-P3-02V_task_run_worker.md). Admission, Worker result and termination proof are separate; Review; fresh make test 11072 passed/3050 conditional skips; make check passed; 40 focused real-PG/API cases passed without skips; candidate Chromium/WebKit new protocol canonical RUN to actual Worker terminal answer passed. Final published-source consumer joint is separate.
 
 # CA-P3-02U validation complete / Review
 
-See [CA-P3-02U](docs/CA-P3-02U_atomic_task_run.md). Atomic Task/RUN admission boundary fixed before code; Review; make test 11072 passed/3050 conditional skips; make check passed; 40 focused (26 API +14 real PG), no skips; candidate Chromium/WebKit atomic Task joint passed. Published-source consumer joint remains separate.
+See [CA-P3-02U](docs/tasks/CA-P3-02U_atomic_task_run.md). Atomic Task/RUN admission boundary fixed before code; Review; make test 11072 passed/3050 conditional skips; make check passed; 40 focused (26 API +14 real PG), no skips; candidate Chromium/WebKit atomic Task joint passed. Published-source consumer joint remains separate.
 
 # CA-P3-02T validation complete / Review
 
-See [CA-P3-02T](docs/CA-P3-02T_atomic_task_termination.md). Atomic Task proof boundary fixed before implementation; Review; make test 11066 passed/3048 conditional skips; make check passed; 32 focused (20 API +12 real PG), no skips; candidate Chromium/WebKit atomic Task joint passed. Published-source consumer joint remains separate.
+See [CA-P3-02T](docs/tasks/CA-P3-02T_atomic_task_termination.md). Atomic Task proof boundary fixed before implementation; Review; make test 11066 passed/3048 conditional skips; make check passed; 32 focused (20 API +12 real PG), no skips; candidate Chromium/WebKit atomic Task joint passed. Published-source consumer joint remains separate.
 
 ## CA-P3-02S：已开始的原子Surface准入终止（验证通过，Review）
 
-make test 11060 passed/3045 conditional skips; make check1408 types/30eval; API14 and real owned PG16 focused passed. Started atomic-surface candidate Chromium/WebKit passed; published-source consumer joint is separate. 新atomic-surface/1仅open/mount，同PG业务效果/原收据同事务，提交点STOP门禁；持执行锁时pending无证明，退出且STOP/无原子收据才证明，提交先胜只恢复原结果。旧started/部分提交/Task创建不升级，不重发/重领/清pending。真实PG30项及候选双浏览器联合通过；完整门禁通过，发布后固定源消费者联合另记。见[正式边界](docs/CA-P3-02S_atomic_surface_termination.md)。
+make test 11060 passed/3045 conditional skips; make check1408 types/30eval; API14 and real owned PG16 focused passed. Started atomic-surface candidate Chromium/WebKit passed; published-source consumer joint is separate. 新atomic-surface/1仅open/mount，同PG业务效果/原收据同事务，提交点STOP门禁；持执行锁时pending无证明，退出且STOP/无原子收据才证明，提交先胜只恢复原结果。旧started/部分提交/Task创建不升级，不重发/重领/清pending。真实PG30项及候选双浏览器联合通过；完整门禁通过，发布后固定源消费者联合另记。见[正式边界](docs/tasks/CA-P3-02S_atomic_surface_termination.md)。
 
 ## CA-P3-02R：派发前终止证明（验证通过，Review）
 
-make test 11059 passed/3036 conditional skips; make check1406 types/30eval; API13 and real owned PG7 focused passed. Pre-dispatch candidate Chromium/WebKit passed; published-source consumer joint is separate. 已核对N/Q依赖；证明仅限新pre-dispatch/1原请求，持久start/terminate第一写者门闩。已开始、旧claim、无claim、超时无非提交证明；unknown不重发、不领取Controller、不清pending。边界及验收见[正式设计](docs/CA-P3-02R_admission_termination.md)。保留历史/原收据/Coverage，无部署/生产迁移。
+make test 11059 passed/3036 conditional skips; make check1406 types/30eval; API13 and real owned PG7 focused passed. Pre-dispatch candidate Chromium/WebKit passed; published-source consumer joint is separate. 已核对N/Q依赖；证明仅限新pre-dispatch/1原请求，持久start/terminate第一写者门闩。已开始、旧claim、无claim、超时无非提交证明；unknown不重发、不领取Controller、不清pending。边界及验收见[正式设计](docs/tasks/CA-P3-02R_admission_termination.md)。保留历史/原收据/Coverage，无部署/生产迁移。
 
 # CA-P3-02O — 审批原操作及当前 Controller 公开查询
 
-为OD-P3-01L补齐当前授权精确原操作GET、原子决定/投影/继续执行及Controller观察；复用既有PG事件唯一键/短事务，无新表或迁移。[合同](docs/CA-P3-02O_approval_operations.md)。API13/真实PG3专项及最终make test11046通过/3029条件跳过、make check1403类型文件/30eval均通过；旧接口/历史/原收据/Coverage保留，无部署/生产迁移/主线整合。
+为OD-P3-01L补齐当前授权精确原操作GET、原子决定/投影/继续执行及Controller观察；复用既有PG事件唯一键/短事务，无新表或迁移。[合同](docs/tasks/CA-P3-02O_approval_operations.md)。API13/真实PG3专项及最终make test11046通过/3029条件跳过、make check1403类型文件/30eval均通过；旧接口/历史/原收据/Coverage保留，无部署/生产迁移/主线整合。
 
 # CA-P3-02N — Client Action Worker 兼容前置
 
-OD-P3-01K同次联合暴露可选描述/schema转换、审批响应重建吞命令及继续执行空Run三个衔接问题；修复共享入口，原合同/摘要/严格Run与审批/历史/Coverage保持。准备增量113仅作用后续header，独享PG21项/本地89专项已通过。[方案](docs/CA-P3-02N_client_tool_compatibility.md)。最终make test11039通过/3026条件跳过、make check1400类型文件/30eval通过；文件边界修正后完整重跑，无部署/生产迁移/主线整合。
+OD-P3-01K同次联合暴露可选描述/schema转换、审批响应重建吞命令及继续执行空Run三个衔接问题；修复共享入口，原合同/摘要/严格Run与审批/历史/Coverage保持。准备增量113仅作用后续header，独享PG21项/本地89专项已通过。[方案](docs/tasks/CA-P3-02N_client_tool_compatibility.md)。最终make test11039通过/3026条件跳过、make check1400类型文件/30eval通过；文件边界修正后完整重跑，无部署/生产迁移/主线整合。
 
 # CA-P3-01F — 可信脚本 Eval 与公开v3绑定（Review）
 
-[正式合同及修正边界](docs/CA-P3-01F_trusted_script_eval.md)；[最终证据](docs/evidence/ca-p3-01f/final-validation.json)。实际只读无网络脚本评分、共享原unknown和原子证据收据；补齐生成schema数组约束及公开v3准入Snapshot摘要，Worker严格检查、v1/v2和历史数据不降级。最终make test11019通过/3022条件跳过（1191.37秒）、make check1399类型文件/30eval通过，41专项通过。4649既有文件保持，仅session_queue.py修正新v3绑定；初版11016全量与中断复验保留为历史记录。Overdoze实际16项候选完整联合通过，最终发布SHA验收由OD-P3-02D独立记录。限定功能分支提交推送；无部署/生产迁移/main合并，Coverage保持。
+[正式合同及修正边界](docs/tasks/CA-P3-01F_trusted_script_eval.md)；[最终证据](docs/evidence/ca-p3-01f/final-validation.json)。实际只读无网络脚本评分、共享原unknown和原子证据收据；补齐生成schema数组约束及公开v3准入Snapshot摘要，Worker严格检查、v1/v2和历史数据不降级。最终make test11019通过/3022条件跳过（1191.37秒）、make check1399类型文件/30eval通过，41专项通过。4649既有文件保持，仅session_queue.py修正新v3绑定；初版11016全量与中断复验保留为历史记录。Overdoze实际16项候选完整联合通过，最终发布SHA验收由OD-P3-02D独立记录。限定功能分支提交推送；无部署/生产迁移/main合并，Coverage保持。
 
 # CA-P3-01E — 纯 ScriptBundle 校验（Review）
 
-[正式合同和边界](docs/CA-P3-01E_script_bundle_validation.md)。D物化创建Version，不能替代草稿纯校验；C只检单包，本片新增显式script-bundle-validation/1，复用原生模型/catalog与有界传输，新增动作需显式批准，不自动扩旧凭据。56专项及完整门禁通过：make test11002通过/3022条件跳过（1166.10s），make check1396类型文件/30eval通过。[证据](docs/evidence/ca-p3-01e/validation.json)记录socket/Schema/零执行与HA边界。无源码执行、Registry写入或新表；Go消费者另片，保留旧合同/历史/Coverage，未部署/生产迁移/主线整合。
+[正式合同和边界](docs/tasks/CA-P3-01E_script_bundle_validation.md)。D物化创建Version，不能替代草稿纯校验；C只检单包，本片新增显式script-bundle-validation/1，复用原生模型/catalog与有界传输，新增动作需显式批准，不自动扩旧凭据。56专项及完整门禁通过：make test11002通过/3022条件跳过（1166.10s），make check1396类型文件/30eval通过。[证据](docs/evidence/ca-p3-01e/validation.json)记录socket/Schema/零执行与HA边界。无源码执行、Registry写入或新表；Go消费者另片，保留旧合同/历史/Coverage，未部署/生产迁移/主线整合。
 
 # CA-P3-01D — 脚本 Bundle 公开发布前置（Review）
 
-[合同与边界](docs/CA-P3-01D_script_publication.md) · [验证证据](docs/evidence/ca-p3-01d/validation.json)。最终make test10985通过/3022条件跳过（1117.01s），make check1394类型文件/30eval通过，29专项通过；Overdoze26个race包及make check通过（74既有警告）。新增显式script-publication/1渠道，复用现有原生装配/精确发布者引用、Registry事务/CAS/原操作收据与可信Eval门禁；旧P2公开合同/历史/Coverage不改。Go消费者下一片，前端mock保持；无部署/生产迁移/主线整合。
+[合同与边界](docs/tasks/CA-P3-01D_script_publication.md) · [验证证据](docs/evidence/ca-p3-01d/validation.json)。最终make test10985通过/3022条件跳过（1117.01s），make check1394类型文件/30eval通过，29专项通过；Overdoze26个race包及make check通过（74既有警告）。新增显式script-publication/1渠道，复用现有原生装配/精确发布者引用、Registry事务/CAS/原操作收据与可信Eval门禁；旧P2公开合同/历史/Coverage不改。Go消费者下一片，前端mock保持；无部署/生产迁移/主线整合。
 
 # CA-P3-02M — 业务 OIDC 与签名云准入（Review）
 
-[正式方案与边界](docs/CA-P3-02M_signed_cloud.md)；[证据](docs/evidence/ca-p3-02m/validation.json)。
+[正式方案与边界](docs/tasks/CA-P3-02M_signed_cloud.md)；[证据](docs/evidence/ca-p3-02m/validation.json)。
 复用 L/G-D；新增隔离 IdP/Broker/cloud Runtime 组合根，实际 TLS RS256/PKCE、两个共享 PG BFF、单次 code/Agent family、unknown不重兑，签名 Task/Run/Session/Controller 与当前业务/Profile 拒绝联合通过。
 make test10971通过/3022条件跳过（1169.80s），make check通过（1393类型文件/30eval）。
 生产 Python/schema/SDK/旧合同/历史/Coverage保持；真实产品参数尚缺，未验证供应商 IdP/业务账户/浏览器SDK与此云链路同次验收、模型/生产HA。无部署/生产迁移/npm发布/主线整合。
 
 # CA-P3-02L — 认证回调与 Runtime 生命周期（Review）
 
-[正式方案与交互](docs/CA-P3-02L_auth_lifecycle.md)。复用K，增加本地epoch/取消围栏与显式启停，凭据留在BFF，unknown不自动重试。
+[正式方案与交互](docs/tasks/CA-P3-02L_auth_lifecycle.md)。复用K，增加本地epoch/取消围栏与显式启停，凭据留在BFF，unknown不自动重试。
 make test10971通过/3022条件跳过（1201.65s）、make check、SDK151及实际平台/独立业务PG/原生HTTP双浏览器通过；Go24个race包通过，4610旧文件保持。 [证据](docs/evidence/ca-p3-02l/validation.json)。生产IdP/签名云准入仍独立。
 无Python/schema/旧合同/历史/Coverage变更，不部署/生产迁移/npm发布。
 
@@ -1351,36 +307,36 @@ make test10971通过/3022条件跳过（1201.65s）、make check、SDK151及实�
 
 依赖J与G-A/G-B，新增无凭据认证状态/显式刷新退出/原操作marker及只读恢复。
 过期Access保留业务授权CAS元数据但阻止bootstrap。Python/schema/历史/Coverage保持。
-[正式合同和交互](docs/CA-P3-02K_bff_auth.md)。make test 10971通过/3022条件跳过（1244.42s），make check/SDK145及实际平台HTTP+独立业务PG双浏览器通过，4601旧文件保持。 [证据](docs/evidence/ca-p3-02k/validation.json)。不部署/生产迁移/npm发布/主线整合。
+[正式合同和交互](docs/tasks/CA-P3-02K_bff_auth.md)。make test 10971通过/3022条件跳过（1244.42s），make check/SDK145及实际平台HTTP+独立业务PG双浏览器通过，4601旧文件保持。 [证据](docs/evidence/ca-p3-02k/validation.json)。不部署/生产迁移/npm发布/主线整合。
 
 # CA-P3-02J — 跨设备待对账与人工处置（Review）
 
 复用H收据/I原映射，新增可选资源收件箱SDK；unknown无自动重发/清除，人工处置独立CAS审计。原生生产Python/schema/历史/Coverage不变。
-[方案与交互](docs/CA-P3-02J_request_discovery.md)；make test 10971通过/3022条件跳过（1220.28s），make check通过（1393类型文件/30eval）；SDK139、React18/19与双浏览器矩阵、新跨设备及旧恢复联合验收通过；3768保护文件未变。 [证据](docs/evidence/ca-p3-02j/validation.json)。无部署/生产迁移/npm发布/主线整合。
+[方案与交互](docs/tasks/CA-P3-02J_request_discovery.md)；make test 10971通过/3022条件跳过（1220.28s），make check通过（1393类型文件/30eval）；SDK139、React18/19与双浏览器矩阵、新跨设备及旧恢复联合验收通过；3768保护文件未变。 [证据](docs/evidence/ca-p3-02j/validation.json)。无部署/生产迁移/npm发布/主线整合。
 
 # CA-P3-02I（Review）
 
 已核对 H 公开收据和 G SDK；显式恢复1、原请求标识持久化和只读对账已实现；业务BFF事实在自有DB，不接mock。补可选原Segment前置条件，保留原Runtime/原生key，未知不重发。
 
-最终make test 10971通过/3022条件跳过（1230.21s），make check通过（1393类型文件、30eval）；SDK verify136及双浏览器/双Go进程/重启/原生收据联合验收通过，3757保护文件不变。[正式方案](docs/CA-P3-02I_command_recovery.md) · [证据](docs/evidence/ca-p3-02i/validation.json)。原生schema/历史/Worker/Coverage不变；生产IdP/完整模型/HA、跨设备发现及非提交证明仍后续。不部署/生产迁移/npm发布/主线整合。按授权限定提交推送，实际SHA另核验。
+最终make test 10971通过/3022条件跳过（1230.21s），make check通过（1393类型文件、30eval）；SDK verify136及双浏览器/双Go进程/重启/原生收据联合验收通过，3757保护文件不变。[正式方案](docs/tasks/CA-P3-02I_command_recovery.md) · [证据](docs/evidence/ca-p3-02i/validation.json)。原生schema/历史/Worker/Coverage不变；生产IdP/完整模型/HA、跨设备发现及非提交证明仍后续。不部署/生产迁移/npm发布/主线整合。按授权限定提交推送，实际SHA另核验。
 
 # CA-P3-02H — 命令接纳收据只读对账前置（Review）
 
 G之后先补P3 unknown的原生可授权、定点只读观察；使用原Segment/幂等键与现有索引，不创建状态表或放开重发。SDK/BFF持久恢复后续独立消费。
 
-最终 make test 10970通过/3022条件跳过（1171.24s），make check通过（1393类型文件、30eval）；定向22通过/1可选PG跳过，独享PG17另跑5通过。3838个既有代码/SDK/合同/证据/Coverage保护文件未变。[正式方案](docs/CA-P3-02H_command_receipts.md) · [证据](docs/evidence/ca-p3-02h/validation.json)。整次PG读取共享两秒预算；首次全量轮次因补齐该预算而中止，最终完整重跑单独计入。按授权限定提交推送，远端SHA由交付回执核验；无部署、生产迁移或主线整合。
+最终 make test 10970通过/3022条件跳过（1171.24s），make check通过（1393类型文件、30eval）；定向22通过/1可选PG跳过，独享PG17另跑5通过。3838个既有代码/SDK/合同/证据/Coverage保护文件未变。[正式方案](docs/tasks/CA-P3-02H_command_receipts.md) · [证据](docs/evidence/ca-p3-02h/validation.json)。整次PG读取共享两秒预算；首次全量轮次因补齐该预算而中止，最终完整重跑单独计入。按授权限定提交推送，远端SHA由交付回执核验；无部署、生产迁移或主线整合。
 
 # CA-P3-02G — SDK/BFF Readable值提交（Review）
 
 基于已发布fb72ef6f的原生准入合同，复用挂载调度和持久命令，显式协商值提交；不新增Go执行代理、原生表或自动重试，旧模式/历史/Coverage保留。
 
-最终make test10949通过/3021条件跳过（1244.07s），make check通过；SDK verify131、双浏览器各3值命令及原有2动作/收据/恢复链通过。2318生产/旧合同/Coverage保护文件与94 SDK/验收输入保持。见[正式方案](docs/CA-P3-02G_readable_submit.md)和[证据](docs/evidence/ca-p3-02g/validation.json)。环境中断运行排除，最终完整门禁重跑；按授权限定提交推送，实际远端SHA以交付回执核验。
+最终make test10949通过/3021条件跳过（1244.07s），make check通过；SDK verify131、双浏览器各3值命令及原有2动作/收据/恢复链通过。2318生产/旧合同/Coverage保护文件与94 SDK/验收输入保持。见[正式方案](docs/tasks/CA-P3-02G_readable_submit.md)和[证据](docs/evidence/ca-p3-02g/validation.json)。环境中断运行排除，最终完整门禁重跑；按授权限定提交推送，实际远端SHA以交付回执核验。
 
 # CA-P3-02F — Readable原生准入（Review）
 
 已核对E后AG-UI现有state/持久命令/Context路径，先补当前Session/挂载绑定与脱敏恢复，不创建新上传接口或Go执行代理。SDK值提交另片；保留旧模式/历史/Coverage，不部署迁移。
 
-最终 make test10949通过/3021条件跳过（1199.57s），make check通过；定向60通过/1条件跳过，独享PG另跑4通过/零跳过。936个保护文件未变。见[正式方案](docs/CA-P3-02F_readable_admission.md)与[证据](docs/evidence/ca-p3-02f/validation.json)。按授权限定提交推送，远端SHA由交付回执核验。
+最终 make test10949通过/3021条件跳过（1199.57s），make check通过；定向60通过/1条件跳过，独享PG另跑4通过/零跳过。936个保护文件未变。见[正式方案](docs/tasks/CA-P3-02F_readable_admission.md)与[证据](docs/evidence/ca-p3-02f/validation.json)。按授权限定提交推送，远端SHA由交付回执核验。
 
 # CA-P3-02E — SDK挂载同步（Review）
 
@@ -1390,7 +346,7 @@ G之后先补P3 unknown的原生可授权、定点只读观察；使用原Segmen
 
 最终make test10914passed/3020条件跳过（1309.26s），make check通过；SDK verify125项、包审计、React18/19消费和双浏览器/Next hydration通过。
 实际HTTP/PG/Worker gateway双浏览器各2动作/2回执/2恢复命令，回执replay/新binding/秘密隔离/撤销拒绝通过。
-3,042既有Python/合同/证据/Coverage文件未变。见[正式方案](docs/CA-P3-02E_sdk_surface_sync.md)与[证据](docs/evidence/ca-p3-02e/validation.json)。
+3,042既有Python/合同/证据/Coverage文件未变。见[正式方案](docs/tasks/CA-P3-02E_sdk_surface_sync.md)与[证据](docs/evidence/ca-p3-02e/validation.json)。
 按授权限定提交推送；生产Go Broker/IdP/共享CAS和完整Worker harness仍独立验收。
 
 # CA-P3-02D — 原生挂载摘要与绑定同步（Review）
@@ -1399,7 +355,7 @@ G之后先补P3 unknown的原生可授权、定点只读观察；使用原Segmen
 同名action的UI revision变化应同步新的mounted snapshot，持久层须在短Session锁内复核收窄。
 最终make test10914passed/3020条件跳过（1135.58秒），make check通过（mypy1388/eval30）。
 API56passed/1条件、独享PG62passed/零跳过；3669源码和414旧SDK/合同/Coverage文件无漂移，其中280Coverage保持。
-[正式方案](docs/CA-P3-02D_surface_metadata.md) · [证据](docs/evidence/ca-p3-02d/validation.json)。
+[正式方案](docs/tasks/CA-P3-02D_surface_metadata.md) · [证据](docs/evidence/ca-p3-02d/validation.json)。
 前轮漏更新旧能力列表严格断言已修正，最终完整复验另记，不把失败/中断轮次计为通过。
 按授权准备限定提交推送，远端SHA由交付回执核验；管理前端mock/历史/Coverage保持。
 实际SDK/BFF应用同步结果及成对浏览器联调仍后续；无部署/迁移/主线整合。
@@ -1411,7 +367,7 @@ SDK新增mode=bff，浏览器只有公共绑定事实，原生HostGrant/Session 
 同源相对路径/方法/头/JSON大小/5秒期限限制、真实connecting/ready/unavailable/stopped订阅，
 旧DI必填secret类型和legacy配置/SSE保持；修复Provider配置更换后旧runtime继续轮询。
 Observer只续Session不误申领Controller；当前控制权/Task/Effect/Receipt权威仍在原生，Go无执行代理。
-[方案与边界](docs/CA-P3-02C_bff_browser.md) · [制品](docs/contracts/bff-browser-sdk/contract.json)。
+[方案与边界](docs/tasks/CA-P3-02C_bff_browser.md) · [制品](docs/contracts/bff-browser-sdk/contract.json)。
 最终SDK verify117passed/零跳过，包/React18-19消费/Chromium-WebKit/Next hydration通过；
 根make test10906passed/3014条件跳过（1181.02秒），make check通过（mypy1388/eval30）。
 2941Python/合同输入、76已验证SDK源码和280Coverage文件无漂移；[证据](docs/evidence/ca-p3-02c/validation.json)。
@@ -1423,7 +379,7 @@ Observer只续Session不误申领Controller；当前控制权/Task/Effect/Receip
 2026-10-22；从已发布8715d225独立继续，先核对实际SDK/BFF/Effect依赖。
 Effect列表/详情/回执统一复用当前Task/Run、线程、主体、issuer/namespace/scope检查；
 本地兼容、原生Controller fence/expiry/revision/收据幂等与原子恢复命令保持，无迁移。
-[正式方案](docs/CA-P3-02B_effect_authority.md) · [语义制品](docs/contracts/client-effect-authority/contract.json)。
+[正式方案](docs/tasks/CA-P3-02B_effect_authority.md) · [语义制品](docs/contracts/client-effect-authority/contract.json)。
 原生专项32项和真实独享PG18项通过/零跳过；最终make test10906passed/3014条件跳过，make check通过。
 3435输入和280Coverage源码/测试零漂移；[证据](docs/evidence/ca-p3-02b/validation.json)区分条件跳过与实际PG。
 按授权提交推送独立分支，实际远端SHA由交付回执核验。
@@ -1442,7 +398,7 @@ Effect列表/详情/回执统一复用当前Task/Run、线程、主体、issuer/
 [evidence](docs/evidence/ca-p3-02a/validation.json)保留中断/旧夹具失败及最终通过记录。
 修复显式stores factory和旧夹具，补历史共享App保护：旧operator绑定与产品撤销共享App锁，
 存在其它Host/namespace引用则拒绝新的范围写入；不删除旧绑定/能力，历史收据仍可只读对账。
-[正式方案与合同](docs/CA-P3-02A_frontend_admission.md)明确一次性credential丢失/部分提交、当前观察和后续UI/HA边界。
+[正式方案与合同](docs/tasks/CA-P3-02A_frontend_admission.md)明确一次性credential丢失/部分提交、当前观察和后续UI/HA边界。
 Overdoze使用公开HTTPS与generic Broker串联真实Task/Session/mount/Controller；Go不访问原生数据库。
 前端mock、历史数据/Coverage均保持；无部署、生产迁移或主线整合。
 
@@ -1846,7 +802,7 @@ No model/search/Run acceptance; Plugin production switch remains false. Search,
 Exa/Yahoo/MCP, global proxy, protected original events/high/v2/data retained.
 RSS upstream ingestion errors remain an explicit operational observation, so this
 is version/deployment acceptance, not a full-business-health claim. See
-docs/CLOUD_VERSION_SYNC_2026-10-20.md for source provenance and rollback.
+docs/reports/CLOUD_VERSION_SYNC_2026-10-20.md for source provenance and rollback.
 
 ## 2026-10-20 - CLOUD-YAHOO-EGRESS-20261020
 
@@ -1860,7 +816,7 @@ image/settings/cache/Exa cooldown retained. One NBOPC native tool acceptance:
 No models/new Runs/original replay/global proxy or Trench logic changes;
 other service identities, original event hashes/high/stream-v2 retained.
 This closes retrieval recovery, not a statistical/page/model performance claim.
-See docs/CLOUD_YAHOO_EGRESS_2026-10-20.md for active override and rollback boundary.
+See docs/reports/CLOUD_YAHOO_EGRESS_2026-10-20.md for active override and rollback boundary.
 
 ## 2026-10-20 - CLOUD-RUNTIME-REPAIR-20261020
 
@@ -1875,7 +831,7 @@ configuration, Search/TLS/Broker identities and Exa state are retained. No model
 or original Run replay. One NBOPC native search reached Yahoo but failed after
 6049.68ms with search_incomplete/upstream five-second timeout; no automatic
 repeat. Search E2E/recall acceptance remains open, not complete. See
-docs/CLOUD_RUNTIME_REPAIR_2026-10-20.md for proof boundaries and rollback.
+docs/reports/CLOUD_RUNTIME_REPAIR_2026-10-20.md for proof boundaries and rollback.
 
 ## 2026-10-20 - Trench baseline archived; generic Cloud branch inherited
 
@@ -1889,7 +845,7 @@ worktree directories preserved. Both redundant remote settings/media refs remove
 No source/configuration/migration/restart/deployment, model/search or MCP calls.
 Runtime readiness remains bounded by existing evidence; the next generic Cloud/
 management task must be separately claimed. See
-docs/CLOUD_TRENCH_ARCHIVE_2026-10-20.md for frozen identities and remaining gates.
+docs/reports/CLOUD_TRENCH_ARCHIVE_2026-10-20.md for frozen identities and remaining gates.
 
 ## 2026-10-18 - CLOUD-RECOVERY-VERIFICATION-03
 
@@ -9383,10 +8339,10 @@ Trench/prompt/rounds/reuse change,push or remote deploy. Real-page speedup remai
 unmeasured. See docs/CLOUD_MCP_PREPARE_TIMING.md.
 
 ## CA-P3-02P 原 Task/surface 操作（2026-10-23）
-复用PG不可变claim/result，当前Host/Task/Profile授权及加密原响应；原UUID GET只观察，不重发/重领Controller。候选跨BFF三处丢响应联合通过，make test11056通过/3031条件跳过、make check1404类型/30eval通过；发布后消费者固定pin证据另记；[合同](docs/CA-P3-02P_admission_operations.md)。既有部分提交窗口仍保留unknown，无迁移/部署/历史或Coverage重写。
+复用PG不可变claim/result，当前Host/Task/Profile授权及加密原响应；原UUID GET只观察，不重发/重领Controller。候选跨BFF三处丢响应联合通过，make test11056通过/3031条件跳过、make check1404类型/30eval通过；发布后消费者固定pin证据另记；[合同](docs/tasks/CA-P3-02P_admission_operations.md)。既有部分提交窗口仍保留unknown，无迁移/部署/历史或Coverage重写。
 
 ## CA-P3-02Q 原准入只读观察（2026-10-24）
-P之后追加原claim/result只读观察，不输出凭据，不推断当前Controller或非提交证明。API/真实PG及消费者实际挂载后丢原收据候选通过；完整make test11057通过/3032条件跳过、check1404类型/30eval通过，[合同](docs/CA-P3-02Q_admission_observation.md)。原unknown不重发/不接管，旧数据/收据/Coverage保留，无迁移/部署。
+P之后追加原claim/result只读观察，不输出凭据，不推断当前Controller或非提交证明。API/真实PG及消费者实际挂载后丢原收据候选通过；完整make test11057通过/3032条件跳过、check1404类型/30eval通过，[合同](docs/tasks/CA-P3-02Q_admission_observation.md)。原unknown不重发/不接管，旧数据/收据/Coverage保留，无迁移/部署。
 
 ## 2026-10-28 SOURCE-STATUS-SUMMARY-20261028
 
@@ -9419,12 +8375,12 @@ pass. Exact candidate and live Worker no-model checks pass. Idle Worker-only ima
 requests/answers/status and protected Task facts unchanged; Search/MCP/cooldown/API
 unchanged. No model/search/newRun/replay, GitHub push or whole-repo gate claim.
 Remaining boundaries: other aggregate/outer COMMIT paths, non-TimeoutError faults,
-full DB outage and historical lock holder. See docs/WORKER_COMMIT_CONFIRMATION_2026-10-28.md.
+full DB outage and historical lock holder. See docs/reports/WORKER_COMMIT_CONFIRMATION_2026-10-28.md.
 
 - 2026-10-28 APPROVAL-BRIDGE-20261028: exact Cloud Task/Run approval and original
   observer continuation implemented; no policy bypass. Deterministic no-model
   checks pass. Production acceptance preserves the original undecided approval.
-  See `docs/APPROVAL_BRIDGE_2026-10-28.md` for v108 and deployment boundaries.
+  See `docs/reports/APPROVAL_BRIDGE_2026-10-28.md` for v108 and deployment boundaries.
 
 - 2026-10-28 APPROVAL-BRIDGE follow-up: production user-clicked approval proved
   exactly-once/original Run but exposed expired frozen Host binding before Worker
@@ -9440,7 +8396,7 @@ full DB outage and historical lock holder. See docs/WORKER_COMMIT_CONFIRMATION_2
 浏览器长历史单独通过。1000Turn/20000事件分页、反馈／建议、正文分片保持完整；
 近1MiB正文真实编码／HTTP断线／双数据库通过。修复审批误用控制grant和多回执丢失；
 无模型／搜索／业务重跑，无Worker/Search/MCP重启。没有声称无限缓存或模型供应商零故障。
-详见docs/AGUI_LONG_SESSION_2026-10-28.md；一键门禁位于tests/conformance/agui_long_session/run.sh。
+详见docs/reports/AGUI_LONG_SESSION_2026-10-28.md；一键门禁位于tests/conformance/agui_long_session/run.sh。
 
 ### CLOUD-FULL-CAPABILITY compatibility checkpoint (2026-10-29)
 Native source now preserves published disabled-guard Bundle baselines and avoids

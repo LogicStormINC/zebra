@@ -523,7 +523,7 @@ Phase A 已由维护者于 2026-07-18 激活，按以下顺序实施：
 ### 项目内部
 
 - `docs/Codex-like工程Agent平台最终架构设计_v1.0.md`
-- `docs/ADR-012_Zebra_Agent_Runtime微服务与外部业务边界.md`
+- `docs/adr/ADR-012_Zebra_Agent_Runtime微服务与外部业务边界.md`
 - `docs/生产级Runtime实施方案_v1.0.md`
 - `docs/Issue_129_架构整改与延期实施计划.md`
 - `docs/operator_runbook.md`
