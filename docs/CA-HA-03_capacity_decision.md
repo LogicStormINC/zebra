@@ -471,3 +471,22 @@ Owner lukeding 于 2026-11-09 深夜会话中明确选择"修订口径 + 101.7 �
 - E1-C 多 scope（1/16/32）与 E1-O 分档随 3/s 基准重定：0.5×/1×/1.5×/2× = 1.5/3/4.5/6 offers/s
 
 修订不回溯既有证据；此前按 5/s 记录的窗口（4.97/s 纯准入、596-offer 过载）保持原样。
+
+## 2026-11-09 专用窗口执行回执：3/s FAIL，本机上限实测 ≈1.6-2.0/s；QA栈事故记录
+
+按修订口径执行专用窗口（停产84容器→闸门3.31s GO→16-20 worker→三轮3/s复验+定标）。
+**E1-A 3/s 未通过**：三轮接受率 1.47/1.46/1.30/s，执行段 7.8-9.4s；20 worker 比 16 更差
+（自增强确认）；2/s 在 20 worker 下也出现 43 个密封容量拒绝。瓶颈定位为产品级执行器
+引导成本（引导段 6.28s，runsc 宿主引导；PgBouncer 池 8→40 无改善）。阶段 0 的 3.3/s
+外推被推翻：并发下有效引导成本 ~5-7 core·s（自增强）。256 SSE 两轮 256/256 零掉线。
+全部 offer 密封对账零损坏；负载守卫未触发。
+
+**剩余选项**：(a) 引导成本产品优化（RUNTIME_CPUS 0.25→1.0 / deferred provisioning，
+需重生成链）；(b) 24-32 核独占；(c) 口径降至 1.5/s。CA-HA-03 维持 In Progress。
+
+**事故（如实记录）**：erp-full-qa-20261028-2 QA栈（10-28一次性验收环境）pg/db/s3
+均为 tmpfs 数据，docker stop 清空其内存态。schema 已迁移重放（MIG_OK），api 两容器因缺
+部署期种子仍退出待原流程重放；验收结论已在仓库文档（ERP-NATIVE系列），证据未丢。
+教训：停产窗口前必须审计 tmpfs 容器。生产恢复 82/84 Up（trench/erpnext/WeKnora/zebra
+健康抽查通过）。证据：.artifacts/cloud-ha-e1/dedicated-window-20261109/WINDOW-RESULTS.md
+（本仓）与宿主 /data/zebra-e1a/window/。
