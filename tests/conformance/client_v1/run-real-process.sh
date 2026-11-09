@@ -20,7 +20,7 @@ stop_api() {
 
 cleanup() {
   stop_api
-  docker rm -f "$REDIS_CONTAINER" "$PG_CONTAINER" >/dev/null 2>&1 || true
+  docker rm -fv "$REDIS_CONTAINER" "$PG_CONTAINER" >/dev/null 2>&1 || true
   rm -rf "$RUN_DIR"
 }
 trap cleanup EXIT
