@@ -514,3 +514,16 @@ session_process_child 已有惰性导入结构。预期 import 2.0→<0.8s、子
 
 证据：/data/zebra-e1a/window/phaseA/（events/importtime/cpu.stat/statements）、
 it2/it3.log、e1a-b1.log、phaseB-gate jsonl。
+
+## 2026-11-09 D1-v1 落地：惰性存储根，单任务 -10%，3/s 仍需 D1-v2
+
+PR #275。agent_storage 根（142 名/35 模块）与 agent_storage.postgres 根（97 名）改
+PEP 562 惰性再导出；TYPE_CHECKING 保持静态视图。实测：根导入 ~2s→14ms；claims 链
+1.21s→0.51s；101.7 带产单任务执行段 4.52→4.06s（-10%）；零新增测试失败
+（4547 通过；11 个失败全部基线既有，stash 对照验证）；新增子进程隔离回归
+test_lazy_package_exports（轻导入保证+导出完整性+AttributeError 契约）。
+
+外推：专用 16 worker 容量 1.94-2.04 → ~2.2-2.4/s，仍未达 3/s。剩余 import 成本
+~1.7s 在 worker 自身模块：control 724ms、execution 362ms、recovery 222ms、
+agent_integrations 218ms、agent_core.application 200ms（it4.log 热点表）——
+D1-v2 范围已圈定。101.7 已部署 perf4-lazyinit 镜像为 4 worker 基线。
