@@ -408,3 +408,20 @@ Owner lukeding；codex/fix-e1a-admission-deserialize。192.168.101.7 隔离 zebr
 共享宿主上的 40 槽不再数学上不可行（仍受生产负载与 8s/任务执行成本约束，不据此宣称可达标）。
 遗留观察：PG 21% 空闲仍偏高（疑 autovacuum/残余轮询，未定论）。PG 空闲证据：
 idle-before.txt / idle-after.txt / idle-after2.txt（本机 .artifacts 同目录随 RESULTS 归档）。
+
+## 2026-11-09 E1-C 公平性 / E1-O 过载分档证据采集（非验收轮）
+
+同卡同branch。perf2 拓扑（空闲成本修复后）按计划完成两项证据采集；冻结口径
+的公平性/过载验收仍排在容量缺口之后，本轮不宣称通过。
+
+- E1-C（16 scope：control 0.25/s + 15×flood 0.5/s，120s，drain 饱和）：
+  control 29/30 接受、14 完成（洪泛中位 13）；洪泛不买吞吐、低速率邻居未被
+  饿死、per-scope 32 上限隔离洪泛伤害；全部拒绝密封、零失败。
+  证据 e1-co-1017-20261109/E1C-RESULTS.md。
+- E1-O（单 scope 0.5/1/2/3 offers/s ×60s 阶梯，档间排空）：
+  ≤1/s 100% 接受零拒绝；≥2/s 接受精确钳制 ~64/60s（drain 份额），
+  溢出全部密封容量拒绝；接受密封 p95 在过载下不升反降（363/330ms vs 963ms），
+  零 unsealed/零失败。证据 E1O-RESULTS.md。
+- 驱动失误记录：`VAR=x docker exec` 不向容器传环境导致 3 轮重复 E1-C 洪泛
+  （非计划窗口，不纳入统计，原始 jsonl 保留；系统连续承受 4×~930 offers
+  零死命令零失败）。两份 RESULTS 连同 idle 修复测量构成今晚证据集。
