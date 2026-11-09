@@ -527,3 +527,21 @@ test_lazy_package_exports（轻导入保证+导出完整性+AttributeError 契�
 ~1.7s 在 worker 自身模块：control 724ms、execution 362ms、recovery 222ms、
 agent_integrations 218ms、agent_core.application 200ms（it4.log 热点表）——
 D1-v2 范围已圈定。101.7 已部署 perf4-lazyinit 镜像为 4 worker 基线。
+
+## 2026-11-10 D1-v2 落地：worker 包惰性根，子进程 import 链 ~1.74→~0.9s
+
+PR #277。zebra_agent_worker/__init__（24 名/12 模块急切链）改 PEP 562 惰性——
+child 只触达其显式导入的模块，control(724ms)/recovery(222ms)/main/resume 链完全
+不再加载。101.7 importtime 实测（perf4→perf5 镜像）：包导入 **1.90s→20ms**；
+子进程总 import 链 ~1.74s→~0.9s。零新增测试失败（worker 套件同 6 个基线既有，
+stash 对照）；新增 worker 轻导入回归。101.7 基线已切 perf5-lazyworker 镜像。
+
+**两轮 D1 合计结构性削减**：子进程 import 2.0s→~0.9s（-55%），预估子进程
+~3.0→~1.9 CPU·s，专用 16 worker 现实容量 ~2.6-3.2/s——3/s 进入可达带但无余量。
+剩余热点（agent_core.ports.agent_tasks 337ms、execution_finalization→
+agent_integrations 237ms）为执行路径真实依赖，继续削减需重构 contracts 导入面，
+边际收益递减。
+
+**下一步**：用户授权第二个专用窗口后按冻结口径（3/s，30s 预热+60s 稳态，零容量
+拒绝）正式复验；通过则接 E1-C/O 正式档位。窗口执行包（停产/恢复/守卫脚本）已沉淀
+于 /tmp/window-*.sh 与宿主 /data/zebra-e1a/window/。
