@@ -1,6 +1,7 @@
 """Read-only canonical Task coordinates for initial replay and rollover refresh."""
 
-from asyncio import timeout, to_thread
+import logging
+from asyncio import timeout
 from collections.abc import AsyncGenerator, AsyncIterator, Awaitable, Callable
 from contextlib import aclosing
 from datetime import UTC, datetime
@@ -15,8 +16,12 @@ from agent_core.ports.task_projection_checkpoints import CheckpointConflict, Che
 from agent_integrations.ag_ui import AgUiProjectionError
 from agent_storage import ControlPlaneStores
 from agent_storage.postgres.task_io import current_task_io_deadline, task_io_deadline
+from fastapi import FastAPI
 
+from zebra_agent_api.database_budget import database_call
 from zebra_agent_api.responses import ApiResponse
+
+logger = logging.getLogger(__name__)
 
 
 async def authorized_task_preflight[T](
@@ -25,6 +30,7 @@ async def authorized_task_preflight[T](
     *,
     authorization_expires_at: datetime | None,
     request_deadline: float | None = None,
+    http_app: FastAPI | None = None,
 ) -> T | ApiResponse:
     """Move all read-only preflight off the loop under one grant-bounded budget."""
 
@@ -35,7 +41,7 @@ async def authorized_task_preflight[T](
         return denied if denied is not None else prepare()
 
     return await authorized_async_read(
-        lambda: to_thread(operation),
+        lambda: database_call(http_app, operation, wait_for_read_slot=http_app is not None),
         authorization_expires_at=authorization_expires_at,
         request_deadline=request_deadline,
     )
@@ -73,7 +79,8 @@ async def authorized_async_read[T](
             _check_read_deadline(deadline, authorization_expires_at)
             async with timeout(max(0, deadline - monotonic())):
                 result = await read()
-    except (TimeoutError, psycopg.OperationalError):
+    except (TimeoutError, psycopg.OperationalError) as exc:
+        logger.warning("Task preflight unavailable: %s", type(exc).__name__)
         return unavailable()
     except CheckpointNotReady:
         result = ApiResponse(409, {"status": "projection_not_ready", "retryable": True})

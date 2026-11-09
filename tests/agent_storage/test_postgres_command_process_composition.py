@@ -25,11 +25,22 @@ def test_unmigrated_default_and_explicit_broker_require_cutover(dsn):
         command_cutover_state(dsn, NAMESPACE, require_ready=True)
 
 
-def test_durable_backfill_marker_cannot_revert_to_legacy_when_admission_disabled(dsn):
+def test_durable_backfill_marker_cannot_revert_to_legacy_when_admission_disabled(dsn, monkeypatch):
     begin_command_backfill(dsn, deployment_namespace=NAMESPACE)
     with psycopg.connect(dsn) as connection:
         connection.execute("UPDATE command_wakeup_rollouts SET admission_enabled=false")
+    statements = []
+    execute = psycopg.Connection.execute
+
+    def record(connection, query, *args, **kwargs):
+        statements.append(str(query))
+        return execute(connection, query, *args, **kwargs)
+
+    monkeypatch.setattr(psycopg.Connection, "execute", record)
     assert command_cutover_state(dsn, NAMESPACE) is True
+    reads = [query for query in statements if query.startswith(("SELECT", "WITH"))]
+    assert len(reads) == 2
+    assert "zebra_schema_migrations" in reads[-1]
 
 
 @pytest.mark.parametrize("migrated", [False, True])
@@ -48,6 +59,9 @@ def test_actual_composition_selects_exactly_one_consumer_and_its_actual_dsn(
         return SimpleNamespace(run=lambda **kwargs: None)
 
     monkeypatch.setattr("zebra_agent_worker.command_process.CommandWorkerProcess", process)
+    monkeypatch.setattr(
+        "zebra_agent_worker.loop.configure_stream_hint_relay", lambda *_: (None, lambda _: None)
+    )
     service = build_worker_loop_service(
         database_path=tmp_path / "unused",
         settings=app.settings,

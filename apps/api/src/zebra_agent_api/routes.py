@@ -16,6 +16,7 @@ from zebra_agent_api.agent_definitions import handle_agent_definition_route
 from zebra_agent_api.app import ZebraAgentApi
 from zebra_agent_api.client_approval_operations import handle_client_approval_operation
 from zebra_agent_api.client_runtime_routes import handle_client_runtime_route
+from zebra_agent_api.command_submission import cloud_command_payload
 from zebra_agent_api.extension_task_selection import validate_task_skill_selection
 from zebra_agent_api.extension_turn_admission import CloudExtensionTurnAdmission
 from zebra_agent_api.memory_routes import handle_memory_route
@@ -176,7 +177,7 @@ class RouteAdapter:
                 return self.app.recover_session_context(parts[0], request.body or {})
             if len(parts) == 2 and parts[1] == "messages":
                 if self.app.settings.deployment == "cloud":
-                    command = _cloud_command_payload("message", request.body or {})
+                    command = cloud_command_payload("message", request.body or {})
                     if isinstance(command, ApiResponse):
                         return command
                     return self.app.submit_command(
@@ -197,7 +198,7 @@ class RouteAdapter:
                 )
             if len(parts) == 2 and parts[1] in {"stop", "cancel", "suspend"}:
                 if self.app.settings.deployment == "cloud":
-                    command = _cloud_command_payload(parts[1], request.body or {})
+                    command = cloud_command_payload(parts[1], request.body or {})
                     if isinstance(command, ApiResponse):
                         return command
                     return self.app.submit_command(
@@ -208,7 +209,7 @@ class RouteAdapter:
                 return self.app.cancel_session(parts[0], request.body or {})
             if len(parts) == 2 and parts[1] == "resume":
                 if self.app.settings.deployment == "cloud":
-                    command = _cloud_command_payload("resume", request.body or {})
+                    command = cloud_command_payload("resume", request.body or {})
                     if isinstance(command, ApiResponse):
                         return command
                     return self.app.submit_command(
@@ -443,20 +444,6 @@ def _idempotency_key(request: RouteRequest) -> str | None:
         if name.lower() == "idempotency-key" and value.strip():
             return value.strip()
     return None
-
-
-def _cloud_command_payload(kind: str, payload: dict[str, Any]) -> dict[str, object] | ApiResponse:
-    expected_revision = payload.get("expected_revision")
-    if not isinstance(expected_revision, int) or isinstance(expected_revision, bool):
-        return bad_request("expected_revision is required for cloud commands")
-    command_payload = {key: value for key, value in payload.items() if key != "expected_revision"}
-    if kind == "message" and command_payload.get("attachments"):
-        return bad_request("cloud message commands require durable attachment references")
-    return {
-        "kind": kind,
-        "expected_revision": expected_revision,
-        "payload": command_payload,
-    }
 
 
 def _principal_identity_hash(request: RouteRequest) -> str:

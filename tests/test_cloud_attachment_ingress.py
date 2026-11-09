@@ -7,7 +7,12 @@ from unittest.mock import Mock
 import pytest
 from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
 from agent_core.application.session_attachments import attachment_refs_from_event
-from agent_core.domain.artifact_objects import ArtifactObjectReceipt
+from agent_core.domain.artifact_objects import (
+    ArtifactObjectReceipt,
+    ArtifactObjectUnavailableError,
+    ArtifactObjectVerification,
+    ArtifactObjectVerificationStatus,
+)
 from agent_core.domain.attachments import TextAttachmentInput
 from agent_core.domain.events import EventType
 from agent_core.domain.image_attachments import ImageAttachmentInput
@@ -98,3 +103,33 @@ def test_empty_duplicate_and_batch_limits():
     with pytest.raises(ValueError, match="bounded"):
         prepare_cloud_inputs(objects, "qa", events, inputs * 9)
     objects.put_if_absent.assert_not_called()
+
+
+@pytest.mark.parametrize("verified", [True, False])
+def test_unknown_put_observes_original_without_resending(verified):
+    events, objects, inputs = fixture()
+    make_receipt = objects.put_if_absent.side_effect
+    objects.put_if_absent.side_effect = ArtifactObjectUnavailableError("lost reply")
+
+    def verify(expectation):
+        receipt = make_receipt(objects.put_if_absent.call_args.args[0]) if verified else None
+        return ArtifactObjectVerification(
+            expectation=expectation,
+            status=(
+                ArtifactObjectVerificationStatus.VERIFIED
+                if verified
+                else ArtifactObjectVerificationStatus.NOT_FOUND
+            ),
+            receipt=receipt,
+        )
+
+    objects.verify.side_effect = verify
+    if verified:
+        _, _, records = prepare_cloud_inputs(objects, "qa", events, inputs[:1])
+        assert records[0].object_receipt.object_version == "real-version-coordinate"
+    else:
+        with pytest.raises(ArtifactObjectUnavailableError, match="lost reply"):
+            prepare_cloud_inputs(objects, "qa", events, inputs[:1])
+    objects.put_if_absent.assert_called_once()
+    objects.verify.assert_called_once_with(objects.put_if_absent.call_args.args[0].expectation)
+    objects.delete_if_version.assert_not_called()

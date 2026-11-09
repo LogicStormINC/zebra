@@ -228,7 +228,8 @@ class DurableHarnessEventRecorder:
         *,
         created_at: datetime | None = None,
     ) -> SessionEvent:
-        self._ownership_check()
+        if self._tail_reader is None:  # The bounded tail checks before every page.
+            self._ownership_check()
         self._synchronize_external_events()
         self._raise_if_interrupted()
         model_call_id = payload.get("model_call_id")

@@ -1,0 +1,22 @@
+[
+  {
+    "case": "disabled",
+    "exit": 0,
+    "expected": 0
+  },
+  {
+    "case": "enabled",
+    "exit": 0,
+    "expected": 0
+  },
+  {
+    "case": "insufficient_worker_peak",
+    "exit": 1,
+    "expected": 1
+  },
+  {
+    "case": "insufficient_total",
+    "exit": 1,
+    "expected": 1
+  }
+]

@@ -18,8 +18,7 @@ from agent_storage.postgres.command_wakeup_pickup import (
 from agent_storage.postgres.command_wakeup_recovery import recover_command_batch
 from agent_storage.postgres.command_wakeup_recovery_proof import CoverageRecoveryCheck
 from agent_storage.postgres.database import PostgresDatabase
-from agent_storage.postgres.migration_history_plan import migration_history_plan
-from agent_storage.postgres.migrations import MIGRATIONS
+from agent_storage.postgres.migration_history_plan import runtime_schema_matches
 from agent_storage.postgres.worker_capability import (
     PostgresWorkerCapabilities,
     WorkerCapabilityExpiredError,
@@ -44,35 +43,28 @@ def command_cutover_state(dsn: str, namespace: str, *, require_ready: bool = Fal
                 raise ValueError("command delivery requires operator migration and cutover")
             return False
         row = connection.execute(
-            """SELECT admission_enabled,
-            COALESCE(to_jsonb(rollout)->>'backfill_state','not_started') AS backfill_state
-            FROM command_wakeup_rollouts rollout
-            WHERE deployment_namespace=%s""",
-            (namespace,),
-        ).fetchone()
-        migrated = row is not None and (
-            row["admission_enabled"] or row["backfill_state"] != "not_started"
-        )
-        if not migrated:
-            migrated = (
-                connection.execute(
-                    """SELECT 1 FROM session_command_pending
-                WHERE deployment_namespace=%s LIMIT 1""",
-                    (namespace,),
-                ).fetchone()
-                is not None
+            """WITH state AS (
+              SELECT EXISTS (
+                SELECT 1 FROM command_wakeup_rollouts rollout
+                WHERE deployment_namespace=%s AND (
+                  admission_enabled OR
+                  COALESCE(to_jsonb(rollout)->>'backfill_state','not_started') <> 'not_started'
+                )
+              ) OR EXISTS (
+                SELECT 1 FROM session_command_pending WHERE deployment_namespace=%s
+              ) AS migrated
             )
+            SELECT migrated, CASE WHEN migrated OR %s THEN (
+              SELECT jsonb_agg(jsonb_build_array(version,name,checksum))
+              FROM zebra_schema_migrations
+            ) END AS ledger FROM state""",
+            (namespace, namespace, require_ready),
+        ).fetchone()
+        assert row is not None
+        migrated = row["migrated"]
         if migrated or require_ready:
-            applied = {
-                r["version"]: (r["name"], r["checksum"])
-                for r in connection.execute(
-                    "SELECT version,name,checksum FROM zebra_schema_migrations"
-                ).fetchall()
-            }
-            if any(
-                applied.get(m.version) != (m.name, m.checksum)
-                for m in migration_history_plan(applied, MIGRATIONS)
-            ):
+            applied = {version: (name, checksum) for version, name, checksum in row["ledger"] or ()}
+            if not runtime_schema_matches(applied):
                 raise ValueError("command delivery requires the complete verified schema")
         if require_ready and not migrated:
             raise ValueError("command delivery requires explicit operator cutover")

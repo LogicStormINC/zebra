@@ -1,0 +1,8 @@
+{
+  "packages/agent-integrations/src/agent_integrations/worker_budget.py": "c17e0f6be4a1d3cb2f9552dd3264fec57a4379fcbe661da69535a5afa1fd3326",
+  "tests/agent_integrations/test_worker_budget_transport.py": "3d0eeb075d9ab3d8449a4a01643f1cfbc885b23c64c6e0d7f7b04c0775498507",
+  "tests/compose/cloud_ha_e1/bundle.py": "29f9749e74d75fe8c5c77aa78bb8f3db7b9d96c64e497c599b83ae577e4c1c50",
+  "tests/compose/cloud_ha_e1/prepare_execution.py": "b77c7148e847abd3f56f76ba9447128a3154295208c4ea3a5cceb26c3de7975e",
+  "tests/compose/cloud_ha_e1/verify.py": "a4bd158d90b837fb4689057eb0db31a64fa45ac6ad83680dee6f98b446f6ee39",
+  "tests/compose/cloud_ha_e1/Dockerfile.delta": "49f3c2a7cb61566e08f5899c7f433a53b0935bfd4d9158198b16bbe68a466e5c"
+}

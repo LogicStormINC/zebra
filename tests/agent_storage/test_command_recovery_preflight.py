@@ -59,12 +59,11 @@ def test_active_lease_defers_before_preparation_without_changing_evidence(dsn, m
         "foreign_scope",
         "foreign_session",
         "foreign_namespace",
-        "fenced",
     ],
 )
-def test_non_active_or_non_scoped_candidate_retains_full_preparation(dsn, monkeypatch, boundary):
+def test_non_active_or_non_scoped_candidate_is_not_deferred(dsn, boundary):
     command = _prepare(dsn)
-    handoff = _handoff(dsn, command)
+    _handoff(dsn, command)
     _due(dsn)
     with psycopg.connect(dsn) as conn:
         if boundary == "expired":
@@ -87,17 +86,12 @@ def test_non_active_or_non_scoped_candidate_retains_full_preparation(dsn, monkey
     candidate = {"accepted_event_id": command.event_id, "session_id": command.session_id}
     if boundary == "foreign_session":
         candidate["session_id"] = uuid4()
-    monkeypatch.setattr(recovery, "prepare_command_recovery", reject_preparation)
     before = _rows(dsn, "session_command_pending")
     database = PostgresDatabase(dsn, deployment_namespace=NAMESPACE)
-    with pytest.raises(PreparationReached), database.connect() as conn:
-        recovery._recover(
-            conn,
-            "other" if boundary == "foreign_namespace" else NAMESPACE,
-            SCOPE,
-            candidate,
-            continuation_fence=handoff.lease.fence if boundary == "fenced" else None,
-        )
+    with database.connect() as conn:
+        assert recovery._defer_active(
+            conn, "other" if boundary == "foreign_namespace" else NAMESPACE, SCOPE, candidate
+        ) is None
     assert _rows(dsn, "session_command_pending") == before
 
 
@@ -152,11 +146,58 @@ def test_preflight_miss_releases_all_lifecycle_locks_before_preparation(dsn, mon
                 ).fetchall()
         raise PreparationReached
 
-    monkeypatch.setattr(recovery, "prepare_command_recovery", check_released)
-    with pytest.raises(PreparationReached), database.connect() as conn:
-        recovery._recover(
-            conn,
-            NAMESPACE,
-            SCOPE,
-            {"accepted_event_id": command.event_id, "session_id": command.session_id},
+    defer = recovery._defer_active
+
+    def future_due(connection, namespace, scope, candidate):
+        connection.execute(
+            "UPDATE session_command_pending SET recovery_due_at="
+            "clock_timestamp()+interval '1 hour'"
         )
+        return defer(connection, namespace, scope, candidate)
+
+    _due(dsn)
+    monkeypatch.setattr(recovery, "_defer_active", future_due)
+    monkeypatch.setattr(recovery, "prepare_command_recovery", check_released)
+    with pytest.raises(PreparationReached):
+        recovery.recover_command_batch(dsn, deployment_namespace=NAMESPACE, scope=SCOPE)
+
+
+@pytest.mark.parametrize("lease_appears", [False, True])
+def test_recovery_preparation_and_commit_share_one_available_permit(dsn, lease_appears):
+    import json
+
+    from agent_storage.postgres.capacity_profile import CapacityProfile
+    from agent_storage.postgres.connection_capacity import ConnectionBudget, capacity_scope
+
+    from tests.agent_storage.test_postgres_connection_capacity import profile_data
+
+    command = _prepare(dsn)
+    _due(dsn)
+    database = PostgresDatabase(dsn, deployment_namespace=NAMESPACE)
+    profile = CapacityProfile.parse(json.dumps({**profile_data(), "normal": 1}))
+    budget = ConnectionBudget(dsn, profile, "worker")
+    calls = []
+
+    class Check:
+        def prepare(self, namespace, event_id):
+            with database.connect() as connection:
+                assert connection.execute("SELECT 1 AS ready").fetchone()["ready"] == 1
+            if lease_appears:
+                assert _handoff(dsn, command).lease is not None
+            calls.append((namespace, event_id))
+            return self
+
+        def __call__(self, *args):
+            pytest.fail("the ordinary command requires no Coverage proof")
+
+    with capacity_scope(budget):
+        result = recovery.recover_command_batch(
+            dsn, deployment_namespace=NAMESPACE, scope=SCOPE, coverage_check=Check()
+        )
+    assert calls == [(NAMESPACE, command.event_id)]
+    expected = (
+        (0, recovery.RecoveryStatus.DEFERRED)
+        if lease_appears else (1, recovery.RecoveryStatus.APPROVED)
+    )
+    assert result == (recovery.CommandRecovery(command.event_id, *expected),)
+    assert budget.stats()["peak"]["normal"] == 1

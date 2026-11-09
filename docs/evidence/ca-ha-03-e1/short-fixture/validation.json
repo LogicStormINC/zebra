@@ -1,0 +1,22 @@
+{
+  "scope": "external synthetic provider E1-A variant only",
+  "runtime_source": "9b4f9ad3",
+  "native_approval": 7,
+  "red": "explicit user short marker incorrectly emitted tool call",
+  "checks": [
+    "short marker final stop without tool",
+    "same canonical byte usage and cap",
+    "normal pwd preserved after short request",
+    "system marker retains pwd",
+    "non-object HTTP400",
+    "short output-cap HTTP400",
+    "existing body bound and provider HTTP checks"
+  ],
+  "local_runnable": "uv run python tests/compose/cloud_ha_e1/check_metering.py",
+  "result": "passed",
+  "independent_provider_HTTP_and_ruff": "passed",
+  "promoted": "not yet",
+  "new_native_short_task": "not_run",
+  "full_E1": "not_run",
+  "qualification": "separate fixture source/hash required; no new runtime or provider quality claim"
+}

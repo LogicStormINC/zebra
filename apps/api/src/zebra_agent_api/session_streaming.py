@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 from collections.abc import AsyncGenerator, AsyncIterator, Sequence
 from datetime import UTC, datetime
@@ -11,11 +12,14 @@ from agent_core.domain.events import SessionEvent
 from agent_core.domain.identifiers import SessionId, TaskId
 from agent_core.domain.sessions import SessionStatus
 from agent_core.ports import LiveEventCursor, LiveEventFanoutPort
+from agent_core.ports.agent_tasks import TaskEventPage
 from agent_core.ports.event_store import BoundedSessionEventReadPort
 from agent_core.ports.live_event_fanout import CanonicalFrontierNotificationPort
-from agent_core.ports.stream_source_head import StreamSourceHeadPort
+from agent_core.ports.stream_source_head import StreamSourceHead, StreamSourceHeadPort
+from agent_core.ports.task_projection_checkpoints import CheckpointNotReady
 from agent_integrations.redis_live_fanout_async import AsyncRedisNotifications
 from agent_storage import ControlPlaneStores, sqlite_control_plane_stores
+from agent_storage.postgres.connection_scope import postgres_connection_scope
 from fastapi import Request
 
 from zebra_agent_api.ag_ui_checkpoint_tail import _backoff_slice, _read_until
@@ -29,12 +33,35 @@ from zebra_agent_api.task_api import is_user_task_event, serialize_task_event
 
 _POLL_SECONDS = 0.05
 _KEEPALIVE_SECONDS = 15.0
-_FALLBACK_SECONDS = 1.0
+_DURABLE_POLL_MAX_SECONDS = 2.0
 _MAX_STREAM_SECONDS = 1800.0
 # awaiting_turn keeps a conversation Task stream open between Turns (ADR-026).
 _ACTIVE_STATUSES = frozenset(
-    {SessionStatus.READY, SessionStatus.RUNNING, SessionStatus.AWAITING_TURN}
+    {
+        SessionStatus.READY,
+        SessionStatus.RUNNING,
+        SessionStatus.AWAITING_TURN,
+        SessionStatus.WAITING_APPROVAL,
+    }
 )
+
+
+async def _read_raw_head(
+    deadline: float,
+    store: StreamSourceHeadPort,
+    *,
+    task_id: TaskId | None = None,
+    session_id: SessionId | None = None,
+) -> StreamSourceHead | None:
+    # The canonical write can wake observers before its read index catches up.
+    async with asyncio.timeout(max(0, deadline - monotonic())):
+        while True:
+            try:
+                return await _read_until(
+                    deadline, store.read_stream_source_head, task_id=task_id, session_id=session_id
+                )
+            except CheckpointNotReady:
+                await asyncio.sleep(uniform(0.025, 0.075))
 
 
 class StreamWake:
@@ -66,6 +93,12 @@ class StreamWake:
         self.backoff = 1.0
         self.reconcile_at = monotonic() + 30.0
 
+    def _notification_failed(self) -> None:
+        self.cursor = None
+        if self.cloud:
+            self.retry_at = monotonic() + min(30.0, self.backoff * uniform(0.9, 1.1))
+            self.backoff = min(30.0, self.backoff * 2)
+
     async def capture(self) -> None:
         if self.fanout is None or self.namespace is None or monotonic() < self.retry_at:
             return
@@ -87,7 +120,7 @@ class StreamWake:
                 session_id=self.session_id,
             )
         except Exception:
-            self.cursor, self.retry_at = None, monotonic() + _FALLBACK_SECONDS
+            self._notification_failed()
 
     async def _wait_backoff(self, keepalive_seconds: float) -> bool:
         assert self.fallback_until is not None
@@ -116,7 +149,7 @@ class StreamWake:
                         ),
                     )
                     changed = positions[key] != self.cursor.value
-                    self.cursor = LiveEventCursor(positions[key], stream_ref=key)
+                    self.cursor, self.backoff = LiveEventCursor(positions[key], stream_ref=key), 1.0
                     if changed or monotonic() >= self.reconcile_at:
                         self.reconcile_at = monotonic() + 30
                         return True
@@ -157,11 +190,15 @@ class StreamWake:
                     return True
                 return False
             except Exception:
-                self.cursor, self.retry_at = None, monotonic() + _FALLBACK_SECONDS
-        # ponytail: bounded degraded polling also recovers lost/trimmed Redis hints.
-        delay = min(30.0, self.backoff * uniform(0.9, 1.1)) if self.cloud else _POLL_SECONDS
-        self.backoff = min(30.0, self.backoff * 2)
-        self.retry_at = self.fallback_until = monotonic() + delay
+                self._notification_failed()
+        # Redis reconnect backoff must not delay authoritative reads by the same amount.
+        if self.cloud and self.fanout is not None and self.namespace is not None:
+            delay = min(_DURABLE_POLL_MAX_SECONDS, self.backoff * uniform(0.9, 1.1))
+        else:
+            delay = min(30.0, self.backoff * uniform(0.9, 1.1)) if self.cloud else _POLL_SECONDS
+            self.backoff = min(30.0, self.backoff * 2)
+            self.retry_at = monotonic() + delay
+        self.fallback_until = monotonic() + delay
         return await self._wait_backoff(keepalive_seconds)
 
 
@@ -227,9 +264,7 @@ async def tail_session_events(
                 and same_source
                 and getattr(active.events, "stream_head_reads_compatible", task_database is None)
             ):
-                head = await _read_until(
-                    deadline, active.tasks.read_stream_source_head, session_id=session_id
-                )
+                head = await _read_raw_head(deadline, active.tasks, session_id=session_id)
                 if head is None or head.task.strict_coverage or head.session_sequence is None:
                     return
             if cloud and (
@@ -305,40 +340,60 @@ async def tail_task_events(
     authorization_expires_at: datetime | None = None,
     notifications: AsyncRedisNotifications | None = None,
     recovery_notice: bool = False,
+    initial_wake_segment: SessionId | None = None,
 ) -> AsyncIterator[str]:
     active = stores or sqlite_control_plane_stores(database_path)
     store, deadline = active.tasks, _deadline(authorization_expires_at)
     cloud = getattr(active, "deployment_namespace", None) is not None
 
+    source_heads = (
+        store if cloud and isinstance(store, StreamSourceHeadPort)
+        and getattr(store, "stream_head_reads_compatible", True) else None
+    )
+
+    def read_native_page(cursor: int) -> TaskEventPage | None:
+        # The callback may reuse a socket, but the privacy proof needs its own
+        # fresh transaction to see a Coverage commit made during page replay.
+        with postgres_connection_scope(bounded=True):
+            page = store.read_event_page(task_id, cursor)
+            return page if coverage_task_read_problem(active, task_id) is None else None
+
     async def frames() -> AsyncGenerator[str, None]:
-        task = await _read_until(
-            deadline, store.read_task_header if cloud else store.get_task, task_id
-        )
-        if task is None:
-            return
+        wake_segment = initial_wake_segment if source_heads is not None else None
+        if wake_segment is None:
+            task = await _read_until(
+                deadline, store.read_task_header if cloud else store.get_task, task_id
+            )
+            if task is None:
+                return
+            wake_segment = task.active_segment_id
         wake = StreamWake(
             live_event_fanout,
             deployment_namespace,
-            task.active_segment_id,
+            wake_segment,
             deadline,
             cloud=getattr(active, "deployment_namespace", None) is not None,
             notifications=notifications,
         )
         await wake.capture()
-        if await _read_until(deadline, coverage_task_read_problem, active, task_id):
-            return
+        if source_heads is None:
+            problem = await _read_until(deadline, coverage_task_read_problem, active, task_id)
+            if problem is not None:
+                return
         cursor, closing, last_delivery = after_sequence, False, monotonic()
         recovered = not recovery_notice
         while not await request.is_disconnected():
             head = None
-            if cloud and (
-                isinstance(store, StreamSourceHeadPort)
-                and getattr(store, "stream_head_reads_compatible", True)
-            ):
-                head = await _read_until(deadline, store.read_stream_source_head, task_id=task_id)
-                if head is None or head.task.strict_coverage:
+            if source_heads is not None:
+                head = await _read_raw_head(deadline, source_heads, task_id=task_id)
+                if head is None or head.task.strict_coverage is not False:
                     return
-            if head is None or cursor < head.task.current_sequence:
+            if head is not None and cursor < head.task.current_sequence:
+                native_page = await _read_until(deadline, read_native_page, cursor)
+                if native_page is None:
+                    return
+                events = native_page.events
+            elif head is None:
                 page = await _read_until(deadline, store.read_event_page, task_id, cursor)
                 if cloud:
                     problem = await _read_until(

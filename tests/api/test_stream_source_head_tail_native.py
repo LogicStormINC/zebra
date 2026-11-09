@@ -78,6 +78,8 @@ def test_privacy_append_after_head_denies_changed_page(source, monkeypatch, read
         return page
 
     monkeypatch.setattr(owner, method, read)
+    if reader == "task":
+        monkeypatch.setattr(type(owner), "stream_head_reads_compatible", True)
     tail = tail_session_events if reader == "session" else tail_task_events
 
     async def collect():
@@ -267,6 +269,7 @@ def test_agui_initial_snapshot_one_socket_and_native_override_fallback(owned, mo
             bundle, SimpleNamespace(publish_committed=lambda _: None)
         ),
         stream_v2_reader=reader,
+        agui_profiles=None,
         cloud_control=PostgresDirectControl(owned[0], deployment_namespace=run.namespace),
         live_event_fanout=None,
         command_outcome=None,
@@ -294,6 +297,8 @@ def test_agui_initial_snapshot_one_socket_and_native_override_fallback(owned, mo
 
     def request(query=None):
         return SimpleNamespace(
+            method="GET",
+            scope={},
             state=SimpleNamespace(host_context=host, authorization_deadline=monotonic() + 2),
             query_params=query or {},
             headers={},
@@ -429,6 +434,40 @@ def test_agui_initial_snapshot_one_socket_and_native_override_fallback(owned, mo
         from zebra_agent_api.coverage_public_read import cloud_raw_stream_preflight
 
         api.settings = SimpleNamespace(deployment="cloud")
+        raw_request = request()
+        raw_request.url.path = f"/tasks/{run.task_id}/stream"
+
+        def raw_preflight(proof=None):
+            assert proof is not None
+            result = cloud_raw_stream_preflight(api.stores, raw_request.url.path, proof=proof)
+            return result if result.status_code != 200 else None
+
+        with monkeypatch.context() as legacy:
+            legacy.setattr(api, "stream_v2_reader", None)
+            telemetry = Telemetry()
+            with telemetry.installed():
+                result = asyncio.run(stream_v2_http.raw_response(
+                    api, raw_request, database_path=Path("/unused"), preflight=raw_preflight,
+                    snapshot_preflight=raw_preflight,
+                ))
+            assert result.status_code == 503 and b"stream_v2_unavailable" in result.body
+            sockets = sum(v for k, v in telemetry.calls.items() if k.endswith("/new_pg_socket"))
+            assert sockets == 1
+            from agent_integrations import run_stream_admission
+
+            legacy.setattr(run_stream_admission, "load_run_stream_admission", lambda *_: None)
+            for kind, identifier in (("tasks", run.task_id), ("sessions", run.session_id)):
+                raw_request.url.path = f"/{kind}/{identifier}/stream"
+                for query, expected in (({}, 200), ({"after_sequence": str(2**63)}, 400)):
+                    raw_request.query_params = query
+                    response = asyncio.run(stream_v2_http.raw_response(
+                        api, raw_request, database_path=Path("/unused"),
+                        preflight=raw_preflight, snapshot_preflight=raw_preflight,
+                    ))
+                    assert response.status_code == expected
+                    if expected == 400:
+                        assert b"after_sequence exceeds" in response.body
+
         for name, route, expected in (
             ("task_id_for_session", "session", 409),
             ("read_latest_run_header", "task", 409),
@@ -553,7 +592,7 @@ def test_agui_initial_snapshot_one_socket_and_native_override_fallback(owned, mo
         previous_heads = len(head_calls)
         rejected = asyncio.run(stream_v2_http.agui_response(api, request({"cursor": "malformed"})))
         assert rejected.status_code == 409 and qualified_calls == [True]
-        assert rejected.body.find(b"stream_source_unavailable") >= 0
+        assert b"projection_not_ready" in rejected.body
         assert len(head_calls) == previous_heads
         original_bind = reader.authority.bind_snapshot
 

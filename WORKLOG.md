@@ -1,3 +1,82 @@
+## 2026-11-03 CA-HA-03 existing Task-control producer alignment
+
+- Exact9b943baa Broker patch +8b286b59 HTTP tests reused; generic signed-body/current-rights checks added.
+-95 Broker tests and independent95 pass; make check zero. Candidate Broker/Authority only;
+ Engine637/native approval6 kept frozen. Native Run-grant rejection stays, no hand-minted workaround.
+- Clean OrbStack node2 created192.168.139.154, same Docker29.1.3/containerd2.2.1/runsc hash.
+ Primary machine has foreign probes: no clone or interference. Both machines4CPU/8GiB; global VM16GiB.
+ New-node-only transient6 loopback socket proxies bridge local primary, no global network changes.
+- Next component image/source verification, signed expired Task stop and new-node calibrated smoke,
+ followed by genuine E1 capacity/fault/soak; no production change or physical-HA claim.
+
+## 2026-11-03 CA-HA-03 live renewal completion and topology correction
+
+- Engine637 actual native publication6 and single-node full flow pass:17.25s,33 events,
+ 2 model receipts29308 synthetic units, one pwd completion/charge exit0, original120s and charges retained.
+- Prior four Tasks and unknown hashes unchanged. Operator WAN503 / early-approval409 cases retained,
+ not replaced/replayed. Successful case explicitly waits original Worker lease handoff.
+- Actual Mac→server route is159ms VPN; shell relay ended, rebuilt6 runtime forwards as constrained
+ transient VM systemd service using existing mounted identity (no key copy). Registry existing relay untouched.
+ Server API/Worker exact IDs held, no false cross-node qualification. Clean logical OrbStack node2 provisioning.
+- Force-stop Run-grant403 and malformed no-Run400 retained. Existing production producer9b943baa and
+ HTTP test8b286b59 absent from HA source. Owned alignment declared before coding; reuse, no bypass.
+- Full E1/HA03 still pending; source/engine proof is one-node. Production unchanged;04 locked.
+
+## 2026-11-03 CA-HA-03 budget renewal source candidate
+
+- Root fix shared at Task-binding persistence: reuse moved Core pure renewal policy, keep API alias.
+- Adjacent CAS, full snapshot and prior SQL/body/ledger agreement required; atomic reference-only move.
+-17 new real-PG pass;46 same-node combined pass;21 unit pass/3 skip; make check pass; AI no major issue.
+- Cross-VM approval had repeated50ms lock timeout, retained as unresolved cross-node acceptance evidence.
+  Native nonroot/read-only QA runner uses existing pure test dependencies and onlyha_qa credentials.
+- Source candidate only. Next dual image/runtime hashes/manifest/native approval and fresh synthetic case.
+  No stale-history migration, old Task resume, quota reset, unknown replay, production cutover or HA04 unlock.
+
+## 2026-11-03 CA-HA-03 f9 live DNS and renewal boundary
+
+- Two native images each 2140 files/3 symlinks verified; actual OCI manifest27f6b931…;
+  cold isolated app cutover only. Old exact PIDs zero and ha_app connections0 before switch.
+- API/Worker healthy, native fixture wire checks and native publication passed. First new model
+  request settled14414 units; gVisor provisioned. Exact pwd approval passed after correct native
+  Run-target fresh Host Grant. No API guard change needed.
+- Operator evidence script initially syntax-rejected (bad local placeholder replacement), confirmed
+  evidence UUID absent, then corrected/compiled and recorded using original IDs; no management retry.
+- Legitimate approval renewal changed binding digest but left Task budget reference stale. Resume
+  child refused before tool, suspended. Its120s absolute budget is now expired: never resume/replay it.
+- Old three Tasks/events and unknown row hashes unchanged. Source+image DNS accepted only at
+  first-model/settlement level; E1 full task/load/fault/soak pending. Next shared renewal fix owned below.
+
+## 2026-11-03 CA-HA-03 E1 bounded DNS candidate
+
+- Shared ordinary transport now uses owned killable/reaped resolver children; auxiliary loop remains strict.
+- 74 focused and independent AI checks pass, make check zero; both Linux engines pass isolated DNS/cancellation.
+- Old 984 reservation remains unknown, not resent/refunded. No existing application replaced in this slice.
+- Evidence: docs/evidence/ca-ha-03-e1/bounded-dns/. Next: exact image builds, hashes/manifest,
+  new native publication, cold isolated promotion and a brand-new synthetic Task; full E1 still pending.
+
+## 2026-11-03 CA-HA-03 E1 provisioning candidate
+
+- 用户明确允许服务器/OrbStack创建新环境；复用运行中引擎，新标签/卷/端口/凭据/数据。
+- 两架构本地镜像+runsc实测，新24GiB文件系统、新库121/NOSUPERUSER/命令切换/对象版本化。
+- 初次门禁失败后启动未中止，立即停本轮实例并修正set-e依赖链；Compose类型、TLS文件owner/
+  Caddy文件能力/tmpfs权限按真实运行修正；原始业务未动。
+- Rabbit身份与原生模型配置要求在实际组合显露；补已有Rabbit extra/拓扑；原生协议替身只在
+  自有容器锁定127对端/测试CA与合成凭据，双节点正反检查及真实SSE解码通过。
+- 发现并修复迁移预算上下文、效果恢复DSN改写两共享入口；恢复真实PG12通过；NativeHTTP
+  ScriptedModel预算hook失败用原模块复现。保留失败记录，不将整组冒充全绿。
+- 当前双API/Worker就绪；维护修复需要新镜像层，后续精确promotion/源hash核验和合成Task。
+- 不执行E1完整负载/生产部署或原Run重放；所有模型/能力/Coverage结果为synthetic。
+
+## 2026-11-02 CA-HA-03 review follow-up
+
+- 同卡同Owner/branch/worktree，修改前补充API/PG async适配器/列表与旧stream探针Owned paths。
+- 独立AI三项Important闭合；取消/嵌套/小read列表回归先红后绿，默认关闭与原授权/期限保持。
+- 预算开启的Helm upgrade拒绝；fresh staging限制及rollback等未验路径写入文档。
+- 最终相关1082pass/327skip（347.77s）、定向114pass/1skip、makecheck全绿；保留中途失败记录。
+- 未做本轮新PG/全仓/E1/生产验收；未重发Run、恢复旧环境、推送/合并/生产切换。
+- 用户授权建立新E1测试环境；只读核实Ubuntu及OrbStack资源/现有runsc，可复用基础设施运行全新测试实例。
+- 下一步：冻结两主机独立API/Worker与新测试依赖、精确资源/所有权及镜像，再逐层验收。
+
 ## 2026-11-02 CA-P7-03C
 
 - 按授权先整合03B：Native7f1f499b、Overdoze e34ecc4；误先推送的3笔既有ERP文档如实记录，无历史重写。
@@ -18762,3 +18841,3927 @@ ingress mapping, release-overlay preflight and redacted live proof. Native apps/
 unchanged. Original Task/Run/receipt/unknown/Coverage protected; no new Docker in export stage.
 Compatibility export is not the full current ERP Host build source; SOURCE explicitly
 requires canonical main for normal Host releases. Exact source mapping verified before gates.
+
+
+## 2026-11-02 — CA-HA-03 / 03A
+
+用户“继续”后从Ready领取独立branch/worktree；先追踪控制/执行/恢复/池与Task I/O，
+再复现空转和真实PG表锁占槽。复用有界I/O和控制lane；无新队列、依赖、schema或unknown重发。
+完整Worker首次唯一失败在干净基线复现，只补缺失forced Mock列；最终证据/未验项见
+docs/evidence/ca-ha-03/validation.json及docs/CA-HA-03_resource_budgets.md。
+本批03A候选交付，03B全副本预算/容量及后续HA仍需完成；不生产部署，不声称HA完成。
+
+
+## 2026-11-02 — CA-HA-03B resumed completion
+
+用户继续后核对中断进程与结果，最终PG113通过/12skip，全部owned临时PG已回收。
+冻结入口/线程/预算路径后实施；普通资源全占满仍有控制和原GET额度，探针单独隔离，
+await取消和失败close不早归还；继承PG上下文而非业务授权。禁止嵌套根scope扩大额度。
+广覆盖3102/951skip与后续定向分别留档；Helm正反例与最终check通过。
+见docs/evidence/ca-ha-03b/validation.json；默认关闭、仅本地候选，不合入/推送/生产部署。
+E1容量、实际fleet约束/漂移告警、独立评审及后续旧任务自动核对仍待完成。
+
+
+## 2026-11-03 — E1 exact-image promotion and failed-closed smoke
+
+用户授权新环境；仅冷切换本轮owned测试应用。旧API/Worker均退出、ha_app连接归零后，
+启动0fd9f0c1 delta镜像。四容器2139文件/3符号链接匹配；双端API TLS200及Worker
+控制新鲜度通过，当前维护stdout尾无原DSN拒绝，不构成长时稳定性证明。
+新Task e698a4d3-e12a-4d37-9fd9-1af491aaff10只POST一次201，1尝试到gVisor；
+模型阶段WorkerBudgetError，原生CLI未接可信request counter，模型预留0/工具0。
+保留11事件及失败任务；未重跑或放宽guard。Host Grant本身一次性，后续GET用新grant；
+复用准入grant的两次GET正确403。原生产页面只读200、既有容器保持运行，未替换生产。
+机器回执docs/evidence/ca-ha-03-e1/validation.json；完整E1/真实Provider/存储HA未验。
+下一步通过既有ModelRequestBudgetFactory补齐可信counter组合及其边界检查，再新任务小样本。
+
+
+## 2026-11-03 — HA03 trusted budget composition follow-up
+
+上一目标回合属于progress：创建并验明新环境，单次Task失败改变后续动作；目标保持active。
+本轮追踪四个入口及普通/委派counter调用，确认旧同步client首先被guard拒绝，缺counter也是
+独立阻塞。复用现有Cloud组合字段及参数优先级，Cloud根不创建同步client，本地关闭语义保留。
+先红4/绿5；广回归3054/856skip/1旧assert，替换生命周期断言后47/2skip；无源行为再修改，
+未复跑全范围；最终check/AI复审通过。合成meter实际模型函数/HTTP反例通过，见budget-composition证据。
+保留旧Task与旧历史，不生产/测试镜像切换，不声称已供应真实counter或通过E1。
+下一步实现显式操作员fixture组合，用冻结模型max_output_tokens（建议1024，仅测试配置）
+约束实际wire，然后构建两端精确源镜像、小样本新Task，再进入E1包络。
+
+
+## 2026-11-03 — E1 operator source preparation
+
+继续目标回合；新增main受信任factory参数，必须在活pool内构造（PGDatabase捕获pool/capacity）。
+使用既有SessionProcess factory、RuntimeBundle/catalog及管理发布配置，不改业务授权/核心预算。
+默认和本地入口保持；41定向通过及make check、真实Bundle离线counter/模型计量自检通过。
+准备私有mode0600配置生成器、不可覆盖release目录、仅限额loopback registry及独立preflight。
+Registry镜像已拉取，当前新应用仍旧镜像，未进行新Task/发布/eval通过写入或生产切换。
+缺执行配置的初始包不能启动；候选真实image index/source证据后生成UID65532配置并核对两端baseline。
+私有token仅操作员保管；下一步新源镜像构建、真实索引、私有装配、冷切owned staging并验新Task。
+
+
+## 2026-11-03 — E1 native pipeline reaches guarded schema bug
+
+e8实际两架构构建/源哈希/真实私有清单/双端baseline/UID0600/冷切与健康完成。
+生成模板公开mode错误、版本ref和token前缀已纠正，原生发布200；所有发布opIDs先存，
+仅已知预鉴权401在原GET404确认未执行后重发同operation，unknown不重发。
+新Task39d0单次201后cap1024/gVisor/隔离子进程成功进入模型前，TypeError失败，0预留。
+实际present参数schema properties.type是字典，共享_supported_content用set导致unhashable；
+以实际schema红3，改tuple一行，35/5skip及独立19通过，未改模型/预算/策略拒绝。
+原e698与新39d0均失败保留、不重跑；新修复候选须重建镜像和清单/批准新冻结配置再新Task。
+操作状态在ignored .artifacts/cloud-ha-e1/{build-e8f528b2,cold-e8f528b2,publication-e8f528b2,guarded-smoke-e8f528b2}.json。
+
+
+## 2026-11-03 — monitor control capacity and stop receipts
+
+Shared monitor retains a normal query connection; short control paths unchanged.
+Real Linux PG30, worker/API19 and make check passed, independent review clear.
+Broker9a signed old e08 stop confirmed resources released; f69 retains missing
+original exit witness reconciliation. New monitor image/promotion pending.
+Fresh OrbStack node2 needs the primary strict gVisor sidecars as well as runsc;
+first real start failed closed rather than being counted as calibration success.
+
+
+## 2026-11-03 — dual-engine cleanup ownership
+
+Real PG red4 confirmed foreign retry consumption and local-work starvation.
+Shared routing now uses existing exact fence/engine facts, with common control,
+frontier and absolute expiry preserved. Native Linux PG46 and make check passed;
+source review clear. New10 cases declare fake engine removal/unit ACKs.
+Two local247 static preflights/baseline match and node2 real runsc/hash checks pass.
+Initial native preview path/auth failures retained; isolated QA credential was
+rotated after a log parameter expansion and active env synchronized. New images,
+publication and actual dual-node task/cleanup gates remain next; no production.
+
+
+## 2026-11-03 — frozen9b two-local-node live acceptance
+
+Exact source/images/index, Native7 CAS/publication, matching247 cold/no-overlap,
+both live/ready/control freshness verified. Full native Tasks completed once on
+each node; active Worker freeze probes retained unknown exit until real ACK and
+exact OCI deletion. Primary cleanup removed a created/not-started OCI object while
+its Worker was still frozen. Old7 event/budget/unknown hashes unchanged. All five
+new cases and operator preview boundaries retained in native-9b evidence. Both
+Workers restored; no production. Full E1 load/corpus/fault/soak remains next.
+
+
+## 2026-11-03 — E1-A external short provider variant
+
+A user-only version marker now selects deterministic no-tool completion using
+the unchanged meter/caps/HTTP. Original pwd/system marker and shared-template
+isolation verified red/green; independent runnable+Ruff passed. Runtime9b/Native7
+unchanged; external fixture must be frozen separately before a NEW short Task.
+No variant promotion or load result yet.
+
+
+## 2026-11-03 — short native receipt and existing deferred configuration
+
+External fixture b15 alone promoted, both native wire checks passed. Fresh short
+Task ee10410b completed8.546s, model1 settled14226, tools0, real exit pair1. Idle
+PG connects5.2/7.3ms and durable commits~2ms; fsync unchanged, owned probe schemas
+removed. Lifecycle/import measurements retained; not a capacity certificate.
+Only E1 configuration now opts existing cloud deferred runtime; existing6 tests
+and Ruff pass. New baseline/Native8, cold idle promotion and new no-tool/pwd cases
+are next. Runtime9b and local defaults unchanged; no original intent replay.
+
+
+## 2026-11-03 — Native8 and checked-bytecode build candidate
+
+Native8 cold/old13 hash preservation, fresh no-OCI short6.347s and approved
+pwd17.7s with real cleanup/ACK verified. Diagnostic8 burst all201/completed once,
+median11.781/max20.549s; not capacity acceptance. Malformed marker original task
+stopped once without approval; retained. Build-time checked-hash stdlib compiler
+candidate preserves readonly/nonroot/fresh-process runtime. Prototype old red1 /
+new green0, stale same-size/mtime source and no-cache-write check passed; import
+CPU roughly halved. Runnable/Ruff/make check and independent review passed.
+Exact official/delta builds, per-arch checks and fresh whole-Task comparison next.
+
+
+## 2026-11-03 — frozen51 checked-bytecode Native9
+
+Official runtime build/default-user check and both native delta source2140/hash
+checks passed. Actual OCI index ec994197 promoted only to isolated pair, Native9
+published. Cold switch no overlap, old24 fact hashes unchanged both before/after
+new10 Tasks. Short5.56s/no OCI; approved pwd16.95s/exact OCI absent; burst8 all
+201/completed once, median9.7305/max13.401. New10 real exit ACK pairs, global
+lease/pending0 and historical unknown1 unchanged. Initial transient-lease read
+and wrong-column readonly query retained/corrected without Task replay. Fixed E1
+historical/SSE/5rps/fault/soak remains open; next diagnose remaining child latency.
+
+
+## 2026-11-03 — bounded E1 child profiler source
+
+No existing profile hook found; standard sitecustomize/cProfile captures only
+explicit E1 marker, exact namespace and private child --execute launcher. Parents
+and --check excluded. Real startup/atexit five-path runnable passed,0600 valid
+stats; argv-spoof guard red/green retained. Independent review and final make
+check/Ruff passed. Missing/empty stats never attest exit; actual ACK remains
+unchanged. Standard Dockerfile/runtime paths untouched. Diagnostic frozen images,
+Native10 and one Task/node with private export remain next; Native9 still live.
+
+
+## 2026-11-03 — Native10 child diagnostics and validation hot path
+
+Native10 separately frozen ARM/AMD source2141 and OCI index732b150a, two
+native startup/bytecode gates, old34 hash preservation, published and both
+logical Workers healthy. Explicit profiler mode created no parent/check
+profiles. One new short Task on each owner, one POST/settled model/real exit
+pair each, no OCI. Both0600 pstats exported, Workers unpaused, old34 facts
+unchanged, leases/pending0 and original unknown1. Profile times overlap and
+are diagnostic only. Both traces show53 snapshot parses and2160 descriptor
+rebuilds. PostgreSQL row decode duplicates the existing typed-field parse;
+closure repeatedly regenerates static catalog schemas. Claim narrowly scoped
+fix before editing; Native10 still diagnostic marker1. Full E1 remains open.
+
+
+## 2026-11-03 — static validation candidate
+
+Shared PG row decoder retains typed validation once. Static fingerprint caches
+hold only bounded immutable strings/tuples; mutable public objects and current
+authority still fresh. Standalone old red/new green, exact golden, tamper and
+mutation isolation. Native same-row23 decode CPU0.490/0.494 ->0.087/0.086,
+identical projection SHA. Focused217/make check/Ruff and independent review
+passed. Real PG initial teardown FK errors retained; one fixture-only missing
+gate-row cleanup restored14 passed, with no old QA sweep. Source candidate
+ready for frozen images and Native11 marker0; Native10 still diagnostic.
+
+
+## 2026-11-03 — normal Native11 and fixed-rate diagnostic failure
+
+Native11 source6cd0162e ARM platform-only after AMD build exit0/SSH timeout;
+verified local source2141, marker0, cold no overlap and old36 hashes preserved.
+New short5.021s, pwd15.92s, exact cleanup/ACK; burst8 all completed but
+median12.215/max16.309 worse than Native9, no overall capacity gain claimed.
+Raw Native9 pilot copied labels corrected by separate original Definition-ID
+attribution. No Task receipts edited. Native11 left healthy in normal mode.
+
+5Hz diagnostic stopped at tick6.4s at32 reserved (17 known active/15 in flight),
+32 POSTs once/201,19 admissions above2s (max5.7775). Final Decimal serializer
+failure retained, original-only readonly PG:30 complete, one suspended with
+LockNotAvailable and unknown model, one answer_committed+exit ACK still running
+without active lease/pending work. Both originals preserved. 14 real PG lock
+timeouts span hint settlement, stream append and lease/advisory locks. Worker
+CPU throttles0/1 through responses; insufficient evidence to blame CPU cap.
+Next isolate the hint batch lock hold before changing it. No full E1 claim.
+
+
+## 2026-11-03 — bounded hint claim and original control verification
+
+Real PG red held32 selected rows across per-row20ms trips and blocked the
+canonical append at250ms; set-based ordered claim/DB clock and busy-settle
+skip green. Same ownership/TTL, no migration or timeout change. Selected real
+PG/Redis15 passed (S3 Coverage excluded), unit29/2 conditional skips and make
+check/Ruff passed, independent source review clear. Initial plan-test capture
+error retained; corrected EXPLAIN rollback/observer, then reran. Native12
+candidate not yet live; does not explain every admission/lease failure.
+Original0fdb Task received one signed STOP202, stopped/resources released in
+1.199s with preserved answer/Event prefix/budget/model counts/exit ACK. Its
+old rate sample still failed. Original39aac remains suspended and unknown;
+no model resend or refund. Both original diagnostic records retained.
+
+
+## 2026-11-03 — Native12 local ARM and retained diagnostic handoff
+
+Source93f7f171, exact ARM image f14db224, marker0, unchanged247. Native12
+published after cold six-app no overlap; old78 fact hashes unchanged across
+fresh29, both APIs ready, Workers control-fresh, cleanup running. 5Hz diagnostic
+hit16 inflight, 29 single201,27 complete/two WorkerExecutorInterrupted before
+model,29 genuine exit pairs, lease/pending0, unknown models remain2 historical.
+22/29 admission>2s, max6.0893; PG captured two stream append lock timeouts
+(previous diagnostic14). No overall SLO or E1 pass. Final CPU window includes
+idle tail, do not interpret per-Task estimate as throughput floor. No AMD12 or
+production work; AMD11 post-build source/digest qualification still open.
+Next: use preflight5-hint12-*/readonly-originals.json and private PG/Worker logs
+under .artifacts/cloud-ha-e1. Correlate the two original interrupted fences
+with exact lock holders/child exit boundary and trace API admission stages.
+Preserve original outcomes, no retry of unknown work. Keep the unchanged
+2vCPU/2GiB and rate/deadline envelope. Full corpus/SSE/steady/fault/soak pending.
+
+## Native12 admission timing follow-up
+
+Recomputed timings from the 29 original POST receipts and canonical events.
+Median POST-to-`session_created.created_at` was 0.687s (0.078–2.287s).
+Median from that timestamp to HTTP response was 2.798s (0.205–4.922s).
+These are cross-clock estimates. The bootstrap assigns the event timestamp
+before persistence, so the second interval includes admission work and does
+not measure database commit latency. Prioritize timing the atomic write and
+the two post-admission Task header reads separately. Both remaining PostgreSQL
+timeouts were on the durable stream-version UPDATE. Neither log contains the
+Task ID, so the child exits cannot yet be attributed to those statements.
+Original Tasks were inspected read-only.
+
+## Native12 admission phase split
+
+Matched all 29 original accepted requests to both bootstrap and run-command
+events. Bootstrap timestamp to run-command timestamp was 0.124–4.303s,
+median 1.996s. Run-command timestamp to HTTP response was 0.081–2.072s,
+median 0.512s. These are event construction timestamps, with a cross-clock
+estimate for the HTTP boundary. The ordinary execute=true path commits
+bootstrap before queue_cloud_run reads the stream and submits the run command.
+Measure binding freeze, bootstrap commit and the queue's event read separately
+before changing response header reads. Preserve the persisted-command lookup
+for duplicate and interrupted admission recovery.
+
+## Native12 sampled advisory-lock queue
+
+Ran fresh synthetic intents with a read-only pg_stat_activity/pg_blocking_pids
+sampler, using the existing 5Hz diagnostic envelope. 31 accepted once,
+30 completed, 16-inflight ceiling reached, longest admission 5.2977s.
+The sampler captured 104 advisory-wait backend observations (repeated
+samples, not unique waits). The dominant waiting statement shape was the
+INSERT referencing agent_tasks and session_projections. Its blockers
+included other such INSERTs and transactions updating session_events.
+Private artifacts: admission-waits-native12.jsonl and
+preflight5-hint12-f76500fe-1fc6-4a34-bc07-3eeaa5847b6c.
+
+The live agent_tasks wake trigger uses the namespace-wide exclusive advisory
+lock family 68. The projector enable path takes the same exclusive lock.
+Next reproduce the collision with two independent Task inserts and verify
+whether shared trigger locking can preserve exclusion against configuration
+changes. The sampler did not capture lock keys, so it cannot attribute
+every observed wait to family 68. Keep the failed original sample and
+inspect its receipt without replay.
+
+## Projector admission lock migration candidate
+
+Real isolated PG reproduced the family 68 conflict with two distinct Task
+inserts under the original trigger. Migration 122 allowed both inserts to
+commit concurrently and preserved mutual exclusion with the projector
+configuration lock in both acquisition orders. Existing migration definitions
+are untouched. The first private probes exposed fixture auto-commit and a
+missing deferred segment FK, both corrected in the committed regression.
+Focused real PG regression and make check passed. Next stage the migration
+with the exact candidate image in the isolated pair and repeat admission
+diagnostics with fresh intents. Native12 and its original receipts remain
+the prior comparison cohort.
+
+## Native13 isolated migration and admission comparison
+
+Packaged source 6bfa3f7e and verified 2142 runtime files plus three symlinks.
+Both logical ARM nodes run platform manifest
+sha256:0720852aec0450c1df3d6a6260b2f52f9d310fecd53904d9264fdf6c42207343.
+Stopped the exact six idle apps and checked zero old app connections before
+applying migration 122 to ha_e1 as ha_app. Verified the live shared trigger,
+both node readiness/control checks, and the 138 prior session fact hashes
+before new requests. Native13 publication 1522142a-677a-44f3-9a0c-f3f5516aa12b.
+
+Fresh 5Hz diagnostic stopped at 32 active reservations (peak 13 in flight).
+32 single POSTs accepted, 31 completed, one suspended after answer commit
+(411426de-f18f-4c0a-8ed7-d9877d3c93ef). All 32 model reservations settled,
+zero active leases and pending commands. No Task replay. Admission median
+2.0867s and max 3.1114s versus sampled Native12 median 3.0947s and max 5.2977s.
+16/32 above 2s, so the capacity diagnostic remains failed. Task-INSERT
+advisory-wait observations dropped from 97 to zero, all advisory waits
+104 to 18, across different bounded cohorts. No sustained E1 claim.
+Private evidence: admission-waits-native13.jsonl and
+preflight5-lock13-80ea6834-5825-47d3-a39f-afded09248ac/readonly-originals.json.
+Next inspect the remaining advisory wait families and the post-answer
+suspension. Preserve the original answer and settlement.
+
+## Native13 post-answer interruption recovery
+
+Original 411426de has a settled model receipt, answer commit and recorded
+executor exit followed by suspension. The PG window contains a worker_leases
+lock timeout, but the log does not bind that timeout to the Task.
+Found a deterministic recovery gap: the isolated IPC-failure branch read
+completion evidence only through the pre-child revision. It now refreshes
+canonical recovery under the original fence and invokes the existing
+completion-only guard. The regression reproduces lost IPC at the normal
+Worker entry point and verifies exactly one child launch. First probe lacked
+a lease serialization stub, corrected before confirming the intended red.
+Focused tests 34 passed, 2 skipped, make check passed. Candidate source only.
+Original session and receipt were inspected read-only.
+
+### CA-HA-03 E1 Native14: fenced recovery after committed answer
+
+- Isolated OrbStack only: source c5b84532, ARM platform manifest
+  sha256:0529e9b63ec1d9173deb13ca921b2941d2cafeae1af37e027d9cff884eff89ff.
+  Both logical nodes passed readiness and TLS/SSE meter checks. Trust revision
+  14, definition 80b05cfc-27bd-444b-aa2c-5a0e24e49fe6. Cold switch preserved
+  existing event, budget, model and executor receipt hashes. No migration.
+- A 5 Hz diagnostic stopped at the 32 in-flight reservation safety limit:
+  32 POSTs, 32 accepted and completed, 32 settled model reservations, zero
+  unknown submissions, tool calls or OCI instances. Admission median 1.902s,
+  max 3.593s, 14 exceeded 2s. This does not pass the sustained E1 gate.
+- Injected one child exit before finalization and result IPC, after the
+  canonical answer was present. The isolated Worker wrote the matching exit
+  receipt and completed task 2dfe8fda-265a-4db0-ab4e-f8f58eb5afbf from
+  canonical state: exactly one answer, completion, and settled model
+  reservation; no active lease or pending command. Removed the temporary
+  Worker bind mounts and verified clean source imports on both nodes.
+- Private evidence under .artifacts/cloud-ha-e1: cold-close14.json,
+  health-close14.json, publication-c5b84532.json, preflight5-close14-*,
+  fault-close14-*/readonly-original.json and fault-marker-*.txt.
+- Next: sample remaining admission bottleneck with concurrent DB wait
+  attribution on Native14. Full corpus, 256 SSE, sustained 5 Hz, failover,
+  soak and independent physical host acceptance remain open.
+
+### CA-HA-03 Native14 admission wait attribution
+
+Repeated the guarded 5 Hz diagnostic with PostgreSQL wait sampling on the
+isolated pair. Run e21c450a-ffda-4b0f-91fa-b0aef80e4e0a: 32 issued once,
+accepted and completed; 32 settled model reservations; no unknown result.
+The active reservation cap stopped offers. Admission median 1.392s, max
+2.1963s, 4 above 2s. The previous Native14 run had 14 above 2s; neither
+run qualifies as sustained capacity acceptance.
+
+The 45-second sampler recorded zero advisory wait observations on the Task
+INSERT (97 on Native12, zero on Native13). COMMIT accounted for 49 WalSync
+and 29 WALWrite backend observations. These are repeated samples across
+components, not unique waits or attribution to individual HTTP requests.
+Do not relax durable commit to improve this metric. Worker cgroup CPU was
+2.5878 CPU-seconds per completion at 4 aggregate quota cores; if replicated
+at steady state, 5 completions/s would need roughly 13 Worker cores before
+other components. This is a sizing hypothesis, not measured throughput.
+Next measure per-component CPU and admission stages, then compare a
+resource-isolated Worker capacity step while retaining the database budget
+and durable settings. Evidence: admission-waits-native14.jsonl and
+preflight5-close14-e21c450a-ffda-4b0f-91fa-b0aef80e4e0a/summary.json.
+
+### CA-HA-03 Native14 Worker quota comparison
+
+On the same 10-core Mac, temporarily increased only the two isolated Worker
+quotas from 2 to 3 cores each; kept the image, durable PostgreSQL settings,
+connection budget and load guard. Both quotas restored and inspected at 2.
+Run 080f781c-7378-4e0c-a294-282ebe0e9d68 accepted 32 once; 31 completed,
+one suspended, all 32 model reservations settled, no unknown submissions.
+Throttle observations fell from 77 to 3 compared with the sampled 4-core
+run. Admission median 1.347s vs 1.392s; max 2.396s vs 2.196s; 7 vs 4 over
+2s. Both stopped at the active reservation cap. Increasing CPU alone did
+not pass the gate or demonstrate a reliable latency gain.
+
+Suspended original 8c841ba6-26b0-4644-b229-60c37931ba06 has one settled
+model and no committed answer, with execution_storage_contention /
+LockNotAvailable. PostgreSQL reported a session_streams UPDATE lock timeout
+136 ms before the suspension event; logs have no task correlation, so the
+association is suggestive. Preserve this original and do not resend.
+Next capture holder and waiter on the same stream transaction and isolate
+the contention before changing retry or lock policy. Private artifacts:
+preflight5-close14-cpu6-*/readonly-originals.json and cpu6-postgres-window.log.
+
+### CA-HA-03 Native14 lock holder and executor startup evidence
+
+Two fresh guarded 5 Hz runs, each 32 accepted once and capped at 32
+reservations. First completed 32 (max admission 3.300s); second completed
+31 (max 1.904s) with one pre-model interruption. Both retained originals.
+In the second capture a session_streams UPDATE waited on a transaction
+executing a WITH on the same table, matching the hint claim shape. The holder
+was 3.7ms old at sampling. This proves overlap, not that it caused the earlier
+timeout. The first run sampled no session_streams waiter.
+
+Second run's suspended original b5e826de-0216-4d93-824b-0114dbd42b0d
+has real executor start/exit, no model reservation or answer, and no pending
+command. The isolated child traceback at the suspension window shows
+LockNotAvailable inside recover_cloud_session -> read_session_recovery_head
+-> lock_session_recovery_source -> lock_session_lease_boundary. This is a
+different failure from the prior post-model stream UPDATE timeout. Next trace
+the startup read's lease contenders and evaluate bounded pre-execution
+recovery without replaying any effect. Do not resend either original.
+Private evidence: stream-holders-native14.jsonl,
+stream-lock-keys-native14.jsonl, stream-key-worker-*.log and
+preflight5-close14-393a5670-*/readonly-originals.json.
+
+CA-HA-03 startup candidate: retry one initial child recovery slice only when
+SessionRecoveryPending wraps PostgreSQL LockNotAvailable. The same lease
+is passed to both attempts and the database revalidates the fence. Retry
+ends before entering execution. Focused tests: 10 passed, 16 conditional
+skips. Next package the child module into the isolated ARM image and
+verify with a bounded lease-lock injection against a new synthetic task.
+
+CA-HA-03 Native15 isolated cutover: source bbe849f9, ARM image
+sha256:37d07ab03af1ebb0538df46100d545a78723d86a0dbf03f1564aa2abf67f534d.
+Verified 2142 runtime files, 3 symlinks, both node readiness and TLS/SSE,
+and identical existing session, budget, model and executor receipt hashes.
+First materialization got 403 because the client sent old trust revision 14.
+Archived that receipt and used revision 15 with the same operation identity.
+Materialize/publish returned 200, definition 46bae679-ecd1-45e7-8424-ae5e32409c64.
+Next inject a PostgreSQL lease-boundary lock timeout before the initial
+child recovery returns and reconcile the new synthetic task.
+
+CA-HA-03 Native15 real startup lock drill: single synthetic Task
+980c7cd0-c6ce-413d-91b4-5b212604dd42. A temporary child bind mount acquired
+the same session-scoped PostgreSQL advisory lock on another connection,
+recorded the actual LockNotAvailable from initial recovery, and released
+the holder before the unchanged retry helper entered its second slice.
+One POST, one fault marker, one executor start/exit, one committed answer,
+one completion and one settled model reservation. No active lease, pending
+command or runtime instance. Both Workers restored to clean image imports.
+Private evidence: fault-start15-*/readonly-original.json and start15-marker-*.
+The drill releases the lock before retry by design. Sustained load, 256
+SSE streams and multi-host failover acceptance are still open.
+
+CA-HA-03 Native15 SSE read-only diagnostic used the completed synthetic
+startup-drill Task. Raw stream uses after_sequence for this numeric cursor.
+Four concurrent clients opened across both nodes and got the exact next
+frame after reconnecting to the opposite node. Initial same-grant reuse
+and Last-Event-ID probes were invalid for this fixture and retained.
+With fresh prefetched grants and 32 simultaneous opens, 4 opened and 28
+received 503 capacity_unavailable. The four hit the test barrier, so the
+cohort has no resume result. With staggered opens, 15 opened, 3 got the
+same 503, and 14 got 503 host_grant_authorization_unavailable. The fixture
+sets read=2 per API. The request semaphore releases at response start,
+so these samples do not establish a cap on established streams.
+Next separate per-node preflight admission from grant verification and
+measure established-stream occupancy with the same connection budget.
+Artifacts: sse15-pair-c985ee86*, sse15-pair-d73da4c7*, sse15-pair-ea368d42*.
+
+CA-HA-03 Native15 SSE occupancy isolation: with one handshake at a time
+per API and a fresh grant per GET, both read-only 32-client cohorts opened
+all streams and received the expected next frame. In the second cohort
+server TCP snapshots showed 0/0 before and 16/16 established at the common
+hold barrier, then the clients held another two seconds. The next frame
+could already have been buffered. No new Task was submitted. Diagnostic
+artifacts sse15-held-dea55b66* and sse15-held-7eb6ab1f*.
+
+The prior staggered run's 14 host_grant_authorization_unavailable errors
+match eight and six DatabaseCapacityExceeded warnings across the two
+APIs. The middleware gate rejects before admission when busy and releases
+at response start. The socket budget has a separate fail-fast read lane
+also used by authorized stream reads. Next distinguish handshake and
+tail socket contention under live cursor traffic before selecting a
+budget or admission change. The 32 established connections do not cover
+the 256-SSE sustained E1 target or reconnect storm.
+
+CA-HA-03 Native15 live SSE diagnostic: one explicit execute=false synthetic
+Task 3fd93e6e-52ce-4fc6-955c-5528573883de stayed ready. With fresh grants
+and one handshake in flight per API, 32/32 streams opened and each received
+a server keepalive. At the common barrier TCP counts rose from 1/0 to
+17/16, consistent with 16 added connections per API. This avoids treating
+buffered terminal replay frames as live stream evidence. Private evidence
+sse15-live-held-446145d4* and live-sse15-be46a9b4*/0.json.
+Code trace: stream tail _read_until routes through the middleware's read
+lane via the ambient async dispatcher. Host authorization uses the same
+lane. Both the executor and native socket permit fail fast. This run
+paced handshakes and used an idle active Task, so it does not measure
+contention after a shared event wake. Next publish one new authorized
+event while the cohort is held and count event/cursor deliveries and
+capacity errors before selecting an admission change.
+
+CA-HA-03 Native15 SSE event-wake attempt: established all 32 observers on
+the ready synthetic Task 3fd93e6e-52ce-4fc6-955c-5528573883de, then sent one
+authenticated /tasks/{id}/resume with a persisted operation key. HTTP 503
+model_gateway_unavailable reported missing execution input tasks/namespace.
+Read-only PostgreSQL reconciliation found status ready, only the three
+bootstrap events and zero model reservations. The original is preserved.
+Source trace: task_routes -> task_api.mutate_task calls app.resume_session
+(the local synchronous executor), whereas the Cloud /sessions/{id}/resume
+route calls submit_command. The planned event wake could not be measured.
+Next align the Cloud Task alias to the durable command route, checking
+suspend and failed Task rollover behavior, and verify with a fresh intent.
+Private receipt: sse15-live-resume-original.json.
+
+CA-HA-03 Cloud Task routing candidate: resume and suspend resolve the
+active Segment and submit a durable command with the caller's original
+idempotency key and explicit expected_revision. Session and Task routes
+share the parser. Cloud Task actions no longer invoke local failed-Task
+rollover; canonical command policy determines whether the current state
+permits the action. Local rollover and force-stop dispatch are unchanged.
+Focused Task route and local Turn lifecycle suite: 11 passed; Ruff and
+diff check passed. Next add the three API modules to the isolated delta
+image, then exercise a fresh Task against real PostgreSQL with SSE held.
+
+CA-HA-03 Native16 isolated cutover: source 02461e27, image
+sha256:47ff0495344bbb1ceb2abc482a1be510f5ebd1fe1ccdf6223d9bec528b7229b6.
+Verified 2142 files and 3 links, both readiness and wire checks, existing
+record hashes equal. Orb returned empty full inspect output twice; resumed
+from recorded IDs with compact inspect and proved all six old processes and
+connections stopped before starting the candidate. Trust 16 and definition
+14112e51-edb2-4aee-91ec-8746fb231cbb published.
+
+Fresh Task cd5e81ee-2d1d-49ff-9d4f-8a4b74e39141 held 32 observers (16 per
+node above baseline). One Task resume POST returned 202, one canonical
+acceptance event and one pending command. Read-only evidence still shows
+ready and no model reservation; preserve and diagnose that command.
+All 32 SSE clients saw RemoteProtocolError after the wake. API traces show
+DatabaseCapacityExceeded in the stream source-head read via _read_until.
+Next address safe bounded read contention and independently trace pending
+resume delivery. Private artifacts: sse16-live-resume-original.json,
+sse16-live-event-4b701583*, route16-wake-*.log.
+
+CA-HA-03 SSE capacity candidate: shared observation read retries explicit
+DatabaseCapacityExceeded with jitter up to the existing absolute deadline.
+The same callable and cursor arguments are retried. The handler does not
+change HTTP command admission, grant checks or read quotas. Focused stream
+tests: 10 passed; Ruff/diff checks passed. Native16 still live. Next package
+the shared tail module and rerun the held-cohort wake, retaining the original
+pending resume for separate read-only command pickup diagnosis.
+
+CA-HA-03 Native17 SSE candidate source 46e9a9e0 frozen as ARM manifest
+sha256:d2066fa929fc721ac2e8b2aa77019536185301f0e26b6e935c8aaf89fde868ae.
+Verified 2142 files and three links; only the shared tail reader changed.
+The Native16 resume is still pending, live origin, generation 1, with
+no recovery code or scoped broker rollout. The all-service cutover guard
+requires no pending commands. For the next SSE wake test, use the verified
+tail module as an API-only isolated overlay, keeping the Worker processes
+running while independently tracing the original fallback pickup.
+
+CA-HA-03 Native17 API-only overlay wake drill: first overlay path failed
+the source hash check due to zsh modifier expansion. After correcting
+the path, an initial cohort hit node2 startup 502s and sent zero commands.
+Added direct per-node readiness gating. The next cohort held 32 streams
+(16 added TCP connections per node) and submitted one Task resume for
+3791b2c3-1e68-4b88-9cb3-ceb3f7379601. It returned 202. Eleven observers
+received exactly acceptance cursor 3; 21 saw RemoteProtocolError. Saved
+API traces show CheckpointNotReady (observation header behind canonical
+source) during source-head reads, with no capacity exception in those
+captured traces. Restore completed and both direct readiness checks passed.
+Next handle lag at the raw tail source-head boundary within the current
+deadline. Preserve AG-UI's separate checkpoint handling and any existing
+pending commands. Evidence: sse17-live-event-7fa1856a*, wake-tail17-*.log,
+sse17-live-resume-original.json.
+
+CA-HA-03 raw SSE candidate retries CheckpointNotReady only around Task
+and Session source-head reads, under the existing absolute deadline.
+The read index must catch up before any cursor advances. AG-UI checkpoint
+classification and conflicts retain their existing handling. Focused tests
+12 passed, 10 native environment skips; Ruff/diff checks passed. Next use
+the two-file API overlay on both isolated nodes for a fresh live wake.
+
+CA-HA-03 two-module overlay wake drill passed: verified source hashes
+on both Native16 API processes, used 32 authorized raw Task SSE clients
+with 16 added established TCP sockets per node, and posted one fresh
+resume for 081774a6-397e-4770-be07-c1a5662cb061. HTTP 202 and the canonical
+acceptance at sequence 3 matched all 32 delivered cursor IDs with zero
+client errors. The command remains pending; this tests event delivery
+through an active tail, not Worker execution or 256-stream capacity.
+Restored both APIs and checked direct readiness. Private evidence:
+sse18-live-event-f0ffc9df*, sse18-live-resume-original.json, wake-tail18-*.
+Next trace fallback pickup on these accepted commands without resending.
+
+CA-HA-03 pending resume diagnosis: both original SSE-wake resume commands
+have accepted handoff receipts and released leases, with no handled Event.
+The Worker did pick them up. Worker traces show RetryableWorkerSetupError
+from recover_execution_progress before executor startup. PostgreSQL
+comparison in the test namespace found all 10 resume commands lack a
+payload run_id while all 332 run commands have one. The two fresh Tasks
+have only bootstrap and resume acceptance and therefore no canonical Run
+anchor. The Worker deliberately refuses to invent one in recovery.
+Next validate the first-run contract at admission: explicit run for an
+unstarted Task and defined identity semantics for public resume of an
+existing Run. Verify internal continuation receipts separately before
+changing shared command parsing. Preserve the two original receipts.
+
+CA-HA-03 Cloud admission candidate rejects new public Run/Resume commands
+with missing or blank run_id after duplicate/revision classification and
+before append. Existing receipts remain readable and internal Harness
+continuations retain their existing identity rules. This validates the
+required identifier shape, not every resumability condition. 25 focused
+tests passed after fixing the test proxy to supply its Session store.
+Next verify fresh first-run and explicit resume with the isolated API and
+leave original pending receipts available for read-only reconciliation.
+
+CA-HA-03 Native16 three-module isolated API overlay: fresh Task
+1eae4323-5c1f-49c3-8d03-b4f054ac8c9a, 32 authorized observers, 16 added
+TCP sockets per node. Missing run_id request returned 400. A distinct
+explicit Run identity resume returned 202 and completed. PostgreSQL
+shows exactly one accepted command, answer, completion and settled model
+reservation; command done. This is first execution from READY via explicit
+resume, not restoration of a previously interrupted Run. Twenty clients
+observed terminal cursor 13. Twelve have no terminal frame in the bounded
+capture. The harness did not distinguish EOF from cancellation at 15s.
+The temporary APIs were restored. Next measure full per-client frame and
+termination timing, then verify resume of an existing interrupted Run.
+Private artifacts sse19-missing-run.json, sse19-live-resume-original.json,
+sse19-live-event-b5935eef*.
+
+CA-HA-03 instrumented SSE terminal delivery: initial cohort established
+32 streams but skipped the POST because one unrelated proxy TCP socket
+closed between snapshots. Adjusted the gate to require all 32 clients
+read a frame plus at least 16 server sockets on each API. The second
+cohort submitted one fresh explicit resume for
+1c818a9c-25cd-43d3-bfc1-383bcdda7837 (202). Twenty-six observers got
+terminal cursor 13; six timed out after 20 seconds of no bytes, having
+read only bootstrap cursors 0–2. All six timeouts were client read
+timeouts, not harness cancellation or EOF. Captured API tails show no
+capacity or checkpoint errors. The observer has a 30-second durable
+reconciliation interval when no hint advances; the 20-second client
+read timeout prevented this run from measuring that fallback. Next
+instrument Redis cursor/barrier and HTTP heartbeat timing and observe
+past the fallback deadline. Both temporary APIs restored.
+Private evidence: sse20-live-event-304d21c8*, sse20-live-resume-original.json.
+
+CA-HA-03 extended SSE capture: fresh Task fd88b19e-69c5-4e5c-a3f4-aa3730813997
+received one resume 202 while 32 observers held. All 32 received every
+cursor 0–8 in order then clean EOF. The harness expected session_completed,
+but cursor 8 was session_suspended, so its completion counter is zero.
+Redis frontier hints reached 2,3,4,5,7,8. Clients recorded zero or one
+heartbeat and no timeout. This shows complete suspended-state delivery;
+the earlier missing completion frames still need attribution. The Task
+suspended after model_request_started on execution_storage_contention /
+LockNotAvailable; one model reservation has no settlement receipt.
+Preserve it for original-only reconciliation. The first runner edit had
+an indentation error before any service change and was corrected. APIs
+restored. Private evidence sse21-live-event-6564659b* and
+sse21-live-resume-original.json.
+
+CA-HA-03 original fd88b19e model reconciliation: canonical events show
+model_request_started at 06:04:56.615Z and suspension at 06:04:58.710Z.
+PostgreSQL reported a worker_leases SELECT FOR SHARE tuple lock timeout
+at 06:04:58.285Z. The same lock protects multiple fenced reads, so timing
+alone cannot identify the exact callback or holder. The synthetic model
+container has no request log in that window, and the original reservation
+has no receipt or model response Event. The request-start Event is written
+before provider completion and is insufficient to infer its outcome.
+Retain the unknown reservation and original command. Next instrument
+a fresh synthetic request with correlated pre-dispatch/provider receipt
+and lock-holder evidence to distinguish fencing before dispatch from
+receipt settlement after dispatch. Private evidence sse21-original-*.
+
+CA-HA-03 guarded model transport phase regression: injected
+LockNotAvailable into the fenced check after reservation and before the
+wire, then separately into the check immediately after a synthetic
+provider response. Both cases leave one reservation and no settlement;
+wire calls are zero and one respectively. The shared transport does not
+repeat the wire request within either invocation. This isolates why the
+original database state cannot establish dispatch. 21 transport tests and
+Ruff passed. Next use phase-specific correlation in the isolated live
+fixture before attributing the original lock to either check.
+
+CA-HA-03 live model phase baseline: temporary isolated Worker instrumentation
+emits digest prefixes and phase labels for a synthetic prompt marker only.
+Fresh Task 5362cd0b-1e41-45ce-8d54-89fa40dee72a shows one complete trace
+from reservation through wire response and settlement. Correlated digest
+4215ceb1dcfafd20 with the original settled row. The earlier unknown Task
+remains suspended with its unsettled reservation. Both overlays restored
+and clean imports verified. This baseline had no lock fault; next inject
+a bounded lease row lock between wire return and the fenced read to
+verify the live failure boundary. Private evidence model-phase-zebra*.log.
+
+CA-HA-03 real post-wire lock drill: fresh Task
+79b8ef05-a4da-416e-a81e-3703f56c37f9 received the synthetic provider response
+once for digest c5bc675dfd011c24. A separate PostgreSQL transaction then
+held that Task's lease row, inducing LockNotAvailable in the subsequent
+fenced read before settlement. The task suspended with one unsettled
+reservation. Both overlays restored and imports verified. This proves
+the post-response mechanism can yield the earlier ambiguous state without
+attributing the earlier original to this phase. Next introduce one fresh
+transaction retry for the side-effect-free fenced budget check and verify
+under the same injection with the holder released after the first timeout.
+Private evidence model-postwire-zebra*.log and model-postwire-736-*/0.json.
+
+CA-HA-03 budget check candidate: PostgreSQL check retries once in a new
+transaction only on LockNotAvailable. Both attempts revalidate the exact
+binding, lease fence, STOP and absolute deadline. Reservation, settlement
+and model transport are outside the retry. Tests verify transaction exit
+before retry, repeated timeout and revoked-fence propagation. Focused
+31 passed, 3 skipped, Ruff/diff clean. Next use the isolated post-wire
+lock fixture to release the holder after the first check times out and
+verify one provider response, one settled receipt and completion.
+
+CA-HA-03 real post-wire retry green: fresh Task
+dc721ac9-4bbe-4b22-8b52-ca49f18fe3c4 received one synthetic response. A
+separate connection held the lease row through the first 500ms lock
+timeout; the fixture released it as the first phase unwound. The unchanged
+candidate check opened its second transaction, validated the same binding
+and settled digest 0f9c0581317c5fa1. PostgreSQL confirmed one reservation,
+response Event, answer, and completion. Both temporary Worker overlays
+restored and clean imports verified. This covers a lock that clears before
+the second check. Next freeze a combined candidate of the validated
+API/Worker modules and run the capacity and failure gates.
+
+CA-HA-03 Native18 combined candidate source
+e4b1359c26ffeeb44f23f84d43db191e71e4ada9 and ARM platform manifest
+sha256:82a65a7fa48fca6e1db61393fc2b6105159667d66ba1c0e66ce7e1d35b8c0f65.
+Verified 2142 files, 3 symlinks and same digest on both nodes. The
+remaining malformed resume had exhausted automatic recovery before
+cutover; pre-switch scan found zero pending and no active lease.
+Cold switch verified six old apps stopped, no overlapping connections,
+existing record hashes unchanged, readiness and TLS/SSE on both nodes.
+Trust revision 17, definition 9ea722ce-b54b-4bba-bd20-94f76c0c622f.
+
+Native18 guarded 5 Hz run 2aabaf07-8a61-4a42-b993-cb3f3cb8e3cb
+issued 32 once and all completed with 32 settled model reservations,
+zero unknown admissions, no tools or OCI. Admission max 2.4783s.
+The 32 active reservation guard stopped issuance, so sustained 5 Hz
+is open. The runner substituted only the short source prefix in its
+runtime label; the authoritative build, cutover and publication records
+give the full SHA above. Preserve original sample file. Next combine
+the live stream workload with the bounded admission run and exercise
+isolated API failover with reconnect evidence.
+
+CA-HA-03 Native18 isolated single API outage: captured cursor 0 and its
+next frame from completed synthetic Task 980c7cd0-c6ce-413d-91b4-5b212604dd42.
+Stopped only the verified isolated primary API, confirmed PID 0 and direct
+502, then issued a newly authorized read with after_sequence=0 to the
+surviving API. It returned exactly the reference frame at cursor 1 in
+0.687s from the stopped-state probe (includes the failed-node probe).
+Restored the exact stopped container and verified both readiness endpoints.
+This used direct node URLs and a single historical read, with no mutation.
+Load-balancer recovery, in-flight write receipts, 256 observers and the
+contract's ten-probe RTO gate remain open. Evidence api-failover-combined18.json.
+
+CA-HA-03 Native18 isolated LB outage: baseline round robin had 8 HTTP 502s
+alternating with 8 exact reads during one API stop. Added active readiness
+checks at 1s with 750ms timeout, without configuring proxy retries.
+Validated with the running Caddy binary and applied to the isolated
+control proxy only. On the next stop the first cursor read returned in
+0.545s and the tenth consecutive exact cursor read in 9.508s after
+confirmed stop. Both APIs restored and ready. This is a single historical
+data path through the LB; write receipts, other read paths and independent
+failure domains remain open. Private baseline and after evidence:
+lb-failover-combined18.json and lb-health-failover-combined18.json.
+
+CA-HA-03 Native18 unobserved create response drill: sent one isolated POST
+through the LB, waited for its committed session.create receipt, and closed
+the client socket without reading the HTTP response. The script assumed
+the inner receipt contained task_id, so its first cross-node GET used an
+invalid ID and returned 400. Corrected read-only reconciliation by original
+key found the unique 201 receipt with session_id
+0958a039-06cd-4975-810f-9e69a47b1b69. PostgreSQL confirms one accepted
+command, one model reservation with settlement, one answer and one
+completion. No repeat POST. This reproduces client-side non-observation
+after COMMIT. It does not prove network loss timing or authorized public
+GET receipt recovery. Next check the public receipt surface and persist
+the exchange binding coordinates before sending the next fresh intent.
+Private evidence lost-create-combined18.json.
+
+CA-HA-03 creation receipt candidate adds GET /tasks/create-receipt with
+the original Idempotency-Key. It derives the same scoped storage key
+as creation, checks current verified Host scope, resolves the immutable
+receipt's session_id and checks exact Task authority before returning a
+minimal accepted identity. A miss returns not_observed and says nothing
+about whether an in-flight original can commit. Focused route suite:
+15 passed and Ruff/diff clean. Next validate real Host grant authorization
+and cross-node lookup after client response loss on the isolated pair.
+
+CA-HA-03 authorized cross-node create receipt green on the Native18 API
+overlay. One fresh POST via the LB, client socket closed without reading
+the response after the original 201 was durable. A fresh grant for the
+same binding and the original Idempotency-Key yielded HTTP 200 from the
+other node at GET /tasks/create-receipt. The URL and request contained
+no Task ID. Returned identity 2151b381-6f53-4d71-a896-4e1b311b7d2b matched
+the original receipt. PostgreSQL confirmed one command, one completion
+and one settled model reservation. Restored both APIs and verified
+readiness. Private evidence lost-create-public18.json. Next run a
+pre-COMMIT loss injection and cross-principal negative check.
+
+CA-HA-03 live receipt authorization check: on the isolated node2 overlay,
+the original principal resolved its committed receipt. A different fixture
+principal using the exact same key and binding coordinates received the
+same not_observed body as an absent key under the original principal.
+No Task ID was disclosed in either negative response. The overlay was
+restored. Private evidence receipt-cross-principal18.json. Next inject
+rollback after PostgresTaskAdmissionTransaction.admit_in_transaction
+returns but before its outer context commits, then query the fresh key
+through the other node and reconcile zero admission effects.
+
+CA-HA-03 Native18 pre-COMMIT drill passed for synthetic Session
+709e4d10-00fb-441c-b329-ad9bab4de0f2. One POST reached the isolated API
+with a temporary marker-scoped fault after admission SQL returned inside
+the open transaction. The fault raised to force rollback. The client
+closed without reading the response. Original key lookup on the other
+API returned not_observed. PostgreSQL independently verified no original
+receipt, Session events/projection, Task, pending command or model
+reservation. Both APIs restored and ready. This is transaction rollback
+injection, not abrupt process death. Evidence precommit-create18.json.
+Next freeze the receipt modules into the E1 image and verify the LB
+read path and write receipt together during the one-API outage.
+
+CA-HA-03 Native19 source 9378c646, ARM manifest
+sha256:4024bcb3a81bc46020eb3ebdd82534fceba0d8a237765d801e3ea48dd19b9ed1.
+Verified 2142 files/3 links, cold no overlap, existing evidence hashes,
+both readiness and TLS/SSE. Published definition
+5c3646db-4fd0-4efb-9dfa-be86e99742a1 at trust revision 18.
+During one API stop, the LB first returned 502, then 10 consecutive
+read groups each returned the exact prior SSE next frame and original
+create receipt. Tenth group finished at 10.771s from confirmed stop.
+Both APIs restored and ready. Private evidence lb-receipt19-combined.json.
+The read drill uses one prior stream and one prior receipt. Independent
+write availability during outage and E1 workload gates remain open.
+
+CA-HA-03 Native19 one-API-out write drill: verified primary API stopped,
+then issued one fresh POST through the LB. Its 201 receipt committed,
+and a fresh authorized GET through the LB recovered Task
+29699b28-9109-4c21-bf47-5785c5f68c94. Exactly one accepted command.
+The completion assertion failed because the Worker suspended before
+any model reservation. Node2 child traceback locates LockNotAvailable
+at execution_inputs.advance -> lock_session_lease_boundary during
+context materialization refresh, after attempt start. Executor start
+and exit receipts are present. Restored both APIs and checked readiness.
+Preserve original. Next reproduce and retry only the failed fenced
+input page transaction, not the started attempt. Private evidence
+outage-write19.json and outage-write19-zebra*.log.
+
+CA-HA-03 input page candidate retries one LockNotAvailable on the same
+page within the original two-second slice. The first transaction exits
+before the retry, which checks ownership and repeats the storage fence,
+canonical page and frontier CAS. Existing stale-page recovery still
+applies. Focused tests 28 passed, 8 native skips. Corrected the first
+test's injected-call count to exclude ownership callbacks. Next inject a
+real advisory lock at the pre-model context refresh under API outage.
+
+CA-HA-03 Native19 outage write green with the input candidate overlay:
+new Task aefe136b-cdea-4993-a009-108dbbfdf0b2 was created once via the LB
+with the primary API stopped. Original receipt GET 200 and database
+completion, one accepted command and one settled model all verified
+before primary restart at 7.486s. The intended advisory lock injection
+did not emit its marker. This validates the one-API write path in this
+sample, but does not validate the input retry under a real held lock.
+Both API readiness probes passed and temporary Worker overlay restored.
+Next bind the fault to the exact input advance call under test and
+require marker evidence. Private artifacts outage-input-lock19.json
+and input-lock-zebra*.log.
+
+CA-HA-03 Native19 real input retry during API outage: Task
+72c147f8-2ef0-4a12-af66-77003f413e99 crossed the first input page boundary
+under a separately held PostgreSQL advisory lock. Captured exactly one
+LockNotAvailable marker for the exact Session, released holder on unwind,
+then the candidate completed. One POST, one committed creation receipt
+recovered through the LB, one accepted command and one settled model;
+completion verified while primary API was still stopped, after 7.049s.
+This drill targets the first page, using the same shared retry as refresh.
+Shell assertion used rg -h in error; corrected read of the retained log
+confirmed the marker. Both APIs ready and Worker overlays removed.
+Evidence outage-input-lock-exact19.json and input-lock-exact-zebra*.log.
+
+CA-HA-03 Native20 source 2c566457, ARM manifest
+sha256:0afea4da8d4ea83c00d8ce900df790aa5fb4eb8cd3db56913a60da9a1abf5165.
+Verified 2142 files, 3 links, two-node cold hash preservation, readiness
+and TLS/SSE. Trust 19, published definition cf241811-f519-4a2b-82fc-52362d0e6d1f.
+Combined diagnostic held 32 SSE observers of one idle ready Task
+(16 TCP additions each) and offered new tasks at 5 Hz. 31 accepted once,
+30 completed, 30 model receipts settled, one pre-model executor
+interruption eb9acb11-3eea-46e7-a763-c452fa81c41f, no unknown POSTs.
+Max admission 3.1957s. The 31 reservation guard left one place for
+the observed ready Task. All 32 observers received keepalives without
+client errors. Runner initially shadowed its Task ID variable and
+failed before writes; corrected and retained barrier evidence.
+Next read the exact child traceback and run live multi-Task observation.
+Evidence preflight5-input20-d047879b* and input20-with-sse-647293b6*.
+
+CA-HA-03 Native20 interrupted cohort original
+eb9acb11-3eea-46e7-a763-c452fa81c41f: correlated exact Session ID in
+Worker logs. Child failed at continuation_recorder while appending
+HARNESS_ATTEMPT_STARTED: commit_worker_event -> append_event_in_transaction
+-> _advance_stream UPDATE raised LockNotAvailable at 07:41:21.589Z.
+Executor exit ACK at 07:41:22.009Z, suspension at 07:41:23.710Z.
+No model reservation. This is a canonical append fault, distinct from
+input-page and startup faults already exercised. Preserve the original.
+Next reproduce the exact UPDATE contention and handle explicit statement
+rollback separately from ambiguous COMMIT, which retains read confirmation.
+Private evidence input20-interrupted-zebra*.log.
+
+CA-HA-03 canonical event candidate: shared Worker commit wrapper retries
+one exact event write after PostgreSQL LockNotAvailable and write-context
+exit, provided no outer work unit owns the transaction. The repeated
+write revalidates the original fence and revision. TimeoutError on
+either attempt still uses the existing read confirmation and never
+reissues an uncertain write. Focused 2 passed, 19 native DSN skips and
+Ruff clean. Next inject a real stream row lock against the first
+HARNESS_ATTEMPT_STARTED append on the isolated candidate.
+
+CA-HA-03 Native20 real canonical append lock drill: synthetic Task
+eb06be80-be13-4150-b35b-5ec96460239c. A separate PostgreSQL connection
+locked the stream row at the first HARNESS_ATTEMPT_STARTED append.
+The actual LockNotAvailable marker identified event
+e2210a67-ad10-4bff-b7f3-33f1ae887eeb. Holder released on unwind and
+the candidate persisted that exact event once. One completion and
+one settled model reservation confirmed. Both temporary Worker
+overlays removed and clean imports verified. Evidence canonical-lock-
+zebra*.log and canonical-lock-781-*/0.json.
+
+CA-HA-03 Native21 source 62bb72e7 and ARM manifest
+sha256:7119fc124856a8924b7fbd333af05855eeddbea6040a1bcd5f54520328bc8a44.
+Both nodes verified 2142 runtime files/3 links, cold record hashes,
+readiness and TLS/SSE. Trust 20 and definition
+66bd2d77-cf52-47a3-81cf-37a7b3badf95 published.
+Repeat mixed diagnostic held 32 idle Task SSE clients, all received
+heartbeats, no client errors. 20 tasks accepted once and completed,
+20 model reservations settled, no unknown POSTs. The generator hit 16
+in-flight at 5 Hz before the active reservation cap. Maximum admission
+3.8818s. This sample eliminated the earlier suspension but is not an
+E1 capacity pass. Next attribute API preflight and Worker throughput
+with per-component measurements and test multi-Task live cursors.
+Evidence preflight5-commit21-39a54ca8* and commit21-with-sse-86a617ac*.
+
+CA-HA-03 Native21 mixed admission attribution: matched all 20 original
+POST timestamps and durations to canonical bootstrap and accepted
+command events by Task ID. Median POST-to-bootstrap 1.1252s, bootstrap
+to-command 1.0371s, command-to-response 0.5629s, end-to-end 2.6827s.
+Max 3.8818s. These are cross-clock stage estimates from event construction
+timestamps, not commit timings. The load generator measures POST after
+grant exchange, so exchange latency is outside these numbers. Source
+shows generic execute=true commits bootstrap before queue_cloud_run;
+the existing native atomic Task+Run path provides a comparison candidate.
+Next measure exact authorization, admission transaction and post-commit
+response timings or compare the signed atomic path before changing
+the generic path. Evidence split-admission21.json.
+
+CA-HA-03 Native21 atomic admission comparison: one calibration plus
+three alternating pairs through the isolated LB. Exact signed Run
+authority, atomic-task-run/1 encrypted receipts decrypted to 201.
+Generic POST timings 0.552/1.254/1.066s, atomic 0.620/1.316/1.057s.
+Medians 1.066/1.057s, exchange excluded. All seven originals completed
+with one settled model reservation each. Small serial samples overlap
+and provide no reliable latency advantage. Keep both paths and measure
+stage timings under controlled load before changing generic admission.
+Private receipts atomic-run21-*.json and generic-run21-*.json.
+
+CA-HA-03 Native21 concurrent admission comparison used four generator
+slots, alternating 4 generic and 4 signed atomic intents through the LB.
+All eight accepted once, completed and had one settled model each.
+POST medians generic 0.890s, atomic 0.793s; grant exchange 0.022/0.027s.
+Canonical bootstrap-to-command event timestamp medians 0.373/0.016s.
+This isolates the smaller internal gap of the atomic path but the
+four-sample end-to-end difference is insufficient for a capacity claim.
+Evidence concurrent-admission21.json and concurrent-admission21-facts.json.
+Next sample actual preflight and transaction time at target mixed load.
+
+CA-HA-03 Native21 API stage attribution under 32 idle SSE observers and
+guarded 5Hz. Temporary marker-scoped API logging, 31 paired requests:
+authorization median/max 265/484ms, create_queued_session 417/904ms,
+queue_cloud_run 388/788ms, receipt update 14/386ms, POST 1596/2778ms.
+Queue stages include SQL and app work and are not pure COMMIT measures.
+All 31 accepted once, completed and settled; all 32 observers got a
+heartbeat. Guard stopped at 31 reservations. Restored both APIs and
+verified readiness. Private evidence stage785-summary.json,
+preflight5-stage785-533dd486*, stage785-with-sse-79cdb7c9*.
+Next compare atomic versus generic at identical open-loop load and
+observe active Task streams with per-client cursor accounting.
+
+CA-HA-03 Native21 signed atomic 5Hz diagnostic with 32 idle SSE observers
+stopped after 10 original POSTs when two HTTP 500s and one 503 made
+outcomes unknown to the client. Seven immediate accepted originals
+completed and settled. Read-only GET using original keys recovered
+the 503's sealed 201, then verified completion/settlement. The other
+two GETs remain unknown with claim recorded and no result. No repeat
+POST. API traces locate both 500s at command_wakeup.py's advisory
+lock inside the atomic Task+Run write. The atomic path failed this
+load comparison despite the small serial advantage. All 32 observers
+received heartbeats. Next reproduce lock contention around atomic
+admission and preserve original-only reconciliation semantics.
+Private evidence preflight5-atomic21-685ca250*, atomic21-original-*,
+atomic21-recovered-outcome.json, atomic21-errors-zebra*.log.
+
+CA-HA-03 atomic admission lock reproduced by holding the isolated namespace
+command-global advisory key while issuing one fresh signed atomic POST
+2ea05f9c-405b-43f4-b4ca-a956cb78bb94. The API traceback shows
+LockNotAvailable at the exact command_wakeup lock. The diagnostic
+expected JSON on errors and could not parse the plain-text 500. It also
+did not persist the random recovery key, so this new original is retained
+without public replay or recovery. The lock holder exited normally.
+Candidate maps explicit PostgreSQL lock timeout to the existing structured
+503 unknown result, preserving original operation identity. 29 tests
+passed. This handles classification, not contention or throughput.
+Next retain recovery keys before POST and validate the response on real
+PG, then address the global lock hold time.
+
+CA-HA-03 atomic lock response live validation: held the exact isolated
+command-global key for one fresh signed POST
+fe2470d1-dbfd-41d2-9343-99519c875a00. Saved the recovery key before
+dispatch. The API overlay returned structured 503 unknown with
+the exact operation ID. Original-only GET observation returned
+claim_recorded=true, result_recorded=false, retry_allowed=false.
+The holder exited and both APIs were restored and ready. No repeat
+POST. Evidence atomic-global-correlation788.json and
+atomic788-original-observation.json. Next reduce lock hold cost or
+test a bounded same-request transaction retry against concurrent
+termination and original-receipt invariants.
+
+CA-HA-03 atomic first-Run candidate retries one rolled-back
+LockNotAvailable transaction inside the same signed request and existing
+deadline. It reuses the prepared admission and original operation fence;
+a durable stop prevents the second dispatch. Other protocols and
+ambiguous timeout handling keep their existing rules. 31 focused tests
+passed, including termination between attempts. Next run real advisory
+lock injection with release after the first rollback and verify one
+sealed receipt and one model settlement.
+
+CA-HA-03 atomic first-Run real lock retry green. One signed POST
+8551f345-bd05-406d-a2ea-70477c96f4da under the isolated two-module
+overlay. Separate connection held the exact global command advisory key,
+first transaction returned LockNotAvailable and rolled back. The holder
+exited before the candidate retried within the original deadline.
+HTTP 200 with sealed 201 for Task 47815dc6-38eb-4d65-b812-09f3ce8c2e5a
+in 0.537s. PostgreSQL confirmed one Task, command, completion and settled
+model reservation. Both APIs restored and ready. This proves release
+between attempts, not sustained throughput. Evidence atomic-retry790-*.
+
+CA-HA-03 Native22 source 0881e747 and ARM manifest
+sha256:e1d306db4d3bb5cd5f53390c0757f2cf04247dbb10b5286d744bf10419f85624.
+Both nodes verified 2142 files/3 links, cold record hashes, readiness
+and TLS/SSE. Trust 21 and definition 09e70b9f-80c9-45a6-8224-282ee283f30c.
+Signed atomic mixed 5Hz diagnostic stopped at 17 offers: 10 accepted
+and completed with one settled model each; seven 503 unknowns. All
+seven original GETs still unknown and no repeat POST. All 32 idle
+SSE clients received heartbeats. Max successful POST 1.9767s.
+The single-lock retry is insufficient at mixed load. Next measure
+global lock holders and the SQL budget consumption without replaying
+originals. Private evidence preflight5-atomic22-e8170374*,
+atomic22-with-sse-4544de88* and atomic22-original-receipts.json.
+
+CA-HA-03 Native22 exact advisory-key sampling under mixed 5Hz: 15 POSTs,
+five completed with settled models, ten 503 unknowns. Original-only GETs
+remain unknown. All 32 idle observers received heartbeats. The sampler
+matched both halves of the namespace command-global key in pg_locks.
+18 granted observations, none waiting at sample times. One holder was
+visible over a 400ms span; oldest sampled transaction age 1.30s
+(age is not lock duration). While held, samples include pending/outbox
+checks, session_events and agent_tasks updates, claim read and COMMIT.
+Source confirms atomic bootstrap rebuilds the Task again after it takes
+the global lock, then seals the result before COMMIT. Next test moving
+the wakeup recording after post-append Task projection inside the same
+transaction. Preserve global admission caps and same-transaction
+event/pending/outbox/receipt invariants. Evidence global-lock792.jsonl,
+preflight5-lock792-37be19f5*, lock792-original-receipts.json.
+
+CA-HA-03 atomic Task admission candidate defers only newly appended
+initial-command wakeups until after the Task index and artifact writes.
+The command Event, pending row, outbox and receipt still share the
+original transaction and capacity locks. Ordinary appends and existing
+idempotent Event handling retain their previous order. Added native
+rollback coverage around the deferred wakeup. Focused 31 passed and
+3 native skips, Ruff clean. Next run the PostgreSQL regression and a
+fresh isolated mixed load comparison before claiming a latency gain.
+
+CA-HA-03 native rollback and commit confirmation validated on a disposable
+local PostgreSQL 17 container and unique test schemas. First run exposed
+a wrong assertion in the new test: bootstrap indexing can use the legacy
+position path, so task_sequence need not be populated there. Corrected
+the test to observe both real rebuilds before wakeup and assert no
+durable Task, event, pending row or outbox after injected rejection.
+22 native tests passed on rerun; both disposable containers stopped.
+Next package the two storage modules and compare Native22 lock sampling.
+
+CA-HA-03 Native23 source 61154d3f, ARM manifest
+sha256:8529b5ce05a5961a19775293f66a315df0249258be4d4da41ee982d52b718a9d.
+Cold cutover hashes and both node readiness/wire checks passed.
+Trust revision 22, definition 7021f7fa-8a15-4852-a033-1f75f40b0c03.
+Mixed 5Hz: 15 POSTs, eight immediate accepted/completed, one more
+sealed 201 recovered via original GET, six still unknown. All 32
+idle observers got heartbeats. Longest sampled holder span decreased
+from 400ms to 198ms. Task and Session-event index work disappeared
+from the observed global lock region; pending/outbox, receipt and
+COMMIT remain. Sampling is not a full lock duration measurement.
+Next measure those remaining statements and the durable COMMIT tail.
+Evidence global-lock-defer23.jsonl, preflight5-defer23-8ecac8d2*,
+defer23-original-receipts.json and defer23-recovered-facts.txt.
+
+CA-HA-03 E1 command wakeup follow-up. Fresh pending inserts skip the
+outbox existence probe, which only affects existing pending records.
+The scope capacity count reuses the transaction's scope lock. Global
+capacity still acquires its own lock for recovery callers.
+Ruff and git diff --check passed. Disposable PostgreSQL 17 passed
+118 command wakeup, handoff, recovery and discovery tests.
+Next package the candidate and rerun the paired 5 Hz and 32 SSE
+preflight before increasing load. No new live capacity result yet.
+
+CA-HA-03 Native24 isolated E1. Runtime source 592522dc, ARM manifest
+sha256:35dee172a04aa979a50b9983405d6d61ecd2d9adfd6eb4ea9e65dacb00e5af91.
+Verified 2,142 runtime files and three symlinks. Both logical nodes
+passed ready, worker freshness, and TLS/SSE/meter wire checks. Cold
+cutover verified identical event, budget, model and execution-receipt
+hashes. Node2 required a direct transfer of the verified image.
+Trust revision 23 published definition 35349925-bd9d-4af0-a5c1-3238d0cc8aaa.
+At 5 Hz with 32 idle SSE streams, 18 POSTs were issued before the
+first unknown halted issuance. Nine accepted and completed initially.
+Three of nine unknowns showed completed through the original GET.
+Six remain unknown and were not resent. All 32 streams kept alive.
+Native23 yielded 9 confirmed of 15 with six unresolved, so this
+sample does not establish a sustained-capacity improvement. Native24
+lock sampling was not captured. Next capture admission stage timing
+under the same workload, especially receipt and durable COMMIT.
+Evidence cold-admission24.json, health-admission24.json,
+publication-592522dc.json, preflight5-admission24-15faa1b8*,
+admission24-with-sse-1e0ac69b* and admission24-original-receipts.json.
+
+CA-HA-03 Native24 sampled repeat, 5 Hz with 32 idle SSE. All 32
+streams kept alive. 15 POSTs, eight completed immediately, one
+confirmed completed through the original GET, six remain unknown.
+No resubmissions. Exact command-global sampling saw eight holders,
+one advisory waiter, four COMMIT samples, and longest observed
+holder span 100 ms (Native23 198 ms). This is a sampled lower bound,
+not a measured transaction duration. Admission still reached 2.289 s.
+The prior Native24 run's nine original unknown responses were all
+HTTP 503; the handler maps both TimeoutError and LockNotAvailable to
+that response under a two-second deadline. The remaining bottleneck
+cannot be assigned to COMMIT based on this sampling. Next separate
+those exception types and correlate budget use with transaction phases.
+Evidence global-lock-admission24.jsonl, preflight5-admission24-13ec5076*,
+admission24-sampled-original-receipts.json and admission24-with-sse-252ae730*.
+
+CA-HA-03 admission diagnostics now log mode, exception class, and
+elapsed milliseconds on the existing 503 boundary. The log contains
+no receipt, operation identifier, exception message, or user input.
+The response and two-second deadline are unchanged. Ruff and all
+31 admission API tests passed. Next run the mixed diagnostic with
+this candidate and classify the sampled failures before changing
+timeouts or further optimizing the transaction.
+
+CA-HA-03 Native25 diagnostics deployed only to both isolated logical
+nodes. Source 4c493f4b, ARM manifest
+sha256:662debb52e5712e234c54e361d0487806d116a5f8309a8181ca9d968817f67cd.
+Overlay mount length forced combining the two changed files in one
+layer atop Native23. Full runtime hash verification (2,142 files,
+three symlinks), cold preservation, readiness and wire checks passed.
+Trust revision 24, definition 27bcfeb2-2661-4f3e-afe6-54548963fa97.
+At 5 Hz with 32 SSE, 16 POSTs: ten completed initially, one recovered
+as completed via original GET, five still unknown. All 32 SSE got
+heartbeats. All six unknown submits logged TimeoutError at
+1890–2005ms inside the two-second budget; none logged LockNotAvailable.
+The diagnostic does not identify which stage consumed the budget.
+Evidence preflight5-diagnostic25-1b82ff1d*, diagnostic25-original-receipts.json
+and diagnostic25-with-sse-cf66a509*. Next correlate task I/O deadlines
+with phase and remaining budget before changing the deadline.
+
+CA-HA-03 timeout stage follow-up. The task I/O adapter reserves up
+to 200 ms from the shared deadline for cleanup. The same TimeoutError
+can come from SQL/COMMIT, connection setup, or the outer deadline check
+after the handler returns. The existing warning now records Python
+module/function/line only, enough to distinguish these paths without
+printing locals, SQL or exception values. No deadline behavior changed.
+Ruff, diff check and 31 admission API tests passed. Next capture the
+stage paths in the isolated mixed-load rerun.
+
+CA-HA-03 Native26 source 72c88e68, ARM manifest
+sha256:ceae46fe7aaf11958b22c905438d4db942a56a314d6e0eed04f66ca35176ef7a.
+Both isolated nodes passed cold preservation, readiness and wire checks.
+Trust revision 25, definition 0cf330da-4272-444b-a57e-24a281b23161.
+At 5 Hz and 32 idle SSE, 14 POSTs, nine completed and five unresolved
+after original GET. No resubmissions. All 32 SSE saw heartbeats.
+Five timeout stacks ended in TaskIoConnection.wait: two in bootstrap
+Task index rebuild, one in the second rebuild, and two in wakeup
+binding validation before global advisory lock acquisition. These
+locations identify where the remaining budget ran out, not where
+most of the time was spent. Audit which binding foreign keys require
+the first rebuild and whether fresh inserts can reuse index work
+without losing stable event positions or atomic rollback.
+Evidence preflight5-stage26-21794baf*, stage26-original-receipts.json,
+stage26-zebra*.log and stage26-with-sse-bbbda170*.
+
+CA-HA-03 atomic initial Task admission now rebuilds its event index
+once after appending the initial command. The immutable binding table
+does not depend on the Task row, and native command wakeup is deferred
+until after indexing in the same transaction. Updated the existing
+rollback check to require exactly one rebuild before wakeup. Ten
+isolated PostgreSQL 17 atomic initial Run and Task admission tests,
+Ruff, and diff check passed. Next package and repeat 5 Hz/32 SSE.
+
+CA-HA-03 Native27 source a9773472, ARM manifest
+sha256:8c30252a2a86e2e83e06cdcc652bf937b665765ceb7e246b2975cd78557f8136.
+Both isolated nodes passed cold preservation, readiness and wire checks.
+Trust revision 26, definition b097f9d1-ef1a-46b9-80d4-83b187160030.
+5 Hz/32 idle SSE: 16 POSTs, ten completed, six unresolved after original
+GET; no resubmissions. All 32 SSE received heartbeats. Four timeouts
+ended in event position backfill at line 107 (one on retry), one in
+binding validation and one in the pending scope sequence query. The
+single rebuild did not clear the sustained-capacity gate. Next inspect
+event-position assignment round trips and keep the stable replay order.
+Evidence preflight5-index27-189102b6*, index27-original-receipts.json,
+index27-zebra*.log and index27-with-sse-741907d2*.
+
+CA-HA-03 event-position assignment reuses the validated predecessor
+inside a contiguous source batch. Legacy validation and each batch
+boundary still read the persisted predecessor. Fresh assignment
+requires exactly one updated source row before the next iteration.
+Ruff and diff check passed; 51 focused PostgreSQL 17 tests passed.
+The separate full run remains active in the 100,000-event fixture;
+no full-suite or isolated E1 capacity result is claimed.
+
+CA-HA-03 Native28 source d7d4aba6, ARM manifest
+sha256:30217cd5c1f6fe01a3574843fdb0e6587afcf66ed60dd9f92df51aa56762a4f4.
+2,142 files and three symlinks verified. Both isolated nodes passed
+cold data preservation, readiness, and TLS/SSE/meter checks.
+Trust revision 27 published definition 7286a844-4639-42c3-8520-7a56928b62cf.
+Mixed-load run deferred while the concurrent 100,000-event PostgreSQL
+fixture competes for the same Mac resources. Resume existing session
+73427 before the controlled comparison. No new capacity claim.
+
+CA-HA-03 Native28 full positions/admission PostgreSQL 17 regression
+passed 54 tests, including the 100,000-event fixture, in 655.34 s.
+After that fixture finished, the isolated 5 Hz/32 SSE diagnostic
+issued 16 POSTs. Eleven completed, five remained unknown via the
+original GET, none resent. All 32 SSE received heartbeats.
+Timeout sites were bootstrap insert (1), position source update
+and derived insert (2), subsequent repair (1), and wakeup shadow (1).
+Next inspect synchronous legacy repair on a just-created Task.
+Evidence preflight5-position28-ebc292cd*, position28-original-receipts.json,
+position28-zebra*.log and position28-with-sse-c709ada9*.
+
+CA-HA-03 skip synchronous repair when legacy initialization found
+zero source reservations and zero derived mappings, repair cursors
+were untouched, and the same call finished assigning every position.
+Existing repair and resumed batches keep their validation. Regression
+checks initial Run becomes ready with untouched repair cursors.
+51 focused PostgreSQL 17 tests passed, and all three atomic Run tests
+passed with the new assertion. Scale fixtures were excluded from this
+run. Next package and repeat the isolated mixed workload.
+
+CA-HA-03 Native29 source d27ee354, ARM manifest
+sha256:107d11aed8c82bc63bab33584f248ce762e8d50953d087e4f5709d4bde2cf144.
+Both isolated nodes passed cold preservation, readiness and wire checks.
+Trust revision 28, definition 8a36daa2-8dc9-4e21-aa3a-0e4a338b8cbb.
+5 Hz/32 idle SSE: 12 POSTs, seven initially completed, one confirmed
+completed via original GET and four unresolved, no resubmission.
+All 32 SSE received heartbeats. Four TimeoutErrors and one
+LockNotAvailable; no timeout stack ended in legacy index repair.
+Worker CPU per completed run rose to 7.07 s from 2.72 s; these short
+runs do not establish comparative capacity. Next measure per-stage
+latency and VM scheduling pressure before more admission tuning.
+Evidence preflight5-repair29-bd7be55d*, repair29-original-receipts.json,
+repair29-zebra*.log and repair29-with-sse-d6ff6b5c*.
+
+CA-HA-03 Native29 scheduling sample, same 5 Hz/32 idle SSE. Twenty
+POSTs, eleven directly completed, one completed via original GET,
+eight unresolved and not resent. All 32 streams received heartbeats.
+Guest CPU PSI unavailable. Observed runnable process peaks 20 and 21;
+both API cgroups added zero throttled periods. Worker cgroups added
+30 and 3 periods and 1.084 and 0.055 s aggregate throttle time.
+These counters include the observation window and do not prove host
+CPU starvation or attribute delay to individual operations. Reported
+worker CPU per completed run 4.92 s versus 7.07 s in the prior sample.
+Next compare bounded admission with low-rate and idle control samples
+and attribute latency by request stage rather than adjusting deadlines.
+Evidence preflight5-repair29-e64f4ef4*, repair29-repeat-original-receipts.json,
+repair29-with-sse-f98ce34a*, repair29-sched-* and repair29-pressure-*.
+
+CA-HA-03 Native29 low-rate control. One signed atomic POST/s
+without idle observers: all 12 completed, zero unknown, maximum
+client admission 2.0813 s. Same rate with 32 established idle SSE:
+six issued, five completed and one remained unknown via original GET;
+no resubmission, all 32 heartbeats. This single sequential pair
+does not establish SSE causality. It shows failures can occur with
+only three observed in-flight submissions. Next compare admission
+phase timings with and without SSE over repeated windows.
+Evidence preflight1-idle-repair29-6353db9f*, preflight1-sse-repair29-cd83f38d*,
+repair29-low-sse-original-receipts.json and repair29-low-with-sse-425caa84*.
+
+CA-HA-03 atomic first-Run diagnostics record cumulative milliseconds
+for preparation, durable fence, transaction entry, dispatch, receipt
+write, and successful transaction exit. Separate attempt milestones
+remain visible across the existing lock retry. Logging contains only
+fixed labels and times; request deadline and receipt behavior unchanged.
+Ruff and 31 admission API tests passed. Next run the same isolated
+low-rate pair and mixed load with milestone logging active.
+
+CA-HA-03 Native30 timing source d25e9a40, ARM manifest
+sha256:67639acb6d447df4040619b219e3b1503f083dd1a6d428c07176df862d055f6a.
+Both logical nodes passed cold preservation, readiness and wire checks.
+Trust revision 29, definition f0dbe311-1e8e-4f6c-b4da-7309f6dece1a.
+First two 5 Hz/32 SSE windows lacked a root logging handler;
+15 POSTs/11 confirmed/four unresolved and 19/13/six respectively.
+A scoped INFO logger with a root handler on both isolated APIs
+captured 12/12 timings on the third window: seven direct completions,
+one confirmed via original GET and four unknown. No resubmission.
+32 SSE heartbeats. Seven confirmed transaction exits had 427–909 ms
+in dispatch, and 4–81 ms from receipt to commit exit. Four failed
+dispatches ran 802–1290 ms after entering the transaction. One
+finished receipt write but lost transaction exit observation and
+was recovered from its original receipt. Next break down dispatch
+and compare the low-rate controls with timing enabled.
+Evidence preflight5-timing30-handler-9cf30318*, timing30-handler-zebra*.log,
+timing30-handler-original-receipts.json and timing30-handler-with-sse-1d996a6d*.
+
+CA-HA-03 Native30 timed 1 Hz controls, 12 signed POSTs each.
+Without observers: 11 accepted, ten completed, one suspended, one
+unresolved original. With 32 idle SSE: ten completed, two originals
+unresolved, all 32 heartbeats. No resubmissions. Each window emitted
+12 timing rows. Dispatch median/range: 608 ms/81–728 without observers,
+552 ms/104–1016 with observers. Receipt-to-commit median 10 ms both,
+range 4–90 and 5–92 ms. One sequential pair with host variability
+does not isolate SSE causality. Focus on dispatch and investigate the
+separate accepted-then-suspended outcome before qualification.
+Evidence preflight1-idle-timing30-9b68049e*, preflight1-sse-timing30-68754547*,
+timing30-low-*-zebra*.log, timing30-low-*-original-receipts.json.
+
+CA-HA-03 inspected the sole accepted-then-suspended Native30 1 Hz
+idle control by exact Session identity in a read-only E1 DB transaction.
+Sequence 7 model_request_started, 8 model_response_delta, 9
+model_response_received, 10 session_suspended. Durable reason
+execution_storage_contention; metadata LockNotAvailable, retryable
+false. No canonical terminal answer or completion precedes suspension.
+This is a separate Worker post-model storage fault, not an admission
+timeout or provider failure. No replay or resume was sent.
+Next locate the post-response storage call that raised the lock error,
+then test retry/reconciliation of the exact write without model replay.
+
+CA-HA-03 correlated suspended Session's committed model response
+(09:38:21.647801 UTC) and suspension (09:38:22.036666 UTC) with E1
+PostgreSQL logs. The sole lock timeout in that interval at
+09:38:21.803 UTC was a tuple lock in session_streams on SELECT
+current_version ... FOR SHARE. Logs omit bind values and Worker
+logs had no matching Session entry. Four storage adapters use the
+same SQL shape, so the precise caller and blocking transaction remain
+unproven. Model/tool projection is a candidate to check against the
+actual Worker composition. No task writes or replay performed.
+
+CA-HA-03 native Worker recorder invokes both indexers per Event,
+and cloud composition uses the same PostgreSQL model/tool store for
+both. Both indexers previously forwarded every Event, reacquiring the
+stream share lock twice even for no-op Event kinds. The suspended
+Session already has the exact model projection, consistent with a
+later redundant lock but not proof of its specific call site.
+Worker indexers now dispatch only their own Event kinds, matching
+local behavior; real projection writes retain the existing fence.
+Routing regression and 18 focused Worker tests passed. Next deploy
+in E1 and check canonical/derived parity and suspension frequency.
+
+CA-HA-03 Native31 source 837defbe, ARM manifest
+sha256:d33e150b1091099389b01168db8dbca03b4b89bf5b900add87f29d78baecde5b.
+Both isolated nodes passed cold preservation, readiness and wire.
+Trust revision 30, definition 199a36f2-acfe-4b86-b5ff-5c737c0aa36e.
+5 Hz/32 SSE: 19 POSTs, 14 direct completions, one original GET
+confirmed completed, four unresolved and not resent. All 32 SSE
+heartbeats. Exact SQL join for 14 directly completed runs found 14
+canonical model response events, 14 matching model rows and no extra
+model rows. No admitted run suspended in this sample. Fixture uses
+no tools so live tool projection parity remains untested.
+Evidence preflight5-routing31-72a56b0e*, routing31-original-receipts.json,
+and routing31-with-sse-389b8efc*.
+
+CA-HA-03 Native31 live tool parity. On the isolated deployment,
+submitted one synthetic read-only pwd task and approved the exact
+command once through the normal API. Completed at sequence 31 in
+16.99 s. Read-only SQL matched every model response and the single
+tool completion to exactly one projection, with no extra rows.
+The projected tool was command.run. Evidence guarded-pwd-routing31.json.
+This verifies the real tool path at smoke scope; E1 sustained load
+and cross-physical-host failover are still open.
+
+CA-HA-03 Native31 API failure smoke: stopped only the exact owned API
+container on zebra-gvisor. Shared ingress returned one initial 502;
+by 1.666 s the surviving API returned the exact next SSE frame from
+the original cursor. Ten consecutive exact resumes followed. Restored
+the stopped API and verified both node readiness endpoints.
+Evidence lb-health-failover-routing31.json. This checks one read-only
+API process outage. E1-R still requires 32 active Tasks, 256 observers
+and the full fault matrix; both logical nodes share one Mac.
+
+CA-HA-03 physical test node preflight on ubuntu@192.168.101.7:
+x86_64, 16 logical CPUs, 22,534 MiB available memory, 48 GiB free
+on Docker filesystem. Exact E1 API/Worker exited, node TLS alive.
+All six test tunnel ports have loopback listeners; end-to-end TLS
+and latency remain to be verified. Built isolated native AMD64
+837defbe from the existing verified AMD64 base with 36 changed
+runtime paths and verified all 2,142 hashes and three symlinks.
+Local image ID sha256:374ea416e4729b91fc77bb0922ce8f51755de957ebec1f6dab90c5b3df444f82.
+No test API or Worker was activated. Next pin the AMD64 platform
+manifest and qualify tunnel RTT and strict task admission before
+replacing the second OrbStack logical node.
+
+CA-HA-03 pinned AMD64 837defbe platform manifest in the isolated
+registry and independently hashed its OCI payload:
+sha256:374ea416e4729b91fc77bb0922ce8f51755de957ebec1f6dab90c5b3df444f82.
+Existing remote loopback PG listener 25432 accepted TCP but the
+candidate TLS connection timed out. A new scoped SSH reverse forward
+on 35432 to the actual OrbStack PG endpoint passed verify-full in a
+read-only probe. Eight connection setups median 149.13 ms (56.89–
+162.38); 32 SELECT 1 round trips median 7.72 ms (6.55–15.45).
+Temporary forward exited with the probe, original listeners untouched.
+Next qualify the other dependencies using isolated forwards and test
+strict admission over the measured link. No server API/Worker activation.
+
+CA-HA-03 AMD64 cross-host dependency probe used temporary alternate
+loopback forwards. Authenticated Redis TLS PONG 51.95 ms, MinIO TLS
+readiness HTTP 200 in 33.04 ms, authority TLS GET HTTP 405 in
+42.88 ms, Rabbit AMQP method frame 153.88 ms, model backend TCP open.
+These are reachability checks, not signed authority or authenticated
+Rabbit and S3 workload acceptance. Existing remote model TLS route
+on 443 timed out after 5 s, consistent with the old dependency
+forward problem. Temporary forwards exited; no remote API/Worker
+started. Next wire a dedicated isolated model TLS listener and test
+the native signed/streaming and authenticated clients.
+Evidence amd64-dependencies-837defbe.txt.
+
+CA-HA-03 AMD64 model wire: temporary loopback Caddy 34443 proxied
+through owned SSH 38082 to the OrbStack fixture. The candidate resolved
+the model hostname to loopback, verified the fixture CA, exact peer
+certificate and fixture marker, then decoded the native streamed pwd
+tool call and coherent usage in 20.91 ms on a warm HTTP client.
+Temporary listener/container and forward exited with the probe.
+No Task or real provider call. Next verify signed authority and
+stage the cross-host API/Worker with independently owned forwards.
+Evidence amd64-model-wire-837defbe.txt.
+
+CA-HA-03 AMD64 signed authority exchange preflight. Through a temporary
+loopback TLS forward, the candidate presented an isolated synthetic
+principal and received an issued grant for fresh test thread/run IDs
+in 194.97 ms. The same endpoint rejected an invalid credential with
+401. No grant or credential was printed; no Task was submitted.
+The remote API still needs to validate an issued grant in its own
+live composition and pass bounded admission before joining ingress.
+Evidence amd64-authority-837defbe.txt.
+
+CA-HA-03 short-lived AMD64 API on 192.168.101.7 reached HTTP 200
+readiness on isolated loopback 38080 using the verified image,
+Native31 execution catalog, and fresh dependency forwards. Stopped
+the second OrbStack API after checking no active lease/pending command
+to keep the two-API budget, then restored it and verified readiness.
+The temporary API and forwards exited. This proves boot/readiness;
+signed ingress was not attempted because the configured issuer still
+uses the original stale authority loopback port. Next preserve that
+issuer identity while replacing its transport, then run one bounded
+signed admission. Evidence amd64-api-ready-837defbe.txt.
+
+CA-HA-03 tested an issuer-preserving transport on AMD64. SSH remote
+Unix socket reached the isolated authority. A TCP-to-Unix relay inside
+a Docker network-none namespace served the original 127.0.0.1:28444
+JWKS URI with the same TLS verification and one expected key.
+The first relay could not access the private socket with container
+root after dropping capabilities. Matching the SSH account UID/GID
+worked without widening socket permissions. No registry mutation,
+API activation or Task submission. Next reuse the isolated namespace
+for all required forwards and run bounded signed API acceptance.
+Evidence amd64-issuer-loopback-837defbe.txt.
+
+CA-HA-03 AMD64 signed atomic admission crossed physical hosts with
+unchanged issuer and PostgreSQL/Redis/S3/Rabbit endpoints inside a
+network-none namespace backed by temporary SSH Unix socket forwards.
+The original single POST returned outer 200 and sealed inner 201
+in 1,853 ms. Decrypted original receipt identified a completed Task;
+read-only SQL found one accepted command and one model response.
+The existing OrbStack Worker executed it. Restored the second
+OrbStack API after the probe; remote API and forwards exited.
+One sample with 147 ms headroom is not a capacity result. Next
+qualify remote Worker execution and the cross-host failure matrix.
+Private evidence amd64-signed-*.log.
+
+CA-HA-03 AMD64 Worker boot preflight on the second physical host.
+Pinned AMD64 sandbox ran under runsc with UID65532, loopback-only
+network and read-only owned workspace. Temporarily replaced the
+second OrbStack Worker within the two-Worker budget. Remote native
+Worker reached control_fresh=true and ran three idle cycles, then
+exited on signal. Startup used a TLS fixture health stub; no Task
+was executed and real model SSE was verified separately. Restored
+the OrbStack Worker. Next use the actual model proxy in the isolated
+namespace and verify a fresh Task is leased and completed by AMD64.
+Evidence amd64-worker-boot-*.log.
+
+CA-HA-03 combined AMD64 API/Worker test accepted one synthetic atomic
+first Run (outer 200, sealed 201, client 2041 ms). Receipt and read-only
+SQL prove e1-amd64-run acquired and released the lease, one accepted
+command, zero model responses. The probe's observation SELECT used
+a wrong lease column, aborted and sent SIGTERM in cleanup. The Task
+then had durable executor_process_interrupted / WorkerExecutorInterrupted
+and suspended. Corrected probe to owner_instance_id. Original remains
+preserved without replay; local Workers restored. This proves remote
+pickup but does not qualify remote execution. Next run a fresh case
+with the corrected observer and retain it until a terminal outcome.
+Private evidence amd64-worker-run-e2fc77229b80.log.
+
+CA-HA-03 AMD64 Worker full synthetic Run confirmed. Corrected
+observer found earlier fresh Task suspended before model dispatch;
+child log showed INCOMPATIBLE_RUNTIME_BUNDLE. The staged server
+environment was from the old release. Used the current E1 environment
+and added exact catalog baseline assertion before any POST.
+A fresh signed POST returned outer 200/sealed 201 in 2017 ms client
+wall time. Read-only state confirmed completed, sole lease owner
+e1-amd64-run, exactly one model response. The synthetic POST flowed
+through the live fixture relay. Prior originals were not replayed.
+Temporary remote containers/forwards exited; OrbStack replicas restored.
+This is cross-host execution smoke; workload and fault qualification remain.
+
+CA-HA-03 cross-physical-host SSE continuity smoke on the completed
+AMD64 Run. Remote API opened the authorized original stream and
+captured two frames. After the remote API exited, the surviving ARM64
+API returned the exact second frame from the first frame's cursor
+using a fresh signed read grant. No Task write. Second OrbStack API
+restored and ready. This validates direct cross-host cursor semantics;
+shared-ingress detection and loaded E1-R remain open.
+Private evidence amd64-stream-*.log and amd64-stream-*-resume.txt.
+
+CA-HA-03 cross-physical-host shared ingress smoke. Temporary private
+Caddy used the AMD64 API and a verified TLS relay to the ARM64 API.
+Opened the original stream through Caddy with only AMD64 available;
+then enabled the ARM64 route, allowed active health checks and stopped
+AMD64. The same ingress returned the exact original next frame after
+261 ms and ten times consecutively. No Task writes. Temporary ingress,
+API and forwards exited; second OrbStack API restored and ready.
+This is an API process fault on a cross-host pair, not loss of the
+ingress host, persistent storage, or the loaded E1-R matrix.
+Evidence amd64-ingress-*.log.
+
+CA-HA-03 reverse cross-host ingress fault. Opened original SSE
+through temporary Caddy via ARM64, enabled AMD64, then withdrew
+the ARM relay listener and cancelled all its open connections.
+Same ingress resumed exact next frame via AMD64 in 1.700 s and
+returned ten consecutive exact resumes. First attempt's test
+listener waited for pooled clients to close; stopped its exact
+temporary container, corrected the harness and repeated read-only.
+No Task mutation. Restored second OrbStack API and verified readiness.
+This isolates the API link, not shared dependency loss or loaded E1-R.
+Evidence amd64-ingress-link-*.log.
+
+CA-HA-03 F-05 Redis read-only fault smoke. Stopped the exact
+owned Redis container and verified PID zero. Both API replicas
+returned the exact next canonical SSE frame from the original
+cursor while Redis was stopped (234 and 533 ms). Redis restarted
+and authenticated TLS PING returned PONG. First probe used a
+nonexistent Docker healthcheck in cleanup; repeated with explicit
+readback and protocol verification. No Task mutation. Active stream
+and loaded recovery, object loss, and PG failover remain open.
+Evidence redis-outage-routing31.json.
+
+CA-HA-03 F-05 isolated object read outage. Native S3 adapter read
+and hash-verified an existing synthetic object (158 ms), then
+returned ArtifactObjectUnavailableError in 69 ms after the exact
+owned MinIO process stopped. Restarted the same container and read
+the same expected object successfully in 157 ms. No object write,
+Task mutation or replay. This covers adapter-level read rejection
+and integrity readback; API error mapping, object write response loss
+and loaded F-05 remain unqualified.
+Evidence objects-read-outage-routing31.json.
+
+CA-HA-03 F-05 object write reply loss at the native adapter boundary.
+One conditional PUT of a new synthetic object in a dedicated isolated
+prefix reached actual MinIO and returned success to the fault shim.
+The shim withheld the reply and raised ReadTimeoutError. Native
+adapter surfaced ArtifactObjectUnavailableError. Read-only verify
+and versioned GET recovered the same committed version and bytes
+using the original expectation. Exactly one PUT, no retry; retained
+the synthetic proof object. This does not exercise TCP packet loss
+or API/PG publication receipt handling.
+Evidence objects-lost-response-routing31.json.
+
+CA-HA-03 attempted API delivery/PG fault regression on disposable
+PostgreSQL 17: 37 passed, nine native HTTP cases failed. Focused
+rerun reproduced both lost audit-COMMIT cases; the fault proxy
+never received a connection. A normal signed download from the
+same fixture returns 409 coverage_identity_unavailable /
+canonical_task_incomplete before object delivery. Fixture appends
+a raw tool event and replays only model/tool projections; audit its
+canonical stream/projection prerequisites before touching policy or
+interpreting this as a commit fault. This does not verify API-level
+object publication response loss. Private logs artifact-audit-regression.log
+and artifact-download-regression.log.
+
+CA-HA-03 repaired native HTTP artifact fixture by committing the
+tool Event and its Session/Workspace projections through the normal
+Worker transaction. Raw append previously left an incomplete
+canonical Task and stopped at 409 before reaching the audit proxy.
+All 46 HTTP artifact and PostgreSQL lifecycle regressions passed
+on disposable PostgreSQL 17, including both real audit COMMIT reply
+loss variants with one durable row and no replay. Production code
+unchanged. This is delivery audit, separate from object publication.
+
+CA-HA-03 Cloud input admission now handles a lost S3 PUT reply by
+verifying the same immutable expectation once, without another
+PUT. Continues only for a verified version receipt; missing or
+mismatched objects leave admission failed. Shared path covers initial
+and follow-up inputs. Five ingress tests passed, including verified
+and absent original outcomes. Next run the real S3/PG publication
+boundary against the isolated candidate.
+
+CA-HA-03 cloud attachment unknown PUT gate passed using b8bd4471
+source in a one-shot exec and isolated real MinIO/PostgreSQL. New
+random namespace, serial external reserve. Three synthetic objects
+received exactly three PUTs; successful replies for initial and
+follow-up inputs withheld at adapter boundary. Original versions
+recovered and exact bytes read back. Partial batch rolled back,
+foreign Session read denied, stale CAS refused without duplication,
+three finalized records with explicit provenance and zero model calls.
+First attempt refused before mutation due to missing process budget
+composition; used one declared external operator connection on retry.
+Running API image unchanged; actual HTTP entry point remains untested.
+Evidence cloud-input-receipt-e1.json.
+
+CA-HA-03 signed HTTP initial attachment regression passed with
+disposable PostgreSQL 17. Real RS256 and /tasks returned 201 after
+the object port reported a lost reply. The stub observed exactly one
+PUT and original verification; SQL found one finalized artifact and
+one canonical materialization Event. This is complementary to the
+previous real MinIO/PG test, which injected the fault without HTTP.
+Ruff and diff check passed; no running image was changed.
+
+CA-HA-03 F-04 storage primitive on two physical hosts. Actual E1 PG
+has no standby. Separate disposable PG17.5 primary on OrbStack and
+AMD64 standby on 192.168.101.7 used synchronous remote_apply over an
+owned tunnel. Confirmed sync state, wrote a marker, fenced the exact
+disposable primary before promotion and read the same marker from
+the promoted standby in 973 ms including operator commands.
+First setup attempts used an unavailable utility and raced the
+temporary init postmaster; corrected TCP readiness and label cleanup.
+All disposable resources gone. This proves a storage primitive with
+manual fencing, not automatic failover or application receipt RPO.
+Evidence pg-sync-two-hosts.json.
+
+CA-HA-03 F-04 native receipt-store cross-host promotion. Disposable
+PG17.5 primary/standby with synchronous remote_apply and real
+migrations. Native PostgresIdempotencyStore saved one 201 admission
+result. Standby contained exactly one row before old-primary fencing.
+After promotion, a fresh store process with the identical multi-host
+read-write DSN performed only GET and recovered original key, status,
+request hash and body. Promotion through readback 6314 ms (includes
+fresh container and connect timeout). No resubmission. Temporary
+containers and tunnel removed. This tests the real receipt store,
+while API-pool reconnection, automatic fencing and live workload
+remain unqualified. Evidence pg-sync-receipt-two-hosts.json.
+
+CA-HA-03 F-04 persistent native receipt-store pool. One AMD64
+process used postgres_pool_scope(component=api), seeded and read
+one admission result against the sync primary, and kept the pool
+open during exact old-primary fencing and standby promotion.
+The same process/pool and unchanged multi-host DSN retrieved the
+identical record with one read-only call and zero observed errors.
+Readback took 1056 ms after promotion observation, 1969 ms from
+promotion command. No write replay. This uses the unprofiled API
+pool and waits for promotion before GET; in-flight/half-open,
+HTTP deadline path and automatic fencing remain unqualified.
+Evidence pg-sync-pool-two-hosts.json.
+
+CA-HA-03 F-04 bounded read during primary stall. Paused the exact
+disposable sync primary while keeping the TCP forward open. Native
+original receipt GET under task_io_deadline(+2s) raised TimeoutError
+after 1809 ms. Then fenced the old primary and promoted the standby.
+Same long-lived process recovered the original receipt in 1762 ms
+from promotion command (1010 ms after its promotion observation),
+without write replay. This injects an unresponsive database behind
+an open transport and exercises the bounded connection path; it
+does not inject a half-open in-flight COMMIT or HTTP route.
+Evidence pg-sync-half-open-two-hosts.json.
+
+CA-HA-03 first Run original COMMIT reply loss regression. Reused the
+PostgreSQL wire fault proxy to drop the actual CommandComplete
+after durable COMMIT of Task, command, wakeup and result. Caller saw
+OperationalError; original read-only observation returned committed.
+Exactly one pending command and one outbox row persisted. Four
+atomic first Run tests passed on disposable PG17. This is the
+atomic transaction path, not a loaded HTTP or cross-host fault.
+
+CA-HA-03 pre-COMMIT disconnect complement. Native wire proxy
+interrupts the first Run transaction before forwarding COMMIT.
+Original read-only observation stays unresolved, with zero Task
+effects, pending commands or outbox rows. Explicit termination then
+certifies the original stopped. Existing post-COMMIT branch still
+finds exactly one durable command/outbox. Seven PG17 cases passed
+including both artifact audit COMMIT-loss consumers of the proxy.
+No production code change.
+
+CA-HA-03 sync standby stall safety discovery. On disposable PG17.5
+cross-host remote_apply, paused standby and observed writer wait
+event SyncRep. An ordinary statement timeout test did not return
+in six seconds. In a separate run targeted pg_cancel_backend of
+the SyncRep writer returned the synchronous-wait cancellation warning
+but psql exited 0 and the locally committed row was visible. After
+resuming standby it caught up. Thus a success command tag alone
+does not prove remote apply under explicit cancellation. Next test
+the native driver notice path and fail closed on this condition
+before treating synchronous PG configuration as receipt RPO=0.
+Evidence pg-sync-stall-two-hosts.json. Temporary resources removed.
+
+CA-HA-03 native psycopg SyncRep cancellation confirmed on two
+physical test hosts. COMMIT returned successfully through the
+connection context despite notice SQLSTATE 01000, nonlocalized
+severity WARNING, primary message "canceling wait for synchronous
+replication due to user request". The row was visible on the old
+primary and later reached the standby after unpause. A write-side
+notice check alone is insufficient for RPO=0: an original GET on
+the old primary could see a locally committed but unreplicated row.
+Next qualify admission and receipt visibility against the same
+durability watermark or close ingress until sync authority is proven.
+No deployed code changes. Evidence pg-sync-driver-notice-two-hosts.json.
+
+CA-HA-03 sync watermark primitive passed on disposable cross-host
+PG17.5. After cancelled SyncRep wait, the row was locally visible
+but a fixed post-read WAL insert LSN was ahead of the designated
+streaming synchronous standby's replay LSN. Rejected at that
+watermark; after unpause the same watermark became covered and the
+row was visible on standby. No resubmission. This conservative
+global LSN can wait on unrelated WAL under load and needs a trusted
+role/identity/timeline check before app use. No API integration or
+RPO acceptance yet. Evidence pg-sync-watermark-two-hosts.json.
+
+CA-HA-03 exact standby visibility alternative. Paused WAL replay,
+leaving the designated synchronous standby queryable. After explicit
+SyncRep cancellation, psycopg returned success and the primary
+showed the row, but a fresh query for the exact key on the standby
+returned zero. Resumed replay and the same key appeared without
+rewriting. This avoids unrelated global WAL in a candidate receipt
+proof, but requires a separately budgeted, authenticated standby
+read and trusted promotion topology. Tested a synthetic marker, not
+the application route. Evidence pg-sync-exact-visibility-two-hosts.json.
+
+CA-HA-03 exact standby receipt visibility reproduced with migrated
+control_plane_idempotency_records on disposable cross-host PG17.5.
+Paused WAL replay, cancelled the writer's SyncRep wait, and observed
+the original receipt on the primary but absent on the designated
+standby. Resumed replay and matched exact key, request hash, status
+and response status without a second write. This is an SQL proof,
+not yet an API gate. Evidence pg-sync-exact-receipt-two-hosts.json.
+
+CA-HA-03 least-privilege standby receipt probe. Disposable PG17.5
+cross-host replication. Dedicated login with SELECT on six receipt
+columns and EXECUTE on pg_control_system, no receipt DML and no
+Session event read. Query used read-only transactions and checked
+expected system ID plus recovery role. Exact original absent during
+replay pause and visible after resume. Test transport isolated by
+SSH; production TLS/endpoint identity and leader timeline/fencing
+are still separate gates. Evidence pg-sync-reader-two-hosts.json.
+
+CA-HA-03 standby identity negative cases passed on disposable
+cross-host PG17.5. Limited receipt reader rejected a wrong system
+identifier while standby was healthy. After exact old-primary
+fencing and promotion, the endpoint retained the expected system
+identifier but the old standby guard rejected its new primary role.
+No fallback approval from a stale endpoint. Evidence
+pg-sync-role-transition-two-hosts.json. API integration must use a
+trusted topology handoff and keep writes gated during this gap.
+
+CA-HA-03 mapped F-04 exact receipt proof across signed submit,
+original observation and termination. Documented deadline, separate
+standby capacity, endpoint identity, role and topology handoff in
+the resource budget design. No application gate or deployment yet.
+
+CA-HA-03 tested a single-statement limited-reader check with
+system ID, recovery role, checkpoint timeline and exact receipt.
+Wrong configured timeline rejected. Immediately after promotion,
+pg_control_checkpoint().timeline_id still reported the old value,
+while pg_is_in_recovery() changed and caused rejection. Do not use
+checkpoint timeline as the live topology generation; require a
+trusted topology handoff. Evidence pg-sync-timeline-two-hosts.json.
+
+CA-HA-03 boolean standby proof prototype passed. The dedicated
+caller had no receipt table or Session Event privilege; only a
+fixed-search-path SECURITY DEFINER function with PUBLIC revoked.
+Same-system standby role and exact namespace/action/key/hash/status/
+JSON equality returned false before replay and true afterward. Wrong
+digest returned false. Disposable prototype used the migration admin
+as function owner; production needs a dedicated non-login owner
+with column-only SELECT and guarded topology configuration.
+Evidence pg-sync-boolean-proof-two-hosts.json.
+
+CA-HA-03 verified the boolean standby proof with a dedicated
+non-login, non-superuser function owner. Owner received only exact
+receipt column reads and pg_control_system execute, no receipt DML
+or Session Event reads. Caller still had function execute only.
+Cross-host paused/replayed cases and wrong digest behaved as before.
+Disposable SQL proof; deployment role provisioning and API composition
+are pending. Evidence pg-sync-proof-owner-two-hosts.json.
+
+CA-HA-03 checked in the isolated standby receipt proof operator SQL.
+Executed the exact file against the disposable cross-host pair,
+including non-login owner privileges, pause/cancel/replay behavior,
+and wrong digest rejection. Fixture only, no deployment or migration.
+Evidence pg-sync-proof-fixture-two-hosts.json.
+
+CA-HA-03 bounded standby proof transport validated. The existing
+TaskIoConnections under a 500 ms scoped deadline queried the
+least-privilege receipt function. With the exact standby process
+paused, the proof failed closed after 456 ms. On resume the same
+original receipt verified without a new write. Single serial proof
+connection, no fleet concurrency or HTTP wiring. Evidence
+pg-sync-proof-deadline-two-hosts.json.
+
+CA-HA-03 database-side standby proof capacity check. Shared limited
+login with CONNECTION LIMIT 2 held two distinct native sockets;
+a third connection was rejected in 2 ms under a 500 ms request
+deadline. Exact receipt proof still passed after replay and refused
+the wrong digest. This shows a database guard for one role, not the
+API scheduling policy or full standby inventory. Evidence
+pg-sync-proof-capacity-two-hosts.json.
+
+CA-HA-03 standby proof extended to atomic termination's durable
+stop record shape (client-admission-v1-atomic-stop, 200,
+state=stop_requested). During paused replay and cancelled SyncRep
+the primary exposed the stop but the proof returned false. After
+replay the exact stop verified and wrong digest was refused.
+This tests the replicated stop row, not the API's separate fence
+and absent-result check required for a non-commit certificate.
+Evidence pg-sync-stop-proof-two-hosts.json.
+
+CA-HA-03 real atomic termination storage operation exercised against
+paused standby replay. Seeded original claim and fence via native
+stores, called observe_atomic_termination(write=True). Cancelling
+one SyncRep wait was insufficient; two targeted cancellations let
+it return terminated on the primary. Exact STOP proof remained false
+on standby until replay resumed. This demonstrates a false durability
+confirmation risk in the current ungated route composition. No
+production change; API must withhold non_commit_proven until proof.
+Evidence pg-sync-native-stop-two-hosts.json.
+
+CA-HA-03 opt-in E1 receipt response gate wired for signed submit,
+original observation and committed/terminated status. Requires
+explicit verify-full reader DSN, expected system ID, and a parsed
+capacity profile. Separate native connector uses one normal slot
+and at most 500 ms of the existing request deadline. Missing,
+mismatched or unavailable proof withholds the result/stop proof.
+Default single-node path unchanged. Ruff and 32 API tests passed.
+This candidate is not deployed; enabled signed HTTP against the
+actual cross-host fixture, TLS and topology admission fencing remain.
+
+CA-HA-03 native RouteAdapter regression with verified Host context
+and real PG17 atomic result. Injected false proof withheld sealed
+original GET, result_recorded and termination committed state.
+Turning proof true recovered the exact original; four checks shared
+one scoped key and canonical sequence did not change. One targeted
+test passed. This injects the proof at the route boundary and uses
+already verified authority, not a live signed HTTP/TLS standby run.
+
+CA-HA-03 cross-host PostgreSQL 17.5 rehearsal repeated over TLS
+verify-full with an ephemeral certificate. The restricted reader
+withheld the exact atomic STOP receipt while replay was paused
+despite the primary reporting termination after SyncRep cancellation.
+After replay resumed the exact receipt was visible. Wrong digest
+and wrong TLS hostname were rejected, and pg_stat_ssl confirmed
+TLS on the proof connection. Both disposable databases were stopped.
+Evidence pg-sync-tls-stop-two-hosts.json. This probe uses psycopg
+directly; signed HTTP and the enabled API gate remain to be exercised
+against this fixture.
+
+CA-HA-03 exercised the candidate's actual e1_receipt_proof.confirmed
+and native connection budget against the cross-host TLS verify-full
+standby. It returned false for the primary-only STOP receipt, true
+after replay, and false for a mismatched digest. Both databases and
+tunnels were temporary. Evidence pg-sync-tls-api-proof-two-hosts.json.
+This covers the live connector, with signed HTTP composition pending.
+
+CA-HA-03 live Uvicorn socket exercised real RS256 verification and
+PostgreSQL authority registry plus the candidate TLS standby gate.
+An invalid signature was rejected. With replay paused, signed GET,
+observation, and termination reads withheld an atomic admission
+result. After resume, the signed original GET recovered the exact
+sealed response. Evidence pg-sync-tls-signed-http-two-hosts.json.
+The fixture seeded the original via the native route using a
+session-local synchronous_commit override to simulate primary-only
+visibility. JWKS resolution used a static public key. Signed submit
+during the fault, topology fencing, and deployment remain pending.
+
+CA-HA-03 cross-host TLS signed-submit fault probe passed. Exactly
+one RS256 signed POST created one completed receipt on the primary
+while replay was paused. POST returned unknown without a sealed
+response; signed original GET, observation and termination withheld
+completion. Resuming replay returned the identical sealed receipt via
+GET only. The disposable API primary connections used a local commit
+override to produce the primary-only visibility window. RS256 key
+resolution used a static test key. Evidence
+pg-sync-tls-signed-submit-two-hosts.json. Primary role fencing and
+production deployment remain pending.
+
+CA-HA-03 isolated cross-host manual fencing drill passed. Stopped the
+labelled disposable primary and verified its TCP endpoint was down
+before promotion. Promoted the standby with matching system identity,
+verified the original STOP record survived, and committed one new
+SQL write. The actual TLS API proof connector rejected the promoted
+endpoint as a standby, even though the original record was present.
+Evidence pg-sync-tls-fenced-promotion-two-hosts.json. The fence was
+operator-driven container stop; no automatic failover or API writer
+reconfiguration was exercised, and only the disposable databases
+were affected.
+
+CA-HA-03 restored synchronous remote_apply after fencing and
+promotion. The replacement needed a fast pg_basebackup checkpoint
+to enter streaming inside the rehearsal deadline. Repointed the
+TLS proof connection to the replacement and re-confirmed the exact
+original STOP record. A new primary SQL write was present on the
+replacement when its commit returned. Evidence
+pg-sync-tls-restore-redundancy.json. The replacement shared the
+promoted primary's host and TLS test identity. This proves the
+replication and proof recovery sequence only; independent failure
+domains, API writer handover, and automated fencing remain open.
+
+CA-HA-03 rebuilt a standby on OrbStack from the promoted primary
+on 192.168.101.7 after stopping the original writer. Streaming used
+a temporary SSH forward bound to the OrbStack private interface.
+Re-established remote_apply and verified the TLS API proof connector
+against the rebuilt standby for the original STOP record. A new SQL
+write was visible on the rebuilt standby at commit return. Evidence
+pg-sync-tls-cross-host-rebuild.json. The fixture reused its ephemeral
+TLS identity and switched topology manually. Application writer
+handover and automatic fencing remain open.
+
+CA-HA-03 live signed HTTP writer handover passed after the manual
+fence, promotion and cross-host rebuild. Booted a new Uvicorn API
+using the promoted writer DSN and rebuilt TLS proof reader, without
+a local commit override. One RS256 POST returned a completed sealed
+201 receipt, original GET returned the identical response, and
+observation recorded the result. Evidence pg-sync-tls-api-handover.json.
+The fresh API used a static verification key and fixture composition.
+This validates manual API reconfiguration, not automatic fencing,
+in-flight writer handoff, Worker recovery or production cutover.
+
+CA-HA-03 isolated fence negative path exercised against both live
+databases. A mismatched fixture owner refused the stop and left the
+original primary active and the standby in recovery. With the exact
+fixture owner, the probe stopped the original container, required
+explicit TCP refusal (a timeout does not qualify), checked standby
+role and system identity, then promoted and verified the original
+receipt and a new write. Evidence pg-sync-owned-fence-two-hosts.json.
+The script is a disposable fixture probe. It supplies no independent
+witness or production fencing authority.
+
+CA-HA-03 cross-host fence drill held an open client transaction
+with an actual receipt-table insert before stopping the old writer.
+After promotion, COMMIT on that same connection failed and the
+promoted database had zero rows for the uncommitted insert. The
+previously committed STOP receipt survived and new writes succeeded.
+Evidence pg-sync-inflight-fence-two-hosts.json. This exercised a
+database transaction, not a live Worker or signed HTTP request.
+
+CA-HA-03 held a single live RS256 POST at the receipt-proof boundary
+after the original atomic result committed. The harness then fenced
+the old writer and promoted the standby. Releasing the hook called
+the real TLS proof, and the old HTTP request returned unknown with
+no sealed response. After cross-host rebuild, a fresh API composed
+all PostgreSQL ports against the new writer, and signed original
+GET returned the exact pre-promotion receipt with no second POST.
+Evidence pg-sync-tls-inflight-http.json. The first attempt exposed
+an old-DSN reference in the harness's replacement API composition;
+recomposing direct control and client platform ports resolved it.
+The fault boundary was synchronized by a test hook and the key
+resolver used a static public key. Worker and automatic fencing open.
+
+CA-HA-03 native Worker recovered a pending Run across the cross-host
+PostgreSQL promotion. Created the original Run and committed a
+short-lived old-worker lease before fencing. After promotion and
+synchronous standby rebuild, a Worker composed against the new
+writer consumed the existing command. A second scan did not invoke
+the provider again. Exactly one answer event and one provider call.
+Evidence pg-sync-worker-promotion.json. Uses the native consumer
+with a deterministic no-tool provider and a fixture lease; recovery
+of an already dispatched provider or tool call remains separate.
+
+CA-HA-03 ordinary model-budget cross-host promotion drill committed
+an exact request reservation and sent one real HTTP POST to a local
+synthetic provider, deliberately omitting result settlement. After
+fencing and rebuild, a successor lease/attempt on the new writer
+was denied an identical reservation with "unknown original". The
+original reservation and single provider request were preserved.
+Evidence pg-sync-worker-unknown-model.json. The harness called the
+native budget store directly around synthetic HTTP; full Worker
+transport/reconciliation and tool-call promotion remain separate.
+
+CA-HA-03 tool-effect promotion drill committed an original outbox
+claim before emitting one synthetic external effect. After fencing,
+promotion and synchronous rebuild, the successor lease recovered
+the same dispatch ID and claim fence, moved it to UNCERTAIN, and
+could not claim it for dispatch again. No terminal result was
+invented. Evidence pg-sync-tool-effect-promotion.json. The harness
+used native effect storage and a file-backed synthetic side effect,
+without an actual production connector.
+
+CA-HA-03 live adapter diagnostic: existing isolated OrbStack
+endpoints held four signed SSE streams during a one-second 5rps
+window. Five planned offers accepted and five signed original GETs
+returned authenticated completed receipts. Private evidence
+adapter-91cf6605895646d6b310468637b2974b. This used the existing
+runtime and no baseline dataset; it is not E1 capacity evidence.
+
+CA-HA-03 live 256-SSE readiness failed twice, with zero admission POSTs
+in the attempted measurement windows. Added per-stream startup failure
+evidence; second run opened 128/128 streams on node 0 and 107/128 on
+node 1. The remaining 21 on node 1 returned HTTP 503 before any event ID.
+Private window adapter256-recheck-0999A6EF-8455-45F9-BCB3-7809C8F13BA1.
+Both attempts used the existing staging fixture. No full E1 pass; next
+correlate typed 503 reasons and node/database budgets before another run.
+
+CA-HA-03 256-SSE failure attribution: bounded problem-code capture
+reported node 0 128/128, node 1 110/128, and 18 node-1 503s all with
+host_grant_authorization_unavailable. The node-1 API logs report
+DatabaseCapacityExceeded in the authorization path. No admission
+POST was sent. Private evidence
+adapter256-reason-735DAC0B-5D9F-4E9F-B496-B694CD7396B0.
+Both Host GET authorization and existing stream reads use the
+bounded read lane. The exact rejecting gate (executor slot versus
+database connection permit) still needs discriminating telemetry.
+
+CA-HA-03 differentiated API executor saturation from a PostgreSQL
+connection permit rejection. The executor raises a specific subclass
+of DatabaseCapacityExceeded, so existing HTTP mapping stays identical
+and the existing auth log records the precise rejecting gate without
+logging exception payloads. Targeted suites 17 passed, 7 skipped.
+The isolated running image predates the diagnostic; a fresh candidate
+must be used before interpreting another 256-stream run.
+
+CA-HA-03 live 256-SSE attribution with a single temporary source
+overlay on the isolated second API: 22 authorization rejections
+logged ApiDatabaseExecutorSaturated, with no database permit
+rejections logged. The readiness gate did not send admission POSTs.
+Private evidence sse-executor-bbf53c03ebba4e17a341635a1ea9addc.
+Restored the exact original image and source on the second API and
+verified TLS readiness. Next isolate or fairly queue stream polling
+and authorization in the bounded read executor without enlarging
+the declared fleet connection budget.
+
+CA-HA-03 source candidate lets already admitted Host reads wait for
+an executor slot inside the original authorization deadline. Only
+pre-submission saturation is waited on; once submitted, the original
+callback runs at most once. Existing HTTP admission bounds waiter
+count; connection/worker quotas and write/control paths are unchanged.
+Regression holds the only read slot, proves timeout runs no callback,
+then proves release runs one callback. Fifteen focused tests passed.
+Live 256-stream comparison on the isolated two APIs remains pending.
+
+CA-HA-03 bounded read-wait candidate passed the live 256-SSE
+diagnostic on two isolated APIs using a temporary two-file overlay.
+Both nodes opened 128 streams without a readiness rejection.
+All five planned 5rps offers accepted and all five original GETs
+authenticated. Private evidence sse-read-wait-6a32202786014156a045492619e3ce81.
+Restored both original API containers and verified TLS ready.
+This is a one-second measurement with an existing synthetic stream
+fixture, not a frozen-image E1 steady run or production deployment.
+
+CA-HA-03 baseline and immutable image preflight. The isolated
+namespace has 692 agent_tasks and 10,364 session_events by direct
+read-only SQL. The Coverage history generator uses a scratch table
+with a reduced schema and cannot qualify this corpus. Attempted to
+freeze all six runtime changes since 837defbe as an offline image
+delta. The OrbStack legacy builder hit "mount options is too long"
+with individual layers; one COPY built, but starting it hit the same
+overlay mount limit. The derivative is unqualified and was not
+deployed. Original APIs remain on the verified base. Next rebuild
+from a lower-depth source image or flatten a disposable base with
+config and source parity checks; use a native-schema corpus loader.
+
+CA-HA-03 built two runnable immutable ARM64 candidates from 0487fdae.
+Exported a new stopped container from the exact 471-layer isolated
+base and imported its filesystem as one layer, preserving image
+configuration. Added the six committed API source changes and
+checked-hash bytecode. Both images ran offline, matched all six source
+hashes, imported the API and proof gate, and matched base image
+configuration except the revision label. Private manifest
+frozen-read-wait.json. This is staged image qualification only;
+the active APIs still use the original image and the corpus is short.
+
+CA-HA-03 frozen image cold-switch diagnostic: both isolated APIs
+ran their exact immutable candidates, passed TLS readiness and
+held 128 SSE streams each. At 5rps for three seconds all 15 POSTs
+were issued once, 2 returned sealed acceptance and 13 returned
+503 unknown with submit TimeoutError. Original-only GET reconciled
+6 completed total; 9 remained unknown at that observation, and no
+POST was repeated. Private run sse-frozen-3bc7d228ee4a43cc8a35fd4d73dfb9c3.
+Both original APIs restored and TLS readiness verified. This is
+a failed admission capacity diagnostic despite the SSE inventory
+passing. Investigate original receipts and phase timing before load.
+
+CA-HA-03 reconciled the nine unresolved frozen-image admissions
+through fresh signed original GET and observation. All nine still
+reported unknown; observation confirmed the claim, no result, and
+retry disallowed. Read-only SQL matched nine claims and nine started
+dispatch fences, with no sealed result rows for those exact digests.
+The original 13 timeout stacks span PostgreSQL COMMIT and several
+statements inside the first-Run atomic transaction, including event
+position assignment and outbox capacity. They expired around the
+existing two-second boundary. This localizes the failed phase, but
+does not identify one blocking statement or prove non-commit for an
+unknown operation. Evidence saved alongside the original frozen run.
+
+CA-HA-03 frozen 256-stream failure reproduced with an isolated
+PostgreSQL wait sampler at ~100ms. All 256 streams opened; of
+15 single POSTs, 5 completed and 10 remained unknown on original
+GET. Private run sse-wait-samples-edee74dc67044da8a20f9ce4c23c9246.
+In 51 snapshots overlapping the POST window, backend observations
+included 180 idle-in-transaction ClientRead, 160 active with no
+reported wait, 19 LockManager, 15 WalSync and 7 advisory locks.
+These are sampled backend observations across the shared database,
+not elapsed milliseconds or attribution to individual POSTs.
+Next correlate statement classes and blockers for admission itself.
+Both original isolated APIs restored and TLS readiness verified.
+
+CA-HA-03 classified pg_stat_activity without storing raw SQL on
+another frozen 256-SSE diagnostic. All streams held; 8/15 POSTs
+completed immediately, and original GET confirmed 9/15 total.
+In 49 overlapping snapshots, COMMIT showed 18 WalSync and six
+WALWrite observations. Advisory waits numbered six, with blocker
+statement classes other (4), idempotency (1), and COMMIT (1).
+Event and task-index queries frequently had no reported wait.
+These shared-db samples identify contributing work but do not
+support a single dominant lock. Next compare a matched no-SSE run
+and log atomic milestones before changing a write-path invariant.
+Private run sse-blockers-5b053d365232408bb1c9c40b92740e83.
+Both original staging APIs restored; no POST replay.
+
+CA-HA-03 matched no-SSE frozen control still failed at 5rps for
+three seconds: 10/15 sealed POSTs and 11/15 completed originals by
+GET. A second no-SSE run with only milestone log severity raised
+returned 11/15 sealed POSTs. All 15 logged first-Run milestones:
+11 reached commit, three stopped after entering the atomic
+transaction, and one stopped after writing the receipt before
+confirmed commit. Median milestones from atomic dispatch entry:
+prepared 211ms, fenced 311ms, transaction entered 473ms,
+dispatch finished 1091ms (12 observed). These samples have different
+denominators and do not imply additive phase durations. This
+shows SSE is not necessary for the deadline failure. Both original
+isolated APIs restored. Private runs no-sse-frozen-6902c3080aa24f6387c91e102eb15b10
+and no-sse-milestones-22ed6e5c81554afdb0d51731c23ac12d.
+
+CA-HA-03 removed one point read from the atomic admission write
+transaction. The normal route supplies the immutable claim returned
+by its successful first-winner save. Final authorization still
+runs inside the transaction; commit fence claim locking and STOP
+checks are unchanged. Direct callers keep their existing lookup.
+The rollback/retry regression verifies no redundant claim lookup
+and final authorization uses the saved metadata. 32 API tests passed.
+A frozen live capacity comparison is still needed.
+
+CA-HA-03 frozen 62f495dc claim-reuse candidate did not improve the
+matched no-SSE capacity diagnostic. Both the previous and updated
+3s/5rps runs returned 10/15 immediate acceptance and 11/15 confirmed
+originals; the other four remained unknown on the sampled GET.
+Offer latency median 1883ms old vs 2139ms new, one sample each,
+which establishes no performance gain or regression. Both images
+verified source hashes, ran by exact ID, and both isolated APIs
+were restored. Private run no-sse-claim-reuse-58960f0d33bc443994fc08d7c00d4405.
+The next meaningful target is first-Run source/index assignment
+round trips; preserve the legacy source-adoption and cursor checks.
+
+CA-HA-03 combined fresh Event position assignment and derived index
+insert in one PostgreSQL statement. It checks the guarded source
+update and retains the existing point-read validation on an index
+collision. Already assigned legacy events retain their previous
+path. Two real PG17.5 native API checks passed and Ruff is clean.
+The broader real-PG suite is running (session 50843); its first
+seven tests passed, then it entered the 100k-event repair case.
+No capacity effect claimed until frozen live comparison.
+
+CA-HA-03 froze source 1eaf5026 on both OrbStack engines, including
+the PostgreSQL position CTE. Both immutable images executed offline
+and verified every modified source digest; private manifest
+frozen-position-cte.json. A separate real PG17.5 regression run
+passed 79 position, repair, and byte-bound tests, with the three
+large benchmark variants deselected. The earlier full run remained
+live on its 100k-event case. No live capacity comparison was run
+concurrently with that database workload on the shared Mac.
+
+CA-HA-03 full PG17.5 event-position/repair/byte-bound and native
+API suite completed: 87 passed in 753.06s, including the 100k
+case. The queued frozen CTE no-SSE diagnostic then ran without
+that database workload. At 5rps/3s, 10/15 POSTs accepted, and
+original GET confirmed 10 with five still unknown. Prior matched
+claim-reuse run accepted 10/15 and recovered 11. No capacity gain
+established. Private run no-sse-position-cte-cf71c885e9a14f1cbe8c57491ff87582.
+Restored both isolated APIs; verified TLS readiness on each.
+
+CA-HA-03 atomic POST now carries the exact saved receipt across
+successful transaction exit to response handling, avoiding the
+post-commit point read. Failed/unknown commit still propagates
+without a receipt; rollback and termination fall back to original
+lookup. Final authorization and opt-in standby proof still execute.
+32 focused API and two actual PG17.5 receipt/native tests passed.
+Capacity effect remains unmeasured.
+
+CA-HA-03 exact frozen 9a1857a2 committed-receipt candidate did
+not improve the isolated 5rps/3s no-SSE diagnostic: 8/15 POSTs
+accepted, seven submit TimeoutErrors, and original GET confirmed
+the same eight. Median offer time 2083ms. Private run
+no-sse-committed-receipt-9e054733a1344e6f93831c0616536db2.
+Both original APIs restored and TLS ready. The three incremental
+SQL reductions have not established a capacity improvement.
+Next qualify independent compute placement and collect per-process
+CPU throttling plus end-to-end admission statement counts before
+another change to the write transaction.
+
+CA-HA-03 built source 9a1857a2 as an immutable AMD64 candidate
+on 192.168.101.7, image add56ad6676281c80413b0d94c174b9df8a6a92daf3a3ba4ee240e7b42f00bf5.
+BuildKit misinterpreted the local image ID as a registry reference;
+a per-command legacy build used the pinned local base. Verified
+all changed source hashes against the ARM64 candidate's commit.
+A fresh isolated signed admission on AMD64 returned sealed 201 in
+1725ms. The transient container used 2CPU/2GiB, network none and
+existing private Unix relays to OrbStack dependencies, then exited.
+No production service changed. This qualifies a single cross-host
+API operation, not comparative capacity or the AMD64 Worker.
+
+CA-HA-03 AMD64 physical-host admission burst on immutable 9a1857a2
+issued 15/15 offers at 5rps for three seconds, no SSE. One sealed
+201, fourteen HTTP 503. Original-only signed GET via the shared
+namespace returned one completed, ten unknown and four not_observed;
+no resubmission or absence inference. The 2CPU/2GiB transient
+container (API plus Unix relays and probe) consumed 2.325 CPU
+seconds and had zero throttled periods in 53 periods. Private
+evidence amd64-load-d437a0a5d3e2.log and matching originals JSON.
+Local API CPU quota saturation does not explain this run. The
+cross-host DB and authority transports differ from the ARM run;
+next instrument those paths before attributing the gap.
+
+CA-HA-03 AMD64 attribution run repeated 1/15 acceptance, with four
+Host-authorization 503s logged as DatabaseCapacityExceeded (distinct
+from the executor subclass), and ten submit TimeoutErrors. Every
+broker exchange succeeded, 44.6ms max. The four authorization
+rejects returned within 7.5ms after POST start; the ten admitted
+unknowns returned after median 2275ms. One extra bounded read-only
+connection measured 83.76ms connect and 26 SELECT 1 samples with
+median 9.015ms/max 61.97ms over the private cross-host relay.
+Zero CPU quota throttles. The probe adds one sampling connection
+and the RTT is a shared transport measurement, not a trace of
+each transaction. Evidence amd64-attribution-afff591d40d5.log.
+No POST replay; next audit normal connection inventory and
+transaction round trips over the cross-host transport.
+
+CA-HA-03 verified AMD64 normal lane saturation with test-only
+instrumentation in the transient isolated API. Across two fresh
+5rps/3s runs, all nine permit rejects were at normal 8/8; read
+and control were idle at the samples. The second run captured 545
+TaskIoConnection.execute calls on api-normal threads across the
+15 offers, including authorization and failed transactions.
+This is an aggregate wrapper count, not per-request wire RTT or
+a successful-request statement count. Zero CPU throttle in both.
+Private evidence amd64-permits-fca5d2072d40.log and
+amd64-permits-24726f8ee718.log. Maintain the fleet connection
+ceiling; next target the number/duration of normal direct
+connections in first-Run admission rather than raising the limit.
+
+CA-HA-03 admission now uses the existing synchronous bounded PG
+connection scope under its original two-second deadline. libpq 17+
+can reuse a compatible same-lane socket across completed transactions;
+each borrow still commits or rolls back and resets session state.
+No reuse across requests. Original GET regression on real PG
+verified one physical open for claim plus result reads on libpq17+.
+42 API/atomic PG tests and the focused socket-count assertion passed.
+Next compare actual direct opens and admission outcomes on AMD64.
+
+CA-HA-03 paired AMD64 5rps/3s control vs bounded-scope candidate:
+normal TaskIo physical opens fell 93 to 37; normal execute calls
+rose 591 to 693 (aggregate including resets and failures). Both
+had four 8/8 normal permit rejections and no CPU throttling.
+Sealed POST and later exact original GET completed 2/15 control
+and 3/15 candidate; candidate remaining eight unknown and four
+not_observed. Each operation was sent once. One paired sample
+confirms reduced opens, not a capacity improvement or a resolved
+bottleneck. Evidence amd64-scope-pair-6b292705dcf8 and 8f9ca3159c44.
+
+CA-HA-03 timed AMD64 bounded-scope phases with test-only wrappers.
+15 offers, 2 sealed POSTs, 4 normal permit rejects and 9 transaction
+body TimeoutErrors. Of the 11 requests that entered the atomic
+path, preparation median 290ms and dispatch-fence write 137ms.
+Two successful transaction bodies took about 1.08s each and
+transaction exit about 129ms median. Two lock-timeout bodies
+were retried under the original fence; nine bodies ultimately
+timed out. Four of nine final stacks were in event-position
+backfill; the others spanned events, Task index, binding and
+wake-up. This identifies the transaction body as the larger
+measured cost, with no single proven locking cause. Private
+evidence amd64-phase-90f646767d48.log. No originals replayed.
+
+CA-HA-03 streamlined position initialization under the existing
+Task advisory lock. When both durable position sources prove empty
+and repair cursors are pristine, move directly to source assignment;
+skip two empty legacy scans and one intermediate state write.
+Nonempty history still validates before assignment, and already
+persisted states avoid a redundant state write. Real PG17.5
+position/repair/byte-bound/native tests: 84 passed, three large
+benchmark variants deselected. Live capacity impact pending.
+
+CA-HA-03 frozen e888c661 AMD64 diagnostic at 5rps/3s:
+3/15 sealed responses, three normal permit rejects and nine
+atomic-body TimeoutErrors. Original GET confirmed the same
+three, nine unknown and three not_observed. Prior instrumented
+candidate accepted 2/15; successful body median was 1081ms
+(n=2) vs 856ms (n=3). The small success-only samples cannot
+establish capacity improvement; final deadline failures persisted.
+No CPU throttling and no replay. Private evidence
+amd64-empty-position-a3c40252d417.log and originals JSON.
+
+CA-HA-03 shortened the namespace command-wakeup critical section.
+Global then scope advisory acquisition uses one materialized CTE;
+the already-locked path skips the duplicate global lock request,
+and pending insert computes the next scope sequence in the same
+statement. Recovery still takes the global lock via the capacity
+helper. Durable capacity checks and pending/outbox identity remain
+in the same transaction. PG17.5 admission/native 27 passed;
+PostgreSQL wakeup/recovery 66 passed. Cross-host impact pending.
+
+CA-HA-03 frozen e517a804 AMD64 wakeup change diagnostic matched
+the prior candidate's 3/15 sealed, nine atomic TimeoutErrors and
+three normal permit rejections at 5rps/3s. Exact original GET
+confirmed three, nine unknown, three not_observed. Successful
+transaction bodies median 835ms vs 856ms (n=3 each); lock-timeout
+bodies one vs two. Zero CPU throttling, no POST replay.
+Private evidence amd64-wakeup-629062641aa4.log and originals.
+No capacity gain established. Repeated small SQL cuts have not
+closed the WAN gap; prioritize qualified database placement and
+the native baseline corpus before more isolated micro-tuning.
+
+CA-HA-03 SSE evidence now advances the raw Task cursor only after
+a complete blank-line-terminated frame with data. It records first
+and last numeric IDs and rejects non-increasing IDs. The standalone
+check proves a truncated frame never marks a connection ready.
+This supplies a safe cursor for future planned stream renewal.
+The current raw API caps a stream at 1800s (or earlier grant
+expiry), so a 30-minute window plus staggered setup needs renewal.
+Full corpus generator still live at 600 Tasks / 60k Events.
+
+CA-HA-03 raw cursor adapter live check used an existing synthetic
+Task only. Node 0 delivered cursor 0 and successor 1; closed that
+stream and exchanged a fresh grant for node 1 with after_sequence=0.
+Node 1 delivered exact cursor 1 with identical data lines. The
+helper rejects duplicate/nonmonotonic IDs and truncated frames.
+This is planned reconnect of one stream, not the 256-stream rotation
+or node-loss fault case. Corpus generation remains live.
+
+CA-HA-03 optional raw SSE renewal uses a new grant and the last
+complete cursor. Only a complete successor frame or keepalive
+closes the recorded renewal interval. Unexpected EOF, rejected
+cursor, and unfinished renewal at window end still fail the
+window. Live two-node check on one synthetic Task renewed one
+stream per node after 22s; both retained cursor 2 and observed
+the next keepalive after 15.348/15.581s. These intervals include
+heartbeat cadence and do not measure TCP outage duration.
+256-stream renewals and steady acceptance remain unverified.
+
+CA-HA-03 read-only planned renewal diagnostic with 32 raw SSE
+streams (16 per isolated API) succeeded. Every stream resumed
+from the same original cursor using a fresh grant; median/max
+time to first resumed observation was 15.407/15.773s including
+keepalive cadence. No admission traffic ran. Private evidence
+sse-renew32-addf7fbcd3c7462ca2e1399e0a68507b.json. Existing
+staging images were used; 256-stream sustained renewal remains
+unmeasured. The independent corpus generator continued running.
+
+CA-HA-03 frozen 256-stream read-only renewal diagnostic: all
+256 initial streams opened, but the first renewal wave failed
+closed after 11 attempts started. One node-1 resumed GET with
+after_sequence=2 returned 503, before any renewed heartbeat;
+no Host authorization exception logged. No reason field was
+captured. Expanded the bounded diagnostic to retain typed status
+as a fallback. Evidence sse-renew256-e1cae0390e4545f190e35c967ae0f504.
+Both isolated APIs restored and TLS ready; no POSTs. Full corpus
+generation concurrently reached 2250 Tasks.
+
+CA-HA-03 repeated frozen 256-stream renewal with typed status capture.
+All initial streams opened; 16 renewals started before a node-1
+resumed GET failed with task_preflight_unavailable. No Host
+authorization warning. The raw Task stream path performs read-only
+preflight via authorized_task_preflight after Host auth, under the
+same remaining deadline; its dispatch does not yet request a
+bounded read executor wait. The HTTP status localizes the boundary
+but also wraps timeout and operational errors, so instrument or
+test that exact preflight before claiming executor saturation.
+Private evidence sse-renew256-ee4059bf9e4541098064c736e932c9ae.
+Both staging APIs restored. Corpus reached 3000 Tasks.
+
+CA-HA-03 HTTP Task/Session read preflight now uses the existing
+bounded read-slot wait, under the same remaining authorization
+deadline. It runs only the admitted read callback and never
+replays authorization or SQL. Failure logs distinguish exception
+classes without payloads and preserve existing HTTP shape.
+The regression holds a single slot and verifies actual authorized
+preflight waits, then runs once; 15 focused tests passed.
+Live frozen 256-stream renewal comparison pending.
+
+CA-HA-03 frozen 3e6ce44b renewal still failed: 256 initial streams,
+21 renewal starts, one task_preflight_unavailable, logged
+ApiDatabaseExecutorSaturated. Private run
+sse-renew256-preflight-acb73db4327e42b2adcf2ee1d05c9d2a.
+Traced the missing wait to stream negotiation's own raw/AG-UI
+preflight, before the HTTP fallback preflight. Routed both through
+the same bounded executor wait. Initial unit run exposed old
+request doubles without ASGI scope; updated the existing dispatch
+regression to supply scope and assert the wait option. Both isolated
+APIs were restored. Corpus reached 4000 Tasks.
+
+CA-HA-03 frozen d5ca057b passed the isolated read-only 256-SSE
+renewal diagnostic. Both nodes opened 128 streams and all 256
+renewed with fresh grants and original cursors. Median 16.078s,
+max 21.112s to first resumed observation, including heartbeat
+cadence. No admission POST. Private evidence
+sse-renew256-negotiation-b4e6912f5a3f463a8f34f5c31316c675.
+Restored both original staging APIs and verified TLS readiness.
+This is one planned renewal cycle, separate from 30m E1 load,
+node-loss recovery and production.
+
+CA-HA-03 synthetic corpus now checks a bounded 16-Task sample via
+the actual PostgreSQL Task store, requiring strict source coverage,
+header highwater 99 and exact page positions 0..99. Ran that
+read-only check against the live corpus generation volume; all
+16 passed. This validates native replay metadata in the synthetic
+corpus, not tenant-signed admission composition or preserved
+legacy/Coverage samples. The running generator predates the new
+post-check; repeat it after the full count completes.
+
+CA-HA-03 added a read-only full-corpus verification CLI, reusing
+count, exact position joins, and strict native replay sampling.
+A fresh PostgreSQL pilot seeded then independently verified three
+Tasks / 300 Events / 300 indexes. Separately inventoried the existing
+staging namespace: 781 Tasks, 11,699 Events, 4,528 idempotency
+records, no Coverage model ledger or execution receipts, all
+position states ready. Thus the current fixture cannot stand in for
+legacy/Coverage acceptance. Its bootstrap script also explicitly
+requires an empty database. Full synthetic generation remains
+in its own namespace; compose its authority/rollout separately
+and preserve old fixture evidence in place.
+
+CA-HA-03 rehearsed corpus namespace bootstrap on a fresh, small
+PostgreSQL database. Verified native replay, registered the
+existing synthetic Host issuer under the corpus deployment namespace,
+initialized the epoch, and used the existing command backfill
+barrier (no historical accepted commands). Initial retry exposed
+that epoch bootstrap is deliberately non-idempotent; the fixture
+now reads and preserves the existing epoch. Two consecutive calls
+returned identical evidence, with 3 Tasks/300 Events/300 indexes
+preserved. Runtime role, isolated dependencies and signed API/Worker
+composition are still separate. Full corpus generation untouched.
+
+CA-HA-03 rehearsed the corpus application role on a disposable
+PostgreSQL 17.5 database started with max_connections=256.
+The existing E1 profile admitted a 238-connection fleet using a
+non-superuser/non-createdb/non-createrole DML role. Strict Task
+replay for three samples and an exact fixture receipt round trip
+passed via the same composed runtime DSN. The first rehearsal
+used the read-only verifier's modified DSN inside the runtime
+budget and correctly failed its DSN binding check; the repeat
+used the exact composed DSN. Grants were broad public-schema
+DML for the fixture, not an audited production least-privilege
+policy. The full generator remains live on its original 100-slot
+server; transition only after it completes and evidence is frozen.
+
+CA-HA-03 signed HTTP composition rehearsal against the populated
+synthetic namespace passed on a small disposable PostgreSQL DB.
+Live Uvicorn socket and real RS256 verifier accepted one
+atomic-task/1 non-executing Task and a fresh signed original GET
+returned the identical sealed response. AES-GCM unseal resolved
+the new Task; SQL verified the three original Tasks and 300 Events
+were preserved. Static test JWKS resolver and operator DB role
+used here; non-superuser role was proven in a separate rehearsal.
+No Worker or real broker on this run. Full corpus continued.
+
+- E1 corpus rehearsal: seed the canonical empty SessionPlan and check projection deserialization alongside strict header and event replay. On a separate OrbStack PostgreSQL database, a non-superuser Native Worker consumed one new synthetic request, called the synthetic provider once, and persisted one answer while the three historical Tasks and 300 events were preserved. The full corpus generator was already running with the earlier seed and requires a namespace-scoped backfill after completion.
+
+- E1 signed HTTP and Worker now run together in the isolated corpus rehearsal. One RS256 POST over a live socket admitted the executable synthetic Task, and a separately signed GET returned the identical sealed receipt. The non-superuser Worker consumed that Task with one synthetic provider call and one answer. The full corpus wait job will use this same path after the generator emits verified counts. JWKS uses the static test resolver and this test exercises the direct PostgreSQL command consumer.
+
+- E1 full OrbStack corpus signed admission/Worker gate passed. The isolated source verified 10,000 historical Tasks, 1,000,000 event/index pairs and 16 strict replay samples, then admitted one signed synthetic request, retrieved the identical sealed receipt, and consumed it with the non-superuser Worker. One provider call and one answer were recorded; all original Tasks/events were retained. The capacity clone and multi-node load/fault gates are separate.
+
+- OrbStack E1 gateway fault smoke: stopped the second API, allowed two seconds for health detection, and observed 12/12 successful TLS readiness requests through the gateway. Restarted the second API and verified its direct readiness recovered. This smoke used the original isolated runtime database. In-flight admissions, SSE recovery, worker takeover and the full E1 load envelope remain separate gates.
+
+- OrbStack E1 SSE fault smoke: captured frames 0 and 1 from the first API, closed the original connection, stopped that API, and used a fresh signed observation grant and cursor 0 to read the exact frame 1 from the second API. Restarted the first API and verified readiness. The probe used one stream on the original isolated runtime database and exercised only read requests. Open-stream interruption and the 256-stream fault envelope remain separate.
+
+- E1 open SSE fault smoke: received cursor 0 while the first API connection remained open, killed that isolated API, observed stream termination, and used a fresh signed grant to resume on the second API. Frame 1 matched the independently captured successor exactly. The first API was restarted and readiness returned. This evidence covers one stream and does not exercise concurrent admissions or the 256-stream fault envelope.
+
+- E1 parallel SSE recovery failed on the surviving API. A 16-request burst returned 2 successful streams and 14 capacity_unavailable responses. The read-entry semaphore with read=2 reproduces that result before database work. A separate read-only retry probe using a fresh grant and the same cursor for every attempt recovered 9/16 and exhausted 7/16. The survivor logged DatabaseCapacityExceeded in Host Grant authorization. The probe deliberately tested both error classes and is not a client retry policy. Next trace the authorization storage lane together with ongoing stream polls and preserve the original receipt path during any fix.
+
+- E1 bounded SSE reconnect probe recovered 16/16, 32/32 and 64/64 after killing the original isolated API, using at most two concurrent recovery attempts and a fresh grant for the same cursor each time. The last recovered frames arrived 22.119s and 45.052s after fault for 32 and 64 respectively. These are original test DB results with a probe-local policy. The first 128-stream attempt failed during setup with Host Grant authorization unavailable before fault injection. Product client and 256-stream acceptance remain open.
+
+- E1 SSE 128-stream fault probe recovered all 128 exact successor frames in 91.882s with two concurrent attempts. Increased only the probe HTTP pool to 136 to avoid the default 100-connection ceiling during setup. The isolated API recovered readiness after restart. The current 240 configured fleet connections plus 7 reserved/external slots leave 9 slots. Adding one read slot to the shared profile adds 15 fleet slots and would exceed 256. Preserve separate admission, control and original receipt budgets in the next candidate.
+
+- E1 paired fault probe on the original isolated database recovered 32/32 exact SSE successor frames in 25.054s with two concurrent reconnects. In the same window, 5/25 signed original GETs recovered the sealed result and 20/25 returned HTTP 503. The probe sent no admission POST. Treat this as a failed combined gate. Next verify an independent receipt admission path under the same bounded PostgreSQL fleet budget.
+
+- E1 paired fault comparison with one reconnect slot recovered all 32 SSE streams in 37.063s. The original GET probe recovered 36 of 37 receipts. The first response could not be decoded as JSON; the probe did not retain its HTTP status. This compares with 5/25 original GET successes and 25.054s for two reconnect slots. A client-local semaphore cannot reserve service capacity across multiple callers.
+
+- CA-HA-03 original receipt capacity candidate adds an optional API-only receipt lane and counts it for every peak API replica. The exact original GET uses it when configured. Ordinary reads, admission POSTs, STOP and health retain their existing lanes. Regression proves receipt GET remains available with the read lane saturated. Live paired fault validation remains pending.
+
+- E1 live receipt isolation candidate on the second OrbStack node recovered 32/32 SSE frames in 24.056s while 24/24 signed original GETs returned and decrypted their original receipt. Maximum GET elapsed 0.547s. Requests targeted the candidate directly through its dedicated TLS listener. The source API restarted and passed readiness. This used the original isolated DB and two concurrent reconnect slots. The 256-stream mixed load and signed STOP remain open.
+
+- E1 256-stream single-source fault probe reached the 64-stream checkpoint but failed during subsequent stream admission with HTTP 503 host_grant_authorization_unavailable. Fault injection was not reached. A follow-up probe logs and bounds retries for this specific setup response, preserving the first-attempt failure separately. This stress shape places all streams on the source replica, unlike the split steady-load topology.
+
+- The source API log for the failed 256-stream setup reports DatabaseCapacityExceeded from Host Grant authorization. This is the native connection budget exception, distinct from ApiDatabaseExecutorSaturated and the outer authorization deadline. The SSE request returned 503 before stream admission. Identify the saturated lane and its socket owners before changing the fleet budget.
+
+- The bounded-retry 256-stream single-source probe stopped during setup after reaching 144 streams. Seven authorization retries were logged, followed by a 503 without the expected authorization/capacity code. The source API remained running and no fault was injected. Started a separate 128+128 split probe against the existing direct TLS endpoints. It checks exact resume for the 128 source streams and buffered successor frames on the survivor. Buffered frames alone do not prove post-fault live delivery.
+
+- E1 split fault probe reached 256 streams (128 per node) with four setup authorization retries. It killed the isolated source API and measured 128 resume attempts with two reconnect slots. 113 matched the exact successor, 14 failed with an unclassified HTTP 503 and one exhausted bounded retries. Recovery collection finished at 119.298s. Concurrent signed GETs opened 119/119 original receipts (max 0.571s). The failed resume assertion prevented the subsequent survivor check. The source API restarted. Treat the combined gate as failed.
+
+- E1 post-fault candidate audit found revision skew: second-node receipt image matched database_budget.py but differed in http_host_auth.py, http.py and ag_ui_task_view.py. It lacked the current bounded read-executor wait during Host authorization and Task preflight. Within the sampled incident window, its logs showed 338 executor rejections and 352 stream GET 503s, with zero receipt GET 503s. This explains the observed executor rejection class, while the other 14 stream 503s lack per-request correlation. Saved the three deployed source files for comparison. Docker rejected the in-place copy because this probe uses a read-only root filesystem. Recreate the isolated probe with verified read-only overlays before rerunning the split gate.
+
+- E1 survivor alignment recreated the second-node receipt probe with the original image and container configuration plus three read-only bind mounts (http.py, http_host_auth.py, ag_ui_task_view.py). All three files matched the worktree SHA-256 and the existing TLS endpoint regained healthy Cloud/gVisor response. The previous probe remains stopped for rollback. Started the same 256-stream split fault probe with the response status field retained for classification.
+
+- E1 repeat after the three-file alignment reached 256 streams and injected the source fault. 113/128 exact resumes succeeded, 15 returned task_preflight_unavailable. Survivor logs classify those 15 as 14 ApiDatabaseExecutorSaturated and one TimeoutError. 109/109 original receipts opened (max 0.689s), collection ended at 109.288s, and source health returned. SHA-256 comparison then found a fourth stale file, stream_v2_http.py. The branch passes http_app to both raw and AG-UI negotiation preflights to enter the bounded read wait. Include this fourth file in the survivor and verify all negotiation entry points before repeating.
+
+- E1 six-file-aligned split run passed 192-stream setup checkpoint, then hit task_preflight_unavailable during setup and exited before fault. The read-only diagnostic now preserves the response retryable flag and retries this preflight status only when explicitly retryable. It uses fresh grants, bounded attempts and the same original cursor, and logs setup retries. No command retry policy changed. Started the updated 256-stream gate.
+
+- E1 two-node split with all six path files hash-verified and bounded read-only retry passed the paired probe. 256 streams opened (128 per node). After killing the source, 128/128 exact successors recovered, 127 on their first reconnect attempt and one on its second. Collection finished in 121.241s with two reconnect slots. 121/121 signed original GETs decrypted (max 0.741s). All 128 survivor streams yielded the expected buffered successor. The source restarted and passed health. This probe does not measure post-fault new-event delivery, product-client reconnect, signed STOP under load, or the full-corpus matrix.
+
+- Started E1 256-stream split fault with a concurrent signed STOP probe against the surviving TLS API. The STOP probe submits one fresh synthetic Task, checks the real sandbox identity, uses one force-cancel POST, and checks terminal status, sandbox absence and matching executor receipts. The exact owned fixture Worker is unpaused in a finally block. The prior test data and production sessions are outside this probe.
+
+- Mixed fault run recovered 128/128 exact SSE successors in 111.261s and opened 111/111 original receipts (max 0.544s). The signed STOP subprocess failed at its single synthetic Task admission POST with 403. It sent no STOP. The script referenced the 9b4f9ad3 publication while the survivor API and both Workers mount 837defbe. Preserved the first diagnostic record and started a fresh mixed probe with the shared publication verified across all three containers. Source API health recovered.
+
+- Mixed run with the shared 837defbe publication reached 254 of 256 streams, then exhausted eight setup attempts on the source with DatabaseCapacityExceeded in Host authorization. Fault and STOP were not reached. Found four stale source negotiation files and recreated the isolated source API with read-only overlays. Verified five relevant file hashes and existing TLS health, retained the original source container for rollback, and restarted the same mixed gate against the aligned source and survivor. Native read lane capacity stays two on both nodes.
+
+- The source preflight overlay failed its first stream with eight TypeErrors in Host authorization. Runtime hash check showed its old database_budget.py lacked wait_for_read_slot. Recreated the isolated source with database_budget.py and its two capacity dependencies overlaid together, verified eight path hashes and existing TLS health, and restarted the mixed gate. Source profile values were not changed.
+
+- E1 mixed gate with both APIs aligned reached 256 and injected the fault. 127/128 SSE resumes matched, one received explicitly retryable projection_not_ready (HTTP 409), outside the probe retry table. 115/115 original receipts opened (max 0.801s), collection 115.280s, source health restored. The synthetic Task was admitted once with HTTP 201 but stopped at approval_requested for command.run; no runtime instance, pause, or STOP occurred. Preserve that Task. The next live-sandbox run needs the normal signed approval path for its fresh fixture, and read recovery needs bounded handling of the explicit projection-not-ready signal.
+
+- Started the E1 mixed gate with a fresh synthetic Task whose pending command.run approval is discovered in the exact isolated namespace and Task. The probe submits a single signed approval through the normal API and preserves its result before looking for a real sandbox. Read-only setup/resume now recognizes projection_not_ready only on HTTP 409 with retryable=true. Prior fixtures and their receipts remain available for comparison.
+
+- E1 256-stream mixed gate with signed approval reached real sandbox execution. Approval returned 200; one signed force-stop POST returned 202 while the exact test Worker was paused and one executor exit was outstanding. STOP reached stopped/resources_released in 10.201s. The subprocess failed its Docker stderr string assertion, so the parent exited nonzero before the survivor buffered check. Independent Docker full-ID inventories confirm exact sandbox absence on both nodes, PostgreSQL shows one removed instance and 2/2 matching start/exit receipts, and both Workers are running/unpaused. Concurrent 128/128 exact SSE resumes completed in 149.301s and 149/149 original receipts opened (max 0.958s). Source health restored.
+
+- Mixed rerun with exact Docker ID inventory reached 256 and injected the fault, but the STOP subprocess timed out before its signed approval. The original synthetic Task was admitted once; PostgreSQL timestamps show model start at +72.701s and the expected approval at +78.693s, beyond the 25s staging timeout. No approval or STOP was sent. Move fresh Task admission and pending-approval readiness ahead of fault injection, then send the signed approval and STOP under fault load. Preserve this Task and the earlier verified STOP result.
+
+- Started staged mixed E1 run. The fresh synthetic Task is admitted during SSE setup. Exact pending approval and 256 opened streams form the two readiness conditions. The subprocess waits for the source-fault marker before sending its signed approval and single STOP, and now uses successful Docker full-ID inventory on both engines. Previous evidence retained.
+
+- Staged E1 run reached 256, injected the source fault and submitted signed approval. Durable events confirm approval_granted and the continuation accepted and authority revalidated. No runtime instance appeared before the 25s probe deadline or at post-run query, so no STOP was sent. 128/128 exact SSE resumes and 128/128 original receipts succeeded in the 128.354s collection window (max GET 1.002s). Trace the original continuation after memory_context_selected before another rerun.
+
+- Read-only budget audit of the original staged Task shows a 120s absolute execution deadline and approval 114.991s after expiry. The Worker correctly rejected continuation at gate.start. Started a fresh mixed probe that stages the synthetic Task at stream 224 and requires more than 45s of persisted execution budget before fault injection. The original Task budget was preserved.
+
+- Late-stage E1 mixed run reached 256 and passed the persisted deadline guard. Approval granted at Task +45.698s; the tool execution started at +47.412s, then suspended at +59.604s with executor_process_interrupted. No runtime instance or STOP was observed. Worker logs show PreparationAdvanced and a lease-boundary lock timeout during recovery; investigate the executor interruption separately from the expired-budget case.
+
+- For the late-stage interrupted Task, the two isolated executor starts each have a matching durable exit receipt. The second child began at 15:49:29.946Z and exit was acknowledged at 15:49:37.944Z. The survivor Worker logged a lease-boundary LockNotAvailable and PreparationAdvanced during that child window. session_process.py distinguishes exact exit proof from a successful child result; a matching exit cannot prove a tool outcome. No runtime instance exists for the Task. Preserve its suspended state while determining whether the child returned an error result or exited before writing it.
+
+- CA-HA-03 continuation recovery fix reuses finish_preparation only around the fenced re-read after continuation start. The durable start appends remain outside the retry. Regression injects PreparationAdvanced and verifies one start pair and the same lease on both reads. Focused Worker suite 15 passed; Ruff passed. Isolated fleet validation pending.
+
+- Installed the 59ce02f6 continuation fix on both owned OrbStack E1 Workers through a read-only source bind. Both started, source hashes matched, and the existing finish_preparation dependency matched before the switch. Retained both stopped pre-change Worker containers for rollback. Started the same 256-stream mixed fault rehearsal with a fresh synthetic Task and original deadline guard.
+
+- E1 59ce02f6 live mixed run passed the signed STOP subprocess: approval 200, one force-stop POST 202 with a live sandbox and paused Worker, terminal stopped and exact cleanup/exit proof in 11.221s. 138/138 original GETs opened (max 0.630s). 127/128 resumes matched in the 138.264s collection window; the other exception string was empty and the parent assertion stopped the survivor buffered check. Source health restored. Prepared the next diagnostic to retain exception class as well as message.
+
+- Classified E1 mixed rerun passed 128/128 exact resumes, all 128 survivor buffered successors and 145/145 original receipts (max 0.748s) in the 145.293s collection window. The fresh fixture signed approval returned 200 but no live runtime instance was observed within its 25s sampling window, so no STOP was sent and the combined runner failed. This run independently preserves all read-side results even when STOP fails.
+
+- Original classified-run Task later completed normally. Its single runtime instance was created 71.197s after approval and was removed. The 25s STOP probe timeout therefore missed a delayed launch, not a continuation failure.
+
+- Started the E1 mixed gate with sandbox observation bounded by the Task persisted execution deadline instead of 25s. The probe measures observed launch latency and selects the Worker node only after matching the exact sandbox ID and namespace/Task/engine labels. It retains one signed STOP, cleanup proof and independent survivor results.
+
+- Deadline-aware E1 mixed run observed a live sandbox 8.893s after approval and sent one signed STOP, accepted HTTP 202. A later status GET returned 503 and failed the subprocess. Reconciled the original via signed read-only GET (HTTP 200 stopped/resources_released), Docker exact-ID absence on both nodes and PostgreSQL removed instance/session_cancelled. No STOP replay. The runner should keep polling only the status GET on transient responses.
+
+- Started mixed E1 rerun with a 35s bounded terminal STOP status polling window. Only status GETs retry 409/429/503; approval and cancel POST counts stay one. The prior deadline-aware run separately verified 128/128 resumes, all 128 survivor buffered frames and 133/133 original receipts (max 0.648s). Fleet corpus live count was 10,132 streams and 946,706 events with an active import COMMIT.
+
+- E1 mixed probe exited zero with 256 streams and a source API kill. All 128 interrupted streams resumed on their first attempt with exact successors (132.406s collection with two slots), all 128 survivor streams yielded expected buffered successors, and 132/132 signed original GETs decrypted (max 0.615s). Signed approval launched the sandbox in 9.013s; one signed STOP while its Worker was paused verified stopped/resources_released, exact container absence on both nodes and two matching start/exit pairs in 7.709s. No terminal status GET retries were needed in this pass. Source health recovered. The probe uses the original isolated DB, local read retry policy and buffered survivor checks. Full-corpus, new live-event delivery and product-client recovery remain open.
+
+- Fleet corpus PostgreSQL read-only coordinate audit during import matched 9,750 ready 100-event Tasks, 975,000 canonical source events and 975,000 exact task-event index rows in the fixture namespace. The live importer still showed an active COMMIT. Repeat the audit at the final 10,000/1,000,000 threshold, then validate the app against that same corpus database.
+
+- Prepared six stopped corpus candidates (two APIs, two Workers, two runtime cleanup services) by cloning owned live test specs and changing only the PostgreSQL database path from ha_e1 to zebra_e1_corpus_fleet. Verified ha_app CONNECT and key event/lease/ledger/receipt table privileges, with no app sessions in the target. At cutover stop the two additional original-DB API fixtures as well as the six originals before starting the corpus candidates, since the deployment namespace and Rabbit/Redis services are shared. The import is still active; no cutover occurred.
+
+- Final corpus audit passed 10,000 ready Tasks, 1,000,000 exact source events and 1,000,000 matching indexes with no remaining importer client. A guarded corpus cutover brought both APIs to readiness but both Workers rejected the alternate database via the fixture operator factory. The cutover rolled back all six candidates and restarted the eight original-DB services. Next align the dedicated fixture factory allowlist before retrying.
+
+- E1 fixture factory now allows only the two exact local database paths on the existing guarded host, port and namespace. Both corpus Workers and cleanup services remained running, and both corpus API TLS readiness probes passed on cutover. Started the 256-stream mixed signed STOP/receipt gate against the full corpus. Ruff passed.
+
+- Full-corpus mixed probe opened all 256 signed streams, then stopped before source fault because its fresh Task suspended before approval. Both corpus Workers independently proved that the current settings HMAC differs from their mounted catalog, while replacing only the database path with /ha_e1 yields the exact catalog HMAC. The runtime bundle guard correctly rejected the old publication on the new database. Preserve the failed Task and existing signed artifacts. Generate and publish a new corpus-specific fixture bundle through the normal publication path before the next mixed fault run.
+
+- Generated a fresh private E1 corpus runtime bundle and scoped publication approval using effective settings inside the running corpus Worker and the existing verified image/evidence pins. Both live corpus Workers match the generated catalog baseline exactly. Retained the operator credential only in the private artifact directory. Catalog/publication mount activation and native materialize/evaluate/publish remain next.
+
+- Activated the corpus-specific catalog and approval on both APIs and Workers. Both TLS readiness and native wire checks passed. Management trust advanced to 31. Initial materialize was denied by an old client revision header; signed original-operation GET confirmed 404. Corrected the header, then materialized and published the scoped corpus definition with HTTP 200 using the saved operation IDs and recorded evaluation evidence. Started a fresh 256-stream mixed probe with this publication.
+
+- Corpus publication mixed drill reached 256, injected source fault, recovered 128/128 exact successors on first attempt and checked all 128 survivor buffered frames. 51/51 signed original receipts opened (max 0.380s, 51.202s collection). Signed approval succeeded, but continuation checkpoint commit hit the lease-boundary PostgreSQL lock timeout before sandbox creation. Reused the existing one-shot same-fence lock retry at the continuation re-read, outside all start appends. Focused Worker suite 23 passed. Corpus rollout of this follow-up remains pending.
+
+- Activated 268cf34e on both corpus Workers with three verified read-only source binds and an import check. Retained the prior Worker containers stopped for rollback. Started the full-corpus 256-stream mixed gate with a fresh signed fixture.
+
+- Full-corpus E1 mixed gate exited 0 after a source API kill with 256 streams. 128/128 exact resumes (125 first attempt) in 74.237s; 128/128 survivor buffered frames; 74/74 original receipts (max 0.436s). Signed approval launched the sandbox in 7.232s, then one STOP returned 202 and verified terminal cleanup in 6.380s with both engine inventories clear and two matching executor receipt pairs. Both APIs passed readiness after restart. Product reconnect, newly committed live events and remaining dependency fault scenarios are separate gates.
+
+- Started a full-corpus 256-stream mixed rerun plus one signed survivor stream for the fresh STOP fixture. The extra connection observes approval_requested before fault and must deliver a higher-sequence session_cancelled without reconnecting after source kill. The probe retains event ID, sequence, creation timestamp and fault-relative receipt time for PostgreSQL comparison.
+
+- Full-corpus post-fault live-event run passed signed STOP in 6.983s and all survivor buffered checks, but its dedicated already-open stream ended before session_cancelled. PostgreSQL shows the original cancellation event committed at sequence 23 after approval at 15. The cursor-only parser drops no-ID SSE notices, so this run cannot distinguish an intentional observation close from a lost live event. The next probe must retain safe notice codes and last delivered sequence. Preserve original STOP and no replay.
+
+- Live event investigation found the existing Task and Session SSE tails both drain and close on WAITING_APPROVAL, which is outside their active status set. The previous watcher deliberately attached to an already approval-blocked Task, so its uninterrupted-connection assumption conflicts with that lifecycle. The in-flight diagnostic now logs no-ID notices and last sequence. A valid same-connection live gate needs a Task that stays active across the fault, while the approval-paused client path needs explicit reconnect verification.
+
+- Notice probe reproduced clean EOF after approval_requested sequence 14 with no no-ID notice, while signed STOP passed in 22.446s. Started an active-task variant: approve before fault, verify and pause the exact sandbox-owning Worker, attach the survivor SSE through tool_execution_started, then kill the source and issue the only STOP. The child releases the paused Worker in finally and bounds the pre-fault hold to 20s.
+
+- Full-corpus active observer gate exited zero. The signed survivor SSE read tool_execution_started before the source fault and received session_cancelled on the same connection at fault +4.457s. PostgreSQL source and task-event index match its exact event UUID, sequence 23 and creation timestamp. Signed STOP cleanup verified at 7.252s; all 128 interrupted resumes and all 128 buffered survivor checks passed. Product-client reconnect remains separate.
+
+- Trench product-path live preflight used fresh signed grants and both corpus TLS endpoints. The existing Task/STOP fixture was created through raw /tasks, and its AG-UI observation at the external Run returned 400 invalid_cursor even with recovery=full; the internal replay Run was rejected with 404 under external authority. This fixture proves raw SSE only. Prepare a new signed AG-UI command with a canonical public Run anchor before the product reconnect fault test. No Task command was sent in this preflight.
+
+- Created a fresh definition-backed corpus Task with execute=false, then one signed /agui/commands RUN using the exact Task revision and public Run. Native admitted it and persisted the original command intent and response. Both signed AG-UI observation endpoints were probed against this canonical Run.
+
+- Trench branch 42be13f observe_zebra and its production watchdog ran directly against signed Native AG-UI on the full corpus. Killed source after first delivered cursor, then test routing selected survivor. Two observation GETs used different grants; the second carried exact saved cursor. All 12 cursor/type pairs matched the uninterrupted survivor baseline through RUN_FINISHED. PostgreSQL retained one original accepted command; the harness only issued observation GETs and fixture grant exchanges. Source readiness restored. This verifies product observation code with fixture routing/authority, not a browser-to-BFF failover.
+
+- F-05 Redis correctness drill stopped the exact owned Redis service and verified its process was down. On the full corpus, Trench observation fetched the canonical original AG-UI Run in one signed GET, all 12 cursor/type pairs and terminal frame identical to the no-fault baseline. Restored Redis. This is one read-only correctness drill, without a steady workload or Redis/object failover acceptance claim.
+
+- F-05 object read drill selected an original finalized tool-output object from the full corpus namespace and used the live API container S3 adapter with the persisted version/digest. Baseline and restored reads returned identical verified 20-byte content, lifecycle revision 2. During an exact owned object-service stop the read reported bounded unavailable in 0.126s; no metadata mutation or replacement object. Service restarted. HTTP authorization path and unknown write-response drill remain separate.
+
+- F-05 object write-reply loss probe used the running full-corpus API container and real isolated S3 service. Injected a client ReadTimeoutError after the real conditional PUT returned 200. The adapter reported unavailable, then HEAD and versioned GET verified the original bytes with one PUT. Deleted only the exact new synthetic version and verified absence. Fault injection was at the SDK response boundary, without application metadata finalization or network-proxy loss.
+
+- F-06 Broker outage drill stopped the exact owned Broker process. Real TLS exchange returned 502 and the probe issued no Native observation request during the outage. After restart, fresh exchange succeeded and Trench read the original full-corpus AG-UI Run with all 12 cursor/type pairs and terminal frame matching baseline. This covers one Broker outage; JWKS unreachability, revocation and expiry are separate cases.
+
+- F-06 cold JWKS drill minted a fresh unused grant, stopped the owned Broker serving JWKS, observed real TLS JWKS 502, then restarted the survivor API to ensure an empty verifier cache. The original unused grant received 403. Restored Broker/JWKS and verified a freshly signed grant opened the same original AG-UI Run. Cold verification case only; warm-cache revocation and expiry remain separate.
+
+- F-06 warm revocation drill primed the survivor verifier with a successful signed GET, minted a second unused grant, then CAS-deactivated the exact isolated corpus registry row. The unexpired grant returned 403 despite warm keys. CAS-reactivated the same row at the next revision and verified a fresh grant returned 200 on the original Run. This injection changed the dedicated DB row directly and did not exercise the management HTTP route.
+
+- Started full-corpus F-02 in-flight model reservation probe using a fresh single-admission synthetic Task. The drill only kills an owned Worker after a live exact Task lease and unresolved reservation identify its node. It observes a higher fence and unchanged unknown reservation, then restores the exact Worker. Expiry probe is still live.
+
+- Full-corpus Worker loss during unsettled model request did not produce a higher-fence execution takeover in the 90s window. Read-only audit explains the outcome: original lease expired, original command became dead/requires_reconciliation at generation 0, and the same single model reservation remains unsettled. Both Workers restored. Treat this as fail-closed evidence for uncertain effects, not proof of takeover for a safely replayable command. Next inject Worker loss before any external reservation to exercise the eligible branch separately.
+
+- Full-corpus F-02 effect-free Worker kill passed. PostgreSQL confirmed zero model reservations immediately after killing the original lease owner. The survivor claimed the original Task at fence 2 and completed command generation 1 with exactly one session_command_accepted event. Original Worker restarted. This single pre-effect fault drill complements the separate unknown-model fail-closed case; old-fence write injection remains separate.
+
+- F-02 old-fence follow-up ran from the restored source Worker against the original takeover Task in the full corpus. The native heartbeat mutation and event append fence guard independently rejected old owner/fence 1. Full successor lease row and event count/highwater matched before and after. The drill called the guard directly, without attempting a complete event transaction.
+
+- F-02 full old-fence transaction probe used the restored original Worker and PostgresWorkspaceProjectionStore.commit_worker_event on the original takeover Task. Original fence 1 was rejected by the current lease fence inside the native transaction. Full event list, Session projection, Workspace projection and persisted successor lease row were identical before and after. LeaseStore.get hides released leases, so audit the persisted successor row explicitly.
+
+- F-03 compute-node loss drill verified only five owned E1 containers on OrbStack node2, then stopped the entire node2 VM. While its machine state was stopped, Trench retrieved the original full-corpus AG-UI Run through the surviving fixture ingress in one signed GET, with all 12 cursor/type pairs and terminal frame matching baseline. Restored node2 and all five services, and verified its API readiness. The logical nodes share a Mac and PostgreSQL/Broker remain on the first node; no independent physical host failure claim.
+
+- F-03 restoration correction: VM/container start alone did not restore node2 readiness. Its ephemeral loopback dependency forwards were lost, and corpus apps initially exited with PostgreSQL connection refused. Recreated a test-owned loopback-only TLS-transparent relay under a transient systemd unit, restarted the three corpus apps, then verified node2 TLS readiness. The relay is transient and must be recreated after the next VM shutdown.
+
+- E1 node2 boot recovery now uses two isolated systemd units: zebra-e1-node2-relay binds only six loopback ports and zebra-e1-node2-corpus starts/stops the exact five owned containers after Docker and relay startup. Verified unit syntax and a full named VM stop/start. Both units became active automatically, all five containers returned, and TLS readiness became ready after initial connection/502 responses. This is fixture boot automation with a fixed first-node destination, not production dependency failover.
+
+- Full-corpus open-loop capacity pilot ran 5 offers/s for 3s with 32 SSE connections using the tracked diagnostic and direct corpus endpoints. 15 offered, 4 accepted and recovered, 8 returned 503 unknown and original GET still showed unknown, 3 returned 503 unavailable and original GET showed not_observed. All 15 original GETs returned HTTP 200. The gate failed; preserved intents and outcomes without retrying POST. Investigate the eight unknown admissions before increasing the load.
+
+- Audited the eight original full-corpus unknown responses. Survivor logs show all eight exhausted the ~2s atomic admission budget in source-event position backfill, down to task_event_positions._assign and libpq wait. The running survivor file hash differs from the branch, which has the combined source-update/index-insert query. Align that path and its dependencies before repeating the open-loop pilot; preserve all original operation intents.
+
+- Aligned both full-corpus API position allocator files with the worktree using read-only binds; verified SHA-256 and TLS readiness. The same 32-SSE / 5 rps / 3s pilot improved from 4 to 7 completed out of 15. Five remained unknown and three not_observed on original GET. Timeout stacks now span position assignment, index transaction completion, outbox capacity and strict command source lookup. No POST replay. This comparison still fails the pilot and does not isolate the remaining shared bottleneck.
+
+- Sampled full-corpus pilot again returned 6 completed, 7 unknown and 2 not_observed out of 15 originals. Corrected the sampler invocation while the pilot was live, so the sampling window is partial. PostgreSQL active client observations include 116 running event-query samples, 56 commit WalSync, 20 commit WALWrite and only two blocking-PID observations. Commit I/O and event SQL are candidates for the next controlled comparison, not causal attribution from these aggregate samples.
+
+- Corpus read-only EXPLAIN ANALYZE shows bounded index scans for session event suffix and both position highwater queries, execution 0.112/0.050/0.061ms at rest. PostgreSQL fsync and synchronous_commit are on. Ran the same 15-offer pilot with zero SSE to test whether observation load is required to reproduce admission failure.
+
+- Reused existing atomic admission milestones by changing only log severity in a private survivor API overlay. Same 15-offer no-SSE pilot again had 6 completed, 6 unknown and 3 not_observed. Timings show the long and missing milestone is usually in dispatch, before receipt persistence. Completed traced dispatch spans 206–731ms while post-receipt commits span 7–90ms. Next instrument existing Task admission boundaries inside dispatch. The severity overlay is diagnostic only; it remains on the test survivor.
+
+- Task-admission stage timings from the full-corpus 15-offer pilot show index rebuild spans 91–605ms where completed, and four traces stopped after command event persistence before index rebuild completion. Wakeup registration spans 20–268ms where completed and two additional traces stopped before it finished. Original GETs report 7 completed, 6 unknown, 2 not_observed. The isolated survivor has a diagnostic-only overlay; next subdivide rebuild and compare deployed transaction source with the branch.
+
+- Index rebuild stage diagnostic on the same full-corpus 15-offer no-SSE pilot recorded 12 traces. Event position synchronization consumed 53–402ms between segment completion and position completion, the largest step in most traces. Original GET recovered 10 completed, 2 unknown, 3 not_observed. All traced position stages finished this time, so this does not attribute the two unknowns solely to position synchronization. Next compare per-event assignment round trips and preserve the guarded legacy recovery path.
+
+- Added one bounded CTE for fresh contiguous unassigned root events after proving both position sources empty under the Task lock. It verifies the indexed row count and treats uniqueness conflict as rollback. Legacy, non-root, sparse and previously assigned rows retain per-event validation. Real PostgreSQL Task and byte-bound tests passed 58; disposable test DB container removed. Corpus activation/comparison pending.
+
+- Batched root position candidate loaded on the corpus survivor with exact hash and readiness. No-SSE pilot returned 7 completed, 6 unknown and 2 not_observed of 15. Completed position stage remained 115–311ms in this run, so the candidate does not establish a capacity gain. One timeout was in the post-commit idempotency GET. Live atomic and operations modules differ from worktree commits 62f495dc/9a1857a2/7b2b50d0 that reuse the claim, exact receipt and bounded sockets. Align those as a compatible pair for the next comparison; preserve original outcomes.
+
+- Aligned atomic and operations modules plus their E1 receipt proof import on the survivor. The first two-file activation failed import and rolled back. The three-file candidate passed hash checks/readiness. Same no-SSE 15-offer pilot returned 12 completed (all original receipts recovered) and 3 HTTP 503 unknown; original GETs classified those as 2 unknown and 1 not_observed. Still fails capacity; remaining stacks include initial bounded DB connect and dispatch, rather than post-commit receipt GET.
+
+- Aligned the first corpus API with the guarded batch allocator and three admission/receipt modules. In the no-SSE 5 rps / 3s comparison, the driver alternated admissions across direct TLS endpoints (8/7) and kept original GETs pinned to the same endpoint. All 15 POSTs accepted and all 15 original GETs decrypted. This short success is not the 256-SSE steady capacity gate; next retain balanced routing while restoring the stream inventory and duration.
+
+- Started 256-stream balanced corpus pilot using the existing bounded stream setup and 5 rps admission split. Natural grant expiry probe reached its scheduled read but received HTTP 503, which did not satisfy its 401/403 expiry assertion. The original probe did not retain the safe response reason or run the fresh-grant control after the assertion. Treat expiry as unverified; no command was replayed.
+
+- Balanced full-corpus pilot held 256 SSE connections and offered 15 admissions at 5/s for 3s, split 8/7. Ten POSTs returned completed, five returned 503 unknown. Original GET recovered two more exact sealed results, giving 12 completed and three still unknown. No submission replay. The short capacity comparison fails even though the runner exited zero after recording evidence.
+
+- Balanced mixed-run node comparison verified identical hashes for ten admission, budget, Task I/O, allocator and wakeup modules. Source unknowns exhausted ~1.9–2.0s at source read, lineage and strict wakeup source, without one common failing statement. Receipt lane differs (source disabled, survivor one) and only the first node hosts PostgreSQL/Broker/Redis. The prior result is insufficient to attribute causality to receipt capacity or placement. Next match the receipt profile and capture per-node contention over a paired window.
+
+- Matched the source and survivor API receipt lane to one slot. Native parser accepts 242 fleet connections plus seven reserved/external, within 256. Source TLS readiness restored. Started the balanced 256-SSE comparison and a bounded PostgreSQL wait sampler keyed to the 224-stream milestone.
+
+- Receipt-aligned 256-stream balanced pilot offered 15 at 5/s. Seven POSTs completed; original GET recovered one additional exact receipt, leaving 8 completed and 7 unknown. First API 5/8 and second 3/7. Both client-address groups show LockManager and WalSync waits; loopback also includes local Workers and cannot be attributed exclusively to its API. Matching receipt profiles did not remove the admission failure. No POST replay.
+
+- Read-only audit of the latest seven unknowns found exactly seven original claims and dispatch fences and zero result receipts. The neighboring timeout logs include wakeup capacity/host validation, position synchronization and commit waits, but lack operation correlation. Outbox capacity SQL used a sequential scan at rest (940 matching rows, 0.555ms). Preserve all unknowns and add safe operation-correlated stage evidence before drawing a per-request causal conclusion.
+
+- E1 outbox audit joined all 940 pending messages to exact command generations and scoped delivery rollouts. None had a broker rollout or any publish attempts. Of those, 890 match done commands, 12 match dead commands and 38 have no exact current-generation match. Live Worker scoped rollout is enabled, so these rows are excluded from broker relay selection. Worker logs separately show Task I/O connection-capacity exhaustion in command discovery and resolution. The pilot still fails capacity; compare under load with lane occupancy and operation-correlated stages before changing budgets.
+
+- E1 Worker diagnostic gap: source logs had 49 execution pickup failures without exception type or frame locations, separate from recovery tick capacity errors. Reused the existing safe traceback formatter in execution pickup to record only type and frame locations. Kept retry behavior and the test profile unchanged (normal 8, pool 3, execution slots 4). Ruff and 15 Worker command-process tests passed. Candidate is not active in the corpus yet.
+
+- E1 diagnostic activation: after confirming the full corpus had only done/dead command rows, replaced the two isolated Worker containers sequentially, reusing each original image and container configuration with one additional read-only command_process.py bind. Both candidates stayed running and reported the exact 47b457ea source hash in-container. Both original containers are stopped under the rollback suffix. The temporary diagnostic image was removed after OverlayFS could not mount the additional layer. Capacity retest remains pending.
+
+- E1 diagnostic mixed pilot reached 256 held SSE connections and 15 original offers at 5/s over three seconds. Thirteen POSTs were accepted and their original receipts decrypted. Two required classification and their GETs did not yield a decryptable receipt. No POST replay. Both Workers now independently identify DatabaseCapacityExceeded in execution discovery (three per node) and Coverage recovery preparation (three per node). Node2 also had one recovery discovery capacity rejection. This confirms Worker Task I/O pressure on both nodes during the diagnostic window; it does not correlate those failures to either admission. The short pilot still fails the capacity gate.
+
+- Audited both unknowns from the 13/15 mixed pilot by original credential hash in the isolated database. Each retains its claim and dispatch fence with no result receipt. Added the canonical validated operation UUID to the existing atomic First Run timing log so a subsequent pilot can associate the transaction milestones with original GET classifications. No credentials or request payloads added to logs. Ruff and all 32 admission operation tests passed. API diagnostic activation remains pending.
+
+- Activated correlated API milestones on both OrbStack nodes by sequential restarts, verified hashes and signed-fixture TLS readiness, then ran 256 SSE plus 15 original offers at 5/s. Ten POSTs accepted; GETs classified 11 completed and four unknown without replay. Runtime log filtering suppressed the INFO milestones on both nodes. Candidate now logs incomplete transaction milestones at WARNING and keeps committed milestones at INFO. This follow-up requires activation before another sample.
+
+- E1 WARNING-level API diagnostics activated sequentially on both test nodes with exact source hashes and TLS readiness. At 256 held SSE and 15 originals at 5/s, six POSTs accepted and one more exact original receipt recovered, leaving eight unknown. All eight correlated to an entered atomic transaction with no dispatch_finished or receipt_written. Their elapsed time from transaction entry to return was 820–1403ms. This narrows the measured failure to the dispatch interval on both nodes, before result persistence. No original was resubmitted. Next correlate existing inner Task-admission stage probes to this same operation UUID.
+
+- Added exception type and the last 12 function/line frames to the existing operation-correlated atomic admission log, so the next mixed pilot can resolve the failing inner dispatch call without logging exception messages or adding storage-layer context. Both raised exceptions and handled AtomicSurfaceAborted retain their prior behavior. Ruff, diff check and 32 admission tests passed. Candidate activation pending.
+
+- The two-node 256-SSE/5-per-second pilot with correlated failure frames accepted five POSTs and recovered one additional original result, leaving nine unknown. Every unknown reached the PostgreSQL socket deadline in dispatch. Five stopped during event-position synchronization (three at fresh root assignment), and four during wakeup registration (one at savepoint exit). No original was resubmitted. Source Task-admission module matches the branch; node2 still has a prior stage-instrumentation overlay. Align that live module before attributing performance differences or testing a candidate.
+
+- Restored the branch Task-admission and Task-index implementations on the second E1 API, replacing two prior fixture-only stage overlays and preserving their exact files for rollback. Node2 TLS readiness recovered. Both live API containers now have matching hashes for task_admission, task_index_transactions, task_event_positions and command_wakeup. Started a new balanced 256-stream pilot with correlated API diagnostics; its result is pending.
+
+- Task-module-aligned pilot at 256 SSE and 5 offers/s completed 11/15, leaving four original GETs unknown. Correlated traces show two wakeup failures (namespace advisory lock wait and repeat global lock acquisition), one bootstrap event append timeout after transaction retry, and one Task projection reread timeout. Both live APIs have the same older command_wakeup.py hash, distinct from the branch. Existing e517a804 already combines the ordered namespace/scope lock round trips and removes the repeat global lock acquisition while preserving capacity checks. Activate that existing candidate on the two isolated APIs for the next controlled comparison. No POST replay.
+
+- Activated e517a804 wakeup optimization on both isolated APIs using a single additional read-only source mount per container. Verified exact hashes and TLS readiness; original API containers retained stopped for rollback. The comparable 256-SSE/5-per-second short pilot returned 8 completed and 7 unknown of 15 without replay. Correlated failures span strict command source reads (2), Task positions (2), wakeup rollout read (1), combined wakeup lock (1), and binding snapshot write after retry (1). Removing the extra lock round trips did not establish a capacity gain or remove lock contention. Next examine transaction-wide round trips and concurrent database wait classes before another candidate.
+
+- Corrected the PostgreSQL sampler invocation after its first run failed on watch syntax (that pilot independently produced 10 completed and five unknown). The next fresh balanced pilot produced 11 completed and four unknown. Across the first intent to last POST response, 24 nonempty samples included 11 LockManager, nine WalSync, six DataFileRead, three WALWrite and three advisory wait observations, aggregated across processes. Exact operation UUID correlation shows four commit-response timeouts all recovered their original committed receipts; the four remaining unknowns instead timed out in combined wakeup locks, scope-capacity check, Task index rebuild and receipt INSERT. No POST replay. The sample supports investigating pre-commit budget use and shared serialization while keeping synchronous durability and original-only recovery.
+
+- Candidate combines the fresh pending-command scope capacity check with the sequence allocation and insert under the existing ordered locks. It removes one round trip, keeps separate control/execution ceilings, skips the live ceiling for historical admissions, and preserves the existing identity and outbox checks. Real PostgreSQL 17 passed 48 wakeup and handoff tests, including concurrent one-slot admission and atomic rollback. Two v49 migration fixture tests failed before command admission with missing next_event_sequence; the same two fail on the original branch file. Disposable test databases removed. Candidate requires an API process reload and matched mixed-load verification.
+
+- Activated 82291253 on both E1 APIs with verified source hashes and TLS readiness. Under 256 SSE and 15 offers at 5/s, seven POSTs accepted and two commit-response timeouts recovered their original receipts; six remained unknown. Three unknowns reached the deadline in fresh-root event assignment, one at wakeup lock, one at binding context read, and one inside optional command-shadow recording. No failure frame landed in the merged scope capacity insert, but this short comparison does not establish a capacity gain. No POST replay. Audit the optional shadow path on fallback scopes as an actionable next reduction while retaining authoritative mode checks for eligible scopes.
+
+- Shadow-path candidate reads the authoritative scope mode under its existing rollout lock before trying the namespace shadow lock. Fallback and broker scopes skip that namespace lock, while shadow scopes retain their existing lock order and bounded write. Real PostgreSQL regression proves an open fallback transaction leaves the namespace lock available to another connection; all 12 scoped shadow tests passed. Mixed-load activation pending.
+
+- Activated 569660f9 on both isolated APIs via read-only binds, verified exact hashes and TLS readiness, and retained prior containers stopped. The mixed 256-SSE short pilot offered 15 at 5/s, returned 11 accepted with original receipts and four unknown without replay. Remaining deadlines were wakeup identity lookup, binding snapshot write, event-position synchronization and strict source read. No correlated unknown landed in shadow code. The short comparison does not establish capacity improvement or meet the gate.
+
+- Combined strict Coverage admission's durable requirement and transaction-local configuration reads into one query. Existing source/binding proof, digest conflict handling, worker capability pin and transaction fences are retained. Real PostgreSQL 17 passed all 51 storage and native HTTP admission tests after supplying the fixture-required password field. Disposable test DB removed. E1 load activation pending.
+
+- Activated strict Coverage requirement read optimization 84726958 on both isolated APIs with verified source hashes and TLS readiness, preserving both prior containers stopped. The balanced 256-SSE pilot offered 15 at 5/s; 10 accepted and recovered exact original receipts, five remained unknown without replay. All five were PostgreSQL deadlines: two Task event-position reads, one outbox insert, one shadow savepoint entry and one shadow scope mode read. None exhausted the budget at the merged strict requirement query. No measured capacity improvement or E1 pass. Optional shadow work still sits inside the canonical deadline, including for fallback scopes.
+
+- Fresh formal outbox INSERT now returns a same-statement shadow eligibility hint. Non-shadow fresh rows skip the optional savepoint and advisory lock path; positive hints still recheck authoritative mode under the rollout lock and duplicate identities retain their previous behavior. A concurrent rollout activation after the insert snapshot may omit best-effort shadow evidence for that overlapping admission. Real PostgreSQL 17 passed all 33 scoped shadow and canonical wakeup tests; Ruff and diff check passed. Mixed-load activation pending.
+
+- Activated 5a7c9d21 on both isolated API processes, verifying source hashes and TLS readiness. At 256 SSE/5 offers per second, 10 POSTs accepted and original GET recovered one commit-response timeout, leaving four unknown of 15. Correlated failures were two fresh-root event assignments, one Task advisory lock call and one outbox capacity count. No shadow-path failure in this sample, no POST replay, and the short pilot remains below the E1 gate.
+
+- Found the isolated E1 PostgreSQL container was capped at one CPU and observed at 102.89% CPU in a point sample. Temporarily increased only its CPU quota to two without restart or changing durability. The existing balanced 256-SSE/5 offers per second pilot accepted all 15 POSTs and decrypted all 15 original receipts, with no replay. Across the whole setup/load/recovery window cgroup CPU use was 91.1s and throttling occurred in 110 of 590 periods. The one-CPU quota was restored and verified. This single short result motivates a matched return-to-one-CPU control and sustained test; it does not pass the E1 gate.
+
+- Matched PostgreSQL CPU quota reversal and repeat with the same two APIs and 256 SSE/5 offers per second. Returning to one CPU yielded 14 completed and one unknown; the cgroup throttled in 1180/1182 periods during the whole run. Repeating at two CPUs yielded 15 completed; throttling fell to 316/670 periods. The run restored and verified the one-CPU quota. Two two-CPU short runs now have all original receipts, but still require a sustained E1-A window and resource/SLO checks. No original was replayed.
+
+- Read the exact 15 original execution histories from the repeated two-CPU all-receipts pilot. All 15 reached session_completed. Mean accepted-to-harness-start was 7.742s, mean harness-start-to-completion was 7.271s and maximum accepted-to-completed was 26.080s. The reference has eight execution slots for five arrivals/sec, allowing only 1.6 slot-seconds per arrival at steady state if each holds a slot. The measured harness interval alone flags an execution throughput gap independent of HTTP receipts; measure exact slot hold and split startup/provider/finalization before asserting the steady gate can pass. E1 requires 5min warmup, 30min steady, 32 active ceiling, and at least 1000 samples per operation.
+
+- Decomposed the same 15 originals by canonical event timestamps. Mean harness-start to model-request start was 4.868s, model-request start to response received 1.106s, response received to session completion 1.297s, and completion to memory-extraction event 4.527s. The last persisted lease was released for all 15 but records only fence 2 for 14 and fence 4 for one (mean last-lease duration 1.009s), so it cannot proxy cumulative execution slot use. The actual semaphore is acquired before handoff and released on the synchronous Future callback; next instrument that boundary per attempt to distinguish continuation slots and post-terminal work. No new task or runtime mutation in this audit.
+
+- Added an INFO sample at real execution semaphore release, keyed by Session and lease fence, with handoff and total slot elapsed time. It measures successfully scheduled attempts, including their synchronous finalization, not deferred pickups. Extended the existing cancellation/shutdown check to prove no early sample and exactly one release sample with bounded timing and exact fence. Ruff, diff check and all 27 consumer tests passed. OrbStack activation and actual slot distributions pending.
+
+- Loaded ec7fc7a8 on both isolated Workers via a fixture-only severity override (INFO to WARNING); verified exact overlay hashes and kept prior containers stopped. Two-CPU PostgreSQL diagnostic with 256 SSE and 15 offers recovered all 15 original receipts and restored the one-CPU quota. Exact 15 session IDs matched 15 first scheduled slot release samples: mean handoff 212ms, mean held 6490ms, max held 10234ms. At that sample 13 command rows were done and two still pending; the figures are first release per session, not cumulative continuation use. The first sampled slot interval alone exceeds the 1.6 slot-seconds steady budget. No replay.
+
+- Followed the slot-timing cohort through terminal state. All 15 exact command rows are done and all 15 Sessions have session_completed. Joined both Worker logs to the 15 original Session IDs: 13 had one measured scheduled slot and two had two, for mean cumulative measured slot occupancy 7.544s per original and maximum 10.234s. This excludes unscheduled pickup/handoff occupancy, so the measured demand alone exceeds the 1.6 slot-second reference by 4.7x. Worker capacity errors and recovery-pending appeared in the same log window, but are not attributed to individual originals without matching evidence. Next isolate startup versus provider and finalization in the measured slot interval.
+
+- Joined canonical execution-stage timestamps to the same slot-timing cohort, including its five longest first-slot samples. Mean harness-to-first-model-request was 4.411s across all 15 and 5.780s in the longest five. Model request-to-response was 0.935s / 1.229s and response-to-completion was 1.144s / 1.573s. Completion-to-memory extraction was 9.567s / 7.328s in elapsed event time, which can include release/requeue gaps and must not be added to measured slot occupancy. The pre-model interval is the largest measured pre-terminal interval in both cohorts. Next instrument actual preparation boundaries within that interval; child main composition timing starts after module import and cannot explain the full interval by itself.
+
+- Traced the ordinary pre-model path and confirmed HARNESS_ATTEMPT_STARTED uses the earlier started_at timestamp; its elapsed interval includes setup before the event append. Added INFO milestones to the actual execution entry for inputs, preflight, context/budget, runtime provisioning, tool gateway, continuation/recorder, and orchestrator build, keyed by Session and fence. This measures successful ordinary preparation up to continuation entry, not child import or the remaining continuation-to-model interval. Ruff, diff check and 16 focused Worker tests passed. Live activation pending.
+
+- Loaded c6dcc609 on both isolated Workers using a fixture-only WARNING severity override; verified exact hashes and retained prior containers stopped. With temporary two-CPU PostgreSQL, 256-SSE/5-per-second short pilot recovered all 15 original receipts. Matched 15 preparation records to 15 slot releases on Session/fence. Mean measured preparation 922ms (max 1178ms), led by context/budget 370ms and input recovery 307ms; runtime provision 51ms. PostgreSQL quota restored and verified. Preparation instrumentation covers entry inside the executing process and ends before continuation/model; next measure process-launch-to-entry and continuation-to-model separately.
+
+- Reused Docker timestamps and canonical events to split the same 15 matched preparation records. The average 3.539s pre-model interval decomposes into 2.571s before executing-process method entry (range 2.203–2.959s), 0.922s in measured preparation, and 0.045s from its log to model-request event (range 0.021–0.081s). This is cross-clock observational evidence, not a monotonic child startup measurement. Parent completion recovery, registration, supervisor/child launch, imports, composition and child recovery precede that method entry. Focus next probe on those boundaries instead of continuation/model dispatch.
+
+- Measured the current executing-child import in both live E1 Worker containers without running a Task: 1.073s and 1.056s under importtime. A source-node fresh-process comparison bypassing only the eager Worker package initializer produced normal 1.077/1.004/0.985s versus minimal initializer 0.995/0.993/1.011s. The child imports the same main dependencies through its actual composition path, so a lazy package initializer is not an evidenced fix. Native child --check composed successfully on both nodes in 148/174ms after imports; the check excludes executor registration, actual child recovery and mixed-load scheduling. Keep the exact process/fence boundary and measure the remaining launch/recovery stages under load.
+
+- Added matched parent/child INFO timing at actual executor registration, spawn, child main, composition and recovery boundaries. The parent sends a monotonic launch timestamp through the inherited process environment; the child uses it only for diagnostics, never as authority or timeout input. Logs contain session/fence plus milliseconds. Existing process group, registration, supervision and exit receipt semantics stay intact. Ruff, diff check and 19 session-process/preparation tests passed. Live activation pending.
+
+- Loaded cdeb574c timing on both isolated Workers with fixture-only WARNING severity, verified both parent/child hashes and retained rollback containers. At 256 SSE and 5 offers/s with temporary two-CPU PostgreSQL, all 15 original receipts recovered. Matched all 15 parent and child records by Session/fence. Means/maxima in ms: registration 30/71, parent spawn call 0.7/2, launch-to-child-main 1467/1786, child composition 220/289, child recovery 233/315. The largest measured startup component is before child main, consistent with the earlier isolated import timing. PostgreSQL one-CPU quota restored. The 1.467s component alone nearly consumes the per-arrival 1.6 slot-second budget; preserve exact child exit/fence semantics in any startup reuse design.
+
+- Child import graph showed AG-UI checkpoint consumer and generated schemas loaded through ordinary Worker loop composition. The isolated execution child never drains projection queues; the parent owns those consumers. Moved checkpoint-only imports behind actual composition and bypassed it for the existing isolated-child marker, retaining canonical execution projection writes and parent validation. Added a child-versus-parent composition regression; 25 focused Worker tests and Ruff/diff check passed. Live import/slot comparison pending.
+
+- Ran six alternating fresh subprocess imports per E1 node using the actual Worker container image and in-memory override of only 309f5cb8's two modules. Every baseline imported the AG-UI checkpoint consumer and every candidate avoided it. Mean baseline/candidate wall times were 1.034/0.993s on source and 1.111/0.941s on node2. The three-per-arm import-only sample confirms the path was removed and indicates a modest, variable startup benefit. It does not exercise Worker composition or E1 execution under load. No running container configuration changed.
+
+- Activated 309f5cb8 on both E1 Workers with two source binds, exact hash and isolated --check verification. First node2 activation rolled back on a probe JSON parser that expected one line; corrected parser and both checks passed. In a 256-SSE/5-per-second short diagnostic with temporary two-CPU PG, all 15 original receipts recovered, 15 launch/recovery records matched, and 15 slots released. Mean launch-to-main 1413ms vs previous cohort 1467ms; mean first hold 4832ms, max 5814ms. Different cohorts and unpaired host load preclude claiming this as the change's causal slot saving. PG quota restored to one CPU. The measured hold still exceeds the steady slot budget.
+
+- Isolated child now explicitly requests execution-only composition. It builds the same execution service and still verifies PostgreSQL command cutover/schema, then skips parent-only control/command consumers, recovery maintenance and projector loop construction. Default parent entry unchanged. Focused regression rejects calls into parent projection composition on this path. Ruff/diff check, 28 Worker tests and the new regression passed. Live hash, child startup and runtime acceptance pending.
+
+- Verified a4c8a22d execution-only composition on both live E1 Worker images with an in-memory override of the two changed modules and three alternating checks per arm. Every check composed successfully without executing a Run. Source baseline/candidate mean 141.5/121.9ms; node2 143.9/129.1ms. No container configuration changed. The measured 15–20ms composition saving is too small to close the slot gap: in the previous matched pilot even subtracting the entire 1.413s launch-to-main from 4.832s first-slot average leaves about 3.419s. Prioritize the remaining per-attempt work and execution capacity design alongside launch optimization; the E1 contract remains unchanged.
+
+- Removed an unconditional bounded event reload from Cloud suspended-session restoration when the claimed status cannot enter any restoration branch. Fresh READY commands now reuse the preceding input preparation boundary and still undergo subsequent handoff/revision checks; RUNNING, SUSPENDED and WAITING_CLIENT_EFFECT keep their existing event-based authority checks. Ruff/diff check and 68 Worker reliability, client-effect and preparation tests passed. Live throughput comparison pending.
+
+- Activated a4c8a22d and 13b1ca9a on both isolated Workers with verified source hashes and child composition; old containers retained. At 256 SSE/5 offers per second with temporary two-CPU PostgreSQL, recovered all 15 original receipts and matched 15 parent/child and slot samples. Mean launch-to-main 1384ms, composition 221ms, recovery 171ms, first hold 5110ms (max 6721ms). Compared with the preceding cohort's 4832ms first hold, this short test does not establish an occupancy gain. Restored one-CPU PG quota and verified it. Need deeper execution-path improvement or capacity design before sustained E1.
+
+- Matched all 15 combined-candidate originals to exact command state, prepared log, executor recovery, slot release and model/completion events. All done. Mean first slot 5.110s: launch-to-main 1.384s, measured preparation 1.001s, preparation-to-model 0.058s, model 0.528s, response-to-completion 0.530s and completion-to-release 0.634s, leaving approximately 0.975s in handoff/registration/composition/recovery and other gaps. Cross-clock intervals are observational. At 5/s, current first-attempt mean alone implies at least 26 slots without headroom; even removing all launch-to-main still implies at least 19. Existing 8-slot contract cannot be met by startup-only work. Current shared budget charges 16 connections per additional executor, so raising slots also requires a separately validated per-component budget/deployment design. Keep the fixed E1 gate and prioritize reducing repeated execution inputs plus splitting post-terminal work only where existing durable ownership permits.
+
+- Confirmed cloud Memory/title is already deferred to durable recovery. The parent supervisor can instead remove exit notification delay without changing work ownership: Linux pidfd readiness wakes the existing monitor before its next 500ms cancellation check, without reaping or replacing the existing group/exit proof. Unsupported pidfd kernels keep bounded sleep. On OrbStack Linux a real child that slept 150ms took 2.000s under the deliberately extended baseline poll interval and 0.157s with pidfd; both acknowledged only after confirmed exit. Seven existing process tests passed locally; added Linux regression. Mixed-load activation pending.
+
+- Activated abfc6126 on both isolated Workers with exact source and in-container pidfd syscall probes; kept original containers stopped for rollback. Temporary two-CPU PostgreSQL 256-SSE/5-per-second pilot recovered all 15 originals. Fifteen fence-1 slot releases averaged 4563ms, max 5411ms, versus preceding cohort 5110/6721ms. No exit ACK warnings in either Worker log during this window. Different cohorts/host load mean the aggregate difference is not a causal pidfd-only estimate. PG one-CPU quota restored. First-slot time still exceeds the reference 1600ms.
+
+- Audited the remaining execution-input reads before attempting caching. Initial preparation can commit checkpoint pages and must finish before any SESSION_RESUMED append. Handoff recovery consumes a bounded source view and may acknowledge dispatch or append drift evidence; the next fresh read and revision comparison protect the restored Session boundary. The final evidence read occurs after Task reconstruction and attachment access. Native read_preparation already groups the initial Task header and input head, but returns to a separate fresh header after checkpoint commits. Do not replace these boundaries with a cached event list. Next target an exact ready-head return that carries its own verified revision/evidence and only removes adjacent rereads with the same freshness contract. The existing 39 frontier/compaction tests passed, including concurrent source advance during a checkpoint commit.
+
+- Reused the existing expected_session_revision parameter in bounded input preparation to validate the same fresh head that passed its canonical frontier checks. This removes the adjacent standalone read on the built-in Worker path without new ports or snapshots. Custom readers retain the old explicit verification; post-restoration/handoff fresh reads and evidence reads remain. Ruff/diff check and 51 execution frontier/compaction/preparation tests passed. Live load verification pending.
+
+- Activated 9d66cce0 on both isolated E1 Workers with exact mounted hash and child composition check, retaining prior containers. The 256-SSE/5-per-second pilot at temporary two-CPU PG recovered all 15 original receipts; all 15 commands reached done. Matched 15 first-slot/inputs records: mean inputs 303ms, mean first hold 4603ms, maximum 5288ms. The preceding cohort averaged 4563ms first hold, so no measurable occupancy improvement can be claimed from this short comparison. PG restored to one CPU and verified. E1 steady gap remains.
+
+- Added INFO executor DB peak/rejection evidence at successful child result publication using existing ConnectionBudget counters. Current 2 API/2 Worker/8 executor/2 cleanup/1 scheduler profile charges every process 16 connections plus API receipt lanes, 242 application plus seven reserve/external. This instrumentation captures direct per-lane peaks and rejections, not the separately bounded psycopg pool or failed child outcomes. Keep charging the declared pool and validate negative paths before lowering any executor allowance. Ruff/diff check and 13 focused Worker tests passed, one Linux-only pidfd test skipped on macOS. Live activation pending.
+
+- Loaded 127b5f58 in the existing read-only child overlay on both isolated Workers (fixture-only WARNING severity, previous overlay preserved). The immediate hash check raced the mounted-file update; repeated hashes on both nodes matched before any load. With 256 SSE, 5/s and temporary two-CPU PG, all 15 originals returned receipts. All 15 successful child samples reported identical direct peaks normal2/read0/control1/probe0 and zero rejects. PG restored to one CPU. Pool and failed/force-stop paths are still outside this sample. Even a hypothetical executor allowance of pool1/normal2/read1/control1/probe1 costs six sockets; 26 executors plus unchanged non-executor and reserve budgets totals 277 > 256. Executor-specific inventory is worthwhile, but expansion at current observed demand also needs separately validated component budgets or larger PG capacity.
+
+- Added an optional complete executor-only pool/lane inventory. The runtime pool and semaphores enforce those same limits, and Helm uses the same peak fleet equation. Existing profiles retain shared limits. Real PG17, Helm exact-boundary render and API budget suite passed 33 tests; disposable database removed. No executor limit or slot count changed on the running E1 fleet. Low-budget execution, STOP and failure paths still require isolated acceptance before selecting any values.
+
+- Real PostgreSQL 17 proved the optional executor profile enforces both pool1 and normal2 simultaneously while a separate control1 connection remains usable. Four distinct native backends observed; second pooled checkout timed out and third normal direct connection was rejected. Corrected the test's initial row-shape assertion to match the direct connection's default tuple. All 18 capacity tests passed; disposable test DB removed. Live low-budget Worker path and STOP/failure acceptance still pending.
+
+- Activated the executor-only pool1/normal2/read1/control1/probe1 profile on both isolated E1 Workers with exact runtime source hashes and isolated composition checks. Parent and API lane limits and execution slot count unchanged. The temporary two-CPU PG 256-SSE/5-per-second pilot recovered all 15 originals, and all 15 commands reached done. All 15 child samples showed normal2/control1 peaks, no direct rejects, and the log window had no execution/exit ACK warnings. PostgreSQL restored to one CPU. Low-budget force-stop/failure paths still need live acceptance before changing fleet size or production profile.
+
+- Ran the existing owned-corpus real sandbox STOP drill under the independent low executor budget, with fresh synthetic Task and no unrelated source outage. Observed exact live sandbox and unconfirmed executor, paused its owned Worker, submitted one signed STOP (202), then unpaused the exact Worker. Original status reached stopped/resources released in 5.797s; sandbox ID absent from both Docker nodes and every original executor start had its exact exit receipt. No original Task or STOP replay. This covers one active STOP; failure/recovery, repeated fault cases and steady throughput remain open.
+
+- Under executor pool1/normal2/read1/control1/probe1, repeated the owned Worker-loss drill with one fresh synthetic command. Killed the exact source Worker holding fence 1; database immediately confirmed zero model reservations. Node2 took over the original at fence 2, and the durable command settled done at wake generation 1 with exactly one accepted-command event and one expected tool approval event. The fixture Task remains at the approval boundary. Original Worker restarted and both inspected running. No POST replay. This exercises safe pre-effect recovery under the low budget; uncertain-effect failure and steady E1 remain separate.
+
+- Repeated uncertain-model Worker loss with the low executor budget and one fresh synthetic command. Killed the owned source Worker after observing its exact live fence and unsettled model reservation. The original command became dead/requires_reconciliation at generation 0; original lease expired at the same fence, and the original reservation remained the only row with no receipt. No takeover or POST replay. Source Worker restored and both inspected running. This is one fail-closed uncertainty case; production and E1 steady gate are outside this result.
+
+- Reversed the low-budget pre-effect Worker failure direction using a fresh synthetic command. Briefly paused the first owned Worker to steer the initial claim to node2, then killed exact node2 Worker at fence 1, confirmed zero model reservations, and unpaused the first Worker. The first Worker took over the original at fence 2 and completed command generation 1 with one accepted event and the expected tool approval. Restarted node2 and verified both running/unpaused. No original replay. This complements the forward direction under the same budget; sustained E1 and independent physical-node HA remain open.
+
+- From the restored node2 Worker, opened its executor-specific low-budget composition and attempted a native PostgresWorkspaceProjectionStore.commit_worker_event using the reverse takeover Task's old node2 fence 1. The transaction explicitly rejected the stale fence. Read-only before/after snapshots of all original events, Session and Workspace projections, and persisted successor fence 2 row matched exactly. No new Task, model call or retry. This one terminal successor case validates stale transaction rejection under the low budget; it does not replace the live concurrent fault matrix.
+
+- Extended the existing mixed diagnostic to 15 seconds at 5/s after the 256-stream setup barrier, using temporary two-CPU PG and the low executor profile. All 75 offers were issued; original GETs recovered 42 and classified 33 unknown. At audit, 42 durable commands existed, 34 had terminal events and eight were still pending. Reconstructed cohort peak from command creation and terminal event timestamps as 32. Both Workers logged capacity rejection in discovery/recovery. Stream driver checks initial frames but does not continuously monitor inventory, so this is queue-pressure evidence only. No POST replay; PG restored to one CPU. Next audit the 33 original claim/fence states and separate Worker lane rejection from client response loss.
+
+- Read-only reconciliation found all 33 queue-pressure unknowns had exactly one original claim and dispatch fence and zero result receipts; all 42 accepted commands are now done. Exact operation UUID joins to API logs showed all 33 were CommandAdmissionCapacityError at command_wakeup.py:163 (command_scope_capacity), not transport ambiguity or PostgreSQL deadline expiry. The atomic first-Run route lets the deterministic capacity exception escape its dispatch transaction, leaving a started fence without a sealed rejection. Next preserve transaction rollback via an inner savepoint and persist an authorized original 429 receipt at the atomic boundary; genuine indeterminate outcomes remain unknown. The 33 historical originals stay unchanged.
+
+- Implemented deterministic atomic-first-Run refusal receipts for scope/outbox capacity. After the failed dispatch transaction rolls back, a new transaction rechecks the same original fence and current authority and seals only the 429/503 refusal. This avoids a savepoint on successful admissions. No business dispatch repeats; STOP can win between rollback and sealing. Genuine timeout/unknown paths and historical records untouched. Ruff/diff check and 36 admission tests passed, including both refusal codes and concurrent STOP precedence in the transaction harness. Live real-PG pressure acceptance pending.
+
+- Activated c69b2dc7 on both isolated APIs with exact mounted hash and TLS readiness. Repeated the 75-offer/15-second diagnostic after the 256 initial SSE barrier at temporary two-CPU PG. All 75 original GET receipts authenticated: 43 sealed 201 and 32 sealed 429; zero unknown. Driver classified only 201 as accepted. No original was resubmitted, and the previous 33 unknown originals were not modified. PG quota restored to one CPU. This confirms overload classification under real pressure; the 32 capacity refusals still fail the E1 acceptance target and the short stream driver does not certify steady inventory.
+
+- Reopened all 32 original sealed 429 receipts locally and verified the exact decrypted body is capacity_limited/command_scope_capacity for each original operation. Audited Trench observation branch: ordinary commands POST /agui/commands and handle non-200/202 as command rejection; they do not use /v1/admission-operations or its sealed results. Therefore the E1 receipt repair is verified at Native admission and does not prove a Trench browser presentation change. No application/runtime changes in this audit.
+
+- Closed the 75-offer refusal cohort through completion. Live rollout limits were scope execution32/control8 and unpublished outbox10000. All 43 accepted Tasks reached terminal events; DB command-created to harness-start nearest-rank p95 was 51.102s, and command-created to terminal max 64.097s. Matched 43 Worker slot releases to the 43 canonical Sessions; mean measured slot occupancy was 8.584s. PostgreSQL quota returned to one CPU after the admission/receipt driver exited, so drain timing mixes quota conditions and is not an E1 SLO measurement. Scope limit is protective: raising it would queue more work without creating throughput. Next keep quota fixed through full drain and account for Worker CPU plus DB contention together.
+
+- Repeated 75 offers at 5/s after 256 SSE initial readiness while holding PG at two CPUs until all 43 accepted commands reached done. All 75 original receipts opened: 43 sealed 201 and 32 sealed 429. Queue p95 27.333s and max admitted-to-terminal 36.289s. Whole setup/admission/drain cgroup observations: PG throttled 366/963 periods, Worker source 102/964 and node2 80/964; these include setup and background activity. Previous mixed-quota cohort p95 51.102s, but current two-CPU drain still far exceeds E1 SLO and capacity. No POST replay; PG restored to one CPU.
+
+- Matched all 43 fixed-two-CPU-drain Worker release samples to launch/recovery and execution preparation logs. Mean/max ms: hold 5291/7737, launch-to-main 1307/1821, composition 202/301, child recovery 174/336, execution preparation 1123/2016, handoff 169/318. Cohort first accepted to last completed took 44.526s. Canonical creation/completion reconstruction shows peak 33 active Tasks despite configured 32 pending commands per scope; the pending-command guard is not an active-Task ceiling. This is an independent E1 gate violation alongside 32 sealed rejections and 27.333s queue p95. Preserve the original fixed reference and treat active inventory as a separate measured dimension in future runs.
+
+- Split the fixed-drain preparation logs: context/budget was the largest measured preparation interval, mean 462ms (max 940ms) vs 371ms in the short cohort; input recovery 336ms vs 303ms, continuation recorder 115ms vs 86ms. Existing interval includes model/workspace setup, context materialization and budget activation. Added two timestamp marks and renamed the final boundary to isolate each without changing behavior. Ruff/diff check and 16 Worker tests passed. Next run paired fixed-quota pressure and inspect actual budget/context contribution.
+
+- Loaded 9bd9e8c4 timing via the existing child-only fixture overlay on both Workers, verified mounted hashes, and held PG at two CPUs through all 39 admitted commands settling. The 75-offer diagnostic produced 39 sealed 201, 36 sealed 429 and zero unknown. Across 39 complete preparation samples, model/workspace setup averaged 6.8ms, context materialization 418.6ms (max 1270ms), budget activation 58.3ms (max 196ms), and input recovery 353.4ms. Context materialization, rather than budget activation, dominates the previously combined interval. PG one-CPU quota restored. Investigate bounded reads and durable projection in prepare_worker_context next; E1 still fails capacity.
+
+- Traced context construction through authority snapshot persistence, optional fresh Host probe, memory selection and context-event commit/recovery. Each has its own authority or freshness boundary, so no blind cache was introduced. Reused the existing monotonic Worker stage recorder to separate binding/extension, authority evidence, fresh authority refresh, context selection and the final context append/refresh. The additional marks are disabled with INFO diagnostics. Ruff/diff check and 37 focused tests passed; live attribution pending.
+
+- Activated 43b2ca52 on both isolated Workers via two verified source mounts with fixture-only WARNING logs. The fixed-two-CPU PG 75-offer pilot produced 44 sealed 201 and 31 sealed 429, no unknown, and all 44 accepted commands drained. Mean/max context subphases in ms: binding14/54, authority evidence192/479, optional fresh-authority refresh0/0, selection16/65, final context append/refresh163/459. The two durable evidence/refresh phases dominate, not memory selection. This fixture did not exercise the optional fresh-authority refresh. PG restored to one CPU. Next measure their canonical append vs bounded refresh split and preserve fresh authority on the enabled path.
+
+- Added two marks to the existing context timing stream at completion of the canonical authority and memory-selection appends. This separates each append from its subsequent claim/input refresh without changing either transaction or probe. Ruff/diff check and 37 Worker tests passed. Both isolated Workers already mount the module; fresh child executions can sample the new marks after hash verification.
+
+- Verified cb37f15e on both mounted Workers and ran 75 offers at 5/s after the 256 initial SSE barrier with PG two CPUs through drain. 41 sealed 201, 34 sealed 429, zero unknown; all 41 accepted commands drained. Across 41 samples: authority append 125.6ms mean / 390ms max, following refresh 97.0/267ms; context-selection append 102.8/261ms, following refresh 97.8/290ms. Together the two appends average 228.4ms and refreshes 194.8ms. Optional fresh authority path was absent. PG restored to one CPU. Prioritize exact bounded refresh reuse and retain the canonical append/fence boundary. No E1 capacity pass.
+
+- Coalesced the duplicate ownership callback in the Context committed-claim refresh only when it is the exact same callable already invoked by read_active_session after the fresh primary read. Distinct caller checks still run before that read; cancellation, lease, projection and bounded recovery checks remain. Added a focused regression for same-callback order/count; Ruff, diff check and 38 focused tests passed. Live latency verification pending.
+
+- Verified the 61eaad36 source on both isolated Workers. With PostgreSQL capped at two CPUs through drain, 75 offers at 5/s after the 256 initial SSE barrier yielded 42 sealed 201 and 33 sealed 429, zero unknown, and 42/42 admitted commands drained. Across 42 samples, authority append averaged 106.3ms (max 295ms), following refresh 87.3ms (268ms), context-selection append 87.6ms (229ms), and following refresh 76.7ms (212ms). The context-selection refresh fell from 97.8ms in the preceding pilot, but the untouched append stages also improved and the single window cannot isolate the effect. PostgreSQL returned to one CPU. Evidence: `.artifacts/cloud-ha-e1/corpus-capacity-queue-pressure-256-1793736222`. E1 capacity remains open.
+
+- Capacity bound from the fixed-quota evidence: the E1-A reference has eight execution slots at 5 offers/s, so a sustained one-slot-per-Task fixture must average below 1.6s per occupied slot before headroom. The 43-Task fixed-quota cohort measured 5.291s, of which launch-to-main averaged 1.307s. Even eliminating that entire interval leaves 3.984s (~2 Tasks/s at eight slots), and eliminating both latest measured Context refresh intervals would save only another 0.164s if those samples transferred. Neither startup-only nor refresh-only work closes the observed gap. Keep scope admission protection and the eight-slot reference. Next profile the remainder of slot hold against the contract's deterministic short fixture, pairing each slot release to command and terminal event, before choosing a structural execution-path change.
+
+- Audited the 15-second queue-pressure driver against E1-A. It preserves scheduled/issued dispositions and original receipt recovery, but after reading each initial frame it leaves the SSE iterators idle. Added a separate isolated diagnostic variant at `.artifacts/cloud-ha-e1/corpus-pilot-observed-sse-256.py` that continuously consumes those same 256 streams during offers and receipt recovery, records terminal readers/transport errors, and fails the sample if any reader ends. Python compilation passed. This has not run live and reader liveness alone still does not prove fresh committed event delivery or steady-state capacity.
+
+- Ran the continuous SSE reader variant live across both isolated OrbStack nodes, using the existing one-CPU PostgreSQL quota. All 256 initial frames arrived and zero readers terminated during the 75-offer window and original GET sweep. The sweep opened ten sealed 201s and 65 operations lacked an opened result at that observation point. Nine initial POSTs were classified accepted, so the original GET sweep recovered one additional acceptance. Driver exit 0 means reader observation passed only. Preserve all originals and reconcile the other 65 by original operation ID before assigning capacity or transport causes. No comparison with the fixed-two-CPU pilot. Evidence: `.artifacts/cloud-ha-e1/corpus-capacity-observed-sse-256-1793736503`.
+
+- Reconciled the continuous-reader one-CPU pilot via read-only SQL against all 65 distinct original request hashes. There are 65 claims, 64 started dispatch fences and zero result records. Exact original operation IDs match 64 atomic Run TimeoutError logs with exhausted remaining budget in database calls (including projection, wakeup and commit paths). The one original without a fence has no matching atomic Run timeout and needs separate pre-dispatch attribution. The 64 started originals remain unknown, and none was replayed or relabeled as scope capacity. API logs are in the private pilot directory. The next controlled capacity sample must hold PostgreSQL quota fixed and separate continuous SSE from its initial-only baseline.
+
+- Ran the continuous-reader pilot with isolated PostgreSQL fixed at two CPUs through the 75-offer window and original receipt sweep. All 256 readers started and zero terminated. All 75 original receipts sealed: 43 accepted (201), 32 refused (429), zero unknown. Prior two-CPU initial-frame-only pilot had 42 accepted and 33 refused; this is a historical same-quota comparison, not a randomized pair. At one CPU the continuous reader pilot had 10 accepted and 65 unknown. The new result restores classification while the admission ceiling still fails E1-A. PostgreSQL restored to one CPU after the receipt sweep, so this run cannot measure fixed-quota drain latency. Evidence: `.artifacts/cloud-ha-e1/corpus-capacity-observed-sse-256-1793736804`.
+
+- Added exact admitted-command drain sampling to the private continuous SSE driver. At fixed two-CPU PG the 75-offer run started all 256 readers with zero observed closures and resolved 42 accepted command IDs from original sealed receipts. First read-only drain sample found 42/42, with 18 done. The second sample failed because the evidence writer intentionally rejects overwriting files; teardown restored PG to one CPU and a read-only follow-up found 27 done and 15 pending. Corrected the driver to write a new numbered artifact per poll and verified Python compilation. Keep the incomplete run as evidence; fixed-quota end-to-end drain is still pending. No original admission replay. Evidence: `.artifacts/cloud-ha-e1/corpus-capacity-observed-drain-256-1793736954`.
+
+- Reran the numbered drain probe with a fresh synthetic cohort, continuously reading 256 SSE streams and holding the isolated PostgreSQL quota at two CPUs until all exact accepted commands reached done. All 75 original results sealed (43 HTTP 201, 32 HTTP 429, zero unknown); zero readers terminated. Read-only joins matched all 43 command IDs to canonical harness starts and completion events. Discrete p95 command creation to harness start was 28.622s, maximum creation to completion 62.294s. PostgreSQL restored to one CPU after the confirmed drain. The diagnostic still fails E1-A on refusals and queue latency. Evidence: `.artifacts/cloud-ha-e1/corpus-capacity-observed-drain-256-1793737083`.
+
+- Correlated all 43 launch/recovery/preparation triplets by Session and fence in the fixed-quota continuous SSE cohort. Mean/max milliseconds: executor registration 49.4/160, spawn 1.2/11, launch-to-main 1198.3/1822, child composition 199.1/343, child recovery 169.0/412, and execution preparation 1072.2/1836. Within preparation, input recovery averaged 335.5ms and context materialization 381.1ms. This window captured no slot-release timestamps, so completion and preparation samples do not establish release latency. Launch-to-main and preparation alone average 2.271s, already above the 1.6s slot budget for 5/s across eight slots. This rules out meeting the gate by optimizing post-completion release alone. Measure isolated warm bootstrap feasibility while preserving fresh child authority and exact process fencing before changing lifecycle behavior.
+
+- Tested import-only warm bootstrap feasibility in independent diagnostic processes inside both isolated Workers. Cold child-module imports took 923/895ms; repeated imports took 0.008/0.006ms, with one Python thread and four visible file descriptors before and after each import. A preload-only single-thread process can be investigated as a source of fresh one-task children. The real Worker parent owns live pools/threads, so this experiment does not justify forking it. Any candidate must prove that the supervisor retains exact exit evidence and STOP behavior, and that each child still builds fresh composition and rechecks its durable fence. No actual execution or deployment change in this probe.
+
+- Validated the existing Linux parent_fence primitive after import preloading on both isolated Worker nodes. Each fresh probe forked a dedicated parent and one child, armed the real parent fence in the child, moved it to a separate session and waited for its readiness pipe before killing only the owned parent. The probe subreaper reaped the exact child with SIGKILL on both nodes. The production supervisor currently forks via Popen/exec and writes its exit receipt only after ECHILD. A persistent warm parent would also have to preserve isolation of the descendant inventory per executor, so the probe does not justify replacing that supervisor. No application task or production configuration changed.
+
+- On both isolated nodes, forked two concurrent synthetic execution trees from a preloaded process. Each tree had a private Linux subreaper, a parent-fenced child and a grandchild that escaped into its own session. The existing supervisor drain reached ECHILD in the first tree while the second supervisor remained live, then independently drained the second. Both exact children were reaped with SIGKILL. This supports retaining a per-task subreaper in a warm launcher design. The probe did not write a production-format exit receipt, exercise Worker STOP or run a business Task.
+
+- Exercised the real supervisor run/exit-receipt logic on both isolated nodes, substituting only synthetic fork for its executor Popen. With a preloaded child and detached grandchild, the receipt was absent before SIGTERM and matched the exact synthetic Session/fence after the supervisor drained descendants. Exit was nonzero with no execution result. Initial probe let the forked supervisor unwind the parent's temporary-directory context on SystemExit, deleting the evidence. Corrected the probe to exit the forked process directly and both nodes passed. This proves the synthetic supervisor boundary only, pending real Worker integration and durable STOP acceptance.
+
+- Tested abrupt private supervisor death on both isolated nodes with the real parent_fence primitive and a synthetic detached grandchild. SIGKILL of the owned supervisor killed its fenced direct child, but the detached grandchild stayed live on both nodes. The outer probe subreaper killed and reaped each exact survivor. This falsifies relying on a chain of SIGKILL parent fences as proof of descendant cleanup for a warm launcher and also applies to the current Linux supervisor if it receives SIGKILL directly. A graceful parent-death signal can let the private supervisor drain on upstream loss, but direct supervisor SIGKILL needs an independent ownership boundary such as a delegated per-execution cgroup or an external reaper. No production changes or real Task execution.
+
+- On both isolated OrbStack hosts, proved independent cgroup v2 cleanup after abrupt owner death. A unique disposable cgroup held the synthetic owner and its setsid descendant. After killing the owner, populated remained 1. Writing cgroup.kill from outside produced populated 0 while an unrelated peer stayed live. Both groups and peers were reclaimed. The Worker container exposes cgroup.kill but its cgroup mount is not writable; the successful probe used host scope. This establishes host feasibility only. Integration needs narrowly delegated ownership and durable Session/fence association before a node reaper can publish exit proof. No container privileges or production configuration changed.
+
+- Validated graceful upstream Worker-loss handling on both isolated nodes with an in-memory supervisor candidate. It installed STOP handlers before arming a SIGTERM parent-death signal and retained the immediate expected-parent PID check. After the synthetic executor and detached grandchild reported ready, SIGKILL of the synthetic Worker triggered supervisor drain, exact Session/fence exit receipt, and nonzero exit without an execution result. This distinguishes upstream Worker loss (private supervisor remains able to drain) from direct SIGKILL of the supervisor (requires independent containment). The candidate ran only in probe processes; production source, mounts and Worker instances were unchanged. The next implementation slice should preserve child SIGKILL fencing, check parent-loss-before-spawn and receipt reconciliation, and remain separate from warm launch integration.
+
+- Traced the crash receipt end to end. The supervisor writes result.exit.json into the Worker's TemporaryDirectory, but only the live Worker callback reads that file and calls acknowledge_executor. The cleanup service checks durable executor_started/executor_exit pairs through executors_exited and has no spool consumer. A Worker/container restart therefore cannot be credited with durable exit confirmation just because the old supervisor drained. Reuse the existing exact-fence acknowledge operation for a future independent reconciler. Its positive input must be a durable, authenticated node-owned witness tied to the registered attempt; its negative inputs include wrong fence, missing witness and replacement container. This rules out treating the in-memory SIGTERM prototype as end-to-end repair or inferring exit from lease expiry.
+
+- Implemented the Worker-loss supervisor candidate. Install stop handlers before arming SIGTERM parent-death protection for the private supervisor, preserve the expected-parent PID check and keep SIGKILL as the default for the actual executor. When stop is already observed before spawn, skip execution and emit only the exact exit receipt. When observed after spawn, use the existing descendant drain. Ruff and focused session-process tests passed (8 passed, 1 platform skip). The committed candidate is not mounted on the E1 Workers yet. Durable crash receipt reconciliation and direct supervisor SIGKILL containment remain open.
+
+- Executed the exact f97be98f supervisor file (SHA-256 436fbacb02dfdd6339727bc02e4bd5558a243023cc2f0a681355837881b29599) in both Linux E1 Worker containers via a disposable probe and normal Python exec. After the actual supervisor spawned a synthetic executor and detached grandchild, SIGKILL of the synthetic Worker caused a nonzero supervisor exit and exact receipt; the receipt was absent before Worker loss, and no execution result existed after drain. No mount or live Worker was changed. This validates the committed Linux process boundary; independent durable receipt consumption and supervisor SIGKILL containment are still open.
+
+- Verified a Linux parent-death edge on both isolated nodes: after a synthetic subprocess armed SIGTERM via prctl, exiting its creator thread delivered SIGTERM even while getppid still reported the live Worker process. The existing per-attempt supervisor launch and wait are synchronous on the caller thread, so this probe does not show a normal-path regression in f97be98f. It does rule out using PDEATHSIG as process-death proof for a future warm launcher that hands supervision off across threads. Keep this candidate isolated until real Worker-path acceptance; a detached launcher should monitor the exact Worker process identity via pidfd or equivalent and preserve explicit STOP as a separate trigger.
+
+- Inspected the live isolated Worker deployment before activation. Both containers have read-only root filesystems and import the image's executor_supervisor.py, with no bind for that module. Existing parent/child timing and runtime overlays are separate from the Compose release label, so recreating directly from the labeled file would risk dropping the active E1 profile. The candidate has not been activated. Preserve the exact current container spec, add only a read-only supervisor mount in a new candidate container, and verify the effective file hash and rollback before the next Worker-loss drill.
+
+- Created stopped supervisor candidate containers on both isolated OrbStack nodes by cloning the running Worker's Docker Config and HostConfig against the exact image ID. Both candidates add just one read-only executor_supervisor.py bind. Docker normalizes unset OomKillDisable to false on create; after checking that normalization, the remaining effective configuration matched. The initial strict compare surfaced that normalization and was corrected. Both original Workers remain running and candidates are named zebra-ha-e1-20261102-worker-1-corpus-supervisor-candidate. Activate one at a time in the isolated fleet, verify the actual imported hash and readiness, and retain the old container for immediate rollback.
+
+- Activated the supervisor candidate sequentially on both isolated Workers under their existing names. Both imported source hashes match f97be98f (436fbacb...b29599); stopped originals remain named zebra-ha-e1-20261102-worker-1-corpus-pre-supervisor for rollback. Four fresh synthetic short-task admissions all returned sealed 201; successful executor result-publication diagnostics appeared on both nodes (one source, three survivor). Evidence: `.artifacts/cloud-ha-e1/corpus-supervisor-smoke-1793737986`. This verifies normal execution after activation; Worker-loss fault and durable ACK reconciliation are separate.
+
+- Ran the existing signed active-sandbox STOP drill against the activated supervisor candidate with one fresh synthetic Task (9798ab03-0452-4817-90b2-7441ce304d33). Observed live sandbox and unconfirmed executor, paused the exact owned Worker, submitted one STOP (202), and unpaused it. Terminal stopped/resources_released with sandbox absent and exact matching exit receipts arrived in 7.640s. The existing Worker-loss script kills the entire container, which also kills the supervisor, so this run deliberately exercises STOP and does not count as independent Worker-process crash reconciliation.
+
+- Ran the owned node2 Worker-container SIGKILL drill with the mounted supervisor candidate and a single new synthetic Task (78b18c15-637e-4012-9d4d-174cbcf26cd6). Verified no model reservation at loss. Source Worker recovered the original at fence 2; read-only SQL confirmed command done, generation 1, and exact start/exit pair at fence 2. Fence 1 had no executor start or exit record, so this sample exercises pre-registration takeover and does not cover crash after executor registration. Both Workers running and unpaused after restoration. Next drill must gate fault injection on exact live executor_started without exit and distinguish container death from in-container Worker process death. No Task replay.
+
+- Completed the post-registration Worker-container SIGKILL drill on the mounted candidate. A fresh synthetic Task (b3b32c93-4d5d-4770-bb97-05ca4d28d1f0) was admitted once; injection required the live exact owner/fence registration without an exit and no model reservation. Source Worker recovered the original at fence 2 and the durable command reached done at wake generation 1. Read-only audit found one executor_started and zero executor_exit at fence 1, and one matching start/exit pair at fence 2. This confirms recovery and the missing old-fence durable proof on whole-container loss. Both workers restored running/unpaused. Preserve the unmatched start and implement independent proof rather than backfilling from successor completion.
+
+- Verified both isolated Workers use private PID namespaces, no automatic restart and no privileged mode. On both nodes a disposable same-image container ran a parent and a setsid child. After killing the exact container, Docker reported exited/PID 0 and neither original host PID belonged to its old namespace. Restarting the exact container ID produced a new PID namespace. This validates whole-container containment in the E1 profile and demonstrates why a durable registration must bind a container incarnation, not its name or ID alone. Scoped probe containers were removed. An independent reconciler still needs durable incarnation identity, a trusted engine witness and a fail-closed policy for missing evidence; do not use this probe to fill historical exits.
+
+- On both isolated Docker engines, tested a retrospective lifecycle query from a fresh observer after kill and restart of the same disposable container ID. The engine returned start/die/start with strictly increasing TimeNano and the same exact Actor.ID, and inspect StartedAt changed. Both probes were removed. This confirms a separate observer can distinguish the two incarnations while the engine still retains the window. It does not prove retention across daemon restart or event eviction. A reconciler must persist a matched positive death witness and keep missing/ambiguous history unresolved; current inspect of a replacement incarnation alone is insufficient for historical reconciliation.
+
+- Verified the strict Docker inspect witness on both isolated nodes using disposable same-image containers. A live original was rejected; after SIGKILL, the same exact ID and StartedAt with private PID namespace, unprivileged mode, exited/PID 0 and a later FinishedAt qualified. Restarting and killing the same ID again was rejected because StartedAt changed. The probes were removed. This gives the independent reconciler a positive witness before restart without depending on event retention. Persist the registered engine/container incarnation before execution and the verified witness before restoring a lost container; missing containers, replacement incarnations and historical rows without identity remain unresolved. No existing exit record changed.
+
+- Verified Worker-to-host identity correlation on both E1 nodes. The Worker hostname is not a Docker ID prefix. The in-container PID namespace inode matches the host's namespace for Docker State.Pid, but the boot ID exposed inside each container differs from the host boot ID. Therefore keep the host boot identity in the trusted node-side binding and correlate live processes by namespace before registering engine/full container ID/StartedAt. Do not infer identity from hostname or compare container boot ID with host boot ID. Existing executor receipts compare the Session/fence body verbatim, so bind incarnation as separate evidence under the same executor key in the fenced registration transaction. No receipt or deployment changed.
+
+- On both E1 nodes, captured a strict same-incarnation Docker death witness before restarting a disposable container, fsynced it to a host-side file, and verified it from a fresh observer process after the same ID restarted with a different StartedAt. The witness kept engine ID, full container ID, original StartedAt, PID namespace and FinishedAt. The probe did not rely on Docker event history after restart. All disposable containers/files were removed. This proves observer-process handoff only; host reboot persistence needs atomic publication plus directory fsync, and the application still needs atomic fence/identity registration and authenticated witness consumption. No historical ACK or production change.
+
+- Implemented the storage boundary for executor incarnation reconciliation. Optional instance identity is inserted in the existing fenced start transaction as a separate immutable record; legacy start/exit bodies and readers retain exact equality. The trusted-adapter ACK entry point matches the registered identity and exact original Session/fence, rejects missing or replacement evidence, and inserts at most one canonical exit receipt. Real disposable PostgreSQL 17 ran all eight recovery tests, including wrong identity, wrong fence and repeat delivery. Ruff/diff check passed and disposable PG was removed. No live caller is wired to the new path yet; the node verifier must supply positive exit evidence before calling it.
+
+- Hardened incarnation ACK idempotency: a conflicting existing executor_exit row now returns false instead of reporting success after a no-op insert. The real PostgreSQL regression covers a matching replay and an intentionally conflicting row in its disposable schema. Targeted test, Ruff and diff check passed. The trusted node observer is still unwired.
+
+- Joined real Docker inspect evidence to real PostgreSQL incarnation ACK in a disposable integration probe (`.artifacts/cloud-ha-e1/test_executor_docker_exit_handoff.py`). Registered an original private-PID container's identity and exact lease, captured the exited instance before restart, then stopped the restarted instance under the same ID. PostgreSQL rejected the replacement and accepted the captured original with exactly one exit row. One integration test passed; both temporary containers removed. This was an explicit harness handoff; automatic Worker registration and trusted node observer wiring remain open.
+
+- Wired opt-in Worker incarnation registration. With ZEBRA_EXECUTOR_INCARNATION_FILE set, the Worker reads the operator-mounted per-start identity, requires the engine/container/StartedAt and matching local PID namespace, and passes it into the fenced start transaction before spawning an executor. An invalid or unavailable configured binding stops dispatch; deployments with no configured identity keep the existing path. The node-side writer must publish a fresh binding per incarnation through a trusted read-only mount. Ruff/diff check and 9 local Worker tests passed, with two Linux-only skips. Node writer, recovery consumer and live activation remain open.
+
+- Added the E1 host identity publisher. It requires the owned private-PID unprivileged running container, correlates Docker's host PID to its namespace, rechecks PID and StartedAt, then atomically publishes a read-only binding and fsyncs the file and parent directory. Ran the exact script on both isolated nodes and independently matched the published namespace against the Worker. A shell check initially assumed jq on node2; used stdlib JSON on both instead. Temporary publications removed. Mount a host-owned directory (not the individual file inode) so replacements remain visible to the Worker. Deployment wiring and independent exit consumption remain open.
+
+- Activated incarnation registration on both isolated Workers sequentially using the exact existing container specs with updated session_process/force_stop_executors source mounts and a per-node root-owned read-only identity directory. Published each fresh identity after start and verified the Worker parser in both containers. Previous containers are stopped under the -pre-incarnation suffix. Four fresh synthetic admissions returned sealed 201 and read-only SQL verified four starts, four incarnation rows and four exits. The cohort ran on one engine, so durable registration is proven on one node and parser/mount preflight on both. Witness consumption is still unwired. Evidence: `.artifacts/cloud-ha-e1/corpus-supervisor-smoke-1793738869`.
+
+- Extended the trusted E1 host publisher with exit-witness capture. It matches the engine, full container ID and original StartedAt, verifies an owned private-PID unprivileged stopped container with PID 0 and FinishedAt after start, then atomically publishes a separate witness. Both isolated nodes passed live negatives for a running original and a stopped replacement, plus the positive original exit. Disposable resources removed. A trusted consumer still needs to take this witness to the exact registered Session/fence ACK path; no historical or live executor ACK was written.
+
+- Connected the E1 host exit witness command to the exact PostgreSQL ACK path via explicit Session/fence arguments. The CLI captures and atomically publishes a fresh same-incarnation witness before ACK, reads its DSN only from the environment, and rejects unmatched registration. In the disposable Docker/PG17 integration probe, the actual consumer rejected the replacement and accepted repeated delivery of the original with one exit row. Corrected the probe's module import before the passing run; temporary resources removed. The isolated live Worker-loss drill and continuous node-side operation remain open.
+
+- Verified the explicit trusted witness handoff on the live isolated dual-node fleet. One new synthetic original (8544d249-2bd4-4c89-a01d-cfa94617206d) was admitted; node2 was killed after exact executor registration and before any model reservation. Host captured the original stopped incarnation, and the operator harness consumed the witness into PostgreSQL before node2 restart. Source recovered the original at fence 2; read-only SQL verified both exact start/exit pairs, two incarnation rows and command done at wake generation 1. Node2 restarted with a freshly published identity, and both Worker parsers verified their bindings. No request replay. Evidence: `.artifacts/cloud-ha-e1/guarded-supervisor-witness-loss.json`. Automatic discovery and acknowledgment, supervisor-only loss containment, and full capacity gates remain open.
+
+- Added E1 node command --reconcile to discover unmatched starts by exact verified incarnation and namespace, without operator-supplied Session/fence. A bounded query selects up to 100 starts and reuses exact ACK for each. Matching existing receipts are skipped; conflicting rows surface failure. Real disposable Docker/PG17 test verified replacement discovers zero, original one, repeat zero. The command remains one-shot and needs isolated live acceptance and restart orchestration.
+
+- Verified incarnation-based discovery against live isolated Worker container loss. New synthetic original 8448fee3-8cf1-400f-8473-798d4a93ee47 was submitted once. The drill killed node2 after its exact registered executor start and before model reservation; host verified the original stopped incarnation. Discovery acknowledged one original exit without Session/fence inputs and zero on immediate repeat, before restart. Source took over at fence 2; read-only SQL verified both exact start/exit pairs and done at generation 1. Both Worker identities verified after restoration. Evidence: `.artifacts/cloud-ha-e1/guarded-supervisor-auto-discovery-loss.json`. Orchestration still invoked the one-shot function explicitly; automatic detection/restart and the full HA gates remain open.
+
+- Added opt-in E1 --reconcile --restart orchestration. It writes the old witness, applies bounded discovery, requires a subsequent empty pass and revalidates the exact Docker exit before starting the same container ID and publishing a fresh binding. Real Docker/PG17 disposable integration confirmed old ACK plus replacement identity publication; the macOS harness substituted identity capture only, which was separately validated on both Linux nodes. Temporary resources removed. This remains a one-shot isolated command. Continuous detection, single-owner restart coordination and crash recovery between Docker start and identity publication are still required.
+
+- Serialized the E1 restart path with a nonblocking host file lock tied to the resolved binding path. The lock spans evidence capture, reconciliation, restart and identity publication, and the output cannot replace the identity or lock file. A competing process was rejected before any Docker access. Ruff/diff check passed. The lock coordinates callers sharing the same trusted binding path; a standing reconciler and interruption recovery remain open.
+
+- Made isolated restart resumable after Docker start but before fresh identity publication. Under the existing lock, a running replacement must match the old engine/container, the durable witness must match the previous binding, and its finish must precede the current start. It reruns reconciliation and confirms the live identity before publishing, without issuing another start. A deterministic probe verified inconsistent timestamps are rejected and valid resume publishes the replacement; the first probe attempted to overwrite the deliberately read-only file, so the corrected probe checks the rejection before the successful atomic publication. Live crash-injection and standing detection remain open.
+
+- Ran the restart-resume command on both Linux E1 hosts against real disposable Docker containers, injecting failure after start and before identity publication. The prior binding and witness survived, the retry published the already-running identity, and the exact new incarnation stayed unchanged. Both disposable containers removed. This probe stubbed PostgreSQL reconciliation to an already-drained state, so it proves the Docker/publisher interruption boundary only. Standing orchestration and full capacity remain open.
+
+- Added an opt-in periodic E1 recovery tick (--recover-crash). It resolves one explicit target to its full container ID, dispatches abnormal exited states to locked reconciliation/restart, and checks running states for interrupted identity publication. Created and normal/TERM exit states are ignored. Deterministic dispatch check and Ruff passed. The tick has not been scheduled. An intentional SIGKILL is indistinguishable from a crash, so stop the scheduler before operator kill/drain. Next wire a bounded node-local scheduler and run the live fault drill through it.
+
+- Preflighted the standing recovery runtime on both E1 nodes. systemd is running, but host Python lacks psycopg/pydantic. Both existing isolated cleanup containers have the dependencies and scoped database configuration, but their baked executor storage module predates incarnation ACK. Executed the exact current storage module in a disposable child process inside each cleanup container and confirmed a read-only connection to zebra_e1_corpus_fleet. No daemon or container configuration changed. The scheduler should use a separately scoped recovery process with the verified dependency image/source and secret injection, while Docker/PID witness collection remains host-side. No scheduler enabled yet.
+
+- Connected the isolated host recovery tick to a bounded child in the exact owned E1 cleanup container. The host retains Docker witness/restart duties; the child uses the container's existing scoped PostgreSQL settings and current checked-out ACK source without logging the DSN. Both isolated nodes verified a zero-result discovery against the real corpus DB with a synthetic unmatched binding. Corrected source extraction after an initial child syntax error. No scheduler enabled or live receipt written in this check.
+
+- Ran the node2 transient systemd timer against a single new isolated Task (01d4b4cd-652f-45a5-8050-ebee54396371), killing the owned Worker after executor registration and before model reservation. Initial timer attempts failed closed because the cleanup child had not composed its DB connection budget. Added the existing cleanup postgres_pool_scope; the same timer then retried the original witness, acknowledged one exit and restarted/rebound node2 without explicit ACK or start calls. Source took over at fence 2 and the command settled done; read-only SQL verified both exact start/exit pairs. Stopped the temporary timer. This drill used a code fix during recovery, so a clean unattended repeat is still needed. The ephemeral child also needs an explicitly budgeted deployment profile before standing use.
+
+- Cleanly repeated the transient node2 timer drill on committed 9dd27828. New original 3c3c2204-c562-4922-a945-a8bdc6e37b62 was submitted once; after exact live executor registration and before any model reservation the owned Worker was killed. The timer acknowledged one exit and restarted/rebound the Worker without any code change or manual ACK/start during recovery. Source took over at fence 2; SQL verified both exact exit pairs and original command done at generation 1. Both Workers running/unpaused, temporary timer stopped. Evidence: `.artifacts/cloud-ha-e1/guarded-supervisor-timer-repeat.json`. Standing deployment and full E1 capacity remain open.
+
+- Journal nuance for the unattended repeat: one tick overlapped the injected exit and returned the fail-closed identity-capture error (the initial running observation became stale). The next scheduled tick independently recovered and logged one ACK. No manual intervention; preserve this failure in the drill record. A future standing service should classify this transient state race separately from an invalid binding.
+
+- Removed the direct psycopg bypass from E1 witness discovery. It now uses the composed connection-capacity adapter on the same control lane as exact exit ACK. Both isolated cleanup child processes successfully queried the real corpus database through this lane with a nonmatching synthetic identity. Ruff/diff check passed. This accounts for the socket inside each child process; standing deployment still needs to account for the extra child process in fleet peak inventory.
+
+- Removed the pool from the short-lived E1 witness reconciliation child. It now uses the existing cleanup ConnectionBudget directly and checks a one-control-socket peak and zero active permits on completion. Both isolated nodes passed those checks on real corpus discovery. Discovery and ACK are serial and share the same lane; two node-local single-flight timers add at most two sockets, so even the earlier conservative 249-of-256 inventory becomes 251-of-256. This arithmetic assumes one configured recovery child per node, with no unmanaged additional callers. Standing profile/deployment and positive ACK acceptance of this revision remain open.
+
+- Exercised the single-socket recovery child under a live node2 timer fault on synthetic original 90898daf-51cf-4cf0-abf8-258b9e576c91. One tick raced container exit; the next acknowledged one original and restarted node2, so both per-process socket assertions passed. Read-only SQL verified exact start/exit pairs at fences 1 and 2 and original command done at generation 1. Fence 2 was owned by the restarted node2, so the inherited harness timed out on its distinct-owner assertion. This is successful same-node recovery and positive ACK evidence, not a new cross-node takeover pass. The original was submitted once and temporary timer stopped by the trap. Cross-node acceptance must hold the restarted node out until survivor acquisition instead of assuming restart ordering.
+
+- Verified cross-node takeover with the single-socket timer revision on synthetic original 41dce44e-3380-4e1e-be8e-592dd7d9be60. Killed the registered node2 Worker before model reservation, kept it stopped until the survivor acquired fence 2, then enabled a temporary timer. The timer acknowledged the old exit and restored node2 with a fresh binding, with no manual ACK/start. Read-only PostgreSQL verified survivor owner, both exact start/exit pairs and done at generation 1. The original was submitted once. The timer was stopped on exit. Evidence: `.artifacts/cloud-ha-e1/guarded-supervisor-timer-survivor-first.json`. The staged activation is deliberate to prove cross-node behavior independently of the restart race; standing deployment and capacity remain open.
+
+- Hardened periodic recovery against the observed state race. Under the restart lock, a healthy container with the already-published ID/StartedAt now returns from a single inspect snapshot; a later exit is observed on the next tick. The same locked snapshot re-applies the abnormal-exit filter, so a normal or TERM exit between the outer observation and lock cannot trigger restart. Explicit operator restart retains its prior behavior. Deterministic healthy and raced TERM cases verified no engine mutation; Ruff/diff check passed. Standing scheduling and full capacity still open.
+
+- Revalidated the locked-state periodic recovery revision on one fresh synthetic original c785f07a-5968-4424-b63f-163534b5c9f0. Fault was after exact executor registration and before model reservation. Survivor took fence 2, then the staged timer wrote one ACK and restored node2 with a valid new identity. No failure appeared in this timer's journal. SQL verified both exact pairs and done at generation 1; no original replay. The timer was stopped on exit. This is a live regression of the post-fault recovery path, not a deliberately forced healthy-to-exit interleaving. Evidence: `.artifacts/cloud-ha-e1/guarded-supervisor-timer-locked-state.json`.
+
+- Enabled one transient systemd timer per isolated E1 node under zebra-e1-worker-recovery.timer. Both active timers completed two healthy ticks successfully with the mounted Worker identities checked beforehand. The interval is five seconds after each service exits, with 1s timer accuracy and 45s service timeout. The initial command placed AccuracySec on the service; corrected to --timer-property. Timers intentionally remain active on the current isolated VM boots. Stop the exact timer before planned Worker kill/recreate. These transient units and /run bindings are not host-reboot durable. Next verify concurrent real recoveries against the two-socket inventory and package a durable isolated deployment before production qualification.
+
+- With both transient E1 recovery timers active, ran parallel cleanup-image probes against the actual corpus PostgreSQL. Each used the pool-free cleanup ConnectionBudget and held one read-only control session until both saw exactly two tagged sessions concurrently in pg_stat_activity. Each verified peak control=1 and active=0 after close. This validates the two-socket incremental inventory under simultaneous access, not concurrent crash/ACK/restart. No Worker or database state changed. The first command was rejected by automatic review because of its temporary-file removal shell pattern; the rerun streamed the probe directly without creating temporary files.
+
+- Audited VM-reboot prerequisites on both live E1 nodes. Both incarnation mounts resolve to tmpfs, /var/lib resolves to btrfs, Docker is enabled, and the Workers have restart policy no. Node2's enabled corpus boot unit directly starts the Worker and does not publish an incarnation; source has no equivalent corpus unit. Documented the resulting boot readiness gap and the ordered persistent-state/reconciliation acceptance in the E1 README. No active mount, service or timer changed.
+
+- Migrated node2's isolated Worker identity bind to /var/lib/zebra-e1-worker-incarnation (btrfs) read-only. Cloned the exact live configuration, replaced the one mount, retained the stopped prior container as -pre-persistent, published and verified the fresh identity, and started a replacement transient timer pointing at the persistent identity/witness path. The initial systemctl stop returned failure for an already unloaded idle service after stopping its timer; verified both inactive before completing the staged cutover. Source node unchanged. This persists node2 state files, not the transient timer or boot ordering. No VM reboot performed.
+
+- Installed the persistent systemd node2 recovery timer and corpus boot drop-in on the isolated VM. The corpus unit now starts dependencies without the Worker, then runs explicit reconcile/restart using the scoped cleanup container before reporting startup success. Added cleanup-container support to explicit restart CLI. systemd-analyze verify passed; timer enabled and first check succeeded; old transient timer stopped. Boot unit was not restarted, so boot-time recovery is still unverified. Rollback: disable/stop zebra-e1-node2-worker-recovery.timer, remove the two same-prefix unit files and corpus 50-worker-incarnation.conf, daemon-reload, then restore the prior transient timer if needed. Units reference the current E1 worktree, which must be available at boot.
+
+- Restarted the named isolated node2 VM and verified its boot ID changed. The first immediate status probe saw boot units inactive before systemd reached them; the same boot subsequently reached active corpus and enabled recovery timer without manual start. Journal showed ordered dependencies and successful boot reconcile/start. Worker identity parser passed. Temporarily paused the other isolated Worker for a short synthetic smoke, then unpaused it via trap. All four receipts sealed 201 and node2 published four executor results. Evidence: `.artifacts/cloud-ha-e1/corpus-supervisor-smoke-1793740971`. This was a planned VM reboot with no deliberately stranded executor; abrupt host loss, source-node boot wiring and E1-A remain open.
+
+- Migrated the source E1 Worker to the same host-local persistent /var/lib incarnation mount as node2, cloning the existing container spec with only the bind changed and retaining the stopped -pre-persistent original. Verified fresh in-container identity and enabled zebra-e1-source-worker-recovery.timer after systemd-analyze verification. The previous transient source timer is stopped. Source PostgreSQL/Broker and other dependencies were not restarted. This persists Worker state and periodic scheduling only; a source boot dependency unit and source-VM reboot acceptance are still needed.
+
+- Installed and enabled the isolated source corpus boot unit and timer ordering drop-in. Explicit allowlist checks confirmed every target bears the E1 owner label. The unit starts the four storage dependencies, waits for PostgreSQL and RabbitMQ, starts the owned apps/cleanup/TLS, and then invokes incarnation-aware Worker reconcile/start. systemd-analyze verify and activation against the already-running fleet passed; PostgreSQL uptime confirmed no restart. Source recovery timer remains active. This checks unit wiring, not a cold source boot or readiness of every dependency after reboot. No production touched.
+
+- Source VM reboot changed its boot ID but failed the cold-start gate. PostgreSQL exited 1: its configured host bind /root/zebra-ha-e1-20261102/data/postgres is now empty and root-owned, and the nonroot container cannot chmod/init it. No PG_VERSION found in the inspected fixture root or /var/lib; the two local PostgreSQL containers expose separate capacity/full corpus DBs, not the original zebra_e1_corpus_fleet. No chmod, initialization, replacement or replay was performed. Source boot readiness correctly withheld apps/Worker while PostgreSQL was down. Determine whether an exact export/snapshot exists before restoring; if unavailable, use a separately named corpus and report the lost rehearsal history explicitly. Node2 remains dependent on the source store. Production untouched.
+
+- Found a retained PostgreSQL custom archive in source containerd storage and preserved a byte-identical root-only copy at /var/lib/zebra-e1-recovery-archives/fleet-base-20261103.dump (SHA-256 1669d828469c67fa957efc7a42e7605ffbde0e98f4d59f285d169b39adf1c6de). Archive metadata is ha_e1 at 2026-11-03 13:21:32 UTC, older and differently named than the lost corpus fleet. Initial streaming pg_restore hit EOF; a staged file matched SHA-256 and restored cleanly into disposable PG17, yielding 11,706 events and 4,528 idempotency records. Disposable PG removed. This is a verified baseline archive, not exact recovery of the later fleet or its original receipts. The failed original store and live services were not changed.
+
+- Restored the checksummed baseline archive on the isolated source VM into separately named PostgreSQL 17.5 container zebra-e1-postgres-rebuilt-baseline and owned named volume zebra-e1-postgres-rebuilt-baseline-data. It is network-none with TCP listening disabled and a distinct database zebra_e1_rebuilt_baseline. Verified 11,706 events and 4,528 idempotency records before and after an exact container restart. The original failed container and empty bind were not modified, and the running application fleet still points at the unavailable original store. Next build a separately identified full E1 corpus and scoped application configuration, preserving baseline and historical evidence.
+
+- Started the full synthetic corpus rebuild on a separate named PostgreSQL volume and DB zebra_e1_corpus_rebuilt, using the validated baseline archive and network-none loopback shared only with the owned one-shot generator. The generator allocated fresh namespace e1-corpus-e8e1b803ad3c43e1ab73a0799cb97ab5; 250 Tasks were already committed while exec session 76965 remained live. Target 10,000 Tasks/1,000,000 events plus generator replay check. Resume observing the same handle and read-only namespace counts; do not restart from a polling timeout. Original failed store and baseline recovery copy untouched.
+
+- Verified the original corpus generator remained live while auditing the application cutover. Both nodes' current API/Worker/cleanup containers use verify-full PostgreSQL on local 127.0.0.1:25432 (node2 via its dependency relay), targeting the lost zebra_e1_corpus_fleet. The rebuilt DB is loopback-only in its own network namespace with bootstrap trust. A later cutover must preserve verify-full, provision the scoped application role and TLS/HBA, and change only exact owned candidate DSNs/namespace; do not expose the bootstrap server or redirect legacy containers. No cutover performed.
+
+- Preflighted the rebuilt corpus TLS profile in a disposable source PG17 instance on separate loopback port 25433. Existing E1 certificate verified with sslmode=verify-full and a non-superuser probe role. The first wrong-password negative exposed default loopback trust; repeated with explicit hostssl/SCRAM HBA and verified wrong password and plaintext both rejected. Disposable instance/HBA removed. This preflight does not reconfigure or expose the live generator database. The original generator continued in its private namespace.
+
+- Provisioned the non-superuser ha_app role and scoped schema/table/sequence grants in zebra_e1_corpus_rebuilt while the original generator was live (1,250 committed Tasks at role verification). Reused the existing isolated application credential without printing it. Read-only SET ROLE verified query access. Staged root-owned /var/lib/zebra-e1-rebuilt-corpus-config/pg_hba.conf permitting only local peer admin and SSL/SCRAM application access from source loopback/node2. It is not mounted yet; the generator remains isolated in its private network. Verify actual relay source and reject paths before cutover.
+
+- Created six stopped rebuilt-corpus application candidates (API/Worker/cleanup per node) from exact owned existing image IDs/specs. Only the DB name and deployment namespace in environment changed; the 127.0.0.1 relay endpoints and verify-full settings were preserved. Verified effective env equality without displaying credentials. All candidates remain created, existing containers untouched. Generator had 1,500 committed Tasks. Before activation, align authority/relay and recovery CLI namespace, provision the new namespace's command rollout/bootstrap, and finish the corpus replay check.
+
+- Made the E1 recovery command accept an explicit deployment namespace while preserving the old timer default. Before spawning a cleanup DB child, the bridge now checks that the owned cleanup container's configured namespace exactly matches the requested one. Deterministic mismatch check showed no DB child spawned; Ruff/diff check passed. Both staged candidate sets can use the new namespace once activated. The original generator remains running with 1,650 committed Tasks.
+
+- Exercised the existing bootstrap_corpus entry point with the scoped ha_app role in a separate two-Task disposable namespace within the rebuilt DB. Structural seed/verification and epoch/authority setup reached the command-backfill step; its cutover lock timed out while the full generator was writing. The original full namespace remains live and untouched. Do not retry cutover during active corpus writes; rerun the idempotent bootstrap after the generator drains, with the exact full namespace and expected count. Retain the small probe namespace as separate evidence.
+
+- Checked the node2 PostgreSQL relay's source address without exposing the rebuilt DB. A short-lived source listener on the otherwise unused source fixture port received existing node2 traffic before the tagged client probe, so its payload assertion failed. Kernel socket inventory then showed the completed peer as 192.168.139.154 on source 192.168.139.232:25432, consistent with the staged HBA. A second bind was blocked by TIME_WAIT; no listener remains. This is source-address evidence, not successful end-to-end TLS authentication through the relay. The original corpus generator was still running.
+
+- Created the stopped zebra-e1-postgres-rebuilt-corpus-tls candidate against the owned rebuilt named volume. It binds only source loopback and the explicit source relay address on 25432, uses the verified certificate and staged hostssl/SCRAM HBA, and retains the 256-connection reference. It must never run concurrently with the network-none generator PostgreSQL on the same volume. At staging the original generator was live with 2,350 committed Tasks. After generator exit and replay validation, cleanly stop its PostgreSQL, confirm stopped, then start the TLS candidate and verify both app endpoints and negative auth before application activation.
+
+- Attached a bounded dependent bootstrap job to the exact live E1 generator container festive_hellman (shell observation handle 88921). The job waits for Docker exit 0, requires the original namespace to contain exactly 10,000 Tasks, then runs the existing scoped ha_app bootstrap with its structural/replay checks. It will not start the TLS PostgreSQL or app candidates. At arming, the original generator was running with 2,450 committed Tasks. Poll original handle 76965 and dependent handle 88921 plus authoritative counts; on a nonzero result inspect rather than replaying generation.
+
+- Added the E1 database cutover command, with an exclusive host lock, exact owner/mount checks, read-only 10,000/1,000,000/epoch/backfill gate, and mutual exclusion on the shared named volume. A failed TLS candidate startup restores the original isolated PostgreSQL after confirming no holder. Ran syntax check and live --check against the active rebuild; it correctly refused 2,750 Tasks/275,000 events without an epoch or completed backfill. No containers switched. Positive cutover and TLS application probes remain pending after the dependent bootstrap.
+
+- Ran the actual rebuilt PostgreSQL cutover shell through a deterministic Docker double on the isolated Linux host. With a complete proof and injected candidate start failure, observed exact ordered stop old/start candidate/stop candidate/start old and the script failed while restoring original state. The first non-root invocation could not open the root-owned lock; the retry used the same operator role as deployment. No real database container changed. Original generator reached 3,000 committed Tasks.
+
+- Verified end-to-end PostgreSQL TLS through the actual node2 dependency relay. A disposable source PG17 bound only the fixture relay address on the otherwise unused 25432, using the existing certificate and HBA limited to a disposable role from node2. The node2 cleanup child retained its exact verify-full/CA settings, connected successfully, and server confirmed TLS and 192.168.139.154. Wrong password failed with SCRAM authentication error. Disposable container and HBA cleaned up; real rebuilt DB never exposed.
+
+- Found the stopped rebuilt Workers mount e1_composition.py, whose existing exact guard rejected their new DB/namespace. Added the explicit rebuilt DB plus generated namespace pairing while retaining the legacy pairings, loopback port and signed external authority namespace. Confirmed the legacy and rebuilt pairs pass and cross-pairs reject before composition in the deterministic probe. The source Broker/Authority/Registry have no deployment namespace or PostgreSQL DSN env to rewrite. Ruff/diff check passed. No candidate started.
+
+- Audited dependency data after source reboot while full generator remained running. RabbitMQ, Redis and object-store bind directories exist and are nonempty. The registry's configured /root/zebra-ha-e1-20261102/data/registry bind is absent and its unrelated default /var/lib/registry volume is empty. Consequently the database switch alone cannot restore definition/runtime artifact reads. Verify the registry's configured storage root, restore or re-publish the exact signed synthetic bundle before fresh Task acceptance, and keep old publication evidence separate. No registry bind or app was started or recreated.
+
+- Both original generator and dependent bootstrap exited 0 for e1-corpus-e8e1b803ad3c43e1ab73a0799cb97ab5. Verified 10,000 Tasks, 1,000,000 events and index rows, 16 replay samples, fresh epoch and complete command backfill; live TLS cutover --check passed. Retained runtime bundle envelope and assembly match their original canonical publication digests after correcting the offline probe to parse the envelope type. Both isolated nodes retain the exact engine image. No Registry push, database cutover or application start performed.
+
+- Created a root-only pre-cutover pg_dump archive of the complete rebuilt namespace database on source persistent storage, at /var/lib/zebra-e1-recovery-archives/rebuilt-corpus-precutover.dump (72,121,920 bytes, SHA-256 bda9d5dac1842fde4fe3403af6e5f5899ab2fe6bfa84c133ec3fa228220525ce). Verified its TOC and restored it into a separate network-none disposable PostgreSQL 17.5 container, confirming 10,000 Tasks, 1,000,000 events and complete command backfill. The first restore probe polled the initdb temporary server too early; the successful probe required the final PostgreSQL PID 1 and target DB readiness. Both disposable instances removed. No Registry, application or TLS database cutover performed.
+
+- Restored the isolated Registry on a new owned named volume, preserving the old stopped container. Pushed only the retained E1 image to source loopback. Manifest fetched by original digest hashes to sha256:d33e150b1091099389b01168db8dbca03b4b89bf5b900add87f29d78baecde5b, matching the original build evidence. Switched the complete rebuilt DB using the guarded cutover; both isolated nodes verified TLS against the actual rebuilt DB. Activated six owned app candidates under canonical names, retaining prior containers as -pre-rebuilt, and verified both API readiness routes and Worker identity parsers. RabbitMQ initially rejected credentials because only the provisioner role existed after reboot; replayed the existing isolated topology provisioning with retained credentials, without rotating them. No recent Worker error types in the post-provision sample. Recovery timers are stopped because their old namespace and boot unit dependencies have not been updated.
+- The original retained publication approval is valid for ha-e1-20261102 and explicitly rejected as INVALID_PUBLICATION_APPROVAL for e1-corpus-e8e1b803ad3c43e1ab73a0799cb97ab5. Rebuilt DB publication heads are present only in the original namespace. Do not transfer or edit original signed evidence to bypass this guard. A separately approved publication scoped to the rebuilt namespace (reusing the verified engine where allowed) is required to exercise fresh signed execution, the dual-node fault matrix and E1-A. No acceptance load or fault injection ran against the rebuilt fleet.
+
+- After explicit authorization, prepared separate private E1 test publication artifacts inside the rebuilt source API at /tmp/e1-execution-rebuilt using the existing fixture generator, verified engine digest and retained source evidence. Validated the new scope and registered trust revision 1 from expected revision 0 via the existing HostManagementStore operator path in zebra_e1_corpus_rebuilt only. Definition 171bd5f6-d63f-45a6-8ebf-e4a52c3d4959, bundle sha256:ced084523d017dc3db4deb907ff78abf1ce7f6c4a292260e2021e611be955853. Original artifacts untouched; no token output. This is approved trust, not a published release. Before materialize/publish, stage private config in durable isolated mounts and align authority fixture grant namespace, registry binding and Worker synthetic metering; then verify signed admission before running fault/capacity gates.
+
+- Persisted the separately authorized rebuilt publication config under /var/lib/zebra-e1-rebuilt-publication on both isolated nodes. The source retains the token and original generated bundle/assembly, and only approval/catalog were copied to node2. All files mode 0600; original publication artifacts unchanged. First docker cp did not see the tmpfs content, so streamed from docker exec. Both Worker baselines matched. Mounted the fresh approvals read-only, aligned synthetic Authority/Broker scope and registered the scoped host authority. Two initial signed smoke attempts failed at grant exchange (old Broker namespace, then Broker startup); neither submitted a Task. Both native synthetic wire checks passed. Materialize and publish returned 200, with separate receipts in .artifacts/cloud-ha-e1/publication-rebuilt-e1.json. Four subsequent signed admissions all sealed 201 and completed. The first fault harness admitted one original but direct host PostgreSQL access was rejected by the existing HBA; no fault injected. Re-ran with a fresh synthetic Task and read-only local database observation, leaving HBA unchanged.
+
+- Rebuilt namespace signed execution and Worker fault result: fresh original 8b77b8e2-915c-41fd-b965-70db5ef45c5f submitted once, node2 killed after registration and before model reservation, source took fence 2, original command done at generation 1. The node2 timer acknowledged one old exit and restored the Worker; SQL found exact matching start/exit pairs at both fences. Both Workers running/unpaused, temporary fault timer stopped. Evidence .artifacts/cloud-ha-e1/guarded-supervisor-rebuilt-loss-local-db.json. This is a pre-effect Worker fault case, not the full 32-active/256-stream E1-R matrix.
+- E1-A diagnostics with rebuilt corpus and PostgreSQL capped at 2 CPUs: both 15s windows scheduled 75 at 5/s (max 16 in flight), issued 68 and had 7 generator-late. First 39 sealed 201/29 sealed 429, all 39 done; queue p95/p99 34.033/34.059s. Second 38 sealed 201/30 sealed 429, all 38 done; queue p95/p99 30.092/60.407s. All 59 refusals decrypted to capacity_limited/command_scope_capacity; no issued unknown. Both windows received initial frames from 256 readers, then all ended with EOF; using a waiting-approval seed instead of a terminal Task did not fix EOF. Keep both failed windows, with receipts/drain/queue-latency evidence in corpus-rebuilt-capacity-256-1793768491 and corpus-rebuilt-capacity-live-sse-256-1793768675. E1-A fails the offer, refusal, queue and stream checks. Docker update --cpus 0 did not clear NanoCpus; isolated rebuilt PostgreSQL remains at 2 CPUs. No production changes.
+
+- Reproduced early EOF at the caught-up native tail for a waiting-approval Task. The same active-status set gates the Session tail and excluded WAITING_APPROVAL, so both tails drained and returned. Included the status in the shared set and added a virtual-clock heartbeat regression for both entry points. Focused stream suite: 39 passed, 1 skipped; Ruff passed. Rebuilt E1 API replicas use the same read-only source delta; previous isolated containers retained. No production changes.
+- E1-A follow-up: corpus-rebuilt-approval-sse-256-1793769502 retained 256 live streams through submit and drain, with 1,240 keepalives and zero closures. All 75 scheduled offers issued at 5/s with 16 max in flight. 39 sealed 201 receipts (all commands done), 34 verified sealed command_scope_capacity refusals, 2 unknown after read-only receipt checks. Matching API log lines show transaction timeouts at command wakeup insertion and Task event position backfill. No retry of original admissions. Queue p95/p99 observed at 40.137/40.176 s (39 samples, diagnostic only), max admission-to-completion 44.633 s. E1-A capacity fails. Prior window correlated 39 slot holds averaging 5.663 s, including measured launch-to-main and preparation stages; 8 slots imply around 1.4 attempts/s at that occupancy. Raising pending scope capacity alone would add queue space without adding execution throughput.
+- E1-R first precondition run corpus-rebuilt-e1r-api-1793769658 staged 32 separately signed admissions behind 256 live streams. Read-only inventory observed 32 pending with at most 6 simultaneous leases during the 6 s gate. Kept the run and injected no fault. Both workers restored to running and unpaused.
+- E1-R retry corpus-rebuilt-e1r-api-retry-1793769807 extended the inventory gate to 16 s using a fresh 32-task cohort and 256 live streams. Again the maximum while all 32 were pending was 6 leases; the later maximum was 7 with 23 pending. No fault injection. Full F-01–F-10 is still pending. Both E1 Workers were restored to running/unpaused; the rebuilt PostgreSQL remained capped at 2 CPUs. Reuse the approved isolated synthetic execution publication and a workload with a controlled longer active phase for a new E1-R cohort. The contract requires simultaneous 32 active (including 24 queued) and 256 observers before each fault.
+- E1-R delayed synthetic precondition probe corpus-rebuilt-e1r-api-delayed-1793770158 used the published rebuilt definition and a temporary E1-only model fixture with a 12 s delay keyed to a new explicit user prompt marker. Initial readiness probe ran before listen; the second checked the live listener before starting the driver. All 32 fresh signed admissions and 256 stream opens passed. Inventory recorded 113 samples at 32 pending / 7 leased, never 32 / 8, so no API fault was injected. Both Worker logs show local DatabaseCapacityExceeded during command pickup, recovery preparation and background discovery (81 matching lines in the captured time window). This proves contention in the process connection budget, without attributing the eighth lease to one failed acquire. Next isolate the lane and per-Worker lease distribution before changing any limits. The original synthetic model was restored and both Workers are running/unpaused. Rebuilt PostgreSQL replication inventory is primary/0 peers/0 synchronous peers, so full F-04 requires separately restoring synchronous redundancy on this topology. Earlier disposable replication and promotion evidence remains retained. Production unchanged.
+- CA-HA-03 execution discovery now uses the existing read connection lane when invoked from the normal lane. Both runtime fallback polling and the background recovery sweep share this read-only SELECT path. Explicit caller lanes and control discovery are preserved, as are normal-lane resolution, handoff and recovery transactions. The two running E1 Worker profiles match (normal8/read2/control2, fleet160 plus reserved/external7 against PostgreSQL256); saved copies with the preceding delayed E1-R evidence. The new routing regression reproduced normal usage before the fix. Ran 66 passing tests against a disposable PostgreSQL 17.5 across pickup, rollout shadow and runtime consumer; disposable database removed. E1 Workers still run the prior signed package, so the eighth lease and E1-A/E1-R results remain unverified on this candidate. Next sign and publish the candidate for E1 and repeat with per-owner lease counts. No production or original evidence changes.
+- Built and published immutable ARM64 E1 control image e23c8b86 from the verified flattened 837defbe base with the two committed discovery/SSE sources and checked-hash bytecode. The first layered build and the one-COPY derivative reproduced the existing overlay depth limit; neither ran on the fleet. Both nodes imported the final image offline with matching module hashes. Isolated Registry OCI manifest and config hashes verified for localhost:28081/ha-e1/control@sha256:33918aa243de225b7a060f9de3f635073e74d2d2bfc7b04a4a8727dcb09764e7. Worker-only cold switch at zero active leases and zero live pending commands. Exact prior containers retained exited; Worker mounts, baseline configuration and bound execution catalog/approval were preserved. This publishes the control image, not a replacement signed Task execution definition. Four fresh signed POSTs were sealed 201 and drained, evidence corpus-rebuilt-signed-smoke-1793770861. Build, hash, registry and activation evidence read-lane-e23c8b86. No production changes.
+- The first e23c8b86 E1-A activation exposed an operator readiness gap. All 75 offers issued and 256 SSE stayed open (1,478 heartbeats, zero closures). Original GET sealed 38 admissions; 37 remained unknown. All 38 command rows reached done, but all Tasks were suspended with executor_process_interrupted and there were zero executor start/incarnation/exit receipts. Preserved failed run corpus-rebuilt-approval-sse-256-1793770883. Cancelled the follow-on E1-R driver during stream setup, before any new POST or fault, and restored its model fixture. Rolled back both Workers. The original identity files had pre-restart timestamps. On a second guarded activation with zero pending commands, both candidates rejected the prior incarnation in their own parser; publishing exact current host identities restored readiness. A separate fresh signed smoke cohort sealed 4 admissions, completed three quickly and recovered the fourth original after SessionRecoveryPending (60.599 s queue to harness and 63.393 s total). This proves resumed execution after fresh identity and leaves a recovery latency failure to investigate. Smoke evidence corpus-rebuilt-signed-smoke-1793771207. No changes to original execution bindings, no replay or production changes.
+- With both candidate incarnations verified, E1-A rerun corpus-rebuilt-approval-sse-256-1793771294 issued 75/75 at 5/s. All 256 SSE stayed live (1,513 keepalives, zero closures). 37 sealed admissions all reached actual Session completion, 35 sealed refusals verified as command_scope_capacity, 3 original GETs remained unknown. Queue p95/p99 34.884/60.299 s across 37 diagnostic samples; max admission-to-completion 63.613 s. The connection-routing change does not close the capacity gate. Both Worker logs retain capacity exceptions, including 5 discovery-path and 22 recovery-preparation lines in the captured window. No replays. Started a separate delayed synthetic E1-R precondition run with lease inventory grouped by Worker and current epoch. Production unchanged.
+- E1-R API SIGKILL subcase corpus-rebuilt-e1r-read-lane-1793771450 reached the full precondition: 32 signed active Tasks, current-epoch leases 4 per Worker and 24 queued, with 256 open streams. Killed only the source API; 128 survivor streams stayed live, 128 source streams closed, and 128 peer requests from the saved seed cursor returned the exact successor frame in 27.332 s. Source API and original model restored; both Workers healthy/unpaused. This measures direct peer cursor recovery, not the LB 10-sample RTO or full F-01/F-09. The harness restored the synthetic provider before the original Task cohort drained, introducing a second disruption. Five HTTPStatusError failures landed 0.154–0.298 s after the delayed provider stopped; the other 27 originals completed, including one at 122.725 s. Retained all receipts and failures. Updated the private E1-R driver to hold the provider through bounded original-command drain for the next fresh run. Full fault matrix and E1 capacity remain open. Production untouched.
+- E1-R ingress retry added an isolated TLS load balancer on 28447 pointed only at the rebuilt API pair (source 28445, peer 28446); prior 28443 ingress config untouched. The driver verified four signed original GETs via the new ingress before opening the fault window. Run corpus-rebuilt-e1r-lb-drain-1793771796 observed 256 streams and 32 signed admissions, but max leases while all 32 were pending were source4/peer3. No fault injected. Held the delayed model through original-command drain, and all 32 reached Session completion (max 96.056 s). Started a separate fresh cohort with peer-first lease staging while retaining the exact 32/8/256 fault gate and independent ingress/original-GET evidence. The prior no-fault attempt and original data remain preserved.
+- E1-R clean source API SIGKILL rerun corpus-rebuilt-e1r-lb-staged-1793771983: staged peer4 then source4 before injecting, with 32 original signed active Tasks including 24 queued and 256 streams. The rebuilt-only TLS LB returned 10 consecutive verified original GETs at 1 Hz, first 0.290 s and tenth 9.058 s after confirmed kill. The source remained stopped through the probe. All 128 source observers disconnected; 128 peer observers stayed open and 128 saved-cursor requests returned exact successor frames in 30.221 s. Restored source API, kept the delayed provider through original drain, and 32/32 original Tasks completed, max 98.468 s; no new POSTs after staging. Both Workers running/unpaused, original model restored. This verifies process-loss RTO and direct peer cursor recovery in the isolated run, not lost-COMMIT responses, latest-client-cursor/Scheduler coverage or the remaining F-02–F-10 matrix. Production untouched.
+- F-01 post-COMMIT HTTP-response loss diagnostic corpus-rebuilt-postcommit-loss-1793772260 used an ephemeral loopback TCP relay to forward the 32nd signed POST to the source API exactly once. It recorded the upstream HTTP 200/sealed 201 and closed the client socket without sending response bytes. The client recorded outcome_unknown; the peer original GET returned the byte-identical sealed receipt, also verified via isolated ingress. Exact read-only cohort audit found one create, one command acceptance, one completion, wake generation 0 for the affected original. All 32 Tasks completed (max 135.792 s), then the delayed model was stopped and original restored. There were 256 live SSE readers during the drop; the POST occurred during cohort staging and subsequent peak at 32 pending was seven leases, so this is not the full loaded E1-R response-loss subcase. No API kill, business replay or production changes. Disposable PostgreSQL 17.5 plus the existing real libpq proxy ran both before-COMMIT and after-CommandComplete disconnect tests as part of 50 passing storage/API regressions. Before-COMMIT produced no Task/command/wakeup and was safely terminated by original identity; after-COMMIT exposed the original committed result and one command/wakeup. This is wire-level regression evidence, not deployed signed pre-COMMIT acceptance. Evidence log pg-wire-and-admission-tests.log in the same run directory; disposable DB removed.
+- Loaded post-COMMIT response-loss attempts corpus-rebuilt-postcommit-full-1793772617 and -1793772803 added a relay decision barrier after verified upstream commit. Both opened 256 streams and staged 32 signed Tasks; both peaked at 7 leases with all 32 pending. The relay passed through the original response on both gate misses, with no injected disconnect. Default 12 s delay cohort completed 32/32. Extending the first eight marked provider requests to 35 s retained the full pending cohort longer but did not yield an eighth lease. That cohort drained to 26 completed and six dead commands with running projections and requires_reconciliation, all with model_request_started and no live leases; preserved without replay. Original model restored after drain. Longer delay is not a clean substitute for resolving the pickup contention.
+- The 35 s attempt captured 75 local DatabaseCapacityExceeded lines, 52 at resolve_command_pickup across the execution loop and background sweep. This shared lookup uses only SELECTs and verifies immutable event/binding identity before separate fenced handoff. Routed its normal callers to the existing read lane, preserving explicit control and other lanes. Regression reproduced the old normal routing and now passes for discovery and resolution. Disposable real PostgreSQL pickup, rollout shadow and runtime consumer checks: 68 passed; Ruff and git diff --check clean. Source candidate only, fleet still on the previous image. Next isolate remaining reconciliation and connection contention with new synthetic evidence before any rerun of fault injection. No production or original evidence changes.
+- Published and activated isolated control image 4d75825d at localhost:28081/ha-e1/control@sha256:0235de45b90daa763f8110970280c6b8d4b33c75f30375b8c434f65d2c4607f0. Both node module hashes, exact executor incarnations and immutable Registry manifest verified; prior Worker containers retained. Two fresh signed smoke cohorts completed 4 on source and 4 on peer (corpus-rebuilt-signed-smoke-1793773294 and -1793773362), verified by original receipts and lease owner. No new execution definition, production change or business replay.
+- Loaded post-COMMIT response loss corpus-rebuilt-postcommit-full-1793773401 passed the exact injection gate: 32 original pending, two Workers with 4 current-epoch leases each, 24 queued, 256 live SSE. The one-shot relay withheld the confirmed HTTP 200/sealed 201 until the gate, then closed without returning a byte. Client disposition unknown, peer original GET returned identical sealed data, and rebuilt ingress verified it. All 32 original Tasks reached completion, max 83.632 s; affected original created/accepted/completed once at wake generation 0. No SSE closes in the observed fault window. Model restored after original drain and both Workers remain running/unpaused. Sampled Worker logs still contained 59 DatabaseCapacityExceeded lines, zero at resolve_command_pickup. This passes the loaded HTTP response-loss-after-commit subcase only. Pre-COMMIT signed deployment fault, remaining E1-R and E1-A still open.
+- Read-only audit of the six historical E1 reconciliation cases from -1793772803 confirmed six exact executor start/exit pairs and six model reservations with no provider receipt. This preserves outcome uncertainty even with proven executor exit. Each pending command is dead with requires_reconciliation and an accepted/unhandled handoff receipt. The shared command outcome reader currently maps that pending recovery code to generic command_delivery_failed; a separately scoped read-path follow-up can surface the existing reconciliation state without changing original Tasks or replaying them. Evidence reconciliation-*.tsv beside that run.
+- F-01 signed pre-COMMIT disconnect passed an isolated single probe precommit-signed-1793773666 and a loaded run corpus-rebuilt-precommit-full-1793773873. A disposable loopback-only API cloned the rebuilt config and used an exact synthetic title + namespace hook after persisting the result inside the transaction and before COMMIT. It exited 86, the client received zero response bytes, and the peer original GET returned unknown. Original observation showed claim/no result, retry disabled. The original task-run termination returned terminated/non_commit_proven with retry and reclaim disabled. Read-only SQL matched the precise original IDs and hash: zero Task, projection, event, command, outbox, lease or sealed result; one original claim, dispatch fence and atomic stop. The loaded probe used a separate preauthorized synthetic workspace so it did not alter the 32-Task scope limit. Before launching it, verified 32 pending, two Workers with four leases each and 256 live SSE; all 256 were live after the probe, and all 32 original background Tasks completed (max 96.831 s). Fault probe completed in 2.937 s, including original observation and termination, not an ingress process-loss RTO. Main rebuilt APIs were untouched; removed the probe container and remote hook after evidence capture, restored original model after drain, both Workers running/unpaused. No production changes or replay. This adds the loaded signed COMMIT-before-exit subcase to the already verified API SIGKILL and loaded HTTP response-loss-after-COMMIT cases; the remaining E1-R matrix and E1-A capacity still open.
+- F-02 loaded Worker loss first run corpus-rebuilt-f02-worker-loss-1793774162 reached 32/8/256 and killed only the source Worker. Standalone incarnation exit reconciliation ignored its supplied cleanup adapter and tried to read a host DSN, so the driver restored the Worker early and no survivor-only RTO was scored. All 32 originals still completed. Fixed the owned E1 publisher CLI to use the existing cleanup callback for standalone reconcile (direct DSN mode retained); Ruff, py_compile and diff checks clean, and the corrected CLI was exercised in the live retry.
+- F-02 fresh retry corpus-rebuilt-f02-worker-loss-1793774346 reached 32 original pending, 4 current leases per Worker and 256 streams. Source SIGKILL left four original Tasks with zero model reservations; 3 already had executor registrations and all 3 exact exits were reconciled through the cleanup adapter before restart. Survivor kept 256 SSE online and isolated ingress verified an original receipt. All four originals were observed with peer fence2 and durable executor registration at 110.253–119.469 s while source remained stopped; model-request events appeared 111.976–120.930 s after the Docker exit timestamp. The exact old write-fence guard rejected all 3 previously registered executor fences using a transaction with no data writes. All four originals completed once with one model request event each and wake generation 1, final lease fence3, and all 32 originals completed overall (max 161.642 s from admission). Source restarted with verified fresh identity; both Workers running/unpaused and original model restored. This is the pre-effect Worker loss subcase, with narrow timing margin; effect-in-flight unknown and old-Worker network isolation/rejoin remain open. No original replay or production changes.
+- F-02 in-flight outcome drill corpus-rebuilt-f02-inflight-1793774759 killed only the peer Worker at 32 pending / 8 live leases / 256 live SSE. One of the four affected originals already had a model-start event and an unreceipted reservation in the last pre-kill sample; two did in the immediate post-kill sample. The other two also took the conservative reconciliation path. All four were first observed as requires_reconciliation at 67.007 s, not counted as takeover or successful Task completion. For both unreceipted reservations the final audit proved exactly one reservation, one model-start event, one executor registration, original fence and wake generation 0, no receipt. All four old executor fences were rejected by the real mutation guard without data writes, four exact exits were reconciled before restart, and four original signed GET receipts remained byte-identical. 256 SSE stayed live and 28 unaffected originals completed; the model was restored after pending reached zero. Both Workers restored with fresh identity, no production or original replay. Evidence is durable reservation/event state from the synthetic path, not provider-side arrival confirmation. F-02 old-Worker live network isolation/rejoin and public reconciliation reason fidelity remain open, as do remaining E1-R and E1-A gates.
+- F-02 reconciliation read fidelity: the shared PostgreSQL outcome reader now maps a dead pending command with recovery_code=requires_reconciliation to the existing command_requires_reconciliation observation. Disposable PostgreSQL regression failed before the patch and 52 PostgreSQL outcome/AG-UI binding tests passed after it. Verified the exact previously unreceipted signed Run via active E1 loopback and a disposable rebuilt-config API with the candidate module: HTTP 200 SSE changed from command_delivery_failed to command_requires_reconciliation, retryable=false. Probe removed after evidence capture. Main E1 APIs and production were not switched. Evidence .artifacts/cloud-ha-e1/f02-reconciliation-outcome. Remaining F-02 network partition/rejoin and other HA gates remain open.
+- F-02 live Worker database partition corpus-rebuilt-f02-partition-1793775467 reached 32 pending / 8 leases / 256 SSE. A temporary nftables rule matched only the peer Worker's Docker cgroup and loopback PostgreSQL port 25432, with a timed host rollback. The Worker connection probe was refused while the host relay remained reachable. One affected original reached a durable new executor on the source at fence 2 by 51.547 s and completed; three went to requires_reconciliation by 50.714 s with zero model reservations or model starts. All four old fences were rejected by the real guard from inside the rejoined Worker without data writes. 256 SSE stayed open, the ingress verified an original receipt, and 29/32 originals completed. Removing the rule restored connectivity to the same container, PID and start time. A fresh signed smoke recorded four peer executor starts and four Task completions while the source was paused; the final lease owner fields later showed source and were not used to attribute execution. Both Workers and original model restored, temporary firewall table and timer removed. Production untouched. The three safety blocks were not counted as successful takeovers. F-03 and further E1 gates remain open.
+- F-03 named peer VM outage exercised twice at 32/8/256. First run -1793775931 proved ingress original GET and 128 saved-cursor reads while node2 was stopped, but reboot left Worker down because corpus boot and recovery unit invoked the original namespace default against the rebuilt cleanup container. Updated the exact owned boot drop-in and recovery service with explicit rebuilt namespace, retained host backups, verified systemd and started the corpus unit. First cohort ended 25 completed/7 failed (4 ConnectError during stop and 3 HTTPStatusError around early fixture restoration following the boot gate failure).
+- Fresh F-03 run corpus-rebuilt-f03-node-loss-1793776264 confirmed peer VM stopped and endpoint unavailable, 128 source SSE stayed open, 128 peer streams disconnected, and 128 saved-cursor probes returned the exact next frame in 21.368 s. Original signed GET reached 10 consecutive successes by 9.054 s from confirmed stop (5.293 s from request to confirmed stop). Peer stayed stopped through observation, then booted with active corpus unit, API readiness and valid Worker identity without manual start. The delayed model stayed through drain. 28 originals completed and four on the stopped peer were finalized failed with ConnectError during shutdown, each retaining an unreceipted model reservation and original generation/fence. This exercises named graceful peer node loss and automated rejoin, with ingress/stream continuity, but does not pass complete original Task recovery. Abrupt compute loss and source node loss remain open. Rebuilt PostgreSQL has no synchronous standby and source also hosts shared services and ingress. No production changes or task replay.
+- F-03 transport-loss follow-up: guarded model I/O can fail after the Worker commits its independent reservation, leaving no provider receipt. ConnectError escaped to generic Worker failure, matching the four recorded node-stop failures. Added a typed unknown-outcome signal for guarded transport errors and deadlines after reservation, and classified it as suspended with model_request_outcome_unknown and retryable=false. Existing reservation and receipt rules remain the accounting authority. The ConnectError regression failed before the patch; focused transport and Worker tests passed (85 passed, 3 skipped), Ruff and diff checks clean. Source candidate awaits live E1 activation and a fresh F-03 rerun. Historic four failures and their unknown reservations remain preserved. No production change.
+- Published and activated c9603e5c in both isolated Workers at localhost:28081/ha-e1/control@sha256:a291e7b54288639a90785cca41559f60d8f58f25ca401c79b0d231e3d340140e. Verified Registry manifest digest, isolated imports and live classification, exact incarnation identity, and a four-Task signed smoke. Old Worker containers retained. Evidence .artifacts/cloud-ha-e1/model-unknown-c9603e5c.
+- Fresh full F-03 named peer VM stop corpus-rebuilt-f03-node-loss-1793777086 exercised 32 pending / 8 leases / 256 SSE. Ten consecutive signed GETs by 9.056 s after confirmed stop, 128 survivor SSE stayed live and all 128 exact saved-cursor successor reads completed in 23.005 s while peer stayed down. API and Worker identity automatically restored on boot. Of the 32 originals, 28 completed and the four affected originals were suspended with model_request_outcome_unknown, no session_failed events, generation 0 and exactly one model request and unreceipted reservation each. The four original signed GET receipts remained identical. Both Workers running/unpaused and original model restored. This validates the graceful peer-stop transport fix, while abrupt loss, source-node dependency failover and F-04 remain open. No original replay or production changes.
+- F-04 rebuilt PostgreSQL cross-node standby foundation .artifacts/cloud-ha-e1/f04-rebuilt-standby-1793777456: copied ~5 GB with pg_basebackup over verify-full TLS using a dedicated replication role and peer-only replication HBA. The first image stream was truncated; the local image archive load matched the source ID. Corrected new standby volume mode to 0700 after PostgreSQL rejected startup. Peer named volume and Unix-only standby are in recovery and read-only, with streaming TLS and zero replay lag in the final sample. During a bounded remote_apply window the primary reported sync and zero replay lag. A new signed 201 receipt was acknowledged in 1.063 s, and the first standby read 0.198 s later verified the identical sealed receipt and exactly one Task and command. Restored prior synchronous settings after the window to preserve the current isolated topology's write availability during peer loss. This is cross-node streaming and synchronous receipt visibility evidence; no writer promotion, primary fencing, application route failover or 32/8/256 F-04 drill yet. Production untouched.
+
+### CA-HA-03 E1 rebuilt capacity and fault follow-up
+
+- Verified the two original 256/256 EOF windows against the actual seed projections. The first seed was completed and returned after its history. The second seed was waiting_approval, which was absent from the shared native Task/Session active-status set until 314f1dde. The exact waiting-approval regression covers both tails. No saved receipts or original tasks were replayed or modified.
+- Fresh baseline corpus-rebuilt-approval-sse-256-1793778004 held 256 readers without EOF. Of 75 issued offers, 35 had sealed 201 and completed, 26 had sealed 429 command_scope_capacity, and 14 were unknown at the first read. Queue to harness p95/p99 40.199/45.942 s. Admission to durable handoff alone p95 40.190 s, with handoff-to-harness p95 0.065 s. Both Workers logged DatabaseCapacityExceeded during preparation or pickup. PostgreSQL stayed capped at two CPUs and the pending scope limits stayed 32 execution / 8 control.
+- 40699e23 separates the scope sequence and pending count under the same lock and transaction. Live EXPLAIN before activation showed 825 matching history rows read by a sequential scan versus one indexed sequence row and 26 indexed pending rows. Single sample execution 1.696 vs 0.816 ms, 60 vs 8 shared buffers touched. PostgreSQL/API regressions 59 passed. Both isolated APIs reloaded the tracked source mount and four fresh signed admissions passed. The API-only capacity rerun -1793778259 issued 75/75, retained all 256 streams, completed 34 sealed admissions and had 41 originals still unknown on a later verified GET. Queue p95/p99 44.283/44.323 s. Atomic admission logs retained, including Task event-position and other statements exceeding the existing deadline. No capacity pass.
+- API-only candidate loaded fault reruns: F-01 -1793778384 reached 32 pending / 8 leases / 256 streams; source SIGKILL left 128 survivor streams, ten original GETs by 9.079 s, and 127 of 128 exact cursor successor reads. One peer preflight timed out with HTTP 503. F-02 -1793778730 reached the same gate; only the peer Worker DB path was fenced, the same live Worker rejoined, all 256 streams survived, and four affected originals completed at fence 2 with exactly one reservation each. F-05 Redis -1793778559 reached the same gate; confirmed Redis exited, kept 256 streams, matched original cursor successor on both APIs and got ten signed original GETs by 9.071 s. Neither object subcase is covered by the Redis run. Synthetic providers and original API/Redis paths restored.
+- F-04 prior isolated DB promotion evidence f04-promote-1793777850: stopped the old writer and proved its endpoint down before promotion, candidate selected timeline 2 and retained the exact synchronous signed receipt. Write probe rolled back. Stopped the promoted Unix-only candidate before restoring the old writer and zero-gap async standby. Application route failover, loaded 32/8/256, and half-open connections remain open.
+- 77428b64 skips an unused second recovery snapshot for initial command handoff only. Generation zero has no approved recovery proof; newer generations retain existing preparation and locked validation. Published both isolated Workers' candidate by OCI digest (first-pickup-fix/registry-reference), verified imports and current executor identities, kept the prior containers, and sealed four fresh signed admissions before loading the candidate. No production changes.
+- Final combined candidate capacity corpus-rebuilt-approval-sse-256-1793778970 held 256/256 with 1,344 keepalives and no closures. 75/75 issued; 23 verified sealed admissions completed, 52 stayed unknown on a later original GET. Queue p95/p99 29.722/60.232 s, p95 before durable handoff 29.716 s. PostgreSQL recovery/pickup regressions 71 passed. The throughput gate still fails, with no verified 429 in this window. No original was retried. Keep both early and later observations and API timing logs.
+- Final combined candidate F-01 process-loss rerun corpus-rebuilt-e1r-f01-bounded-resume-1793779092 staged 32 pending / 8 leases / 256 streams. First original GET 0.178 s after confirmed kill, tenth consecutive signed GET by 9.056 s. All 128 survivor streams stayed open, all 128 affected cursor reads returned the exact saved-prefix successor in 25.192 s, no read retries used. All 32 originals completed and the source API and original model were restored. The earlier peer 503 remains in its separate evidence. This probe does not cover later-generation Scheduler recovery or every F-01 subcase on the final candidate.
+- Final candidate F-06 Broker-outage subcase corpus-rebuilt-e1r-f06-broker-1793779244 reached 32/8/256. The exact isolated Broker process stopped, fresh exchange returned HTTP 502, all 256 streams stayed open, and signed original GET worked after Broker restart. The 32 commands drained. Cold JWKS, revocation and expiry are separate subcases.
+- Full E1-R stays open. The current runs cover individual API, Worker network, Redis and Broker faults. Re-run loaded before/after-COMMIT and the other Worker-loss subcases on the same candidate. F-04 needs actual application writer routing and old half-open connections under load. Complete object read and lost-write-reply, authority revocation/expiry, overload and fairness, executor drain/cleanup, Scheduler takeover, and upgrade/rollback/restore with old-authority fencing. Earlier independent smoke or wire tests do not close those loaded gates. Never replay an original POST to fill an unknown result.
+- Final candidate F-03 peer VM stop corpus-rebuilt-f03-node-loss-1793779387 reached 32/8/256. During confirmed peer outage, 128 streams survived and 128 exact saved-prefix successor reads took 20.699 s. Tenth consecutive signed GET at 9.053 s. After drain, 28 completed and the four affected originals stayed suspended at generation 0 with model_request_outcome_unknown, one model request and one unreceipted reservation each. All 32 signed original GETs were byte-identical after recovery. Peer API/Worker booted with valid identity. The separate PostgreSQL standby did not auto-start; manually restarted the exact isolated standby on its preserved named volume and verified streaming with zero replay gap. Evidence first-pickup-fix/standby-restored.tsv. Standby startup is still an E1 boot gap.
+- Closed the rebuilt standby boot gap in isolated E1. The persistent Docker restart policy was `no` and the corpus systemd boot list did not include the separate replica. Set `unless-stopped` on the exact read-only replica only and documented the rollback. A second named VM stop/start at zero active leases and live pending commands changed the boot ID. The same container and named volume came up automatically, the replica stayed in recovery with transaction_read_only=on, and the source reported async streaming with zero replay gap. The retained signed receipt, one Task and one command matched exactly on the restarted standby and through the isolated ingress original GET. Evidence .artifacts/cloud-ha-e1/f04-standby-reboot-1793779688. No receipt replay or production change. Full loaded application writer cutover and half-open old connection isolation remain open.
+- F-04 half-open writer route prerequisite. In a separate Python process in the isolated API container, a loopback TCP endpoint accepted a connection and sent no PostgreSQL handshake response. The deployed bounded Task I/O adapter timed out in 1.807 s without reaching the available second address. The candidate divides remaining connection time among addresses within the original request budget and advances only at the pre-transaction connection stage. With the exact candidate source loaded in a separate probe process, the same test reached the real E1 writer in 0.917 s with verify-full and target_session_attrs=read-write. The native scratch regression failed before the fix and the final focused suites reported 31 passed, 2 skipped (optional native catalog DSN absent). Scratch PostgreSQL removed. Evidence f04-standby-reboot-1793779688/half-open-*.log. Application processes retain their current single-endpoint configuration. Loaded writer promotion, existing half-open transaction handling, proof target rebind and client admission after cutover remain open.
+- F-04 writer-route wire drill f04-writer-route-1793780234. Took two separate Btrfs clones of the isolated standby and restored the original follower after each brief copy. Each candidate used a peer-loopback TLS endpoint with verify-full, the E1 application DB role, target_session_attrs=read-write, and the exact 2133b66d bounded connector source in a separate peer API-container process. The first probe demonstrated writer routing in 0.944 s after the real old writer stopped and the candidate promoted. The old socket received AdminShutdown, so that result did not exercise an existing half-open timeout. The second candidate reached zero replay gap after a bounded readiness retry and rejected writer selection while still in recovery. Kept a previously established TLS session blackholed, fenced the real old writer, promoted the clone, then verified the old session timed out in 1.012 s and the new connection selected the promoted writer in 0.938 s. The application role wrote to a temporary table in a rolled-back transaction. Stopped both promoted candidates with restart policy no before restoring the source on their respective runs. The retained signed receipt matched through the restored ingress and standby, the original follower returned to zero replay gap, and no original was replayed. This is an idle-cohort application connector drill. API listener routing, synchronous proof target rebind, 32/8/256 load, and fresh signed admission after cutover remain open. No production change.
+- F-04 isolated receipt proof now requires the configured PostgreSQL timeline and an active WAL receiver on that timeline before comparing the original exact receipt. The same physical system ID alone previously allowed an old standby to confirm an inherited receipt. Tracked native check tests/compose/cloud_ha_e1/check_receipt_timeline.sh promoted a disposable PostgreSQL 17.5 replica from timeline 1 to 2, then streamed a new follower. The check rejected the incorrect timeline on each follower, the disconnected old follower, the promoted writer as proof endpoint, and a wrong receipt digest. The new follower confirmed the inherited exact record. Evidence .artifacts/cloud-ha-e1/f04-proof-timeline-1793780573. All test containers and their dedicated network were removed. This candidate has not been activated on the rebuilt E1 API processes. Fenced topology binding, synchronous membership, and fresh signed HTTP admission under the full load gate remain open. No original data or production changes.
+- F-04 signed HTTP with timeline proof .artifacts/cloud-ha-e1/f04-signed-rebind-1793780958. Used a disposable PostgreSQL 17.5 topology on one Docker host and the real HTTP admission route with an isolated RS256 signing key and static test JWKS resolver. Fenced the old writer before promoting, rebuilt a new follower on timeline 2, and required sync|remote_apply before submitting. Two fresh signed POSTs were sent exactly once each. A correctly bound proof exposed a sealed 201 and the original GET matched it. Binding to the old timeline or to the promoted writer withheld the original result. A new signed POST under the old timeline returned unknown without a sealed result, then a correctly rebound original GET exposed the committed 201 with no POST retry. The first attempt reached synchronous replication but its probe lacked the repository import path and sent no POST. Both attempts cleaned up their dedicated containers and networks. This complements the isolated two-node wire cutover, with a single-host HTTP fixture. Full loaded E1 topology cutover, live endpoint rebind, production activation, and capacity remain open.
+- F-04 two-node signed rebind and paused-replay evidence .artifacts/cloud-ha-e1/f04-signed-rebind-two-nodes-1793781137. On the two isolated OrbStack VMs, stopped the disposable original writer before promotion, promoted the peer, and built its replacement follower back on the first VM. Verified the replacement cross-VM WAL connection used TLS and reported sync with remote_apply before signed admission. The real HTTP route accepted a new signed POST and recovered the same receipt by original GET after correct timeline binding. A stale proof timeline and pointing to the promoted writer both withheld the result. In the final run, a test hook paused replacement replay after persisting the third signed request's result and before COMMIT. The POST returned HTTP 503 unknown after 1.812 s, and the original GET during the pause returned HTTP 503 unavailable. Neither exposed a sealed result. The writer had exactly one committed 201 result for that request. Resuming replay let the original GET return that exact receipt without a second POST. Earlier paused probes are retained, including the one that timed out before the atomic result transaction. Scratch containers, ports and temporary TLS keys were cleared. Both VMs share one physical host, and the scratch HTTP fixture used no worker or 32/8/256 load. Runtime E1 API/Worker configuration and production were unchanged. The loaded topology cutover and capacity gate remain open.
+- F-04 rebuilt E1 runtime proof activation .artifacts/cloud-ha-e1/f04-live-proof-1793782690. Provisioned the no-login proof function owner and limited receipt reader in the isolated rebuilt database. A separate peer-loopback TLS follower copied from the original standby replayed the proof function. Temporarily switched only the isolated peer API to a staged clone with the explicit timeline and proof DSN, retained its original container and used its actual TLS ingress and grant exchange. Verified sync|remote_apply over TLS, submitted one fresh signed synthetic request, and got a sealed 201 in 0.682 s. Independent standby read after 0.169 s found the identical sealed receipt and exactly one Task and command. The original task completed and command reached done. Restored the original peer API and prior commit settings. Stopped the proof follower and candidate API, retaining their isolated configuration and data. The original standby returned to zero replay gap. The proof role and function remain staged in the rebuilt namespace for further rehearsals. This was one signed admission under synchronous proof, with no writer promotion or full load during the window. No production change or original replay.
+- F-04 both rebuilt E1 API endpoints under proof-enabled capacity .artifacts/cloud-ha-e1/f04-proof-capacity-1793782874, workload corpus-rebuilt-approval-sse-256-1793782885. Both API clones connected to the same TLS proof replica and verified its recovery role. Source used a temporary TCP relay allowing only the source VM address. Confirmed sync|remote_apply with TLS. Issued 75/75 original signed offers at 5/s, with no POST retry. All 256 SSE stayed live through drain, with 1585 keepalives and zero closures. The proof-enabled APIs returned 38 accepted receipts, all 38 tasks completed, 35 exact scope-capacity refusals, and 2 unknown that stayed unknown on a later signed GET after restoring original APIs. Queue p95/p99 42.549/60.541 s. Before durable handoff p95 42.491 s and after handoff-to-harness p95 0.167 s. This window fails E1-A. Restored both original APIs, previous PostgreSQL commit settings, zero live pending and zero replay gap on the original follower. Proof relay removed, proof follower and both API clones stopped and retained. This window established a synchronous-proof load baseline with no writer promotion. Do not combine this evidence with the separate F-04 wire or scratch HTTP cuts to claim the full 32/8/256 fault gate. No production change or original replay.
+- F-04 loaded promotion .artifacts/cloud-ha-e1/f04-loaded-promote-1793783106 and corpus-rebuilt-e1r-f04-loaded-promote-1793783171. Verified two TLS synchronous standby connections with remote_apply and both receipt-proof-enabled API endpoints before load. Admitted 32 distinct signed originals and sampled exactly 32 active, 4 leases on each Worker, 256 live SSE before stopping the old writer. The fenced primary exited after 1.544 s and the separate standby promoted by 1.769 s. The promoted database matched all 32 sealed receipt bodies. At the promotion snapshot 235 SSE were still open and 21 had disconnected. The APIs and Workers remained bound to the old endpoint for this run. The promoted candidate was stopped before restoring the old writer. One socket readiness probe failed during restart and bounded retry recovered. Drained all original commands without POST replay, 32 tasks completed, and all 32 original ingress GET receipts matched. Final pending zero and original follower replay gap zero. This covers loaded fencing, promotion and acknowledged-receipt survival. Application route and proof target rebind, affected SSE cursor recovery, fresh post-cutover signed admission and E1-A capacity remain open. No production change.
+- F-04 peer application writer relay .artifacts/cloud-ha-e1/f04-live-writer-relay-1793783524. The existing node2 relay now allows a root-owned runtime selector for new PostgreSQL connections only, retaining the fixed E1 Worker DSN and other dependency routes. Installed the relay on the isolated peer with an exact backup. A fresh idle candidate was at zero replay gap before closing the route and fencing the old writer. After promotion, the already-running peer API and Worker containers reached the writable peer through their unchanged DSNs and retained both container ID and start time. The real peer TLS ingress returned an identical previously sealed original receipt. No new admission POST ran on the promoted timeline. Closed the route and stopped the promoted copy before restoring the original writer, then removed the runtime selector. Both services stayed ready and the original follower returned to zero replay gap. This validates peer writer rebind at idle. Source API/Worker rebind, a new synchronous proof follower and signed admission on the promoted topology, and the combined loaded exercise remain open. Production untouched.
+- F-04 real peer signed cutover .artifacts/cloud-ha-e1/f04-peer-signed-cutover-1793783690. A fresh idle follower received a prebuilt cascading replacement on the first VM. The replacement's basebackup succeeded, but PostgreSQL rejected its restored directory permissions. Corrected the existing named volume to 0700 and retained the failed bootstrap container. Fenced the old writer, promoted the peer, confirmed the replacement streamed timeline 2 over TLS and switched it to sync|remote_apply. Rebound the peer database relay, started the staged proof-enabled peer API on the real TLS ingress and left the peer Worker running. The original signed GET matched. A new signed synthetic POST on the promoted topology returned sealed 201 in 0.404 s, the replacement independently matched it with one Task and one command, and the peer Worker drained it to done|completed. Those new records remain on the stopped drill timeline. During rollback the original peer API exited when started before reopening the route. Started the original API after restoring the original writer and route, then reverified original signed GET and zero replay gap. Corrected the saved driver order and retained the as-run driver. This covers an idle real API/Worker proof rebind and fresh signed execution. Combined 32/8/256 cutover and cursor recovery, source API/Worker routing and E1-A capacity remain open. No production change or original replay.
+- F-04 combined loaded rebind attempt .artifacts/cloud-ha-e1/f04-loaded-rebind-1793783982 and corpus-rebuilt-e1r-f04-loaded-rebind-1793784195. Source replacement basebackup hit ENOSPC despite free-space reporting; made a guarded idle reflink of the stopped original writer and reopened it as a cascading read-only follower. Refreshed the first proof follower from a retained snapshot after the previous standby lacked a removed WAL segment. Verified both original synchronous followers, 32 signed originals, 4+4 current-epoch leases and 256 SSE. Paused both Worker containers after capturing the gate so the two timelines would not execute the same originals. Fenced and promoted, then verified the replacement TLS follower on timeline 2 in sync|remote_apply. Rebind aborted because the staged API name collided with a retained idle-drill container. Restored original writer, route and both API containers before resuming the Workers. All 32 original receipts remained byte-identical via signed GET, with no POST retry. The 180 s original drain ended with 20 pending. A guarded source Worker restart at zero source leases reconciled seven exact exits and published a valid incarnation. Later observed 18 pending generation-2 commands, with persisted recovery due times recorded in recovery-deadlines.tsv. Prepared a separate candidate and unique API name with a pre-fault existence check at .artifacts/cloud-ha-e1/f04-loaded-rebind-retry-1793784296. Its automated wait reached the idle guard timeout before injecting any new fault. The fresh candidate is still following the original writer asynchronously for the next attempt, with no production changes or original replay. Combined promoted API rebind, saved-cursor recovery, fresh signed admission and final drain remain open.
+- F-04 combined loaded retry .artifacts/cloud-ha-e1/f04-loaded-rebind-retry-1793784296 and corpus-rebuilt-e1r-f04-loaded-rebind-1793784795. The previous cohort drained before the retry. A second stale initial-proof preflight failed on a removed WAL segment, so staged a fresh reflink clone and kept the old volumes. Both initial proof endpoints were synchronized with remote_apply. The retry captured 32 active, 4+4 leases and 256 open SSE, then paused Workers to prevent executing the same originals on the two timelines. Fenced and promoted, followed timeline 2 on the replacement, and rebound the real peer TLS API with synchronous receipt proof. Promoted peer API ready in 17.733 s. One signed original GET matched its prior receipt and a fresh signed non-executing Task returned a sealed 201 on the promoted timeline. Of 192 affected connections at rebind, 185 saved-prefix exact successor probes recovered within the attempt budget; seven failed. API logged 185 successful and 130 HTTP 503 reconnect attempts including retries. The driver recorded a failure for that gate. The successor check used the saved first-event prefix, so latest per-reader cursor acceptance remains open as well. Original topology restored before unpausing Workers. All 32 original tasks completed, all 32 post-restore signed GETs matched, pending zero and original follower replay gap zero. Retained the new non-executing Task on the stopped drill timeline. No original POST replay or production change.
+- F-04 SSE reconnect admission .artifacts/cloud-ha-e1/f04-sse-reconnect-1793785140. Reproduced on the actual isolated TLS APIs with each probe consuming and saving its own last cursor on source before peer reconnect. Four-at-once reconnect with the two-slot read budget returned 16 exact successors and 16 HTTP 503 capacity_unavailable over 32 attempts. Two-at-once returned 16/16 exact. Added one bounded waiting wave of at most the read slot count and at most 0.5 s, only for raw GET SSE with a supplied nonnegative cursor. Shared connection and executor budgets, existing authorization, and immediate ordinary-read admission stayed in place. Red regression covered the bounded waiter and overflow. After deploying the source bind to the isolated peer API and retaining the prior stopped container, the same probe gave 32/32 exact with four concurrent attempts and 16/16 with two, zero refusals, max 0.692 s after sending the individual reconnect. Focused real PostgreSQL regression 29 passed. Source API and stopped proof-enabled clones still need the candidate for the next full loaded cutover. This checks per-connection last cursor for controlled reconnects, with no failover or simultaneous 256-reader cohort in this measurement. No production change or original replay.
+- F-04 loaded latest-cursor rebind .artifacts/cloud-ha-e1/f04-loaded-resume-1793785471 and corpus-rebuilt-e1r-f04-loaded-resume-1793785488. At the fault gate observed 32 active commands, 4+4 leases and 256 SSE. Paused Workers to avoid execution on both drill timelines. The promoted peer API used the exact 3b817718 reconnect source and a new TLS remote_apply follower on timeline 2. Peer ready in 18.952 s, original signed GET matched, and a fresh non-executing signed POST sealed 201. 193 streams had closed at readiness and 195 by the reconnect snapshot. All 195 reopened using their individually saved latest cursors and delivered a keepalive without delivering any ID at or below the saved cursor. Eleven HTTP 503 capacity_unavailable attempts were retried. Last HTTP open was 43.014 s after fault, or 24.062 s after promoted readiness, and only 46/195 opened within 5 s of readiness. The head-cursor case verified live continuation and non-replay, not a new durable successor on each stream. UX-07 latency and full promoted-timeline Worker recovery remain open. Restored the original route before unpausing Workers. All 32 original tasks completed, their 32 sealed GET receipts matched, pending reached zero, and original follower replay gap returned to zero. No production change or original replay.
+- F-04 reconnect latency decomposition .artifacts/cloud-ha-e1/f04-resume-latency-1793785791. On actual isolated API endpoints, 64 controlled exact-successor reconnects with four concurrent requests all succeeded, grant exchange p95 0.021 s and API open p95 0.579 s, with only 30 within five seconds and final 10.747 s. Eight concurrent under the same deployed budget returned 56 capacity 503s and eight exact results. An isolated callback-connection reuse experiment kept authorization and JTI commits separate but did not improve batch latency (11.253 s at width four), so removed the code and restored prior API. Trial read-slot increases to 8, 5, and 3 were rejected by the deployed fleet budget before service startup, and the original API was restored after each. The live parser predates component-specific executor limits. Its shared read lane counts all 15 declared peak processes, with 249/256 connections already accounted, so even one more shared slot would require 264. Do not infer an API-only read increase from this schema. Existing candidate reconnect wait remains active on isolated peer, with ready HTTP 200. Next investigate stage-level server costs and a fully declared API-specific inventory before another loaded test. No production change or original replay.
+- F-04 optional API read-only inventory .artifacts/cloud-ha-e1/f04-api-read-budget-1793786219. Added api_read to the strict profile and Helm budget accounting, and applied the effective API limit to HTTP admission, callback executor, connection budget and extension fanout. Defaults continue to use shared read. Existing isolated peer image had older connection capacity code; its first mixed-module trial admitted at the HTTP limit while physical sockets still used two slots, producing authorization 503s. Baseline API initially exited during rollback because the mounted HTTP module called a method absent in the old profile. Preserved legacy two-slot fallback and restored health. A staging-path typo in the second attempt briefly stopped the original API before a missing candidate rename; corrected the helper and required a created candidate before stopping the original. The aligned candidate used API 5 / Worker 2 and declared 255 of 256 connections. Isolated real TLS probe at width eight improved from 8/64 exact with 56 503s to 64/64 exact with zero 503s. Last exact successor took 8.211 s and 35/64 finished within 5 s, so UX-07 still fails. Width four improved from 10.747 to 8.683 s, width ten 8.086 s. After the comparison restored the prior peer API and retained stopped candidates. Real PostgreSQL, API and Helm regression 83 passed. No production change or original replay. Next loaded proof and SSE run must use an aligned immutable runtime on each promoted API and continue measuring server auth and preflight throughput.
+- F-04 request stage timings `.artifacts/cloud-ha-e1/f04-resume-server-stages-1793786491`: 192/192 exact successors on the isolated TLS endpoints. Mean server grant authorization was 101 ms, first raw preflight 171 ms, and both legacy preflights 212 ms. A request-local highwater reuse trial `.artifacts/cloud-ha-e1/f04-resume-highwater-1793786716` eliminated the duplicate legacy lookup, but width eight still took 8.303 s for 64/64 exact successors versus 8.211 s on the retained API-read-five candidate. Reverted the experimental source and retained the result and stopped candidate.
+- E1-A synchronous proof recheck `.artifacts/cloud-ha-e1/f04-proof-capacity-recheck-1793786769` aborted before any load or fault injection: retained proof follower needed a WAL segment already recycled on the primary. Both isolated APIs ready after restoration and primary at prior `|on|0` (no synchronous standby setting, commit on, zero live pending). The ordinary capacity recheck `.artifacts/cloud-ha-e1/corpus-rebuilt-approval-sse-256-1793786809` kept 256/256 SSE, 1,057 keepalives, zero EOF. Issued 75/75 synthetic offers, 40 verified sealed 201 all drained, 34 verified sealed 429 command_scope_capacity, one original status unknown at the first signed GET. Queue p95/p99 38.424/38.642 s, before durable handoff p95 38.420 s, and handoff to harness p95 0.046 s. E1-A fails. Heartbeat, API-budget and Helm regression 27 passed. No production change or replay.
+- Ordinary capacity late signed GET for offer 25 remained unknown; retained as a separate read artifact. PostgreSQL was capped at two CPUs and both Workers emitted DatabaseCapacityExceeded in the load window (14 and 19 matching log lines). Distinguish Worker database contention before handoff from the explicit per-scope pending admission refusal.
+- E1-R F-01 fresh cohort `.artifacts/cloud-ha-e1/corpus-rebuilt-e1r-f01-bounded-resume-1793786915`: source API SIGKILL at 32 active / 4+4 leases / 256 SSE. Peer kept 128/128 streams, and all 128 affected reads returned the exact saved-prefix successor without retries in 25.395 s. Tenth consecutive ingress original signed GET at 9.063 s. All 32 synthetic originals drained, original API and model restored. The recovery time and saved-prefix method leave the latest-cursor UX-07 gate open. No production change or replay.
+- Rebuilt the stale isolated proof follower from the healthy read-only follower on a new labeled volume. `.artifacts/cloud-ha-e1/f04-fresh-proof-capacity-1793787074` confirmed TLS sync|remote_apply, both proof-enabled APIs, and rollback to both original APIs ready, zero live pending and zero replay gap on the original follower. The new proof follower is stopped and retained and the temporary relay was removed. Fresh cohort `.artifacts/cloud-ha-e1/corpus-rebuilt-approval-sse-256-1793787087` held 256/256 SSE, 1,072 keepalives and zero EOF. Of 75/75 issued, 40 sealed 201 all completed, 32 sealed 429 command_scope_capacity, and three unknown remained unknown on later signed original GETs. Queue p95/p99 31.535/35.511 s, before durable handoff p95 31.499 s, after handoff to harness p95 0.086 s. E1-A remains below gate. This test included synchronous durability and no writer promotion. Full E1-R remains open, including loaded writer promotion with timely latest-cursor recovery and continued Worker execution, and the other unclosed fault cases documented above. No production change or original replay.
+- CA-HA-03 bounded pickup backoff: `.artifacts/cloud-ha-e1/e1-pickup-lane-1793787323` correlates the prior synchronous-proof cohort with 37 measured slot holds averaging 7.910 s, 26 maintenance tick and 9 pickup failures explicitly caused by local DB permits. Eight slots at that observed occupancy imply about 1 attempt/s if kept busy. For the 40 completed originals, mean harness-attempt timestamp to model-start timestamp was 4.598 s and model-start to completion was 2.363 s. The harness event is stamped with the parent execution entry time, so this span includes child launch and preparation. Independently timed child launch-to-main/composition/recovery averaged 1.338/0.240/0.275 s. This is a diagnostic, not client-render or provider wire latency.
+- Reused bounded blocked backoff for typed DatabaseCapacityExceeded in foreground pickup and background ticks, leaving generic failure delay, logs and durable command transitions intact. Deterministic test failed before the change and 76 focused checks passed afterward (9 conditional skips). Both isolated Worker clones ran with only the two exact source binds changed. New ordinary E1-A cohort `.artifacts/cloud-ha-e1/corpus-rebuilt-approval-sse-256-1793787528` issued 75/75 at 5/s, retained 256/256 SSE with 1,036 keepalives and zero EOF, completed 41 sealed 201s, recorded 34 sealed command_scope_capacity 429s, zero unknown. Queue p95/p99 28.608/40.408 s versus 38.424/38.642 s in the prior ordinary window. Single-window mixed latency result leaves E1-A failing and does not establish a reproducible throughput gain. Restored original Workers and checked exact source hashes, incarnation, zero pending and zero follower replay gap. Production untouched, no original replay. Next isolate the long execution occupancy on the deterministic short-task path and validate it under the fixed contract before closing E1-A. Full E1-R remains open.
+- CA-HA-03 execution input evidence follow-up: `.artifacts/cloud-ha-e1/e1-preparation-phases-1793787739` correlates 41 prior attempt triplets. Mean input recovery 535.8 ms, all execution preparation 1772.9 ms, launch-to-main 1303.0 ms and slot occupancy 7077 ms. Native input recovery used a fenced head to validate the restored Session revision and a separate fenced read to fetch its evidence. Reuse the validated snapshot for both. Existing evidence integration regression failed on the second read and 94 input/coverage/entrypoint checks passed with the change. Two original isolated Workers share the worktree source mount, so the initial edit briefly exposed candidate bytes before staging. Restored baseline bytes at zero live pending and verified both before the controlled test.
+- With the same two backoff source binds as the prior comparison and the changed recovery file as a third pinned bind, cohort `.artifacts/cloud-ha-e1/corpus-rebuilt-approval-sse-256-1793787908` issued 75/75, held 256 SSE with zero closures, drained all 40 sealed 201s, and recorded 35 sealed scope-capacity 429s and zero unknown. Queue p95/p99 30.219/32.228 s; mean input recovery 503.5 ms and total slot occupancy 7221.3 ms across 40 matched samples. Inputs improved modestly while aggregate occupancy rose, so no throughput gain or E1-A pass is established. Restored original container IDs/configuration and confirmed baseline bytes, incarnation, zero pending and zero replay gap before committing. The committed recovery file again supplies the pre-existing isolated worktree mount for future child imports. No production changes or original replay. Full E1-R remains open.
+- CA-HA-03 execution input frontier read follow-up: .artifacts/cloud-ha-e1/e1-input-frontier-1793788143. Merged the bounded head body and exact canonical source lookup into one statement for PostgreSQL and SQLite, retaining namespace/Task/frontier identity and the byte cap. Extended the existing regression to count the previously uncounted source query and reject mismatched event IDs. The regression was red before the change and 45 checks passed with scratch PostgreSQL and SQLite. In both rebuilt E1 Workers a read-only diagnostic compared 64 original heads per node and all matched. Median head read was 0.759 to 0.513 ms on source and 0.670 to 0.455 ms on peer. An initial diagnostic passed UUID objects where the adapter expects string keys; corrected the harness before measurements. No runtime activation, writes, original replay or production change. This is an atomic read consistency and query-count improvement, not an E1-A throughput result.
+- Fresh import-only probes in both existing E1 Workers measured private child module import at 1.096 and 1.006 s, without running an executor or opening a model request. The highest individual module self time was 34 ms. The cost is spread across the dependency tree, so another single-query optimization cannot close the short-task slot gap. Preserve the exact fence, private subreaper and fresh composition when investigating how to remove repeated cold imports. E1-A and the full E1-R matrix remain open.
+- CA-HA-03 early executor parent fence `.artifacts/cloud-ha-e1/e1-early-fence-1793788372`: direct private child script arms the existing Linux parent fence before Worker imports and request reads, preserving the supervisor, private process group, lease validation and exact receipt. On both isolated nodes a stale parent PID reached the baseline's fake Worker import and the candidate rejected it before import. In a separate synthetic kernel probe, the live child was held inside import and its parent was SIGKILLed. Baseline survived the 500 ms window on both nodes and was reclaimed; candidate was reaped with SIGKILL on both nodes. Focused local checks 13 passed and 3 skipped, including Linux-only cases covered by the explicit VM probes.
+- The exact two-file candidate ran on both isolated Worker clones. Fresh signed cohort `.artifacts/cloud-ha-e1/corpus-rebuilt-approval-sse-256-1793788447` issued 75/75, held 256 SSE with zero EOF, completed all 41 sealed admissions and recorded 34 sealed command_scope_capacity refusals with zero unknown. Queue p95/p99 29.719/60.194 s; this run does not close E1-A or measure a startup speedup. Restored original container identities, checked their original source hashes before committing, zero live pending and zero original-follower replay gap. The pre-existing worktree mount can expose the committed launcher on a future isolated Worker restart. Full E1-R remains open. No original replay or production change.
+- E1-R F-02 early-fence repeat `.artifacts/cloud-ha-e1/e1-f02-early-fence-1793788658` and `.artifacts/cloud-ha-e1/corpus-rebuilt-f02-inflight-1793788668`: the two exact launcher files were activated on isolated clones. At 32 active commands, 4+4 current leases and 256 live SSE, killed the peer Worker with one unreceipted model request. Existing node2 timer restarted the same candidate container 7.021 s after Docker exit. All four exact executor exit ACKs were reconciled, the mutation guard rejected all four old fences with no data writes, and all four commands were observed in requires_reconciliation by 46.615 s. The one in-flight command retained exactly one reservation and one model-start event at generation 0, with no receipt or new executor. The other three had zero model starts and reservations. All 28 unaffected Tasks completed, 256 SSE stayed live and all 32 signed original GETs matched both the receipt and decrypted payload after fault. This proves the observed in-flight recovery and automatic restart subcase, not a sustained outage takeover or provider-side request arrival. Both original Workers and model restored, zero pending and zero standby replay gap.
+- After the F-02 rerun both current isolated TLS API endpoints exposed the affected Run's durable reconciliation as generic command_delivery_failed (retryable=false). Both still import the old outcome module hash a5985c06; tracked source bdcd8a74 contains the previously validated specific code. Evidence `.artifacts/cloud-ha-e1/corpus-rebuilt-f02-inflight-1793788668/observation-reconciliation.json`. The specific public read reason requires candidate integration on both APIs. Full E1-R and E1-A remain open. No production change or original replay.
+- E1 F-02 public reconciliation integrated on both isolated TLS API replicas in `.artifacts/cloud-ha-e1/e1-f02-outcome-integrated-1793789008`. Each replica retained its image and config with one extra read-only bind of exact tracked outcome module bdcd8a74. Before activation each returned generic command_delivery_failed for the same signed original in-flight Run. Both after activation and the isolated ingress returned HTTP 200 SSE command_requires_reconciliation with retryable=false. The original signed receipt and decrypted payload matched on all three paths; all 32 original signed GETs matched through ingress after activation. Both APIs and ingress ready, zero pending, original follower streaming (168-byte replay gap at final sample). Left both isolated candidates active with both original containers stopped and retained; run.sh supports exact rollback.
+- First rollout wrapper reused a loop variable in its readiness function. The source switched and was restored by the trap before the peer switched. Fixed the wrapper, revalidated both baselines, reran successfully, retained the first run log and removed only its two exact disposable clone containers. No database or volume change and no production operation or original replay. E1-A and complete E1-R remain open.
+- E1-R sustained F-02 source Worker loss: first fresh cohort `.artifacts/cloud-ha-e1/corpus-rebuilt-f02-sustained-1793789130` stopped before injection because the new barrier referenced a missing model counter. All admitted commands drained and the isolated runtime was restored. Corrected the query and used a fresh signed cohort rather than retrying originals.
+- Corrected run `.artifacts/cloud-ha-e1/e1-f02-sustained-1793789154` / `.artifacts/cloud-ha-e1/corpus-rebuilt-f02-sustained-1793789284` reached 32 active / 8 leased / 256 SSE. Source SIGKILL left four commands with zero model starts and reservations, and source remained exited with code 137 through the 122.499 s observation. Three registered source executors had exact exit ACKs and all four old fences were refused by the real write guard without data mutation. At ~101 s the four leases and their recovery deadlines had passed but generation remained zero. All four first reached generation 1 at 118.193 s. Three had peer fence-2 executor evidence at 119.035 s and peer model-start evidence at 121.641 s, and the fourth had neither executor nor model-start evidence in the fault window. The 120 s all-Task takeover gate fails. During the fault window the peer logged 30 background DatabaseCapacityExceeded ticks and 28 LeaseHeartbeatError execution failures. These are measured contention symptoms; the exact source of the takeover delay still needs isolation. 256 SSE remained live, 32 original signed GET receipts and decrypted payloads matched, all 32 commands eventually completed, both original Workers/model restored, pending zero and standby replay gap zero. No original POST replay or production change.
+- F-02 active-lease rescan bound `.artifacts/cloud-ha-e1/e1-lease-expiry-recovery-1793789631`: real PostgreSQL regression confirmed the original 60 s defer scheduled a 30 s lease roughly 30 s after expiry. Both locked live-lease paths now defer to the earlier of expiry and the existing retry bound. Recovery proof, generation and stale write fencing unchanged. 72 real PostgreSQL recovery/handoff checks passed.
+- New sustained fault cohort `.artifacts/cloud-ha-e1/corpus-rebuilt-f02-sustained-1793789702` used both exact isolated Worker launcher binds plus the recovery candidate. Source killed at 32 active / 8 leases / 256 SSE with no model starts or reservations on the four targets. Source remained exited through observation. All four first reached generation 1 at 80.081 s, peer model starts were observed by 98.433 s and all four completed by 111.023 s. All 32 completed, all 32 signed receipts/decrypted results matched and 256 SSE survived. Four old fences refused and all three registered old executors had exact exit ACKs. Both original Workers/model restored, zero pending and zero replay gap. This is one within-target sample, not the required three repeats. The initial admission due times were still ~13 s beyond expiry at fault, so this comparison does not attribute the improvement to live-lease rescheduling. The survivor still logged 25 background capacity and 24 heartbeat errors. Next isolate the first eligible scan after handoff and heartbeat capacity. No production change or original replay.
+- F-02 initial handoff recovery schedule `.artifacts/cloud-ha-e1/e1-handoff-recovery-due-1793790012`: real PostgreSQL broker/fallback race reproduced an initial check ~30 s after the acquired lease expired. The winning accepted handoff advances a later pending check to its lease expiry in the same transaction as its receipt. 72 PostgreSQL handoff/recovery checks passed. To stay below 500 lines moved unchanged inbox verification to the existing receipts module and retained the handoff import seam. The final expanded suite passed 96 with one cutover fixture failure (missing settings.storage_authority), reproduced using the pre-change storage source. The live drill used the candidate before the unchanged inbox helper relocation.
+- Sustained fault `.artifacts/cloud-ha-e1/corpus-rebuilt-f02-sustained-1793790066` confirmed all four due times at or before expiry, versus about 13 s after expiry in the previous run. Injected at 32 active / 8 leased / 256 SSE before any affected model starts or reservations. At 64.6 s all four remained generation 0 even though all were due; peer logged repeated capacity refusal on recovery preparation. All four reached peer fence-2 model-start evidence by 117.412 s with source still offline through 122.421 s. This is a within-target sample on the handoff candidate, with worse worst-case timing than the prior candidate's 98.433 s, so it does not establish an end-to-end speedup or three-repeat pass. Three registered exits had exact ACKs, all four stale fences were refused, all 256 SSE stayed live and all 32 signed original receipts/decrypted results matched and completed. Both original Workers and model restored, pending zero, replay gap zero. No production change or original replay.
+- F-02 recovery socket sequencing `.artifacts/cloud-ha-e1/e1-recovery-socket-1793790506`: reproduced ordinary recovery failing with one real PostgreSQL normal permit because the scan held it while native preparation tried to open a second connection. Batch now closes the deny-only transaction, prepares, then opens the final fenced proof transaction. Active-lease fast defer still bypasses preparation and in-transaction strict continuation keeps its existing sequence. 116 focused checks passed and two targeted one-permit checks passed including a new lease appearing between prep and commit. The final check defers rather than approves that race.
+- New sustained fault `.artifacts/cloud-ha-e1/corpus-rebuilt-f02-sustained-1793790587` at 32 active / 8 leased / 256 SSE, zero pre-kill model starts/reservations on four targets. All four generation-1 approvals at 31.356 s, versus 80.465–86.401 s in the prior candidate. Three peer model starts by 49.677 s and the fourth at 113.183 s while source remained exited. All 32 eventually completed, all 32 original signed receipts and payloads matched, all four old fences refused, three registered exits had exact ACKs, 256 SSE survived. Original isolated Worker/provider restored, zero pending and replay gap. One within-120 s sample on this candidate, not the required same-candidate repeat set. Peer still logged 31 background capacity, 15 pickup capacity and 24 heartbeat errors during the fault window. The controlled unit case proves the removed nested permit demand; the single fault window does not establish reproducible latency improvement. No production change or original replay.
+- F-02 heartbeat local permit `.artifacts/cloud-ha-e1/e1-heartbeat-capacity-1793790909`: full scratch schema reproduced immediate renewal failure on a refused normal connection permit. Paced retry of this pre-SQL refusal retains the same deadline and fence, and sustained refusal still publishes ownership failure. The earlier partial header fixture lacked execution_segments; switched the new cases to the full scratch schema. Updated the existing private child factory regression to patch defining modules after early-fence lazy imports. Final focused suite 26 passed, six legacy header-fixture cases skipped.
+- Sustained cohort `.artifacts/cloud-ha-e1/corpus-rebuilt-f02-sustained-1793791045` used the exact prior runtime binds plus heartbeat candidate at 32/8/256. Four pre-effect targets, source exited throughout 123.010 s. All four generation-1 approvals at 98.747 s. Three peer model starts by 118.028 s, fourth had no new executor/model evidence before window ended, so the 120 s all-Task gate fails. Peer fault window had 27 background and 7 pickup capacity refusals plus 28 heartbeat errors. Generic heartbeat logs do not identify the nested cause and this run does not establish an end-to-end improvement. All 32 eventually completed, all 32 signed original receipts and decrypted payloads matched, four exact old exit ACKs and four stale fence refusals, 256 SSE survived. Restored both original Workers/model, zero pending and replay gap. No original replay or production change.
+- F-02 heartbeat cause isolated probe `.artifacts/cloud-ha-e1/e1-heartbeat-cause-1793791351`, cohort `.artifacts/cloud-ha-e1/corpus-rebuilt-f02-sustained-1793791361`: sanitized exception types/locations confirmed 28 renewals exhausted the deadline on normal DatabaseCapacityExceeded, not an observed stale fence. One matched DB activity sample had four executor stop monitors plus eight idle reset sockets. All four peer model starts observed by 119.259 s, 32 exact original signed GETs, stale fences rejected and 256 SSE held. This was diagnostic overlay only.
+- Restricted the Run connection owner to the process actually executing the task. Isolated Worker parent preflight no longer retains idle Run sockets while supervising a child; the child and in-process Cloud execution keep the existing scope. 49 focused regressions passed, three skipped. The fresh paired F-02 run `.artifacts/cloud-ha-e1/e1-parent-scope-1793791652` / `.artifacts/cloud-ha-e1/corpus-rebuilt-f02-sustained-1793791662` used the same diagnostic overlay plus this source change. Matched four-monitor sample had four idle reset sockets, and the peer recorded zero heartbeat, background-capacity and pickup-capacity failures in the fault window. At 32 active / 8 leased / 256 SSE, all four pre-effect targets reached recovery generation 1 at 29.569 s, peer model starts by 87.218 s and completion by 99.708 s with source still exited. All 32 eventually completed; all 32 original signed receipts and payloads matched, all four old fences refused and all four exact exits acknowledged. 256 SSE survived. Restored original containers/model, zero pending and replay gap. Existing isolated worktree bind exposes the committed recovery source for future process imports. This is one measured result on the changed candidate; same-candidate repeats and E1-A/full E1-R remain open. No original replay or production change.
+- Same parent-scope candidate repeats `.artifacts/cloud-ha-e1/e1-parent-scope-1793791652/repeats.tsv`: byte-identical runtime binds on both Workers, fresh cohorts `.artifacts/cloud-ha-e1/corpus-rebuilt-f02-sustained-1793791963` and `.artifacts/cloud-ha-e1/corpus-rebuilt-f02-sustained-1793792181`. At 32 active / 8 leases / 256 SSE with source SIGKILL held, the latest of four peer model starts was 121.132 s in repeat 2 and 88.313 s in repeat 3. Together with the original 87.218 s, two of three met the 120 s criterion. Both repeats kept 256 SSE, refused all four old fences, matched all 32 original signed receipts and decrypted results, and completed all 32 without POST replay. Both isolated Workers/model restored, zero pending and zero replay gap. No production change.
+- Repeat 2's late fallback-scope task had approved recovery but 20 higher scope sequences received a durable handoff before it. This proves overtaking, not which individual polling turn caused it. Deterministic regression reproduced the fallback scanner moving past a valid command when no execution slot was available, before any handoff. Now uses the existing internal busy result so the scanner preserves its frontier on slot refusal and Broker still defers/requeues. Retains independent control and poison validation. 57 consumer/Worker regressions passed. The new cursor change was not active in either repeat and still needs a fresh pinned E1 run.
+- F-02 slot-cursor candidate `.artifacts/cloud-ha-e1/e1-slot-cursor-1793792458`: three fresh, byte-identical two-node repeats at 32 active / 8 leases / 256 SSE with only the slot-refusal cursor behavior changed from the parent-scope baseline. All three missed the 120 s threshold: round 1 observed peer model starts for two targets (53.800 and 122.272 s), with two absent at the end; round 2 worst 121.171 s; round 3 worst 122.344 s. In each cohort three targets were overtaken by 20 later same-scope handoffs after recovery approval, and the survivor logged zero background-capacity, pickup-capacity or heartbeat errors. The fallback cursor was still ahead of tasks newly eligible after approval. This evidence distinguishes a re-eligibility problem from lack of socket permits. All rounds retained 256 SSE, rejected four old fences, confirmed registered exits, matched 32 signed receipts and decrypted payloads, and eventually completed all 32. Original Workers/model restored, zero final pending and replay gap. Retired de5952df runtime/test delta because it did not close the loaded gate and the parent-scope baseline performed better. Retained both candidate and failing evidence. Next target a bounded revisit of newly approved recovery behind the normal cursor with forward and scope fairness preserved. No production change or original replay.
+
+- CA-HA-03 F-02 fallback recovery now revisits approved generations behind the ordinary cursor on bounded alternating pages. Existing scope selection, handoff receipts, proof and fence checks remain authoritative. Real PostgreSQL pickup suite 30 passed; stream waiting/terminal suite 10 passed. In `.artifacts/cloud-ha-e1/e1-recovered-prefix-1793793349`, fresh cohort `.artifacts/cloud-ha-e1/corpus-rebuilt-f02-sustained-1793793360` killed the source Worker at 32 active / 8 leases / 256 SSE. The survivor started all four affected models within 35.983–53.507 s while source remained down. All 32 original sealed receipts matched and all commands finished. Four stale fences rejected; three registered executors had exact exit proof and the fourth had no registration. All 256 streams remained open. Restored both Workers, zero pending, zero follower replay gap. Candidate mount and checked-in SQL differ only in whitespace. One passing F-02 repeat does not close the full E1-R matrix. No production operation or original POST replay.
+- E1-A diagnostic with the same two-node candidate, run `.artifacts/cloud-ha-e1/e1-capacity-recovered-prefix-1793793444`, signed cohort `.artifacts/cloud-ha-e1/corpus-rebuilt-approval-sse-256-1793793567`: 75/75 issued at 5/s for 15 s, 256 open / zero EOF / 1,098 keepalives. All 39 sealed 201s finished. 33 sealed 429s were command_scope_capacity; three POSTs returned 503 unknown and remained unknown under fresh signed original GET. Milestone logs for the three show two budget expirations in task event position assignment and one in outbox capacity check, with no committed milestone for those operations. Retained the raw evidence and initial GETs. Observed accepted-to-harness p95/p99 40.688/40.758 s across 39 samples, max accepted-to-done 45.557 s. Short window and small sample are diagnostic only; scope limit triggered and queue missed the gate. Both original Worker containers restored, temporary clones removed, zero live pending and zero follower replay gap. Production untouched and no original POST replay.
+- Confirmed the exact F-02 recovered-prefix candidate in two more isolated source SIGKILL rounds at 32 active / 8 leases / 256 SSE. The combined three-round manifest is `.artifacts/cloud-ha-e1/e1-recovered-prefix-confirm-1793793796/all-repeats.tsv`. The per-round worst model start was 53.507, 54.353 and 54.136 s while the source stayed offline, below the 120 s criterion. Across the three cohorts 96 original signed receipts matched, 96 commands finished, all 12 old fences were rejected, and no SSE stream closed in any fault window. Both repeat candidates were removed after restoring the original isolated topology and verifying zero live pending and zero follower replay gap. This verifies the pre-model source Worker SIGKILL subcase. Other F-02 subcases and the full E1-R matrix remain separate. No original POST replay or production changes.
+- E1-A instrumented short window `.artifacts/cloud-ha-e1/e1-admission-waits-1793794020`, signed cohort `.artifacts/cloud-ha-e1/corpus-rebuilt-approval-sse-256-1793794194`: 75/75 issued, 38 sealed 201s all done, 26 sealed scope-capacity 429s, 11 unknown on initial and fresh original signed GET, 256 open with zero EOF. Queue p95/p99 41.821/41.982 s across 38 samples. The 38 signed Session IDs matched exactly 38 slot-release records, with mean hold 9.041 s and max 14.937 s. Eight slots imply about 0.885 Tasks/s at that mean; 5/s would require a mean at or below 1.6 s at full utilization. Treat this as observed demand in the instrumented window, not a steady-state capacity estimate. Read-only database sampling over the first 15 s yielded 641 active backend observations, including 56 WALWrite, 48 WalSync, 32 LockManager and three advisory waits attributed to the application command lock query. The sampler covers all database clients; this distribution does not establish per-request causation. Outbox count used 1.775 ms in a warm read-only plan versus 0.552 ms with existing partial indexes split by state; this does not explain the queue gap and the trigger still enforces the original check. No production change, capacity configuration change, or original POST replay. Both isolated Workers restored, clones removed, zero live pending and zero follower replay gap.
+- Matched all 11 unknown admissions in `.artifacts/cloud-ha-e1/e1-admission-waits-1793794020` to their original API logs. Ten budget timeouts crossed Task indexing/backfill, binding and outbox checks, and one exhausted the command-admission lock retry. The final stack frame is the point of exhaustion, not a per-operation attribution of the entire delay. Signed cohort event timeline averages 18.087 s to durable handoff and 8.132 s from handoff to completion.
+- Follow-up short load and exact process timings `.artifacts/cloud-ha-e1/e1-slot-breakdown-1793794461`, cohort `.artifacts/cloud-ha-e1/corpus-rebuilt-approval-sse-256-1793794509`: 75/75 issued, 40 sealed 201s all done, 33 sealed scope-capacity 429s, two still unknown via original GET, and 256 SSE without EOF. All 40 matched full execution timing, with 8.648 s mean successful slot occupancy, 1.359 s launch-to-main, 0.280 s composition, 0.304 s initial recovery and 2.220 s preparation. Queue sample p95/p99 was 42.076/120.326 s. Its longest sample first had an accepted handoff 32.844 s after admission, no executor registration at fence 1, expired_unstarted approval at 120.165 s and a replacement handoff 0.157 s later. All isolated clones were removed after restoring both Workers, zero live pending and zero follower replay gap.
+- CA-HA-03 released-lease scheduling: real PostgreSQL reproduced a released yet unexpired lease deferring the scan about 30 s past expiry. The shared recovery branch now uses the earlier of expiry and the existing retry deadline, retaining the exact receipt, expiry, epoch and proof checks. The new released case failed before the change; 73 recovery and handoff tests passed afterward. The F-02 accepted candidate precedes this one-line change. No post-fix loaded rerun in this slice. Preserve the original evidence and all unknown dispositions. No production operations or original POST replay.
+- Deployed the exact f23e7e22 recovery module as an isolated read-only Worker candidate. F-02 `.artifacts/cloud-ha-e1/corpus-rebuilt-f02-sustained-1793795005` ran at 32 active / 8 leases / 256 SSE, with all four pre-model targets starting on the survivor in 36.247–69.899 s, all 32 signed originals matched and completed, all four old fences rejected with exact exit proofs, zero SSE EOF. This is one loaded regression on the new revision and does not exercise an early explicit lease release; that branch is proven by the separate PostgreSQL regression.
+- Two fresh signed capacity diagnostics on the same Worker candidate in `.artifacts/cloud-ha-e1/e1-release-expiry-live-1793794993`: at 2 PostgreSQL CPUs, 75/75 issued, 36 signed 201s all done, 29 sealed scope 429s, 10 still unknown under original GET, queue p95/p99 39.318/41.405 s and mean held slot 9.176 s. At an isolated diagnostic 4 PostgreSQL CPUs, 75/75 issued, 42 signed 201s all done, 33 sealed scope 429s, zero unknown, queue p95/p99 30.066/47.612 s and mean held slot 6.810 s. Both had 256 SSE and zero EOF. The 2-CPU cgroup was throttled in 152/167 offer-window quota periods at ~1.95 cores used; at 4 CPUs it was throttled in 0/156 periods at ~2.28 cores used. The short runs isolate a meaningful database constraint but do not establish a reproducible p99 improvement or E1-A capacity. The 4-CPU run still has an over-fourfold slot demand gap at 5/s; launch-to-main alone averaged 1.628 s. PostgreSQL restored to 2 CPUs, original Worker containers restored, temporary clones removed, pending zero, follower replay gap zero. Production unchanged and no original POST replay.
+- CA-HA-03 scoped Broker relay separates the broker eligibility predicate from the unrestricted query so generic plans can check scope before scanning outbox. Preserve row locking with FOR UPDATE OF outbox SKIP LOCKED. A live isolated corpus generic-plan probe saw the old query discard 2,449 candidates, the scoped query skip the outbox scan. In a matched 20 s idle two-Worker A/B, previous relay read 384,493 Outbox index heap tuples, candidate read zero index heap tuples and 8,190 sequential tuples. 22 PostgreSQL relay tests passed, including a broker-only claim while the rollout row is locked. Evidence `.artifacts/cloud-ha-e1/e1-relay-query-1793795571`.
+- The same optimized Worker candidate at the original 2-CPU PostgreSQL quota ran signed cohort `.artifacts/cloud-ha-e1/corpus-rebuilt-approval-sse-256-1793795772`: all 75 offered requests issued, 40 sealed 201s all completed, 33 sealed scope 429s, two still unknown after signed original GET, 256 SSE and zero EOF. Queue p95/p99 33.973/37.882 s, mean slot occupancy 7.886 s. This loaded diagnostic is a single short cohort; only the idle A/B directly measures the relay scan effect. E1-A and the full E1-R remain open. Restored the original Workers, removed only the four owned clones and verified zero pending and zero follower replay gap. No original POST replay or production operation.
+- CA-HA-03 Cloud memory recovery idle pacing. On the isolated corpus, one empty discovery read checked 2,212 completed projections, ~25,570 shared buffers and ~30 ms. Pace empty/blocked/error passes at one second while keeping successful work on normal cadence and retaining the same durable completion-receipt authority. The deterministic pacing test failed before the change; 59 focused Worker tests passed, and the final compatibility guard was rechecked with both memory tests. Exact 20 s isolated A/B reduced replay-index scans from 323,350 to 78,050 and receipt-index scans from 320,740 to 77,420. Both original container configurations were restored; they already bind worker_loop_service.py from this worktree and can load the updated caller with the old helper on restart. The compatibility guard keeps the prior cadence for a helper that returns None. Evidence `.artifacts/cloud-ha-e1/e1-maintenance-query-1793795967`.
+- Capacity short window with both modules mounted and original 2-CPU PG, signed cohort `.artifacts/cloud-ha-e1/corpus-rebuilt-approval-sse-256-1793796242`: 75/75 issued, 42 sealed 201s, 30 sealed scope 429s, three still unknown after signed original GET, 256 SSE with zero EOF. All accepted commands drained, with 41 sessions completed and one suspended for execution_storage_contention after a durable model response. Queue p95/p99 33.087/33.823 s, mean slot hold 8.055 s. Keep the suspension distinct from success. Removed the four owned clones, verified both original containers running, zero live pending and zero follower replay gap. No original POST replay or production operation. E1-A and full E1-R remain open.
+- CA-HA-03 model/tool projection contention. The retained suspended original c652142b had a durable model response, then LockNotAvailable and execution_storage_contention. Isolated PostgreSQL logs in the same interval show a current_version SELECT FOR SHARE timing out on session_streams, but do not uniquely identify the historical call site or blocker. Reproduced the same relation/error in the actual model/tool indexing entrypoint with a concurrent NO KEY UPDATE lock. KEY SHARE preserves stream identity and allows version advancement, while the existing epoch/lease fence, revision bounds and exact canonical Event equality still guard the derived write. Red test failed on the expected stream lock; 99 PostgreSQL/Worker checks passed with the fix. Evidence `.artifacts/cloud-ha-e1/e1-contention-trace-1793796479`.
+- Fresh signed short windows before and after the narrow lock change did not reproduce the original suspension. Post-fix cohort `.artifacts/cloud-ha-e1/corpus-rebuilt-approval-sse-256-1793796782` issued 75/75, completed all 36 sealed 201s, sealed 27 scope-capacity 429s, retained 12 unknown under original signed GET, and 256 SSE stayed open. Sample queue p95/p99 33.860/37.612 s. The live run is a regression smoke, not proof of historical caller attribution or improved capacity. Original suspended Task, receipts, and data retained. Original isolated containers restored, candidates removed, pending and replay gap zero. No production operation or original POST replay.
+- E1-R F-08 normal source Worker SIGTERM completed three isolated signed rounds on the same integrated candidate (includes abf400db). At 32 active / 8 leases / 256 SSE each, source exited code 0 in 18.026, 17.772 and 18.635 s. Original fenced handoff receipts prove the source completed its four admitted Runs at generation zero each round and took no new command, and the survivor processed the other 28. Across 96 originals, all 96 signed receipts matched, all 96 Sessions completed, each had one model start and one settled reservation, all 12 source executors had exact exit receipts and all 12 stale fences were rejected. No SSE EOF, pending runtime/cleanup obligation or exact session-labelled OCI residue. The initial driver's mutable final lease assertion misread peer memory maintenance as execution; the retained raw round was independently reverified by the canonical handoff/handled Event and exit evidence, and both fresh repeats used that proof. Evidence `.artifacts/cloud-ha-e1/e1-f08-sigterm-1793796997/summary.json`. This subcase uses synthetic no-tool Tasks; hung executors, lost cleanup responses, late creation, remaining E1-R and E1-A are separate gates. Original containers/provider restored, zero pending and zero follower replay gap. No original POST replay or production operation.
+- E1-R F-08 component proofs on real Linux, isolated PostgreSQL and OCI using cached images and fresh schemas. Three repeated suites of 7 passed each. The hung factory held execution locks and spawned a detached descendant; exact process exit was observed in 2.7478–2.8890 s, target lease was revoked, and the Worker analogue and sibling executor/lease/sandbox survived. Canonical completion waited behind the deliberately held stream lock even after OCI cleanup. The same three suites verified late creation retains its obligation while the exact instance is absent and removes only that instance when it appears. Added and ran three independent real-engine lost-remove-response tests: Docker removed the exact instance, the harness discarded the successful response, the durable obligation remained pending, and a later exact absence check settled it without a second removal. Owned fixture containers and disposable PG containers were removed and re-inventoried. Evidence `.artifacts/cloud-ha-e1/e1-f08-linux-1793797769`. These are component proofs; the three fault cases still need the full two-node 32/8/256 signed E1-R envelope. Production and original task/receipt data untouched.
+- F-08 loaded private executor SIGSTOP before model request. The first 32/8/256 attempt was excluded after the capture script tried to overwrite an exclusive evidence file; original stop and task receipts were preserved, originals reconciled read-only, and only owned test candidates removed. Fresh fixed-driver cohort and two independent repeats on the same integrated E1 candidate all passed. Linux pidfd injection verified the exact private child was stopped by Session/current fence; signed Force Stop submitted once per new intent. Slowest signed acceptance 0.214 s, slowest executor stop and resources released 5.524 s from request start. Across 96 originals, all signed receipts matched; three selected Sessions each cancelled once with zero model starts, all 93 siblings completed with one model start each, no source Worker outage or SSE EOF. Exact executor exit receipts and rejection of old fences verified for all three, no owned sandbox residue or pending cleanup obligation. Source/provider restored and candidates removed. Evidence `.artifacts/cloud-ha-e1/e1-f08-hung-1793798238/summary.json`. This is the pre-model hung-child subcase; lost cleanup response and late creation still need loaded E1-R repeats. Production untouched; no original POST replay.
+- F-08 successful OCI remove response lost, first verified full-load round: `.artifacts/cloud-ha-e1/corpus-rebuilt-f08-lost-remove-1793799604`, driver `.artifacts/cloud-ha-e1/e1-f08-lost-remove-1793799592`. At 32 pending / 8 leases / 256 SSE, reserved and started one exact synthetic sandbox for a newly signed Task. A fixture-only recovery tick invoked real Docker rm and discarded only that successful response. Exact ID absence was proved while the signed stop state still showed sandbox pending and resources_released false; the original cleaner reconciled in 6.427 s from the sole POST (accepted in 0.088 s). Exact exit and stale-fence rejection verified. Target cancelled once, its one unreceipted model reservation remained unknown, and all 31 siblings completed. All 32 original signed admission receipts matched, source Worker stayed up, zero SSE EOF and no residual OCI/cleanup obligations. Three earlier driver attempts did not qualify (missing capacity composition, invalid OCI invocation with reserved fixture, missed injection); preserved evidence, verified receipts and settled the exact test-only reservation using an observed unstarted container create/remove. Both original cleaners and Workers restored, pending zero and replay gap zero. One of three required loaded repeats is proven. No original POST replay or production operation.
+- F-08 OCI remove-response-loss loaded subcase completed all three independent signed rounds. Two new repeats held both owned cleaners only through the injected tick and first signed status read, avoiding a cross-node claim race. In each 32/8/256 round a successful exact Docker remove response was discarded, the exact container was absent while the stop still reported cleanup pending, and the original cleaners reconciled by original stop ID. Worst acceptance 0.108 s, worst resources released 6.427 s from request start. All 96 original admissions matched, 93 siblings completed, three targets cancelled once with exact exit and stale-fence rejection, and all 256 SSE stayed open in each round. No cohort resource residue. Evidence `.artifacts/cloud-ha-e1/e1-f08-lost-remove-1793799592/summary.json`. The late-create case and complete E1 gates remain separate; no production operation or POST replay.
+- F-08 late create after force-stop, first loaded round passed on the same integrated candidate. At 32/8/256 the target already had one model start. Its fixture sandbox reservation remained provisioning with no container ID during the first cleanup; the signed stop showed sandbox pending with creation_unsettled. A real exact OCI container was created and recorded after the stop and was never started. The ordinary cleaners removed it and closed the same stop in 7.975 s (accepted in 0.186 s). All 32 signed original admissions matched; target cancelled once with exact exit and stale fence rejection, the other 31 completed, source Worker stayed up and all 256 SSE stayed open. No cohort OCI residue or pending obligations. Evidence `.artifacts/cloud-ha-e1/corpus-rebuilt-f08-late-create-1793800153`. Two loaded repeats remain. Both Workers and cleaners restored, no original POST replay or production operation.
+- F-08 late OCI create completed three independent signed 32/8/256 rounds. Each retained creation_unsettled while the reservation had no container, then removed the exact late-created instance without starting it and closed the same stop. Slowest acceptance 0.186 s and slowest release 7.975 s. Across all three, 96 originals matched, 93 siblings completed, the three targets cancelled once with exact exit and stale fence rejection, and no SSE EOF or residual cleanup obligations. Cross-checked all four defined F-08 subcases (normal SIGTERM, pre-model hung executor, successful remove response lost, late create): 12 rounds, 384 distinct verified signed originals, 256 SSE per round, identical Worker candidate overlays by SHA-256. Index `.artifacts/cloud-ha-e1/e1-f08-late-create-1793800142/f08-index.json`. Scoped F-08 evidence only; remaining E1-R subcases and E1-A are still open. Original processes restored, zero pending and zero replay gap, no POST replay or production operation.
+- F-09 Scheduler claimant-loss storage regression used an actual subprocess and disposable PostgreSQL. The child committed a claim and was killed. After natural database-clock expiration, the successor recovered the original firing ID, scheduled time and idempotency key at attempt 2. The previous claim could no longer settle, the successor settled once, and a third claimant found nothing. Scheduler/storage/materializer suite 23 passed. Evidence .artifacts/cloud-ha-e1/e1-f09-scheduler-1793800954/regression.log. Neither isolated node currently has a running Scheduler. The full F-09 gate still needs two Scheduler processes with a dedicated signed workload grant exchange, a connection budget for both processes, and the 32/8/256 precondition. Production and existing signed receipts untouched.
+- F-09 isolated composition now packages the regular Scheduler for both OrbStack nodes, reserves a peak of two Schedulers, and carries a scoped synthetic workload credential only on those nodes. The new preparation check first caught 263/256 declared connections because the old template omitted the isolated executor caps already used by the rebuilt Workers. With those measured caps encoded, all three bundle/Compose config checks passed at 176 fleet connections, 183/256 including reserves. The fixture check exercised the actual Broker and Zebra RS256 verifier through in-memory HTTP, and rejected a foreign principal, management scope, and signed-body tampering. Focused Broker/Scheduler tests: 42 passed. Evidence .artifacts/cloud-ha-e1/e1-f09-scheduler-composition-1793801383/check-fixed.log, with the initial failed check retained alongside it. The temporary bundles were removed after checking; the active corpus still has no Scheduler processes. Next stage the new fixture Broker and authority together, verify one new scheduled firing through signed admission on the real two-node topology, then exercise F-09 claim loss and contention under 32/8/256. Production and original signed evidence untouched.
+- F-09 signed live admission used the two isolated OrbStack Scheduler entry points, a dedicated TLS Broker/authority clone, and the rebuilt PostgreSQL corpus. Kept the initial startup/config errors and the rejected probe (single-use grant was already consumed by the preflight GET). The first fresh authenticated Schedule was accepted and claimed once, then failed closed with authority_definition_binding_forbidden. The Scheduler's frozen Definition check omitted the API settings and freshly verified consumer grant and therefore selected publisher authorization instead of the published consumer path. Passed those two inputs to the shared resolver. The new test failed before the fix; Scheduler and Schedule route tests passed 14 afterward. On the corrected read-only module overlay, a new signed Schedule 8253d7ec-248d-5ed7-9cbf-795e432bb484 returned 201, then one firing 33f7d505-a04a-5f50-aae5-83185cf80dfd dispatched once (attempt 1) while the other Scheduler polled without claiming it. Task b98ccbb1-e9f4-4761-b4f5-6903ede4c699 completed, with one done Run command and one model start. Evidence .artifacts/cloud-ha-e1/e1-f09-live-1793801581/fixed/database-firing.tsv and adjacent original Schedule response and signed GET. Removed only the ten labeled temporary containers and the one temporary TLS key copy. This is signed end-to-end dispatch and one contested firing; the loaded 32/8/256 claimant-death and repetition gate remains open. Original data/receipts retained, no original POST replay or production changes.
+- F-09 loaded Scheduler claimant death passed three independent signed rounds on 8845c0d7 Scheduler admission and identical Worker overlay digests. Each reached 32 active originals, eight current Worker leases and 256 SSE before a SIGKILL of the owned source Scheduler. A fixture hook held only the exact new Schedule after its committed claim and before external authority exchange. The peer Scheduler was already polling, waited for natural database-clock expiry and dispatched the original firing at attempt 2 in 35.624, 36.995 and 37.019 s from injection. Each signed original Schedule GET returned the one firing with its original scheduled time, and each scheduled Task completed with one Run command and one model start. All 96 distinct cohort originals completed once and their exact sealed receipts matched via signed readback. All 256 SSE stayed open through each scheduled Task's completion. Removed owned candidates, restored both original Workers and model, and observed zero pending and zero follower replay gap. Index .artifacts/cloud-ha-e1/e1-f09-loaded-1793802012/f09-scheduler-index.json. Scope is Scheduler claimant loss before external exchange. F-09 SSE disconnect/peer resume and complete E1-R and E1-A gates remain separate. No original POST replay or production change.
+- F-09 client-side SSE disconnect and peer resume correctness passed three isolated signed 32/8/256 rounds on identical Worker overlay digests. In each round the clients consumed and retained the first source cursor on 128 individual connections, closed those responses at the gate, and opened 128 peer connections with fresh grants while the existing 128 peer connections stayed live. Every reopened stream delivered the exact reference successor frame, and all 256 were open on the peer at the end. The original observed Task's command, Run and model facts were unchanged. All 96 distinct signed cohort receipts matched and all 96 Tasks completed once. The two-concurrent reconnect profile failed the five-second experience target: only 6/128, 8/128 and 6/128 recovered by five seconds; last exact frame at 62.527, 69.371 and 69.581 s. In the last two repeats the client gate-wait p95 was 62.461/63.241 s and post-gate service p95 3.056/2.611 s. One transient attempt failed and the read-only retry succeeded. Index .artifacts/cloud-ha-e1/e1-f09-sse-1793802705/f09-sse-index.json. Both original Workers and model restored, all six temporary Worker candidates gone, zero pending and zero follower replay gap. Scope is raw SSE continuity and exact replay on the observed saved prefix; the UX-07 timing, full E1-R and E1-A capacity gates remain open. Production untouched, original data and receipts retained, and no original POST replay.
+- F-09 SSE loaded concurrency comparison .artifacts/cloud-ha-e1/e1-f09-sse-read16-1793803392. Staged an isolated aligned peer API with effective read 16, Worker read 2, and 213/256 declared connections including reserves. Kept PostgreSQL quota and the Worker candidate unchanged. At 32/8/256 disconnected 128 client streams and attempted peer resume with width 16 and fresh grants. Exact successors 109/128, 15 within 5 s, last success 43.645 s, 19 exhausted three attempts. There were 108 HTTP 503 task_preflight_unavailable and 13 HTTP 409 stream_source_unavailable attempts. The candidate logged Task preflight TimeoutError, so this configuration moved failure past admission into preflight. Exact source failure types behind the 409 were not captured. The original 128 peer streams stayed open. All 32 original sealed receipts matched, all 32 Tasks completed once, and the observed seed's command and model facts matched before and after. Restored the same peer API container ID, original Workers and model, removed the owned candidates, pending and follower replay gap zero. This candidate fails stream continuity and UX-07 and was reverted. No production change or original POST replay. Evidence comparison.json and audit.json in the driver directory.
+- F-09 stream negotiation now lets transient TimeoutError and PostgreSQL OperationalError escape both generic source handlers into the existing authorized preflight classification. Red regression proved a TimeoutError previously returned 409 stream_source_unavailable; afterward it returns retryable 503 and existing invalid cursor, checkpoint and generic broken-source behavior is covered. Targeted stream suite 25 passed, 11 skipped, Ruff passed. Read-only candidate on the isolated peer ran the same 16-read/16-reconnect 32/8/256 probe, evidence .artifacts/cloud-ha-e1/e1-f09-sse-classify-1793803732. No 409 stream_source_unavailable in this round (13 on prior candidate); observed 140 retryable 503 task_preflight_unavailable and one 503 tenant_binding_unavailable. Exact replay 101/128, 15 by five seconds, 27 exhausted attempts, 128 preexisting peer streams stayed open. Failure classification is fixed, capacity is not, and the previous 409s were not individually attributed. All 32 sealed receipts and completions verified, original observer facts unchanged, same peer API container and both Workers restored, owned candidates removed, pending and follower replay gap zero. No original POST replay or production change. Full E1-R and E1-A remain open.
+- F-09 native stream snapshot reuses the already qualified latest Run header for a matching unbounded Run lookup inside the same repeatable-read transaction. Both existing SQL paths use the same Run predicates and decoder. A red/green regression proves elimination of one duplicate query and isolation across different Tasks, Runs, historical bounds and snapshots. Focused PostgreSQL/Redis storage and API regression 19 passed. Broader native run retained one AG-UI test fixture failure because its request stub lacks method, and eight skips because that run did not set the separate API PG fixture variable. The unchanged source and fixture show the method lookup precedes snapshot access. Isolated loaded 16/16 comparison .artifacts/cloud-ha-e1/e1-f09-sse-run-header-1793804117 reached 32/8/256: 111/128 exact, 15 by five seconds, last success 37.448 s, 94 retryable preflight 503 attempts and 17 exhausted. Prior classified run had 101/128 and 140 preflight 503s, but one sample per candidate does not establish a stable performance gain or pass. All 32 original signed receipts matched and all Tasks completed once; original observer facts unchanged. Original peer API and Workers restored, owned candidates removed, pending and follower replay gap zero. Production untouched and no original POST replay. E1-R, E1-A and the five-second recovery goal remain open.
+- F-09 bounded PostgreSQL event pages now read Task highwater and a limited seek of member/byte metadata in one statement, with body hydration still after the existing byte and membership guards. New real-PostgreSQL regression failed at three statements and passed at two. Final PostgreSQL/API suite 41 passed, 2 skipped, Ruff clean. Read-only EXPLAIN on the synthetic corpus seed used the Task PK and session_events_task_positions range index. Loaded isolated peer at 16 reads/16 reconnects and 32/8/256 recorded 120/128 exact, 15 by five seconds, last success 36.238 s, 71 retryable preflight 503 attempts and 8 exhausted. Previous Run-header candidate had 111/128 and 94 preflight 503s; this is one diagnostic per candidate, not a stable gain or gate pass. Original 128 peer streams stayed live, all 32 sealed receipts matched, all 32 Tasks completed once, and observer facts matched. Original API and Workers restored, owned candidates removed, no pending commands; follower gap briefly 40 bytes then zero on recheck. Evidence .artifacts/cloud-ha-e1/e1-f09-sse-page-1793804521. Production untouched and no original POST replay. E1-R, E1-A and the five-second recovery gate remain open.
+- F-09 native Task SSE first frame now uses the native source head for the initial privacy decision and removes the duplicate preliminary source lookup. Unqualified or strict privacy still fails closed and the post-page privacy check remains; the real PG race test still denies an intervening privacy append. New PG check proved the first-frame sequence changed from head/head/page/head to head/page/head. Focused PG stream suite 42 passed, 2 skipped, 3 deselected. The broad run retains 3 unrelated signed-prefix fixture failures in grant minting with scope_not_allowed before the route was called. The 16/16 isolated loaded sample at 32/8/256 gave 114/128 exact, 16 by five seconds, last success 34.291 s, 83 task preflight 503s and one principal binding 503. Prior event-page candidate gave 120/128 and 15 by five seconds, so this sample does not show a batch improvement. All 32 original signed receipts matched and all Run commands drained. The terminal audit failed: 31 Tasks completed and one suspended after a single model start. The original observer facts matched, and the original API and Workers were restored with owned candidates removed. No production or original POST replay. Evidence .artifacts/cloud-ha-e1/e1-f09-sse-tail-1793804933. Five-second recovery, full E1-R and E1-A remain open.
+- CA-HA-03 projection row contention follow-up: the retained suspended Task had LockNotAvailable after a committed model response. In the same second PostgreSQL logged the model/tool projection's exact SELECT FOR KEY SHARE on session_streams timing out. SQL parameters and blocker identity were unavailable for the historical request. Real PostgreSQL reproduced the lock timeout with a concurrent FOR UPDATE holder. Removed the projection-only stream row lock; retained frontier validation, canonical Event equality, projection FK and epoch/lease fences. Red/green and related PostgreSQL suite 26 passed. The same loaded 32/8/256 diagnostic on both Worker overlays completed all 32 originals once and recovered all 32 signed receipts. At 16 concurrent reconnects only 108/128 were exact and 16 met five seconds; 20 exhausted attempts. This single load run is a smoke, while the deterministic lock test proves the specific fix. Restored original APIs, Workers and provider, removed owned candidates, and drained all pending commands. Evidence .artifacts/cloud-ha-e1/e1-model-projection-row-lock-1793805436 and prior lock statement under e1-f09-sse-tail-1793804933. Production untouched and no original POST replay. Full E1-R, E1-A and the SSE five-second target remain open.
+- CA-HA-03 E1-A finish-path decomposition .artifacts/cloud-ha-e1/e1-a-worker-finish-1793805806 used disposable Worker instrumentation and retained signed cohort .artifacts/cloud-ha-e1/corpus-rebuilt-approval-sse-256-1793805839. All 75 offers issued at 5/s for 15 seconds with 256 live SSE and zero EOF; 37 sealed 201s completed with one model start each, 28 sealed 429s decoded as command_scope_capacity, and ten remained unknown on a fresh original signed GET. Queue p95/p99 38.929/39.034 s. Matched all 37 per-Session finish records to exact slot-release records. Mean slot hold 9.026 s, finish 0.582 s (paired mean 6.3%), including persisted-tail projection 71 ms, finalization 410 ms, projection read 38 ms and Task index upkeep 63 ms. Canonical timestamps showed 5.400 s mean harness-start to model-start, 1.325 s model-start to durable response, and 1.380 s response to terminal. The representative single-root lineage EXPLAIN used its existing index at 0.080 ms. The measured finish work is too small to close the capacity gap: even eliminating that segment would leave ~8.44 s mean slot hold against 1.6 s required for 5/s with eight slots. Next trace the 5.400 s harness-to-model interval; timestamps alone do not attribute its cost. Restored both original Workers, removed owned overlays, zero live pending. The follower remained streaming with a 704-byte lag at the sampled check. No production change or original POST replay. The short diagnostic fails E1-A and does not change E1-R.
+- CA-HA-03 E1-A pre-model decomposition .artifacts/cloud-ha-e1/e1-a-pre-model-1793806092. Read-only event correlation on 37 prior originals showed authority, context selection and attempt-start timestamps were all backdated to the Worker start; the observed 5.400 s interval includes private executor launch and execution preparation. In the new isolated signed cohort .artifacts/cloud-ha-e1/corpus-rebuilt-approval-sse-256-1793806145, disposable timing overlays matched 36 exact short-task completions. Preparation mean 2.257 s/p95 5.214 s, led by input recovery mean 670 ms/p95 1.726 s. Two model planning passes averaged 0.731 and 0.515 ms, while persisting the model-request-start event averaged 357 ms/p95 878 ms. Do not trade context-budget checks for a negligible saving. The canonical backdated interval averaged 5.206 s and mean slot hold 8.458 s. All 75 offered at 5/s issued, 36 sealed 201s completed once, 37 sealed scope 429s and two still unknown after fresh signed original GET; 256 SSE stayed open with zero EOF. Queue p95/p99 35.387/42.162 s. The snapshot does not attribute the rest of the backdated interval to a single operation. Next isolate fenced input recovery and startup costs on the normal path. Original Workers restored, owned timing candidates removed, pending zero and follower streaming with 840-byte lag at the sampled check. No production changes or original POST replay. E1-A and full E1-R still open.
+- CA-HA-03 non-Handoff Worker input path reuses the bounded post-restoration event view when the native Handoff gate reports no Handoff. Actual Handoff/custom gates still reread, and the final execution input head still checks the restored Session revision. Regression counted three bounded preparations before and two after; 48 input/frontier/batch/compaction checks passed with scratch PostgreSQL. Both original isolated Workers already bind the worktree file, so the candidate was briefly visible before staging. Verified zero pending and restored HEAD bytes before the controlled run; the staged clones used the pinned candidate. Restored the original containers and verified pending and follower replay gap zero before committing. Loaded signed short diagnostic .artifacts/cloud-ha-e1/e1-a-input-handoff-1793806382 / corpus-rebuilt-approval-sse-256-1793806516 used the previous timing overlays. Mean input 572.757 ms vs 670.167 ms in the prior sample; p95 1223 vs 1726 ms. Mean slot hold essentially unchanged at 8456.514 vs 8457.889 ms. All 75 issued, 37 sealed 201s completed once, 34 sealed scope 429s, four still unknown after original signed GET, 256 SSE without EOF. Queue p95/p99 37.593/37.864 s. Single diagnostic comparison does not prove a sustained gain. E1-A and full E1-R remain open. No production change or original POST replay.
+- CA-HA-03 private executor warm-start composition evidence .artifacts/cloud-ha-e1/e1-executor-warm-receipt-1793806831. Extended the earlier synthetic supervisor probe to the real child --check on both isolated Workers, three cold and three warm per node. A sterile import-only parent remained at one thread and four visible FDs. Existing per-Task subreaper run/drain wrote matching exact synthetic receipts; only the launch operation was substituted in the diagnostic. Across six samples per variant, median import ready 886.229 to 3.679 ms, real composition 128.8 to 143.3 ms, check result 1014.398 to 148.029 ms and supervisor exit receipt 1216.618 to 174.935 ms. The first stdout parser treated multi-record logging as one JSON object; corrected it to select the one composition record. The actual child --execute path also rejected an invalid synthetic lease as LeaseLostError before the instrumented execution boundary in both cold and warm variants on both nodes. No Run executed. Concurrent synthetic STOP probe independently drained an escaped descendant before receipt and left the sibling intact. Product launch remains cold; a Worker-owned launcher lifecycle, task permit transfer and signed loaded F-02/F-08 proof remain necessary before integration. Both original Workers running, pending zero, follower gap zero. No production operation or original POST replay. E1-A and full E1-R remain open.
+- CA-HA-03 warm launcher ancestor-death evidence .artifacts/cloud-ha-e1/e1-warm-parent-death-1793807073. In both isolated Workers, exercised actual per-Task supervisor run/drain after killing either the synthetic sterile launcher directly or its synthetic Worker parent. The launcher in the latter case was parent-fenced; both private supervisors per round were already armed and each controlled an executor plus an escaped setsid descendant. Three rounds per mode per node. All 24 exact synthetic Session/fence exit receipts matched, no descendant residue, slowest receipt observation 44.507 ms for launcher SIGKILL and 47.837 ms for synthetic Worker SIGKILL. Worker containers, storage and durable tasks were untouched. This tests the post-arm ancestor-death edge; direct private-supervisor SIGKILL still needs independent ownership evidence, and launch before arming, real permit handoff, durable acknowledgments and signed loaded execution need integration. Both original Workers running, pending zero; no production or original POST replay.
+- CA-HA-03 pre-arm supervisor exit proof .artifacts/cloud-ha-e1/e1-supervisor-pre-arm-1793807184. The prior code emitted an empty-tree receipt when SIGTERM arrived after arming but raised without a receipt if the expected parent had already exited. Distinguished parent mismatch from prctl failure and let only the private supervisor take its existing no-spawn exit branch on mismatch. The private executor still fails closed on the same condition. Red/green Worker tests 10 passed/3 skipped, force-stop storage regression 11 passed/1 skipped. Six Linux probes on the two isolated nodes killed the synthetic parent before releasing the supervisor to arm the fence. Six matching exact Session/fence exit files, zero executor spawns or result files, and no remaining child processes. This proves the receipt file path, not a durable Worker ACK after parent loss or the integrated warm launcher. Original containers and production unchanged, no signed originals or POSTs replayed. E1-A and full E1-R remain open.
+- CA-HA-03 pre-arm durable confirmation .artifacts/cloud-ha-e1/e1-pre-arm-durable-1793807398: used a network-disabled disposable private-PID container on each isolated Linux node and a disposable PostgreSQL fixture. Registered the exact live Docker incarnation and lease, then injected parent SIGKILL before the supervisor armed. The real patched supervisor produced the exact receipt with no executor or result. Before the trusted witness, force-stop remained unconfirmed and wrong fence/PID namespace both wrote no exit. Killed the disposable container, verified its exact stopped incarnation with the existing node tool, and reconciled exactly one durable ACK per node; repeat reconciliation was zero. Force-stop then proved resources released with zero model starts. Two end-to-end cases passed. The database ACK was driven by the stopped-incarnation witness, not by a receipt file alone. No signed production-shaped load, live Worker kill or warm launcher was involved. Disposable fixtures removed, original Workers running, no production or original POST replay. Full E1-A and E1-R remain open.
+- CA-HA-03 signed loaded F-02 pre-arm loss .artifacts/cloud-ha-e1/e1-pre-arm-loaded-1793807500, cohort corpus-rebuilt-f02-pre-arm-1793807511. On both isolated Workers used the current supervisor with a source-only synthetic delay immediately before arming. At 32 pending / 8 leases / 256 SSE, all four source supervisors had passed exact durable registration and reached the hold, with no model start or reservation. Killed the owned source Worker container, captured the stopped incarnation and recorded four exact durable exit ACKs before restart. The peer started the four original Runs at fence 2 after 35.796–53.490 s while source stayed down. Each target had one model start and one reservation. Four old fences rejected, 32 original signed receipts matched and all 32 Tasks completed, no SSE EOF. The early audit sampled 11 siblings still pending; the final post-drain audit verified 32/32 completed, original Workers and model restored, temporary candidates removed, pending and replay gap zero. The durable ACK is from the trusted node witness for container loss. This is one loaded pre-arm round on the cold launcher; integrated warm launcher and remaining E1 gates are still open. No original POST replay or production changes.
+- CA-HA-03 loaded F-02 pre-arm subcase completed two independent repeats. In both, the source fixture reported the exact supervisor PID and hold deadline; immediately before SIGKILL the kernel showed all four supervisors sleeping, with no children and more than four seconds remaining, and durable registrations matched. All rounds reached 32 active / 8 leases / 256 SSE. Across the initial and two repeats, 12 exact node-witness exit ACKs persisted before source restart, 12 old fences rejected, all 96 original signed receipts matched and all 96 Tasks completed. Slowest affected original model start 53.754 s on the peer while source was down, zero SSE EOF. The first repeat attempt is excluded because an embedded NUL prevented the process probe; no Worker was killed and all 32 original receipts were retained and read back without POST replay. Both original Workers/provider restored, owned candidates removed, pending and replay gap zero. Index .artifacts/cloud-ha-e1/e1-pre-arm-repeat-1793807853/pre-arm-index.json. Scope is cold launcher before arming; integrated warm launcher, complete E1-R and E1-A remain open. No production change.
+- CA-HA-03 isolated signed warm-supervisor diagnostics used four one-shot sterile supervisors per Worker, keeping the private supervisor, parent fence and ordinary executor registration path. First cohort `.artifacts/cloud-ha-e1/corpus-rebuilt-approval-sse-256-1793808582` is excluded from performance comparison: all 41 sealed admissions failed with TypeError. The fixture had inherited its Popen substitution into the executor. Restored the original Popen in the forked executor for the independent cohort `.artifacts/cloud-ha-e1/corpus-rebuilt-approval-sse-256-1793808717`. All 75 offers issued at 5/s. 36 sealed 201s completed with one model start each, 35 sealed 429s, four still unknown after signed original GET, 256 open SSE with zero premature EOF and 996 keepalives. Queue p95/p99 31.369/32.427 s. Executor launch-to-main median 8 ms (36 matched sessions), mean slot hold 7.856 s versus 8.457 s in the separate cold cohort. The corrected logging did not emit individual warm-dispatch markers, so timing cannot prove the warm path for every Run or establish a sustained gain. The short comparison is not an E1-A pass or a full E1-R rerun. Evidence `.artifacts/cloud-ha-e1/e1-warm-signed-1793808705`. Current native SSE heartbeat/approval suite 10 passed. Both original isolated Workers restored, staged containers removed, zero pending and original follower streaming with zero replay gap. No original POST replay or production change.
+- CA-HA-03 paired low-load isolation run on the same two-node E1 topology and with 256 SSE throughout. Copied the cold 5/s diagnostic fixture byte-for-byte except for changing the open-loop generator to 0.5/s for 24 s. Independently repeated with the isolated warm supervisor, logging dispatches at the fixture's enabled warning level. Cold evidence `.artifacts/cloud-ha-e1/e1-a-low-load-cold-1793808975` / signed cohort `corpus-rebuilt-approval-sse-256-1793808982`; warm evidence `.artifacts/cloud-ha-e1/e1-a-low-load-warm-1793809069` / signed cohort `corpus-rebuilt-approval-sse-256-1793809080`. Each issued 12/12, verified 12 sealed 201s, completed all 12 with one model start each, matched all 12 start/exit Session and fence ACK pairs, and had zero 429s, unknowns or SSE closures. Cold to warm mean slot hold 3.415 to 2.660 s, queue p95 0.453 to 0.529 s, mean pre-model interval 2.211 to 1.313 s; measured Worker preparation stayed at 0.678 to 0.681 s. Warm inventory showed four sterile children on each Worker and the expected supervisor hashes; logs recorded 12 dispatches and 12 matched startup records, median launch-to-main 3 ms. At 5/s the same cold fixture had 8.457 s mean slot hold, 2.186 s preparation and 37.593 s queue p95. This identifies a load-sensitive increase beyond import startup and shows that warm launch alone still exceeds the 1.6 s mean slot ceiling implied by eight slots at 5/s. The 1 s short-task UX target remains separate. The observations are bounded synthetic samples. Continue with measuring and reducing sequential durable I/O and database pressure on the execution path, with no increase to resource caps. Both original isolated Workers restored, candidate containers removed, pending zero and follower streaming at zero replay lag. No original POST replay or production change. E1-A and full E1-R remain open.
+- CA-HA-03 initial native execution-input preparation now resolves Session membership within the existing Task header statement, removing one SQL round trip while retaining namespace, active Segment, canonical frontier and the separate fresh final header. Scratch PG red observed two task queries, green required one; 44 focused tests passed, 7 skipped, including the interleaved canonical append regression. Ruff and targeted mypy passed. Read-only E1 EXPLAIN on an existing synthetic seed showed a single indexed membership InitPlan and indexed Task lookup. Evidence `.artifacts/cloud-ha-e1/e1-input-membership-1793809296`. The two isolated Worker clones loaded both exact new source hashes. New signed short window `.artifacts/cloud-ha-e1/e1-a-membership-candidate-1793809415` / `corpus-rebuilt-approval-sse-256-1793809424` issued 75/75 at 5/s, completed 40 sealed 201s with one model start each, recorded 24 verified scope 429s and 11 unknown after fresh original GET. All 256 SSE stayed connected, queue p95/p99 33.691/41.197 s, mean slot hold 8.476 s (prior cold 8.457 s). This proves one fewer query, with no demonstrated end-to-end slot gain. Both original Workers restored and owned clones and scratch PG removed, zero pending and follower streaming at zero replay lag. No original POST replay or production changes. E1-A and full E1-R stay open.
+- CA-HA-03 loaded executor exit timing diagnostic `.artifacts/cloud-ha-e1/e1-exit-timing-1793809598` / fresh signed cohort `corpus-rebuilt-approval-sse-256-1793809630`. Under the prior cold Worker configuration with the two membership-query source binds, added isolated timing markers at executor result write and supervisor/ACK return. The attempted exact slot timestamp marker did not apply; existing slot duration remained available. All 39 Session/fence pairs matched both timing points and 39 durable start/exit ACK bodies matched. Mean result-to-parent-return 318.020 ms, p95 426.568 ms, including ACK mean 57.904 ms/p95 101.982 ms. The remaining 260.116 ms average includes executor teardown and parent supervision and is not attributable to either alone. Compared with 8.552 s mean slot hold, even removing the entire measured interval would save only 3.7%. Prioritize pre-model work and database contention over exit-proof changes. At 5/s, 75/75 issued, 39 sealed 201s (38 completed, one canonically suspended for execution_storage_contention), 26 verified scope-capacity 429s and ten still unknown after signed original GET. Each of the 39 admitted originals had one model start. All 256 SSE held with zero closures, queue p95/p99 35.864/39.984 s. Both isolated Workers restored, owned candidates removed, pending zero and follower replay gap zero. No production changes or original POST replay. E1-A and full E1-R remain open.
+- CA-HA-03 bounded recorder prepare now relies on the ownership check already performed before each bounded tail page, retaining the no-tail check, append check and native write fences. Real PostgreSQL regression observed two checks before and one afterward, and revoked ownership still fails before reading the tail. Focused 15 passed/1 optional scratch test skipped, Ruff and mypy passed. The first native fixture attempt used its older partial schema and failed before exercising the assertion; the red/green test uses the existing full migration fixture. Two isolated signed 5/s windows used the same cold candidate and 256 SSE. Baseline `.artifacts/cloud-ha-e1/e1-ownership-cost-1793809818`: 40 admitted, 39 completed and one suspended; mean 76.675 child ownership reads and 853.779 ms in the reads per task, mean slot hold 8.521 s. Candidate `.artifacts/cloud-ha-e1/e1-ownership-dedup-1793810005`: 38 signed admissions all completed, 34 verified scope 429s, three still unknown after fresh signed original GET, all 75 issued, no SSE closures, 38 exact durable executor start/exit ACKs. Mean 67 ownership reads and 773.395 ms per task, mean slot hold 8.324 s, queue p95/p99 36.762/40.151 s. The baseline profiler reported only the common ownership wrapper; candidate caller labels use one deeper frame and identify catch_up as its largest measured caller. The count regression proves one check removed per bounded prepare; per-task wall-clock deltas are cohort observations. Both original isolated Workers restored, owned clones and scratch PG removed, pending zero and follower replay gap zero. No original POST replay or production change. E1-A and full E1-R remain open.
+- CA-HA-03 bounded catch-up diagnostic and budget deadline poll. The baseline `.artifacts/cloud-ha-e1/e1-catchup-cost-1793810219` matched 456 catch-up checks to 38 signed Tasks, 190 already at the frontier. Mean per Task 220.910 ms in ownership/budget checks and 178.136 ms in fresh Run header reads. Kept those control boundaries and consolidated the PostgreSQL deadline poll's binding and bounded ancestor checks into one statement and one DB clock reading, reusing the ancestor query/validation. Native red observed two SQL calls, final green 36 passed including parent expiry, binding drift, and progress supersession. Ruff and targeted mypy passed. Isolated candidate `.artifacts/cloud-ha-e1/e1-budget-poll-1793810398` used the same SQL as the commit; the final missing-row guard was added after staging and covered by the final focused run. At 5/s, 75/75 issued, 40 sealed 201s all completed with one model start, 26 sealed scope 429s, nine unknown after signed original GET. All 256 SSE held and 40 exact executor start/exit ACKs matched. Queue p95/p99 33.123/44.277 s, mean slot hold 8.391 s vs 8.294 s on baseline, catch-up ownership mean 228.607 ms per Task vs 220.910 ms. One fewer SQL call per deadline poll is verified; the loaded comparison does not show a wall-clock gain. Both original isolated Workers restored, owned candidate/scratch resources removed, zero pending and final follower replay gap zero. No production change or original POST replay. E1-A and full E1-R remain open.
+- CA-HA-03 matched SSE-isolation diagnostics on the final budget-poll source. Same isolated Worker overlays, request rate 5/s, 75 fresh signed offers, no dependency quota change. Without SSE (`.artifacts/cloud-ha-e1/e1-a-no-sse-1793810594` / corpus -1793810621), 40 sealed admissions completed, 31 verified scope 429s, four still unknown after signed original GET, queue p95/p99 35.044/39.525 s, mean slot hold 7.800 s, 40/40 exact executor ACK pairs. With 256 SSE (`.artifacts/cloud-ha-e1/e1-a-sse-control-1793810696` / corpus -1793810705), 38 sealed admissions completed, 30 verified scope 429s, seven still unknown after signed original GET, queue p95/p99 34.996/37.251 s, mean slot hold 8.261 s, all streams remained connected. Removing SSE improved mean slot hold by 0.461 s in this comparison but queue p95 remained about 35 s in both. The 30 s 256-SSE sample consumed 59.987 CPU-seconds in the PostgreSQL cgroup with a 2-vCPU ceiling, throttled in 288/301 scheduling periods. Source VM consumed 99.845 CPU-seconds and was throttled in 88/301 periods. Active-backend samples show CPU/runnable, WALWrite and WalSync in both windows; counts are samples, not per-request attribution. Prioritize isolating database capacity and durable write amplification. The 256-SSE cohort has 38 exact start registrations and 37 exact exit ACKs, verified twice after drain; the missing ACK remains unconfirmed. Both original Workers restored, candidates removed, pending zero and follower streaming with zero replay gap. Stopped two owned read-only sampler sessions that outlived their local tool wrappers, and verified none remain. No original POST replay or production change. E1-A and full E1-R remain open.
+- CA-HA-03 isolated PostgreSQL CPU quota comparison `.artifacts/cloud-ha-e1/e1-a-pg3cpu-1793810905` / fresh signed cohort -1793810914. Kept exact Worker overlay sources, 4+4 slots, 5/s and 256 SSE as in the preceding 2-vCPU control. Updated only the exact owned E1 primary cgroup from 2 to 3 vCPU and verified rollback to 2 after the run. 75/75 issued, 41 sealed 201s completed with one model start each, 34 verified scope 429s, zero unknown, 256 SSE with zero closures, 41 exact start/exit ACKs. Queue p95/p99 29.163/35.266 s versus 34.996/37.251 s at 2 vCPU; mean slot hold 7.000 vs 8.261 s. Over the same 30 s interval after the SSE gate, primary CPU usage 70.744 CPU-s and throttled 34/301 periods (prior 59.987 and 288/301); source VM CPU usage 119.305 CPU-s and throttled 283/301 periods (prior 99.845 and 88/301). Moving CPU headroom to PostgreSQL improved this cohort and shifted saturation toward the shared VM. The short test still fails E1-A. The earlier unconfirmed executor ACK was matched to its stored start/incarnation via read-only SQL; the candidate container had already been removed and could not be verified by the stopped-container witness. No ACK was synthesized. Both original Workers running, test clones removed, pending zero and final follower replay gap zero. No original POST replay or production change. Full E1-R remains open.
+- CA-HA-03 exact executor exit ACK now waits briefly for the existing control permit when connection creation is rejected before sending SQL. The 250 ms wait bound only covers typed permit refusal; a query or commit error still returns to existing unconfirmed handling. Real PostgreSQL red reproduced the refused ACK, then green proved a released permit writes the exact Session/fence and a permit held through the wait leaves it unconfirmed. The broader stop suite also caught the previous header decoder reading task_id from every row, including the direct-coordinate adapter path. The correction uses the already supplied TaskId on that path and retains row resolution for Session membership. Final 51 passed, 4 Linux-only skipped; Ruff and mypy passed. Evidence `.artifacts/cloud-ha-e1/e1-ack-capacity-1793811123`. Both isolated Linux Workers ran the exact ACK candidate at the restored 2-vCPU quota with 256 SSE, 75 offers at 5/s, 36 signed admissions all completed, 30 sealed scope 429s and nine unknown after signed original GET. All 36 exact start/exit ACKs matched; no ACK warning or SSE closure. This load window did not inject ACK refusal; the deterministic native checks cover that failure. Queue p95/p99 37.280/37.875 s, mean slot hold 8.842 s. Evidence `.artifacts/cloud-ha-e1/e1-a-ack-capacity-1793811166` / signed cohort -1793811176. Earlier missing ACK stays unconfirmed. Both original Workers restored, owned candidates and scratch PG removed, pending zero and replica replay gap zero. No production change or original POST replay. E1-A and full E1-R remain open.
+- CA-HA-03 loaded F-02 pre-arm source Worker loss on the current ACK candidate. Driver `.artifacts/cloud-ha-e1/e1-f02-ack-candidate-1793811389`, signed cohort `corpus-rebuilt-f02-pre-arm-1793811402`. Reused the controlled pre-arm overlay and pinned six current sources for ACK, budget, input membership/header and bounded recorder changes, verified on both isolated Workers. At 32 active / 8 leases / 256 SSE, the four exact source supervisors were sleeping before arming with no child, model start or reservation. Source SIGKILL confirmed exit code 137; exact stopped-incarnation reconciliation wrote all four source exit ACKs before restart. All four original Runs started their single model on the peer at fence 2 within 35.363–53.132 s while source remained stopped, with one reservation each. No SSE closures. After drain 32/32 Tasks completed, 32/32 original signed receipts matched via read-only recovery, all four old fences rejected, and 36/36 exact start/exit ACK pairs matched across the two generations. Original Workers/model restored, owned clones removed, pending and replay gap zero. This is one repeat of the cold pre-arm subcase on the newer overlay. The four source ACKs use the node witness, and this run did not inject permit refusal on the peer ACK path. No production change or original POST replay. E1-A and full E1-R stay open.
+- CA-HA-03 current ACK candidate completed the two additional loaded cold pre-arm F-02 repeats on identical overlay sources. Index `.artifacts/cloud-ha-e1/e1-f02-ack-repeat-1793811716/index.json` covers all three independent 32-active / 8-lease / 256-SSE rounds. 96 distinct signed originals matched after fault and all completed. 12 source exit ACKs persisted before restart using exact stopped-incarnation witnesses, all 12 old fences rejected, and 108/108 start/exit ACK pairs matched across both generations. Every affected original started on the peer under fence 2 while the source was still stopped; worst per round 53.132/51.919/69.675 s, below 120 s. Zero SSE closures. Both original Workers/provider restored, owned clones removed, live pending and standby replay gap zero. This closes the three-round pre-arm cold-launch subcase on this candidate only. Other E1-R subcases and E1-A stay open. No production change or original POST replay.
+- CA-HA-03 loaded F-05 object-read outage on the current ACK overlay. First setup `.artifacts/cloud-ha-e1/e1-f05-object-read-1793812242` failed before admissions or fault injection with NoSuchBucket. The rebuilt isolated MinIO listed no buckets. Provisioned only the configured ha-e1-artifacts bucket with versioning on the existing data bind; no old data changed. Corrected driver `.artifacts/cloud-ha-e1/e1-f05-object-read-1793812316` / signed cohort `corpus-rebuilt-e1r-f05-object-read-1793812330` reached 32 active / 8 leases / 256 SSE and stopped the exact owned MinIO container. A direct native S3 read from the isolated API container returned bounded TimeoutError in 0.491 s; the signed original ingress GET and all SSE survived. After restart recovered the identical 71-byte fixture version and SHA-256, deleted only that exact synthetic version and verified absence. 32/32 signed receipts matched after the fault, 32/32 Tasks completed and 32/32 executor ACK pairs matched. Both Workers/provider restored, pending and replica replay gap zero. This is one loaded adapter-level read outage; the public artifact HTTP path, loaded write-reply-loss case and remaining repeats are open. No original POST replay or production change.
+- CA-HA-03 loaded F-05 object write-reply loss at the SDK boundary. Driver `.artifacts/cloud-ha-e1/e1-f05-object-write-1793812562` / signed cohort `corpus-rebuilt-e1r-f05-object-write-1793812575`. The same isolated Worker overlay reached 32 active / 8 leases / 256 SSE. In the isolated API container the native adapter issued exactly one actual conditional PUT, counted by the SDK before-send hook. MinIO returned HTTP 200 with an object version. The after-call hook withheld that success by raising ReadTimeoutError; the native adapter returned unavailable. A read-only HEAD and versioned GET matched the exact committed version and SHA-256, 71 bytes, in 0.949 s total. No repeat PUT. Original signed ingress GET worked and all 256 SSE survived. All 32 Tasks completed, 32/32 signed original receipts matched and 32/32 executor ACK pairs matched. Removed only the exact synthetic object version and verified absence; original Workers/provider restored, owned clones removed, pending and replica replay gap zero. This is one loaded SDK-boundary fault. Wire-level response loss, public artifact API/metadata reconciliation and remaining repetitions are open. No original POST replay or production change.
+- CA-HA-03 loaded F-05 object write reply loss at the socket boundary. Driver `.artifacts/cloud-ha-e1/e1-f05-object-wire-1793812930`, signed cohort `corpus-rebuilt-e1r-f05-object-wire-1793812944`. At 32 active / 8 leases / 256 SSE, a loopback HTTP relay in the isolated API container forwarded exactly one signed conditional PUT to the actual MinIO service over verified TLS. It read MinIO HTTP 200 and exact version, then closed the client socket without returning a response. Botocore raised ConnectionClosedError and the native adapter reported unavailable. The direct adapter's read-only HEAD and versioned GET matched that version and the 71-byte SHA-256 in 1.966 s total. No repeat PUT. All SSE and original ingress GET survived; 32/32 Tasks completed, all original signed receipts and 32 exact executor ACK pairs matched. Removed only the synthetic object version, confirmed absence, restored original Workers/model, and verified pending and replay gap zero. Excluded first setup `e1-f05-object-wire-1793812821` used an unavailable boto3 import after signed admissions but before the PUT. The corrected probe uses installed botocore, verified the excluded fixture absent and read back all 32 excluded original receipts without replay. This is one loaded socket-boundary round; public artifact API/metadata reconciliation, the remaining fault repetitions, full E1-R and E1-A stay open. No production change or original POST replay.
+- CA-HA-03 completed three isolated loaded F-05 object write reply-loss rounds at the socket boundary on identical candidate sources. Evidence index `.artifacts/cloud-ha-e1/e1-f05-wire-repeat-1793813170/index.json`. Each round reached 32 active / 8 leased / 256 SSE and forwarded one signed conditional PUT over verified TLS to MinIO, dropped the HTTP 200 on the client socket, and recovered the exact unique committed object version and digest via HEAD and versioned GET without another PUT. Total fault/proof times 1.966/1.984/1.971 s. All 96 distinct signed originals completed, original receipts and 96 exact executor start/exit pairs matched, zero SSE closures. Removed only the three exact synthetic versions. Both original Workers/provider and MinIO verified, owned clones removed, pending and replica replay gap zero. This completes the three loaded repeats at the native adapter/socket boundary. Public artifact API/metadata reconciliation, remaining read-outage repeats, full E1-R and E1-A remain open. No original POST replay or production change.
+- CA-HA-03 completed three isolated loaded F-05 native object read-outage rounds on identical candidate sources. Index `.artifacts/cloud-ha-e1/e1-f05-read-repeat-1793813554/index.json`. Each reached 32 active / 8 leases / 256 SSE and stopped the exact MinIO process. Versioned reads failed within 0.491/0.542/0.603 s during outage; after restart each read recovered its exact original version and SHA-256 in 0.308/0.320/0.312 s. All 96 distinct signed originals completed, 96 signed receipts and executor start/exit pairs matched, and all SSE and ingress original GET survived. Removed only the three owned synthetic object versions. Both original Workers/provider and MinIO verified running, temporary clones removed, pending and standby replay gap zero. This completes the three loaded native adapter read-outage repeats. Public artifact HTTP and metadata reconciliation and full E1-R/E1-A remain open. No original POST replay or production change.
+- CA-HA-03 public artifact HTTP fault regression `.artifacts/cloud-ha-e1/e1-f05-artifact-http-1793813954`. The current baseline signed attachment, authenticated download and dropped PostgreSQL audit-COMMIT cases all passed (6 selected); the older canonical_task_incomplete failure did not recur. Extended the owned signed HTTP attachment regression to run against a real disposable, versioned MinIO bucket as well as the existing stub. The native API route with real RS256 and PostgreSQL submits one conditional PUT; the test records MinIO HTTP 200/version and discards the response at the SDK boundary. Actual transport send count is one. The API returned 201 and PostgreSQL contained exactly one finalized artifact at that exact ID/version and one input_artifact_stored event. Final suite 35 passed using real scratch PG and MinIO, Ruff clean. This is the public application HTTP route exercised through TestClient, distinct from the loaded wire-level adapter drills; deployed ingress plus loaded artifact metadata reconciliation remain open. Scratch containers removed, no production operation or original POST replay. E1-A and full E1-R stay open.
+- CA-HA-03 loaded F-05 deployed ingress attachment reconciliation, driver `.artifacts/cloud-ha-e1/e1-f05-ingress-1793814252`, signed cohort `corpus-rebuilt-e1r-f05-ingress-1793814302`. Fresh signed execute=false baseline through the actual isolated TLS ingress returned 201. Staged exact fixture-only read-only API overlays on both isolated replicas, suppressing the MinIO success after its actual 200 only for one unique synthetic SHA-256. At 32 active / 8 leases / 256 SSE the single new signed attachment POST through the same ingress returned 201. One suppression marker matched the returned artifact ID and the sole finalized PostgreSQL row/version; one linked input_artifact_stored event and zero Run commands for the attachment Task. Versioned read verified 37 bytes and the original digest, and MinIO listed exactly one version. All 32 load Tasks completed, signed originals and 32 ACK pairs matched, all SSE and signed original GET survived. Restored both exact prior API IDs and both original Workers/provider, removed candidate clones, pending zero and final replica replay gap zero. Retained the two new synthetic attachment Tasks and their matching objects as evidence. This covers one loaded public ingress SDK-success suppression and metadata reconciliation round; the separate socket-boundary adapter repeats do not substitute for an ingress socket injection. No original POST replay or production change. E1-A and full E1-R remain open.
+- CA-HA-03 loaded F-05 public ingress attachment reconciliation with socket-level reply loss. Driver `.artifacts/cloud-ha-e1/e1-f05-ingress-wire-1793814555`, signed cohort `corpus-rebuilt-e1r-f05-ingress-wire-1793814572`. Two isolated API overlays route only the synthetic attachment's exact digest through a one-request loopback relay. At 32 active / 8 leases / 256 SSE the signed execute=false attachment POST entered through the actual TLS ingress. Relay forwarded one conditional PUT over verified TLS, captured MinIO HTTP 200/version and closed the client socket; Botocore ConnectionClosedError flowed through the actual S3 adapter. The API returned 201. One suppression marker, one exact MinIO version with verified 37-byte SHA-256, one finalized artifact row and one input_artifact_stored event all matched. The attachment Task had zero Run commands. All 32 load Tasks completed, all 32 signed originals and ACK pairs matched, and all 256 SSE survived. Both exact prior API IDs and original Workers/provider restored, temporary clones removed, pending and standby replay gap zero. Retained the synthetic attachment Task/object as evidence. This is one loaded socket-level round through public ingress; public route repeats and full E1-R/E1-A stay open. No original POST replay or production change.
+- CA-HA-03 completed three loaded F-05 public ingress attachment socket-reply-loss rounds. Index `.artifacts/cloud-ha-e1/e1-f05-ingress-wire-repeat-1793814963/index.json`. On identical isolated candidate logic (only the fixture digest changed), all three reached 32 active / 8 leases / 256 SSE, closed the client socket after the one signed conditional PUT returned 200 at MinIO, and returned 201 for the signed ingress attachment request. Each had one exact version/digest, one finalized PostgreSQL artifact row and one linked input_artifact_stored event with zero attachment Run commands. All 96 distinct load Tasks completed; 96 original signed receipts and 96 exact exit ACK pairs matched; all SSE survived. The excluded first repeat used a wrong relative credentials path before the attachment POST; its 32 original load receipts were retained and read back without replay, and it is not counted. The corrected run restored exact original API IDs and original Workers, removed owned clones, and verified zero pending and replay gap. Kept the three synthetic attachment Tasks and object versions as matched evidence. This closes the three loaded public ingress write-reply-loss repetitions. Public ingress read outage, remaining fault matrix and E1-A stay open. No production change or original POST replay.
+- CA-HA-03 loaded F-05 public download outage. Retained input attachment returned 404 on the public tool-artifact route, so created a fresh signed execute=false Task and seeded a synthetic tool-output artifact via existing fenced Worker commit/lifecycle APIs in isolated E1. Baseline through actual TLS ingress returned the verified 68 bytes. First loaded attempt `e1-f05-download-1793815387` hit the expected product 409 during exact MinIO stop but the probe erroneously required 503, so excluded it and preserved/verified its 32 signed originals. Corrected driver `.artifacts/cloud-ha-e1/e1-f05-download-1793815684` / cohort `corpus-rebuilt-e1r-f05-download-1793815697` hit 32 active / 8 leases / 256 SSE. Stopped the exact MinIO process; public signed download returned 409 artifact_unavailable / artifact_payload_unavailable in 1.108 s with no artifact bytes; on restart public GET returned 200 in 1.385 s with exact byte count and SHA-256. PG delivery audit records the bounded rejection and recovered success; the original finalized version stayed intact. 32/32 load Tasks completed, signed original receipts and 32 exact executor ACK pairs matched, all 256 SSE and ingress original GET survived. Original Workers/provider and MinIO restored, pending and replay gap zero. The synthetic Task and tool artifact retained as evidence. One loaded public read-outage repeat completed; two repetitions, full E1-R and E1-A stay open. No original POST replay or production change.
+- CA-HA-03 completed three loaded F-05 public download outage rounds using the same finalized synthetic artifact version on identical isolated Worker overlays. Index `.artifacts/cloud-ha-e1/e1-f05-download-repeat-1793815919/index.json`. Each hit 32 active / 8 leases / 256 SSE and actually stopped MinIO. Signed public TLS ingress GET returned 409 artifact_payload_unavailable without artifact bytes in 1.108/1.106/1.309 s, then 200 with the original 68-byte digest after restart in 1.385/1.487/1.349 s. PG delivery audit records the failures and successful readbacks; the same finalized version remains present. All 96 distinct load Tasks completed, 96 original signed receipts and 96 exact start/exit ACK pairs matched, and all SSE and original ingress GET survived. Original Workers, MinIO and provider restored, test clones removed, pending and replay gap zero. Retained the synthetic Task/version. This closes the three loaded public download read-outage repeats; full E1-R and E1-A remain open. No original POST replay or production change.
+- CA-HA-03 loaded F-05 Redis process stop on the current isolated Worker overlay, driver `.artifacts/cloud-ha-e1/e1-f05-redis-current-1793816325` and cohort `corpus-rebuilt-e1r-f05-redis-current-1793816337`. At 32 active / 8 leases / 256 SSE stopped the exact owned Redis container and verified it was offline. During the outage both APIs returned the exact saved-cursor successor frame, 256 SSE stayed connected, and the real TLS ingress completed ten consecutive signed original GETs by 9.118 s. All 32 load Tasks completed, 32 original signed receipts and 32 exact executor exit ACK pairs matched. Same Redis ID restored, original Workers/provider running, owned clones removed, pending and replica replay gap zero. This is one current-candidate loaded Redis stop round; remaining repeats, full E1-R and E1-A stay open. No production change or original POST replay.
+- CA-HA-03 current isolated candidate completed three loaded F-05 Redis process-stop rounds. Index `.artifacts/cloud-ha-e1/e1-f05-redis-repeat-1793816554/index.json`. At 32 active / 8 leases / 256 SSE in each round the exact owned Redis container was stopped; both APIs returned the exact saved-cursor successor and ingress completed ten consecutive signed original GETs by 9.118/9.100/9.074 s. All 96 distinct load Tasks completed, 96 signed original receipts and exact start/exit ACK pairs matched, zero SSE closures. The same Redis container and original Workers/provider restored, owned clones removed and live pending zero. Post-drain follower first sampled at 5,072 bytes, final recheck zero. This closes three loaded Redis process-stop repetitions on this overlay; loaded object-read and object-write evidence is indexed separately at the native and public ingress boundaries. Full E1-R and E1-A stay open. No original POST replay or production change.
+- CA-HA-03 F-06 isolated Broker stop reached 32 active Tasks, 8 leases and 256 SSE. New exchange through TLS ingress returned 502 in 14.6 ms while all 256 readers stayed connected. After restart the signed original ingress read passed in 3.689 s. PostgreSQL then exited during drain on ENOSPC. OrbStack's exact node qgroup was at its 32 GiB ceiling. Preserved the stopped PostgreSQL container's original 3,360,267,971-byte JSON log as a restricted gzip archive with a matching SHA-256 of the decompressed bytes. Truncation was refused by the full filesystem; unlinked only that verified archived log and restarted the exact original PostgreSQL ID on its original named data volume. Restored both original Worker IDs and incarnations and removed the two owned candidates. The original Broker and provider are running. Signed original GET matched all 32 sealed receipts, without POST replay. Read-only audit found 28 completed Sessions with done commands, and four dead commands whose projections remained one ready and three running. No live pending commands, and original follower streaming with zero replay gap at the audit. Driver and archive `.artifacts/cloud-ha-e1/e1-f06-broker-current-1793816971`; signed cohort `.artifacts/cloud-ha-e1/corpus-rebuilt-e1r-f06-broker-current-1793816983`. Keep this as mixed-fault evidence, excluded from clean F-06 repetitions. Production untouched. E1-A and complete E1-R stay open.
+- CA-HA-03 F-06 Broker process-stop completed three clean loaded repeats, indexed in `.artifacts/cloud-ha-e1/e1-f06-broker-repeat-1793817594/index.json`. Each hit 32 active / 4+4 leases / 256 SSE before stopping the exact owned Broker. Fresh exchange returned 502 in 38.9/31.7/26.6 ms. All 256 readers stayed open each round, and a signed original TLS ingress GET passed in 3.257/3.239/3.162 s from Broker start. All 96 fresh synthetic Tasks completed, 96 original signed receipts matched, and 96 exact executor start/exit pairs matched. PostgreSQL ID/start time did not change in any repeat. Final qgroup headroom 3,287,556,096 bytes, zero pending, replica streaming with zero replay gap. Original Worker/Broker/provider IDs restored and owned Worker clones removed. The prior mixed round remains excluded. Cold JWKS, warm revocation, expiry, full E1-R and E1-A remain open. No original POST replay or production operation.
+- CA-HA-03 parsed the preserved 3,360,267,971-byte PostgreSQL archive from the mixed fault. Found 94,026 statement timeouts and 1,490 lock timeouts. Of 94,272 SQL statement records, 92,556 match the anonymous DO that inserts into task_projection_work_routes in PostgresTaskProjectionWorkStore.repair_projection_work, across 8,313 distinct Task IDs (maximum 21 records for one ID). SQL/CONTEXT records with continuation lines account for about 3.34 GB, and the exact isolated container used unbounded json-file logging. The current read-only count found 2,904 ag-ui-v1 routes marked for repair, and the three clean rounds still grew that log by 6.45–7.00 MB each. Evidence in the same repeat directory: archive-error-summary.json, archive-sql-fingerprint-counts.json, archive-projection-task-skew.json, current-projection-backlog.tsv and per-round storage TSVs. This identifies the workload amplifying disk use, without claiming why each DO exceeded its 100 ms budget. Next diagnostic is to separate planning, lock wait and execution on the same bounded header repair in a disposable PostgreSQL copy, then verify any fix against privacy/frontier and concurrent canonical-write regressions. Long runs require bounded log retention plus a qgroup headroom check.
+- CA-HA-03 AG-UI repair timeout diagnostic on a dedicated local PostgreSQL 17 container capped at 2 vCPU, with 14,900 synthetic sibling routes and the real bounded scalar repair entry point. Evidence `.artifacts/cloud-ha-e1/e1-projection-timeout-1793818153`. An experimental scratch-only typed PL/pgSQL function reused the exact existing routed statements, used generic plans and restored the same cleanup budget. Successful per-header roundtrip median went from 8.80 to 1.50 ms idle and 10.94 to 1.60 ms with four independent read-only CPU clients. With pressure, both paths advanced 36 headers, and deferred calls were 8 versus 1. Across all six pressure trials PostgreSQL logged eight statement cancellations and zero lock cancellations. Representative nested UPDATE planned 13 times for 12 completions on the old path, versus two plans for 12 completions on the experimental path. Cold helper calls still incur planning and CPU pressure can still defer work. A separate exact route lock reproduced 55P03 after 53.3 ms and recovered the same header after releasing the lock. The benchmark distinguishes a repeated planning cost from a lock wait and does not attribute each historical timeout to either. Existing PostgreSQL/privacy/concurrency regressions plus the isolated lock check passed 45/45 on current source. Removed the exact scratch container and its anonymous volume. No code or schema changed on the E1 fleet, and no original POST or production operation. Next, claim the additive migration/rolling compatibility slice before implementing and validate cold/warm plans, privacy, partial progress and the full loaded E1 candidate.
+- CA-HA-03 projection repair plan reuse candidate. Additive PostgreSQL v123 installs one typed invoker function using existing routed statements and function-scoped generic plans. The Worker calls it with the same scalar header and finish timeout, maintaining the 100 ms page, 50 ms lock cap, per-header commit, read-only healthy path and partial-progress boundary. Scratch real PostgreSQL suites 68 passed; final scoped configuration/budget, rollback and timed candidate check 8 passed; Ruff/mypy clean. Full scratch forward migration preserved all 121 existing ledger rows byte-for-byte and the reapply was idempotent. The old repair SQL itself advanced all 12 headers with the additive function installed, but both old API startup and old strict Worker capability schema checks rejected v123. Do not use a migration-first rolling switch across these binaries; prove an exact-checksum bridge before a no-gap rollout. Three A/B CPU-pressure pairs (2 vCPU, four read-only CPU clients, 14,900 synthetic sibling routes): 36 headers per side, per-header success median 12.82 ms old / 1.68 ms candidate, deferred calls 8 / 0. Idle median 9.19 / 1.78 ms; candidate cold calls and pressure tail remain. Evidence `.artifacts/cloud-ha-e1/e1-projection-plan-candidate-1793818483`. Removed the exact scratch container and anonymous volume. E1 runtime, original data, signatures and production untouched. E1-A and full E1-R still open.
+- CA-HA-03 v122/v123 rollout bridge verified on real scratch PostgreSQL. API startup, strict Worker capability verification and command cutover share exact ledger matching for these two adjacent revisions, including both published branch histories. Rejects arbitrary earlier/future or altered histories; the migration runner still applies and checks the complete catalog. The same repair store advanced the original scratch route with the anonymous block on v122, then the typed function after additive migration, without restarting the store. Initial cross-schema test found a public-schema function could shadow the v122 fallback; repaired detection to require the function in current_schema, and retained the red output. Final combined native and focused suite 87 passed; Ruff/mypy clean. Evidence `.artifacts/cloud-ha-e1/e1-schema-bridge-1793818799`; owned scratch container and anonymous volume removed. Read-only inventory confirmed both running E1 APIs, both Workers and both cleaners still advertise catalog max 122; live database v122 and zero pending at the preflight. Bridge source digests recorded. Next, package and roll all participating E1 consumers onto bridge while DB is still v122, verify signed operations through each and exact installed module hashes, then apply v123 once and verify readback/continued traffic. Fleet-level uninterrupted upgrade and rollback, E1-A and full E1-R remain open. No original POST replay, E1 mutation or production operation.
+- CA-HA-03 published the committed b10b77e4 bridge as a pinned read-only eight-module bundle to both isolated E1 nodes, reusing each role's existing image and runtime configuration. Rolled both APIs, both cleanup services and both Workers while PG stayed at v122, validated all eight in-container hashes and the catalog checksum on all six, and republished exact new Worker incarnations. Retained and verified six stopped originals. Initial attempts were excluded and retained: a too-early direct read restored the original peer API, a repeat needed to allow the exact exited staged candidate, a fresh execute=false probe was rejected by atomic Run and preserved, and the successful peer segment stopped early because a child consumed the shell inventory's stdin. Resumed the verified peer candidate without replay and completed the other five using a separate inventory FD. Committed v123 once via the repository advisory lock and an exact locked predecessor-ledger assertion. All 121 prior rows and their timestamps matched byte-for-byte, only the v123 row was added. Four fresh signed synthetic Tasks across the two direct APIs before/after migration all completed with one model start each and exact sealed readback. In the successful rollout and migration windows 34 sampled signed original ingress reads matched, zero failures, max 118 ms; sampling was segmented and is not continuous outage/fleet SLO proof. Final six bridge containers running with restart count zero, pending zero and standby streaming with zero replay gap. The v122 originals cannot directly resume against v123. Full under-load F-10 rollback/upgrade, E1-A and E1-R remain open. Evidence `.artifacts/cloud-ha-e1/e1-bridge-rollout-1793819039`. No original POST replay or production operation.
+- CA-HA-03 E1-A short signed capacity rerun on v123, driver `.artifacts/cloud-ha-e1/e1-a-v123-1793819406`, cohort `corpus-rebuilt-approval-sse-256-1793819415`. Used the same historical 2-vCPU PostgreSQL, 4+4 slot, 5/s for 15 s, 256-reader probe and pinned instrumentation overlay, with all eight inherited bridge module hashes verified on both Workers. 75/75 issued; 38 sealed 201 completed with one model start and one exact start/exit ACK pair each; 32 sealed command_scope_capacity 429s; five still unknown after fresh signed original GET. 256 SSE stayed open with 971 keepalives. Canonical cohort peak 33 between command creation and session_completed; queue p95/p99 35.070/36.021 s, mean slot 8.325 s (previous v122 matched short run 34.996/37.251 s and 8.261 s). No demonstrated capacity gain, E1-A fails. Five unknown operation IDs matched three API deadline failures (two fresh-root event-position assignments and one strict command source read) plus two wakeup-record lock failures. No prior POST replay. Window PostgreSQL stderr captured 14 statement timeouts matching the new typed repair call and zero anonymous DO statements; 38 lock timeouts across multiple write paths. The bounded window log is 75,270 bytes decoded; owned JSON log grew 100,391 bytes and dirty ag-ui-v1 routes fell 2796 to 2726. This confirms the installed function is exercised, not a paired logging speedup claim. Same PostgreSQL ID/start time, both bridge Worker IDs restored, owned candidates removed, zero pending and standby streaming with zero replay gap. Production untouched. Full E1-R and capacity gate remain open.
+- CA-HA-03 removed duplicate raw bootstrap marker traversal from the enabled native wakeup rollout read. The existing strict admission path still verifies canonical identity, binding and capability; disabled or missing rollout rows still probe raw markers and retain the same strict fail-closed behavior. Actual PostgreSQL plan regression failed on old enabled path (one session_events loop), then passed for enabled, disabled and absent rollout. Paired read-only-in-effect EXPLAIN/ROLLBACK on the isolated v123 corpus, 16 per side, reduced median shared buffers 18 to 2 and median execution 0.0895 to 0.0345 ms, with zero event relation loops on candidate. This is a sub-millisecond statement improvement, not load throughput or unknown recovery proof. Suite 71 passed with two v49 fixture failures, reproduced unchanged using the exact old module: the fixture calls modern source-position code on a v48 schema without next_event_sequence. Ruff/mypy clean; exact scratch container and anonymous volume removed. Evidence `.artifacts/cloud-ha-e1/e1-admission-source-read-1793819671`. No runtime rollout, original POST replay, or production change. Remaining capacity work must address execution slot occupancy and write serialization; full E1-R remains open.
+- CA-HA-03 v123 loaded execution-slot phase decomposition, driver `.artifacts/cloud-ha-e1/e1-a-v123-slot-1793819924` and signed cohort `corpus-rebuilt-approval-sse-256-1793819934`. Exact bridge hashes and same 2-vCPU PG / 4+4 slots, 5/s for 15 s and 256 readers. Added temporary timing-only Worker overlay and timestamped capture; both exact bridge Worker IDs restored and owned candidates removed. All 75 offers issued; 37 sealed 201 completed with 37 exact start/exit ACK pairs and one model start per Task; 33 sealed scope 429, five still unknown on signed original GET, zero SSE closures. Queue p95/p99 36.811/36.999 s. Matched 37/37 per-slot timelines: mean slot 8.340 s; 0.989 s claim to parent probe, 0.121 s parent completion check, 1.936 s parent-check end to child-check start, 0.144 s child completion check, 0.164 s progress recovery, 0.281 s input preparation, 1.520 s remaining context/runtime setup, 2.321 s from orchestrator entry to finalization start, 0.512 s finalization and 0.353 s until slot release. Cross-process intervals are Docker capture timestamp deltas, not CPU samples; the 2.321 s spans harness, provider and durable writes. Even removing the entire parent-to-child gap leaves about 6.4 s mean against the 1.6 s theoretical per-slot requirement at 8 slots and 5/s. Prioritize decomposing private launch and orchestration storage work rather than weakening completion/ownership checks. No capacity improvement claim. Unchanged PG ID/start time, pending zero and original evidence retained. No original POST replay or production change; E1-A and complete E1-R remain open.
+- CA-HA-03 completed three loaded F-06 warm registry revocation rounds on v123. Index `.artifacts/cloud-ha-e1/e1-f06-revocation-v123-1793820310/index.json`. Exact signed claims checked before CAS on the active rebuilt namespace row. Each reached 32 active, 4+4 leases, 256 SSE; both APIs rejected their unused still-valid grants with 403 (47–99 ms), all 256 existing readers remained open at the fault sample, and both APIs returned the exact saved-cursor successor with fresh grants after restoration. Original signed TLS ingress GET recovered in 126–143 ms from registry restoration. All 96 Tasks completed, 96 original signed receipts and 96 exact executor start/exit pairs matched. Initial wrong-registry round `e1-f06-revocation-v123-1793820188` targeted the legacy row (both requests 200); excluded, exact row reactivated and all 32 signed originals read back and completed. The three valid rounds use a CAS at the registry store, not the management HTTP route, and do not test post-revocation delivery on pre-existing streams. Original bridge Workers/provider restored, owned candidates removed, both registry rows active, pending zero and follower rechecked. No original POST replay or production change. Cold JWKS and natural expiry subcases, full E1-R and E1-A remain open.
+- CA-HA-03 completed three loaded F-06 cold JWKS rounds on v123. Index `.artifacts/cloud-ha-e1/e1-f06-cold-jwks-v123-1793820906/index.json`. Each reached 32 active / 4+4 leases / 256 SSE before stopping the exact Broker. Its registered JWKS URI returned 502 over verified TLS from the peer. Started a fresh loopback-only peer API after the outage was confirmed, preserving both live API instances. Each cold verifier rejected an unused, still-valid grant with 403; startup warmup and request logs recorded HostGrantDecodeError. On restoration the same cold process accepted a fresh grant, both original APIs returned the exact saved-cursor successor, and the signed ingress original GET passed. All 256 streams were open at the fault sample in each round; 96 load Tasks completed, 96 original sealed receipts and 96 exact executor start/exit pairs matched. All three cold API clones and owned Worker clones removed, original bridge Workers/Broker/provider restored, PostgreSQL remained running, zero pending and standby streaming. This tests actual TLS JWKS and the native cold API on loopback, not a new public ingress node. No original POST replay or production operation. Natural expiry, full E1-R and E1-A remain open.
+- CA-HA-03 F-06 natural expiry runner started on isolated v123. Driver `.artifacts/cloud-ha-e1/e1-f06-expiry-v123-1793821518`, process PID 64238, exec session 82829 at handoff. Six unused grants came from the existing verified TLS Broker; claims matched the rebuilt namespace. Tokens remain in memory and cross into each round through an anonymous pipe only. The exact driver is waiting until 2026-11-04 20:18:04 UTC (max exp +65s); no Workers or provider were switched during the wait. It rechecks exact bridge Worker IDs, v123, idle pending, active registry and qgroup headroom before each round. Poll the existing process, do not duplicate the timer or run competing E1 fault loads across its due time. This is not a completed expiry round.
+- CA-HA-03 fixed the task binding regression fixture discovered while expiry aged. It requested artifact.read but its shared test Broker config excluded that scope; prior tests failed during minting and never reached expiry/authority assertions. First attempt to remove the scope exposed that the sibling artifact issuer case needs it to reach the issuer boundary. Scoped fixture now explicitly permits artifact.read only for this test module. Final 22 focused tests passed including native PostgreSQL/Redis stream expiry, Ruff clean. Exact disposable PG/Redis and anonymous volumes removed. Evidence `.artifacts/cloud-ha-e1/e1-f06-expiry-v123-1793821518/expiry-regression-green.log`. No production change or original POST replay. Natural loaded expiry, complete E1-R and E1-A remain open.
+- CA-HA-03 shortened the first command admission critical section: combine outbox capacity availability and per-scope pending insertion into one native statement under the unchanged global then scope transaction locks. Bounded outbox existence check shares the existing recovery path, with the same control reserve and outbox-first refusal priority. Real PostgreSQL tests now cover simultaneous limits and different-scope global-capacity races alongside existing rollback/receipt/control gates. 138 focused tests passed, Ruff and mypy clean. Twenty alternating rollback-only exact native admissions per variant observed four to three statements after acquiring locks, median time before returning to caller 2.894 to 2.839 ms (local scratch, no commit duration or loaded throughput inference). Evidence `.artifacts/cloud-ha-e1/e1-admission-lock-roundtrip-1793821803`. Removed exact scratch container/anonymous volume. Verified existing natural-expiry PID 64238 still waiting; no E1 cutover or competing fault injection. No original POST replay or production operation. Loaded capacity effect, natural expiry and full E1-R remain open.
+- CA-HA-03 tested combined admission candidates 6b9c5f2e/968d3915 as exact read-only API module overlays on both isolated v123 replicas, with the same instrumented Worker sources, 2-vCPU primary, 4+4 slots and 5/s for 15 s with 256 SSE as the earlier v123 control. Driver `.artifacts/cloud-ha-e1/e1-a-admission-candidate-v123-1793821987`, fresh cohort `corpus-rebuilt-approval-sse-256-1793822005`. All 75 issued. 38 sealed admissions completed, 38 exact executor ACK pairs matched, 26 verified scope 429s, and 11 unknown after signed original GET versus 5 in control. Zero SSE closures, canonical cohort peak 33. Queue p95/p99 33.786/39.093 s versus 35.070/36.021 s control; mean slot 8.249 versus 8.325 s. All 11 unknowns matched TimeoutError logs, across initial Event append (3), Task event-position assignment (3), Session projection save (2), Task rebuild transaction exit (1), wakeup write (1), and receipt persist (1). Single matched windows do not establish cause or improvement. E1-A fails. Both exact bridge APIs and Workers restored, owned candidates removed, zero pending and follower replay gap; original data and receipts retained. Existing natural expiry process still live, next fault window undisturbed. No production operation or original POST replay. Full E1-R remains open.
+- CA-HA-03 batched the small, contiguous, keyless fresh-root bootstrap prefix under the existing Task admission transaction. Fresh stream reservation writes the final bootstrap head once, then native ordered VALUES insert runs all existing Event guards/triggers. Existing stream, unsupported prefix and Event idempotency paths retain per-event handling; accepted command, task position assignment, wakeup and signed receipt ordering remain intact. Real first Run regression confirms two bootstrap statements and exact persisted command identity; atomic failure, wakeup, and Worker capability suites passed (59 total). Ten alternating real first-Run pairs on isolated PG compared the original per-event path and candidate: three bootstrap Events, six versus two statements, median 9.611 versus 7.708 ms for this prefix. No loaded capacity inference. Ruff/mypy clean. Evidence `.artifacts/cloud-ha-e1/e1-bootstrap-batch-1793822300`, exact scratch container and volume removed. Natural expiry process PID 64238 still live and waiting. No E1 runtime change, original POST replay or production operation. Loaded capacity and full E1-R remain open.
+- CA-HA-03 tested 81ef0cc0 fresh-root bootstrap batch on top of the same 6b9c5f2e/968d3915 admission overlays in isolated v123. Driver `.artifacts/cloud-ha-e1/e1-a-bootstrap-batch-v123-1793822446`, fresh signed cohort `corpus-rebuilt-approval-sse-256-1793822462`. Both exact API source digests verified, same Worker sources, 2-vCPU PG, 4+4 slots, 5/s for 15 s and 256 SSE. All 75 issued, 38 sealed admissions completed and 38 exact executor start/exit pairs matched, 30 signed scope 429, seven unknown after signed original GET, 256 SSE stayed open and cohort peak 33. Previous matched window: 38 completed/26 refusals/11 unknown. All-issued client elapsed p95/p99 2.242/2.330 s versus 2.317/2.512 s (includes grant exchange), queue p95/p99 38.626/42.764 s versus 33.786/39.093 s, mean slot 7.945 versus 8.249 s. All seven unknowns matched API frames: six along wakeup/strict command path and one Task position backfill, none in initial Event append in this sample. Single window each does not establish causal capacity improvement; E1-A fails. Original exact bridge API/Worker containers restored, candidates removed, pending zero and follower replay gap rechecked at zero. Natural-expiry controller still waiting and its scheduled window was not disturbed. No original POST replay or production operation. Full E1-R remains open.
+- CA-HA-03 F-10 PostgreSQL backup/restore component proof on isolated v123. Captured a single exported read-only snapshot of the live E1 database and its source fingerprints, with zero live pending. SHA-256 pinned 197,251,871-byte custom archive captured in 20.1 s, source timestamp/LSN recorded. Copied to a dedicated Docker PG17 with network none and no ports. First pg_restore listing was blocked by root-owned private archive copy; corrected only its scratch ownership. SQL restore took about 42 s, then required read-only by default and observed SQLSTATE 25006 on a write attempt. Snapshot vs restore matched all ten fingerprint/count rows, including 122 migration rows, 21,511 admission claim/fence/result records, 12,297 executor receipts, 23 artifact metadata rows and counts for 1,090,266 Events, 16,081 streams and 16,081 Tasks. Exact restored sealed bodies for 96 cold-JWKS cohort originals matched and decrypted with their original associated data. Coverage execution receipts and membership seals were empty in source; no nonempty Coverage or object bytes/cross-store watermark, epoch rejoin, write enable, or full F-10 RPO/RTO proved. Removed exact scratch container/anonymous volume, retained protected archive and evidence `.artifacts/cloud-ha-e1/e1-f10-pg-restore-v123-1793822707`. Natural expiry controller still waiting. No E1 service switch, original POST replay, or production operation.
+- CA-HA-03 F-10 nonempty Coverage/epoch restore component on scratch PostgreSQL v123, evidence `.artifacts/cloud-ha-e1/e1-f10-coverage-epoch-1793823025`. Reused qualified native Coverage continuation to generate one real sealed execution receipt and nonempty membership. Used persisted receipt coordinates (first-create uses a new run binding) to read via native receipt, membership and record adapters. Schema-scoped logical backup restored into a distinct disposable DB, matching all three business reads before/after restore and after rotation. Source old lease heartbeat passed before snapshot. Restored target retained old epoch until explicit rotate, then real old-fence heartbeat failed and newly acquired lease heartbeat passed. Source epoch and lease still matched. Two qualified continuation controls passed. Earlier probes lacked the qualified verifier or used provisional binding and are retained. Existing unqualified native receipt-chain test independently expected two receipts and observed zero; not counted as a pass or fixed here. Coverage Host/model/object transports were controlled fixtures, and epoch write denial here exercises an old fence against an isolated copy, not live old-primary isolation or shared-store RPO/RTO. Removed exact scratch container/volume, preserved archive checksum. Natural expiry controller live and waiting; no production operation or original POST replay.
+- CA-HA-03 F-06 natural authorization expiry passed three loaded isolated v123 rounds. Index `.artifacts/cloud-ha-e1/e1-f06-expiry-v123-1793821518/index.json` ties the exact fault observations, signed originals, executor ACKs and restoration evidence together. Each round reached 32 pending / 4+4 leases / 256 SSE. Two unused grants aged on the real clock beyond expiration and skew allowance. Both APIs returned 403 host_grant_rejected (25–80 ms), both fresh grants read the exact saved-cursor successor, and the signed original TLS ingress read passed in 110–172 ms. All 256 existing readers stayed open at each fault sample. All 96 distinct Tasks completed; 96 original signed receipts and 96 executor start/exit pairs matched. Exact original bridge Workers and model restored, owned candidates removed, registry unchanged, zero pending, streaming standby with zero replay gap. No token persisted, no original POST replay and no production operation. This covers the fresh authorization boundary and cursor recovery, not expiry of an already-established stream's credential. E1-A and the complete E1-R gate remain open.
+- CA-HA-03 corrected the F-10 native Coverage receipt regression composition. Configured the existing verifier for the qualified cases while preserving the constructor default-off case. The old inline duplicate test replaced the guarded public commit delegate, so native evidence qualification rejected the run before any receipt. Removed that injection and kept chain, predecessor tamper, transactional rollback and append-only checks. Ran the independent native PostgreSQL concurrent retry regression alongside the 11 Worker receipt tests: 12 passed. Ruff and diff checks clean; exact scratch container and volume verified absent. Evidence `.artifacts/cloud-ha-e1/e1-f10-receipt-diagnose-1793824205/pytest.log`. Test-only change. Cross-store recovery and full E1-R remain open.
+- CA-HA-03 F-10 compared object recovery against the isolated v123 PostgreSQL artifact-metadata fingerprint. All 23 finalized metadata rows matched the previously restored SQL backup; there were zero live pending and identical exact object inventories before and after bucket capture. Archived only the isolated MinIO bucket and its versioning metadata, with SHA-256. Restored to a separate MinIO of the exact image, network none, no published port. First extraction refused writes by the image's nonroot user; cleaned the exact scratch volume and retried extraction as root in a fresh owned scratch volume. Native version-aware S3 reads returned identical results before and after restore: rebuilt namespace 6/6 exact version IDs, byte counts and SHA-256 verified; legacy ha-e1-20261102 0/14 and input-qa 0/3 exact versions were already absent from the source bucket. Retained all rows and archive; no metadata rewrite, original POST replay, source service restart or production operation. Exact scratch container and volume removed. This proves the rebuilt namespace's version recovery in the idle window and exposes a retained-namespace source gap. A common write-enabled recovery drill, including old-authority isolation and cross-store RPO/RTO, remains open. Evidence `.artifacts/cloud-ha-e1/e1-f10-cross-store-1793824433/results.json` and adjacent inventories, archive hash, full audits and final state.
+- CA-HA-03 F-10 traced the 17 missing retained-namespace object versions to the original checksummed baseline restore. All 17 exact tuples (namespace, artifact ID, version ID, byte count, SHA-256) match the network-none PostgreSQL baseline restored from fleet-base-20261103.dump, whose checksum still matches the preserved record. Direct paginated S3 version inventory of the current isolated bucket found six exact rebuilt-namespace versions and no versions or delete markers in either retained prefix. The prior signed-input fixture evidence records that three of the missing objects were once written and read successfully; their previous success does not establish present recoverability. The named recovery archive directory contains only two PostgreSQL dumps and neither E1 engine inventory exposed an additional named MinIO/backup volume. This establishes import lineage and the current bucket's gap, not deletion timing or the absence of all external copies. Keep the original metadata, signed receipts and backups; do not issue new PUTs to substitute version identity. Full retained-data restore and F-10 write-enable gate remain open. Evidence `.artifacts/cloud-ha-e1/e1-f10-object-lineage-1793824637`. Read-only on both isolated nodes; no production operation or original replay.
+- CA-HA-03 F-10 restore write-fence component passed in dedicated local PG17, evidence `.artifacts/cloud-ha-e1/e1-f10-write-fence-1793824754`. Reused the qualified native Coverage fixture and schema backup. Created a separate fresh synthetic Session for the mutation probe before backup. Restored target initially held the exact old fence. From the target operator connection, disallowed connections to the scratch source DB, terminated its old established socket and proved the same old Worker commit could not reconnect to the source. Only then rotated the restored namespace epoch. The exact old fence could not commit to the target and its Event stream stayed at one Event. A fresh lease committed the next Event and both canonical Session/Workspace projections through PostgresWorkspaceProjectionStore.commit_worker_event. Restored native Coverage receipt and membership still matched. 0.218 s from source fence initiation to successful fenced commit and readback, excluding backup/restore, measured in one local cluster and not E1 DR RTO. Reopened only the scratch source for teardown, confirmed its epoch and original stream stayed unchanged, then removed the exact scratch container and volume. Live E1 read-only postcheck showed zero pending and zero replica replay gap. No production operation or original replay. Full E1-R, retained object recovery and loaded cross-store write-enable/RPO/RTO remain open.
+- CA-HA-03 ran one combined F-10 restore verification from preserved archives. Timed from archive checksum verification through isolated PostgreSQL restore, read-only transition, ten source fingerprint comparisons and 96 exact sealed original receipt decryptions, then MinIO restore. Object verification was driven directly by metadata read from the newly restored PostgreSQL, not a separately supplied object list. The two restored stores reproduced 6 exact active-namespace versions and 17 missing retained-namespace versions. The write gate stayed closed and an actual PostgreSQL DDL probe returned SQLSTATE 25006. Elapsed 53.355 s to read-only PostgreSQL restore and 62.773 s to the closed-gate result. This is an idle recovery attempt with no source cutover, no full common watermark and no measured DR RPO/RTO. Both scratch instances were network-none and exact owned containers/volumes were removed. No source writes, original replay or production operation. Evidence `.artifacts/cloud-ha-e1/e1-f10-combined-restore-1793824852/result.json` and adjacent checksums, timelines, per-object results and receipt readback.
+- CA-HA-03 compared 4-vCPU PostgreSQL against the previous 2-vCPU isolated v123 window with byte-identical API/Worker candidate sources, 4+4 Worker slots, 5/s for 15 seconds and 256 SSE. Only the owned primary quota changed. Fresh cohort `corpus-rebuilt-approval-sse-256-1793825023`: 75/75 issued, 42 sealed 201s completed with 42 exact executor ACK pairs, 33 signed command_scope_capacity 429s, zero unknown, 256 SSE with zero closures, canonical peak 32. Previous comparable window: 38 completed, 30 signed 429, 7 unknown, peak 33. Queue p95/p99 fell from 38.626/42.764 to 30.567/31.242 s; mean slot hold 7.945 to 6.631 s. All-issued client p99 including grant exchange fell from 2.330 to 1.880 s. Window logs contained 0 statement and 9 lock timeouts versus 9 and 18 in the previous window; the background repair backlog differed, so a single non-interleaved pair cannot attribute all differences to quota. E1-A still fails because of the 33 refusals. Restored 2-vCPU quota on the exact same PG ID and start time, original two Worker IDs and original APIs with both readiness 200, zero pending and follower replay gap. No original POST replay or production operation. Evidence `.artifacts/cloud-ha-e1/e1-a-pg4cpu-v123-1793825005`.
+- CA-HA-03 E1-A 8+8 slot attempt exposed a published Runtime Bundle pin. Initial combined inventory staging stopped at peer API readiness without issuing requests; next attempt was stopped by a 96-byte follower preflight gap before runtime changes. With original API runtime config and exact prior source overlays, 4-vCPU PG and 8+8 Worker slots, both Workers accepted their 215/256 declared inventory including reserves, plus two separately accounted API receipt connections. At 5/s for 15s and 256 SSE, 75/75 issued, 45 sealed 201, 29 signed scope 429, one unknown after original signed GET, zero stream closures. All 45 Sessions suspended with executor_process_interrupted before any model start. The performance audit rejected the sample because no execution finish markers existed. Signed cohort SQL verified 45 exact executor start/exit pairs and a fleet peak of nine simultaneous registered executor intervals (previous 4+4 window peak eight). A new one-Task probe captured the child exception at require_snapshot_compatibility: INCOMPATIBLE_RUNTIME_BUNDLE. Read-only HMAC comparisons on both restored Workers confirmed the current approval digest matches the four-slot settings and changing only execution_slots to eight invalidates it. Preserve all existing receipts and suspended originals. Next isolated slot benchmark requires a separately approved and published eight-slot Bundle and new Tasks, with a one-Task gate before load. No safety check relaxed. Exact original APIs/Workers restored, PG quota 2 vCPU, zero pending and follower replay gap. No original replay or production operation. Evidence `.artifacts/cloud-ha-e1/e1-a-pg4cpu-slots8-v123-1793825338` and `.artifacts/cloud-ha-e1/e1-a-slot8-executor-probe-1793825528`.
+- CA-HA-03 prepared and published a distinct isolated E1 8-slot Definition/Bundle with a separately scoped publisher actor. Original and new approvals both remain revision 1 on distinct actor keys. Candidate catalog/approval persisted on both OrbStack nodes, token and full assembly only on source. Both nodes verified the exact new 8-slot settings digest and synthetic TLS/model SSE wire. Initial materialize returned 403 before the separate actor approval was registered. Native materialize and publish then returned 200 using a fresh materialize operation; each matched its original authenticated GET receipt. A new one-Task signed smoke completed, with one model start, exact executor ACK and 2 SSE still open. Evidence `.artifacts/cloud-ha-e1/e1-slot8-publish-smoke-1793825866` and `e1-slot8-publication-1793825685`. Definition 2bb7bcff-7ba9-401a-8438-cf70741bf2a9, bundle sha256:53c8845c84f0d6e31f7cb88f1c7f8dbbb4fd095fc45dbef2ebe78b9a34694844.
+- CA-HA-03 ran the new published 8+8 candidate at 4-vCPU PG, same source overlays, 5/s for 15 s and 256 SSE. All 75 issued; 41 signed 201 completed once with 41 exact ACK pairs, 32 signed command_scope_capacity 429s, two unknown after signed original GET and zero SSE closures. Initial post-rollback readback encountered a non-JSON response; after both original API readiness checks returned 200, the same two operations returned signed unknown. No POST replay. Durable executor overlap peak 13 (per-node peaks 8 and 6); canonical active peak 33. Versus prior 4+4 at 4-vCPU PG, queue p95/p99 36.607/43.357 versus 30.567/31.242 s, mean slot 8.845 versus 6.631 s. Expanded slots did execute real synthetic workloads, but this single comparison shows no throughput gain and E1-A still fails. Exact original APIs and Workers and 2-vCPU quota restored, zero pending and replica replay gap. No production operation. Evidence `.artifacts/cloud-ha-e1/e1-a-slot8-published-1793825884` and cohort `corpus-rebuilt-approval-sse-256-1793825922`.
+- CA-HA-03 repeated the published 8+8 isolated E1 capacity window with only candidate Worker CPU changed from 2 to 3 vCPU each, keeping 4-vCPU PostgreSQL, same source overlays/Bundle, 5/s for 15 s, 256 SSE and unchanged admission caps. 75/75 issued, 40 sealed 201 completed once with exact start/exit ACKs, 34 sealed command_scope_capacity 429, one unknown after signed original GET, zero SSE closures; canonical active peak 32 and executor peak 13. Prior matched 2-vCPU Worker window: 41 completed, 32 refusals, two unknown. Queue p95/p99 19.129/40.079 versus 36.607/43.357 s; average slot hold 8.987 versus 8.845 s. Candidate Worker CPU counters recorded 0/778 and 10/778 throttled periods with zero OOM events. Baseline Worker cgroup counters were not sampled, and a single non-interleaved pair does not establish cause. The remaining unknown matched LockNotAvailable at the combined global/scope advisory-lock statement in the admission transaction, not an executor error; the existing statement does not distinguish which lock waited. E1-A remains failed, with no demonstrated throughput gain. Both original Workers and APIs restored, both readiness 200, exact PG restored to 2 vCPU, zero pending and follower replay gap. Production and original operations untouched. Evidence `.artifacts/cloud-ha-e1/e1-a-slot8-worker3cpu-1793826279`.
+- CA-HA-03 profiled exact advisory lock keys during a fresh signed E1-A run on the published 8+8 candidate, 3-vCPU Workers and 4-vCPU PG. A bounded read-only PostgreSQL sampler took 230 snapshots every 100 ms during the offer window, classifying query shapes without retaining raw statements. Three sampled waiters were on the namespace-global admission lock, zero on the scope key. PID/time correlation places three of four logged combined-advisory lock timeout attempts on the global key 9–27 ms before timeout; the fourth was unsampled. Matching global lock holders were in the outbox admission/read or insert query shapes. This identifies global serialization in this load window, while leaving the exact slow operation within each combined query unproven. All 75 offers issued: 40 sealed 201 completed once with exact executor ACKs, 35 signed scope-capacity 429s, zero unknown, 256 SSE with zero closures. Queue p95/p99 20.790/38.735 s. E1-A still fails; lock retry recovered or classified the affected offers in this round. Original APIs and Workers restored, both readiness 200, exact PostgreSQL restored to 2 vCPU, zero pending and replay gap. No production operation or original replay. Evidence `.artifacts/cloud-ha-e1/e1-a-advisory-lock-profile-1793826514`.
+- CA-HA-03 combined canonical pending identity lookup with the existing outbox availability and pending insertion statement under unchanged global-then-scope locks. Existing commands keep exact identity checking and the prior outbox retry path; new commands keep outbox-first capacity refusal, scope reserves, capability clock and atomic signed receipt boundary. Real PostgreSQL regression was red with two pending SQL round trips after lock acquisition and green with one. Focused native wakeup and atomic Task suites 33 passed, unit wakeup suite 17 passed, Ruff/mypy clean; exact scratch PG and volume removed. Evidence `.artifacts/cloud-ha-e1/e1-admission-identity-1793826747`. The preceding lock profile correlated three of four advisory timeout attempts to the global key; live impact of this change requires a matched load run.
+- CA-HA-03 reran the pending identity roundtrip candidate f7e85dc2 with the same published 8+8 settings, Worker 3 vCPU each, PG 4 vCPU and 230 exact advisory-key samples as the prior profile. 75/75 issued: 42 signed 201s completed with exact executor pairs, 31 signed scope 429s, two still unknown after signed original GET and zero of 256 SSE closures. Prior 40/35/0. Queue p95/p99 16.632/45.702 s versus 20.790/38.735 s. Sampled global waits rose from three to eight distinct transactions; scope waits remained zero. The deterministic SQL roundtrip reduction is verified, but this single matched load window shows mixed results and does not prove reduced lock pressure or throughput improvement. E1-A remains failed. Exact original Worker/API IDs restored, both ready, PG restored to 2 vCPU, zero pending and follower replay gap. No original POST replay or production operation. Evidence `.artifacts/cloud-ha-e1/e1-a-identity-roundtrip-1793826821`.
+- CA-HA-03 removed the nested Task rebuild savepoint only for the atomic admission path, whose callers propagate failure to the enclosing transaction. The helper verifies that the enclosing transaction is active; standalone rebuild, handoff and migration callers keep their existing savepoint. Canonical membership, Event positions and error translation are unchanged. Real PostgreSQL regression caught the old nested transaction and passed with the wakeup-time rejection still rolling back all Task and command rows. Native atomic Task, wakeup and subagent delegation suites 36 passed; Ruff/mypy clean; exact scratch PostgreSQL and volume removed. Evidence `.artifacts/cloud-ha-e1/e1-task-rebuild-savepoint-1793827060`. Live effect remains subject to paired E1 load.
+- CA-HA-03 reran the no-savepoint Task rebuild candidate 1d70d51a on published 8+8 settings and same overlays, 3-vCPU Workers, 4-vCPU PG, 75 offers and 256 SSE. 42 signed 201s completed with exact ACK pairs, 27 signed scope 429s, six unknown after signed original GET, zero SSE closures. Prior matched run 42/31/2. Queue p95/p99 21.952/22.808 versus 16.632/45.702 s; mean slot 8.830 versus 8.818 s. Six unknowns matched two wakeup lock timeouts and four deadline errors in Task lock/position or Host binding read. Global waits sampled 14 versus eight, scope waits zero. Deterministic savepoint elimination passed, but this single load pair is mixed and E1-A still fails. Both original APIs and Workers restored, both ready, PG back to 2 vCPU with zero pending and zero follower replay gap. No original POST replay or production operation. Evidence `.artifacts/cloud-ha-e1/e1-a-task-rebuild-savepoint-1793827098`.
+- CA-HA-03 combined Task root projection existence/creation-time read and existing Segment membership read in one query under the same Task advisory lock. Rebuild and attach are the only membership writers and take that lock. Preserved the separate agent_tasks FOR UPDATE after UPSERT because its lock strength can exceed the UPSERT row lock; no change to canonical lineage validation, event positioning or rollback. Actual first-Run regression counted two source queries on old code and one on candidate while preserving full wakeup rollback. Native wakeup, atomic Task, subagent delegation, Task index and Task/lease suites 68 passed; Ruff/mypy clean and exact scratch PG/volume removed. Evidence `.artifacts/cloud-ha-e1/e1-task-root-members-1793827312`. Live capacity effect requires the matched E1 run.
+- CA-HA-03 replay-free E1-A load of Task root/member query candidate e67d7ab6 used the same published 8+8 runtime, 3-vCPU Workers, 4-vCPU PG and 230 lock samples. All 75 issued; 40 signed 201s completed once with 40 exact executor pairs, 34 signed scope 429s, one unknown after signed original GET and zero of 256 SSE closures. Prior matched run 42/27/6. Queue p95/p99 20.081/49.068 s versus 21.952/22.808 s; mean slot 8.305 versus 8.830 s. Sampled global waiting transactions seven versus 14, no scope waits. The remaining unknown matched a combined advisory-lock timeout; its exact key was not proved by the operation log. The deterministic roundtrip savings passed, but capacity effect is mixed and E1-A remains failed. Exact original API/Worker containers restored, both API readiness checks passed, PG 2 vCPU and zero pending/replica gap. No original replay or production operation. Evidence `.artifacts/cloud-ha-e1/e1-a-task-root-members-1793827349`.
+- CA-HA-03 reused the exclusive transaction-scoped Task advisory lock already held by Task rebuild and Handoff when syncing Event positions. Explicit standalone and migration backfill callers retain their existing lock acquisition; repair locking is unchanged. Real PG admission regression observed two identical Task lock requests on the prior code and one after the change, while a wakeup rejection still rolled back the complete Task and command. All 68 targeted PostgreSQL tests passed including rebuild/rollover lock and delegation; Ruff/mypy clean and exact scratch PG and volume removed. Evidence `.artifacts/cloud-ha-e1/e1-task-position-lock-1793827591`. Matched loaded impact pending.
+- CA-HA-03 tested Task lock reuse 26f64b01 on the same isolated published 8+8, 3-vCPU Worker/4-vCPU PG configuration and 230 lock samples. Fresh cohort corpus-rebuilt-approval-sse-256-1793827691 issued 75/75, completed 42 sealed 201s once with exact executor pairs, returned 33 sealed scope-capacity 429s and zero unknown. 256 SSE stayed open. Prior matched load 40/34/1. Queue p95/p99 19.910/20.640 s versus 20.081/49.068 s, mean slot 8.435 versus 8.305 s. Global lock wait transactions sampled six versus seven, scope zero. Deterministic SQL reduction verified; single load pair does not establish a sustained gain and E1-A still fails on 33 refusals. Both exact original APIs and Workers restored, API readiness passed, PG restored to 2 vCPU, zero pending and follower replay gap. No original replay or production operation. Evidence `.artifacts/cloud-ha-e1/e1-a-task-position-lock-1793827630`.
+- CA-HA-03 combined Task position state and legacy high-water reads into one post-lock statement. PostgreSQL CASE keeps the two indexed high-water seeks conditional on legacy state; membership, position proof, limits and independent repair are unchanged. Actual first-Run regression observed two statements before and one after while preserving wakeup-time rollback. Native wakeup, atomic Task, delegation and Task/lease tests 68 passed; Ruff/mypy clean, scratch PG/volume removed. Evidence `.artifacts/cloud-ha-e1/e1-task-position-watermark-1793827848`. Matched E1 load pending.
+- CA-HA-03 matched E1-A load of combined legacy watermark/state query 6dea4397. Same published 8+8 configuration, 3-vCPU Workers/4-vCPU PG, 75 issued and 230 lock samples. 43 signed 201s completed once with 43 exact executor pairs, 32 signed scope 429s, zero unknown and zero closures among 256 SSE. Prior 42/33/0. Queue p95/p99 18.612/19.312 versus 19.910/20.640 s, mean slot 8.479 versus 8.435 s. Eight global wait transactions and one scope waiter sampled. The latter already held the global key while another backend held the scope key in transaction finish; wait age at sample about 3.3 ms. No operation stayed unknown. Single matched sample does not establish sustainable gain; E1-A remains failed on scope refusals. Exact original API/Workers restored, readiness passed, PG restored to 2 vCPU, zero pending and follower replay gap. No original replay or production operation. Evidence `.artifacts/cloud-ha-e1/e1-a-task-position-watermark-1793827884`.
+- CA-HA-03 folded the bounded source-tail existence check into the existing Segment cursor/readiness UPDATE. Under the same Task lock it retains the exact namespace/Session/sequence predicate; separate pending-Segment lookup and Task state transition remain. The real first-Run regression observed two statements before and one after, with wakeup-time rollback preserved. Native atomic Task, wakeup, delegation and Task/lease suites 68 passed; Ruff/mypy clean and exact scratch PG/volume removed. Evidence `.artifacts/cloud-ha-e1/e1-task-position-tail-1793828101`. Matched E1 load pending.
+- CA-HA-03 matched E1-A run of Segment source-tail candidate af4fe7d7 at published 8+8, 3-vCPU Workers/4-vCPU PG and 230 advisory samples. 75/75 issued, 40 sealed 201s completed with exact ACK pairs, 32 sealed scope 429s, three unknown after signed original GET, zero SSE closures. Prior 43/32/0. Queue p95/p99 17.865/21.043 versus 18.612/19.312 s, mean slot 9.674 versus 8.479 s. Unknowns matched two wakeup advisory timeouts and one strict command source deadline. Sampled seven global and zero scope waiters. Real statement-count reduction verified, no demonstrated capacity gain; E1-A still fails. Exact original API and Worker IDs restored, both APIs ready, PG restored to 2 vCPU, zero pending/replica gap. No original replay or production operation. Evidence `.artifacts/cloud-ha-e1/e1-a-task-position-tail-1793828138`.
+- CA-HA-03 made strict command qualification a materialized candidate within the same PostgreSQL statement, before reading the full source Segment set, bootstrap rows and binding. Preserves all historical raw Coverage markers and requirement rows, ambiguity limits, exact root identity and fail-closed behavior. In 16 alternating read-only EXPLAIN pairs on a real ordinary isolated E1 Task, the candidate skipped one Segment index scan, median shared-hit blocks 25 to 21 and median execution 0.138 to 0.132 ms. This is small statement-level evidence, not load throughput. 83 targeted tests passed (strict capability/markers, Coverage Handoff, wakeup and atomic Task), Ruff/mypy clean, exact scratch PG/volume removed. Evidence `.artifacts/cloud-ha-e1/e1-strict-source-plan-1793828363`. Loaded comparison pending.
+- CA-HA-03 matched E1-A load of strict source candidate 501dcc39 on published 8+8, 3-vCPU Workers/4-vCPU PG and 230 samples. 75/75 issued, 40 signed 201s completed with exact ACK pairs, 35 signed scope 429, zero unknown and zero closures among 256 SSE. Prior 40/32/3. Queue p95/p99 19.978/37.439 versus 17.865/21.043 s, mean slot 9.099 versus 9.674 s. Two sampled global waiters versus seven, scope zero. This single pair shows mixed latency and no throughput improvement; E1-A still fails. Exact original API/Worker containers restored, API readiness passed, PG restored to 2 vCPU, zero pending/replica gap. No original replay or production operation. Evidence `.artifacts/cloud-ha-e1/e1-a-strict-source-1793828431`.
+- CA-HA-03 removed an empty typed Worker replay fetch when the current metadata page is below its row cap and all selected bodies fit the byte cap. Exact bounded evidence, fixed snapshot/highwater, source-body validation, overall limits and post-read lease fence remain. Full/byte-trimmed and untyped pages keep the existing loop. Native regression with an unselected event above the last completion Event observed two metadata reads before and one after, returning the same exact completion. The first test run found an outdated scratch schema missing the current lease stop ancestry relations; added only the required existing migrations to that fixture. 55 Worker replay/completion tests passed, Ruff/mypy clean, exact scratch resources removed. Evidence `.artifacts/cloud-ha-e1/e1-worker-replay-tail-red-1793828816`. Loaded effect pending.
+- CA-HA-03 matched E1-A run of Worker typed replay tail candidate 62a8ab13 on the same 8+8 Bundle, 3-vCPU Workers/4-vCPU PG and 230 advisory samples. All 75 issued; 41 signed 201s completed with one model start each and 41 exact executor pairs, 33 signed scope 429s, one still unknown after signed GET, zero closures among 256 SSE. Prior 40/35/0. Queue p95/p99 16.620/41.963 versus 19.978/37.439 s, mean slot 9.463 versus 9.099 s. Audit initially stopped because only 40 finish timing markers were present; independently rebuilt the exact cohort from sealed signed GETs and verified 41 terminal rows and ACK pairs, with 40 phase samples reported as such. No demonstrated throughput improvement and E1-A remains failed. Exact original API/Workers restored and ready, PG back to 2 vCPU with zero pending and replica gap. No original replay or production operation. Evidence `.artifacts/cloud-ha-e1/e1-a-worker-replay-tail-1793828869`.
+- CA-HA-03 F-09 reuses an already qualified Task source proof for the matching Task and frontier within the native repeatable-read preflight. The independent header and safety override reads remain in place. Native PostgreSQL red evidence `.artifacts/cloud-ha-e1/e1-f09-snapshot-source-red-1793829259/red.log` observed the duplicate query; the regression also requires a fresh snapshot to requalify. Updated stale request fixtures and kept the expired-lease mutation within schema constraints.
+- CA-HA-03 isolated F-09 client disconnect and peer resume used fresh signed cohort `corpus-rebuilt-f09-sse-1793829524`. At 32 pending / 8 leases / 256 SSE, disconnected 128, retained all 128 survivor streams, recovered 119 exact next frames, 15 by 5 seconds, last at 33.352 s, with 68 retryable task-preflight 503 responses. Among exact results the 16-wide driver gate wait p95 was 27.918 s and service p95 6.798 s (including retry). Historical comparison 114 exact, 16 by 5 seconds and 34.291 s. This does not demonstrate a five-second recovery improvement. All 32 fresh originals completed once, with exact original signed receipts and executor acknowledgments. The original observer seed matched before/after, original containers were restored, pending and follower replay gap were zero. Evidence `.artifacts/cloud-ha-e1/e1-f09-snapshot-source-loaded-1793829468`. E1-A's preceding matched capacity run still failed with 33 signed scope refusals and one unknown out of 75, and the full E1-R gate remains open on F-09 and F-10 retained object versions. No production changes or original POST replay.
+- CA-HA-03 final PostgreSQL/Redis stream and proof regressions: 54 passed. Ruff, targeted mypy and diff checks clean. Evidence `.artifacts/cloud-ha-e1/e1-f09-snapshot-source-fixed-1793829787/green.log`.
+- CA-HA-03 F-09 read-only follow-up on 0341d13e. Ran five EXPLAIN ANALYZE probes on the exact retained observer Task using its bound namespace and the unmodified source-proof SQL on the isolated E1 primary. Idle planning 1.099–4.949 ms and execution 0.321–0.850 ms. This measures one statement on the 15-event seed and does not estimate under-load connection or statement latency. Reclassified the 128 existing reconnect observations: 16 exact successes entered the 16-wide test driver gate immediately; 15 made five seconds. Of the 104 late exact successes, 81 had post-gate service at most five seconds and 23 took more. Nine did not recover and the driver recorded 68 task-preflight 503 attempts. The driver gate is a substantial contributor to the measured tail, while removing it alone cannot be inferred to fix recovery. Next matched diagnostic should separate grant exchange, API read lane wait, PostgreSQL connection and snapshot, and first frame, with reconnect width varied independently of the API read budget. No production interaction, new task, or original POST replay. Evidence `.artifacts/cloud-ha-e1/e1-f09-source-plan-1793829889`; zero live pending and follower replay gap after the read-only probes.
+- CA-HA-03 F-09 width isolation, driver `.artifacts/cloud-ha-e1/e1-f09-phase-width32-1793829983`, signed cohort `corpus-rebuilt-f09-sse-1793829998`. Held peer API read budget 16, Worker read 2 and declared fleet inventory 213/256. Changed driver reconnect width 16 to 32 and measured client attempt phases. Fault at 32/8/256; 128 survivor streams remained open, 77/128 exact successor recoveries (12 within 5 s, last at 22.006 s) versus prior width 16's 119/128 (15 within 5 s, last at 33.352 s). Returned 128 capacity 503s at 0.503–0.638 s, consistent with the middleware's 0.5 s wait, and 80 preflight 503s (median headers 2.105 s). Successful attempt p95: grant 0.290 s, stream request to headers 2.357 s, headers to exact first frame 3.795 s. These client intervals do not attribute server subphases, and the earlier last success excludes 51 unrecovered streams. This rejects increasing driver width alone as a recovery fix under this load. Next isolate the read admission/preflight and post-header first-frame paths; the latter does fresh header, notification capture, source head and event page reads. All 32 synthetic Tasks completed once and all 32 signed original receipts matched. Retained seed snapshot matched; original APIs and Workers restored, zero live pending and follower replay gap. No production changes or original POST replay. E1-A and full E1-R remain open.
+- CA-HA-03 native Task SSE reuses the preflight active Segment as a notification hint only, avoiding a separate initial header read. The tail captures its notification barrier before fresh canonical head/page reads, retains the post-page privacy recheck and existing rollover recapture, and uses the original lookup for callers without a compatible native hint. Regression covers a stale hint and direct callers. Moved the existing cursor query adapter to the query module with the original import retained, and relocated the native regression to keep source/test file sizes within repository limits. Corrected a stale ASGI request fixture. PostgreSQL/Redis suite 88 passed, Ruff and targeted mypy clean. Evidence `.artifacts/cloud-ha-e1/e1-f09-first-frame-verified-1793830523/green.log`.
+- CA-HA-03 F-09 isolated loaded run with the first-frame change, before the query adapter relocation, held peer API read slots and reconnect width at 16. At 32 pending / 8 leases / 256 SSE, 128 survivor streams stayed online, 122/128 exact successors, 16 within five seconds, last at 35.837 s and 74 preflight 503s. Prior matched width had 119 exact, 15 in five seconds, last at 33.352 s and 68 preflight 503s. This shows one fewer lookup but no demonstrated recovery latency improvement. Successful attempt p95 grant 0.160 s, headers 1.973 s, first frame after headers 3.408 s. All 32 fresh signed Tasks completed once, original signed receipts and retained observer seed matched. Restored original API/Workers, zero live pending and zero follower replay gap at final check. No original POST replay or production changes. Evidence `.artifacts/cloud-ha-e1/e1-f09-first-frame-loaded-1793830319` and `corpus-rebuilt-f09-sse-1793830334`. E1-A and full E1-R remain open.
+- CA-HA-03 native Task stream page and post-page privacy check now use one bounded callback socket in separate transactions on eligible libpq 17+. Compatibility fallback and per-event privacy checks remain. Native regression counts one fewer physical socket, verifies existing read order with and without the first-frame hint, and verifies a Coverage commit after page materialization still prevents disclosure on the native path. PostgreSQL/Redis 88 passed, Ruff/mypy clean. Evidence `.artifacts/cloud-ha-e1/e1-f09-page-dispatch-1793830684/green.log`.
+- CA-HA-03 F-09 paired isolated run, fixed peer read 16 and reconnect width 16. Fresh cohort `corpus-rebuilt-f09-sse-1793830756`, fault at 32 pending / 8 leases / 256 SSE. All 128 unaffected streams stayed open; 118 exact successors, 16 in five seconds, last at 32.888 s, 78 preflight 503. Prior matched 122 / 16 / 35.837 s / 74. Successful headers-to-first-frame p95 fell 3.408 to 2.506 s; cohort composition differs and this single pair does not demonstrate improved overall recovery. All 32 fresh signed originals completed once and exact receipts matched, retained observer seed unchanged, original APIs and Workers restored, zero live pending and replay gap. No production changes or original POST replay. Evidence `.artifacts/cloud-ha-e1/e1-f09-page-dispatch-loaded-1793830742`. E1-A and complete E1-R remain open.
+- CA-HA-03 F-09 client retry scheduling diagnostic held the exact page-dispatch candidate, API read 16 and driver width 16. Only the disposable driver was changed to release the semaphore between attempts and requeue after the unchanged bounded backoff. Fresh cohort `corpus-rebuilt-f09-sse-1793830984` reached 32/8/256; all 128 unaffected streams stayed connected. First-attempt exact successes increased 85 to 95, retry successes fell 33 to 10, total exact fell 118 to 105 and five-second exact stayed 16. Last success 29.236 versus 32.888 s, with 23 instead of 10 unrecovered. 84 preflight and two principal-binding 503s versus 78 preflight 503s in prior. This single matched window provides no recovery benefit for the driver change; keep it as diagnostic only. Total failed request-to-header time 172.678 vs 156.667 cumulative slot-seconds. Next focus is service-side preflight/first-frame capacity with authorization and database timings separated. 32 fresh originals completed once, all signed receipts matched, retained seed unchanged. Original APIs and Workers restored, zero live pending and replica replay gap at final check. No production change or original POST replay. Evidence `.artifacts/cloud-ha-e1/e1-f09-fair-retries-1793830970`. E1-A and complete E1-R remain open.
+- CA-HA-03 F-09 instrumented isolated API callbacks and physical PostgreSQL opens/protocol waits without recording SQL, parameter or request data. At API read 16 / driver width 16, fresh cohort `corpus-rebuilt-f09-sse-1793831231` reached 32/8/256; 128 unaffected readers stayed open, 120 exact successors, 14 in five seconds, last 31.493 s, 61 preflight and one tenant-binding 503. Server window has 142 successful six-open callbacks (p95 1.203 s callback, 0.563 s opens, 0.737 s protocol waits) and 111 successful one-open callbacks (p95 0.302 s callback). Of parseable cancellation lines, 42 were after submission and seven while waiting for a slot. Six malformed callback lines and one malformed cancellation were excluded; counts are aggregate, no per-request join. The diagnostic callback selector did not capture the authorization phase. The exact running route source hashes matched; isolated peer has Redis but no V2 cursor signing key. Current raw snapshot activation depends on a V2 reader, and the unsigned numeric-cursor route can also fall back through a separate highwater callback. Prioritize validating and shortening the raw path while preserving tenant binding, privacy, canonical source and cursor semantics. All 32 new synthetic Tasks completed once, signed original receipts matched, retained seed unchanged, original containers restored, zero live pending and replica lag. No production change or original POST replay. Evidence `.artifacts/cloud-ha-e1/e1-f09-server-phases-1793831216`. E1-A and complete E1-R remain open.
+- CA-HA-03 legacy raw SSE negotiation reuses the existing bounded callback connection scope across tenant/source preflight and Run negotiation, with independent transactions and unchanged signed-cursor dispatch. The native V2 snapshot path and raw fallback highwater validation retain their boundaries. Real PostgreSQL/Redis 88 passed, including one physical socket on eligible libpq and the original transient-V2 denial when no reader is composed. Ruff and targeted mypy passed. Code c976c12a, evidence `.artifacts/cloud-ha-e1/e1-f09-raw-socket-verified-1793831576/green.log`.
+- CA-HA-03 matched F-09 on c976c12a at API read 16, reconnect width 16 and fault 32/8/256. Fresh signed cohort `corpus-rebuilt-f09-sse-1793831638`: all 128 survivor streams stayed connected, all 128 exact successors recovered (25 by five seconds, last 17.847 s), two preflight 503 attempts. Previous uninstrumented matched baseline was 118 / 16 / 32.888 s / 78. Successful headers p95 1.693 vs 1.960 s and first-frame-after-headers p95 1.916 vs 2.506 s. Driver correctness assertion passed and all 256 streams were online at its final check; the five-second gate still failed. Single matched pair. All 32 new Tasks completed once and signed receipts matched, retained seed identical, exact original containers restored, zero pending and replica lag. No original POST replay or production change. Evidence `.artifacts/cloud-ha-e1/e1-f09-raw-socket-loaded-1793831597`. E1-A and complete E1-R remain open.
+- CA-HA-03 two F-09 isolated comparisons on c976c12a. At client width 32 / peer API read 16, fresh cohort -1793831843 reached 32/8/256, kept all 128 unaffected readers, and recovered 111 exact (20 by five seconds, last 18.266 s), with 78 capacity and 52 preflight 503s. Prior width 16/API 16 had 128 exact, 25 by five seconds, last 17.847 s and two preflight 503s. At fixed client width 32, increased only peer read slots to 32 (declared fleet budget 245/256 including reserves) and verified byte-identical driver/Worker overlays. Fresh cohort -1793832018 recovered the same 111 exact (25 by five seconds, last 22.585 s); capacity 503s dropped to zero and preflight 503s rose to 126. This paired diagnostic rejects increasing only client width or peer read slots as the recovery fix. Each cohort completed all 32 fresh Tasks once and matched every original signed receipt. Retained seed identical, original API/Worker containers restored, zero pending and replica gap, no original POST replay or production change. Evidence `.artifacts/cloud-ha-e1/e1-f09-raw-socket-width32-1793831828` and `.artifacts/cloud-ha-e1/e1-f09-raw-socket-api32-1793832003`. E1-A and complete E1-R remain open.
+- CA-HA-03 legacy raw SSE can use the native read-only proof snapshot without a V2 cursor reader when exact Task, Session, event and binding adapters match one DSN and namespace. The snapshot now also loads canonical Run admission; raw numeric highwater still follows the existing fallback. The common adapter guard is shared with V2 and custom readers retain prior dispatch. Real PostgreSQL/Redis 88 passed including the no-reader single-socket snapshot and transient-V2 denial, Ruff/mypy clean. Code 19ed7ab4. Loaded 16/16 F-09, fresh signed cohort -1793832384, fault at 32/8/256, retained all 128 unaffected streams, recovered 128/128 exact, 29 by five seconds, last 17.386 s, zero reconnect 503. Previous matched 128/25/17.847 s/two 503; headers p95 1.572 vs 1.693 s, first-frame-after-headers 2.023 vs 1.916 s. Five-second gate remains open. All 32 fresh Tasks completed once and exact signed receipts matched. Retained seed identical, exact original containers restored, zero pending and replica gap. No original POST replay or production change. Evidence `.artifacts/cloud-ha-e1/e1-f09-legacy-snapshot-1793832312` and `.artifacts/cloud-ha-e1/e1-f09-legacy-snapshot-loaded-1793832369`. E1-A and complete E1-R remain open.
+- CA-HA-03 legacy numeric Task/Session SSE highwater now validates on the already authorized native snapshot, preserving the existing parser, error body and fallback for nonnative compositions. Task wake capture receives the snapshot Segment hint while the tail still reads fresh source/privacy proof. Genuine transient-V2 denial plus legacy default/over-highwater covered for both routes. Native PostgreSQL/Redis 88 passed and focused final regression passed; Ruff and mypy clean. Code c548836e. Loaded 16/16 F-09 fresh signed cohort -1793832721 at 32/8/256: 128 unaffected streams stayed online and 128/128 exact successors recovered, 36 by five seconds, last at 14.530 s, zero reconnect 503. Prior matched 128/29/17.386 s/zero 503; headers p95 1.286 vs 1.572 s, first-frame-after-headers 1.595 vs 2.023 s. One matched pair, five-second gate still open. All 32 new synthetic Tasks completed once, signed receipts matched, retained seed identical, exact original containers restored, zero pending and replica gap. No production change or original POST replay. Evidence `.artifacts/cloud-ha-e1/e1-f09-legacy-highwater-1793832648`, `e1-f09-legacy-highwater-final-1793832715` and `e1-f09-legacy-highwater-loaded-1793832706`. E1-A and complete E1-R remain open.
+- CA-HA-03 F-09 width crossover on c548836e, changed only client reconnect width 16 to 24, held peer API read 16. Fresh signed cohort -1793832926 reached 32/8/256. All 128 unaffected readers stayed connected and 128/128 exact successors recovered, 39 by five seconds, last 13.479 s, three preflight 503 attempts; prior matched 128/36/14.530 s/zero. Baseline completed attempts occupied 223.838 client slot-seconds, p95 gate wait 12.420 s and admitted-to-success p95 2.618 s. At unchanged individual service times that work would require at least 45 concurrent attempts to fit five seconds, which is arithmetic, not demonstrated capacity. Changing width alone gave a small improvement and still failed the five-second criterion. All 32 fresh synthetic Tasks completed once with matching original signed receipts, retained seed identical, original containers restored, zero pending and replica lag, no production change or original POST replay. Evidence `.artifacts/cloud-ha-e1/e1-f09-legacy-highwater-width24-1793832911`. E1-A and complete E1-R remain open.
+- CA-HA-03 E1-A read-only lock-path follow-up on isolated E1 v123. Admission executes the namespace-global and scope advisory locks before the unpublished Outbox gate. At the effective execution ceiling 9,936 (10,000 less 64 reserved), the exact gate scanned 6,545 matching pending rows and 818 filtered rows, 1,231 shared buffer hits and 3.951 ms in one idle EXPLAIN ANALYZE. A status-split ordered rewrite chose a sequential pending scan plus sort and was slower in one sample (5.131 ms), so no query rewrite was applied. All 6,545 pending outbox rows were paired to terminal canonical commands (6,513 done, 32 dead, zero pending/unpaired). Both isolated Workers reported publish, consume, scoped rollout and fallback enabled, while this namespace had zero rollout rows. The relay claims only broker-mode scopes in this composition, so these rows still count against the admission ceiling after fallback completion. This establishes an independent accumulation issue and work under the global lock; it does not attribute the earlier signed scope 429s or prove load-time lock duration. Next verify a transactional lifecycle for exact terminal fallback wakeups, preserving original envelope/receipt evidence and cutover fencing. No state mutation, original POST replay or production change. Zero live pending and replica gap. Evidence `.artifacts/cloud-ha-e1/e1-a-lock-path-1793833158`. E1-A and complete E1-R remain open.
+- CA-HA-03 isolated terminal Outbox eligibility audit. All 6,545 pending envelopes had zero publish attempts, fence zero, no owner, lease or publication timestamp, no explicit scope rollout, and a canonical accepted-event/Session match. Each had an exact Inbox identity and envelope digest plus an accepted handoff receipt. Of these, 6,279 current-generation done envelopes have a handled-event receipt protected by the live validated foreign key. A further 234 done envelopes are older generations and 32 dead current envelopes have no handled-event receipt, so exclude those 266 from the first retirement slice. Full direct event join exceeded the 3 s probe bound, then exact receipt/Inbox join plus live validated FK established event existence for the handled receipts without scanning event bodies. The v49 direct-insert compatibility trigger and runtime admission both count physical pending/publishing statuses, and relay can later claim pending rows after Broker mode change. Therefore an admission-only filter would change cap semantics and leave relay work eligible. Next implement a bounded, transactional retirement of exact current-generation done candidates under the existing scope rollout fence, retaining envelope, digest, Inbox and receipt and leaving other statuses intact. No mutations or replay; zero pending commands and replica gap. Evidence `.artifacts/cloud-ha-e1/e1-a-terminal-outbox-proof-1793833362`. E1-A and complete E1-R remain open.
+- CA-HA-03 additive v124 adds explicit operator function retire_terminal_fallback_outbox(namespace, scope, batch_size). In READ COMMITTED it takes the exact scope rollout advisory key without waiting, returns zero when rollout exists or the fence is busy, and updates at most 128 unlocked exact current-generation handled fallback wakeups per invocation. Envelope, digest, Inbox and receipt remain intact. Retired rows leave both existing capacity counters and relay claim eligibility through their status. No automatic backfill or publication. The caller should bound statement time and commit one batch at a time. Scratch PostgreSQL proved v123-to-v124 preserves all 122 prior ledger rows, and 29 native tests passed including fence contention, live pending exclusion, invalid isolation, idempotence, exact row preservation and broker reactivation with no retired claim. Broader run had three failures reproduced on v123 (one lease-wait deadline and two old v49 schema fixtures). No E1 database migration or production change; do not attribute prior capacity failures to this code. Evidence `.artifacts/cloud-ha-e1/e1-terminal-retire-final-1793833689` and `e1-terminal-retire-verified-1793833613/v123-baseline.log`. E1-A and complete E1-R remain open.
+- CA-HA-03 v124 retirement rehearsal on a network-none, no-port disposable restore of the checksummed earlier E1 v123 archive (2026-11-04 20:05 UTC). The exact archived migration history matched the current compatibility plan; only v124 was added. Explicit READ COMMITTED 128-row transactions retired 5,259 records in 42 nonempty batches; repeat returned zero. Outbox rows except status, Inbox, command handoff, canonical pending and source admission/executor/Coverage receipt fingerprints matched. Archived namespace pending/publishing occupancy 5,514 -> 255; whole database pending 6,332 -> 1,073. The same gate still used sequential scan after ANALYZE: 2.852 -> 2.791 ms, 1,104 -> 1,916 shared hits. This confirms capacity headroom and evidence preservation, not lock speed or throughput. Source archive checksum preserved and exact temporary container/volume reclaimed. Live E1 and production untouched, no original POST replay. Evidence `.artifacts/cloud-ha-e1/e1-a-retirement-restored-1793833833`. E1-A and complete E1-R remain open.
+- CA-HA-03 measured one partial Outbox index on the same checksummed E1 v123 disposable restore after v124 retirement (5,259 rows) and VACUUM ANALYZE. Eight unchanged execution-capacity queries without the index all used Seq Scan, median 3.194 ms and 1,916 shared buffer hits. Eight with the partial namespace index over pending/publishing all used Index Only Scan, median 0.0575 ms and 1–2 hits. The index did not change Outbox/Inbox/receipt/command fingerprints. This is an idle archive query test, not a load or lock-duration result. Added the same index as v125 without editing v124 or either capacity predicate. Scratch v124-to-v125 ledger prefix retained and 29 native admission/retirement tests passed; Ruff/mypy clean. The catalog uses ordinary transactional CREATE INDEX, so application requires a coordinated database window. Exact owned scratch containers/volumes reclaimed; no E1 migration, original POST replay or production change. Evidence `.artifacts/cloud-ha-e1/e1-a-outbox-index-1793833961/summary.json` and `e1-outbox-index-upgrade-1793834061`. E1-A and complete E1-R remain open.
+- CA-HA-03 E1-A bounded database crossover on checksummed archived E1 data after v124 retirement and VACUUM ANALYZE. Eight simultaneous local clients ran 400 read-only transactions per stage using the actual namespace-global advisory key and capacity predicate. Same copy, no index -> v125-equivalent index -> no index. Lock acquisition p95 17.648 -> 3.304 -> 17.177 ms; acquired-to-capacity-result p95 2.460 -> 0.369 -> 2.240 ms. The latter interval ends before commit and is not the full production lock hold. All 1,200 decisions agreed; Outbox/Inbox/receipt/canonical fingerprints matched after all stages. Initial restore attempt stopped before measurement because its inherited script asserted the current catalog ended at 124; fixed by explicitly selecting the v124 prefix for the A/B/A control. Exact scratch resources reclaimed; no live E1 or production writes, no original POST replay. Evidence `.artifacts/cloud-ha-e1/e1-a-outbox-lock-crossover-1793834220/summary.json`. This proves localized contention improvement; full E1-A and E1-R remain open.
+- CA-HA-03 live isolated E1-A index-only diagnostic on v123, preserving existing ledger/Runtime Bundle approvals and Outbox statuses. Created and later removed one exact run-owned partial index concurrently, verified ready/valid and both APIs ready after restoration. The initial attempt -1793834370 stopped at 256 SSE HTTP 500 before any offers because historical API overlays omitted two current stream dependencies. Pinned both module hashes and retried with fresh synthetic cohort -1793834476. All 75 issued at 5/s with 256 SSE, zero closures. 41 sealed 201s completed once with 41 exact ACK pairs, 34 sealed command_scope_capacity 429s, zero unknown; queue p95/p99 19.110/44.468 s, mean slot 8.476 s. Historical 8+8 sample 41/33/1, 16.620/41.963 s and 9.463 s; API stream overlays differ and this is not a controlled throughput delta. The exact pre-offer capacity probe used Seq Scan both before/after adding the index on the unretired 6,545-row namespace (1,231 hits both). This run does not verify combined v124 retirement/v125 index under load. Original APIs/Workers and PG quota restored, index removed, zero pending/replay gap. No production change or original POST replay. Evidence `.artifacts/cloud-ha-e1/e1-a-outbox-index-load-1793834458`. E1-A remains failed and complete E1-R remains open.
+- CA-HA-03 additive Outbox runtime readiness accepts only exact, contiguous known ledger prefixes ending at v122/v123/v124/v125. v122 compatibility for the prior repair rollout remains; unrelated missing migrations, holes, unknown versions and checksum mismatches still fail. v124 operator function and v125 index are not invoked by runtime startup. Eight unit/native PostgreSQL checks passed across both branch histories and the API/Worker/capability gates, including explicit cutover denial on each prefix. Live E1 ledger verified read-only at v123 with 122 rows. Both actual API and Worker images on both nodes imported the four exact candidate migration modules with network disabled and accepted the live ledger. These image probes do not start the service or alter approvals; live signed candidate smoke, v124/v125 cutover and combined load remain open. No E1 migration, original POST replay or production change. Evidence `.artifacts/cloud-ha-e1/e1-outbox-readiness-1793834689`. E1-A and complete E1-R remain open.
+- CA-HA-03 live E1 staging gate: both candidate API and Worker nodes loaded exact cbad8f1e schema compatibility modules on unchanged v123, matched source hashes and used the already published 8+8 fixture bundle. Fresh signed cohort -1793834819, 75/75 offers at 5/s, 256 SSE with zero closures. 39 sealed 201s completed once with all 39 exact executor start/exit ACK pairs, 35 sealed command_scope_capacity 429s, one remained unknown after original signed GET. Queue p95/p99 19.484/19.628 s, mean slot 9.253 s. One global waiter and no scope waiters in 230 sampled snapshots. This verifies live signed candidate readiness before migration and is a pre-migration capacity control, not an E1-A pass. Original containers restored, both original API readiness 200, PG exact original ID/start and 2-vCPU quota, zero live pending and replay gap. No index/retirement/migration applied on E1, no original POST replay or production change. Evidence `.artifacts/cloud-ha-e1/e1-v125-runtime-v123-1793834803`. v124/v125 combined load and complete E1-R remain open.
+- CA-HA-03 combined v124/v125 and retirement reversal rehearsal on the checksummed E1 v123 archive in a network-none/no-port PostgreSQL clone. Applied both exact catalog entries, preserved the archived ledger prefix, retired 5,259 rows in 42 batches, then reverted exactly the manifest-listed 5,259 status transitions in one transaction on the quiescent clone. Full Outbox status inventory, status-independent Outbox fingerprint, canonical commands, Inbox, handoff, admission/executor/Coverage receipts matched original evidence; v124/v125 ledger retained. Pre-retirement and post-retirement/VACUUM queries both used the real v125 index (5,514 vs 255 qualifying entries; 0.527 vs 0.057 ms single idle samples). This is a data-state reversal on an isolated copy, not schema downgrade or an online rollback under concurrent relay. Existing E1 inspected read-only at v123, zero pending and replica gap. Clone/container/volume reclaimed. No production change or original POST replay. Evidence `.artifacts/cloud-ha-e1/e1-outbox-v125-rollback-1793834974`. Live combined E1-A and complete E1-R remain open.
+- CA-HA-03 combined retirement/index E1-A diagnostic on live isolated E1. Captured fresh checksummed v123 archive and applied exact v124/v125 database objects temporarily without changing ledger. Retired 6,359 rows, VACUUM ANALYZE, and exact gate switched from Seq Scan (6,626 matching rows, 21.531 ms) to Index Only Scan (267, 0.065 ms), single idle samples. Same candidate/8+8/4-vCPU PG as pre-migration control, fresh cohort -1793835185: 75 issued at 5/s, 256 SSE zero closures, 44 sealed 201 completed once with 44 exact start/exit ACKs, 31 sealed scope-capacity 429 and zero unknown. Queue p95/p99 18.228/34.088 s, mean slot 8.860 s; prior 39/35/1, 19.484/19.628 s, 9.253 s. Two sampled global waiters vs one. One matched pair shows mixed queue effects and capacity still fails. After drain restored exactly 6,359 prior statuses, matched preexisting Outbox fingerprint, removed temporary objects, confirmed original API/Worker IDs and readiness, PG quota/ledger v123 unchanged, zero pending/replay gap. Original POSTs not replayed and production untouched. Evidence `.artifacts/cloud-ha-e1/e1-a-outbox-combined-1793835104`. This tests combined database objects under load, not persistent schema cutover. Full E1-R remains open.
+- CA-HA-03 E1-A execution slot envelope derived from the signed combined Outbox cohort -1793835185. Read-only exact start/exit receipt and canonical event join matched 44/44 ordered timelines (initial scratch SQL needed explicit UUID cast). Both Workers reached eight simultaneous registered executors individually, fleet peak 13 vs 16 configured slots. Mean held 8.860 s, mean registered span 7.637 s split into 4.570 s registration-to-first-model, 2.415 s model-start-to-terminal, and 0.652 s terminal-to-exit ACK. The 1.223 s difference is a comparison of means from separate clocks/markers, not a directly timed stage. Worker cgroup throttle periods 0%/5.07%, zero OOM; this alone does not locate PG/VM pressure. Even at all 16 slots busy and unchanged mean, arithmetic steady capacity is 1.806/s; 5/s would require 45 such slots or mean hold <=3.2 s at 16. Contract short-task target remains <=1 s. Next instrument the 4.570 s registered-to-model span by private executor startup, preparation and authority/context work before changing slot counts or scope cap. No mutations, original POST replay or production change. Evidence `.artifacts/cloud-ha-e1/e1-a-slot-envelope-1793835367`. E1-A and complete E1-R remain open.
+- CA-HA-03 E1-A pre-model timing refresh on live isolated v123, exact 8+8 candidate and 4-vCPU PG, added capture of existing child/parent timing markers only. Fresh signed cohort -1793835506: 43 sealed 201 completed once with 43 exact executor ACK pairs, 30 sealed scope 429, two unknown after original signed GET, 256 SSE and zero closures; queue p95/p99 21.554/44.598 s. Paired all 43 accepted timelines: mean Popen return 3.674 ms, launch to child post-import entry 2,099.465 ms (p95 4,000), composition 372.907 ms, initial recovery 341.209 ms, in-child execution preparation 2,237.651 ms, first model reservation persistence 370.176 ms. Launch-to-main includes supervisor arming and imports and does not by itself attribute CPU/scheduling time. Timing parser first rejected an unrelated duplicate slot-release marker, then restricted to the four required phase markers. Next distinguish supervisor/arming from import cost and preserve the exact cancellation boundary. Original APIs/Workers and PG quota restored; final zero pending and replica gap. No original POST replay or production change. Evidence `.artifacts/cloud-ha-e1/e1-a-worker-pre-model-timing-1793835489`. E1-A and complete E1-R remain open.
+- CA-HA-03 isolated import boundary probe on actual source Worker image, no network, 3-vCPU cap, real private supervisor and Linux parent fence, no factory/DB/provider invocation. Bare image lacked a bridge import; reran with the exact running read-only /app mounts. Eight sequential and eight simultaneous fresh children all received matching synthetic supervisor exit proof. Median supervisor-to-child 23.849/29.198 ms, child-to-fence 14.887/36.684 ms, post-fence storage/config import group 523.367/1,680.213 ms and Worker import group 253.873/917.536 ms; total 820.894/2,667.195 ms. Separate sequential importtime trace attributes 535 ms cumulative to agent_storage (artifact_objects branch 196 ms) and 300 ms to the eager zebra_agent_worker package loaded by claims (command_consumer branch 202 ms). These cumulative groups overlap internally and wall time under concurrency includes scheduling. Worker loop imports command_consumer later, so changing only the package re-export would move some costs without proving end-to-end savings. This isolates repeated cold imports ahead of execution preparation as a real lever while retaining parent fence. Owned containers auto-removed, no E1/production writes or original POST replay. Evidence `.artifacts/cloud-ha-e1/e1-executor-import-boundary-1793835678`. E1-A and complete E1-R remain open.
+- CA-HA-03 execution-only imports: defer SessionCommandConsumer until legacy loop composition actually constructs it, retain public Worker exports via lazy resolution and keep type-only loop annotations. Fresh interpreter regression verifies no consumer import on execution-only composition import and original public class identities on explicit import. 32 smoke/process/polling tests passed; Ruff/mypy clean. Same real source Worker image, network-none, 3-vCPU cold child import A/B: median full path 835.105 -> 818.314 ms sequential, 2,678.329 -> 2,512.609 ms at width eight. This single pair has scheduling variation and does not prove E1-A throughput. Every probe used original supervisor/parent fence and matched synthetic exit proof. No live Worker, E1 database or production changes and no original POST replay. Evidence `.artifacts/cloud-ha-e1/e1-executor-deferred-consumer-1793835872`. E1-A and complete E1-R remain open.
+- CA-HA-03 matched isolated E1-A deferred consumer test on ec21e5a7: same v123/8+8/4-vCPU PG composition and timing driver, exact three changed files verified on both Workers. Fresh cohort -1793835993 issued 75, 40 sealed 201 completed once with 40 exact executor ACK pairs, 33 sealed scope 429, two unknown after signed original GET, 256 SSE with zero closures. Prior 43/30/2. Launch-to-main mean 2.160 vs 2.099 s and p95 3.252 vs 4.000 s; in-child preparation mean 2.159 vs 2.238 s. Mean slot 9.679 vs 9.773 s; queue p95/p99 20.943/21.879 vs 21.554/44.598 s. Single matched pair shows mixed performance and no demonstrated throughput gain. Both exact original APIs/Workers restored, API readiness passed, PG 2 vCPU/zero pending/replay gap. No production changes or original POST replay. Evidence `.artifacts/cloud-ha-e1/e1-a-deferred-consumer-load-1793835976`. E1-A and complete E1-R remain open.
+- CA-HA-03 consolidated Worker cutover state and exact migration ledger into one statement after the missing-table probe, saving one read round trip when migrated and preserving explicit cutover and checksum gates. Native regression proves two reads; 12 targeted tests passed after supplying the unrelated checkpoint callback in two composition fixtures. Live isolated matched E1-A on v123/8+8/4-vCPU PG. First staging stopped before offers because an inherited manifest also checked the deliberately replaced Worker module against the old digest; retained the old API check and separated candidate Worker hash verification. Fresh retry -1793836302 offered all 75, with 41 sealed 201 (40 completed, one executor_process_interrupted suspension before any model start), 33 signed scope 429, one unknown after original signed GET, 256 SSE with zero closures. Strict completion-timing audit stopped on the suspension; separately reconstructed all 41 signed admissions and matched 41 exact executor ACK pairs, and kept timing denominator 40. Mean slot 8.990 vs 9.679 s, completed queue p95/p99 18.835/19.816 vs 20.943/21.879 s; no completed throughput increase and no attribution of the suspension or latency changes from one comparison. Exact original containers restored and API readiness passed, PG back to 2 vCPU, zero pending and replay gap. No production changes or original POST replay. Evidence `.artifacts/cloud-ha-e1/e1-worker-cutover-verified-1793836350` and `e1-a-cutover-roundtrip-load-1793836285`. E1-A and full E1-R remain open.
+- CA-HA-03 isolated executor exit follow-up. Exact suspended Session in -1793836302 had a registered process launch but no initial-recovery marker and no model start; the parent wrote the fallback suspension. Three nearby PostgreSQL lock timeouts did not carry this Session identity. Worker cgroup reported no OOM. Do not infer a lock failure from temporal proximity. Added bounded parent return-code/result-presence and child initial-recovery exception class diagnostics at the existing interruption boundary. Existing no-model-retry and bounded recovery behavior remain intact. Executor suite 10 passed, 3 Linux-specific skips on macOS. Waiting-approval native Task and Session SSE regression rerun 10 passed. Evidence e1-a-executor-diagnostic-1793836600 and e1-a-cutover-roundtrip-load-1793836285/suspended-event-timeline.tsv. Reproduce with a fresh cohort only; keep the old suspension and receipt.
+- CA-HA-03 fresh isolated E1-A short-window rerun, driver e1-a-executor-exit-load-1793836692, signed cohort corpus-rebuilt-approval-sse-256-1793836709. All 75 offered and issued at 5/s. 256 SSE, 1,096 keepalives, zero closures. Forty sealed 201s completed with one model start and forty exact start/exit ACK pairs. Thirty-four sealed 429s all command_scope_capacity. One original remained unknown after verified signed GET; exact operation log locates LockNotAvailable in record_command_wakeup_in_transaction. Read-only exact-cohort queue p95/p99 19.770/49.153 s, mean execution slot 9.518 s, 7 global and zero scope waiting transactions in 230 bounded lock snapshots. Sixteen slots imply about 1.68 completions/s at the measured occupancy, below 5/s before other limits. No early executor interruption recurred. E1-A fails; no capacity fix claimed. Exact original E1 API/Worker IDs and 2-vCPU PG quota restored, zero pending, peer streaming with zero replay gap. No production mutation or old POST replay.
+- CA-HA-03 isolated E1-R F-09 fresh rerun e1-f09-stream-only-rerun-1793837092, signed cohort corpus-rebuilt-f09-sse-1793837113. Earlier copied harness attempts failed before injection due to missing source stream dependency, missing bind, mismatched 8+8 publication on source, and an inherited hash list for modules absent from the restored original image. Retained all failed attempts and drained any admitted commands. Final source clone replaced only stream authority and query, kept exact original publication mounts, and matched all six applicable inherited source hashes. Fault at 32 pending / 8 leased / 256 observers. Closed 128 source client streams, retained all 128 peer observers, restored all 128 exact successors; 35 by 5 s, last at 14.430 s. This fails five-second recovery. Thirty-two original signed receipts matched and all 32 Tasks completed once with one model start each. Retained seed identical and exact APIs restored. F-10 backup rerun e1-f10-restore-rerun-1793836943 verified ten restored PostgreSQL fingerprints and 96 original signed receipts. First object phase lacked a local archive link, so reran only object restore against the already-verified inventory and same checksummed archive. Six exact versions and 17 missing out of 23, matching prior proof. Previous combined restore demonstrated closed writes, fresh repeat does not claim a new write test. Scratch resources removed. Full E1-R remains incomplete. No production operation, old POST replay or alteration of original evidence.
+- CA-HA-03 execution-slot follow-up on isolated E1. Parsed all 40 prior signed executor timelines: mean launch-to-main 2.056 s, composition 0.356 s, preparation 2.094 s. Worker cgroups showed zero quota-throttled periods or OOM events in that captured window. Tested deferring three control imports in four network-none image runs, found the execution import graph still reaches them and no improvement, and left the probe out of the branch. Evidence e1-execution-control-import-1793837405 and e1-a-executor-exit-load-1793836692/pre-model-timing.json.
+- CA-HA-03 8f57f52a reuses one Botocore Session during sequential S3 composition while preserving independent write and bounded read clients and independent event handlers. Deadline-client creation still uses a fresh Session. Four network-none image runs with exact baseline/candidate modules gave two medians each of 88.096/82.449 ms versus 45.127/43.751 ms, 16 samples per run. 48 focused tests passed, two skipped, Ruff/mypy passed. Evidence e1-s3-composition-pair-1793837472.
+- CA-HA-03 matched short E1-A on v123, 8+8 slots, 3-vCPU Workers, 4-vCPU PG with both candidate S3 module hashes verified on both Workers. Fresh signed cohort corpus-rebuilt-approval-sse-256-1793837594, driver e1-a-s3-composition-load-1793837577. All 75 issued at 5/s, 42 signed 201s completed once with 42 exact executor start/exit pairs, 32 sealed scope-capacity 429s, one still unknown after original signed GET and matched to wakeup write lock timeout. All 256 SSE stayed open. Mean composition 272.643 vs 356.175 ms, mean slot 8.582 vs 9.518 s, queue p95/p99 20.175/20.399 vs 19.770/49.153 s. Five global and zero scope waiting transactions in 230 samples. Single comparison, no sustained throughput claim and capacity gate still fails. Copied SQL caused the first audit to stop on an existing output; preserved inherited queries separately and finished with signed GET and read-only PG, without replay. Both original Worker IDs matched, both original APIs ready, PG returned to 2 vCPU and zero pending/replica lag. No production change. Full E1-R remains incomplete.
+- CA-HA-03 bounded brief global RUN wakeup lock wait, f1509f88. The existing 50 ms budget aborted the entire already-prepared canonical transaction when the namespace-global admission lock was briefly contended. For new RUNs with an active Task IO deadline and the standard 50 ms setting, grant 100 ms to that one lock, restore the original setting before taking the scope lock, and keep the same operation deadline, lock order, transaction, capacity decisions and receipts. Native PostgreSQL red test failed on the old code with LockNotAvailable; 102 wakeup/handoff/recovery tests passed on candidate. Six repetitions per scratch probe: previous global 50.83–53.28 ms timeout, brief global 75.98–82.19 ms acquisition, scope 51.03–53.12 ms timeout, long global 101.16–102.75 ms timeout. Ruff/mypy passed; exact scratch container and volume removed. Evidence e1-wakeup-lock-budget-1793837831.
+- CA-HA-03 matched isolated E1-A of bounded wakeup lock f1509f88, driver e1-a-wakeup-lock-load-1793837950 and signed cohort corpus-rebuilt-approval-sse-256-1793837969. Candidate API hashes verified on both nodes, previous S3 Worker overlays retained, same 8+8 slots, 3-vCPU Workers, 4-vCPU PG. All 75 issued at 5/s, 43 exact sealed 201s completed once with 43 matching executor ACK pairs, 32 sealed scope-capacity refusals, zero unknown, 256 SSE and zero closures. Prior 42/32/1. PostgreSQL wakeup lock timeout log count 3 vs 10, other lock timeouts 4 vs 3, sampled global waiting transactions 11 vs 5, scope zero both, so no contention elimination claim. Queue p95/p99 19.737/20.139 s, slot mean 8.542 s. Single diagnostic pair, E1-A still fails, full E1-R still open. Original E1 API/Worker IDs restored, original PostgreSQL stayed running and returned to 2-vCPU quota, no pending and zero replay gap. No production writes or original POST replay.
+- CA-HA-03 bb8e2382 folds typed Worker replay metadata and bounded bodies into one statement per page. The page still seeks each allowed event type on the replay index, checks event bounds before selecting bodies, uses exact source positions, and retains the 256-event/1MiB page and total replay limits, source snapshot, and both fence checks. A native completion regression observed two statements on the old code and one on candidate. PostgreSQL completion/Worker replay suite 55 passed, shared native PostgreSQL/Redis API stream proof suite 17 passed, Ruff/mypy passed. Read-only EXPLAIN on one original E1 pre-attempt prefix used the replay index for metadata and stream-order index for three eligible body reads. Exact scratch resources removed. Evidence e1-worker-replay-page-1793838183 and e1-a-replay-page-load-1793838241/replay-page-plan.json.
+- CA-HA-03 matched isolated E1-A on bb8e2382, driver e1-a-replay-page-load-1793838241 and signed cohort corpus-rebuilt-approval-sse-256-1793838258. Exact replay module verified on both Workers; prior bounded wakeup API and S3 Worker overlays retained, same 8+8 slots, 3-vCPU Workers, 4-vCPU PG. All 75 issued at 5/s, 46 signed 201s completed once with 46 exact ACK pairs, 29 signed scope 429, zero unknown and 256 SSE with zero closures. Prior 43/32/0. Mean slot 8.223 vs 8.542 s, queue p95/p99 17.801/18.650 vs 19.737/20.139 s. One paired short window, no sustained gain claim, E1-A and complete E1-R still open. Original API/Worker IDs restored, PostgreSQL returned to 2-vCPU quota with zero pending and replay gap. No production writes or original POST replay.
+- CA-HA-03 f2f50a47 combines shared lease row lock and post-lock database clock into one statement. MATERIALIZED row and outer clock preserve expiration, absent-row semantics, stop and epoch ordering; DST unit regression red on old two calls. Candidate PostgreSQL broad run 86 passed, five failed and 16 fixture errors; exact previous module reproduced all five/16, excluding two new round-trip checks. Lease cleanup FK errors remain separate. Exact scratch containers/volumes reclaimed. Evidence e1-post-lock-lease-clock-1793838506.
+- CA-HA-03 matched isolated E1-A f2f50a47, driver e1-a-lease-clock-load-1793838615, signed cohort corpus-rebuilt-approval-sse-256-1793838696. Exact candidate module on both Workers, prior APIs unchanged from comparator. 75/75 issued, 42 signed completions with 42 exact executor ACK pairs, 33 scope 429, zero unknown and 256 SSE with zero closures. Queue p95/p99 17.049/17.293 vs 17.801/18.650 s, slot mean 8.856 vs 8.223 s. Mixed result, no throughput gain established. Original API/Worker IDs, 2-vCPU PG quota, zero pending and replay gap verified. E1-A and full E1-R still open. Production and historical admissions untouched.
+- CA-HA-03 force-stop receipt root cause found in the four inherited force-stop failures. Both scratch and E1 report en_US.utf8, but identical receipt-key punctuation range excludes the prefix on scratch and includes it on E1. Cleanup therefore held execution unconfirmed despite durable exit receipts in the affected environments. Switched to collation-independent exact prefix; existing exit/body/fence checks remain. All four previously failing cases passed, with 80 passing and one skipped across native force-stop, lease clock, handoff and task lock. Ruff/mypy clean. Read-only live E1 EXPLAIN returned the exact receipt, but used a sequential scan over ~66k rows (38.665 ms one idle sample); an indexed prefix is still needed if history exceeds the cleanup budget. Evidence e1-post-lock-lease-clock-1793838506/receipt-collation.tsv, force-stop-green.log and receipt-prefix-plan.txt. Candidate force-stop runtime and complete E1-R still require isolated fault acceptance. No production change.
+- CA-HA-03 v126 adds a partial executor-start receipt prefix index using text_pattern_ops. The collation-independent starts_with lookup, exact start/exit body equality and fence checks are unchanged. Readiness accepts only exact known additive prefixes through v126 for both branch histories. Restored the checksummed E1 v123 archive into a disposable localhost-only PostgreSQL, ran 8 native plans before and after v126, and proved every prior ledger row and all 61,405 receipt rows remained identical. Same exact receipt result; median SQL execution 20.751 -> 0.0135 ms, shared hits 5708 -> 8, all 8 post-upgrade plans used the prefix index. This is a single archived corpus and idle plans, not loaded stop RTO. 16 native/ledger tests passed, Ruff/mypy passed, exact scratch container/volume removed. Live isolated E1 stayed v123, zero live pending and streaming replica zero replay gap. No E1 migration, original POST replay or production writes. Evidence e1-force-stop-prefix-index-1793839072. F-08 live runtime proof with this candidate, E1-A and full E1-R remain open.
+- CA-HA-03 v126 runtime preflight e1-v126-image-readiness-1793839248. Took exact current E1 v123 ledger read-only. On both OrbStack nodes, exact existing API/Worker/cleanup image IDs loaded candidate schema, lease and force-stop modules in network-none containers. All six accepted the actual v123 ledger and exact candidate v124/v125/v126 prefixes; each rejected modified checksums. This verifies image/module and ledger compatibility, with no service activation or database migration.
+- CA-HA-03 F-08 real local Linux/PG17/OCI component rerun with candidate v126 e1-force-stop-linux-v126-1793839364. First run -1793839316 used the executor image as the sleep sandbox; its Worker entrypoint exited before the sibling assertion, so excluded. Fresh rerun used distinct pinned images and passed all eight force-stop/cleanup cases. Target detached descendants reaped at 2.672 s, sibling executor/sandbox and shared parent survived, target lease revoked. Held canonical stream lock while physical cleanup completed; resources_released remained false until canonical synchronization, then repeating the same stop added zero events. Zero model/search. Container inventory identical; exact event-correlated 15 sandbox volumes absent after nine explicit owned-volume removals. Scratch PostgreSQL/container removed. This is local F-08 component evidence, not a loaded two-node fault, E1-A or complete E1-R pass. Isolated E1 and production unmodified; no original signed POST replay.
+- CA-HA-03 F-08 loaded hung-executor subcase with v126-equivalent prefix index and candidate force-stop/lease modules on both isolated cleaners. Driver e1-f08-v126-hung-1793839535; fresh signed cohort corpus-rebuilt-f08-hung-1793839586. At 32 active including 8 leased and 256 SSE, exact pidfd SIGSTOP targeted one source private executor before its first model call. Public force stop accepted in 0.212 s and reported stopped/resources released at 3.401 s from submit. Target cancelled once, no model start, exact start/exit body matched and old fence rejected. All 31 siblings completed once, all 32 original signed receipts and decrypted results matched, all 256 SSE retained, ingress original GET passed and source Worker stayed up. No cohort runtime containers or cleanup rows outstanding. Temporary run-owned concurrent index removed; exact original cleaner IDs restored along with APIs, Workers and model fixture, seed unchanged, ledger v123 and zero pending/replay lag. This proves only the loaded hung subcase; candidate F-08 SIGTERM/lost-remove/late-create, E1-A and full E1-R remain open. No production changes or historical POST replay.
+- CA-HA-03 completed one fresh loaded F-08 run for each remaining v126-equivalent subcase. Lost successful Docker remove reply (driver e1-f08-v126-lost-remove-1793839808, cohort corpus-rebuilt-f08-lost-remove-1793839828) left the exact container absent and stop unconfirmed until normal cleaner reconciled; accept 0.069 s, released 6.180 s. Late create (driver e1-f08-v126-late-create-1793839855, cohort corpus-rebuilt-f08-late-create-1793840028) remained creation_unsettled until a never-started exact OCI instance appeared and was removed; accept 0.077 s, released 8.149 s. Both targets cancelled exactly once with only the pre-fault model start, original executor exit matched and stale fence rejected; all 31 sibling tasks per case completed once. Exact run-owned anonymous sandbox volumes reclaimed.
+- CA-HA-03 normal SIGTERM (driver e1-f08-v126-sigterm-1793840036, cohort corpus-rebuilt-f08-sigterm-1793840201): source exited code 0 at 17.513 s, canonical handoffs prove four original source tasks completed at generation zero and survivor handled 28; source took no new command. All four F-08 subcases including previous hung run held 32 active / 8 leased / 256 SSE, retained all SSE, and matched 128 distinct original signed receipts and decrypted responses. No cohort runtime resources remained. Both cleaner overlays used exact candidate exit/lease modules in all four runs; this turn also pinned those modules on both candidate Workers for the three new cases. Temporary equivalent index removed after each run, all original processes restored, entire v123 ledger unchanged and zero pending/replay lag. Combined evidence e1-f08-v126-sigterm-1793840036/f08-matrix.json. This covers all four loaded subcases on the diagnostic composition, not an installed v126 runtime publication or full E1-R pass. Production unchanged, historical POSTs not replayed.
+- CA-HA-03 published isolated immutable v126 control overlay, source 7c8f9093, registry localhost:28081/ha-e1/control-overlay@sha256:00eba7b9f3ca0f16b33ef335505b97f38be085b6a54ee4bd2477e6f7b39c5814. Verified OCI manifest and config bytes, pulled by digest on source, checksummed the compact image archive, imported identical image ID on peer and verified all 13 exact payload hashes on both extracted copies. No settings, credentials, approvals or Task-bound runtime definitions in the package. Six exact role images passed network-none module and ledger probes using the extracted package. Evidence e1-v126-control-package-1793840537.
+- CA-HA-03 live isolated package smoke e1-v126-control-smoke-1793840747. First smoke loop consumed stdin after staging one role; kept those requests and excluded that run from six-role proof. Fresh rerun used a dedicated role-list descriptor and asserted six staged. Both APIs, both Workers and both cleaners loaded all 13 digest-pinned files on unchanged v123. Each API admitted one fresh signed Task, original GET matched the sealed 201s, ingress read an older exact original, both new Tasks completed with one model start and one exact start/exit pair. Restored all six exact original containers, removed all candidates, verified both API readiness, unchanged catalog/approval hashes and exact v123 ledger, zero live pending and replay gap. No historical POST replay or production change. Published package is a control overlay and does not republish existing Task-bound execution definitions. Actual v126 activation, E1-A and complete E1-R still open.
+- CA-HA-03 activated the digest-pinned v126 control overlay on both isolated E1 APIs, Workers and cleaners from persistent node directories under /var/lib/zebra-e1-control-overlays. First attempt stopped before migration on a missing hash-manifest path. Second stopped before any committed DDL because the app role lacks schema-create privileges. Both restored the exact prior six roles. Final attempt e1-v126-forward-1793842263 used the existing isolated PostgreSQL operator and exact catalog SQL inside one transaction with the migration advisory lock and complete v123 ledger guard. No grant changes. Pre-migration 222,640,133-byte archive checksummed and TOC readable, source fingerprints matched immediately before DDL. Applied only v124/125/126, all 122 prior ledger rows and nine non-ledger fingerprints matched before any new offers, and retirement function was not invoked. Original catalog/approval hashes and existing signed GET results matched both APIs/ingress. Fresh post-migration synthetic Tasks completed once on two signed admissions with exact receipts and executor ACK pairs. Both new indexes valid on primary and read-only standby at v126, prefix index used in a 0.087 ms single idle query, zero pending/replay gap. Six candidates retained active; six originals retained exited. After the forward migration, a v123-only executable is not a rollback target for the v126 ledger. Production untouched and no historical POST replay. Evidence e1-v126-forward-1793842263 and linked backup-evidence. Existing private acceptance drivers with hardcoded v123 or original container IDs must be rebound to this verified runtime before further E1-A/R runs. Complete E1-A/R still open.
+- CA-HA-03 actual v126 E1-A preflight e1-a-v126-deployed-1793842397 failed before any new offers: both installed API images returned HTTP 500 for all 256 SSE, with missing legacy_snapshot_database import. The prior immutable v126 overlay omitted the coordinated stream modules used in F-09; health and signed Task smoke had not covered the streaming route. Published digest-verified v126 stream overlay localhost:28081/ha-e1/control-overlay@sha256:314a49360b19addfedeecf858e795df43ee2921f922579131bae137b1efe52cc with seven coordinated stream files added. Pulled source, imported same peer image digest, checked all 20 file hashes and rolled both isolated APIs. Verified both actual signed SSE first frames and eight seconds of liveness, older signed originals via both APIs and ingress, and unchanged catalog/approval hashes. Workers/cleaners keep original v126 overlay because their files are unchanged. Evidence e1-v126-stream-package-1793842475 and e1-v126-stream-roll-1793842517.
+- CA-HA-03 actual deployed v126 E1-A short window e1-a-v126-stream-deployed-1793842548, new cohort corpus-rebuilt-approval-sse-256-1793842574. All six expected IDs verified, actual API/Worker each 2 vCPU/2 GiB, 4+4 execution slots, previous 4-slot signed definition. All 75 issued at 5/s, 36 sealed 201s completed once with one model start and exact start/exit pair each, 38 sealed scope-capacity 429, one unknown after original signed GET. Exact unknown log identified Task IO timeout in wakeup recording. Queue p95/p99 39.284/39.732 s across 36 starts, 256 SSE retained and 929 keepalives, three global and zero scope advisory waiting transactions in 230 samples. Not comparable to the 8+8 diagnostic; E1-A fails on scope refusals and queue, no full-duration pass. Both API candidates retained, all six verified running and final v126 zero live pending/replay gap. No original POST replay or production changes. Complete E1-R still open.
+- CA-HA-03 measured exact installed v126 slot floor without runtime mutation. Read-only joined 36 previous sealed admissions to unique exact start/exit pairs and canonical model/completion events, then paired 36 Worker recovery/preparation marker sets. Ran four fresh serial signed tasks against the same installed roles and fixture definition, requiring zero pending and zero live leases before each offer; all four original signed GETs and exact executor pairs matched and cohort drained. Loaded/idle means: admission to registration 18.801/0.776 s, registration to first model 4.430/1.838 s, registration to exit ACK 7.605/2.900 s. Exact registered peak 8 (4+4) under load, 1 at idle. Loaded/idle launch-to-main 1.230/0.874 s, in-child preparation 2.401/0.664 s, input phase 0.633/0.130 s. Eight slots at 5/s imply at most 1.6 s average hold under sustained arrivals. Even the small serial sample's registered span exceeds that; arithmetic 1.052/s loaded and 2.759/s idle at unchanged span are optimistic slot envelopes, not measured throughput. Dropping the entire loaded registration-to-model interval still leaves 3.175 s registered span, so durable preparation and post-model path both matter in addition to child startup. Wall times include queueing/scheduling and DB work; no attribution to network or CPU saturation. Evidence e1-v126-slot-timeline-1793842748 and e1-v126-idle-slot-floor-1793842777. Six exact v126 roles retained, pending and replay gap zero. No old POST replay or production change. E1-A and full E1-R remain open.
+- CA-HA-03 6cd50d4a combines canonical Session and Workspace projection reads in the shared fenced Worker commit/projection adapter. Both come from one snapshot, retaining missing Workspace handling, exact revision/content, monotonic writes and receipt checks. Native red showed two queries, green one. 47 passed; one handoff fixture teardown FK error reproduced on exact prior module (test body passed). Ruff/mypy clean. Evidence e1-worker-projection-snapshot-1793843104.
+- CA-HA-03 installed-v126 matched short-window diagnostic e1-a-v126-projection-snapshot-1793843162, signed cohort corpus-rebuilt-approval-sse-256-1793843212. Only workspaces.py changed on two temporary Worker clones; live prior module hashes matched exact comparator. Same 4+4, original API/DB and approvals. All 75 issued at 5/s, 40 signed 201s completed once with exact ACK pairs, 35 signed scope 429, zero unknown, 256 SSE retained. Comparator 36/38/1. Queue p95/p99 35.459/60.698 vs 39.284/39.732 s. Exact registered span mean 6.561 vs 7.605 s; response-to-complete 1.220 vs 1.341 s. Single matched window mixed, no sustained gain proved. Tail original was first accepted at wake generation 1 about 60.694 s after admission, before its first executor registration, rather than a long completion. No attribution for why generation zero did not reach handoff. Original IDs and catalog/approval hashes matched, v126 zero pending and replay gap. No production change, original POST replay, or E1-A/full E1-R pass.
+- CA-HA-03 corrected the v126 projection-window tail interpretation: generation zero was durably handed to ha-e1-vm about 18 s after admission, fence 1, with no started event; recovery stored the prior receipt as expired_unstarted and admitted generation 1 around the 60 s deadline. The exact prior 36 and candidate 40 cohorts had zero and one such recoveries respectively (e1-v126-generation-zero-1793843451). The original cause was not observable in its removed candidate logs.
+- CA-HA-03 b3a856db adds safe failed-future correlation by Session, fence and exception class. The next matched short window e1-a-v126-future-correlation-1793843654 reproduced a generation-zero pre-start failure: exact Worker trace showed DatabaseCapacityExceeded in the local control permit acquisition inside register_executor. The same Session acquired fence 2 and started around 60 s. 75 offers, 40 sealed admissions, 35 signed scope refusals, 39 single completion events, 40 single model starts and exact executor pairs, 256 SSE and zero closures. Queue p95/p99 32.580/60.203 s.
+- CA-HA-03 fcde46d2 shares the existing bounded 250 ms pre-connect permit wait with executor registration. Retry only DatabaseCapacityExceeded before connecting, retain control lane/fence/transaction semantics and preserve existing recovery for longer contention. Native red on prior module failed only registration; candidate 42 passed and 1 Linux-only skipped on macOS, Ruff and mypy clean. Evidence e1-executor-register-red-1793843916 and e1-executor-register-permit-1793843822; exact scratch resources removed.
+- CA-HA-03 matched isolated v126 candidate short window e1-a-v126-register-permit-1793843834: 75/75 issued at 5/s with both Worker overlays hashed, 38 sealed admissions completed once with exact start/exit pairs, 36 signed scope-capacity refusals, 1 unknown retained after signed original GET. Exact API log traces that unknown to Task event-position backfill exceeding its I/O budget. 256/256 SSE, zero closures, 875 keepalives. Queue p95/p99 37.034/37.151 s, no failed execution futures in this sample. Three global lock waiters and zero scope lock waiters observed in 230 samples, max sampled global wait 96.76 ms. Fixed cap 32 and 4+4 slots retained; candidate removes observed registration tail in this sample but E1-A still fails. No sustained pass. Both installed Workers and approval/catalog hashes restored. Original data and signed evidence retained; no original POST replay or production change.
+- CA-HA-03 F-08 SIGTERM on isolated v126 + registration candidate. First cohort e1-r-v126-sigterm-1793843746 reached 32 active, 8 leases and 256 SSE but an inherited recovery-deadline assertion prevented injection; all tasks drained and exact roles restored. Fresh e1-r-v126-sigterm-drain-1793844082 / corpus-rebuilt-f08-sigterm-1793844092 injected source SIGTERM at the same load. Source exited 0 by 16.509 s, retained 256 SSE and took no new leases. The driver judged target ownership from the final poll and returned 1. Reanalysis of the preserved time series shows all four targets already done on source, fence 1, at 16.509 s, before later fence-2 leases on the peer at 18.838–21.420 s. No second execution: all 32 originals have one canonical completion, one model start, 32 matching executor starts/exits in total and 32 equal signed original receipts after the fault. The four old source fences were rejected. Exact six roles and model fixture restored, catalog/publication hashes matched, v126 zero pending and standby replay gap zero. The normal SIGTERM subcase has evidence, but full E1-R on the final candidate is still open. Both nodes are on the same OrbStack host. No original POST replay or production action.
+- CA-HA-03 correlated the prior E1-A unknown with its first transaction retry. In e1-v126-admission-timeout-proof-1793844450, sampler saw backend 3037265 waiting for the namespace-global wakeup lock at 01:57:56.910 UTC while backend 3037279 held it in transaction finish. PostgreSQL logged the waiter's lock timeout at 01:57:56.994 UTC, and the API's estimated retry began 6.7 ms later. The retry then exhausted Task IO at Segment cursor update. This is a timestamp/SQL-shape correlation, no shared API-to-backend PID was logged. Installed backfill source matched branch. This shifts the next probe toward lock hold/whole-transaction retry cost; the last frame alone did not implicate the Segment update as the main cause.
+- CA-HA-03 F-03 named peer VM loss on installed v126 (no temporary Worker overlays), e1-r-v126-peer-loss-1793844431 / corpus-rebuilt-f03-node-loss-1793844435. Preflight verified all six running peer containers belonged to the isolated E1 environment and checked zero live pending and standby replay gap. Fault injected at 32 active / 8 leases / 256 streams. Peer VM confirmed stopped in 5.263 s, ingress original signed GET reached ten consecutive successes by 9.058 s after confirmed stop, and 128 exact saved-cursor successor reads completed in 12.374 s. 128 survivor streams stayed open. Peer automatically restored API and valid Worker incarnation; two readiness polls landed before the Worker started. All 32 original signed receipts matched, 28 Tasks completed once, and four affected Tasks remained suspended with one model start, one unreceipted reservation and generation zero. Exact v126 role identities, model fixture and standby replay restored; no replay of original POSTs or production changes. This is one F-03 drill on two logical nodes on the same host. The saved-prefix batch measurement does not establish latest-cursor UX-07.
+- CA-HA-03 F-01 source API SIGKILL on installed v126, e1-r-v126-api-loss-1793844614 / corpus-rebuilt-e1r-f01-bounded-resume-1793844618. At 32 active / 8 leases / 256 streams, SIGKILL stopped the source API only. 128 survivor streams stayed live; all 128 affected requests read the exact saved-prefix successor in 25.823 s with no retryable read errors. Ingress original GET reached ten consecutive verified successes at 9.108 s. After source restoration all 32 original signed receipts matched, all 32 completed once with a single model start, and 32 start/exit receipts matched exactly. Driver exited 0, six expected v126 roles restored, no live pending and no standby replay gap, original model fixture active. This does not cover the before/after COMMIT reply-loss subcases or establish latest-cursor UX-07. No original POST replay, production mutation, or complete E1-R claim.
+- CA-HA-03 F-01 after-COMMIT response loss on installed v126. Initial e1-r-v126-postcommit-loss-1793844812 proved one upstream POST, a sealed 201, zero response bytes delivered and exact signed peer GET, but sampled 32 active/8 leases after the drop, so retained as diagnostic. The fresh e1-r-v126-postcommit-loaded-1793844843 / corpus-rebuilt-postcommit-loss-1793844989 held the already-committed HTTP response until the gate recorded exactly 32 signed originals, 4+4 live leases and 256 SSE. Closed the loopback connection without sending bytes; client recorded outcome_unknown and the exact sealed result was recovered by original signed peer GET and isolated ingress. All 32 signed original receipts matched after drain and each Task had one canonical completion, one model start and one exact executor start/exit pair. Both drivers exited 0, exact roles, v126, zero pending and standby replay gap verified. Original POSTs not replayed. Production untouched. One loaded after-COMMIT repeat on installed v126; full multi-repeat E1-R remains open.
+- CA-HA-03 F-01 before-COMMIT response loss on installed v126, e1-r-v126-precommit-1793844956 / corpus-rebuilt-precommit-full-1793845130. An owner-tagged clone of the installed API was bound only to node loopback and mounted the exact deployed atomic admission module with one fresh-title/namespace-gated exit hook after sealed result insertion and before COMMIT. At 32 active background originals, 4+4 leases and 256 SSE, the separate signed probe received zero response bytes and the clone exited 86. Peer signed original GET preserved unknown; observation and termination denied retry and Controller reclaim, and termination proved non-commit. Exact probe Task, projection, Events, command, outbox, lease and sealed result all counted zero by read-only SQL. All 256 streams remained live and all 32 background Tasks completed once with one model start and matching executor pair each. All 32 original signed receipts matched. Clone and its loopback listener removed, exact six v126 roles and model fixture verified, no live pending and standby gap zero. No production action or POST replay. F-01's three subcase types now each have a loaded drill on installed v126; contractual repeats and full E1-R remain open.
+- CA-HA-03 completed the loaded F-01 repeat matrix on installed v126 at 32 active / 4+4 leases / 256 SSE. Evidence e1-r-v126-f01-repeat-1793845384/summary.json indexes three independent rounds each of source API SIGKILL, before-COMMIT exit and after-COMMIT reply loss. Across nine disjoint cohorts all 288 signed originals verified, with one completion, one model start and one exact executor start/exit pair per Task. All three pre-COMMIT probes left zero rows in the seven audited business/result categories, retained original unknown/termination evidence and kept all 256 streams. All three after-COMMIT drops occurred only after the full injection gate, retained all streams and recovered the exact sealed response by signed GET. API SIGKILL worst signed original GET RTO 9.108 s, worst saved-cursor batch 25.823 s, all 128 affected reads exact and 128 survivor streams per round. Retained one retryable 503 in the second API-kill round, counted as an availability error; saved-prefix batch does not satisfy latest-cursor UX-07. Exact six roles and model fixture restored, zero pending and standby replay gap, temporary clone IDs and loopback listener absent. No original POST replay or production operation. This closes the three-repeat evidence for the F-01 fault behaviors under E1-R on this composition. The complete E1-R matrix, sustained capacity and long-window availability remain open.
+- CA-HA-03 completed three independent loaded F-03 peer VM-loss repetitions on the exact installed v126 roles. Index e1-r-v126-f03-repeat-1793846267/summary.json covers the prior accepted round and two fresh runs. At injection each held 32 active / 4+4 leases / 256 SSE; confirmed VM stop worst 5.263 s, tenth consecutive signed ingress original GET worst 9.095 s after confirmed stop, and 128 exact saved-cursor successor reads worst 12.374 s. All 128 surviving streams stayed connected each round. All 96 original signed receipts matched; 84 Tasks completed once, and the 12 affected Tasks suspended at generation zero with one model start and one unreceipted reservation each, without re-dispatch. Peer API and valid Worker incarnation recovered after each reboot; exact role IDs and zero live pending/replay gap verified. An initial preflight sampled 96 bytes of async lag and stopped before injection; a fresh bounded readiness poll required exact zero and did not loosen the gate. Both nodes share one physical host; latest-cursor UX-07, physical-host HA and full E1-R remain open. No original POST replay or production change.
+- CA-HA-03 installed v126 F-02 peer Worker PostgreSQL partition, e1-r-v126-f02-partition-1793846600 / corpus-rebuilt-f02-partition-1793846604. At 32 active, 8 leases and 256 SSE applied only a named cgroup-specific loopback port 25432 nftables reject with independent timed rollback. Peer Worker TCP failed while host relay connected; same live Worker process rejoined with valid incarnation, all 256 SSE stayed up and 32 signed original GETs matched. All 28 unaffected Tasks completed once. By the last pre-heal sample (122.333 s) zero of four targets began under a new fence; three required reconciliation and one stayed pending through the post-heal drain deadline. All four had source executor registration, no exact exit ACK, zero model starts/reservations, and one or two post-handoff canonical setup events (execution_authority_resolved, memory_context_selected). Direct fence check via the rejoined peer confirmed four old fences rejected; the audit's stricter exit-receipt assertion failed and is retained. The installed recovery path treats post-floor events as uncertain absent native proof; no inference that setup events alone authorize replay. The still-pending row has an overdue recovery timestamp; its persistent pending reason is unproven. Driver exited 1, exact roles, original model and zero standby gap confirmed; one pending preserved. Exact nft table/timer and failed rollback unit removed. No original POST replay or production action. F-02 partition availability and drain fail, so further load should use an independent isolated state or wait for a proof-preserving recovery path.
+- CA-HA-03 priority redirected to E1-A at user request. The previously launched F-02 Worker SIGKILL run e1-r-v126-f02-worker-kill-1793848304 drained and restored the original isolated roles; kept it separate from capacity evidence. Rechecked the previous F-02 partition's overdue pending row read-only, which had since reached requires_reconciliation like its three peers. No original task replay or edits.
+- CA-HA-03 independent E1-A baseline preparation. The first restore into a separate DB on the existing isolated PG container failed ENOSPC while building the Task event index; verified the owned DB label and dropped only that incomplete copy. Restored the pre-F-02 digest-pinned v123 archive in a new network-none PostgreSQL container and dedicated owner-tagged volume, then applied the exact ledger-guarded v124–126 migrations. Initial disposable attempt needed the archive's e1_receipt_owner role; created it as NOLOGIN in the seed container before a clean restore. Verified v126/125 ledger entries and zero live pending; kept the dedicated seed stopped for independent reproducible A/B clones. Evidence e1-a-v126-seed-volume-1793848829. The phase contract and pinned historical role resources are in e1-a-v126-independent-state-1793848439/comparison-contract.json. Next bind test-only API/Worker/cleaner and TLS to the dedicated state, run a same-config baseline at 4+4/5 offers per second/256 SSE, join full slot hold to child launch, preparation and post-model finalization/exit, then select a total-slot improvement for a same-seed comparison. No new capacity result or selected performance change yet. Keep F-02 separate and preserve original data and receipts. Production untouched.
+- CA-HA-03 original isolated standby follow-up. After the first independent-database restore attempt on the original isolated primary hit ENOSPC, the old standby was observed requesting WAL 000000010000000C00000083 already removed. Primary and the six existing application roles remained online, v126 and zero live pending, with no connected standby. Attempted reversible reseed to a new owner-tagged peer volume using exact existing TLS verification and passfile, leaving the old standby and volume in place. pg_basebackup also hit ENOSPC before candidate creation; verified temporary basebackup container absent and removed only the new empty/failed volume. Evidence e1-standby-wal-reseed-1793849163. Original isolated standby still disconnected, old volume retained; capacity seed itself is verified and stopped on an independent dedicated volume. Production was not involved.
+- CA-HA-03 independent E1-A wiring and rejection diagnosis. Cloned the stopped v126 seed read-only into separate owner-tagged PostgreSQL runtime volumes, kept port bound to the local host, and verified TLS and exact ha_app grants from both OrbStack nodes. Matched 2-vCPU PG and relevant PostgreSQL settings, 2-vCPU/2-GiB API/Workers, 4+4 slots, and used separate matching 512 MiB tmpfs workspace volumes. Startup retries before any offers fixed the clone's missing ACL, max_connections, ephemeral Docker port and fixture URL-port checks. Kept original approvals and isolated roles, restoring all six after each attempt.
+- Two independent short-window attempts (e1-a-v126-fixed-baseline-1793849743 and -1793849946) issued 75/75 at 5/s with 256 SSE and no closes. They sealed 48 and 40 201s and 27 and 35 scope 429s respectively; all 88 admitted originals were accounted for with exact executor pairs but zero model starts or completions. The first workspace clone lacked tmpfs options; matching quota verified on both Workers did not resolve execution. These are invalid capacity comparison arms. One fresh signed diagnostic e1-a-v126-child-diagnostic-1793850092 captured the child failing require_snapshot_compatibility. A no-write counterfactual on both original Workers verified the installed approval baseline digest matches original configuration but differs when only the isolated PostgreSQL route changes. The baseline HMAC includes non-model settings such as the DSN. Next use a new isolated approval/bundle and signed definition for the exact test route, preserving the original catalog and receipts. Require a fresh signed Task to reach actual model execution and complete before rerunning the 75/256 phase profile. Both runtime DB copies stopped and retained for evidence; test-only workspace volumes removed, original six roles and binding hashes restored. Production untouched. No new capacity result and no optimization selected yet.
+- CA-HA-03 obtained the first valid independent E1-A baseline in e1-a-v126-approved-baseline-1793850310. Copied the clean v126 seed, matched isolated PG settings/2 CPUs and TLS app access, and created a fresh test-only definition/actor and exact DSN-bound approval. The native publication gate rejected the first evidence record without policy_version; preserved it, recorded a fresh evidence ID tied to two successful native synthetic wire/meter probes and exact policy, and published through the native operator service on the clone only. One fresh signed Task reached one model start and completed before load.
+- CA-HA-03 same-config baseline corpus-rebuilt-approval-sse-256-1793850565, 4+4 slots, 5/s for 15 s, 16 in flight, 256 SSE with zero closes. Issued 75; 40 sealed 201s had one canonical completion, one model start and exact start/exit pair, 35 sealed scope 429s, zero unknown. Queue p95/p99 36.994/37.955 s. All 40 durable samples mean registration to exit ACK 7.980 s; registration to model start 4.494 s, model request to persisted response 1.436 s, response to complete 1.512 s and complete to exit ACK 0.537 s. 32 paired child traces had mean launch to child main 1.484 s and preparation 2.320 s; 30 slot-release traces mean full hold 9.336 s, with ten missing and not extrapolated. One global wait and no scope lock waiter in 230 samples. E1-A fails, no sustained or fairness pass. Next matched optimization candidate is import-only warm executor launch, retaining fresh per-Task isolation, model authority/fence and exact exit proof. Existing sterile warm probe e1-executor-warm-receipt-1793806831 reduced synthetic check result median 1014 to 148 ms; this supports testing and does not establish total-slot gains or the 1.6 s ceiling. Recover complete phase logging in the comparison and use the same seed/workload/limits. Baseline clone stopped and preserved with zero pending, original six IDs and approvals restored, exact temporary workspace volumes removed. No production mutation or old POST replay.
+- CA-HA-03 independent matched v126 warm launch comparison e1-a-v126-warm-comparison-1793850832, signed cohort corpus-rebuilt-approval-sse-256-1793850897. Restored a fresh copy of the identical stopped seed, matched cold local TLS route and exact same catalog, approval and published definition via native operator metadata only. Ran the same fresh signed smoke before the 75/256 window. Overlaid only the exact installed Worker session_process and executor_supervisor with the prior one-shot sterile test launch path; both hashes matched. Each Task retains its fresh process, parent fence and exit receipts. All 75 issued, 40 sealed 201s with one model and one completion plus exact ACK per Task, 35 sealed scope 429s, zero unknown and zero SSE closures. Registration to exit ACK mean 7.980 to 6.395 s across 40 each (-1.585 s, -19.9%); launch to child main 1.484 s on 32 cold traces to 0.0053 s on 40 warm. Successful full-slot log mean 9.336 s on 30 cold traces versus 7.394 s on all 40 warm, different coverage; also retained one 0.491 s first-fence hold with no executor start, approved generation 1 as expired_unstarted. Queue p95/p99 36.994/37.955 to 32.659/60.414 s. This verifies startup speed in one matched pair; E1-A still fails, no throughput or broad availability pass. No product rollout of the warm fixture. Further phase work must address remaining preparation/model settlement in addition to startup. All original six roles and approval hashes restored, clone v126/zero pending stopped and retained, temporary workspace volumes removed. No production change or original POST replay.
+- CA-HA-03 ordinary model ledger 8b057720 coalesces transaction-local timeout setup, pre-send charge/reservation and receipt/refund writes. Independent pre-send COMMIT, exact reservation/receipt match, unknown refusal, replay/idempotence and the final fenced budget recheck stay in place. Real PG red reproduced four targeted statements versus two expected, green budget/admission suites 34 passed, Ruff/mypy clean. Evidence e1-worker-ledger-proof-1793851296.
+- CA-HA-03 installed-v126 matched warm+ledger arm e1-a-v126-ledger-comparison-1793851349 / corpus-rebuilt-approval-sse-256-1793851377. New same-seed copy, exact same TLS/definition/approvals and warm supervisor, fixed 4+4/5/s/256 SSE. Only the ledger hunks overlaid on installed worker_budget.py so the branch's separate deadline poll changes were excluded. Fresh signed smoke completed. All 75 issued, 40 sealed 201s completed once with one model start and exact exit pair, 35 scope 429, zero unknown, 256 SSE/zero closes. Full slot mean 7.394 to 7.219 s (-2.4%, 40 exact successful fence traces per arm); registration to ACK 6.395 to 6.272 s and model request to durable response 1.361 to 1.302 s. Queue p95/p99 32.659/60.414 to 32.077/60.758 s; one unstarted first fence observed again. A single short-window pair proves the round-trip change ran, with no material capacity step or causality claim. Capacity still fails. Prioritize repeated ownership/authority/deadline reads before further small write batches. Clone stopped/zero pending, original six roles and approvals restored, owned temporary workspaces removed. No production action or old POST replay.
+- CA-HA-03 evaluated one post-lock authority snapshot for ordinary Worker budgets. The prototype merged the fresh clock, exact shared STOP ancestry predicate, unreserved-child and settled-child reads from four statements into one after unchanged lease/Task locks. Red measured four, native green 54 tests passed including budget/admission/force-stop, Ruff and mypy clean. Evidence e1-worker-authority-snapshot-1793851623. Same-seed warm+ledger vs warm+ledger+snapshot short-window e1-a-v126-authority-snapshot-1793851657 / corpus-rebuilt-approval-sse-256-1793851684 issued 75, completed 40 sealed admissions once with exact pairs, 35 sealed scope refusals and zero unknown/stream closures. Full slot mean 7.219 to 7.541 s across 40 exact log pairs, registration to ACK 6.272 to 6.472 s, queue p95/p99 32.077/60.758 to 32.411/33.155 s. No failed first fence in the candidate versus one in control; the p99 difference cannot establish a scheduling improvement. Archived exact candidate patch and excluded it from the branch. Further work needs a larger lifecycle boundary reduction, not a claim based on fewer queries. Clone v126 zero pending stopped and retained, exact original six roles and approvals restored, owned workspace volumes removed. No production change or original POST replay.
+- CA-HA-03 measured native child SQL call-site cost on fresh same-seed warm+ledger arm e1-a-v126-native-sql-profile-1793852204 / corpus-rebuilt-approval-sse-256-1793852231. Only a temporary child instrumentation overlay counted psycopg.Connection.execute call sites and wall time inside execute_claimed_with_stale_retry; no SQL text, parameters or business contents recorded. Fresh signed smoke completed. All 75 issued, 40 signed 201s, 34 signed scope 429s, one unknown on recorded original GET. 39 canonical completions among the 40 exact registered/exit pairs, so not a passing short-window arm. All 256 SSE reached startup; separate lock sampler timed out at 90 ms and prevented end-of-window SSE observation from being recorded. Do not infer retention or causal performance from this diagnostic. Matched all 40 Session/fence call-site profiles. Per-Task mean 1,095.725 execute calls and 4.289 s in measured calls (not DB server CPU, excludes child initial recovery, other driver APIs and commit wall outside execute). Major sites: read_current_lease 76.85 calls/0.598 s, connection_scope.release 186.55/0.463 s, stop_requested 59.875/0.360 s, check_deadline 48.85/0.267 s, pool check_connection 89.875/0.267 s, ancestor_deadline 65.85/0.208 s. Prioritize structural coalescing of repeated fresh lease/control checks across a coherent Worker stage, or bounded Run-owned socket reset policy with proof that transaction-local state is the only possible state; keep fences, exact receipt, control progress and cross-operation isolation. Clone zero pending and stopped, exact original roles and binding hashes restored, owned workspace volumes removed. No production change, original replay or accepted optimization in this turn.
+- CA-HA-03 evaluated one fresh isolated Worker authority poll on the same v126 seed, 4+4 slots, 5/s, 75 offers and 256 SSE. The installed baseline used two deadline/lineage statements plus one lease read. The candidate reused the exact current-lease/STOP proof in a single read with deadline and binding, retained ownership callbacks for other callers, and left write fences and model reservation transactions in place. Native and Worker regression 73 passed, scoped Ruff and mypy clean. An E1 Worker recovery module was bind-mounted from the worktree; restored its original source before the isolated cutover and verified both candidate Worker module manifests. Fresh signed smoke completed once. All 75 issued, 40 sealed 201s completed once with one model start and one exact start/exit ACK pair each, 35 sealed scope 429s, zero unknown. 256 SSE stayed open through drain. Sampler completed 230 samples with one global and zero scope waiters. Full-slot mean 7.2191 to 7.8952 s, registration to exit ACK 6.272 to 6.672 s, queue p95/p99 32.077/60.758 to 32.446/37.298 s. The baseline had one abandoned first fence and the candidate none. Per-stage means (40 exact traces per arm) were launch-to-child-main 0.006 to 0.007 s, preparation to orchestrator build 2.199 to 2.704 s, registration to model start 2.984 to 3.657 s, model response to completion 1.428 to 1.232 s and completion to exit ACK 0.558 to 0.576 s. One pair did not demonstrate a material occupancy improvement. Archived the exact candidate patch instead of keeping it on the delivery branch. Next capacity slice should trace durable input and context materialization as a whole, and independently separate actual model transport from model journal and finalization overhead before choosing a structural reduction. E1-A still fails. Sustained load, cross-scope fairness and full E1-R remain open, and F-02 state was separate from this seed. Clone v126 zero pending stopped and retained, original six role IDs and approval hashes restored, both isolated APIs ready and both owned workspace volumes removed. No production operation or original POST replay. Evidence e1-a-v126-paired-authority-1793852833/comparison.json and corpus-rebuilt-approval-sse-256-1793853062, regression e1-worker-paired-authority-1793852881/green.log.
+- CA-HA-03 evaluated native input page read/advance in one existing fenced transaction, excluding the separate initial source-page read while preserving exact page validation for legacy callers, post-lock lease/STOP, bounded page bytes, CAS, and the final fresh Task header. Both original E1 Workers were checked for source binds before editing. Native red reproduced two identical reads; candidate read once and rejected released ownership before source read. PostgreSQL and Worker 65 focused tests, Ruff and mypy passed. Matched installed v126 warm+ledger baseline e1-a-v126-ledger-comparison-1793851349 against same-seed candidate e1-a-v126-input-page-1793853381. Only the two input preparation source modules changed and both runtime manifests matched. Signed smoke completed once. At 4+4 slots, 5/s, 75 offers and 256 observers, all 75 issued and resolved to 38 sealed 201s with one model start, one completion and one exact ACK pair each, and 37 sealed scope 429s. Zero unknown and zero SSE closures. Input preparation mean 0.667 to 0.805 s, preparation through orchestrator build 2.199 to 2.687 s, full-slot mean 7.219 to 8.083 s, queue p95/p99 32.077/60.758 to 35.322/60.309 s. Each arm had one first fence without the successful executor pair. Sampler completed 230 snapshots, two global waiting transactions and zero scope. One matched short window did not show an occupancy or admission improvement. Archived the candidate with red/green and pinned overlays, excluded from the branch. After repeated small changes failed to move full-slot occupancy, the next matched diagnostic should timestamp reservation/commit, pre-wire authorization, actual wire, post-wire authorization, receipt settlement, and response-event commit on the same Session/fence. Existing one-Task model phase evidence proves the boundaries but cannot quantify them under 8-slot load. E1-A still fails, sustained and fairness gates and full E1-R remain open. F-02 was separate. Restored exact six role IDs and approval digests, both isolated APIs ready, stopped zero-pending v126 clone retained and both owned workspace volumes removed. No production operation or old POST replay. Evidence e1-a-v126-input-page-1793853381/comparison.json, corpus-rebuilt-approval-sse-256-1793853516, e1-worker-input-page-red-1793853421/red.log and e1-worker-input-page-1793853362/green.log.
+- CA-HA-03 measured full guarded model lifecycles on 40 exact Session/fence pairs at v126, 4+4 slots, 5/s and 256 observers. The diagnostic overlaid only the child timing wrapper and logged phase names, time and success without request data. Fresh signed smoke succeeded. Model reservation including commit 0.076 s mean, pre-wire authorization 0.054, wire 0.655 (0.238 nested budget polling and 0.417 remainder, including client/body/parser work), post-wire authorization 0.036, settlement including commit 0.063, post-settlement authorization 0.040, response Event append 0.247. From reservation start through response append was 1.242 s, versus 7.639 s mean whole-slot. Tested coalescing protocol-only model SSE lines within 100 ms while authorizing every emitted text delta, retaining non-emitting heartbeat revocation, absolute I/O timeout, exact reservation and final settlement. Red reproduced excess per-line checks, 120 focused transport/stream tests plus Ruff and mypy passed. Matched same-seed profiled arm with only the transport module changed: 6 to 2.025 in-wire checks per Task, 0.238 to 0.110 s of nested checks, 1.242 to 1.284 s reservation through response append, and 7.639 to 8.694 s whole-slot. Both arms issued 75/75, each recorded 40 sealed 201s with one model start, one completion and one exact exit pair each, 35 sealed scope 429s, no unknown and 256 SSE with zero closures. Queue p95/p99 33.226/36.081 to 38.235/60.208 s; candidate had one short unstarted fence. This single pair proves the change removed polling work, with no material slot gain. Archived exact candidate and regressions outside delivery branch. Over six seconds of baseline full-slot time remain outside even the entire measured model span. Next pursue larger shared Worker persistence boundaries across preparation and completion, keeping post-commit receipt and control semantics; further streaming poll tuning cannot close the 1.6 s capacity requirement. E1-A, sustained/fairness, and full E1-R remain open. Both owned v126 clones stopped with zero pending, exact original six role IDs and approval hashes restored, isolated APIs ready and owned temporary workspaces removed. No production operation, original POST replay or F-02 state reuse. Evidence e1-a-v126-model-phase-1793853796/model-phases.json, e1-a-v126-model-cadence-1793854028/comparison.json, and signed cohorts corpus-rebuilt-approval-sse-256-1793853872 and corpus-rebuilt-approval-sse-256-1793854057.
+- CA-HA-03 evaluated a shared fenced projection-pair write in Worker append, companion reconciliation and bounded tail batch. The statement shares the authoritative stream check and writes Session then Workspace through the same monotonic upserts, retaining standalone adapters, conflict verification, post-write lease recheck for the batch, and receipt ordering. Native regression demonstrated two projection-writing statements before and one after. 64 focused tests, Ruff and mypy passed, including rollback on workspace failure and on lease expiry after the paired write. An additional handoff test passed its assertions but hit an existing runtime_namespace_gates FK during teardown, independently reproduced against the pre-change public adapter. Isolated v126 warm+ledger fixed-load candidate e1-a-v126-projection-pair-1793854410 changed only the three named storage modules on both Workers, exact digest manifests checked, fresh signed smoke completed. All 75 issued at 5/s with 4+4 slots. 39 sealed 201s with one model start, completion and exact ACK pair each, 36 sealed scope 429s, zero unknown; all 256 SSE held to drain. Baseline 40/35, mean whole-slot 7.219 versus 9.296 s, registration to ACK 6.272 versus 8.010 s, queue p95/p99 32.077/60.758 versus 43.682/60.647 s. Both arms had one unstarted first fence. Candidate had one global and zero scope advisory waiters in 230 snapshots. One short pair does not establish the performance cause. Candidate and regression archived outside the branch. Further work should compare operation-level and process scheduling wait under fixed load to choose a broader execution-path reduction, with prior native profiling showing 1,096 SQL calls/Task across many boundaries. E1-A still fails; sustained/fairness and full E1-R remain open. F-02 separate. Clone v126 zero pending stopped and retained, exact six original role IDs and approval digests restored, both isolated APIs ready and owned temporary volumes removed. No production changes or original POST replay. Evidence e1-a-v126-projection-pair-1793854410/comparison.json, corpus-rebuilt-approval-sse-256-1793854680, e1-worker-projection-pair-1793854476/{red,green}.log and e1-worker-projection-pair-handoff-baseline-1793854523/baseline.log.
+- CA-HA-03 fixed v126 load CPU/DB scheduling diagnostic e1-a-v126-db-scheduler-1793855033, exact installed warm+ledger cohort at 4+4 slots, 2-vCPU Worker/PG, 75 offers at 5/s and 256 SSE. First staged arm -1793854945 stopped before offers when the CPU pressure file was unavailable; restored and stopped its own clone. In the retry, child-only profiling used kernel per-main-thread runnable delay and thread CPU time with exclusive psycopg call scopes (nested driver calls excluded), logging no SQL, parameters or business data. Signed smoke completed once. All 75 issued, original signed GETs resolved 32 admissions and 21 scope 429s, 22 unknown. Read-only lookup by exact operation/request digest found no sealed result rows for those 22 in the clone. Unknown remains unknown. The temporarily pending accepted command later drained under a later fence, without replay. All 32 admissions had exact executor registration/exit pairs and one model start each, 31 canonical completions, 256 SSE and zero closures. Mean whole-slot 10.275 s and queue p95/p99 38.118/121.096 s in this diagnostic, not an uninstrumented capacity arm. Of mean 7.450 s on executor main thread, 0.687 s ran on CPU, 1.379 s waited runnable, 5.384 s remained non-running. Exclusive DB scopes held 6.797 s wall and 5.348 s non-running remainder, including driver/network/server waits and wrapper overhead, not measured SQL server execution. Scope release commit and reset together consumed 1.658 s mean across about 184 commits and 186 resets per Task; smoke DB scopes 2.152 s wall on 1,496 calls vs 6.797 s on 1,487.875 mean under load. Isolated PG CPU was throttled in 498/1,582 periods (2 vCPU), source Worker 102/1,582. Exact before/after peer Worker counters missing because the capture command consumed the remaining input row. Per-thread execution evidence includes both nodes. Workload sampling completed with four global/zero scope advisory waiting transactions. This distinguishes scheduling and driver waits, and identifies the shared socket-release boundary for targeted work. Both E1 clones retained stopped, zero pending, original six roles and approval digests restored, both isolated APIs ready, owned temporary workspaces removed. No production change or old POST replay. Evidence scheduler-profile.json, audit.json, offline-receipts.json and corpus-rebuilt-approval-sse-256-1793855065.
+- CA-HA-03 scratch PG17 connection-release protocol probe e1-db-reset-protocol-1793855462. PostgreSQL refused DISCARD ALL following COMMIT or ROLLBACK in a simple-query string. One libpq pipeline exchange with a distinct Sync after each command succeeded for successful commit, rollback of an aborted transaction, and deferred commit failure. The deferred violation was independently classified as SQLSTATE 23505, with zero rows persisted and DISCARD succeeding afterward. Only a protocol feasibility result. Next verify cancellation, transport-loss unknown, commit acknowledgment/error attribution and driver reset-state compatibility before integrating a socket-release candidate; then use fixed-load A/B. No runtime source or gate changes. E1-A, sustained/fairness and full E1-R remain open.
+- CA-HA-03 evaluated native scoped socket release with separate COMMIT/ROLLBACK and DISCARD ALL Sync messages sent together, receiving commit acknowledgment before interpreting reset failures. Exact native connection types and unchanged transaction hooks only; custom connections, prepared state, active transaction contexts and external pipelines retained the old path. Deferred constraint failure, pre/post-ack disconnect, KeyboardInterrupt, actual deadline during deferred commit wait and native reuse/reset were covered. 36 focused scope/bounded/work-unit tests, Ruff and mypy passed; red confirmed pipeline-fault cases were not exercised by the old implementation. Installed candidate only on the two isolated E1 Workers, verified module and driver identities, kept v126/4+4/2-vCPU PG/5-per-second/256 SSE. Fresh signed smoke completed once. Candidate e1-a-v126-reset-pipeline-1793855779 / corpus-rebuilt-approval-sse-256-1793855862 issued all 75, had 34 sealed admissions completed once with exact model/exit proof, 31 sealed scope 429s and ten unknown original GETs. Zero SSE closures; independent lock sampler timed out, retained partial evidence. Mean whole-slot 10.387 s; queue p95/p99 44.000/45.626 s. Ran an immediately adjacent original warm+ledger control from another fresh copy of the identical seed, e1-a-v126-reset-control-1793855927 / corpus-rebuilt-approval-sse-256-1793856037. All 75 issued, 37 sealed admissions completed once with exact model/exit proof, 38 sealed scope 429s, zero unknown and zero SSE closures. Mean whole-slot 8.754 s, queue p95/p99 40.875/40.892 s. Neither arm passes E1-A. This pair gives no capacity gain for the lower-level protocol change, so exact candidate and regressions were archived outside delivery branch. Observed host had 4.5 GiB swap use and 61 GiB free on the data volume; this is a resource snapshot, not attribution of latency. Next focus on the approximately 220 independent transaction boundaries per short Task measured previously, preserving mandatory independent model reservation and durable completion; fewer network waits at release alone did not improve whole-task occupancy. Both clone databases stopped with v126/zero pending, exact original six roles and approval hashes restored, both isolated APIs ready and owned temporary workspace volumes removed. No production operation or old POST replay. Evidence adjacent-comparison.json, audit.json, sampler-partial.json, e1-scope-reset-pipeline-1793855753/green.log and e1-reset-pipeline-red-1793855804/red.log.
+- CA-HA-03 paired native lease/deadline work unit ac349add. Verified final single-Task transaction map e1-a-v126-transaction-map-1793856413 has 222 commits, with 77 lease reads in BudgetExecutionCheck and 49 paired deadline reads. Child now supplies an explicit native database binding only for its exact PostgresLeaseStore. Execution binds a fresh BudgetExecutionCheck per attempt/retry. The callback shares the existing postgres_work_unit only for the same DSN/namespace and exact native budget store. Default/custom callbacks retain their call order. No query-result cache, model I/O or reservation transaction is enclosed. Native red measured 98 commits versus 49 expected over 49 pairs; 59 focused budget/work-unit/execution tests passed, including subsequent lease/STOP/deadline/binding refusal, failure scope cleanup, foreign-scope fallback, fresh retry gates and deadline narrowing between the two reads. Ruff/mypy and size/diff checks passed.
+- Fixed installed-v126 candidate e1-a-v126-ownership-unit-1793857758 / corpus-rebuilt-approval-sse-256-1793857864 against immediately adjacent original control e1-a-v126-ownership-control-1793857796 / corpus-rebuilt-approval-sse-256-1793858033. Each restored a fresh copy of the identical retained seed, exact approval/catalog/definition, 4+4 slots, 5/s, 75 offers, 256 SSE. Only the three apps/Worker module changes were overlaid, with same main-thread commit counter in both arms; installed storage deadline implementation remains unchanged, retaining its two statements. All runtime manifests matched. Separate fresh signed smoke completed once per arm and counted 173 candidate versus 222 control commits. All 40 candidate and 36 control sealed admissions completed once, with one model start and one exact executor start/exit pair each. Every candidate profile counted exactly 173 commits, every control 222, no missing profiles. All occupied attempt logs matched one successful fence per Task, so per-Task complete slot sums equal successful-fence holds without excluded failed attempts. Full-slot mean 8.2606 versus 9.6234 s (-1.3628 s/-14.2%), p95 11.757 versus 14.760 s. Queue p95/p99 32.0155/36.2002 versus 43.8579/43.9331 s. Candidate 40 sealed 201 / 34 sealed command_scope_capacity 429 / one unknown, control 36 / 38 / one unknown, including every one of 75 issued offers in each arm. Original signed GET recheck after drain retained each unknown; no POST replay. Both 256 SSE cohorts held with zero closures, samplers completed 230 snapshots each. One adjacent short pair supports the measured transaction reduction and observed occupancy difference, with no sustained throughput, fairness or complete E1-A pass. Original six role IDs and approvals restored for each arm, both APIs ready, v126 clones zero pending stopped/retained, two owned workspace volumes per arm removed; six original Worker source hashes rechecked. Production untouched. Evidence adjacent-comparison.json, occupancy.json, audit-online.json, audit.json, sampler-status.json, and e1-ownership-work-unit-1793857708/{red,green}.log. Local candidate retained for review, E1-A and the full HA goal remain incomplete.
+- CA-HA-03 fresh ac349add single synthetic Task transaction map e1-a-ac349add-transaction-map-1793859182 confirmed 173 commits: 50 work units, 28 unpaired lease reads, 18 progress transactions, 13 latest Run header reads, 13 native budget phases and 11 tail reads. Twelve latest Run header reads immediately followed catch_up ownership/deadline checks. A shared native header read was selected to reduce this common synchronous boundary; no result caching or longer transaction across canonical/derived writes or model I/O.
+- Checked progress Run header eb0721a9 reuses postgres_transaction_work_unit with an explicit read-only transaction for the configured native callback and Run metadata read. Only matching native Task stores and ownership database bindings use the optional hook; the existing compatibility property preserves custom readers. Plain calls preserve the one-statement path. Callback and Run read finish before any page advance/append. Native red reproduced two commits versus one expected; 58 focused native/Worker progress, work-unit, budget and preflight regressions passed, including scope fallback, a newly committed Run seen after the callback, refusing writes in the read phase, and proving page advances occur outside the read unit. Ruff/mypy/size/diff checks passed.
+- New candidate e1-a-ac349add-checked-header-1793859685 / corpus-rebuilt-approval-sse-256-1793859844 against immediately adjacent ac349add control e1-a-ac349add-header-control-1793859764 / corpus-rebuilt-approval-sse-256-1793860018. Both fresh identical v126 seeds, 4+4 slots, 5/s, 75 issued offers, 256 SSE, same light main-thread commit counter and fixed approvals/definition. Only progress_recovery.py and worker_progress.py differ on top of the exact prior ac349add overlays; installed deadline SQL remains unchanged. Smoke succeeded once in each arm, counting 161 versus 173 commits. Candidate 40 sealed admissions all completed once with one model start and exact executor ACK each, plus 35 sealed scope 429s; control 40 sealed admissions, 38 completed, 39 model starts and 40 exact executor ACK pairs, plus 35 sealed scope 429s. No unknown GETs in either arm. Control preserved two suspensions, executor_process_interrupted and execution_storage_contention, plus one additional unstarted fence. All 40 signed admissions per arm and every recorded occupied attempt included in complete per-Task occupancy: candidate 40 attempts mean 7.7545/p95 10.635 s; control 41 attempts mean 7.8292/p95 10.775 s. Completed Task counters candidate all 40 at 161, control all 38 completed at 173, no missing completed profiles. Queue p95/p99 candidate 35.4370/35.7701 s, control 35.3398/60.5706 s. All 256 SSE stayed open in each arm and both lock samplers completed 230 snapshots. One pair with different failure outcomes shows a 0.95% full-slot difference and cannot establish a significant capacity improvement or recovery fix. E1-A still fails. Original six roles and approvals restored, four original module hashes verified, both isolated APIs ready, clones stopped with v126/zero pending and temporary workspace volumes removed. Candidate retained locally for review. Historical data/unknown receipts/signature evidence untouched; no production operation or original POST replay. Evidence adjacent-comparison.json, occupancy.json, audit-online.json, audit.json, noncompleted-outcomes.json in control, and e1-checked-run-header-1793859716/{red,green}.log. Candidate timeline evidence was regenerated by read-only queries against its owned retained clone, then it was stopped again. Sustained/fairness and full E1-R remain open.
+
+## CA-HA-03 installed Recorder guard comparison, 2026-11-05
+
+Baseline transaction map is one fresh signed Task at the previous installed
+ac349add overlay: 173 commits (work unit 50, lease.get 28, progress 18, Run
+header 13, budget phase 13, tail 11, commit 10, event page 8). The installed
+execution_events.py differs from checkout only in the b8e0559c prepare guard;
+reuse that existing fix rather than add another implementation. This is an
+installed composition baseline, not full checkout ac349add. Checked-header
+eb0721a9 is excluded from both arms.
+
+Extended the existing native regression: prepare checks once before the bounded
+tail; after revocation, append_event rejects before persistence or sequence
+advance. Installed old logic fails the duplicate-call assertion, current logic
+passes. Full native file initially had one existing 250ms timing case stop on
+page one rather than page two; preserve native-suite-first.log. Independent
+confirmation 11 passed; Ruff passed. No unrelated test changes.
+
+Fresh same-seed clones, 4+4 slots, 5 offers/s, 75 offers, 256 SSE, Worker/PG
+2 CPU. Candidate then adjacent original. Candidate 163 commits versus 173
+per completed Task, each n=40 with no missing profiles. Complete slot means
+8.288500 versus 8.457625 seconds (-2.00%); p95 13.092 versus 12.602, p99
+13.679 versus 12.984. Registration-to-exact-exit ACK means 7.185 versus 7.300.
+Queue p95/p99 36.193058/38.267631 versus 37.552000/37.797071. Both arms
+40 signed 201, 35 signed scope 429, zero unknown; all 40 complete/model/ACK
+once, all 40 slot attempts included, 256 SSE/zero early closes, 230 lock samples.
+Each separate fresh signed smoke also model/complete once and no suspension.
+No historical POST or model replay or reclassification of previous unknowns.
+
+E1-A remains FAIL. The 1.6s occupancy and 2s/5s queue gates are not met.
+Single-pair 2% mean movement and worse tails are not material capacity proof.
+Candidate registration-to-model mean 3.656s; model-return-to-completion 1.498s
+and completion-to-ACK 0.626s. Concentrate subsequent investigation on this
+whole-phase synchronous waiting; do not expand failure matrix before capacity.
+Sustained load, cross-scope fairness and full E1-R remain outstanding.
+
+Evidence: .artifacts/cloud-ha-e1/e1-a-ac349add-recorder-dedup-1793861657/
+RESULTS.md, adjacent-comparison.json, isolated-change.diff, occupancy.json,
+timeline.json, audit.json, baseline-hotspots.json, overlay-comparison.json.
+Adjacent control e1-a-ac349add-recorder-control-1793861657. Signed cohorts
+corpus-rebuilt-approval-sse-256-1793861739 and -1793861926. Native regression
+e1-recorder-dedup-regression-1793861563.
+
+Both six-role original ID sets restored and running, approval hashes identical;
+both original Worker recorder source hashes match the baseline. Both original
+API readiness ready. Clone v126/pending=0, both stopped/data retained. Four
+owned workspace tmpfs volumes precisely removed. Production and original
+business data/signatures/unknown evidence untouched.
+
+## CA-HA-03 SQL attribution and bounded Memory discovery, 2026-11-05
+
+Prior goal turn made progress: valid adjacent 173->163 transaction comparison
+showed no material whole-slot gain, redirecting work to synchronous waiting.
+New SQL diagnostics use fresh signed fixture Tasks only. All 40 main summaries
+are intact; 31/40 complete SQL-site profiles, 9 with 1-2 missing records from
+interleaved output, six malformed lines retained and excluded from site sums.
+The app pg_stat_statements delta includes nested/background execution: 601
+Memory-discovery calls/38.536s of 72.288s accumulated SQL time (not CPU share).
+Read-only EXPLAIN returns no candidates but probes 6,786 closed Sessions and
+filters 10,213 others. Warm correlated baseline 59.648/56.898ms versus set-based
+89.029/52.837ms: no stable SQL rewrite gain, so no SQL source or migration edit.
+
+Reuse PollingDelay (d9ab05a0) with configured cloud Memory idle ceiling 30s,
+80-100% jitter and progress reset/immediate next batch. Errors remain <=5s;
+local cadence remains 1s and command/control default idle cap 1s. No business
+retry, authority cache, fence/deadline or receipt changes. Deterministic red
+was 1s !=30s; green 18 tests; Ruff/mypy clean. WorkerLoopService is 490 lines.
+The recovery discovery ceiling includes later maintenance tick/query overhead;
+tighter background latency needs a durable wakeup queue.
+
+Fresh same-seed 4+4 slots, 5/s, 75 offers, 256 SSE, Worker/PG 2 CPU each.
+Control / first candidate / latest candidate whole-slot mean 9.001900 /
+7.148550 / 7.926775s; p95 12.513/8.221/10.757 and p99 12.769/8.488/11.246.
+Queue p95 35.533928/31.143304/30.675555, p99 38.128308/33.117628/34.162657.
+Every arm has 40 occupied attempts counted, 40 sealed201 +35 sealed scope429,
+zero unknown, 40 model starts and exact exit ACKs. Control completes39/40;
+remaining Task 9198d9bf-9407-49d2-9cb1-1502df871519 suspended on
+execution_storage_contention/LockNotAvailable after one model call; preserve,
+no replay. Candidates both complete40/40; successful Task commits remain163.
+All256 SSE remain open during each observation, 230 lock samples each.
+Memory scans65/3/2, service execution7.630795/.397007/.300525s; windows
+54.16/42.25/47.71s. Counts are not equal-duration rates. Mean gains20.59%
+and11.94% are short-window observations, not significance or capacity proof.
+
+First candidate at switchback has24/40 Memory recovery receipts,16 retained
+in stopped clone. Repeated candidate uses NEW Tasks and keeps Worker/SSE
+alive after unchanged capacity window: all40 Memory receipts naturally commit
+21.932s after main drain. Before-grace and after-grace SQL snapshots separate.
+No original business POST/model calls replayed; historical unknowns unchanged.
+
+Important E1 restoration defect: worker_loop_service.py was a mutable worktree
+bind while PollingDelay came from the older image. Source edit caused two
+original Worker restart failures after the successful first capacity window.
+Preserve original failed rollback and inspect evidence. Pinned17 modules/node
+to SHA256-named baseline files, original loop bytes, recreated only two
+stateless Workers; same image/env/volumes/approvals. Old containers retained
+stopped with restart=no. Four other role IDs unchanged. New Worker IDs
+5a7ba5d2d5ea1873ce8a732174895b208d5b171f72253da12b8950f3006b89c9
+and fc01f065c9db0019a04950fe4cf9077bee4f96d56b7f8a01b1cc8ebda07a6a07.
+Latest expected roles file is in the latest candidate directory. Both active
+Workers'17 source hashes verified; six roles running, approval hashes match,
+two APIs ready. Four new cloned DBs v126/pending command0 stopped/data kept;
+eight owned tmpfs workspace volumes removed. Production untouched.
+
+Evidence root .artifacts/cloud-ha-e1/:
+- e1-a-sql-wait-profile-1793862510/{SQL_FINDINGS.md,sql-profile.json,memory-plan-comparison.json}
+- e1-a-memory-backoff-candidate-1793863451/ (failed restore + repaired pinned baseline retained)
+- e1-a-memory-backoff-control-1793863451/ (one suspension retained)
+- e1-a-memory-backoff-drain-1793865198/{RESULTS.md,adjacent-comparison.json,memory-grace-result.json,pinned-source-final-verification.json}
+Native regression path is recorded by latest candidate regression-directory.txt.
+
+E1-A still FAIL: latest mean7.927s>1.6, queue30.676/34.163>2/5. Latest
+registration-to-first-model3.458s and model-return-to-complete/ACK1.305+.667s
+remain next whole-slot targets. Sustained load/cross-scope fairness/full E1-R
+are not accepted, and overall HA goal remains active. Do not hide failed
+control outcome, old pending Memory receipts or partial diagnostic profiles.
+
+## 2026-11-05 同期诊断结论（仍未达标）
+
+正式90s、450/450发出，103签名接纳、347容量拒绝、unknown0；接纳任务
+103/103模型/完成/精确ACK各一次。稳态完成47/60=0.7833/s，计划窗口内接纳
+48/300，队列32→31；全尝试占槽均值8.9243s，queue p95/p99 78.06949/106.57204s。
+256SSE没有提前关闭。原unknown与签名数据保留；生产未动。
+
+完整占槽覆盖103Task/104attempt；细段时钟闭合100/103Task，缺失保留。
+PG稳态1.981/2CPU、93.22%period触发限额；child平均DB范围6.3309/7.0308s，
+主线程CPU0.6874/runnable1.2124s，范围有重叠不相加。完成后占槽0.6087s，
+移出不足以跨过缺口。Worker稳态cgroup采样丢失，补采仅排空；不声称Worker
+CPU饱和已证实。SSE汇总重复写使runner退出1；首份结果保留，收尾核验退出0。
+
+主方案选择联动PG/Worker资源预算，候选已准备但未安装：PG16CPU、双Worker
+各4CPU/16槽、总32槽；独占测试池预留32CPU/64GiB。现有CapacityProfile检查
+306连接+7保留<=384；原256明确拒绝此fleet。PG资源由本轮复合CPU/完成率
+外推并留20%余量得到，含拒绝/后台/SSE，既不是必要资源下界也不是达标实证。
+WAL/IO及Worker稳态需求还未定量。32槽在80%利用率须平均占槽<=5.12s，需实测。
+
+本机10CPU/32GiB由两个OrbStack节点共享；远端16CPU/约31GiB已有生产负载。
+未建立上述独占测试池，不占用生产余量，不跑无预计达标条件的缩水版复验。
+因此诊断完成，配置候选备好；主要配置未安装，一轮450请求复验尚未执行，
+CA-HA-03/E1-A仍In Progress，完整E1-R不启动。下一步是独占资源就绪后按原
+冻结口径只跑新合成Task的一次候选复验，而非继续局部业务优化。
+
+证据：`.artifacts/cloud-ha-e1/e1-a-bounded-diagnostic-1793873558/RESULTS.md`；原密封回执
+`.artifacts/cloud-ha-e1/corpus-rebuilt-approval-sse-256-1793873711/`。
+六角色ID/绑定/ready恢复、pending0、clone停止、两个owner workspace卷精确回收。
+
+## CA-HA-03 资源候选只读补核查，2026-11-05
+
+这是前一轮容量诊断的只读补核查，不是第二轮450请求容量试验。
+
+- 从原停止的保留clone，以ha_app角色、READ ONLY、3s statement timeout取得两个
+  热点定位谓词的ANALYZE/BUFFERS计划：接纳定位Index Only Scan/已有覆盖索引，
+  event identity Index Scan/主键；执行0.336/0.189ms。不能据此证明UPDATE/触发器便宜，
+  也不能以它替代负载实测。没有发现这两个谓词缺索引的证据，故未添加新索引。
+- session_events实存约111.8万行、37个索引；只记录事实，不能把索引数直接当根因。
+- 两台真实Worker里分别运行纯load_settings/CapacityProfile检查：候选16槽、batch16、
+  fleet306连接均可解析；旧PG256元数据被拒绝，候选PG384元数据通过。
+  未发起DB连接/Task/model，不代表签名准入或部署验收。
+- 原Worker运行环境仍各4槽；原六角色ID/running和两API ready再次核验；clone停止。
+- 32CPU/64GiB是候选预留估算，不是已证明的最小配置或硬件采购结论。
+  当前缺口仍是隔离的扩展实测（包括Worker稳态CPU、WAL/IO、slot与吞吐伸缩性）。
+  未安装主要配置、未执行容量复验、不推进完整E1-R，HA目标未完成。
+
+证据：hotspot-read-plan-summary.json、hotspot-read-plans.jsonl、
+event-storage-inspection-verified.tsv、native-config-check.json、
+config-followup-restoration.json。既有evidence.sha256保留；新增证据见
+followup-evidence.sha256，未改写旧容量结果/回执/unknown/签名。
+
+目录：`.artifacts/cloud-ha-e1/e1-a-bounded-diagnostic-1793873558`。
+
+## CA-HA-03 delegated resource candidate, 2026-11-05
+
+User delegated resource choice. The uninstalled32CPU/64GiB draft is not a minimum.
+Selected12CPU test cap on192.168.101.7: PG6CPU/4GiB plus two independent private
+Docker nodes, each3CPU/4GiB,16slots.32slots total;306+7 connections<=320.
+This is logical dual-node evidence on one physical host, not physical multi-host HA.
+Avoid cross-WAN DB transactions (measured TCP latency around160ms or more).
+Guard tracks existing85 containers, memory>=6GiB, disk>=12GiB and sustained load.
+Exact installed source snapshots plus d9 overlay retained. Source v126 copied via
+pg_dump/restore across architectures:1114740 events,17742Tasks,pending0 match.
+Logical restore/reindex and PG patch changes are explicit comparison limitations.
+Old stalled transport terminated only after checking remote progress/process state;
+checksum transfer completed, no business replay. OCI/config image IDs reconciled
+by identical layers/semantic config. Official DinD initialization enables nested
+memory/CPU cgroups with parent3CPU/4GiB limits; no host cgroup change.
+Both new nodes pass native counter/TLS and wrong key/client/namespace checks;
+zero Tasks executed during qualification. Isolated test bundle materialized and
+published:437a587a-a0c7-4c83-b477-9a62afdf7e7c,version0a432a2d-4c4f-4d19-92b5-b39a827116b9.
+Next: one fresh signed Task then one450-offer30s+60s window at5/s, zero capacity
+rejection. Original six test roles paused only during controlled run and restored
+in finally. Production, original Tasks/unknowns/signatures remain unchanged.
+Evidence:.artifacts/cloud-ha-e1/e1-a-resource-candidate-1793875018 and remote
+/home/ubuntu/.local/state/zebra-e1/e1-a-resource-candidate-1793875018. Task In Progress.
+
+## 2026-11-05 隔离资源复验结论：FAIL，停止本轮负载
+
+Owner lukeding；CA-HA-03 / codex/ca-ha-03-budgets。按用户自行决定资源的授权，
+实装 PG6CPU/4GiB＋两个逻辑节点各3CPU/4GiB，共12CPU/12GiB硬上限，32执行槽。
+同一物理宿主机，不是物理双机HA；跨架构逻辑恢复/重建索引和PG版本差异使其不能
+作为仅CPU变化的因果对照。32CPU/64GiB始终不是实测最低需求。
+
+- v2运行包发布成功：version cd8e94a6-e77a-4a92-98d1-f62cb7409e9d，
+  bundle sha256:d7a2207696e03cfada19d469fa38fa9dfa708d0b249a437d2003154fbe07922c，
+  trust revision2；原版本/签名证据保留。私有配置权限恢复600/UID65532，不放宽安全校验。
+- 第一个新预检保留unknown且不重发；新v2合成预检201、模型/完成/精确ACK各一次，
+  登记→ACK4.51746s。合成模型fixture，不是实际供应商验收。
+- 第一正式窗口错误地把API压到0.25CPU：450计划/347发出/103未发出，347回执
+  未解析成功、零已验证201；API节流周期100%。失败原始记录另存failed-api-quarter-run。
+  纠正API为2CPU，外层节点仍各3CPU，未修改Task预算，也没有覆盖原窗口。
+- 最后窗口450/450发出；AES-GCM及request_hash逐原intent核验得到51个201、5个429、
+  394个unknown。保留41个原GET文件；其余可用原POST密封回执核验。unknown不通过DB
+  状态冒充成功，不重发。51个已验证会话中37业务完成、41模型开始、44精确退出ACK，
+  command done44/pending7；退出ACK不等于业务成功。
+- 排队44个可观测样本，p95/p99=94.800879/105.581530s（另7个未启动，不能当零）。
+  登记→ACK44个完整单调时钟样本：平均14.009924s，p95/p99=18.658526/18.930204s。
+  全部已记录释放57次/51会话：每会话累计占槽均值15.189157s，p95/p99=22.755/23.183s；
+  这是保护中止后的有限释放样本，不证明所有命令完整排空。
+- 阶段样本均值：登记→子进程1.061s(n44)，子进程→组装0.462s(n43)，
+  组装→恢复0.914s(n43)，恢复→模型6.168s(n41)，模型3.053s(n37)，
+  返回→完成2.110s(n36)，完成→退出证明1.026s(n36)，证明→ACK0.143s(n44)。
+  各阶段覆盖集合不同，不能直接相加。稳态在已验证201集合内观察到接纳31、完成24、
+  ACK22；394个unknown尚未收敛，不能据此声称总体稳态完成吞吐。
+- 60个稳态资源样本：PG2.704/6CPU，零节流；node1/node2分别2.608/2.787CPU，
+  父级节流周期52.1%/66.3%；Worker1.944/2.119CPU。API约0.628/0.619CPU，零自身节流。
+  父级包含子进程，不能相加；本轮主要瓶颈为执行节点共享CPU配额/调度压力，
+  不能沿用旧PG2CPU饱和解释，也不能以此证明某个更大资源配置必然达标。
+- 256 SSE观察期零提前结束、2036 keepalive；保护停止后的连接行为不计入此前观察。
+- 宿主机连续10个5秒采样load>20触发保护（触发load25.7954，MemAvailable约15.35GiB，
+  diskfree约22.19GiB）；只停止本run节点与PG，未重启/修改生产。load包含配额等待，
+  不能单靠它推断生产受损。原回执查询/排空被中止，未知状态及7个pending保留。
+
+结论：该12CPU共享主机配置不能通过持续5/s、零容量拒绝与排队SLO；没有证明达标配置，
+也没有证明最低硬件需求。现有环境不能继续加压争取通过。下一次容量验证需要独占且
+有明确CPU余量的执行节点，保持近端PG，并先证明父级CPU节流消失；具体CPU下限尚缺
+无节流条件下的每任务服务需求测量。完整E1-R/跨scope公平性未执行，里程碑3不关闭。
+本轮不再追加微调、负载或故障矩阵。
+
+收尾：停止的节点直接离线提取日志，未重启Worker/daemon；仅PG短暂启动供BEGIN READ ONLY
+审计，随后停止。原六个E1角色ID核验恢复，两原入口/health/ready均ready。只删除本run
+已停止的本地导出副本容器及卷；原种子、原数据、unknown、签名和远端未完成状态保留。
+证据：.artifacts/cloud-ha-e1/e1-a-resource-candidate-1793875018/RESULTS.md，
+final-audit.json、final-phases.json、resources-summary.json、offline-recovery/、
+original-restored-final.tsv、publication-v2-pool-proof.json、evidence-final.sha256；
+原窗口corpus-rebuilt-approval-sse-256-1793886575与failed-api-quarter-run分别保留。
+远端保留：/home/ubuntu/.local/state/zebra-e1/e1-a-resource-candidate-1793875018。
+
+## 2026-11-05 停载后原证据追踪：unknown不是提交未到达
+
+本轮只读本地离线日志，未启动节点/数据库、未发HTTP请求或新Task。
+最终450个原operation在两API访问日志均有且仅有一次POST：112个HTTP200、338个HTTP503。
+HTTP200中只有56个最终可验证密封结果（51接纳＋5拒绝）；另56个仍unknown，
+加338个503组成394个unknown。因此生成器/SSH观察中断不能解释全部未知结果，
+HTTP200不能等同接纳。
+按精确operation匹配199条atomic first Run失败里程碑，全为TimeoutError；其中198个
+属于最终unknown，另1个已由原回执恢复为密封结果。其余196个unknown没有该里程碑，
+不可用相邻日志代替关联或强行定位。generic unknown日志无operation ID，未逐任务归因。
+198个可关联unknown中prepare阶段耗时中位1492ms、fence1550ms；189个进入事务，
+transaction_entered中位1558ms；dispatch_return中位1861ms（局部起点晚于外层2s起点）。
+多数已在进入原子业务事务前耗尽大部分2s总预算。失败栈涉及idempotency、event、
+Task投影和binding等多个SQL位置；这是截止时间到达点，不是各SQL CPU成本排名。
+结合PG零配额节流与执行节点父级节流，现有证据不足以把某条查询或锁定为单一根因，
+也不足以安全放宽deadline、移除授权复核或自动重发unknown。
+停止后原GET收集仅41文件，最后ConnectError与节点被保护停止一致；这是回执收敛缺口，
+不改写已存POST结果。需要在下一可承载测试环境证明独立原GET/控制预算，不能把当前
+51个signed集合中的完成数当作450个operation的全局完成吞吐。
+证据unknown-diagnostic.py/json/output.json，原API日志offline-recovery/；脚本断言
+450个不同operation均单次到达及199条唯一失败关联，已运行通过。
+总体E1-A仍FAIL，HA目标未完成；不追加本宿主机容量负载，不改生产。
+
+## 2026-11-05 准入准备追踪补证：排他消费锁，不再归为纯CPU问题
+
+只读现有62个数据库采样，49个存在advisory等待，累计321个后端×采样，峰值9个。
+这不是等待秒数或CPU比例。采样没有锁键/阻塞PID，不能归因全部到某条锁。
+直接检查原api-source.tar（未使用当前checkout替代安装版本）：publication_consumer.py
+59–60行依次调用HostManagementStore.authorized和lock_definition；对应安装版
+host_management.py242行、publication.py87行均为排他pg_advisory_xact_lock。
+前者按管理binding、后者按Definition串行，且消费期间持锁完成Snapshot校验。
+因此“CPU不足为唯一/已确定主要根因”的表述收紧为：节点节流已证实，准入锁争用
+也有同时期证据与静态串行路径；两者贡献尚未分离。仅加CPU不能保证接纳5/s。
+
+不能直接删除锁或缓存当前权限/Release：撤权、审批轮换、发布切换、过期校验必须保留。
+下一可验证切片应先用原生PG的小型并发事务验证共享消费/排他发布合同：双消费者并行，
+审批或Release写者被读事务阻挡；写者完成后新读拒绝旧审批/取得新Release；到期拒绝；
+锁有相同deadline且无死锁/非预期锁序变化。只能在这些不变量成立且持锁成本可测后，
+决定是否扩大应用Owned paths做共享读取修复。当前不扩路径、不实现、不追加容量负载。
+该假设尚未证明能跨过完整占槽缺口，不能启动新的无边界优化轮次。
+
+lock-evidence.py已运行，断言62采样/321后端样本并核验三个冻结源码文件及精确锁调用。
+证据.artifacts/cloud-ha-e1/e1-a-resource-candidate-1793875018/lock-evidence.json；
+其源文件摘要与行号固定。原RESULTS.md及evidence-final.sha256保持不变。
+生产/服务状态未改，CA-HA-03及整体HA仍In Progress。
+
+## 2026-11-05 准入锁切片已完成本地验证，Review未部署
+
+四个应用文件最小修改：消费K1/K2共享锁，原生append_release补齐K2排他锁；其他写者
+排他默认值、授权/expiry复核和deadline不变。冻结源码逐字节匹配相邻基线acb7a85f。
+正式schema新8项并发/撤权/轮换/发布/超时/取消/到期检查通过；相关49通过，旧Registry
+另补5通过2基线同样失败；workspace mypy原版/候选同3项既有错误，ruff改动文件通过。
+一次新合成Task低负载前后对照：每侧24/24密封201、unknown0；准入p95/p99
+238.607/245.529→232.664/243.506ms；锁获取p95 26.573→0.951ms；持锁均值
+26.259→41.287ms；原GET各24个200，重叠STOP均202 requested（非清理完成）。
+准入p95仅改善2.49%，不足填平E1-A缺口；结束此优化方向，不追加零散优化/容量试跑。
+原数据、unknown、签名和失败探针保留，生产未动；临时PG精确回收。
+证据.artifacts/cloud-ha-e1/e1-a-resource-candidate-1793875018/lock-contract/RESULTS.md，
+comparison.json、locks.json、source-pins.json及正式回归日志。尚无达标配置证明，
+下一容量验证需独占CPU余量/近端PG/无父级节流/固定签名候选；E1-A/E1-R未跑，HA未完成。
+
+## 2026-11-05 完整执行资源测量：预检失败，未进入阶梯
+
+只操作本机隔离环境。候选13a8de6c＋原d9安装overlay；PG3CPU/3GiB在Docker VM，
+Worker3CPU/3GiB＋cleanup0.5CPU在根4CPU/8GiB的VM1，API1CPU/1GiB在另一根4CPU
+VM2；GET/控制lane仍共享API CPU，不宣称独占物理资源或CPU预留。
+新副本签名包版本d0da96c7-8c34-4b76-8f28-e58567d38935；只发1个新预检，
+201及原GET核验通过，但model_started0/completed0/suspended1（executor_process_interrupted）。
+登记/精确退出ACK各1，失败登记→ACK0.750468s、持槽1.527743s，不能作为成功占槽。
+按停止条件不发剩余15任务，不跑1/2/4阶梯或强停探针。warm-fork夹具吞掉原异常，
+另有RabbitMQError但未证明根因；下一步先补异常元数据及原生依赖资格，无业务重放。
+原六角色/绑定哈希/两ready恢复；新候选容器和tmpfs卷精确回收，失败DB停止保留。
+容量边界/5/s配置仍未测得，不申请猜测CPU数量；生产/旧unknown/签名均未改。
+证据.artifacts/cloud-ha-e1/execution-resource-measurement-1793890154/RESULTS.md；offline-audit已运行通过。03及整体HA仍In Progress。
+
+## 2026-11-06 执行资格修复与1/2/4有界测量完成（未达容量验收）
+
+隔离安装错误已定位：旧baseline pin绑定33410，而新PG为33413。安全异常元数据回归
+冷/暖两分支通过；原生新包v2通过兼容校验，旧快照保持拒绝。另对原测试Rabbit应用
+备份Mnesia后stop_app/start_app恢复，无reset或凭据轮换；不归为子进程根因。
+实际测量使用逐Task native冷启动，不用warm-fork。并发1两窗口0.229/0.226完成/s，
+完整占槽3.234/3.339s；并发2为0.397/s、3.673s；并发4为0.626/s、4.414s。
+并发4毛CPU/Task Worker2.535s、PG1.793s，Worker叶级17.19%周期节流，父级未见节流。
+曲线随并发增长，但短批次不能证明持续容量；guest时钟未同步，未给排队SLO。
+19个新Task均签名201、准入unknown0，17个模型/业务各完成一次，19个精确ACK各一次；
+全部失败和编排错误保留：两次GET503中止、一轮脚本失败后额外5个新Task、错误Run范围
+强停403及ready前502。无旧任务POST重发。Task范围强停完成退出和资源释放，但仅启动阶段；
+仍保留pending_live1、active_leases0，未删除或宣称排空。原六角色/绑定/ready恢复，
+六临时容器和两再生tmpfs精确回收，PG容器/数据停止保留，生产未操作。
+下一条件为专用完整父级预算环境；约32可分配同等CPU/32GiB/32槽仅规划候选，非最低需求
+或达标证明。本机10核无法验证此配置，不向共享生产宿主机继续加压。
+不追加局部优化，不跑450或完整E1-R。13a8de6c仍本地Review，CA-HA-03/整体HA仍In Progress。
+证据.artifacts/cloud-ha-e1/execution-qualification-1793892399/RESULTS.md，
+all-task-audit.json、measurement-analysis.json、resource-estimate.json及final-resource-audit.json。
+
+## 2026-11-06 测试工具收尾，容量验收明确暂停
+
+冻结13a8de6c/package-v2/native cold候选，无执行架构/性能改动。新增受检查的单解释器
+准备→执行入口及离线回归：旧准备失败继续执行可复现，修复后停止；冻结观察器16并发
+查询活动峰值1、503保留且无Task POST，原unknown/no-replay检查通过。本轮新Task0。
+只读检查保留PG：强停Task已cancelled/stop done/无租约，但pending未结清、handoff未handled，
+确实占同scope32中的1个准入名额，且仍满足pending扫描。物理exitACK不能冒充命令处理边界；
+未删行/标done/修改应用候选。冻结安装8模块来源核验，4个command模块与checkout不同，
+使用安装源码而非当前代码归因；该派生队列名额缺口后续需最小修复/回归并重新冻结。
+OrbStack Kube现可达但单节点10CPU/约15.66GiB，仍与Mac共享；两VM各4CPU父级，
+未落实独立32CPU/32GiB可分配资源。32候选需另留宿主余量，非最低/达标配置；
+无选定供应商/报价，不承诺成本或发起采购。PG复查后停止保留，生产未访问。
+容量E1-A/完整E1-R明确暂停，不用零散优化填时间。证据：
+.artifacts/cloud-ha-e1/test-tool-closeout-1793897286/RESULTS.md。
+
+## 2026-11-06 CA-HA-03-Q1 本地修复通过，候选待Review
+
+独立分支codex/ca-ha-03-q1-stop-capacity，唯一应用修改force_stop_recovery.synchronize：
+在原Session/lease/stream事务结清canonical终态后，仅在租约明确释放且现有精确退出
+证明满足时，将该Session前缀内pending置cancelled；不写handled，不改旧回执/结果。
+排队1→请求后1→0；运行中无ACK/错ACK保持1，精确ACK后0。单槽真实接纳检查证明
+名额可以再用一次，重复ACK/停止/恢复不多释放。领取并发、事务回滚与清理进程真实
+os._exit后的原机制恢复通过；真实本机子进程退出但缺持久ACK仍保持1。
+新增8项、相关79项通过，Linux专用1项在macOS跳过；冻结9相关模块组合再验8通过。
+ruff和修改模块mypy通过。这里只是存储/API组合及本机进程回归，不是完整Linux部署资格。
+原pending/unknown/签名未改，旧PG保持停止；原293+37证据摘要核对一致。新合成数据
+快照/日志保留，独立临时PG/卷精确回收。旧done记录不会自动回填；原行仍保留为证据。
+源码覆盖包与清单重新冻结，未重新签署/发布运行包，未推送或部署。独立资源仍阻塞
+容量验收，E1-A/E1-R继续暂停；整体HA未完成。
+证据.artifacts/cloud-ha-e1/force-stop-capacity-1793898506/RESULTS.md，
+capacity-and-recovery-results.json、fresh-regression-data/及FROZEN_CANDIDATE.json。
+
+## 2026-11-06 资源决策：容量验收受环境阻塞
+
+Q1修复线结束追加开发，应用f20b56a3及原源码/签名证据冻结不变；尚未重签或部署。
+资源方案选择AWS us-east-1 Linux ARM64按需：2×c7g.8xlarge（各32CPU/64GiB）
+＋独立c7g.xlarge控制/负载节点（4CPU/8GiB），同AZ spread、双PG与明确父子预算。
+总68CPU/136GiB含备库/控制/宿主余量，不是5/s最低需求证明。数据盘2×500GiB gp3，
+各6000IOPS/250MiB/s；三系统盘各64GiB。48小时含准备/验收/导出，网络和磁盘实测待资源。
+下载AWS官方2026-11-04价目核实EC2费率：1.16/h×2＋0.145/h；公开存储/网络费率
+估算税前48h129.86美元，含至多7天快照约143.77美元，建议预留180美元税前；
+地域EBS正式报价/税费仍未核验，不是已授权支出或保证账单。报价与公式可复算。
+本机无云CLI/账户配置/凭据；账户净剩余额度、AZ库存、支付与实际启动均未核验，
+已落实独立实例0。未购置/建环境/跑Task/改生产。不在阻塞期间继续局部优化或安装器开发。
+资源/签包/单任务执行及强停名额释放→E1-A→完整E1-R的核验命令、旧入口限制与停点
+已写入docs/CA-HA-03_resource_decision.md。里程碑3仍In Progress，不能关闭。
+证据.artifacts/cloud-ha-e1/resource-decision-1793899843/，cost-and-allocation.json及官方价目JSON。
+
+## 2026-11-06 CA-HA-03-Q1 交付
+
+草稿 PR #267 仅包含原修复和回归。云分支回归 34 通过。冻结镜像在线
+强停功能资格完成，生产待部署。E1-A/E1-R 等待独立资源，详见容量决策文档。
+
+## 2026-11-06 CA-HA-03-Q1 Broker 联合审查
+
+Broker-only PR #268 复用 9a3a939e 的签发源码 hunk，正式测试 96 项。#267
+da9a5734 的 API、Worker、清理器与 Broker 1e0f1868 的精确组合使用独立签名和
+schema 121。一次新任务获得真实 Broker 授权，POST 202，在线终态 4.797 秒，
+精确 ACK 与名额归零已核对。WorkerBudgetError 在强停受理前结束模型阶段，
+队列行已为 done，模型调用中强停仍待验。先核验原生子进程的可信计数及传输组合。
+生产保持原状，E1-A/E1-R 暂停。证据在 q1-amd64-build/pr-delivery/da9a5734-broker/。
+
+## 2026-11-06 CA-HA-03-Q1 联合强停通过
+
+#267 a487cb4e 与 #268 1e0f1868 在固定 amd64 组合上使用新签名包。
+冷子进程改用原生预算传输，复用已有 schema 类型谓词修复；未改预算与授权合同。
+仅最终一条新任务到达隔离模型，强停受理时模型仍未返回。在线终态 5.580 秒，
+精确 ACK、租约释放、原命令 cancelled、同 scope 待处理 1→0、无 handled 证据。
+跨 Task 404、带 Run 403；旧失败证据保留。定向 88 与 Broker 96 通过。
+合并建议 #268 先于 #267，Backend 未得到通过结论前保持草稿。Tauri 排除。
+未部署生产，E1-A/E1-R 继续暂停。证据 q1-amd64-build/pr-delivery/a487cb4e-broker/。
+
+## 2026-11-06 CA-HA-03-Q1 签发夹具与 Backend 复核
+
+#268 36b69a8e 只给共享 API 夹具补 artifact.read 白名单。真实签发代码和验收组合
+不变。原 25、Broker 96、拒绝 9 项通过，扩展 286 通过 4 跳过。两个 PR 的七项
+静态/发布门槛独立通过。精确基线与 #267 复现相同 12 个 Backend 失败；
+AG-UI 检查点回放存在长耗时，剩余 CI-only 失败待归因。未重复全量 Backend
+或在线强停；#268 夹具提交使用 skip ci。两个 PR 待维护者决定，依赖顺序
+#268 → #267。未合并或部署，E1-A/E1-R 继续暂停。
+
+## 2026-11-06 CA-HA-03-Q1 合并与生产切换预案
+
+已获授权按 #268 → #267 合入 cloud-agent。合并提交依次 b05c3ab8、8457efc6，
+最终完整树 4f58a9f5 与 Linux 定向对照及合成强停的交付组合一致。未重复测试。
+生产只读盘点确认 schema 117，现网镜像严格核对迁移记录；验收候选 schema 121。
+简单切回旧镜像不能作为迁移后的回滚。先准备生产兼容镜像、迁移及恢复预演，
+另行授权后切换。未部署。证据 pr-delivery/merged-8457efc6/。历史 Backend 缺口
+保留，E1-A/E1-R 继续资源阻塞，里程碑 3 未完成。
+
+## 2026-11-06 CA-HA-03-Q1 迁移与回退预演
+
+四个隔离 amd64 候选冻结，包内完整源码摘要对应 8457efc6。合成 schema 117
+升级到 121，旧 ledger 与旧表摘要一致；118 的既有表 DDL 锁已留档。实际恢复
+117 备份并启动原角色。两侧新签名正常任务及原回执读取通过。升级组合模型中
+强停达成 cancelled/ACK/名额 1→0；回退组合在线终态及 ACK 通过、名额归零，
+但命令 dead/terminal_or_dead，严格回退门槛未通过。未验证生产规模停机时间及
+schema 121 兼容回退，未申请生产部署。证据 merged-8457efc6/rehearsal-117-121/。
+
+## 2026-11-08 F-05 真实 Worker Redis 中断闭环（602e2afa）
+
+接续 11-07 中断点：查询 API 层降级合同已过（f05-mac-query-602e2afa/
+RESULTS.md），剩余为真实 Worker 全链路样本。复用 24h 存活拓扑（共享
+netns 的 PG/Redis/Rabbit/S3/Broker/Authority、f327a05d Worker、只读
+引擎身份代理 23751）。修复两处夹具问题后一次通过：API 镜像
+session_streaming.py 为 0600/属主 zebra，须按查询阶段方式以 root 运行；
+API 需挂载 /state（publication/catalog），缺失时 prepare 阶段解析失败
+返回 unknown 回执，该失败样本原样保留（receipts-attempt1-api-mount-missing/）。
+驱动 config/f05_redis_probe.py + 宿主控制监视器 control-watcher.py
+（redis-ready/stop/start fsync 应答，停后 1.2s 放行模型）。结果：任务
+d94f53de 全链 14 事件在 Redis 中断 3.026s 内由真实 Worker 持久化，
+既有 SSE 1.921s 补齐至 session_completed，中断期新 SSE 186.6ms 精确重放，
+原回执逐字节相等，命令 done、scope_pending=0、租约释放、executor_exit
+在案；查询 API 同容器 ID/PID 全程未重启。F-05 剩余：Rabbit 故障注入下
+确认/重投/恢复、对象存储降级与未知写对账。证据 f05-worker-mac-602e2afa/。
+
+
+## 2026-11-08 F-05 Rabbit 故障一轮闭环（续 Redis 轮）
+
+门控 scope 到 broker 后跑通 RA/RB/RC：真实重启中恰一次完成、原信封重投零效果、提交期
+中断第 7 次重试恢复。夹具缺陷两处修复留档：Rabbit tmpfs 数据卷（改持久 bind+原凭据重
+置备）、宿主控制器单次标记不可重入（改幂等再武装）。产品在全状态丢失超模型窗口内
+outbox 不丢、8 分钟自愈。七次失败尝试均夹具/驱动侧，逐次留档。矩阵同步修正 Redis 轮
+"Rabbit 未承载投递"的事实。证据 f05-worker-mac-602e2afa/RESULTS-rabbit.md 与
+receipts-rabbit/。
+
+
+## 2026-11-08 F-05 对象存储故障一轮闭环（续 Redis/Rabbit 轮）
+
+产品端口级两场景通过：读降级有界+恢复同版本；线级 PUT 应答丢失对账唯一版本/幂等/异字
+节拒绝。MinIO tmpfs 数据卷缺陷修复为持久 bind（同 Rabbit 类），桶+版本化原凭据重建。
+至此 F-05 三子域各一轮闭环，均待三轮正式化。证据 f05-worker-mac-602e2afa/RESULTS-objects.md。
+
+
+## 2026-11-08 F-05 三轮正式化完成
+
+三子域×三轮全过、最差值留档（RESULTS-three-rounds.md + f05-three-rounds-summary.json）。
+控制器补 ready 自愈与可重入；一轮因 pkill 误杀监视器失败后重跑通过并留档。
+
+
+## 2026-11-08 F-08 正式化尝试（未通过）与三项发现
+
+工具链就绪；第 1 轮 cancel 后命令永挂 + stop 404（executor 已 6s 退出），操作侧清理竞态
+参与，需干净复现。incarnation 重签、DEFER 可观测性、孤儿 handoff 重驱三项发现登记。
+证据 f05-worker-mac-602e2afa/RESULTS-f08-attempt.md。
+
+
+## 2026-11-08 发现③复现确认
+
+干净复现（无 release 干预、逐轮询留证）：退出 23.3s/预算10s、在线 45s unconfirmed、
+命令 dead@44s/预算30s。缺陷登记；执行器阻塞读+循环边界中断假设待查。
+
+
+## 2026-11-08 F-08 三轮通过 + 发现③定性收口
+
+根因为环境缺 cleanup 角色（synchronize 独占者）；误读 23.3s 已更正为 2.68s。三轮最差
+195ms/2875ms/5723ms。cleanup 角色写入停合同前置。证据 RESULTS-f08.md。
+
+
+## 2026-11-08 F-01 六轮正式化通过
+
+提交前×3 零部分写入；提交后×3 sealed 恢复恰一次（GET 最差103ms）；API SIGKILL RTO 最差
+7.9s/10连续探测/回执相等。证据 RESULTS-f01.md。
+
+
+## 2026-11-08 F-02 接管尝试收档
+
+四次尝试+发现留档（RESULTS-f02-attempt.md）：DLQ-churn 缺口（0.25s×5 ≪ 30s TTL）、
+worker-id 租约键雷区、fallback 重驱孤儿成功。三轮正式化开放，工具就绪。
+
+
+## 2026-11-08 F-02 架构澄清与工具收尾
+
+读全 command_wakeup_recovery：dead=设计（可用性换证明）；安全点→世代恢复 gen+1；
+DLQ churn 降级为观测项；无需产品修复。arm 安全点驱动+扩展控制器就绪（/f02 挂载、
+supervisor 覆盖、source 参数、唯一代 id）。重叠运行残渣致三轮未收，留待复位后单跑。
+
+
+## 2026-11-08 F-02 三轮通过
+
+安全点（武装屏障）×3：接管 ~30s、新 fence、恰一次完成、旧 fence 拒绝。F-01/F-02/F-05/
+F-08 四域正式化齐。证据 RESULTS-f02.md。
+
+
+## 2026-11-08 E1-A 阶梯 1（1/s）
+
+120@1/s → 30/82/8；占槽 12.75s；吞吐 0.157/s（目标 5/s）。PG 0.6CPU 是主杠杆；槽位
+冻结在基线摘要；Mac 本身空闲。资源底线：15-64 槽（取决于占槽优化幅度）。
+证据 RESULTS-e1a-step1.md。
+
+
+## 2026-11-08 E1-A 三级瓶颈收档
+
+PG CPU ✓（0.6→3.0）→ 轮询噪音 ✓（12→4 worker）→ **准入锁串行化 ✗**（产品级）。
+158/158 完成、占槽 2.01s、零拒绝；但 1.32/s 上限由单一咨询锁决定。
+
+
+## 2026-11-08 准入锁去串行化实验
+
+分支 codex/fix-e1a-admission-deserialize（8215d73c）：移除全局锁、保留 scope 键锁。
+API 容器 overlay 测试。多 principal +19%；单 principal 需事务查询批量化（50→10）。
+
+
+## 2026-11-08 E1-A 终局发现
+
+纯准入（零 worker）5/s × 60s = 300/300 100%——准入路径不是瓶颈。瓶颈 = worker 后台
+轮询噪音（~35 查询/tick/worker）。解决方案：多槽 worker / 后台批量化 / PG 分离。
+
+
+## 2026-11-08 projection 缓存实验
+
+TTL 缓存 135K→2 查询/s，吞吐不变。定位到 PG 连接调度竞争（15 后端×3 CPU）。
+基础设施级约束：需 PgBouncer/独立 PG/更多 CPU 核。
+
+
+## 2026-11-08 PgBouncer 部署与调优
+
+edoburu/pgbouncer + transaction pooling，API+worker 全走 25433。吞吐翻倍（1.32→2.58/s），
+310/310 完成。8 连接是最优。5/s 需 PG 6+ 核。
+
+
+## 2026-11-08 101.7 PG 部署
+
+PG 8CPU/16GB + PgBouncer 已部署在 101.7:25432/25433。schema 迁移成功但缺 2 表
+（165 vs 163）→ API Host Grant origins 校验失败。回退 Mac PG。需后续补齐 setup。
+
+
+## 2026-11-08 101.7 PG 最终修复
+
+文件 dump/restore + 全表 GRANT → API 启动成功。5/s 67/600（网络延迟+槽位不足）。
+最优仍为 Mac PgBouncer 2.58/s。101.7 需本地 worker（amd64 镜像）才能消除延迟。
+
+
+## 2026-11-08 101.7 全栈部署状态
+
+9 容器全部运行。API healthy。broker-authority 签名链 422/403 需修复：
+①读 grant_minting.py ExchangeRequest 格式 → 修正 authority.py
+②或用 broker.key 自签 JWT 绕过 broker。混合模式（Mac broker→101.7 API）也需修
+JWKS 信任。基础设施完备，只差签名链一个环节。
+
+
+## 2026-11-08 101.7 E1-A 最终冲刺
+
+Caddy TLS 代理链修复（authority HTTP + Caddy TLS 统一）→ broker 200 → API 准入处理。
+600/600 零拒绝、3.81/s（顺序提交上限）。任务未落库（unknown，publication 种子差异待修）。
+零拒绝证明 PG 8CPU 消除了连接调度瓶颈。
+
+
+## 2026-11-08 E1-A 5/s 达成
+
+并发提交（分TLS/HTTP双客户端）→ 4.98/s 600/600 零拒绝。5/s 准入吞吐目标达成。
+
+
+## 2026-11-08 E1-A unknown 根因
+
+ARM64 (Mac) catalog baseline_key ≠ AMD64 (101.7) baseline_digest → 定义解析失败。
+需 AMD64 catalog 重发布。吞吐已验证（4.98/s 零拒绝）。
+
+
+## 2026-11-08 E1-A 最终状态
+
+5/s 吞吐已证明（4.98/s 600/600 零拒绝）。unknown→accepted 尝试了 catalog+DB 补丁，
+仍需 AMD64 publication 整链重生成（publish-q1.py + prepare_execution.py on 101.7）。
+吞吐测量结果有效（API 处理了全部请求）。
+
+
+## 2026-11-08 AMD64 publication 迁移结论
+
+ARM64→AMD64 逐字段补丁不够（catalog+DB manifest+engine.image 嵌套摘要全需改）。
+正确做法：从零 DB 开始，原生 AMD64 链（migrations→seed→publish→prepare）。
+5/s 吞吐已在 4.98/s 验证，AMD64 原生化只影响响应分类不影响吞吐。
+
+
+## 2026-11-08 101.7 clean-slate 结论
+
+SSH 内联 SQL 不可靠（三层引号转义）。需在 Mac 写 setup.sh + seed.sql → scp → 执行。
+全部基础设施就绪。5/s 吞吐已证明。
+
+
+## 2026-11-08 最终收档
+
+SSH 脚本化 setup 尝试多轮未成功（引号/权限/schema 链条过长）。5/s 已证明。
+下次会话直接交互式 SSH 操作或 docker-compose。
+
+
+## 2026-11-08 101.7 setup 到达 publication 步骤
+
+DB/migrations/seed/PgBouncer/API 全部就绪。Publication 因 ARM64 catalog 不匹配 AMD64 
+baseline 而 BUNDLE_ASSEMBLY_REFUSED。需运行 prepare_execution.py 重生成 AMD64 catalog。
+
+
+## 2026-11-08 101.7 历史性突破
+
+31 任务首次获得 ACCEPTED (201) 响应！Publication→Broker→API→PG 全链路通。
+Worker 在运行但未消费任务（fallback scan 待查）。4.97/s 吞吐。
+
+
+## 2026-11-08 Worker 消费诊断
+epoch 空→插入后 worker 开始拾取。RetryableWorkerSetupError=ARM64/AMD64 baseline。
+prepare_execution.py 成功但输出文件未到宿主机（volume mount 问题）。需交互式操作。

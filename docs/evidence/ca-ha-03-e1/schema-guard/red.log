@@ -1,0 +1,124 @@
+FFF                                                                      [100%]
+=================================== FAILURES ===================================
+_________ test_native_present_schema_type_property_is_not_media_input __________
+
+    def test_native_present_schema_type_property_is_not_media_input():
+        from agent_tools.builtin.present import content_present_contract
+
+        gateway = _gateway(lambda _: pytest.fail("inspection must not send"))
+        gateway.model_request_budget = _proof
+        body = {
+            "max_tokens": 5, "messages": [],
+            "tools": [{"type": "function", "function": {
+                "name": "content__present", "parameters": {
+                    "type": "object", "properties": content_present_contract.argument_properties,
+                },
+            }}],
+        }
+>       proof = inspect_request(gateway, body)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/agent_integrations/test_worker_budget_transport.py:297:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+packages/agent-integrations/src/agent_integrations/worker_budget.py:23: in inspect_request
+    _supported_content(body)
+packages/agent-integrations/src/agent_integrations/worker_budget.py:51: in _supported_content
+    _supported_content(child)
+packages/agent-integrations/src/agent_integrations/worker_budget.py:54: in _supported_content
+    _supported_content(child)
+packages/agent-integrations/src/agent_integrations/worker_budget.py:51: in _supported_content
+    _supported_content(child)
+packages/agent-integrations/src/agent_integrations/worker_budget.py:51: in _supported_content
+    _supported_content(child)
+packages/agent-integrations/src/agent_integrations/worker_budget.py:51: in _supported_content
+    _supported_content(child)
+packages/agent-integrations/src/agent_integrations/worker_budget.py:51: in _supported_content
+    _supported_content(child)
+packages/agent-integrations/src/agent_integrations/worker_budget.py:51: in _supported_content
+    _supported_content(child)
+packages/agent-integrations/src/agent_integrations/worker_budget.py:51: in _supported_content
+    _supported_content(child)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+value = {'alt': {'description': 'Required concise image alternative text.', 'type': 'string'}, 'artifact_uri': {'description':...cation.', 'type': 'string'}, 'captions_artifact_uri': {'type': 'string'}, 'captions_language': {'type': 'string'}, ...}
+
+    def _supported_content(value: Any) -> None:
+        if isinstance(value, dict):
+>           if value.get("type") in {"image_url", "input_image", "image", "file", "input_file"} or any(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                key in value for key in ("previous_response_id", "continuation")
+            ):
+E           TypeError: unhashable type: 'dict'
+
+packages/agent-integrations/src/agent_integrations/worker_budget.py:46: TypeError
+____ test_schema_union_and_type_field_do_not_crash_inspection[schema_type0] ____
+
+schema_type = ['string', 'null']
+
+    @pytest.mark.parametrize("schema_type", [["string", "null"], {"type": "string"}])
+    def test_schema_union_and_type_field_do_not_crash_inspection(schema_type):
+        gateway = _gateway(lambda _: pytest.fail("inspection must not send"))
+        gateway.model_request_budget = _proof
+        body = {"max_tokens": 5, "tools": [{"type": schema_type}]}
+>       assert inspect_request(gateway, body).output_cap == 5
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/agent_integrations/test_worker_budget_transport.py:306:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+packages/agent-integrations/src/agent_integrations/worker_budget.py:23: in inspect_request
+    _supported_content(body)
+packages/agent-integrations/src/agent_integrations/worker_budget.py:51: in _supported_content
+    _supported_content(child)
+packages/agent-integrations/src/agent_integrations/worker_budget.py:54: in _supported_content
+    _supported_content(child)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+value = {'type': ['string', 'null']}
+
+    def _supported_content(value: Any) -> None:
+        if isinstance(value, dict):
+>           if value.get("type") in {"image_url", "input_image", "image", "file", "input_file"} or any(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                key in value for key in ("previous_response_id", "continuation")
+            ):
+E           TypeError: unhashable type: 'list'
+
+packages/agent-integrations/src/agent_integrations/worker_budget.py:46: TypeError
+____ test_schema_union_and_type_field_do_not_crash_inspection[schema_type1] ____
+
+schema_type = {'type': 'string'}
+
+    @pytest.mark.parametrize("schema_type", [["string", "null"], {"type": "string"}])
+    def test_schema_union_and_type_field_do_not_crash_inspection(schema_type):
+        gateway = _gateway(lambda _: pytest.fail("inspection must not send"))
+        gateway.model_request_budget = _proof
+        body = {"max_tokens": 5, "tools": [{"type": schema_type}]}
+>       assert inspect_request(gateway, body).output_cap == 5
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/agent_integrations/test_worker_budget_transport.py:306:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+packages/agent-integrations/src/agent_integrations/worker_budget.py:23: in inspect_request
+    _supported_content(body)
+packages/agent-integrations/src/agent_integrations/worker_budget.py:51: in _supported_content
+    _supported_content(child)
+packages/agent-integrations/src/agent_integrations/worker_budget.py:54: in _supported_content
+    _supported_content(child)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+value = {'type': {'type': 'string'}}
+
+    def _supported_content(value: Any) -> None:
+        if isinstance(value, dict):
+>           if value.get("type") in {"image_url", "input_image", "image", "file", "input_file"} or any(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                key in value for key in ("previous_response_id", "continuation")
+            ):
+E           TypeError: unhashable type: 'dict'
+
+packages/agent-integrations/src/agent_integrations/worker_budget.py:46: TypeError
+=========================== short test summary info ============================
+FAILED tests/agent_integrations/test_worker_budget_transport.py::test_native_present_schema_type_property_is_not_media_input
+FAILED tests/agent_integrations/test_worker_budget_transport.py::test_schema_union_and_type_field_do_not_crash_inspection[schema_type0]
+FAILED tests/agent_integrations/test_worker_budget_transport.py::test_schema_union_and_type_field_do_not_crash_inspection[schema_type1]
+3 failed, 16 deselected in 0.67s

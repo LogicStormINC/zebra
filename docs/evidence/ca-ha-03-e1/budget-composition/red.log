@@ -1,0 +1,244 @@
+FF.FF                                                                    [100%]
+=================================== FAILURES ===================================
+________ test_cloud_bundle_counter_reaches_both_execution_paths[False] _________
+
+tmp_path = PosixPath('/private/var/folders/qx/n_v9dpmd12dgb9m1s75tjgtm0000gn/T/pytest-of-lukeding/pytest-1116/test_cloud_bundle_counter_reac0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x109cb12e0>
+explicit = False
+
+    @pytest.mark.parametrize("explicit", [False, True])
+    def test_cloud_bundle_counter_reaches_both_execution_paths(tmp_path, monkeypatch, explicit):
+        from zebra_agent_worker.cloud_composition import compose_cloud_worker
+        from zebra_agent_worker.loop import build_worker_loop_service
+
+        from tests.test_cloud_api_worker_profile_composition import _cloud_settings
+        from tests.worker.test_command_recovery import _settings
+
+        monkeypatch.setattr("agent_storage.runtime_composition.require_current_schema", lambda _: None)
+        counter = lambda gateway, assembly: None
+        override = lambda gateway, assembly: None
+        bundle = compose_cloud_worker(_cloud_settings())
+>       bundle = replace(bundle, model_request_budget_factory=counter)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/worker/test_cloud_budget_composition.py:25:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+obj = CloudWorkerComposition(stores=PostgresControlPlaneStores(deployment_namespace='deployment', events=<agent_storage.post...=<tests.test_cloud_api_worker_profile_composition._ObjectReader object at 0x104333560>), transient_output_factory=None)
+changes = {'artifact_factory': <function compose_cloud_worker.<locals>.artifact_factory at 0x10e8e7b00>, 'authority_resolver': T...t at 0x10e8d3620>, objects=<tests.test_cloud_api_worker_profile_composition._ObjectReader object at 0x104333560>), ...}
+f = Field(name='transient_output_factory',type='TransientOutputFactory | None',default=None,default_factory=<dataclasses._... at 0x102f9e150>,init=True,repr=True,hash=None,compare=True,metadata=mappingproxy({}),kw_only=False,_field_type=_FIELD)
+
+    def replace(obj, /, **changes):
+        """Return a new object replacing specified fields with new values.
+
+        This is especially useful for frozen classes.  Example usage::
+
+          @dataclass(frozen=True)
+          class C:
+              x: int
+              y: int
+
+          c = C(1, 2)
+          c1 = replace(c, x=3)
+          assert c1.x == 3 and c1.y == 2
+        """
+
+        # We're going to mutate 'changes', but that's okay because it's a
+        # new dict, even if called with 'replace(obj, **my_changes)'.
+
+        if not _is_dataclass_instance(obj):
+            raise TypeError("replace() should be called on dataclass instances")
+
+        # It's an error to have init=False fields in 'changes'.
+        # If a field is not in 'changes', read its value from the provided obj.
+
+        for f in getattr(obj, _FIELDS).values():
+            # Only consider normal fields or InitVars.
+            if f._field_type is _FIELD_CLASSVAR:
+                continue
+
+            if not f.init:
+                # Error if this field is specified in changes.
+                if f.name in changes:
+                    raise ValueError(f'field {f.name} is declared with '
+                                     'init=False, it cannot be specified with '
+                                     'replace()')
+                continue
+
+            if f.name not in changes:
+                if f._field_type is _FIELD_INITVAR and f.default is MISSING:
+                    raise ValueError(f"InitVar {f.name!r} "
+                                     'must be specified with replace()')
+                changes[f.name] = getattr(obj, f.name)
+
+        # Create the new object, which calls __init__() and
+        # __post_init__() (if defined), using all of the init fields we've
+        # added and/or left in 'changes'.  If there are values supplied in
+        # changes that aren't fields, this will correctly raise a
+        # TypeError.
+>       return obj.__class__(**changes)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: CloudWorkerComposition.__init__() got an unexpected keyword argument 'model_request_budget_factory'
+
+../../../../.local/share/uv/python/cpython-3.12.9-macos-aarch64-none/lib/python3.12/dataclasses.py:1588: TypeError
+_________ test_cloud_bundle_counter_reaches_both_execution_paths[True] _________
+
+tmp_path = PosixPath('/private/var/folders/qx/n_v9dpmd12dgb9m1s75tjgtm0000gn/T/pytest-of-lukeding/pytest-1116/test_cloud_bundle_counter_reac1')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10e90a9f0>
+explicit = True
+
+    @pytest.mark.parametrize("explicit", [False, True])
+    def test_cloud_bundle_counter_reaches_both_execution_paths(tmp_path, monkeypatch, explicit):
+        from zebra_agent_worker.cloud_composition import compose_cloud_worker
+        from zebra_agent_worker.loop import build_worker_loop_service
+
+        from tests.test_cloud_api_worker_profile_composition import _cloud_settings
+        from tests.worker.test_command_recovery import _settings
+
+        monkeypatch.setattr("agent_storage.runtime_composition.require_current_schema", lambda _: None)
+        counter = lambda gateway, assembly: None
+        override = lambda gateway, assembly: None
+        bundle = compose_cloud_worker(_cloud_settings())
+>       bundle = replace(bundle, model_request_budget_factory=counter)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/worker/test_cloud_budget_composition.py:25:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+obj = CloudWorkerComposition(stores=PostgresControlPlaneStores(deployment_namespace='deployment', events=<agent_storage.post...=<tests.test_cloud_api_worker_profile_composition._ObjectReader object at 0x10e90bbc0>), transient_output_factory=None)
+changes = {'artifact_factory': <function compose_cloud_worker.<locals>.artifact_factory at 0x10e9f42c0>, 'authority_resolver': T...t at 0x10e90b230>, objects=<tests.test_cloud_api_worker_profile_composition._ObjectReader object at 0x10e90bbc0>), ...}
+f = Field(name='transient_output_factory',type='TransientOutputFactory | None',default=None,default_factory=<dataclasses._... at 0x102f9e150>,init=True,repr=True,hash=None,compare=True,metadata=mappingproxy({}),kw_only=False,_field_type=_FIELD)
+
+    def replace(obj, /, **changes):
+        """Return a new object replacing specified fields with new values.
+
+        This is especially useful for frozen classes.  Example usage::
+
+          @dataclass(frozen=True)
+          class C:
+              x: int
+              y: int
+
+          c = C(1, 2)
+          c1 = replace(c, x=3)
+          assert c1.x == 3 and c1.y == 2
+        """
+
+        # We're going to mutate 'changes', but that's okay because it's a
+        # new dict, even if called with 'replace(obj, **my_changes)'.
+
+        if not _is_dataclass_instance(obj):
+            raise TypeError("replace() should be called on dataclass instances")
+
+        # It's an error to have init=False fields in 'changes'.
+        # If a field is not in 'changes', read its value from the provided obj.
+
+        for f in getattr(obj, _FIELDS).values():
+            # Only consider normal fields or InitVars.
+            if f._field_type is _FIELD_CLASSVAR:
+                continue
+
+            if not f.init:
+                # Error if this field is specified in changes.
+                if f.name in changes:
+                    raise ValueError(f'field {f.name} is declared with '
+                                     'init=False, it cannot be specified with '
+                                     'replace()')
+                continue
+
+            if f.name not in changes:
+                if f._field_type is _FIELD_INITVAR and f.default is MISSING:
+                    raise ValueError(f"InitVar {f.name!r} "
+                                     'must be specified with replace()')
+                changes[f.name] = getattr(obj, f.name)
+
+        # Create the new object, which calls __init__() and
+        # __post_init__() (if defined), using all of the init fields we've
+        # added and/or left in 'changes'.  If there are values supplied in
+        # changes that aren't fields, this will correctly raise a
+        # TypeError.
+>       return obj.__class__(**changes)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: CloudWorkerComposition.__init__() got an unexpected keyword argument 'model_request_budget_factory'
+
+../../../../.local/share/uv/python/cpython-3.12.9-macos-aarch64-none/lib/python3.12/dataclasses.py:1588: TypeError
+__ test_cli_preserves_local_client_but_cloud_uses_cancellable_native_io[True] __
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10e99ee10>
+cloud = True
+
+    @pytest.mark.parametrize("cloud", [False, True])
+    def test_cli_preserves_local_client_but_cloud_uses_cancellable_native_io(monkeypatch, cloud):
+        entry = importlib.import_module("zebra_agent_worker.main")
+        settings = SimpleNamespace(
+            deployment="cloud" if cloud else "local", web_egress_socks_endpoint=None,
+            storage_authority="postgresql" if cloud else "sqlite", database_url="unused",
+            command_delivery=SimpleNamespace(execution_slots=1),
+        )
+        result = SimpleNamespace(
+            cycles_completed=1, idle_cycles=1, stop_reason="idle",
+            executed_session_ids=(), skipped_session_ids=(),
+        )
+        service = Mock()
+        service.run.return_value = result
+        builder = Mock(return_value=service)
+        monkeypatch.setattr(entry, "load_settings", lambda: settings)
+        monkeypatch.setattr(entry, "postgres_pool_scope", lambda *a, **kw: nullcontext())
+        monkeypatch.setattr(entry, "build_worker_loop_service", builder)
+        assert entry.main(["--max-cycles", "1"]) == 0
+        client = builder.call_args.kwargs["model_http_client"]
+>       assert client is None if cloud else isinstance(client, httpx.Client)
+E       assert False
+
+tests/worker/test_cloud_budget_composition.py:72: AssertionError
+----------------------------- Captured stdout call -----------------------------
+{
+  "batch_size": 1,
+  "command": "loop",
+  "cycles_completed": 1,
+  "database": "postgresql:[redacted]",
+  "executed_session_ids": [],
+  "idle_cycles": 1,
+  "lease_ttl_seconds": 30,
+  "max_cycles": 1,
+  "skipped_session_ids": [],
+  "stop_reason": "idle",
+  "stop_when_idle": false,
+  "worker_id": "local-worker"
+}
+______ test_isolated_executor_keeps_native_transport_and_operator_bundle _______
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10e99e180>
+
+    def test_isolated_executor_keeps_native_transport_and_operator_bundle(monkeypatch):
+        entry = importlib.import_module("zebra_agent_worker.session_process_child")
+        settings = SimpleNamespace(
+            deployment="cloud", storage_authority="postgresql", database_url="unused"
+        )
+        bundle = object()
+        factory = Mock(return_value=bundle)
+        module = SimpleNamespace(build=factory)
+        builder = Mock()
+        monkeypatch.setattr(entry.sys, "argv", ["worker-child", "--check"])
+        monkeypatch.setenv("ZEBRA_SESSION_PROCESS_FACTORY", "trusted_operator:build")
+        monkeypatch.setattr(entry, "load_settings", lambda: settings)
+        monkeypatch.setattr(entry, "settings_digest", lambda _: "digest")
+        monkeypatch.setattr(entry, "cloud_composition_from_environment", lambda: "cloud")
+        monkeypatch.setattr(entry.importlib, "import_module", lambda _: module)
+        monkeypatch.setattr(entry, "postgres_pool_scope", lambda *a, **kw: nullcontext())
+        monkeypatch.setattr(entry, "build_worker_loop_service", builder)
+        entry.main()
+        factory.assert_called_once_with(settings, "cloud")
+        assert builder.call_args.kwargs["cloud_worker_composition"] is bundle
+>       assert builder.call_args.kwargs["model_http_client"] is None
+E       assert <httpx.Client object at 0x10e99e1b0> is None
+
+tests/worker/test_cloud_budget_composition.py:95: AssertionError
+----------------------------- Captured stdout call -----------------------------
+{"cloud_composition_ready": true, "run_executed": false, "composition_ms": 12.1}
+=========================== short test summary info ============================
+FAILED tests/worker/test_cloud_budget_composition.py::test_cloud_bundle_counter_reaches_both_execution_paths[False]
+FAILED tests/worker/test_cloud_budget_composition.py::test_cloud_bundle_counter_reaches_both_execution_paths[True]
+FAILED tests/worker/test_cloud_budget_composition.py::test_cli_preserves_local_client_but_cloud_uses_cancellable_native_io[True]
+FAILED tests/worker/test_cloud_budget_composition.py::test_isolated_executor_keeps_native_transport_and_operator_bundle
+4 failed, 1 passed in 1.31s

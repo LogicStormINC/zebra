@@ -1,0 +1,122 @@
+{
+  "old_image": "sha256:2cbbb14b896367f1ceb3d8bf93b76a85ac4ff32b5fec653c547ac22a51692183",
+  "prototype_image": "sha256:897d855a9fb9590787ef7057be031f9c1d9fcd4e557163a3c33f62d5082df9a3",
+  "prototype_not_promoted": true,
+  "samples": [
+    {
+      "variant": "old",
+      "wall": 1.6599917389976326,
+      "cpu": 1.655556701
+    },
+    {
+      "variant": "compiled",
+      "wall": 0.8819642869930249,
+      "cpu": 0.881803537
+    },
+    {
+      "variant": "old",
+      "wall": 1.6306749180075713,
+      "cpu": 1.628292035
+    },
+    {
+      "variant": "compiled",
+      "wall": 0.8139955980004743,
+      "cpu": 0.812392331
+    }
+  ],
+  "checked_hash_headers": [
+    {
+      "file": "/app/apps/worker/src/zebra_agent_worker/session_process_child.py",
+      "checked_source_hash": true
+    },
+    {
+      "file": "/app/packages/agent-core/src/agent_core/domain/events.py",
+      "checked_source_hash": true
+    },
+    {
+      "file": "/usr/local/lib/python3.12/typing.py",
+      "checked_source_hash": true
+    }
+  ],
+  "old_image_check_exit": 1,
+  "prototype_check_exit": 0,
+  "same_size_mtime_changed_source_rejected": true,
+  "read_only_cache_unchanged": true,
+  "make_check": "passed",
+  "ruff": "passed",
+  "independent_review": "no Critical/Important; full Dockerfile and per-arch builds/checks still required",
+  "current_live_runtime": "51f2ddb8 / Native9, isolated pair only",
+  "E1_capacity": "not_run",
+  "candidate_source": "51f2ddb86bac947f7daa23308a84d2396b815e7e",
+  "common_manifest": "sha256:ec9941973d14122a61c4b495c8a44a2b5286050ff45cfdf66e05ca856a0cd288",
+  "platform_images": {
+    "vm": "sha256:ecf814aed14917fce050afd884b0ab0c6eecf2e85d8636a75231a2c447c433ba",
+    "server": "sha256:3f86d00da23bb0f14f27515c37e0bdd23dc6027f19ae443265f87f794587aa44"
+  },
+  "runtime_files_verified_per_arch": 2140,
+  "native_checks": {
+    "vm": {
+      "image": "sha256:ecf814aed14917fce050afd884b0ab0c6eecf2e85d8636a75231a2c447c433ba",
+      "architecture": "arm64",
+      "checked_hash_source_safety": "passed"
+    },
+    "server": {
+      "image": "sha256:3f86d00da23bb0f14f27515c37e0bdd23dc6027f19ae443265f87f794587aa44",
+      "architecture": "amd64",
+      "checked_hash_source_safety": "passed"
+    }
+  },
+  "official_build": {
+    "image": "sha256:ad45c706777bd6c348bb188f2905e25607487ba7461ba71a5b93adb9e4efa2f2",
+    "architecture": "arm64",
+    "default_user": "zebra",
+    "native_readonly_nonroot_check": "passed",
+    "target": "runtime",
+    "install_rabbitmq": true
+  },
+  "Native9": {
+    "definition": "9409feb3-1de0-465f-9e07-1aef77d165a4",
+    "published": true,
+    "cold_no_overlap": true,
+    "previous_sessions_preserved": 24
+  },
+  "fresh_short": {
+    "task": "3f548341-0683-4fc4-af64-7b1ee29e54f8",
+    "completion_seconds": 5.56,
+    "models_settled": 1,
+    "OCI": 0,
+    "real_exit_pairs": 1
+  },
+  "fresh_approved_pwd": {
+    "task": "29cb4c15-5f42-43f4-b03b-f17b73609a4a",
+    "completion_seconds": 16.95,
+    "models_settled": 2,
+    "tools": 1,
+    "original_deadline_seconds": 120,
+    "real_exit_pairs": 2,
+    "exact_OCI_removed_and_absent": true
+  },
+  "burst8": {
+    "offered": 8,
+    "single_POST_201": 8,
+    "completed": 8,
+    "min_seconds": 9.142,
+    "median_seconds": 9.7305,
+    "max_seconds": 13.401,
+    "models_each_settled": 1,
+    "OCI": 0,
+    "scope": "diagnostic burst; not fixed E1 historical/SSE/capacity acceptance",
+    "operator_attribution": "Raw summary carried previous labels. All eight original request Definition IDs match Native9 publication and exact live source51/image; separate attribution record retained without modifying raw receipts."
+  },
+  "quiescence": {
+    "all_new_tasks_real_exact_exit_pairs": true,
+    "active_leases": 0,
+    "pending_commands": 0,
+    "historical_unknown_models_unchanged": 1,
+    "old24_events_budgets_models_receipts_hashes_unchanged": true
+  },
+  "operator_boundaries": [
+    "Initial post-completion short audit found an active transient lease; later original-only read proved release. No Task replay.",
+    "First readonly quiescence query named nonexistent runtime_id; corrected to schema instance_id. Failed read retained."
+  ]
+}

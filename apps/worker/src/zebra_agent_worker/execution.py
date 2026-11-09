@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import logging
 from collections.abc import Callable
 from dataclasses import replace
 from datetime import datetime
+from time import monotonic
 
 import zebra_agent_config
 from agent_core.application import SessionTitleService
@@ -53,6 +55,8 @@ from zebra_agent_worker.session_process import execute_isolated, process_factory
 from zebra_agent_worker.task_recovery import apply_bound_host_context
 from zebra_agent_worker.worker_budget import BudgetExecutionCheck, prepare_task_budget
 
+logger = logging.getLogger(__name__)
+
 
 class SessionExecutionService(SessionExecutionComposition, SessionExecutionEntrypoints):
     def _execute_claimed_session_once(
@@ -62,7 +66,22 @@ class SessionExecutionService(SessionExecutionComposition, SessionExecutionEntry
         started_at: datetime,
         ownership_check: Callable[[], None],
     ) -> ExecutedSession:
-        budget_check = BudgetExecutionCheck(ownership_check)
+        timing_enabled = logger.isEnabledFor(logging.INFO)
+        timing_started = monotonic() if timing_enabled else 0.0
+        timing: list[tuple[str, int]] = []
+
+        def mark(stage: str) -> None:
+            if timing_enabled:
+                timing.append((stage, int((monotonic() - timing_started) * 1000)))
+
+        # A child may supply native read composition. Bind a new gate on every retry.
+        budget_check = (
+            BudgetExecutionCheck(
+                ownership_check.original, ownership_database=ownership_check.ownership_database,
+            )
+            if type(ownership_check) is BudgetExecutionCheck
+            else BudgetExecutionCheck(ownership_check)
+        )
         ownership_check = budget_check
         session_id = claimed.lease.session_id
         if completed := recover_committed_completion(self, claimed, ownership_check, started_at):
@@ -78,9 +97,13 @@ class SessionExecutionService(SessionExecutionComposition, SessionExecutionEntry
                     },
                 )
             except errors.WorkerExecutorInterrupted:
-                # Result may have committed before IPC failed; never reverse confirmed completion.
+                # The child may have advanced the canonical head before IPC failed.
+                ownership_check()
+                recovery = self._recovery_service.recover_session(
+                    session_id, worker_lease=claimed.lease
+                )
                 if completed := recover_committed_completion(
-                    self, claimed, ownership_check, started_at
+                    self, replace(claimed, recovery=recovery), ownership_check, started_at
                 ):
                     return completed
                 raise
@@ -119,6 +142,7 @@ class SessionExecutionService(SessionExecutionComposition, SessionExecutionEntry
                     **kwargs, strict_dispatch_configured=self._coverage_runtime is not None
                 ),
             )
+        mark("inputs")
         claimed = inputs.claimed
         session_events = inputs.session_events
         provider_continuation = inputs.provider_continuation
@@ -157,10 +181,12 @@ class SessionExecutionService(SessionExecutionComposition, SessionExecutionEntry
             if self._coverage_runtime is None:
                 raise WorkerExecutionError("coverage_unsupported")
             return self._coverage_runtime.execute(self, inputs, authority_recorder, ownership_check)
+        mark("preflight")
         model_gateway = execution_gateway.model_gateway(self, build_model_gateway, task=task)
         task = bundle.resolve_bound_workspace(task, self._workspace_resolver, session_id)
         if fresh_authority is not None:
             model_gateway = fresh_authority.model(model_gateway)
+        mark("model_workspace_setup")
         effect_recorder: list[DurableHarnessEventRecorder] = []
 
         def current_recorder() -> DurableHarnessEventRecorder:
@@ -190,11 +216,13 @@ class SessionExecutionService(SessionExecutionComposition, SessionExecutionEntry
                 authority_check=(lambda events: fresh_authority.bind(current_recorder, events))
                 if fresh_authority is not None
                 else None,
+                mark=mark if timing_enabled else None,
             )
             claimed, session_events = prepared_context.claimed, prepared_context.events
             task_binding = prepared_context.binding
             task = apply_bound_host_context(task, task_binding)
             materialized_context = prepared_context.materialization
+            mark("context_materialization")
             task_budget = prepare_task_budget(
                 self, claimed, task_binding, attempt_number, model_gateway, task)
             budget_check.gate = task_budget
@@ -211,6 +239,7 @@ class SessionExecutionService(SessionExecutionComposition, SessionExecutionEntry
         except (RuntimeError, ValueError) as exc:
             log_worker_failure("worker_setup_failed", "context_prepare", session_id, exc)
             raise WorkerExecutionError(str(exc)) from exc
+        mark("budget_start")
         setup_stage = "runtime_instance_binding"
         try:
             compatible_ids = runtime_setup.runtime_session_ids(self._task_index_store, session_id)
@@ -250,6 +279,7 @@ class SessionExecutionService(SessionExecutionComposition, SessionExecutionEntry
                     ),
                     lease=claimed.lease,
                 )
+            mark("runtime_provision")
             setup_stage = "tool_gateway"
             if fresh_authority is not None:
                 fresh_authority.check("tool_setup")
@@ -329,6 +359,7 @@ class SessionExecutionService(SessionExecutionComposition, SessionExecutionEntry
                 attempt_number,
                 started_at,
             )
+            mark("tool_gateway")
             setup_stage = "continuation_recovery"
             with sequence_race_guard("continuation start lost a sequence race"):
                 claimed, continuations = execution_continuations.recover_and_start_continuations(
@@ -369,6 +400,7 @@ class SessionExecutionService(SessionExecutionComposition, SessionExecutionEntry
                     created_at=started_at,
                 )
             context = replace(context, session=recorder.session)
+            mark("continuation_recorder")
             setup_stage = "orchestrator_build"
             orchestrator = execution_context.build_execution_orchestrator(
                 self,
@@ -390,6 +422,12 @@ class SessionExecutionService(SessionExecutionComposition, SessionExecutionEntry
                     else None
                 ),
             )
+            mark("orchestrator_build")
+            if timing_enabled:
+                logger.info(
+                    "worker_execution_prepared session_id=%s fence=%s elapsed_ms=%s",
+                    session_id, claimed.lease.fence.fencing_token, timing,
+                )
             setup_stage = "continuation_run"
             attempt_result = run_worker_continuation(
                 orchestrator,

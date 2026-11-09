@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime, time
+from types import SimpleNamespace
 from typing import Any, cast
 from uuid import UUID, uuid4
 
@@ -98,6 +99,7 @@ def schedule_fixture() -> tuple[TaskScheduleFiring, ScheduleAuthorityBinding]:
 class FakeApi:
     agent_registry = None
     publisher_grants = None
+    settings: object = None
 
     def __init__(self, response: ApiResponse, command: ApiResponse | None = None) -> None:
         self.response = response
@@ -258,3 +260,36 @@ def test_frozen_stream_and_extension_selection_use_normal_agui_admission(monkeyp
     assert len(api.calls) == 1  # create only; no second legacy Run command.
     assert "extension_selection" not in api.calls[0]["payload"]
     assert "stream_capabilities" not in api.calls[0]["payload"]
+
+
+def test_scheduler_resolves_published_definition_with_fresh_consumer_grant(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    firing, binding = schedule_fixture()
+    template = ScheduledTaskTemplate(
+        payload={"prompt": "Daily report", "definition_id": str(uuid4())}
+    )
+    task_id = uuid4()
+    api = FakeApi(ApiResponse(201, {"session_id": str(task_id), "current_sequence": 2}))
+    api.settings = SimpleNamespace(publication_management_config="/approved/publication.json")
+    fresh = execution(binding)
+
+    def resolve(settings, registry, parsed, context, verified):
+        assert settings is api.settings
+        assert context is fresh.host_context
+        assert verified.grant_id == fresh.grant_id
+        assert verified.authority_issuer == fresh.authority_issuer
+        return SimpleNamespace(definition_digest=binding.agent_definition_digest)
+
+    monkeypatch.setattr("zebra_agent_api.publication_consumer.resolve_consumer_binding", resolve)
+    admission = ZebraApiScheduledTaskAdmission(cast(ZebraAgentApi, cast(Any, api)))
+    assert (
+        admission.admit(
+            template,
+            binding=binding,
+            firing=firing,
+            execution_authority=fresh,
+            idempotency_key=firing.idempotency_key,
+        )
+        == task_id
+    )

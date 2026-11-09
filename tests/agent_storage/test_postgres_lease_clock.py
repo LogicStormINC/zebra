@@ -40,14 +40,20 @@ def test_post_lock_clock_normalizes_dst_before_ttl_arithmetic(month, day):
     local = datetime(2026, month, day, 1, 30, tzinfo=ZoneInfo("America/New_York"))
 
     class Connection:
+        calls = 0
+
         def execute(self, query, parameters=None):
-            self.is_clock = isinstance(query, str) and "clock_timestamp" in query
+            self.calls += 1
+            text = query if isinstance(query, str) else query.as_string()
+            self.is_clock = "clock_timestamp" in text
             return self
 
         def fetchone(self):
-            return {"now": local} if self.is_clock else None
+            return {"now": local, "session_id": None} if self.is_clock else None
 
-    _, now = _lock_lease_and_clock(Connection(), "test", uuid4(), update=True)
+    connection = Connection()
+    row, now = _lock_lease_and_clock(connection, "test", uuid4(), update=True)
+    assert row is None and connection.calls == 1
     ttl = timedelta(hours=2)
     assert now.tzinfo is UTC
     assert (now + ttl).timestamp() - local.timestamp() == ttl.total_seconds()

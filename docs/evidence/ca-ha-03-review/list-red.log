@@ -1,0 +1,124 @@
+FF                                                                       [100%]
+=================================== FAILURES ===================================
+___________ test_extension_list_metadata_fanout_fits_read_budget[1] ____________
+
+read_limit = 1
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10ff64e60>
+
+    @pytest.mark.parametrize("read_limit", [1, 2])
+    def test_extension_list_metadata_fanout_fits_read_budget(read_limit, monkeypatch):
+        from time import sleep
+        from types import SimpleNamespace
+        from unittest.mock import AsyncMock
+    
+        from agent_core.ports.extensions import ExtensionStore, SkillInstallationPage
+        from agent_core.ports.skill_publications import SkillPublicationNotFoundError
+        from agent_storage.postgres.capacity_profile import CapacityProfile
+        from agent_storage.postgres.connection_capacity import ConnectionBudget, capacity_scope
+        from agent_storage.postgres.skill_publications import PostgresSkillPublicationStore
+        from agent_tools.skill_publications import SkillPublicationService
+        from fastapi import Request
+        from zebra_agent_api.database_budget import configure_database_budget
+        from zebra_agent_api.extension_reads import extension_read_response
+    
+        from tests.api.test_extension_reads import SKILL, VERIFIED
+    
+        profile = profile_data() | {"read": read_limit}
+        budget = ConnectionBudget("dbname=one", CapacityProfile.parse(json.dumps(profile)), "api")
+        app, store = FastAPI(), AsyncMock(spec=ExtensionStore)
+        store.list_skills.return_value = SkillInstallationPage(items=tuple(
+            SKILL.model_copy(update={"installation_id": f"installed-{i}"}) for i in range(3)
+        ))
+        publications = PostgresSkillPublicationStore("dbname=one", deployment_namespace="test")
+        completed = []
+    
+        def missing_metadata(*_):
+            sleep(0.05)
+            completed.append(True)
+            raise SkillPublicationNotFoundError("legacy record has no publication metadata")
+    
+        monkeypatch.setattr(publications, "_get", missing_metadata)
+        with capacity_scope(budget):
+            configure_database_budget(app, SimpleNamespace(), "dbname=one")
+    
+        @app.get("/v1/extensions/skill-installations")
+        async def listing(request: Request):
+            request.state.verified_host_grant = VERIFIED
+            return await extension_read_response(
+                request, store=store, deployment="cloud",
+                publications=SkillPublicationService(publications, None, "test"),
+            )
+    
+        try:
+            with TestClient(app) as client:
+                response = client.get("/v1/extensions/skill-installations")
+>           assert response.status_code == 200
+E           assert 503 == 200
+E            +  where 503 = <Response [503 Service Unavailable]>.status_code
+
+tests/api/test_database_budget.py:268: AssertionError
+------------------------------ Captured log call -------------------------------
+WARNING  zebra_agent_api.extension_reads:extension_reads.py:197 Extension configuration read unavailable: DatabaseCapacityExceeded
+___________ test_extension_list_metadata_fanout_fits_read_budget[2] ____________
+
+read_limit = 2
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10ffc0fe0>
+
+    @pytest.mark.parametrize("read_limit", [1, 2])
+    def test_extension_list_metadata_fanout_fits_read_budget(read_limit, monkeypatch):
+        from time import sleep
+        from types import SimpleNamespace
+        from unittest.mock import AsyncMock
+    
+        from agent_core.ports.extensions import ExtensionStore, SkillInstallationPage
+        from agent_core.ports.skill_publications import SkillPublicationNotFoundError
+        from agent_storage.postgres.capacity_profile import CapacityProfile
+        from agent_storage.postgres.connection_capacity import ConnectionBudget, capacity_scope
+        from agent_storage.postgres.skill_publications import PostgresSkillPublicationStore
+        from agent_tools.skill_publications import SkillPublicationService
+        from fastapi import Request
+        from zebra_agent_api.database_budget import configure_database_budget
+        from zebra_agent_api.extension_reads import extension_read_response
+    
+        from tests.api.test_extension_reads import SKILL, VERIFIED
+    
+        profile = profile_data() | {"read": read_limit}
+        budget = ConnectionBudget("dbname=one", CapacityProfile.parse(json.dumps(profile)), "api")
+        app, store = FastAPI(), AsyncMock(spec=ExtensionStore)
+        store.list_skills.return_value = SkillInstallationPage(items=tuple(
+            SKILL.model_copy(update={"installation_id": f"installed-{i}"}) for i in range(3)
+        ))
+        publications = PostgresSkillPublicationStore("dbname=one", deployment_namespace="test")
+        completed = []
+    
+        def missing_metadata(*_):
+            sleep(0.05)
+            completed.append(True)
+            raise SkillPublicationNotFoundError("legacy record has no publication metadata")
+    
+        monkeypatch.setattr(publications, "_get", missing_metadata)
+        with capacity_scope(budget):
+            configure_database_budget(app, SimpleNamespace(), "dbname=one")
+    
+        @app.get("/v1/extensions/skill-installations")
+        async def listing(request: Request):
+            request.state.verified_host_grant = VERIFIED
+            return await extension_read_response(
+                request, store=store, deployment="cloud",
+                publications=SkillPublicationService(publications, None, "test"),
+            )
+    
+        try:
+            with TestClient(app) as client:
+                response = client.get("/v1/extensions/skill-installations")
+>           assert response.status_code == 200
+E           assert 503 == 200
+E            +  where 503 = <Response [503 Service Unavailable]>.status_code
+
+tests/api/test_database_budget.py:268: AssertionError
+------------------------------ Captured log call -------------------------------
+WARNING  zebra_agent_api.extension_reads:extension_reads.py:197 Extension configuration read unavailable: DatabaseCapacityExceeded
+=========================== short test summary info ============================
+FAILED tests/api/test_database_budget.py::test_extension_list_metadata_fanout_fits_read_budget[1]
+FAILED tests/api/test_database_budget.py::test_extension_list_metadata_fanout_fits_read_budget[2]
+2 failed in 1.46s

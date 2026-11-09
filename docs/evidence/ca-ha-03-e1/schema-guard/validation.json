@@ -1,0 +1,48 @@
+{
+  "task": "CA-HA-03",
+  "parent": "e8f528b2b6df1d33f65cab9a355114f33fb074c7",
+  "status": "shared_schema_guard_source_fix_not_image_accepted",
+  "root_cause": "set membership hashes tool JSON Schema properties.type dict/list, before exact counter/reservation/wire",
+  "regression": "actual native content.present contract plus schema union/types",
+  "red_failed": 3,
+  "focused": {
+    "passed": 35,
+    "skipped": 5
+  },
+  "independent_AI": {
+    "passed": 19,
+    "critical": 0,
+    "important": 0,
+    "human_review": false
+  },
+  "make_check": {
+    "exit": 0,
+    "typed_sources": 1534,
+    "eval_cases": 30
+  },
+  "live_e8": {
+    "manifest": "sha256:abfd6addecc7bb837bab5c6fb6bafb57f2a732b04c43da9fbeead94df876d24e",
+    "runtime_files_per_arch": 2139,
+    "symlinks": 3,
+    "both_api_and_worker_health": "passed",
+    "management_materialize_http": 200,
+    "management_publish_http": 200,
+    "eval_scope": "synthetic native wire accounting and frozen Bundle compatibility only",
+    "task_id": "39d0bc5d-0347-40df-8fef-78dd05d33421",
+    "post_count": 1,
+    "task_status": "failed",
+    "error_type": "TypeError",
+    "event_count": 11,
+    "output_cap": 1024,
+    "model_reservations": 0,
+    "tools_executed": 0,
+    "task_replayed": false
+  },
+  "original_e698_task_unchanged_hash": "f6748e0bfb34029a2b195cff51dca0d4c3d3b82f724b498b32f0c7ce1c21d8b2",
+  "boundaries": [
+    "real provider tokenizer not supplied",
+    "new schema-guard image/Task not yet accepted",
+    "full E1 capacity/fault/soak not run",
+    "production unchanged"
+  ]
+}

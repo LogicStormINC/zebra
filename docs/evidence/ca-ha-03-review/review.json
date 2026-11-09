@@ -1,0 +1,39 @@
+{
+  "review_type": "independent_AI_read_only_not_human",
+  "reviewer": "/root/ha03_candidate_review",
+  "initial_range": "56ae352a5b50f1ce323899afcef464ad641a302c..1d5207b401a27337b9a12921d1b4a7abc01d4a3f",
+  "followup_range": "1d5207b4..working_tree",
+  "findings": [
+    {
+      "severity": "Important",
+      "issue": "cloud read cancellation bypasses bounded dispatcher",
+      "status": "closed"
+    },
+    {
+      "severity": "Important",
+      "issue": "rollout budget omits terminating processes",
+      "status": "closed_with_install_only_restrictions"
+    },
+    {
+      "severity": "Important",
+      "issue": "metadata fanout can exceed configured read lane",
+      "status": "closed"
+    }
+  ],
+  "final_verdict": "no_new_Critical_or_Important; ready_to_merge_restricted_candidate_scope",
+  "exclusions": [
+    "human review",
+    "production acceptance",
+    "upgrade certification",
+    "E1 capacity certification"
+  ],
+  "earlier_independent_tests": {
+    "passed": 61,
+    "scope": "API budget, Helm, extension reads"
+  },
+  "independent_tests": {
+    "passed": 47,
+    "skipped": 1,
+    "scope": "final API budget, standalone metadata/plugin, stream compatibility"
+  }
+}

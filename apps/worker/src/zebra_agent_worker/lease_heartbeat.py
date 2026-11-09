@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Callable, Iterator
 from contextlib import AbstractContextManager, contextmanager, nullcontext
 from threading import Event, Lock, Thread
-from time import monotonic
+from time import monotonic, sleep
 from types import TracebackType
 from typing import Literal
 
@@ -132,12 +132,18 @@ class LeaseHeartbeat:
     def _call[T](self, operation: Callable[[], T], deadline: float | None) -> T:
         if deadline is None:
             return operation()
+        from agent_storage.postgres.connection_capacity import DatabaseCapacityExceeded
         from psycopg.errors import LockNotAvailable
 
         with self._io_scope(deadline):
             while True:
                 try:
                     return operation()
+                except DatabaseCapacityExceeded:
+                    # A refused permit sent no SQL. Pace retries inside the same deadline.
+                    sleep(max(0, min(0.01, deadline - monotonic())))
+                    if monotonic() >= deadline:
+                        raise
                 except LockNotAvailable:
                     # Native lock_timeout confirms rollback, not an unknown COMMIT.
                     # Recovery Pages hold this fence too; retry only within the

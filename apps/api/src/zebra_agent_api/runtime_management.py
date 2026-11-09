@@ -19,6 +19,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from zebra_agent_config import ZebraAgentSettings
 
+from zebra_agent_api.database_budget import database_call
 from zebra_agent_api.extension_request_body import _unique_object
 
 CONTRACT = "runtime-management/1"
@@ -136,7 +137,7 @@ def register_runtime_management(
             return response
         await slots.acquire()
         read = asyncio.create_task(
-            asyncio.to_thread(_config, settings.runtime_management_config, namespace)
+            database_call(None, _config, settings.runtime_management_config, namespace)
         )
 
         # Keep the capacity slot until the actual read ends, including timed-out callers.

@@ -47,33 +47,38 @@ def claim_stream_hints(
         for claimed, due in ((False, "next_attempt_at"), (True, "lease_expires_at")):
             if len(claims) == limit:
                 break
+            # ponytail: cap32 in the canonical table; split hint storage only if
+            # these short set-based transactions still contend with Event appends.
+            owner_check = "IS NOT NULL" if claimed else "IS NULL"
             rows = connection.execute(
-                "SELECT session_id,current_version FROM session_streams "
-                "WHERE deployment_namespace=%s AND current_version>published_through "
-                + ("AND claim_owner IS NOT NULL " if claimed else "AND claim_owner IS NULL ")
-                + f"AND {due}<=%s ORDER BY {due},session_id LIMIT %s FOR UPDATE SKIP LOCKED",
-                (namespace, selected_at, limit - len(claims)),
+                f"""WITH picked AS MATERIALIZED (
+                    SELECT session_id,{due} AS due_at FROM session_streams
+                    WHERE deployment_namespace=%s AND current_version>published_through
+                      AND claim_owner {owner_check} AND {due}<=%s
+                    ORDER BY {due},session_id LIMIT %s FOR UPDATE SKIP LOCKED
+                ), updated AS (
+                    UPDATE session_streams AS stream SET claim_owner=%s,
+                      claim_fence=stream.claim_fence+1, claimed_through=stream.current_version,
+                      lease_expires_at=clock_timestamp()+%s
+                    FROM picked WHERE stream.deployment_namespace=%s
+                      AND stream.session_id=picked.session_id
+                    RETURNING stream.session_id,stream.claim_fence,stream.claimed_through,
+                      stream.lease_expires_at,picked.due_at
+                ) SELECT session_id,claim_fence,claimed_through,lease_expires_at FROM updated
+                  ORDER BY due_at,session_id""",
+                (namespace, selected_at, limit - len(claims), owner, ttl, namespace),
             ).fetchall()
-            for row in rows:
-                now = _now(connection)  # Sample DB clock after owning the row lock.
-                result = connection.execute(
-                    """UPDATE session_streams SET claim_owner=%s,claim_fence=claim_fence+1,
-                    lease_expires_at=%s,claimed_through=current_version
-                    WHERE deployment_namespace=%s AND session_id=%s
-                    RETURNING claim_fence,claimed_through""",
-                    (owner, now + ttl, namespace, row["session_id"]),
-                ).fetchone()
-                assert result is not None
-                claims.append(
-                    StreamHintClaim(
-                        namespace,
-                        SessionId(row["session_id"]),
-                        owner,
-                        result["claim_fence"],
-                        result["claimed_through"],
-                        now + ttl,
-                    )
+            claims.extend(
+                StreamHintClaim(
+                    namespace,
+                    SessionId(row["session_id"]),
+                    owner,
+                    row["claim_fence"],
+                    row["claimed_through"],
+                    row["lease_expires_at"],
                 )
+                for row in rows
+            )
     return tuple(claims)  # Commit and connection close precede caller publication.
 
 
@@ -88,13 +93,16 @@ def settle_stream_hint(dsn: str, claim: StreamHintClaim, *, confirmed: bool) -> 
     with _database(dsn, claim.namespace).connect_task_io() as connection:
         row = connection.execute(
             """SELECT claim_owner,claim_fence,claimed_through,lease_expires_at
-            FROM session_streams WHERE deployment_namespace=%s AND session_id=%s FOR UPDATE""",
+            FROM session_streams WHERE deployment_namespace=%s AND session_id=%s
+            FOR UPDATE SKIP LOCKED""",
             (claim.namespace, claim.session_id),
         ).fetchone()
+        # A busy durable writer wins; this hint remains reclaimable at expiry.
+        if row is None:
+            return False
         now = _now(connection)
         if (
-            row is None
-            or row["claim_owner"] != claim.owner
+            row["claim_owner"] != claim.owner
             or row["claim_fence"] != claim.fence
             or row["claimed_through"] != claim.through
             or row["lease_expires_at"] != claim.expires_at

@@ -29,27 +29,31 @@ def read_task_event_page(
     through: int | None,
 ) -> TaskEventPage:
     validate_page_request(after, limit, max_bytes, through)
-    header = connection.execute(
-        """SELECT next_event_sequence,event_position_state FROM agent_tasks
-           WHERE deployment_namespace=%s AND task_id=%s""",
-        (namespace, task_id),
-    ).fetchone()
-    if header is None:
+    rows = connection.execute(
+        """SELECT task.next_event_sequence,task.event_position_state,page.*
+           FROM agent_tasks task LEFT JOIN LATERAL (
+               SELECT event.task_sequence,member.task_id AS member_task,
+                      event.event_bytes_bound AS source_bytes
+               FROM session_events event LEFT JOIN execution_segments member
+                 ON member.deployment_namespace=event.deployment_namespace
+                AND member.session_id=event.session_id
+               WHERE task.event_position_state='ready'
+                 AND event.deployment_namespace=task.deployment_namespace
+                 AND event.task_id=task.task_id AND event.task_sequence>%s
+                 AND event.task_sequence<=LEAST(task.next_event_sequence-1,%s)
+               ORDER BY event.task_sequence LIMIT %s
+           ) page ON true
+           WHERE task.deployment_namespace=%s AND task.task_id=%s
+           ORDER BY page.task_sequence""",
+        (after, through, limit, namespace, task_id),
+    ).fetchall()
+    if not rows:
         raise PostgresAgentTaskConflictError("Task page target was not found")
+    header = rows[0]
     if header["event_position_state"] != "ready":
         raise PostgresAgentTaskConflictError("Task Event positions require explicit backfill")
     highwater = page_highwater(after, header["next_event_sequence"], through)
-    metadata = connection.execute(
-        """SELECT event.task_sequence,member.task_id AS member_task,
-                  event.event_bytes_bound AS source_bytes
-           FROM session_events event LEFT JOIN execution_segments member
-             ON member.deployment_namespace=event.deployment_namespace
-            AND member.session_id=event.session_id
-           WHERE event.deployment_namespace=%s AND event.task_id=%s
-             AND event.task_sequence>%s AND event.task_sequence<=%s
-           ORDER BY event.task_sequence LIMIT %s""",
-        (namespace, task_id, after, highwater, limit),
-    ).fetchall()
+    metadata = [row for row in rows if row["task_sequence"] is not None]
     if any(row["member_task"] != task_id for row in metadata):
         raise PostgresAgentTaskConflictError("canonical Task page conflicts with membership")
     if any(row["source_bytes"] is None for row in metadata):

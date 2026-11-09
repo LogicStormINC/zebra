@@ -9,7 +9,6 @@ from uuid import UUID, uuid5
 from agent_core.contracts.session_commands import SessionCommand, SessionCommandKind
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId
-from psycopg.conninfo import make_conninfo
 from psycopg.errors import LockNotAvailable, QueryCanceled
 
 from agent_storage.postgres.client_effects import _append_client_event
@@ -23,16 +22,14 @@ class ClientEffectRecovery:
 
     def __init__(self, dsn: str, *, deployment_namespace: str) -> None:
         self._database = PostgresDatabase(
-            make_conninfo(
-                dsn, connect_timeout=2, options="-c statement_timeout=1500 -c lock_timeout=100"
-            ),
+            dsn,
             deployment_namespace=deployment_namespace,
         )
         self._cursor: SessionId | None = None
 
     def reconcile(self, *, session_id: SessionId | None = None, dry_run: bool = False) -> int:
         namespace = self._database.deployment_namespace
-        with self._database.connect() as connection:
+        with self._database.connect_task_io() as connection:
             rows = connection.execute(
                 """SELECT session_id FROM session_projections
                 WHERE deployment_namespace=%s AND status='waiting_client_effect'
@@ -58,7 +55,7 @@ class ClientEffectRecovery:
             if session_id is None:
                 self._cursor = selected
             try:
-                with self._database.connect() as connection:
+                with self._database.connect_task_io() as connection:
                     count += self._recover(connection, selected, dry_run)
             except (LockNotAvailable, QueryCanceled):
                 if session_id is not None:

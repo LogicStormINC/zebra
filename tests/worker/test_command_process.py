@@ -2,7 +2,6 @@
 
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
-from contextlib import nullcontext
 from dataclasses import replace
 from threading import Event
 from types import SimpleNamespace
@@ -207,7 +206,7 @@ def test_broker_down_keeps_fallback_and_safe_logs(wired, caplog):
     assert "SECRET" not in caplog.text and "command_background_tick_failed" in caplog.text
 
 
-def test_worker_main_closes_model_client_after_real_process_drain_and_hides_dsn(
+def test_cloud_main_closes_pool_after_real_process_drain_without_sync_model_client(
     wired, monkeypatch, capsys
 ):
     import importlib
@@ -226,20 +225,21 @@ def test_worker_main_closes_model_client_after_real_process_drain_and_hides_dsn(
 
     class Client:
         def __init__(self, **kwargs):
-            pass
-
-        def __enter__(self):
-            return self
-
-        def __exit__(self, *args):
-            log.append("model-client-close")
+            raise AssertionError("Cloud model I/O must be natively cancellable")
 
     process = _process(wired)
     pool_dsns = []
-    monkeypatch.setattr(
-        main_module, "postgres_pool_scope",
-        lambda dsn: pool_dsns.append(dsn) or nullcontext(),
-    )
+    from contextlib import contextmanager
+
+    @contextmanager
+    def pool(dsn, **options):
+        pool_dsns.append(dsn)
+        try:
+            yield
+        finally:
+            log.append("database-pool-close")
+
+    monkeypatch.setattr(main_module, "postgres_pool_scope", pool)
     monkeypatch.setattr(main_module, "load_settings", lambda: settings)
     monkeypatch.setattr(main_module.httpx, "Client", Client)
     monkeypatch.setattr(main_module, "build_worker_loop_service", lambda **kwargs: process)
@@ -248,7 +248,7 @@ def test_worker_main_closes_model_client_after_real_process_drain_and_hides_dsn(
     assert (
         log.index("consumer-drained")
         < log.index("memory-drained")
-        < log.index("model-client-close")
+        < log.index("database-pool-close")
     )
     output = capsys.readouterr().out
     assert "SECRET" not in output and "postgresql:[redacted]" in output

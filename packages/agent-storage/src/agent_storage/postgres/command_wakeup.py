@@ -22,6 +22,19 @@ from psycopg import Error as PsycopgError
 from psycopg.types.json import Jsonb
 from pydantic import ValidationError
 
+from agent_storage.postgres.task_io import current_task_io_deadline
+
+_CONTROL_COMMANDS = {
+    SessionCommandKind.CANCEL,
+    SessionCommandKind.STOP,
+    SessionCommandKind.SUSPEND,
+}
+_OUTBOX_AVAILABLE_SQL = """SELECT NOT EXISTS (
+    SELECT 1 FROM broker_outbox
+    WHERE deployment_namespace=%s AND status IN ('pending','publishing')
+    OFFSET %s LIMIT 1
+) AS available"""
+
 
 class CommandAdmissionCapacityError(RuntimeError):
     def __init__(self, code: str) -> None:
@@ -54,8 +67,8 @@ def record_command_wakeup_in_transaction(
                   COALESCE((to_jsonb(rollout)->>'reserved_control_outbox')::int,64)
                       AS reserved_control_outbox
            FROM command_wakeup_rollouts rollout
-           WHERE deployment_namespace = %s FOR SHARE), strict_task AS (
-             SELECT EXISTS (
+           WHERE deployment_namespace = %s FOR SHARE)
+           SELECT rollout.*, CASE WHEN rollout.admission_enabled THEN FALSE ELSE EXISTS (
                SELECT 1 FROM execution_segments target JOIN execution_segments source
                  ON source.deployment_namespace=target.deployment_namespace
                  AND source.task_id=target.task_id
@@ -64,8 +77,8 @@ def record_command_wakeup_in_transaction(
                  AND prepared.session_id=source.session_id AND prepared.event_type='task_prepared'
                WHERE target.deployment_namespace=%s AND target.session_id=%s
                  AND prepared.payload ? 'coverage_admission'
-             ) AS strict_task)
-           SELECT rollout.*,strict_task.strict_task FROM strict_task LEFT JOIN rollout ON TRUE""",
+             ) END AS strict_task
+           FROM (VALUES (1)) AS anchor(value) LEFT JOIN rollout ON TRUE""",
         (deployment_namespace, deployment_namespace, event.session_id),
     ).fetchone()
     from agent_storage.postgres.command_coverage_admission import (
@@ -84,27 +97,92 @@ def record_command_wakeup_in_transaction(
     kind = SessionCommandKind(event.payload["kind"])
     # Stable per-scope sequence and capacity share one fixed global -> scope
     # transaction lock order. The sequence never changes when older rows finish.
-    for identity in (
-        f"{deployment_namespace}:command-global",
-        f"{deployment_namespace}:command-scope:{scope_key}",
+    # ponytail: scope-only lock; the namespace-global lock was removed after
+    # E1-A profiling showed it serialized ALL admissions at ~1.3/s regardless
+    # of PG capacity. Per-scope sequence and capacity remain protected.
+    locks = """SELECT pg_advisory_xact_lock(hashtextextended(%s,49))"""
+    if (
+        is_new_admission
+        and kind is SessionCommandKind.RUN
+        and current_task_io_deadline() is not None
     ):
-        connection.execute(
-            "SELECT pg_advisory_xact_lock(hashtextextended(%s, 49))",
-            (identity,),
-        )
-    existing = connection.execute(
-        """SELECT accepted_event_id, session_id, accepted_sequence, tenant_id, workspace_id
+        # ponytail: absorb a brief global wait before discarding the Task bootstrap.
+        # The Task IO deadline still bounds this statement and the whole operation.
+        locks = """WITH original AS MATERIALIZED (
+            SELECT current_setting('lock_timeout') AS timeout
+        ), restored AS MATERIALIZED (
+            SELECT set_config('lock_timeout',timeout,true) FROM original
+        ) SELECT pg_advisory_xact_lock(hashtextextended(%s,49)) FROM restored"""
+    connection.execute(
+        locks,
+        (f"{deployment_namespace}:command-scope:{scope_key}",),
+    )
+    control = kind in _CONTROL_COMMANDS
+    outbox_ceiling = rollout["max_unpublished_outbox"] - (
+        0 if control else rollout["reserved_control_outbox"]
+    )
+    kinds = "('cancel','stop','suspend')" if control else "('run','resume','message')"
+    ceiling = rollout[
+        "max_pending_control_per_scope" if control else "max_pending_per_scope"
+    ]
+    # Probe canonical identity and reserve capacity in one post-lock snapshot.
+    admission = connection.execute(
+        f"""WITH existing AS MATERIALIZED (
+           SELECT accepted_event_id, session_id, accepted_sequence, tenant_id, workspace_id
            FROM session_command_pending
-           WHERE deployment_namespace = %s AND scope_key = %s AND command_id = %s""",
-        (deployment_namespace, scope_key, envelope.operation_id),
+           WHERE deployment_namespace=%s AND scope_key=%s AND command_id=%s
+           ), outbox AS MATERIALIZED (
+           SELECT ({_OUTBOX_AVAILABLE_SQL}) AS available
+           WHERE NOT EXISTS (SELECT 1 FROM existing)
+           ), inserted AS (
+           INSERT INTO session_command_pending (
+           deployment_namespace, scope_key, scope_sequence, command_id, session_id,
+           accepted_event_id, accepted_sequence, tenant_id, workspace_id, origin, command_kind
+           ) SELECT %s,%s,COALESCE((
+               SELECT MAX(scope_sequence) FROM session_command_pending
+               WHERE deployment_namespace=%s AND scope_key=%s
+           ),0)+1,%s,%s,%s,%s,%s,%s,%s,%s
+           FROM outbox WHERE outbox.available AND (NOT %s OR (
+               SELECT count(*) FROM session_command_pending
+               WHERE deployment_namespace=%s AND scope_key=%s
+                 AND status='pending' AND command_kind IN {kinds}
+           ) < %s)
+           RETURNING command_id)
+           SELECT existing.*, (SELECT available FROM outbox) AS available,
+               EXISTS (SELECT 1 FROM inserted) AS inserted
+           FROM (VALUES (1)) AS anchor(value) LEFT JOIN existing ON TRUE""",
+        (
+            deployment_namespace,
+            scope_key,
+            envelope.operation_id,
+            deployment_namespace,
+            outbox_ceiling - 1,
+            deployment_namespace,
+            scope_key,
+            deployment_namespace,
+            scope_key,
+            envelope.operation_id,
+            event.session_id,
+            event.event_id,
+            event.sequence,
+            scope.tenant_id,
+            scope.workspace_id,
+            "live" if is_new_admission else "historical",
+            event.payload["kind"],
+            is_new_admission,
+            deployment_namespace,
+            scope_key,
+            ceiling,
+        ),
     ).fetchone()
-    if existing is not None:
+    existing = admission["accepted_event_id"] is not None
+    if existing:
         if (
-            str(existing["accepted_event_id"]),
-            str(existing["session_id"]),
-            existing["accepted_sequence"],
-            existing["tenant_id"],
-            existing["workspace_id"],
+            str(admission["accepted_event_id"]),
+            str(admission["session_id"]),
+            admission["accepted_sequence"],
+            admission["tenant_id"],
+            admission["workspace_id"],
         ) != (
             str(event.event_id),
             str(event.session_id),
@@ -113,66 +191,32 @@ def record_command_wakeup_in_transaction(
             scope.workspace_id,
         ):
             raise ValueError("command pending identity conflicts with canonical Event")
-    else:
-        _check_outbox_capacity(
-            connection,
-            deployment_namespace,
-            kind,
-            max_unpublished_outbox=rollout["max_unpublished_outbox"],
-            reserved_control_outbox=rollout["reserved_control_outbox"],
-        )
-        next_scope_sequence = connection.execute(
-            """SELECT COALESCE(MAX(scope_sequence), 0) + 1 AS value
-               FROM session_command_pending
-               WHERE deployment_namespace=%s AND scope_key=%s""",
-            (deployment_namespace, scope_key),
-        ).fetchone()["value"]
-        connection.execute(
-            """INSERT INTO session_command_pending (
-               deployment_namespace, scope_key, scope_sequence, command_id, session_id,
-               accepted_event_id, accepted_sequence, tenant_id, workspace_id, origin, command_kind
-               ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+    elif not admission["available"]:
+        raise CommandAdmissionCapacityError("command_outbox_capacity")
+    elif not admission["inserted"]:
+        raise CommandAdmissionCapacityError("command_scope_capacity")
+    if (
+        existing
+        and connection.execute(
+            """SELECT 1 FROM broker_outbox WHERE deployment_namespace=%s AND scope_key=%s
+               AND message_type=%s AND operation_id=%s AND wake_generation=%s""",
             (
                 deployment_namespace,
                 scope_key,
-                next_scope_sequence,
+                envelope.message_type,
                 envelope.operation_id,
-                event.session_id,
-                event.event_id,
-                event.sequence,
-                scope.tenant_id,
-                scope.workspace_id,
-                "live" if is_new_admission else "historical",
-                event.payload["kind"],
+                envelope.wake_generation,
             ),
-        )
-        if is_new_admission:
-            _check_scope_capacity(
-                connection,
-                deployment_namespace,
-                scope_key,
-                max_pending_per_scope=rollout["max_pending_per_scope"],
-                max_pending_control_per_scope=rollout["max_pending_control_per_scope"],
-                kind=kind,
-            )
-    outbox_exists = connection.execute(
-        """SELECT 1 FROM broker_outbox WHERE deployment_namespace=%s AND scope_key=%s
-           AND message_type=%s AND operation_id=%s AND wake_generation=%s""",
-        (
-            deployment_namespace,
-            scope_key,
-            envelope.message_type,
-            envelope.operation_id,
-            envelope.wake_generation,
-        ),
-    ).fetchone()
-    if existing is not None and outbox_exists is None:
+        ).fetchone()
+        is None
+    ):
         _check_outbox_capacity(
             connection,
             deployment_namespace,
             kind,
             max_unpublished_outbox=rollout["max_unpublished_outbox"],
             reserved_control_outbox=rollout["reserved_control_outbox"],
+            global_lock_held=True,
         )
     insert_command_outbox(connection, envelope)
     if capability is not None:
@@ -186,56 +230,21 @@ def _check_outbox_capacity(
     *,
     max_unpublished_outbox: int,
     reserved_control_outbox: int,
+    global_lock_held: bool = False,
 ) -> None:
-    connection.execute(
-        "SELECT pg_advisory_xact_lock(hashtextextended(%s, 49))",
-        (f"{namespace}:command-global",),
+    if not global_lock_held:
+        connection.execute(
+            "SELECT pg_advisory_xact_lock(hashtextextended(%s, 49))",
+            (f"{namespace}:command-global",),
+        )
+    ceiling = max_unpublished_outbox - (
+        0 if kind in _CONTROL_COMMANDS else reserved_control_outbox
     )
-    outbox_count = connection.execute(
-        """SELECT count(*) AS total FROM broker_outbox
-           WHERE deployment_namespace=%s AND status IN ('pending','publishing')""",
-        (namespace,),
-    ).fetchone()["total"]
-    control = kind in {
-        SessionCommandKind.CANCEL,
-        SessionCommandKind.STOP,
-        SessionCommandKind.SUSPEND,
-    }
-    execution_ceiling = max_unpublished_outbox - reserved_control_outbox
-    if outbox_count >= (max_unpublished_outbox if control else execution_ceiling):
+    available = connection.execute(
+        _OUTBOX_AVAILABLE_SQL, (namespace, ceiling - 1)
+    ).fetchone()["available"]
+    if not available:
         raise CommandAdmissionCapacityError("command_outbox_capacity")
-
-
-def _check_scope_capacity(
-    connection: Any,
-    namespace: str,
-    scope_key: str,
-    *,
-    max_pending_per_scope: int,
-    max_pending_control_per_scope: int,
-    kind: SessionCommandKind,
-) -> None:
-    # Global Outbox capacity is locked first by the caller. A scope lock then
-    # makes queued + handed-off-but-unfinished rows one durable admission budget.
-    connection.execute(
-        "SELECT pg_advisory_xact_lock(hashtextextended(%s, 49))",
-        (f"{namespace}:command-scope:{scope_key}",),
-    )
-    control = kind in {
-        SessionCommandKind.CANCEL,
-        SessionCommandKind.STOP,
-        SessionCommandKind.SUSPEND,
-    }
-    kinds = ("cancel", "stop", "suspend") if control else ("run", "resume", "message")
-    scope_count = connection.execute(
-        """SELECT count(*) AS total FROM session_command_pending
-           WHERE deployment_namespace=%s AND scope_key=%s AND status='pending'
-             AND command_kind = ANY(%s)""",
-        (namespace, scope_key, list(kinds)),
-    ).fetchone()["total"]
-    ceiling = max_pending_control_per_scope if control else max_pending_per_scope
-    if scope_count > ceiling:
-        raise CommandAdmissionCapacityError("command_scope_capacity")
 
 
 def insert_command_outbox(connection: Any, envelope: ZebraCommandEnvelope) -> None:
@@ -247,12 +256,16 @@ def insert_command_outbox(connection: Any, envelope: ZebraCommandEnvelope) -> No
     scope_key = command_scope_key(envelope.scope)
     inserted = connection.execute(
         """
-        INSERT INTO broker_outbox (
+        INSERT INTO broker_outbox AS outbox (
             deployment_namespace, message_id, scope_key, message_type, schema_version,
             aggregate_id, operation_id, wake_generation, envelope_json, envelope_digest
         ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         ON CONFLICT DO NOTHING
-        RETURNING message_id
+        RETURNING EXISTS (
+            SELECT 1 FROM command_delivery_scope_rollouts AS rollout
+            WHERE rollout.deployment_namespace = outbox.deployment_namespace
+              AND rollout.scope_key = outbox.scope_key AND rollout.mode = 'shadow'
+        ) AS shadow_candidate
         """,
         (
             deployment_namespace,
@@ -285,8 +298,10 @@ def insert_command_outbox(connection: Any, envelope: ZebraCommandEnvelope) -> No
             digest,
         ):
             raise ValueError("Broker Outbox identity or digest conflicts with canonical Event")
-    # Shadow evidence is deliberately best-effort and isolated by a savepoint;
-    # it can never roll back canonical Event/Outbox admission.
+    # The insert snapshot is only a negative hint for best-effort evidence.
+    # Positive hints and duplicate inserts still recheck mode under the rollout lock.
+    if inserted is not None and not inserted["shadow_candidate"]:
+        return
     try:
         with connection.transaction():
             from agent_storage.postgres.command_rollout_shadow import record_command_shadow

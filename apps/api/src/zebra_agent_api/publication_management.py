@@ -21,6 +21,7 @@ from fastapi.responses import JSONResponse
 from starlette.routing import Route
 from zebra_agent_config import ZebraAgentSettings
 
+from zebra_agent_api.database_budget import database_call
 from zebra_agent_api.publication_config import load_publication_approval
 from zebra_agent_api.publication_service import mutate_publication
 from zebra_agent_api.runtime_management import _HEADERS, _error
@@ -195,7 +196,8 @@ def register_publication_management(
         namespace = getattr(api.stores, "deployment_namespace", None)
         headers = {name: request.headers.getlist(name) for name in names}
         task = asyncio.create_task(
-            asyncio.to_thread(
+            database_call(
+                None,
                 perform, settings, namespace, token, headers, request.method, raw, scripts=scripts
             )
         )

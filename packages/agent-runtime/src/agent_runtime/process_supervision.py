@@ -1,7 +1,9 @@
 """Bounded private process-group supervision; no application or model dependencies."""
 
 import logging
+import math
 import os
+import select
 import signal
 import subprocess
 import time
@@ -43,7 +45,16 @@ def supervise_process(
     process: subprocess.Popen[Any], cancelled: Any, *, interval: float = 0.5, on_exit: Any = None
 ) -> bool:
     requested = False
+    pidfd = None
     try:
+        try:
+            pidfd = os.pidfd_open(process.pid)
+        except (AttributeError, OSError):
+            pass  # Kernels without pidfds retain the bounded sleep.
+        poller = None
+        if pidfd is not None:
+            poller = select.poll()
+            poller.register(pidfd, select.POLLIN)
         while _running(process):
             try:
                 stopped = cancelled()
@@ -53,8 +64,14 @@ def supervise_process(
             if stopped:
                 requested = True
                 break
-            time.sleep(interval)
+            if poller is None:
+                time.sleep(interval)
+            else:
+                # Readiness does not reap the leader. terminate_group still owns exit proof.
+                poller.poll(math.ceil(interval * 1000))
     finally:
+        if pidfd is not None:
+            os.close(pidfd)
         exited = terminate_group(process)
         if exited and on_exit is not None:
             try:

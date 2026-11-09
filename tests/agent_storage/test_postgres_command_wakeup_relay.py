@@ -8,6 +8,7 @@ from uuid import uuid4
 
 import psycopg
 import pytest
+from agent_storage.postgres.command_rollout import set_command_scope_rollout
 from agent_storage.postgres.command_wakeup import _canonical_json
 from agent_storage.postgres.command_wakeup_relay import claim_relay_batch, settle_relay_claim
 from psycopg.rows import dict_row
@@ -65,6 +66,35 @@ def test_concurrent_claims_disjoint_and_skip_locked(dsn):
         assert blocked not in {claim.message_id for claim in claims}
     assert len(_claim(dsn)) == 1
     assert _claim(dsn) == ()
+
+
+def test_scoped_relay_claims_only_broker_scope(dsn):
+    _seed_outbox(dsn)
+    fallback, = _rows(dsn)
+    session = _seed(dsn, tenant="other-tenant")
+    _store(dsn).append(_command(session.session_id, key="broker"))
+    broker = next(row for row in _rows(dsn) if row["message_id"] != fallback["message_id"])
+
+    assert _claim(dsn, scope_mode="broker") == ()
+    set_command_scope_rollout(
+        dsn,
+        deployment_namespace=NAMESPACE,
+        scope_key=broker["scope_key"],
+        mode="broker",
+        actor="operator",
+        reason="relay scope regression",
+    )
+    with psycopg.connect(dsn) as rollout_writer:
+        rollout_writer.execute(
+            "SELECT 1 FROM command_delivery_scope_rollouts "
+            "WHERE deployment_namespace=%s AND scope_key=%s FOR UPDATE",
+            (NAMESPACE, broker["scope_key"]),
+        )
+        claim, = _claim(dsn, scope_mode="broker")
+    assert claim.message_id == broker["message_id"]
+    assert _claim(dsn, scope_mode="broker") == ()
+    unscoped, = _claim(dsn)
+    assert unscoped.message_id == fallback["message_id"]
 
 
 def test_lost_confirmation_reclaims_identical_physical_message(dsn):

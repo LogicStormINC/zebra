@@ -3,26 +3,34 @@
 import base64
 import hashlib
 import json
+import logging
 import os
 from dataclasses import replace
 from datetime import UTC, datetime
 from time import monotonic
+from traceback import walk_tb
 from typing import Any, Literal
 from uuid import UUID, uuid4
 
 from agent_core.domain.client_capabilities import ProfileLifecycle
+from agent_core.ports.idempotency_store import IdempotencyRecord
 from agent_storage import PostgresControlPlaneStores, new_idempotency_record
 from agent_storage.idempotency import IdempotencyConflictError
+from agent_storage.postgres.connection_scope import postgres_connection_scope
 from agent_storage.postgres.task_io import task_io_deadline
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+from psycopg.errors import LockNotAvailable
 from pydantic import BaseModel, ConfigDict, Field
 
 from zebra_agent_api.client_grant_auth import SessionBackedClientGrantAuthorizer
 from zebra_agent_api.client_surface import mount_client_surface, open_client_surface
+from zebra_agent_api.e1_receipt_proof import confirmed, enabled
 from zebra_agent_api.idempotency import scoped_idempotency_key
 from zebra_agent_api.responses import ApiResponse
 from zebra_agent_api.task_api import create_task
 from zebra_agent_api.tenant_guard import host_list_context_response, task_access_response
+
+logger = logging.getLogger(__name__)
 
 _PREFIX = "/v1/admission-operations/"
 _CLAIM = "client-admission-v1-claim"
@@ -194,8 +202,9 @@ def handle_admission_operation(app: Any, request: Any) -> ApiResponse | None:
         }
     )
     assert scoped is not None
+    started = monotonic()
     try:
-        with task_io_deadline(monotonic() + 2):
+        with task_io_deadline(started + 2), postgres_connection_scope(bounded=True):
             return _handle(
                 app,
                 request,
@@ -207,7 +216,20 @@ def handle_admission_operation(app: Any, request: Any) -> ApiResponse | None:
             )
     except IdempotencyConflictError:
         return ApiResponse(409, {"status": "admission_operation_conflict"})
-    except TimeoutError:
+    except (TimeoutError, LockNotAvailable) as exc:
+        # Code locations identify the failed stage without logging frame locals,
+        # exception messages, query text, or credentials.
+        frames = [
+            f"{frame.f_globals['__name__']}.{frame.f_code.co_name}:{line}"
+            for frame, line in walk_tb(exc.__traceback__)
+        ]
+        logger.warning(
+            "Admission outcome unknown mode=%s error=%s elapsed_ms=%d path=%s",
+            "terminate" if termination else "observe" if observation else "submit",
+            type(exc).__name__,
+            (monotonic() - started) * 1000,
+            " > ".join(frames),
+        )
         return ApiResponse(503, {"status": "unknown", "operation": operation})
 
 
@@ -355,7 +377,14 @@ def _handle(
             return denied
         if result is not None and result.request_hash != digest:
             return ApiResponse(503, {"status": "observation_unavailable"})
+        if (
+            enabled()
+            and result is not None
+            and not confirmed(store._database.deployment_namespace, result)
+        ):
+            result = None
         return _observation(operation, digest, meta, result)
+    result = None
     if claim is None:
         assert body is not None
         nonce = str(uuid4())
@@ -384,16 +413,26 @@ def _handle(
             }:
                 from zebra_agent_api.client_admission_atomic import execute_atomic_surface
 
-                execute_atomic_surface(app, request, body, scoped, key, digest, operation)
+                result = execute_atomic_surface(
+                    app, request, body, scoped, key, digest, operation,
+                    original_claim=claim.response_body,
+                )
             else:
                 # Legacy partial commits and their original receipts remain unchanged.
                 response = _dispatch(app, request, body, scoped)
                 if not _persist_result(store, response, operation, scoped, key, digest):
                     return ApiResponse(503, {"status": "unknown", "operation": operation})
-    result = store.get(action=_RESULT, idempotency_key=scoped)
+    if result is None:
+        result = store.get(action=_RESULT, idempotency_key=scoped)
     denied = _authorize(app, request, meta)
     if denied is not None:
         return denied
+    if (
+        enabled()
+        and result is not None
+        and not confirmed(store._database.deployment_namespace, result)
+    ):
+        result = None
     return ApiResponse(
         200,
         result.response_body
@@ -408,13 +447,13 @@ def _handle(
 
 def _persist_result(
     store: Any, response: ApiResponse, operation: str, scoped: str, key: bytes, digest: str
-) -> bool:
+) -> IdempotencyRecord | None:
     raw = json.dumps(response.body, sort_keys=True, separators=(",", ":")).encode()
     if len(raw) > 131072:
-        return False
+        return None
     iv = os.urandom(12)
     sealed = base64.b64encode(iv + AESGCM(key).encrypt(iv, raw, digest.encode())).decode()
-    store.save(
+    return store.save(
         new_idempotency_record(
             action=_RESULT,
             idempotency_key=scoped,
@@ -429,7 +468,6 @@ def _persist_result(
             },
         )
     )
-    return True
 
 
 def _request_hash(value: dict[str, Any]) -> str:

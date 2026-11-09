@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 from typing import Any
 
 from agent_core.domain.extensions import (
@@ -26,6 +25,7 @@ from agent_core.ports.extensions import (
 from agent_core.ports.plugin_installations import PluginInstallationPage
 from pydantic import TypeAdapter
 
+from agent_storage.postgres.async_dispatch import storage_call
 from agent_storage.postgres.database import PostgresDatabase
 from agent_storage.postgres.extensions import (
     _CURRENT,
@@ -46,7 +46,7 @@ class PostgresPluginInstallationStore(PostgresDatabase):
         )
 
     async def get(self, *, scope: ExtensionScope, installation_id: str) -> PluginInstallation:
-        row = await asyncio.to_thread(self._extensions()._get, scope, "plugin", installation_id)
+        row = await storage_call(self._extensions()._get, scope, "plugin", installation_id)
         return _decode_record(PluginInstallation, row, scope)
 
     async def get_current_batch(
@@ -84,7 +84,7 @@ class PostgresPluginInstallationStore(PostgresDatabase):
                     ready.append(record)
             return tuple(ready)
 
-        return await asyncio.to_thread(load)
+        return await storage_call(load)
 
     async def get_creation(
         self,
@@ -102,7 +102,7 @@ class PostgresPluginInstallationStore(PostgresDatabase):
         revision: int,
     ) -> PluginInstallation:
         TypeAdapter(ExtensionRevision).validate_python(revision)
-        return await asyncio.to_thread(self._get_revision, scope, installation_id, revision)
+        return await storage_call(self._get_revision, scope, installation_id, revision)
 
     def _get_revision(
         self,
@@ -130,7 +130,7 @@ class PostgresPluginInstallationStore(PostgresDatabase):
         scope: ExtensionScope,
         page: ExtensionPageRequest,
     ) -> PluginInstallationPage:
-        rows = await asyncio.to_thread(self._extensions()._list, scope, "plugin", page)
+        rows = await storage_call(self._extensions()._list, scope, "plugin", page)
         return PluginInstallationPage(
             items=tuple(
                 _decode_record(PluginInstallation, row, scope) for row in rows[: page.limit]
@@ -150,7 +150,7 @@ class PostgresPluginInstallationStore(PostgresDatabase):
             raise ValueError("package belongs to another deployment")
         if expected_revision is None and record.enabled:
             raise ValueError("plugin installations must be created disabled")
-        await asyncio.to_thread(
+        await storage_call(
             self._extensions()._save,
             scope,
             "plugin",

@@ -2,7 +2,10 @@
 
 import psycopg
 
-from agent_storage.postgres.migration_history_plan import migration_history_plan
+from agent_storage.postgres.migration_history_plan import (
+    migration_history_plan,
+    runtime_schema_matches,
+)
 from agent_storage.postgres.migration_types import PostgresMigrationError
 from agent_storage.postgres.migrations import MIGRATIONS
 
@@ -17,10 +20,7 @@ def require_current_schema(dsn: str) -> None:
             "SELECT version, name, checksum FROM zebra_schema_migrations"
         ).fetchall()
     history = {version: (name, checksum) for version, name, checksum in applied}
-    expected = {
-        (m.version, m.name, m.checksum) for m in migration_history_plan(history, MIGRATIONS)
-    }
-    if set(applied) != expected:
+    if not runtime_schema_matches(history, MIGRATIONS):
         raise PostgresMigrationError(
             "database schema differs from this application; run matching migrations before startup"
         )

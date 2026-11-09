@@ -148,6 +148,8 @@ class ZebraApiScheduledTaskAdmission:
             self.api.publisher_grants,
             parsed,
             host_context=verified.context,
+            settings=self.api.settings,
+            verified_host_grant=verified,
         )
         if isinstance(definition, ApiResponse):
             self._reject_or_retry(definition, "definition_binding")

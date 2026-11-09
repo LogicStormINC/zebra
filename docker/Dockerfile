@@ -28,6 +28,8 @@ RUN case "$ZEBRA_INSTALL_RABBITMQ" in \
       false) uv sync --frozen --all-packages --no-dev ;; \
       *) exit 2 ;; \
     esac \
+    && python -m compileall -q -f --invalidation-mode checked-hash \
+         /app/apps /app/packages /app/.venv/lib/python3.12/site-packages /usr/local/lib/python3.12 \
     && groupadd --gid 65532 zebra \
     && useradd --system --create-home --uid 65532 --gid 65532 --shell /usr/sbin/nologin zebra \
     && chown -R zebra:zebra /app

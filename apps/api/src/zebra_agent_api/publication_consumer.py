@@ -56,8 +56,8 @@ def resolve_consumer_binding(
         authority = HostManagementStore(
             settings.database_url, deployment_namespace=context.namespace_id
         )
-        with authority.authorized(approval.trust) as connection:
-            lock_definition(connection, approval.definition_scope.scope_key)
+        with authority.authorized(approval.trust, shared=True) as connection:
+            lock_definition(connection, approval.definition_scope.scope_key, shared=True)
             with postgres_transaction_work_unit(database, connection):
                 snapshot = DefinitionBindingService(
                     registry, StaticPublisherGrantResolver({})

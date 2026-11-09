@@ -28,6 +28,7 @@ from agent_storage.postgres.command_wakeup_message import (
     MessageInputRejected,
     append_command_message,
 )
+from agent_storage.postgres.command_wakeup_receipts import _check_inbox as _check_inbox
 from agent_storage.postgres.command_wakeup_receipts import _terminal_session as _terminal_session
 from agent_storage.postgres.command_wakeup_receipts import _validate as _validate
 from agent_storage.postgres.command_wakeup_recovery_proof import (
@@ -427,6 +428,13 @@ def handoff_command(
                 input_event_id,
             ),
         )
+        if lease is not None:
+            connection.execute(
+                """UPDATE session_command_pending SET recovery_due_at = %s
+                   WHERE deployment_namespace = %s AND accepted_event_id = %s
+                     AND status = 'pending' AND recovery_due_at > %s""",
+                (lease.expires_at, deployment_namespace, accepted_event_id, lease.expires_at),
+            )
         _inbox(connection, deployment_namespace, pending, outbox, status.value)
         if coverage_proof is not None:
             check_coverage_recovery_clock(connection, coverage_proof, pending=pending)
@@ -449,27 +457,6 @@ def handoff_command(
                 connection, coverage_check, proof=coverage_proof, pending=pending
             )
         return CommandHandoff(status, pending["command_id"], accepted_event_id, lease)
-
-
-def _check_inbox(
-    connection: Any,
-    namespace: str,
-    pending: dict[str, Any],
-    outbox: dict[str, Any],
-) -> str | None:
-    row = connection.execute(
-        """SELECT * FROM broker_command_inbox
-           WHERE deployment_namespace = %s AND message_id = %s""",
-        (namespace, outbox["message_id"]),
-    ).fetchone()
-    if row is not None and (
-        row["envelope_digest"] != outbox["envelope_digest"]
-        or row["scope_key"] != pending["scope_key"]
-        or row["command_id"] != pending["command_id"]
-        or row["accepted_event_id"] != pending["accepted_event_id"]
-    ):
-        raise ValueError("command Inbox identity or digest conflict")
-    return None if row is None else str(row["status"])
 
 
 def _inbox(

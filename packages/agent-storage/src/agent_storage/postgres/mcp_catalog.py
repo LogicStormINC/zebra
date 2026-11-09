@@ -1,6 +1,5 @@
 """Append-only catalog publication serialized with connection configuration changes."""
 
-import asyncio
 
 from agent_core.domain.extensions import (
     ExtensionDigest,
@@ -14,6 +13,7 @@ from agent_core.ports.mcp_catalog import McpCatalogIntegrityError
 from psycopg.types.json import Jsonb
 from pydantic import TypeAdapter
 
+from agent_storage.postgres.async_dispatch import storage_call
 from agent_storage.postgres.database import PostgresDatabase
 from agent_storage.postgres.extensions import _COLUMNS, _KEY, _scope_key
 from agent_storage.postgres.mcp_credentials import _locked_connection
@@ -24,7 +24,7 @@ class PostgresMcpCatalogStore(PostgresDatabase):
         catalog = McpToolCatalog.model_validate(catalog.model_dump())
         if catalog.connection.scope != scope:
             raise ValueError("MCP catalog scope mismatch")
-        await asyncio.to_thread(self._publish, scope, catalog)
+        await storage_call(self._publish, scope, catalog)
 
     def _publish(self, scope: ExtensionScope, catalog: McpToolCatalog) -> None:
         key = (
@@ -63,14 +63,14 @@ class PostgresMcpCatalogStore(PostgresDatabase):
         expected_digest: str,
     ) -> McpToolCatalog:
         TypeAdapter(ExtensionDigest).validate_python(expected_digest)
-        return await asyncio.to_thread(
+        return await storage_call(
             self._read, scope, connection_id, config_revision, expected_digest
         )
 
     async def latest(
         self, *, scope: ExtensionScope, connection_id: str, config_revision: int
     ) -> McpToolCatalog:
-        return await asyncio.to_thread(self._read, scope, connection_id, config_revision, None)
+        return await storage_call(self._read, scope, connection_id, config_revision, None)
 
     def _read(
         self, scope: ExtensionScope, connection_id: str, revision: int, expected: str | None

@@ -183,12 +183,108 @@
 - Current receipt: docs/evidence/ca-baseline-gate-02/validation.json；最终完整test11672/0/3161skip、check全绿、真实PG5通过；本卡先前验证为当时历史记录，不覆盖旧证据。
 
 # CA-HA-03 — 资源预算、退避与技术namespace隔离
-- Status: Ready（未领取/未实施）；01已合入，02已完成组合完整验收并快进至本地cloud-agent；不自动开工。
+
+- E1 SSE 快照内复用源证明（实施前登记）：沿用 CA-HA-03 Owner、branch 和 worktree。Owned paths 为 packages/agent-storage/src/agent_storage/postgres/{stream_proof_batch,task_read_header}.py、tests/api/{test_cloud_stream_read_bounds,test_stream_source_head_tail_native}.py 和 WORKLOG.md。补齐相关请求夹具；仅同只读快照内同 Task 同水位复用，保留安全终态读取。
+
+- E1 Worker 类型回放尾页（实施前登记）：沿用 CA-HA-03 Owner、branch 和 worktree。Owned paths 为 packages/agent-storage/src/agent_storage/postgres/worker_replay_reader.py、tests/worker/{test_bounded_worker_replay,test_bounded_session_recovery}.py 和 WORKLOG.md。补齐真实租约停止查询所需的测试 schema；只在类型元数据证明读到尾页时省去空页查询，保留快照、字节预算和租约栅栏。
+
+- E1 严格命令源候选门槛（实施前登记）：沿用 CA-HA-03 Owner、branch 和 worktree。Owned paths 为 packages/agent-storage/src/agent_storage/postgres/command_coverage_admission.py 和 WORKLOG.md。保留同一 SQL 快照、全部历史严格标记、绑定及拒绝逻辑。
+
+- E1 Task 回填源尾与水位更新（实施前登记）：沿用 CA-HA-03 Owner、branch 和 worktree。Owned paths 为 packages/agent-storage/src/agent_storage/postgres/task_event_positions.py、tests/agent_storage/test_admission_atomic_task_run.py 和 WORKLOG.md。只合并尾部存在性判断和 Segment 水位写入，保留 Task 锁及有界回填。
+
+- E1 Task 事件位置水位读取（实施前登记）：沿用 CA-HA-03 Owner、branch 和 worktree。Owned paths 为 packages/agent-storage/src/agent_storage/postgres/task_event_positions.py、tests/agent_storage/test_admission_atomic_task_run.py 和 WORKLOG.md。仅合并 legacy 水位与状态读取，保留 Task 锁和校验。
+
+- E1 Task 同步复用已持有的锁（实施前登记）：沿用 CA-HA-03 Owner、branch 和 worktree。Owned paths 为 packages/agent-storage/src/agent_storage/postgres/{task_event_positions,task_index_transactions}.py、tests/agent_storage/test_admission_atomic_task_run.py 和 WORKLOG.md。重建和 Handoff 的事件位置同步复用同事务 Task 锁，独立回填照常获取。
+
+- E1 Task 根投影和成员读取合并（实施前登记）：沿用 CA-HA-03 Owner、branch 和 worktree。Owned paths 为 packages/agent-storage/src/agent_storage/postgres/task_index_transactions.py、tests/agent_storage/test_admission_atomic_task_run.py 和 WORKLOG.md。复用 Task 锁，保留重建校验与行锁。
+
+- E1 原子 Task 准入重建（实施前登记）：沿用 CA-HA-03 Owner、branch 和 worktree。Owned paths 为 packages/agent-storage/src/agent_storage/postgres/{task_index_transactions,task_admission}.py、tests/agent_storage/test_admission_atomic_task_run.py 和 WORKLOG.md。首次准入复用外层事务回滚，保留其余重建调用的 savepoint。
+
+- E1 准入身份与待处理记录合并（实施前登记）：沿用 CA-HA-03 Owner、branch 和 worktree。Owned paths 为 packages/agent-storage/src/agent_storage/postgres/command_wakeup.py、tests/agent_storage/test_postgres_command_wakeup.py 和 WORKLOG.md。保持全局与范围锁、重复身份校验及容量优先级，移除首次准入锁内一个往返。
+
+- E1 F-10 回执链夹具（实施前登记）：沿用 CA-HA-03 Owner、branch 和 worktree。Owned paths 为 tests/worker/test_coverage_execution_receipts.py 和 WORKLOG.md。为已启用回执的夹具声明 native verifier，保留默认关闭的负向检查。
+
+- E1 新根 Task 事件批量写入（实施前登记）：沿用 CA-HA-03 Owner、branch 和 worktree。Owned paths 为 packages/agent-storage/src/agent_storage/postgres/{events,task_admission}.py、tests/agent_storage/test_admission_atomic_task_run.py 和 WORKLOG.md。只优化连续且无幂等键的新根启动事件，命令和既有流仍沿用已有逐条校验。
+
+- E1 准入全局锁内往返（实施前登记）：沿用 CA-HA-03 Owner、branch 和 worktree。Owned paths 为 packages/agent-storage/src/agent_storage/postgres/command_wakeup.py、tests/agent_storage/test_postgres_command_wakeup.py 和 WORKLOG.md。合并首次准入容量读取和待处理记录插入，保留锁顺序、控制预留、错误优先级与既有恢复校验。
+
+- E1 授权过期测试夹具（实施前登记）：沿用 CA-HA-03 Owner、branch 和 worktree。Owned paths 为 tests/api/test_task_resource_binding.py 和 WORKLOG.md。仅在该模块测试 Broker 夹具显式授权其制品读取用例需要的 scope，以运行实际资源绑定与过期断言。
+
+- E1 准入重复源检查（实施前登记）：沿用 CA-HA-03 Owner、branch 和 worktree。Owned paths 为 packages/agent-storage/src/agent_storage/postgres/command_wakeup.py、tests/agent_storage/test_postgres_command_wakeup.py 和 WORKLOG.md。仅跳过 native rollout 已启用时重复的 bootstrap marker 探测；保留关闭路径和现有严格校验。
+
+- E1 v122/v123 滚动过渡（实施前登记）：沿用 CA-HA-03 Owner、branch 和 worktree。Owned paths 为 packages/agent-storage/src/agent_storage/postgres/{migration_history_plan,migration_runner,worker_capability,projection_work,projection_work_io}.py、apps/worker/src/zebra_agent_worker/command_process_state.py、tests/agent_storage/{test_schema_readiness,test_projection_repair_contention,test_postgres_branch_history_upgrade}.py 和 WORKLOG.md。三个运行时门接受精确相邻账本；迁移执行器保持严格校验；旧 schema 沿用既有修复语句。
+
+- E1 投影修复计划复用（实施前登记）：沿用 CA-HA-03 Owner、branch 和 worktree。Owned paths 为 packages/agent-storage/src/agent_storage/postgres/{projection_work,projection_work_repair_plan_migration,migration_catalog_tail}.py、tests/agent_storage/{projection_work_test_support,test_projection_repair_contention,test_projection_work_native}.py 和 WORKLOG.md。仅新增前向迁移和调用，保留已有修复 SQL、锁与事务边界。独立 PostgreSQL 验证，旧二进制严格 schema 校验单独核实。
+
+- E1 模型连接中断 follow-up（实施前登记）：沿用 CA-HA-03 Owner、branch 与 worktree。Owned paths 为 packages/agent-core/src/agent_core/ports/worker_budget.py、packages/agent-integrations/src/agent_integrations/worker_budget.py、apps/worker/src/zebra_agent_worker/execution_errors.py、tests/agent_integrations/test_worker_budget_transport.py、tests/worker/test_reliability_boundaries.py 和 WORKLOG.md。只处理已有持久预留之后的传输中断及超时。
+
+- E1 对账原因读取补充（实施前登记）：沿用 CA-HA-03 Owner、branch 与 worktree。Owned paths 为 packages/agent-storage/src/agent_storage/postgres/command_wakeup_outcome.py、tests/agent_storage/test_postgres_command_wakeup_outcome.py 和 WORKLOG.md。复用现有对账错误码及原 Run 读取资格。
+- Status: In Progress（2026-11-02）；用户“继续”授权后从Ready领取；人类Owner Luke Ding，执行Codex；branch codex/ca-ha-03-budgets；独立worktree ca-ha-03-budgets/zebra-agent；基线56ae352a5。
+- E1 rebuilt publication（实施前登记）：沿用 CA-HA-03 Owner/branch/worktree。Owned paths：既有 tests/compose/cloud_ha_e1/e1_composition.py、authority.py 和 WORKLOG.md。仅对重建隔离命名空间启用签名及确定性计量，原发布证据保留。
+- E1 rebuilt PostgreSQL cutover（实施前登记）：沿用 CA-HA-03 Owner/branch/worktree。新增 Owned path tests/compose/cloud_ha_e1/switch_rebuilt_postgres.sh，用于受控切换隔离 PostgreSQL，不切换应用。
+- E1 node identity publisher（实施前登记）：沿用 CA-HA-03 Owner/branch/worktree。新增 Owned path tests/compose/cloud_ha_e1/publish_executor_incarnation.py，用于隔离节点身份发布，持久对账接线另验。
+- E1 executor incarnation Worker follow-up（实施前登记）：沿用 CA-HA-03 Owner/branch/worktree。新增 Owned path apps/worker/src/zebra_agent_worker/session_process.py，复用已登记 tests/worker/test_session_process.py。仅由显式节点身份文件启用实例登记。节点观察器和部署挂载另验。
+- E1 executor incarnation storage follow-up（实施前登记）：沿用 CA-HA-03 的 Owner、branch 与 worktree。Owned paths：既有 force_stop_executors.py、tests/agent_storage/test_postgres_force_stop_recovery.py 与 WORKLOG.md。独立记录实例身份，保留旧启动/退出回执兼容性。可信节点观察器及部署接线另验。
+- E1 Worker-loss supervisor follow-up（实施前登记）：沿用 CA-HA-03 的 Owner、branch 与 worktree。新增 Owned paths：packages/agent-runtime/src/agent_runtime/executor_supervisor.py、tests/worker/test_session_process.py。保留执行子进程的 SIGKILL 父进程保护，仅让监督进程在 Worker 丢失时进入现有清理路径。持久回执对账和监督进程直接 SIGKILL 独立验收。
+- Baseline test-only scope (before edit): 干净56ae352a5已复现test_cloud_factory_composes_bounded_scalar_read的forced缺列；补齐该Mock已存在的SQL列，不更改生产停止判定。
+- Current slice 03A（Review：候选已验收，未生产部署）: 修复Cloud新旧Worker空/blocked/error轮询空转，复用独立控制lane；完成可运行回归和资源边界核算。03B预算装配候选已完成，完整E1/隔离容量验收仍未完成，不能由03A代替。
+- Owned paths（03A实施前冻结）: apps/worker/src/zebra_agent_worker/{worker_polling,worker_loop_service,loop,command_process,command_background}.py；packages/agent-storage/src/agent_storage/postgres/command_wakeup_pickup.py；tests/worker/{test_cloud_ha_polling,test_execution_control_status}.py、tests/agent_storage/test_postgres_command_wakeup_pickup.py；docs/CA-HA-03_resource_budgets.md、docs/evidence/ca-ha-03/；docs/{AGENT_TASKS,CLOUD_HIGH_AVAILABILITY_TASKS_v1}.md、PROGRESS.md、WORKLOG.md、task_plan.md。
+- Validation: 确定性状态/延迟边界，新旧实际run接线，持续deferred下独立控制与停止响应；现有consumer槽/公平性回归；不创建或重试业务操作，不部署/迁移/恢复旧环境。
 - Scope: 复用现有Worker control/maintenance lane、TaskIoConnections和连接池；细化前先复核真实cutover/组合入口，不新增第二执行队列或商业租户聚合。
 - Required claim: 单一人类Owner/独立功能分支/worktree及精确Owned paths；候选Worker轮询/配置、storage postgres/{connection_pool,task_io}.py及专职回归；入口/Helm超出范围先更新任务，不提前混入08。
 - Invariants: 凭据留BFF；unknown不自动重发/重领Controller；保留原历史、收据、Coverage和前端mock。
 - Acceptance: 区分空/blocked/error退避与抖动，SQL/CPU/线程/连接/队列硬预算，跨namespace公平，控制/原GET独立预算；E1-C/E1-O分层统计p95/p99/拒绝率，不以单池或单角色上限冒充全副本预算。
 - Dependencies/boundaries: docs/CA-HA-02_readiness_preflight.md 第8、9节；仅设计目标/后续待验，不部署/生产迁移。
+
+- Actual receipt: docs/evidence/ca-ha-03/validation.json；完整Worker1326通过/759条件跳过；真实PG33通过；make check全绿。这是03A历史记录；03B当前证据见下。独立/人工评审仍待完成，03整体不标Done、不解锁04。
+
+- 03B claim（2026-11-02）：用户“继续下一步”授权；Owner Luke Ding / Codex，沿用本任务branch/worktree，03A359ee6ca作为冻结父提交。03B从Ready领取，现Review（候选已验，未生产部署）；独立AI复审见Review follow-up；未授权生产部署。
+- 03B Owned paths（实施前冻结）：packages/agent-storage/src/agent_storage/postgres/{connection_capacity,capacity_profile,connection_pool,database,task_io,worker_capability,force_stop_executors,force_stop_recovery}.py；packages/agent-runtime/src/agent_runtime/command_wakeup_consumer.py；apps/api/src/zebra_agent_api/{server,http,http_host_auth,database_budget,health_readiness}.py；apps/worker/src/zebra_agent_worker/{main,session_process_child,command_process,loop,runtime_cleanup_service,worker_loop_service,ag_ui_projection_work,runtime_gates}.py；apps/scheduler/src/zebra_agent_scheduler/main.py；deploy/helm/zebra-agent/{values.yaml,values.schema.json,templates/api-deployment.yaml,templates/worker-deployment.yaml,templates/_helpers.tpl}；docker/Dockerfile、docker/compose.application.yml；tests/agent_storage/test_postgres_connection_capacity.py、tests/api/test_database_budget.py、tests/worker/test_command_process.py、tests/deploy/test_helm_chart.py；docs/CA-HA-03_resource_budgets.md、docs/evidence/ca-ha-03b/、docs/AGENT_TASKS.md、PROGRESS.md、WORKLOG.md、task_plan.md。
+- 03B design：默认关闭的显式进程容量scope，普通池+直连/控制/只读/专属probe分别计数；PostgresDatabase和TaskIo共享同一连接关闭生命周期，额度耗尽立即拒绝、不排新队列。显式fleet上限包含发布surge/执行槽/cleanup/scheduler及外部预留；与真实数据库上限核对，不把单池当全局。无全局DSN注册表、第二调度器、schema或领域状态变化。
+- 03B HTTP addendum（实施前）：共享auth/路由sync dispatch接入有界lane executor；request取消不释放仍运行Future的线程槽；精确GET健康缓存不经过业务准入，SSE响应头后释放请求准入但连接仍计实际关闭。
+- 03B threading addendum（实施前）：只传播PG容量/池/lane上下文，保留旧线程不继承业务授权/事务的边界；不泛化copy所有ContextVar。
+- 03B acceptance：并发开/关、失败/取消及复用不早释放/不超发；跨线程/进程入口覆盖；真实PG普通耗尽时控制/只读仍可用；记录峰值/拒绝/延迟及配置不完整拒绝。微型限额证明不得冒充E1集群/30min容量验收；不得在Mac创建E1全量集群。
+
+- 03B current receipt: docs/evidence/ca-ha-03b/validation.json；广覆盖3102/951skip，最终真实PG113/12skip，后续边界定向通过，make check全绿、Helm实际渲染正反例通过。默认关闭、未部署；预算以冻结fleet与external为前提，运行时漂移/E1容量/独立评审仍未验。
+
+- Review follow-up（2026-11-02）：用户继续授权；独立AI只读审查56ae352a..1d5207b4确认两项Important：部分读路径绕过线程配额、滚动预算漏terminating进程。领取本卡复核修复In Progress，不合并/部署。
+- Review owned-path addendum（实施前）：apps/api/src/zebra_agent_api/{database_budget,ag_ui_task_view,ag_ui_checkpoint_tail,artifact_download,coverage_report_http,runtime_gates,management_transport,runtime_gate_termination,validation_transport,publication_management,runtime_management}.py；tests/api/test_database_budget.py；tests/deploy/test_helm_chart.py；既有03B Helm/任务/证据/进度路径。请求级scope传递现有dispatcher，不改变读授权/期限或业务重发；预算模式暂限fresh staging install，不新增08发布编排。
+- Review stream test owned path（实施前）：tests/api/test_stream_v2_http.py；12个已有case的单dispatch探针由旧to_thread改为共享database_call，保留原授权/游标/降级断言。
+- Review list fanout owned path（实施前）：apps/api/src/zebra_agent_api/extension_reads.py；同一已有Semaphore限为min(8,profile.read)，关闭模式仍8；三条记录实际publication适配器回归写入既有tests/api/test_database_budget.py。
+- Review transitive owned paths（实施前）：packages/agent-storage/src/agent_storage/postgres/{async_dispatch,extensions,plugin_installations,mcp_catalog,mcp_credentials,skill_publications,extension_snapshots,plugin_distribution}.py；复用同一请求dispatcher，未组合时保持asyncio.to_thread；同一取消回归覆盖真实异步存储适配器入口。
+- Review result：最终1082pass/327skip、定向114/1skip、makecheck全绿；独立AI最终复验47/1skip，三项Important闭合。源码仍Review，03不解锁04；本轮新PG/人工/生产/E1未验。
+- E1后续授权：用户明确允许192.168.101.7及本地OrbStack建立全新隔离测试环境；沿用同卡/Owner/branch，先冻结新实例资源及路径，不切换既有生产或恢复旧任务。
+- E1 provisioning slice（2026-11-02实施前）：按用户明确授权从Ready领取In Progress；Owner Luke Ding/Codex，同卡同branch/worktree；候选冻结9e3cef3b。Owned paths新增tests/compose/cloud_ha_e1/、docs/evidence/ca-ha-03-e1/及既有03进度/任务文档；临时源包/密钥仅.artifacts/cloud-ha-e1/（不提交）。允许192.168.101.7和正在运行的OrbStack zebra-gvisor基础设施上创建全新隔离测试实例；不修改/重启旧业务/集群，所有变更以本轮唯一名称/精确ID为界。
+- E1 migration root follow-up（实施前）：集成发现docker/migrate.py继承预算JSON但未进入应用进程scope，epoch bootstrap因此拒绝。新增Owned paths docker/migrate.py、tests/deploy/test_migration_budget.py；仅此操作员组合入口校验完整profile后明确使用已声明external份额，普通应用/Worker guard保持。先红后绿并在新测试库复验，不新增schema或业务重发。
+- E1 recovery DSN owned-path addendum（实施前）：packages/agent-storage/src/agent_storage/postgres/client_effect_recovery.py、tests/agent_storage/test_client_effect_capacity.py。实际新环境发现该共享服务重写DSN options导致被相同数据库预算拒绝；保留原DSN，复用原生Task I/O期限，不放宽authority身份比较；回归及新PG作用域检查。
+- E1 bounded DNS follow-up（2026-11-03实施前）：同卡Owner/branch，新增Owned paths packages/agent-integrations/src/agent_integrations/{bounded_model_dns,worker_budget}.py、tests/agent_integrations/test_bounded_model_dns.py及既有E1文档/镜像delta。严格普通传输复用辅助NoThreadedIO循环，域名经默认线程解析被拒；保留辅助路径不变，普通请求在Task期限内用受控可杀/回收DNS子进程，原URL/SNI/证书不改，不放开不可取消线程；984原Task未知预留保留且不重发。
+- E1 bounded DNS validation：74定向/独立AI74通过、make check通过；双实际Linux引擎限权无网独立DNS/取消回收通过，证据docs/evidence/ca-ha-03-e1/bounded-dns/。新镜像/原生新审批及全新Task仍待验；原984未知预留不变，不重放。
+- E1 DNS live follow-up：f9e9f44e双端2140文件/3链接、实际OCI清单、冷切及双API/Worker健康/原生线协议通过；新Task f69首模型已结算14414，但审批续期后预算digest滞后导致暂停，完整E1不通过；三旧Task及984未知hash保留。证据bounded-dns/staging.json。
+- E1 renewal-budget follow-up（2026-11-03实施前领取）：同CA-HA-03 In Progress/Owner Luke Ding-Codex/branch/worktree；新增Owned paths packages/agent-core/src/agent_core/domain/task_bindings.py、apps/api/src/zebra_agent_api/session_binding.py、packages/agent-storage/src/agent_storage/postgres/task_admission.py、tests/agent_storage/test_postgres_worker_budget_renewal.py及现有worker_budget测试、tests/api/test_task_approval_expiry.py、tests/api/test_client_approval_renewal.py和既有E1证据/镜像delta。复用既有纯renew_task_binding_snapshot规则（如需移到core供API/storage共用，保留API导入兼容），仅在Task锁/CAS同事务下可证明的相邻同authority不扩权续期迁移预算binding引用；不放宽latest binding/lease/STOP/namespace，不重置deadline/started_at/费用/unknown/执行日志。已落后历史链不自动补迁，过期f69不恢复消费。先做真实PG正反/回滚回归再切新候选；旧任务不重跑，04不解锁。
+- E1 renewal-budget candidate验证：共同原子引用迁移、Core规则复用/API兼容；PG新17通过、同节点组合46通过，API/Worker21通过/3skip，make check通过，独立AI无Critical/Important。跨VM并发审批45pass/1锁超时及单例同样失败保留，未放宽50ms；不宣称跨节点验收。新镜像/原生新审批和新Task仍待验；旧链不自动迁移，f69过期不恢复、984未知不重发。
+- E1 renewal-budget live：6374181e双架构2140文件/3链接、OCI2dcaf9cb…、原生trust6审批/发布通过；本地Task a1a039d4原期限内17.25s完成，2模型结算29308合成单位、1工具完成/扣次、gVisor、binding1→2预算指针一致、原120s不变、lease/pending0。四旧Task和984 unknown hash不变。跨物理链路utun100 RTT159ms，旧shell转发结束后改为新VM transient systemd6端口转发；不改生产，远程API/Worker精确停并留作未验WAN，未放宽期限。不以单节点成功冒充E1。
+- E1 Task-control dependency alignment（2026-11-03实施前）：同Owner/branch/worktree/CA-HA-03 In Progress；新增Owned paths apps/host_grant_broker/src/zebra_host_grant_broker/grant_minting.py、tests/host_grant_broker/test_task_control_grant.py、tests/host_grant_broker/test_task_control_generic.py及既有E1夹具/镜像/证据。Native Task-wide强停拒Run grant正确；当前HA分支Broker缺producer9b943baa（此前生产已部署），复用其精确taskControl:true、无runId、仅agent.run、无额外refs协议及8b286b59 HTTP入口回归，不发明新签发/不弱化Native授权。验证E1 generic真实联合链路，Broker/Authority候选单独冻结部署，Engine637冻结审批保持；不调用旧stop对账工具处理未接受的新请求。
+- E1 Task-control candidate：9b精确producer diff和8b HTTP测试复用，generic正/反新增，Broker95及独立95通过、make check通过。仅Broker/Authority组件待验，Engine637/审批6保持，Native拒Run守卫不动。干净OrbStack node2已建并校准版本/限额，六临时loopback代理就绪，尚无应用；不clone含foreign probes的primary、不宣称物理HA。
+- E1 checked-bytecode build follow-up（2026-11-03实施前）：同CA-HA-03/Owner/branch/worktree，沿用Owned docker/Dockerfile、tests/compose/cloud_ha_e1/Dockerfile.delta，新增tests/compose/cloud_ha_e1/check_bytecode.py及E1证据。Native8现有defer配置已实证：无tool0OCI、pwd批准后1OCI/清理、原预算/ACK保持；8burst全接受完成但8.3–20.5s，不宣称容量。原生import对照旧1.63–1.66 CPU秒、checked-hash编译原型0.81–0.88秒。复用stdlib compileall构建期预编译workspace/venv/stdlib，保留PYTHONDONTWRITEBYTECODE、只读/非root/新进程隔离；checked-hash必须验证源变更会失效，不用unchecked cache、不做warm-pool。先旧镜像红及源改过期缓存回归；新精确镜像/Native新批准前不切当前服务。
+- E1 existing deferred-runtime configuration follow-up（2026-11-03实施前）：同CA-HA-03/Owner/branch/worktree，沿用Owned tests/compose/cloud_ha_e1/prepare.py及文档/证据。真实短Task功能成功但8.546s，PG连接中位5.2/7.3ms、持久写2ms，实例创建前3.3s、创建到模型约2s；不将单例当容量。复用已存在的cloud-only ZEBRA_RUNTIME_DEFER_PROVISION及DeferredRuntime，不新建warm pool/不禁隔离/不改本地默认。固定新配置baseline/Native审批8后仅idle staging冷切，新Task分别验no-tool不建OCI、pwd首次tool仍按原授权建/清OCI、原budget deadline/unknown保持；不混7/8性能样本、不推生产HA。runtime镜像继续9b，provider变体另记b15来源。
+- E1-A deterministic short fixture follow-up（2026-11-03实施前）：同CA-HA-03 In Progress/Owner Luke Ding-Codex/branch/worktree；沿用Owned tests/compose/cloud_ha_e1/{model,check_metering}.py、README与E1证据。原provider总要求pwd审批，不能充当合同E1-A确定性短任务；仅显式user marker返回无tool的终答，复用原meter/cap/HTTP路径，覆盖marker/nonuser/普通pwd互不污染和输入负例。先红后最小修复；不改runtime预算/授权/Source9b镜像、不借模型失败算容量成功。外部合成provider变体单独冻结/记清source hash，Native7仍仅TLS/SSE/byte-meter资格，完整E1未验。
+- E1 live9b receipt：Native审批7/发布200，两local节点完整247冷切/源/健康通过；各18.99/18.73s原生pwd完成，2模型结算/1工具/2真实退出配对/原120s/预算续期一致。两active executor冻结强停证明未确认不报释放、精确资源删除/ACK/canonical cancelled；primary在Worker仍冻结时删除真实created OCI对象，不冒充started工具强杀。两Worker恢复，7旧Task事件/预算/unknown hash保持，完整负载故障/soak仍待验，03 In Progress/04 Locked；生产未改。
+- E1 dual-engine candidate receipt：真实PG4红后新10项/原生同节点组合46通过，make check及独立源码复审通过；ordinary按已记revoked fence路由、settlement仍全engine；force保留共享撤租/同步、frontier与绝对10min，foreign/None不消耗其他owner额度。双local247预检/HMAC/Node2真实gVisor与2140文件/3链接通过；真实双节点清理、新镜像和E1负载故障仍待验，不标Done/不解锁04。
+- E1 dual-engine cleanup affinity follow-up（2026-11-03实施前）：同CA-HA-03 In Progress/Owner Luke Ding-Codex/branch/worktree；新增Owned paths packages/agent-storage/src/agent_storage/postgres/command_runtime_cleanup.py、packages/agent-runtime/src/agent_runtime/force_stop_cleanup.py、tests/agent_storage/test_postgres_cleanup_engine_affinity.py、tests/agent_storage/test_postgres_command_runtime_cleanup.py及必要既有cleanup/recovery回归，沿用已Owned force_stop_recovery.py/E1夹具与文档。独立复审指出错误engine领取会延后并消耗其他engine义务重试，先真实PG双engine红回归，再共享领取处按本地engine路由；保持原证据验证、精确删除、绝对停止期限及历史requires_reconciliation，不补造ACK、不重跑旧Task。两个local247静态preflight已通过，不代表双清理器收敛。
+- E1 executor monitor capacity candidate：真实PG红2后原生Linux PG30、Worker/API19、make check通过；独立审查无重大问题。仅monitor复用normal，短STOP/ACK/register仍control；未切Worker镜像。Broker9a实际签名e08强停stopped且resources_released，f69缺原proof保留requires_reconciliation，不伪造ACK/不重跑。
+- E1 executor monitor capacity follow-up（2026-11-03实施前）：同CA-HA-03/Owner/branch；沿用已Owned packages/agent-storage/src/agent_storage/postgres/force_stop_executors.py，新增tests/agent_storage/test_postgres_force_stop_executor_capacity.py（必要时现有worker session_process回归）及既有E1镜像/证据。独立审查发现合法control1下长持monitor占掉唯一control，scope内短exit ACK必拒；control2并发同类风险。先真实PG/真实非零child回归，再复用现有normal lane计入execution_slots约束，保留短STOP/ACK/control及精确subreaper witness，不增角色、不补造旧ACK。f69已接受stop推进lease revoked/sandbox cleaned/canonical synchronized，execution未证实后requires_reconciliation；日志有exit_ack_unavailable但不据此归因容量，历史原proof缺失仍保留。
+
+
+
+- E1 native schema guard follow-up（2026-11-03实施前）：同卡同Owner，新增Owned paths packages/agent-integrations/src/agent_integrations/worker_budget.py、tests/agent_integrations/test_worker_budget_transport.py。真实合成Task39d0在预留前TypeError，追踪到共享guard对工具Schema.type字典做集合查询；以原生content.present schema复现，只改共用成员判断，保留image/continuation拒绝与原任务不重跑。
+- E1 operator binding follow-up（2026-11-03实施前）：同卡/Owner/branch，复用既有Owned paths main.py、tests/worker/test_cloud_budget_composition.py及tests/compose/cloud_ha_e1/；main仅增可选Python组合参数，默认CLI不变；新fixture入口复用main及Cloud组合，子进程继续用既有受信任factory。通过现有管理发布接口/正实测fixture评估/冻结Bundle cap接入；不手工伪造能力或真实Provider证明。
+- E1 budget composition follow-up（2026-11-03实施前冻结）：同卡In Progress、Owner Luke Ding/Codex、同branch/worktree；Owned paths新增apps/worker/src/zebra_agent_worker/{cloud_composition,loop,main,session_process_child}.py及tests/worker/{test_cloud_budget_composition,test_command_process}.py；E1 fixture沿用已冻结tests/compose/cloud_ha_e1/。复用现有ModelRequestBudgetFactory和受信任操作员Cloud组合，把counter传到普通/委派模型，Cloud根使用原生可取消I/O；本地客户端保持，默认不伪造供应商counter、不放宽预算。fixture/端到端后续仍需实证。
+- E1运行回执（2026-11-03）：新双主机镜像已切换，源码四容器匹配及双端新鲜健康通过；新Task单次201到gVisor后因原生CLI缺可信request counter在发送前失败关闭。原任务保留不重跑，完整E1未验/03 In Progress/04 Locked。下一片先明确counter组合归属及Owned paths后再实施；不得以估算替换可信计数。见docs/evidence/ca-ha-03-e1/validation.json。
+- E1 plan：复用现有Compose/镜像构建/真实PG/Redis/对象/Broker及确定性模型fixture；服务器与Mac VM各1API+1Worker，角色2CPU/2GiB，slots4；依赖新实例及独立硬磁盘/内存/CPU上限，根连接预算显式完整；先环境就绪再迁移新测试库/小样本，再按E1包络。现有mTLS/runsc仅作为基础设施复用，不恢复旧Workload。
+- Review/E1证据：docs/evidence/ca-ha-03-review/；仅只读核查可用context/runner，不启动旧环境或E1集群，不恢复生产/Overdoze。
+
+- E1-A AMD64修复回执（2026-11-09）：101.7七项叠加根因清除后全链路端到端打通（密封201→runsc执行器→TLS模型fixture→session_completed）；关键根因为catalog baseline以直连PG环境生成而运行态走PgBouncer（database_url参与baseline_digest），已按worker.env原生重生发布（da587ef8/trust r1）。产品修复准入全局锁移除（8215d73c）与projection TTL缓存（4444af6a）随PR #269送审cloud-agent。5/s×120s过载窗口596/596 offer密封对账（79承接/515密封容量拒绝/0损坏）；真实gVisor执行器引导实测6.03s为容量新数据点；256并发SSE两轮256/256零提前结束。冻结5/s零拒绝口径仍被独占执行资源阻塞（约40槽Little's-law估算；用户已否决付费资源；共享宿主load 13/16不可加压），03维持In Progress不关闭，不跑缩水复验。证据.artifacts/cloud-ha-e1/e1a-1017-amd64-final-20261109/与宿主归档；docs/CA-HA-03_capacity_decision.md 2026-11-09节。
+- E1 空闲成本与公平/过载证据回执（2026-11-09 二段）：两项空闲缺陷修复（StreamHintRelay 失败重试打转→租约有界重试；AG-UI 投影 10Hz+每拍 bootstrap FOR UPDATE→60s 复查+空闲倍增），fleet 空闲 108%→40% 单核（perf2-5aa6cf1c 实测，E2E 复验通过，回归测试全绿）；40 worker 空闲底盘 ~10.8→~4 核。E1-C 16 scope 公平性证据：control 29/30 接受/14 完成≈洪泛中位，无饿死、per-scope 上限隔离；E1-O 0.5/1/2/3 阶梯：≤drain 100% 接受、之上精确钳制 ~64/60s、溢出全密封拒绝、接受 p95 不劣化。均为证据采集非验收（冻结口径仍排容量缺口后）。PR #269 更新送审。证据 e1-co-1017-20261109/。
 
 # CA-HA-01 — HA基线、DDD不变量与验收合同（仅文档）
 - Status: Done（仅设计文档）；2026-10-31 单人文档复核修正9项，revision 2及01文档已合入并推送cloud-agent 1dd88bfd；未运行实现或故障验收；用户授权后登记Ready并领取；Owner Luke Ding，执行Codex；独立评审待安排。
@@ -37307,3 +37403,958 @@ AGUI-CLOUD-INTEGRATION accepted: make test11216passed/3082conditional skips;
 make check and SDK typecheck passed; standalone152native+32SDK zero skips,
 SDK full174passed. Prior Zebra repair branches are integrated by ancestry;
 paired Trench UI/ORM history remains external, not imported into Runtime.
+
+
+CA-HA-03 E1 child-latency diagnostic claim (2026-11-03, Luke Ding/Codex,
+existing branch/worktree): before implementation, include E1-only gated stdlib
+sitecustomize/cProfile hook and runnable under tests/compose/cloud_ha_e1/,
+Dockerfile.delta and E1 evidence. Profile only explicit marker + exact owned
+namespace + isolated-child orig_argv; runtime defaults/authority/deadlines and
+standard Dockerfile unchanged. Freeze diagnostic image/config separately; its
+timings cannot be E1 SLO samples. Existing runtime abstractions remain unchanged.
+
+
+CA-HA-03 static validation hot-path claim (2026-11-03, Luke Ding/Codex,
+existing owned branch/worktree): before implementation add PG workspaces.py,
+agent-core/domain/runtime_bundle_catalog.py, E1 Dockerfile.delta and one
+stdlib runnable under tests/compose/cloud_ha_e1/, focused evidence/worklog.
+Delete the PG row's redundant Definition parse; retain WorkspaceProjection's
+same typed field validation. Memoize only immutable static catalog digests
+and component identities. No cache of Definition, tenant, grant, lease or
+mutable schema; keep fresh returned catalog/pins and existing golden bytes.
+Native11 normal samples must explicitly disable the diagnostic marker.
+
+CA-HA-03 static validation test ownership addendum (2026-11-03): include
+`tests/agent_storage/test_postgres_workspaces.py` only for fixture cleanup of
+the runtime_namespace_gates row before its control_plane_epochs parent. The
+real PG run exposed the existing FK dependency during teardown. Keep all
+assertions and previously failed QA receipts; do not sweep old namespaces.
+
+
+CA-HA-03 stream hint contention claim (2026-11-03, Luke Ding/Codex,
+existing owned branch/worktree): before implementation include
+`packages/agent-storage/src/agent_storage/postgres/stream_hint_relay.py`,
+`tests/agent_storage/test_stream_hint_relay_native.py`, E1 Dockerfile.delta,
+focused evidence/worklog. Native11 5Hz diagnostic exposed shared stream
+row lock timeouts. Verify real PG writer contention while the current hint
+claim holds a batch; use set-based bounded claim and skip busy hint settlement.
+Keep exact owner/fence/frontier/DB-clock expiry, ordered bounded selection,
+durable writes, deadlines, receipts, and existing unknowns unchanged. No
+migration, new scheduler or original Task replay. This is one evidenced
+contention path, not a proof of every admission/heartbeat failure's cause.
+
+CA-HA-03 projector admission lock claim (Luke Ding/Codex, existing branch):
+add a forward PostgreSQL migration and register it in migration_catalog_tail.py.
+Own a focused real-PG concurrency check under tests/agent_storage. Change the
+Task wake trigger to shared namespace locking while projector enable retains
+exclusive locking. Preserve historical migration bytes and routing semantics.
+
+CA-HA-03 migration 122 packaging addendum: include E1 Dockerfile.delta to
+carry the forward migration and catalog in the isolated ARM candidate.
+
+CA-HA-03 isolated completion recovery claim (Luke Ding/Codex): own the
+Worker execution.py interruption branch and test_close_recovery_guard.py.
+Refresh canonical recovery under the same fence before completion-only
+reconciliation after child interruption.
+
+CA-HA-03 completion recovery packaging addendum: include execution.py in
+E1 Dockerfile.delta for the isolated ARM candidate.
+
+CA-HA-03 isolated startup recovery addendum (Luke Ding/Codex, existing branch):
+own session_process_child.py and tests/worker/test_session_process.py for one
+fenced retry of initial recovery after PostgreSQL lock timeout.
+
+CA-HA-03 Cloud Task command routing addendum (Luke Ding/Codex, existing branch):
+own routes.py, task_routes.py, command_submission.py, and the focused Task
+command route regression. Route Cloud Task resume/suspend through durable
+Session commands with the same revision parser and idempotency key.
+
+CA-HA-03 Cloud Task command packaging addendum: include the three owned API
+modules in the isolated E1 Dockerfile.delta.
+
+CA-HA-03 SSE read contention addendum (Luke Ding/Codex, existing branch):
+own ag_ui_checkpoint_tail.py and tests/api/test_stream_wait_heartbeats.py
+for bounded capacity backoff shared by observation tail readers.
+
+CA-HA-03 SSE read contention packaging addendum: include the owned
+ag_ui_checkpoint_tail.py module in the isolated E1 Dockerfile.delta.
+
+CA-HA-03 raw SSE checkpoint lag addendum (Luke Ding/Codex, existing branch):
+own session_streaming.py and reuse the owned stream heartbeat tests for the
+raw Task and Session source-head recovery boundary.
+
+CA-HA-03 public execution command identity addendum (Luke Ding/Codex):
+extend owned command_submission.py and tests/api/test_stream_command_admission_api.py
+to reject new Cloud Run/Resume intents missing an explicit Run identifier.
+
+CA-HA-03 fenced budget check retry addendum: reuse owned PostgreSQL
+worker_budget.py and tests/worker/test_worker_budget.py for one independent
+transaction retry on an explicit lock timeout during the read-only check.
+
+CA-HA-03 combined HA candidate packaging addendum: include the owned raw
+session_streaming.py and PostgreSQL worker_budget.py in the E1 delta.
+
+CA-HA-03 isolated load balancer addendum: own E1 Control.Caddyfile for
+active readiness-based backend selection.
+
+CA-HA-03 original create receipt addendum: own task_routes.py, idempotency.py,
+http_host_auth.py, tenant_guard.py and tests/api/test_task_create_receipt.py for
+a scoped GET of an existing Cloud creation receipt.
+
+CA-HA-03 create receipt packaging addendum: include all four owned API
+modules in the E1 Dockerfile.delta for the isolated failover candidate.
+
+CA-HA-03 input page retry addendum: own execution_input_preparation.py
+and tests/worker/test_execution_input_frontier.py for the bounded
+fenced page retry during pre-model context refresh.
+
+CA-HA-03 input retry packaging addendum: include the owned
+execution_input_preparation.py module in the isolated E1 Dockerfile.delta.
+
+CA-HA-03 canonical Worker append lock addendum: own worker_commit_confirmation.py
+and its focused Worker regression for one exact retry after explicit PostgreSQL
+lock rejection outside a borrowed transaction.
+
+CA-HA-03 canonical event retry packaging addendum: include the owned
+worker_commit_confirmation.py in the E1 Dockerfile.delta.
+
+CA-HA-03 atomic admission lock response addendum: own
+client_admission_operations.py for structured original-only reconciliation
+on PostgreSQL lock rejection.
+
+CA-HA-03 atomic first-Run transaction retry addendum: own
+client_admission_atomic.py and the existing admission-operation tests
+for one same-request retry after a confirmed PostgreSQL lock rejection.
+
+CA-HA-03 atomic admission retry packaging addendum: include the two
+owned client admission modules in the isolated E1 Dockerfile.delta.
+
+CA-HA-03 atomic command lock duration addendum: own PostgreSQL events.py
+and task_admission.py and the existing native Task admission regression.
+
+CA-HA-03 atomic lock ordering test addendum: include
+tests/agent_storage/test_admission_atomic_task_run.py.
+
+CA-HA-03 deferred wakeup packaging addendum: include the owned events.py
+and task_admission.py PostgreSQL modules in E1 Dockerfile.delta.
+
+CA-HA-03 command wakeup lock duration addendum: own the fresh admission
+outbox lookup and scope capacity lock seams in PostgreSQL command_wakeup.py.
+
+CA-HA-03 admission diagnostics addendum: own the bounded failure logging
+seam in client_admission_operations.py and its E1 delta image entry.
+
+CA-HA-03 initial admission index addendum: own the Task rebuild ordering
+in PostgreSQL task_admission.py and its existing atomic rollback regression.
+
+CA-HA-03 event position addendum: own the predecessor validation seam in
+PostgreSQL task_event_positions.py and its existing ordering tests.
+
+CA-HA-03 atomic admission timings addendum: own phase instrumentation
+in client_admission_atomic.py and the isolated E1 delta image entry.
+
+CA-HA-03 Worker projection addendum: own event-kind dispatch guards in
+model_call_index.py and tool_run_index.py for native and local parity.
+The Worker projection addendum also owns the routing regression in
+tests/worker/test_model_call_index.py.
+
+CA-HA-03 artifact HTTP fault fixture addendum: own the native media
+fixture setup in tests/api/test_artifact_download_deadline.py.
+
+CA-HA-03 Cloud input object receipt addendum: own the unknown PUT
+reconciliation seam in cloud_attachment_ingress.py and its regression.
+The Cloud input object receipt addendum also owns the signed HTTP
+regression in tests/api/test_artifact_download_deadline.py.
+
+CA-HA-03 first Run lost COMMIT addendum: own the native atomic Run
+regression in tests/agent_storage/test_admission_atomic_task_run.py.
+The first Run lost COMMIT addendum also owns the pre-COMMIT fault
+switch in the existing native artifact wire test proxy.
+
+CA-HA-03 standby receipt proof addendum: own the isolated operator
+fixture tests/compose/cloud_ha_e1/standby_receipt_proof.sql.
+
+CA-HA-03 E1 receipt response gate addendum: own the isolated proof
+adapter and signed response seams in client_admission_operations.py
+and client_admission_termination.py plus their existing API tests.
+The E1 receipt response gate addendum also owns the native admission
+route regression in tests/api/test_agui_initial_native.py.
+
+CA-HA-03 E1 load driver slice: same In Progress card, owner Luke Ding/Codex,
+branch and worktree. Reuse the existing owned tests/compose/cloud_ha_e1/
+boundary for an open-loop clock and its executable saturation check.
+The driver records missed offers and never resends original submissions.
+
+CA-HA-03 event-position write round-trip follow-up: same owner and
+branch, existing task_event_positions.py and native source-position tests.
+Combine the guarded source update and index insert for unassigned events.
+Preserve historical adoption, conflict checks, and transaction rollback.
+
+CA-HA-03 stream negotiation addendum: same owner and branch, include
+stream_v2_http.py's raw and AG-UI preflight dispatch in the existing
+bounded read-executor change. Preserve profile and cursor checks.
+
+CA-HA-03 continuation recovery addendum, same In Progress owner and branch.
+Own Worker continuation_lifecycle.py and tests/worker/test_approved_continuation_recovery.py.
+After a continuation start is committed, finish advancing fenced recovery slices
+without replaying start events or running the tool before recovery completes.
+
+CA-HA-03 E1 corpus factory addendum, same owner and branch. Own tests/compose/cloud_ha_e1/e1_composition.py for the exact isolated fleet database allowlist.
+
+CA-HA-03 E1 continuation lock follow-up, same owner and branch.
+Own execution_preparation.py, session_process_child.py and the existing continuation
+recovery test. Reuse the one same-fence lock retry for the post-start recovery read.
+
+CA-HA-03 E1 node boot addendum, same owner and branch. Own the isolated
+cloud_ha_e1 node2 relay and systemd units plus their fixture README instructions.
+
+CA-HA-03 fresh position batching addendum, same owner and branch. Own
+task_event_positions.py and existing PostgreSQL Agent Task position tests.
+Batch only the contiguous unassigned root prefix after proving both indexes empty.
+
+CA-HA-03 E1 shadow contention follow-up (Luke Ding/Codex, existing branch/worktree):
+own the mode-check ordering in postgres/command_rollout_shadow.py and its
+PostgreSQL regression. Keep the scope rollout lock around the mode proof.
+
+CA-HA-03 E1 strict command admission follow-up (Luke Ding/Codex, existing branch/worktree):
+own the deployment requirement read in postgres/command_coverage_admission.py.
+Reuse the existing strict Coverage and command admission PostgreSQL tests.
+
+CA-HA-03 E1 execution preparation timing follow-up (Luke Ding/Codex, existing
+branch/worktree): own diagnostic phase boundaries in Worker execution.py.
+
+CA-HA-03 E1 isolated executor timing follow-up (Luke Ding/Codex, existing
+branch/worktree): own parent/child timing in session_process{,_child}.py.
+
+CA-HA-03 E1 child projection composition follow-up (Luke Ding/Codex, existing
+branch/worktree): own AG-UI composition imports and the Worker loop annotation.
+Keep parent projection composition and execution-side durable writes intact.
+
+CA-HA-03 E1 execution-only child follow-up (Luke Ding/Codex, existing branch/worktree):
+use the owned loop/child composition paths and own the focused test_loop regression.
+
+CA-HA-03 E1 fresh execution input follow-up (Luke Ding/Codex, existing branch/worktree):
+own the suspended restoration guard and focused Worker reliability boundary check.
+
+CA-HA-03 E1 supervisor exit wakeup follow-up (Luke Ding/Codex, existing branch/worktree):
+own process_supervision.py exit waiting and the Worker supervision regression.
+
+CA-HA-03 E1 input head reuse follow-up (Luke Ding/Codex, existing branch/worktree):
+own the first preparation boundary in execution_input_preparation.py and
+execution_recovery.py. Keep the post-restoration/handoff refresh unchanged.
+
+CA-HA-03 E1 Context timing follow-up (Luke Ding/Codex, existing branch/worktree):
+own timing seams in Worker context_materialization.py and execution.py.
+
+CA-HA-03 E1 context refresh follow-up (Luke Ding/Codex, existing branch/worktree):
+own same-callback coalescing in context_materialization.py and its snapshot regression.
+
+CA-HA-03 E1 scope admission history scan follow-up (Luke Ding/Codex, existing
+In Progress branch/worktree): own the existing command_wakeup.py and
+test_postgres_command_wakeup.py for the measured admission scan. Reuse the
+existing sequence and pending indexes with the same lock order and limits.
+
+CA-HA-03 E1 first pickup connection follow-up (Luke Ding/Codex, existing In
+Progress branch/worktree): own coverage_recovery_preparation.py in PostgreSQL
+storage and test_coverage_recovery_preparation.py. Skip the separate recovery
+snapshot for generation zero only. Preserve locked approval checks, stale
+generation handling, and every recovery proof for later generations.
+
+CA-HA-03 F-04 bounded alternate address follow-up (Luke Ding/Codex, existing
+In Progress branch/worktree): own PostgreSQL task_io.py and the existing
+test_postgres_task_io.py for initial connection attempts only. Reserve time
+for alternate endpoints within the same deadline. Keep TLS, writer-role
+selection, admission fencing and transaction no-replay semantics.
+
+CA-HA-03 F-04 receipt timeline follow-up (Luke Ding/Codex, existing In Progress
+branch/worktree): own e1_receipt_proof.py, standby_receipt_proof.sql, the
+existing client admission proof regression, check_receipt_timeline.sh, and
+the CA-HA-03 receipt runbook.
+Require the configured recovery timeline as part of the existing exact proof.
+
+CA-HA-03 F-04 peer writer routing follow-up (Luke Ding/Codex, existing In
+Progress branch/worktree): own the existing node2_dependency_relay.py and its
+fixture README. Preserve the fixed Worker DSN and use a root-owned runtime
+route selector for new PostgreSQL connections during a fenced drill.
+
+CA-HA-03 API read inventory follow-up (Luke Ding/Codex, existing In Progress
+branch/worktree): own capacity_profile.py, database_budget.py, extension_reads.py,
+the existing capacity/API/Helm tests and database-budget chart schema/helper.
+Count the optional API-only read limit against peak replicas at every gate.
+
+CA-HA-03 E1 capacity-backoff follow-up (Luke Ding/Codex, existing In Progress
+branch/worktree): use the already-owned command_process.py, command_background.py
+and test_cloud_ha_polling.py. Keep local DB permit pressure on the existing
+bounded blocked cadence while retaining the existing error cadence for outages.
+
+CA-HA-03 E1 input evidence snapshot follow-up (Luke Ding/Codex, existing
+In Progress branch/worktree): own existing execution_recovery.py and the
+execution input compaction regression. Use the same fenced head for the
+post-restoration revision check and its evidence, preserving bounded reads.
+
+CA-HA-03 E1 execution input frontier read follow-up (Luke Ding/Codex, existing
+In Progress branch/worktree): own execution_inputs.py and the existing bounded
+query regression. Verify the canonical source ID in the same bounded head query.
+
+CA-HA-03 E1 early executor parent fence follow-up (Luke Ding/Codex, existing
+In Progress branch/worktree): own session_process.py, session_process_child.py
+and the existing session-process regression. Arm the Linux executor fence before
+Worker imports, retaining the current supervisor, private process and receipts.
+
+CA-HA-03 F-02 live-lease recovery schedule follow-up (Luke Ding/Codex,
+existing In Progress branch/worktree): own command_wakeup_recovery.py and its
+PostgreSQL recovery regression. Recheck active leases by their expiry within
+the existing retry bound, using the same locked authority and proof checks.
+
+CA-HA-03 F-02 initial handoff recovery schedule follow-up (Luke Ding/Codex,
+existing In Progress branch/worktree): own command_wakeup_handoff.py and the
+existing PostgreSQL handoff regression. Only an accepted fenced handoff can
+advance the pending row's first recovery check to the lease expiry.
+The handoff file size boundary adds ownership of command_wakeup_receipts.py
+for moving its existing inbox verification, retaining the handoff import seam.
+
+CA-HA-03 F-02 recovery socket sequencing follow-up (Luke Ding/Codex, existing
+In Progress branch/worktree): own command_wakeup_recovery.py and
+test_command_recovery_preflight.py. End the ordinary scan's deny-only
+transaction before native preparation, then recheck proof and fence at commit.
+
+CA-HA-03 F-02 heartbeat capacity follow-up (Luke Ding/Codex, existing In
+Progress branch/worktree): own lease_heartbeat.py and test_lease_heartbeat_deadline.py.
+Retry a locally refused database permit only within the existing native deadline.
+Also own the existing test_postgres_connection_capacity.py executor composition
+fixture to follow the early-fence entrypoint's lazy imports.
+
+CA-HA-03 F-02 isolated parent socket lifetime follow-up (Luke Ding/Codex,
+existing In Progress branch/worktree): own execution_recovery.py and existing
+test_execution_preflight_order.py. Restrict Run socket retention to the actual
+execution process while preserving parent completion recovery and lease checks.
+
+CA-HA-03 F-02 fallback slot saturation follow-up (Luke Ding/Codex, existing
+In Progress branch/worktree): own command_wakeup_consumer.py and the existing
+consumer regression. Verify whether refusal before handoff advances the scan
+cursor and makes earlier ready commands wait behind later scope sequences.
+The slot-refusal cursor candidate is retired after three loaded misses; see the
+E1 slot-cursor evidence and WORKLOG before selecting a recovered-prefix approach.
+
+CA-HA-03 F-02 recovered fallback pickup follow-up (Luke Ding/Codex, existing
+In Progress branch and worktree). Owned paths for this slice include
+`packages/agent-storage/src/agent_storage/postgres/command_wakeup_pickup.py`
+and `tests/agent_storage/test_postgres_command_wakeup_pickup.py`.
+
+CA-HA-03 released-lease recovery scheduling follow-up (Luke Ding/Codex,
+existing In Progress branch/worktree). Own `command_wakeup_recovery.py` and
+`test_postgres_command_wakeup_recovery.py` for the expiry-bound deferral.
+
+CA-HA-03 scoped relay query follow-up (Luke Ding/Codex, existing In Progress
+branch/worktree). Own `command_wakeup_relay.py` and
+`test_postgres_command_wakeup_relay.py` for a scope-filtered claim query plan.
+
+CA-HA-03 memory recovery polling follow-up (Luke Ding/Codex, existing In
+Progress branch/worktree). Own `worker_loop_service.py`,
+`cloud_memory_recovery.py` and `test_cloud_memory_recovery.py` for bounded
+no-progress polling; preserve original completion receipts and recovery keys.
+
+CA-HA-03 canonical model/tool projection contention follow-up (Luke Ding/Codex,
+existing In Progress branch/worktree). Own `model_tool_projections.py` and
+`test_postgres_model_tool_projections.py` for the stream lock strength.
+
+CA-HA-03 E1-R F-08 cleanup fault proof (Luke Ding/Codex, existing In
+Progress branch/worktree). Own `test_command_runtime_cleanup_live.py` for
+the lost removal response with real OCI and isolated PostgreSQL.
+
+CA-HA-03 F-09 Scheduler claimant loss proof (Luke Ding/Codex, existing
+In Progress branch/worktree). Own `test_postgres_task_schedules.py` for
+process death, natural expiry, recovery and stale settlement evidence.
+
+CA-HA-03 F-09 isolated Scheduler composition (Luke Ding/Codex, existing
+In Progress branch/worktree). Own E1 fixture authority, preparation, Compose
+bundle, authority self-check and README under `tests/compose/cloud_ha_e1/`.
+
+CA-HA-03 F-09 scheduled publication admission fix (Luke Ding/Codex, existing
+In Progress branch/worktree). Own Scheduler `admission.py` and
+`tests/scheduler/test_scheduler_admission.py` for frozen Definition resolution.
+
+CA-HA-03 F-09 stream preflight error classification (Luke Ding/Codex, existing
+In Progress branch/worktree). Own `stream_v2_http.py` and
+`test_agui_preparation_retry.py` for transient source-read errors.
+
+CA-HA-03 F-09 stream snapshot Run header reuse (Luke Ding/Codex, existing
+In Progress branch/worktree). Own `stream_proof_batch.py` and
+`test_stream_proof_batch.py` for exact same-snapshot lookup reuse.
+
+CA-HA-03 bounded PostgreSQL event page lookup (Luke Ding/Codex, existing In
+Progress branch/worktree). Own PostgreSQL `task_event_pages.py` and
+`test_postgres_task_event_pages.py` for metadata round-trip reduction.
+
+CA-HA-03 native Task stream initial privacy lookup (Luke Ding/Codex, existing
+In Progress branch/worktree). Own `session_streaming.py` Task tail and
+`test_stream_source_head_tail_native.py` for first-frame query reduction.
+
+CA-HA-03 model/tool projection stream lock (Luke Ding/Codex, existing In
+Progress branch/worktree). Own `model_tool_projections.py` and
+`test_postgres_model_tool_projections.py` for projection under stream contention.
+
+CA-HA-03 Worker execution input handoff read (Luke Ding/Codex, existing In
+Progress branch/worktree). Own `execution_recovery.py` and
+`test_execution_input_frontier.py` for reuse of unchanged non-handoff input.
+
+CA-HA-03 pre-spawn supervisor exit proof (Luke Ding/Codex, existing In
+Progress branch/worktree). Own `executor_supervisor.py` and
+`test_session_process.py` for parent mismatch before executor spawn.
+
+CA-HA-03 E1 input preparation round trip (Luke Ding/Codex, existing In
+Progress branch/worktree). Own the existing PostgreSQL Task header reader,
+execution_inputs.py and test_execution_input_read_batch.py. Resolve namespace
+membership in the initial header statement while retaining the fresh final
+header and existing fenced checkpoint writes.
+
+CA-HA-03 E1 bounded recorder ownership check (Luke Ding/Codex, existing In
+Progress branch/worktree). Own execution_events.py and test_bounded_recorder_tail.py
+for removing the duplicate ownership read immediately before the bounded tail's
+own read guard. Retain the unbounded/local check and the append/commit fence.
+
+CA-HA-03 E1 budget deadline poll (Luke Ding/Codex, existing In Progress
+branch/worktree). Use owned PostgreSQL worker_budget.py, worker_budget_queries.py
+and test_postgres_worker_budget.py. Check current binding and bounded ancestor
+deadline in one statement with the same fail-closed rules.
+
+CA-HA-03 E1 executor exit ACK capacity (Luke Ding/Codex, existing In Progress
+branch/worktree). Use owned force_stop_executors.py and the existing native
+executor capacity regression. Retry only typed pre-connection permit refusal
+within a small bounded interval; preserve exact fence and unknown SQL outcomes.
+
+CA-HA-03 native Task SSE first-frame Segment hint (Luke Ding/Codex, existing
+In Progress branch/worktree). Own raw preflight in stream_v2_http.py, Task
+tail in session_streaming.py, and the native stream source-tail regression.
+Reuse the preflight Segment only for notification capture; retain fresh
+canonical source, privacy and rollover checks before delivering events.
+
+CA-HA-03 first-frame file boundary follow-up (same owner and branch). Also
+own stream_v2_query.py and test_cloud_stream_read_bounds.py to relocate the
+existing query adapter and the extended regression, keeping import compatibility.
+
+CA-HA-03 first-frame test fixture follow-up (same owner and branch). Own
+test_stream_v2_http.py's native handoff request fixture to supply ASGI scope.
+
+CA-HA-03 native Task SSE page and privacy dispatch (same owner and branch).
+Own session_streaming.py and existing native source-tail regressions. Reuse
+one bounded callback socket for the page and its subsequent privacy check,
+with separate transactions and the legacy path preserved.
+
+CA-HA-03 raw SSE preflight socket reuse (same owner and branch). Own
+stream_v2_http.py and native source-tail regressions. Reuse one bounded
+callback socket on the legacy preflight path with fresh transactions,
+retaining signed-cursor negotiation and the existing authority checks.
+
+CA-HA-03 legacy raw SSE native snapshot (same owner and branch). Own
+stream_v2_http.py, stream_v2_authority.py and the native source-tail
+regression. Bind the existing proof snapshot to exact native adapters
+when no V2 reader is configured, preserving extension and cursor behavior.
+
+CA-HA-03 legacy numeric stream cursor highwater (same owner and branch).
+Own stream_v2_http.py, stream_v2_query.py, stream_v2_authority.py and native
+source-tail regression. Validate the raw cursor on the existing authorized
+proof snapshot while preserving the numeric parser and prior error contract.
+
+CA-HA-03 terminal fallback Outbox retirement (same owner and branch). Own
+the additive command_outbox_retirement_migration.py, migration catalog tail,
+and native command receipt regression. Provide a bounded explicit operator
+transaction under the scope rollout lock and preserve all envelope evidence.
+
+CA-HA-03 Outbox capacity index (same owner and branch). Own additive
+command_outbox_capacity_index_migration.py and migration catalog tail. Add the
+measured partial index for existing pending/publishing capacity predicates.
+
+CA-HA-03 additive Outbox runtime readiness window (same owner and branch).
+Own migration_history_plan.py and branch-history regressions. Allow the exact
+pre-upgrade ledgers while staging current runtime code; keep checksum, gap,
+unknown-version and explicit cutover checks fail-closed.
+
+CA-HA-03 execution-only Worker imports (same owner and branch). Own Worker
+package exports, loop.py, worker_loop_service.py and workspace smoke regression.
+Defer the legacy command consumer until full Worker composition needs it.
+
+CA-HA-03 Worker command cutover round trips (same owner and branch). Own
+command_process_state.py and native command process composition regression.
+Read namespace rollout and the exact schema ledger in one read snapshot,
+retaining missing-schema and explicit-cutover checks.
+
+CA-HA-03 private executor exit diagnostics (same owner and branch). Own
+session_process.py. Record bounded exit status and receipt presence after
+supervision without changing interruption, cancellation or retry semantics.
+Also own session_process_child.py for the initial recovery exception category
+at the existing pre-model boundary, without logging request or exception text.
+
+CA-HA-03 S3 client startup composition (same owner and branch). Own
+artifact_object_reads.py, runtime_composition.py, and the native object read
+bounds regression. Reuse S3 service metadata while constructing the distinct
+write and bounded read clients sequentially in cloud composition.
+
+CA-HA-03 bounded global wakeup admission wait (same owner and branch). Own
+command_wakeup.py and test_postgres_command_wakeup.py for the isolated
+advisory wait regression. Preserve the existing Task IO deadline, lock
+order, scope-lock budget, and canonical admission transaction.
+
+CA-HA-03 typed Worker replay bounded page dispatch (same owner and branch).
+Own worker_replay_reader.py and its existing native bounded Worker replay
+regression. Fetch only admitted bodies with their bounds in one statement;
+preserve ordered canonical evidence, cumulative limits and both lease fences.
+
+CA-HA-03 post-lock lease clock round trip (same owner and branch). Own
+postgres/leases.py and test_postgres_lease_clock.py for the shared lease-row
+read. Sample the database clock after acquiring the row lock in one query,
+retaining epoch/stop ordering and absent-row acquisition semantics.
+
+CA-HA-03 portable force-stop executor receipt lookup (same owner and branch).
+Own postgres/force_stop_executors.py and the native force-stop recovery
+regression. Match the exact receipt-key prefix independently of DB collation.
+
+CA-HA-03 indexed force-stop receipt prefix (same owner and branch). Own
+the additive v126 receipt index, catalog and readiness compatibility,
+and migration history regressions. Preserve exact prefix and receipt
+semantics and keep the prior schemas valid for the rollout window.
+
+CA-HA-03 Worker projection snapshot read (same owner and branch). Own
+postgres/workspaces.py and its native Worker commit regression. Read the
+canonical Session and Workspace projections in one database snapshot before
+existing revision, content, and receipt checks.
+
+CA-HA-03 Worker execution failure correlation (same owner and branch). Own
+agent_runtime/command_wakeup_consumer.py, its existing consumer regression and
+WORKLOG.md. Correlate failed futures to their durable Session and fence without
+including exception text or changing the recovery decision.
+
+CA-HA-03 bounded executor registration connection acquisition (same owner and
+branch). Own postgres/force_stop_executors.py, its existing native capacity
+regression and WORKLOG.md. Reuse the exit ACK permit wait for registration;
+preserve the control lane, fence checks and single transaction.
+
+CA-HA-03 ordinary Worker model ledger round trips (same owner and branch).
+Own postgres/worker_budget.py, its native budget regression and WORKLOG.md.
+Combine transaction-local setup and paired ledger writes. Preserve independent
+pre-send commit, unknown refusal, exact receipt checks and final budget fence.
+
+CA-HA-03 ordinary Worker post-lock authority reads (same owner and branch).
+Own postgres/worker_budget_queries.py, the native Worker budget regression and
+WORKLOG.md. Read the clock, STOP ancestry and delegation status in one fresh
+snapshot after the existing locks. Preserve the shared STOP proof and refusal rules.
+
+Post-lock authority-read candidate evaluated and archived in the E1-A
+evidence. It is excluded from the delivery branch because the fixed-load
+comparison did not demonstrate lower full-slot occupancy.
+
+CA-HA-03 isolated Worker deadline and lease polling (same owner lukeding and
+branch). Own postgres/leases.py, postgres/worker_budget.py and its queries,
+Worker execution.py, execution_recovery.py, session_process_child.py and
+worker_budget.py, existing native/Worker budget regressions and WORKLOG.md.
+Share one fresh read for the isolated executor's paired polls. Retain callback
+semantics for other callers, exact fence and STOP proof, and all write guards.
+
+Paired authority polling evaluated on the same v126 seed and archived with its
+native regression. Excluded from the delivery branch because full-slot
+occupancy and admission did not improve. E1-A remains the milestone priority.
+
+CA-HA-03 native input page transaction (same owner lukeding and branch).
+Own agent_storage/execution_inputs.py, Worker execution_input_preparation.py,
+existing input frontier regressions and WORKLOG.md. Read the canonical page
+once inside the existing fenced advance transaction. Preserve legacy page
+validation, retry budgets, projection CAS, and final fresh header.
+
+Native input page transaction evaluated on the fixed v126 E1-A workload.
+Archived with its regression. The candidate did not demonstrate lower input
+preparation or slot occupancy, so it is excluded from the delivery branch.
+
+CA-HA-03 guarded model stream authorization cadence (same owner lukeding and
+branch). Own agent_integrations/worker_budget.py, its existing transport
+regression and WORKLOG.md. Preserve exact reservation, per-output checks,
+absolute deadlines, final authorization and receipt handling. Bound checks
+for protocol lines that publish no content.
+
+Guarded streaming cadence evaluated with paired Session/fence model timings.
+Archived the transport change and regression after proving fewer in-wire
+checks but no whole-slot gain. The CA-HA-03 capacity gate remains open.
+
+CA-HA-03 Worker projection pair persistence (same owner lukeding and branch).
+Own postgres/projections.py, postgres/workspaces.py, postgres/workspace_projection_batch.py,
+existing native Workspace projection regression and WORKLOG.md. Consolidate
+the existing stream check and two monotonic projection writes on the fenced
+Worker paths, preserving canonical derivation and command receipt ordering.
+The existing native batch lease-expiry regression is also owned so its fault
+fires after the combined write, before the unchanged final lease recheck.
+
+Worker projection pair candidate evaluated on fixed v126 capacity and archived
+with its native regressions. Excluded from the delivery branch because it did
+not demonstrate reduced whole-slot occupancy. E1-A remains open.
+
+CA-HA-03 scoped socket commit/reset pipeline (same owner lukeding and branch).
+Own postgres/connection_scope.py, existing native connection scope regressions,
+and WORKLOG.md. Use distinct protocol Sync boundaries and preserve commit
+outcome, reset isolation, timeout, cancellation and socket permit ownership.
+
+Scoped socket release pipeline evaluated with immediate same-seed control.
+Archived with its native regression. Excluded from the delivery branch because
+whole-slot time and admission receipt availability did not improve.
+
+CA-HA-03 paired ownership/deadline work unit. Ready, claimed In Progress by
+human owner lukeding, executor Codex, branch codex/ca-ha-03-budgets, this worktree.
+Owned paths are Worker worker_budget.py, execution.py, session_process_child.py,
+tests/worker/test_worker_budget.py and existing native budget regression,
+WORKLOG.md and task_plan.md. Reuse postgres_work_unit for the isolated native
+lease callback and its paired deadline read. Preserve default/custom callbacks,
+fresh retry gates, independent model reservation and commit boundaries.
+
+Paired ownership/deadline work unit is Review at ac349add. Native regression and
+adjacent isolated E1-A comparison completed. Exactly 49 fewer commits per
+completed Task, with same-scope reads sharing the existing work unit. E1-A still
+fails its queue/capacity targets. Local only, original services restored.
+
+CA-HA-03 checked progress Run header. Ready, claimed In Progress by human owner
+lukeding, executor Codex, branch codex/ca-ha-03-budgets, this worktree.
+Own agent_storage/worker_progress.py, Worker progress_recovery.py,
+tests/agent_storage/test_postgres_worker_progress.py and existing Worker
+progress recovery regression, task_plan.md and WORKLOG.md. Join the native
+ownership/deadline check and latest Run header in one bounded read transaction.
+Keep default/custom reads and all page/append commits independent.
+
+Checked progress Run header is Review at eb0721a9. Native regression and
+adjacent ac349add isolated comparison completed. Completed Task commits 173
+to 161; complete occupancy nearly unchanged in one pair. E1-A still fails.
+Original services restored and all candidate/control evidence retained.
+
+CA-HA-03 installed recorder ownership deduplication. Ready, claimed In Progress
+by human owner lukeding, executor Codex, branch codex/ca-ha-03-budgets, this
+worktree. Own tests/worker/test_bounded_recorder_tail.py, task_plan.md, WORKLOG.md
+and isolated E1 artifact scripts. Reuse existing b8e0559c prepare guard rather
+than add a second implementation. Prove post-tail revocation still refuses append,
+then compare only that installed module against adjacent ac349add baseline.
+No production, historical receipt replay or original data changes.
+
+Installed recorder deduplication is Review at bfd04c5d. Existing b8e0559c
+implementation reused unchanged. Native regression 11 passes, old logic red;
+first timing-case failure retained. Adjacent same-seed comparison: 173->163
+commits, complete slot mean 8.457625->8.288500s; worse tails. Both 40 complete,
+35 sealed scope 429, zero unknown, 256 SSE/zero early closes. E1-A still FAIL.
+Both six-role original sets restored, approvals/source hashes verified, owned
+workspace volumes removed, stopped clone data and all signed evidence retained.
+
+CA-HA-03 SQL wait attribution. Ready, claimed In Progress by human owner
+lukeding, executor Codex, same codex/ca-ha-03-budgets branch/worktree. Own
+isolated .artifacts/cloud-ha-e1 diagnostic scripts, task_plan.md, WORKLOG.md.
+Profile unchanged execution semantics at the installed recorder-dedup baseline:
+main-thread SQL template, commit/reset/acquire wall/CPU/runnable wait and native
+server pg_stat_statements deltas. Fresh signed synthetic Tasks only, same 8 slots
+and 256 SSE; retain data/unknown/signatures, restore original roles, no production.
+Do not choose another transaction-count fix until this attribution is collected.
+
+SQL wait attribution is Review. Profile e1-a-sql-wait-profile-1793862510:
+all 40 new signed Tasks completed/model/ACK once; server memory discovery query
+601 calls, 38.536s of 72.288s accumulated statement execution (includes nested
+statements/background, not CPU share). Empty scan probes 6,786 closed Sessions.
+All 40 main totals retained; 31 complete SQL-site profiles, 9 incomplete due
+interleaved diagnostic log lines, explicitly excluded from site aggregates.
+Read-only set-based query rewrite had no stable gain. Exact original roles and
+approvals restored, clone stopped, workspace volumes precisely removed.
+
+CA-HA-03 cloud Memory empty-scan backoff. Ready, claimed In Progress by human
+owner lukeding, executor Codex, same branch/worktree. Own Worker
+worker_polling.py, worker_loop_service.py, tests/worker/test_cloud_memory_recovery.py,
+tests/worker/test_cloud_ha_polling.py, task_plan.md and WORKLOG.md. Reuse
+PollingDelay with a configured idle ceiling; cloud best-effort Memory discovery
+empty/blocked scans reach <=30s, reset on progress, errors stay <=5s; local and
+command/control cadence unchanged. Keep all durable recovery receipts and do not
+retry business execution. Add deterministic timing regressions; compare new
+signed Tasks against adjacent installed recorder-dedup control at fixed E1-A.
+
+Cloud Memory discovery backoff owned paths explicitly include
+docs/CA-HA-03_resource_budgets.md for the bounded discovery latency contract
+and immutable E1 source-pinning repair. Scope remains CA-HA-03; no milestone
+advancement, production deployment or historical Task replay.
+
+Cloud Memory discovery backoff is Review at d9ab05a0;18 deterministic tests,
+Ruff/mypy pass. Adjacent control/first/latest candidate full-slot means
+9.001900/7.148550/7.926775s. All40 attempts per arm included; control retains
+one storage-contention suspension, candidates40/40 complete. Latest naturally
+settles40/40 Memory receipts in21.932s; first candidate's16 pending retained.
+Repeated empty scans65->2 and7.631->.301s accumulated SQL in respective
+windows. E1-A still FAIL; no sustained/fairness/full E1-R or production claim.
+Pinned17 source files per node and recreated two stateless E1 Workers after
+mutable bind/helper skew; old containers stopped/configs retained, approvals
+unchanged, source hashes verified, six roles running. Latest expected-role
+list and full evidence are e1-a-memory-backoff-drain-1793865198.
+
+CA-HA-03 preparation and transport attribution. Ready, claimed In Progress by
+human owner lukeding, executor Codex, same codex/ca-ha-03-budgets worktree.
+Own isolated E1 diagnostic artifacts, task_plan.md and WORKLOG.md. Reuse current
+40-Task stage logs, then read-only SELECT1 and short-transaction timing against
+the retained clone and configured test DB from both native Worker environments.
+No source/runtime config edits, production, model calls or historical intent
+replay. Decide next preparation optimization from measured client/server cost.
+
+Preparation/transport attribution is Review: all40 stage logs analyzed; native
+constant-read probes show no material short-transaction win from proxy bypass
+to the SAME clone (isolation marker verified), so no routing change retained.
+Configured native DB latency is lower, but different server placement is not a
+matched capacity proof. Prioritize existing uninstalled bounded-read helpers.
+
+CA-HA-03 coherent preparation reads in E1. Ready, claimed In Progress by human
+owner lukeding, executor Codex, same branch/worktree. Own E1 artifact overlay/
+staging scripts, task_plan.md and WORKLOG.md. Reuse already committed
+7a462157/7f9d3ba3/5ce07e93/eb0721a9 and their existing regressions: source
+ExecutionInputStore+Task header membership read, native deadline query/helper,
+checked Run header store/Worker wiring. No new implementation or abstractions.
+Validate these six modules together on native scratch PG, then fresh signed
+Tasks and adjacent memory-backoff baseline at fixed 8-slot/5s/256 SSE E1-A.
+Preserve all signed/unknown evidence and immutable original source pins.
+
+Coherent preparation reads in E1 is Review, existing70 native tests pass.
+Candidate40/40 completed at7.547600s mean/151 commits, adjacent control42/42
+at7.386976s/163 commits; both natural Memory drains complete. No capacity
+gain established, so do not promote the read composition as performance baseline.
+
+CA-HA-03 preparation CPU/wait attribution. Ready, claimed In Progress by human
+owner lukeding, executor Codex, same branch/worktree. Own E1 diagnostic overlays,
+task_plan.md and WORKLOG.md. Add bounded per-stage thread CPU/runnable/wall
+observations to the current memory-backoff execution/child overlays only; use
+fresh signed Tasks at fixed8 slots/5s/256SSE and natural Memory drain. No
+application source, schema, topology, production or historical intent replay.
+
+Preparation CPU attribution is Review:40 complete profiles; inputs742ms wall/
+65ms CPU, with195ms runnable wait and482ms other remainder. All40 known
+Tasks/model/ACK/Memory complete; one original receipt remains unknown after
+original signed GET, retained without replay. Lock sampler177/230 timed out;
+explicitly incomplete, restoration/cleanup completed separately.
+
+CA-HA-03 read-only canonical tail fencing. Ready, claimed In Progress by human
+owner lukeding, executor Codex, same branch/worktree. Own postgres/
+worker_replay_reader.py, tests/worker/test_bounded_recorder_tail.py,
+docs/CA-HA-03_resource_budgets.md, task_plan.md and WORKLOG.md. Tail pages are
+pure reads at captured highwater; reuse read_current_lease before/after in
+explicit READ COMMITTED READ ONLY rather than mutation-side FOR SHARE checks.
+Do not change mutation fencing or typed multi-page repeatable-read evidence.
+Prove no XID/read locks, concurrent release/epoch/expiry/token changes rejected
+before returning, force-stop and existing bounded replay/write regressions.
+Then matched fresh signed E1-A, preserve all receipts/data and original roles.
+
+User steering,2026-11-05: stop local optimizations without a quantified gap-closing
+expectation. Explicit user freeze: sustained5 offers/s, normal-load capacity
+rejections not allowed;30s warmup+60s steady, queue p95<=2s/p99<=5s. Retain
+429/timeouts/unknown in the offered denominator. Existing15s windows are
+exploration, not acceptance.
+
+Readonly-tail implementation5143b2f9 remains Review (83 native regressions), not
+a capacity-qualified promotion. Old in-flight adjacent run was allowed to end:
+candidate40 complete,34 scope429,1unknown,8.42955s mean; control36 admitted,
+35complete,34scope429,5unknown,10.85389s mean, one unresolved failed Task and
+Memory drain timeout. Missing final control SSE observation and incomplete lock
+sampling are retained explicitly. Both original six-role sets restored, clones
+stopped/pending command0, exact owned workspace volumes removed. No replay.
+
+CA-HA-03 bounded capacity decision. Ready, claimed In Progress by human owner
+lukeding, executor Codex, same branch/worktree. Own docs/
+CA-HA-03_capacity_decision.md, task_plan.md, WORKLOG.md and isolated E1 diagnostic
+scripts/evidence. One bounded contemporaneous diagnostic/time bill, at most two
+main bottlenecks; then one primary repair/configuration, one capacity rerun. No
+more speculative local changes or expanded E1-R before capacity gap is closed.
+Preserve exact data/unknown/signature evidence and immutable original source pins;
+production remains untouched. Application owned paths are NOT expanded until
+the time bill selects a single primary scheme with quantitative justification.
+
+CA-HA-03 bounded capacity decision update: diagnosis complete, capacity still FAIL.
+450 issued/103 signed admitted/347 scope429; 103 completion/model/exactACK each once.
+All-attempt slot8.9243s; queue78.06949/106.57204s; PG2CPU saturation verified.
+Selected coordinated resource candidate (not installed/accepted); static CapacityProfile
+check306+7<=384. Need dedicated test resource qualification before one450-offer rerun;
+Worker steady/IO scaling remain unproven. Task stays In Progress; no expanded E1-R.
+Evidence .artifacts/cloud-ha-e1/e1-a-bounded-diagnostic-1793873558/RESULTS.md.
+
+## CA-HA-03 delegated resource candidate, 2026-11-05
+
+User delegated resource choice. The uninstalled32CPU/64GiB draft is not a minimum.
+Selected12CPU test cap on192.168.101.7: PG6CPU/4GiB plus two independent private
+Docker nodes, each3CPU/4GiB,16slots.32slots total;306+7 connections<=320.
+This is logical dual-node evidence on one physical host, not physical multi-host HA.
+Avoid cross-WAN DB transactions (measured TCP latency around160ms or more).
+Guard tracks existing85 containers, memory>=6GiB, disk>=12GiB and sustained load.
+Exact installed source snapshots plus d9 overlay retained. Source v126 copied via
+pg_dump/restore across architectures:1114740 events,17742Tasks,pending0 match.
+Logical restore/reindex and PG patch changes are explicit comparison limitations.
+Old stalled transport terminated only after checking remote progress/process state;
+checksum transfer completed, no business replay. OCI/config image IDs reconciled
+by identical layers/semantic config. Official DinD initialization enables nested
+memory/CPU cgroups with parent3CPU/4GiB limits; no host cgroup change.
+Both new nodes pass native counter/TLS and wrong key/client/namespace checks;
+zero Tasks executed during qualification. Isolated test bundle materialized and
+published:437a587a-a0c7-4c83-b477-9a62afdf7e7c,version0a432a2d-4c4f-4d19-92b5-b39a827116b9.
+Next: one fresh signed Task then one450-offer30s+60s window at5/s, zero capacity
+rejection. Original six test roles paused only during controlled run and restored
+in finally. Production, original Tasks/unknowns/signatures remain unchanged.
+Evidence:.artifacts/cloud-ha-e1/e1-a-resource-candidate-1793875018 and remote
+/home/ubuntu/.local/state/zebra-e1/e1-a-resource-candidate-1793875018. Task In Progress.
+
+CA-HA-03 2026-11-05资源复验仍FAIL：12CPU/12GiB、32槽，450发出；51已验证201、
+5容量429、394unknown；37业务完成、44精确ACK；排队p95/p99=94.801/105.582s，
+登记→ACK均值14.010s(n44)。双节点父级CPU节流52%/66%，PG6CPU无节流。
+宿主机负载保护中止；未完成状态/签名保留，原六E1角色与两ready恢复，测试节点/PG停止。
+生产未改；本轮停止追加负载，完整E1-R未跑，里程碑3及HA仍In Progress。
+详见docs/CA-HA-03_capacity_decision.md及隔离artifact RESULTS.md；尚无达标配置/最低资源证明。
+
+CA-HA-03 admission lock slice (2026-11-05): Ready -> In Progress; human owner lukeding,
+executor Codex; existing codex/ca-ha-03-budgets worktree/branch, bounded user-authorized follow-up.
+First owned paths: tests/api/test_publication_consumer_concurrency.py; isolated E1 artifacts,
+WORKLOG.md/task_plan.md/docs/CA-HA-03_capacity_decision.md. Use formal migrations and native
+consumer/approval/publication calls. No production or full E1-A/R. App paths stay unexpanded
+until native concurrency checks establish the contract. Preserve all old unknown/evidence.
+
+CA-HA-03 lock slice owned paths expanded after seven formal-schema native protocol
+checks passed (lock-contract/prototype-full-final.log): apps/api/src/zebra_agent_api/
+publication_consumer.py; packages/agent-storage/src/agent_storage/postgres/
+{host_management,publication,agent_registry}.py; tests/api/test_publication_consumer_concurrency.py;
+PROGRESS.md and existing slice docs/evidence. Only opt-in shared consumption locks and
+exclusive native append_release; writers retain exclusive defaults. Human lukeding,
+executor Codex, same branch/task. No deadline expansion, authority caching or unknown replay.
+
+CA-HA-03 admission lock slice -> Review (local only): minimal four-source-file fix,
+8 new native schema regressions; paired24+24 signed nonexecuting Tasks all201/unknown0.
+Admissionp95 improves2.49%, insufficient to close E1-A gap; direction closed for this slice,
+no further micro-optimizations/load runs. See lock-contract/RESULTS.md. Overall03 In Progress,
+no production deploy or E1-A/R acceptance. Existing baseline failures explicitly retained.
+
+CA-HA-03 full-execution resource measurement slice: Ready -> In Progress,
+Owner lukeding / executor Codex, existing branch/worktree. User authorized local isolation,
+full synthetic execution with bounded1/2/4 concurrency, no450-load/noE1R/no production.
+Owned paths: isolated execution-resource-measurement artifacts; task_plan.md/WORKLOG.md,
+PROGRESS.md/docs/CA-HA-03_capacity_decision.md and this registry. No application changes.
+Freeze13a8de6c four-file fix over exact d9 installed overlay; at most16new synthetic Tasks,
+stop escalating on unknown/backlog/throttle/protection, preserve all originals and receipts.
+
+CA-HA-03资源测量slice：单个全新签名Task准入201，但完整执行预检suspended，
+模型开始/完成0/0、精确退出ACK1；按边界停止，未进入阶梯或强停，尚无容量结论。
+原六E1/绑定/ready恢复，临时运行资源精确回收，失败数据停止保留。应用代码未改，
+13a8de6c仍本地Review未部署。阻塞为执行资格/夹具原异常信息缺失；HA仍In Progress。
+证据.artifacts/cloud-ha-e1/execution-resource-measurement-1793890154/RESULTS.md。
+
+CA-HA-03 execution qualification follow-up: Ready -> In Progress; Owner lukeding,
+executor Codex, existing branch/worktree. User authorized safe exception metadata,
+frozen-install/native-dependency checks, one fresh synthetic execution qualification,
+then existing bounded1/2/4 stages and independent force-stop probe if qualified.
+Owned paths remain isolated qualification/measurement fixtures plus task_plan.md,
+WORKLOG.md, PROGRESS.md, this registry and docs/CA-HA-03_capacity_decision.md.
+No application paths expanded; no DB optimization/refactor/450/E1-R/production.
+Use native per-Task process startup for measurement, warm-fork only a fixture regression.
+
+CA-HA-03 execution qualification follow-up -> Review (local fixture/evidence only).
+2026-11-06: old baseline transport pin fixed by native new publication, safe error regression2 passed.
+Native cold execution1/2/4 completed; finite rate .226-.229/.397/.626 per second, not sustained5/s.
+All19 fresh signed receipts retained;17 business completions,19 exactACK, startup force-stop closed.
+Two GET503 and runner/setup failures retained; final pending1/leases0, no oldPOST replay.
+Original6 roles/bindings restored; candidate6/tmpfs2 reclaimed; clonedDB stopped retained.
+Evidence execution-qualification-1793892399/RESULTS.md. No source changes or production deployment.
+CA-HA-03 remains In Progress, resource-qualified E1-A and fullE1-R remain blocked on dedicated capacity.
+
+CA-HA-03 test-tool closeout: Ready -> In Progress (2026-11-06).
+Human owner lukeding / executor Codex; branch codex/ca-ha-03-budgets, existing worktree.
+Freeze13a8de6c installed candidate/package-v2/config/native cold startup. No performance changes.
+Owned paths: tests/compose/cloud_ha_e1/{run_execution_measurement.py,check_execution_measurement.py,README.md};
+new isolated closeout artifacts; docs/AGENT_TASKS.md, task_plan.md, WORKLOG.md, PROGRESS.md,
+docs/CA-HA-03_capacity_decision.md. Application/storage paths are read-only.
+Scope: checked preparation-before-execution entry, bounded receipt observer regression,
+read-only retained pending/stop/capacity investigation, independent resource inventory.
+No new Tasks, oldPOST replay, direct row cleanup, production access/load, E1-A or E1-R.
+
+CA-HA-03 test-tool closeout -> Review (local only): checked preparation entry and offline
+regressions passed; zero newTasks. Frozen native installed source/DB prove stopped Task
+still occupies1/32 scope admission slots; not deleted or falsely attributed as handled.
+Dedicated resource allocation/cost remains unavailable; reachable OrbStack Kube is shared10CPU.
+E1-A/E1-R paused. Evidence test-tool-closeout-1793897286/RESULTS.md. Overall03 In Progress.
+
+CA-HA-03-Q1 — Ready, unclaimed: reconcile force-stopped command derived capacity.
+Separate follow-up branch required before implementation; current candidate stays frozen.
+Candidate owned paths to confirm on claim: postgres/{force_stop_recovery,command_wakeup_receipts}.py,
+focused tests/agent_storage force-stop/queue regression, relevant task records.
+Require exact stop/command identity, concurrent admission safety, immutable original receipts;
+no direct cleanup of retained old rows or inference of handled from executor ACK.
+
+CA-HA-03-Q1: Ready -> In Progress (2026-11-06); human owner lukeding, executor Codex.
+Branch codex/ca-ha-03-q1-stop-capacity, existing ca-ha-03-budgets worktree; base2759b352.
+User explicitly authorizes this focused follow-up over frozen candidate; no E1-A/deployment.
+Owned paths: packages/agent-storage/src/agent_storage/postgres/force_stop_recovery.py,
+packages/agent-storage/src/agent_storage/postgres/command_wakeup_receipts.py;
+tests/agent_storage/test_postgres_force_stop_capacity.py; isolated new Q1 artifacts;
+docs/AGENT_TASKS.md, WORKLOG.md, task_plan.md, PROGRESS.md, docs/CA-HA-03_capacity_decision.md.
+Trace shared paths read-only before editing; expand ownership explicitly if proven necessary.
+New synthetic schema/data only. Preserve retained pending row, old Tasks/unknown/signatures.
+
+CA-HA-03-Q1 -> Review (local only, 2026-11-06). One application file changed; existing
+stop synchronization marks derived commands cancelled only after revoked lease/exact exits,
+never invents handled/control receipts. New8 + related79 passed, Linux1 skipped; frozen9-module
+composition8 passed. Scope replacement admission, pickup race, duplicate ACK/stop, rollback,
+real cleaner process interruption and local child exit covered. Original pending/receipts untouched;
+old293+37 evidence hashes unchanged. New testPG/volume reclaimed, data snapshots retained.
+Frozen source overlay only, no signed-package republication/push/deployment. E1-A/R paused
+for independent resources and later full runtime qualification; overallCA-HA-03 In Progress.
+Evidence force-stop-capacity-1793898506/RESULTS.md. Owned paths not expanded; receipts source untouched.
+
+CA-HA-03-Q1 -> Review (2026-11-06): isolated amd64 online functional qualification
+complete. Linux 9 passed; POST 202, GET 200 with fresh Task scope, 403 with Run scope,
+exact exit ACK and pending 1 -> 0. Draft PR #267 targets cloud-agent with 34 focused
+PostgreSQL tests passing. Production pending. E1-A/E1-R remain blocked on isolated
+resources; milestone 3 remains In Progress. Evidence: q1-amd64-build/stop-read-recheck/.
+
+CA-HA-03-Q1 review follow-up: user-authorized additional owned application path
+packages/agent-storage/src/agent_storage/postgres/force_stop_executors.py for exact
+receipt matching. PR #267 remains in Review. Prefix predicate is a correctness
+dependency; index migration stays separate. The cloud-agent Broker currently
+requires a Run binding and rejects Task-wide stop authority at exchange. Resolve
+the Broker dependency and validate the resulting online composition before a
+merge decision. Frozen qualification, production and E1-A/E1-R states are separate.
+
+CA-HA-03-Q1 review follow-up: user-authorized child transport correction in
+apps/worker/src/zebra_agent_worker/session_process_child.py and its focused
+tests/worker/test_session_process.py regression. Keep the budget and authorization
+checks unchanged. Joint qualification only, Tauri excluded, no production or E1 runs.
+
+CA-HA-03-Q1 joint probe follow-up: confirmed pre-wire TypeError in the existing
+guarded tool-schema scan. Own the one predicate in
+packages/agent-integrations/src/agent_integrations/worker_budget.py and its
+focused test_worker_budget_transport.py regressions. Reuse the frozen exact
+fix without changing budget, DNS or provider safety policy.
+
+CA-HA-03-Q1 Broker review follow-up: user authorizes the shared API fixture
+tests/api/test_task_resource_binding.py on PR #268 to match the signer contract.
+Preserve application signer/HTTP guards and the qualified runtime source. Run
+affected suites and independent static/release gates; no full Backend retries.
+
+CA-HA-03-RD1 — Ready -> In Progress (2026-11-06); human owner lukeding / executor Codex.
+Branch codex/ca-ha-03-resource-decision, existing worktree; frozen applicationf20b56a3 untouched.
+Documentation/evidence only: docs/CA-HA-03_resource_decision.md, docs/AGENT_TASKS.md,
+PROGRESS.md, WORKLOG.md, task_plan.md, docs/CA-HA-03_capacity_decision.md; new resource-decision artifacts.
+Scope: independent resource specification, primary-source price/cost verification, account/availability
+boundaries, exact resumption gates/commands. No implementation, account changes, spending, Task load,
+re-signing, provisioning or production access. If allocation unavailable, record environment block and stop.
+
+CA-HA-03-RD1 -> Review: documented primary-source compute prices,48h pretax143.77 estimate
+including7day snapshots,proposed180 pretax budget;no spend authorized. Planned2×32CPU/64GiB
+ARM64 data nodes +4CPU/8GiB control node. Actual allocated0;account quota/AZ inventory/payment
+unverified and unavailable locally. Capacity acceptance explicitly ENVIRONMENT BLOCKED.
+Q1 remains localReview with no further fixes; applicationf20b56a3 unchanged. No provisioning,
+package signing, E1-A/R or production access. Resume gates/commands and fixture limitations in
+docs/CA-HA-03_resource_decision.md; evidence resource-decision-1793899843/. Milestone3 remains open.
+
+CA-HA-03-AF1 — Ready → In Progress. Human owner lukeding. Branch
+`codex/ca-ha-03-acceptance-fixtures`, existing CA-HA-03 worktree.
+Owned paths: `tests/agent_storage/test_postgres_leases.py`,
+`tests/agent_storage/test_postgres_command_wakeup_receipts.py`, this task record,
+and CA-HA-03 acceptance artifacts. Scope is exact baseline/candidate comparison
+and fixture-only repair. Product constraints, timeout and rollout are unchanged.
+
+CA-HA-03-AF1 → Review. Exact baseline and candidate reproduced the same
+18 records. Fixture-only repairs passed all 17 affected cases on each.
+Application source remains frozen at f327a05d. Full capacity and independent
+node qualification remain blocked on resources and the fixed signed run package.
+
+### CA-HA-06-F05 — Raw SSE durable fallback after Redis loss
+
+- Ready → In Progress. Human owner lukeding, branch `codex/ca-ha-06-f05-sse-fallback`.
+- Narrow follow-up to the F-05 single-host dependency contract. Existing low-load evidence qualifies the reproduction. Formal HA and capacity gates remain open.
+- Owned paths: `apps/api/src/zebra_agent_api/session_streaming.py`, `tests/api/test_raw_stream_redis_fallback.py`, private F-05 acceptance artifacts, this task card.
+- Review. Product frozen at `602e2afa`; PostgreSQL regression 19 passed / 4 skipped. Mac ARM64 query API validation completed with Redis continuously down 30.826s, existing/new raw Task SSE and original signed GET passing without API restart. Exact cursors and PG query cost retained under `.artifacts/cloud-ha-e1/f05-mac-query-602e2afa/RESULTS.md`. Controlled native fenced event producer was used, not full Worker execution. First observer recovery timeout remains failed evidence; four specialized skipped contracts, full Worker joined F-05 and formal HA/capacity gates remain open.

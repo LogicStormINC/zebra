@@ -37,6 +37,20 @@ from zebra_agent_api.responses import ApiResponse, bad_request, conflict
 _COMMAND_FIELDS = frozenset({"command_id", "kind", "expected_revision", "payload"})
 
 
+def cloud_command_payload(kind: str, payload: dict[str, object]) -> dict[str, object] | ApiResponse:
+    expected_revision = payload.get("expected_revision")
+    if not isinstance(expected_revision, int) or isinstance(expected_revision, bool):
+        return bad_request("expected_revision is required for cloud commands")
+    command_payload = {key: value for key, value in payload.items() if key != "expected_revision"}
+    if kind == "message" and command_payload.get("attachments"):
+        return bad_request("cloud message commands require durable attachment references")
+    return {
+        "kind": kind,
+        "expected_revision": expected_revision,
+        "payload": command_payload,
+    }
+
+
 def submit_session_command(
     stores: ControlPlaneStores,
     session_id: str,
@@ -150,6 +164,14 @@ def submit_session_command(
     )
     if decision.status is not SessionCommandStatus.ACCEPTED:
         return _decision_response(session_id, command, decision, existing)
+    if (
+        getattr(stores, "deployment_namespace", None) is not None
+        and actor is EventActor.USER
+        and command.kind in {SessionCommandKind.RUN, SessionCommandKind.RESUME}
+    ):
+        run_id = command.payload.get("run_id")
+        if not isinstance(run_id, str) or not run_id.strip():
+            return bad_request("run_id is required for cloud run and resume commands")
     assert decision.event_type is EventType.SESSION_COMMAND_ACCEPTED
     scope = snapshot = task_ceiling = None
     if needs_extensions and extension_admission is not None:

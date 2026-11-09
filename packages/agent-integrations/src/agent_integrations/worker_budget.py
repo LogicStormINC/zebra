@@ -11,9 +11,13 @@ from uuid import uuid4
 import httpx
 from agent_core.domain.modeling import ModelCompletion, ModelTextDelta
 from agent_core.ports.model_gateway import ModelResponseRejectedError
-from agent_core.ports.worker_budget import ModelRequestBudget, WorkerBudgetError
+from agent_core.ports.worker_budget import (
+    ModelRequestBudget,
+    ModelRequestOutcomeUnknown,
+    WorkerBudgetError,
+)
 
-from agent_integrations.bounded_model_http import _bounded_loop
+from agent_integrations.bounded_model_dns import model_io_loop
 
 
 def inspect_request(gateway: Any, body: dict[str, Any]) -> ModelRequestBudget:
@@ -76,10 +80,15 @@ def guarded_completion(
     else:
         raise WorkerBudgetError("synchronous guarded transport cannot block an async loop")
     # Existing native async cancellation scope bounds connect, body and cleanup together.
-    with asyncio.Runner(loop_factory=_bounded_loop) as runner:
-        payload = runner.run(_wire(gateway, request.exact_body, remaining, stream_sink, responses))
+    try:
+        with asyncio.Runner(loop_factory=model_io_loop) as runner:
+            payload = runner.run(
+                _wire(gateway, request.exact_body, remaining, stream_sink, responses)
+            )
+    except (httpx.TransportError, TimeoutError) as error:
+        raise ModelRequestOutcomeUnknown("model request outcome is unknown") from error
     if monotonic() - started >= remaining:
-        raise WorkerBudgetError("model Task deadline exceeded")
+        raise ModelRequestOutcomeUnknown("model request outcome is unknown after its deadline")
     gate.check()
     try:
         completion = parse(payload)

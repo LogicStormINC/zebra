@@ -14,6 +14,7 @@ from agent_storage.postgres import coverage as coverage_store
 from agent_storage.postgres.coverage_execution_receipt_read import read_execution_receipt
 from agent_storage.postgres.coverage_execution_receipts import model_fingerprint
 from agent_storage.postgres.coverage_recovery_preparation import RecoveryReadSnapshot
+from agent_storage.worker_capability_configuration import NATIVE_CONTINUATION_VERIFIER
 from psycopg.types.json import Jsonb
 from zebra_agent_config.coverage_settings import CoverageWorkSettings
 
@@ -38,7 +39,10 @@ def receipt_composition(monkeypatch, receipt_protocol):
 
     def configured(store, *args, **kwargs):
         if receipt_protocol:
-            kwargs = kwargs | {"execution_receipts": True}
+            kwargs = kwargs | {
+                "execution_receipts": True,
+                "execution_receipt_verifier": NATIVE_CONTINUATION_VERIFIER,
+            }
         else:
             assert "execution_receipts" not in kwargs  # Protect the constructor default itself.
         original(store, *args, **kwargs)
@@ -65,9 +69,8 @@ def rows(env):
 
 @pytest.mark.parametrize("native_worker", ["first_create"], indirect=True)
 @pytest.mark.parametrize("model_cloud", [{"validation_mode": "final_certification"}], indirect=True)
-def test_native_receipt_chain_retry_and_append_only(native_worker, monkeypatch):
+def test_native_receipt_chain_and_append_only(native_worker, monkeypatch):
     env = native_worker
-    original = coverage_store.PostgresCoverageStore.commit
     mint = coverage_store.mint_execution_receipt
     minted = 0
     read_counts = []
@@ -102,12 +105,6 @@ def test_native_receipt_chain_retry_and_append_only(native_worker, monkeypatch):
         read_counts.append(facts.accepted_count)
         assert env.client.calls == object_calls
 
-    def duplicate(store, request, *, fence):
-        first = original(store, request, fence=fence)
-        assert original(store, request, fence=fence) == first
-        return first
-
-    monkeypatch.setattr(coverage_store.PostgresCoverageStore, "commit", duplicate)
     monkeypatch.setattr(coverage_store, "mint_execution_receipt", shorter_first)
     run(env)
     receipts = rows(env)

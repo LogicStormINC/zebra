@@ -8,6 +8,7 @@ from uuid import UUID
 
 from agent_core.contracts.broker_envelope import ZebraCommandEnvelope, parse_broker_envelope
 from agent_core.domain.events import EventType, SessionEvent
+from psycopg import sql
 from pydantic import ValidationError
 
 from agent_storage.postgres.command_wakeup import (
@@ -106,20 +107,28 @@ def claim_relay_batch(
         raise ValueError("relay batch size must be an integer between 1 and 32")
     if scope_mode not in ("all", "broker"):
         raise ValueError("invalid relay scope mode")
+    # Keep broker eligibility visible to generic prepared plans before scanning outbox.
+    scope_filter = sql.SQL("")
+    if scope_mode == "broker":
+        scope_filter = sql.SQL(
+            """AND EXISTS (
+                 SELECT 1 FROM command_delivery_scope_rollouts rollout
+                 WHERE rollout.deployment_namespace=outbox.deployment_namespace
+                   AND rollout.scope_key=outbox.scope_key AND rollout.mode='broker')"""
+        )
     claims = []
     with _database(dsn, deployment_namespace).connect() as connection:
         connection.execute("SET LOCAL lock_timeout = '5s'")
         selected_at = _now(connection)
         rows = connection.execute(
-            """SELECT * FROM broker_outbox outbox WHERE deployment_namespace = %s AND (
-                   (status = 'pending' AND available_at <= %s) OR
-                   (status = 'publishing' AND lease_expires_at <= %s))
-               AND (%s='all' OR EXISTS (
-                 SELECT 1 FROM command_delivery_scope_rollouts rollout
-                 WHERE rollout.deployment_namespace=outbox.deployment_namespace
-                   AND rollout.scope_key=outbox.scope_key AND rollout.mode='broker'))
-               ORDER BY available_at, message_id LIMIT %s FOR UPDATE SKIP LOCKED""",
-            (deployment_namespace, selected_at, selected_at, scope_mode, batch_size),
+            sql.SQL(
+                """SELECT * FROM broker_outbox outbox WHERE deployment_namespace = %s AND (
+                       (status = 'pending' AND available_at <= %s) OR
+                       (status = 'publishing' AND lease_expires_at <= %s))
+                   {}
+                   ORDER BY available_at, message_id LIMIT %s FOR UPDATE OF outbox SKIP LOCKED"""
+            ).format(scope_filter),
+            (deployment_namespace, selected_at, selected_at, batch_size),
         ).fetchall()
         for row in rows:
             now = _now(connection)

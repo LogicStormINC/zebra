@@ -12,6 +12,10 @@ class WorkerBudgetError(ValueError):
     """Budget, proof or current execution boundary does not permit an effect."""
 
 
+class ModelRequestOutcomeUnknown(RuntimeError):
+    """A reserved model request lost its transport outcome before settlement."""
+
+
 @dataclass(frozen=True)
 class WorkerBudgetBinding:
     task_id: str

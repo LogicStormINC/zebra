@@ -8,6 +8,7 @@ from typing import Any, cast
 import psycopg
 from psycopg.rows import dict_row
 
+from agent_storage.postgres.connection_capacity import capacity_for, connect, current_lane
 from agent_storage.postgres.connection_pool import composition_pool
 from agent_storage.postgres.task_io import TaskIoConnections, current_task_io_deadline
 
@@ -49,6 +50,7 @@ class PostgresDatabase:
         self._dsn = dsn
         self._deployment_namespace = deployment_namespace
         self._pool = composition_pool(dsn)
+        self._capacity = capacity_for(dsn, strict=False)
         if task_io_connections is not None:
             task_io_connections.require_compatible(dsn)
         self._task_io = task_io_connections
@@ -61,6 +63,7 @@ class PostgresDatabase:
         from agent_storage.postgres.connection_scope import current_connection_scope
         from agent_storage.postgres.work_unit import borrow_work_unit
 
+        capacity = self._capacity or capacity_for(self._dsn)
         deadline = current_postgres_deadline()
         unit = borrow_work_unit((self._dsn, self.deployment_namespace))
         if unit is not None:
@@ -74,6 +77,9 @@ class PostgresDatabase:
 
         if deadline is None and (task_deadline := current_task_io_deadline()) is not None:
             return self.connect_task_io(deadline=task_deadline)
+
+        if capacity is not None and current_lane() != "normal" and deadline is None:
+            return self.connect_task_io()
 
         scope = current_connection_scope()
         if scope is not None and not scope.task_io_only:
@@ -91,7 +97,7 @@ class PostgresDatabase:
                 scoped_options["connect_timeout"] = int(remaining)
             connection = scope.borrow(
                 (self._dsn, self._deployment_namespace),
-                lambda: psycopg.connect(self._dsn, **scoped_options),
+                lambda: connect(self._dsn, budget=self._capacity, **scoped_options),
             )
             if deadline is not None:
                 connection = RecoveryDeadlineConnection(connection, deadline)
@@ -99,7 +105,7 @@ class PostgresDatabase:
         if deadline is None:
             if self._pool is not None:
                 return self._pool.connection()
-            return psycopg.connect(self._dsn, row_factory=dict_row)
+            return connect(self._dsn, budget=self._capacity, row_factory=dict_row)
         from agent_storage.postgres.coverage_recovery_preparation import (
             CoverageRecoveryDeferred,
             RecoveryDeadlineConnection,
@@ -112,8 +118,8 @@ class PostgresDatabase:
             raise CoverageRecoveryDeferred("insufficient database connection budget")
         options = psycopg.conninfo.conninfo_to_dict(self._dsn).get("options", "")
         milliseconds = max(1, int(remaining * 1000))
-        connection = psycopg.connect(
-            self._dsn,
+        connection = connect(
+            self._dsn, budget=self._capacity,
             row_factory=dict_row,
             connect_timeout=int(remaining),
             options=f"{options} -c statement_timeout={milliseconds} -c lock_timeout={milliseconds}",
@@ -143,7 +149,7 @@ class PostgresDatabase:
                 raise ValueError("owned transaction cannot change its cursor protocol")
             return cast(psycopg.Connection[dict[str, Any]], unit)
         if self._task_io is None:
-            self._task_io = TaskIoConnections(self._dsn)
+            self._task_io = TaskIoConnections(self._dsn, budget=self._capacity)
         return self._task_io.connect(
             timeout_seconds=timeout_seconds,
             deadline=deadline,

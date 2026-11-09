@@ -149,7 +149,8 @@ def native_server(
     server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
     thread = Thread(target=server.serve_forever, kwargs={"poll_interval": 0.01})
     thread.start()
-    client = Session().create_client(
+    session = Session()
+    client = session.create_client(
         "s3",
         endpoint_url=f"http://127.0.0.1:{server.server_port}",
         aws_access_key_id="scratch-key",
@@ -164,7 +165,9 @@ def native_server(
         ),
     )
     try:
-        yield S3ArtifactObjectStore(client, bucket="scratch"), probe
+        read_client = reads.bounded_s3_read_client(client, session=session)
+        assert read_client is not client and read_client.meta.events is not client.meta.events
+        yield S3ArtifactObjectStore(client, bucket="scratch", read_client=read_client), probe
     finally:
         probe.release.set()
         client.close()

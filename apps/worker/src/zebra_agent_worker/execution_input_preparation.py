@@ -71,7 +71,16 @@ def recover_execution_input_events(
                         return _ready_events(head, expected_session_revision)
                 page = store.read_page(lease, head.through_sequence, header.current_sequence)
                 try:
-                    head = store.advance(lease, page)
+                    try:
+                        head = store.advance(lease, page)
+                    except LockNotAvailable:
+                        if monotonic() >= deadline:
+                            raise
+                        if ownership_check is not None:
+                            ownership_check()
+                        # The aborted transaction wrote no page. The store
+                        # rechecks the exact source, CAS and lease in the retry.
+                        head = store.advance(lease, page)
                     committed = True
                 except CheckpointStale:
                     head = store.read(lease)

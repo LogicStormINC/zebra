@@ -28,11 +28,24 @@ def test_projection_work_migration_is_registered_and_frozen() -> None:
     assert migration.checksum == "a08e29f23387b57b0ed740702c65bedee740384226363e3d919f7689dc36201f"
 
 
-@pytest.mark.parametrize("valid", [True, False])
-def test_startup_requires_exact_schema(monkeypatch, valid):
+@pytest.mark.parametrize(
+    ("variant", "valid"),
+    [("current", True), ("predecessor", True), ("older", False),
+     ("wrong_checksum", False), ("future", False)],
+)
+def test_startup_requires_exact_schema(monkeypatch, variant, valid):
     connection = MagicMock()
     rows = [(m.version, m.name, m.checksum) for m in MIGRATIONS]
-    connection.execute.return_value.fetchall.return_value = rows if valid else rows[:-1]
+    if variant == "predecessor":
+        rows = rows[:-1]
+    elif variant == "older":
+        rows = rows[:-2]
+    elif variant == "wrong_checksum":
+        version, name, _ = rows[-1]
+        rows[-1] = (version, name, "0" * 64)
+    elif variant == "future":
+        rows.append((rows[-1][0] + 1, "unknown", "0" * 64))
+    connection.execute.return_value.fetchall.return_value = rows
     connect = MagicMock()
     connect.return_value.__enter__.return_value = connection
     monkeypatch.setattr("agent_storage.postgres.migration_runner.psycopg.connect", connect)

@@ -10,10 +10,16 @@ import time
 from pathlib import Path
 
 
-def parent_fence(parent_pid: int) -> None:
+class ParentFenceLost(RuntimeError):
+    """The expected parent exited before the child could arm its fence."""
+
+
+def parent_fence(parent_pid: int, *, death_signal: int = signal.SIGKILL) -> None:
     libc = ctypes.CDLL(None, use_errno=True)
-    if libc.prctl(1, signal.SIGKILL, 0, 0, 0) != 0 or os.getppid() != parent_pid:
+    if libc.prctl(1, death_signal, 0, 0, 0) != 0:
         raise RuntimeError("executor parent fence unavailable")
+    if os.getppid() != parent_pid:
+        raise ParentFenceLost("executor parent fence unavailable")
 
 
 def _children() -> set[int]:
@@ -54,7 +60,6 @@ def run(source: Path, result: Path) -> None:
     if not hasattr(os, "waitid"):
         raise RuntimeError("private supervisor requires Linux waitid")
     request = json.loads(source.read_bytes())
-    parent_fence(request["parent_pid"])
     if ctypes.CDLL(None, use_errno=True).prctl(36, 1, 0, 0, 0) != 0:  # CHILD_SUBREAPER
         raise RuntimeError("executor subreaper unavailable")
     stopping = False
@@ -65,21 +70,30 @@ def run(source: Path, result: Path) -> None:
 
     signal.signal(signal.SIGTERM, stop)
     signal.signal(signal.SIGINT, stop)
-    process = subprocess.Popen(
-        [*request["executor_command"], str(os.getpid())],
-        start_new_session=True,
-    )
     try:
-        while not stopping:
-            if os.waitid(os.P_PID, process.pid, os.WEXITED | os.WNOHANG | os.WNOWAIT) is not None:
-                break
-            time.sleep(0.02)
-    finally:
-        _drain(process)
+        parent_fence(request["parent_pid"], death_signal=signal.SIGTERM)
+    except ParentFenceLost:
+        # Parent died before arming. No executor was spawned, so this private
+        # supervisor can attest its empty process tree without starting work.
+        stopping = True
+    process = None
+    if not stopping:
+        process = subprocess.Popen(
+            [*request["executor_command"], str(os.getpid())],
+            start_new_session=True,
+        )
+        try:
+            while not stopping:
+                status = os.waitid(os.P_PID, process.pid, os.WEXITED | os.WNOHANG | os.WNOWAIT)
+                if status is not None:
+                    break
+                time.sleep(0.02)
+        finally:
+            _drain(process)
     # Private supervisor alone writes this, after the kernel reports no children.
     receipt = request["exit_receipt"]
     result.with_suffix(".exit.json").write_text(json.dumps(receipt))
-    if process.returncode:
+    if stopping or (process is not None and process.returncode):
         raise SystemExit(1)
 
 

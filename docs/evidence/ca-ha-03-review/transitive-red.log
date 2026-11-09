@@ -1,0 +1,103 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+________ test_cancelled_cloud_preflight_keeps_read_thread_slot[storage] ________
+
+callback = 'storage'
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10e0b3f80>
+
+    @pytest.mark.parametrize("callback", ["preflight", "storage"])
+    def test_cancelled_cloud_preflight_keeps_read_thread_slot(callback, monkeypatch):
+        import asyncio
+        from threading import Event
+        from types import SimpleNamespace
+    
+        import httpx
+        from agent_storage.postgres.capacity_profile import CapacityProfile
+        from agent_storage.postgres.connection_capacity import ConnectionBudget, capacity_scope
+        from fastapi.responses import JSONResponse
+        from zebra_agent_api.ag_ui_task_view import authorized_task_preflight
+        from zebra_agent_api.database_budget import configure_database_budget
+        from zebra_agent_api.responses import ApiResponse
+    
+        budget = ConnectionBudget(
+            "dbname=one", CapacityProfile.parse(json.dumps(profile_data())), "api"
+        )
+        app, started, finish = FastAPI(), Event(), Event()
+        with capacity_scope(budget):
+            configure_database_budget(app, SimpleNamespace(), "dbname=one")
+        live = []
+    
+        def blocking_read():
+            live.append(True)
+            started.set()
+            assert finish.wait(5)
+            return ApiResponse(200, {"status": "ok"})
+    
+        @app.get("/tasks/one/stop")
+        async def cloud_read():
+            if callback == "storage":
+                from agent_storage.postgres.extensions import PostgresExtensionStore
+    
+                store = PostgresExtensionStore("dbname=one", deployment_namespace="test")
+                monkeypatch.setattr(store, "_authorize_frozen_skills", lambda *_: blocking_read())
+                result = await store.authorize_frozen_skills(scope=None, installations=())
+            else:
+                result = await authorized_task_preflight(
+                    lambda: None, blocking_read, authorization_expires_at=None,
+                )
+            return JSONResponse(result.body, status_code=result.status_code)
+    
+        async def exercise():
+            async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app),
+                                        base_url="http://test") as client:
+                first = asyncio.create_task(client.get("/tasks/one/stop"))
+                try:
+                    assert await asyncio.to_thread(started.wait, 1)
+                    first.cancel()
+                    await asyncio.gather(first, return_exceptions=True)
+                    try:
+                        second = await asyncio.wait_for(client.get("/tasks/one/stop"), 0.5)
+                    except TimeoutError:
+                        second = None
+                    assert len(live) == 1, "cancelled cloud read escaped the configured read pool"
+                    assert second is not None and second.status_code == 503
+                finally:
+                    finish.set()
+                    await asyncio.gather(first, return_exceptions=True)
+        try:
+>           asyncio.run(exercise())
+
+tests/api/test_database_budget.py:200: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../../../.local/share/uv/python/cpython-3.12.9-macos-aarch64-none/lib/python3.12/asyncio/runners.py:195: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+../../../../.local/share/uv/python/cpython-3.12.9-macos-aarch64-none/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../../.local/share/uv/python/cpython-3.12.9-macos-aarch64-none/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    async def exercise():
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app),
+                                    base_url="http://test") as client:
+            first = asyncio.create_task(client.get("/tasks/one/stop"))
+            try:
+                assert await asyncio.to_thread(started.wait, 1)
+                first.cancel()
+                await asyncio.gather(first, return_exceptions=True)
+                try:
+                    second = await asyncio.wait_for(client.get("/tasks/one/stop"), 0.5)
+                except TimeoutError:
+                    second = None
+>               assert len(live) == 1, "cancelled cloud read escaped the configured read pool"
+E               AssertionError: cancelled cloud read escaped the configured read pool
+E               assert 2 == 1
+E                +  where 2 = len([True, True])
+
+tests/api/test_database_budget.py:194: AssertionError
+=========================== short test summary info ============================
+FAILED tests/api/test_database_budget.py::test_cancelled_cloud_preflight_keeps_read_thread_slot[storage]
+1 failed in 1.60s

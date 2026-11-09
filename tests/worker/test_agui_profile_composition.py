@@ -54,6 +54,15 @@ def test_profiles_require_explicit_settings_and_bind_the_same_six_versions(tmp_p
         stores.projection_work_for_version("unsupported-eleventh").enable_projection_work()
 
 
+def test_isolated_child_leaves_projection_consumers_to_parent(tmp_path, monkeypatch):
+    settings = _settings(tmp_path / "child-projections.sqlite")
+    stores = sqlite_control_plane_stores(tmp_path / "child-projections.sqlite")
+    monkeypatch.setenv("ZEBRA_SESSION_PROCESS_CHILD", "1")
+    assert configure_agui_projection_work(stores, settings, None, None) is None
+    monkeypatch.delenv("ZEBRA_SESSION_PROCESS_CHILD")
+    assert configure_agui_projection_work(stores, settings, None, None) is not None
+
+
 def test_new_flag_is_strict_and_preserves_old_positional_settings():
     assert not load_stream_settings({}).agui_profiles_enabled
     assert StreamSettings(True).new_admission_enabled

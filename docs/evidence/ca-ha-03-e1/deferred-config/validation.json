@@ -1,0 +1,70 @@
+{
+  "runtime_source": "9b4f9ad3",
+  "external_fixture_source": "b15a32eb",
+  "new_config": "existing ZEBRA_RUNTIME_DEFER_PROVISION opt-in in E1 only",
+  "runtime_code_changed": false,
+  "local_defaults_changed": false,
+  "existing_guard_unit_tests": 6,
+  "ruff": "passed",
+  "live_short_eager": {
+    "task": "ee10410b-5246-4713-80bd-7159167425db",
+    "seconds": 8.546,
+    "model_calls_settled": 1,
+    "synthetic_units": 14226,
+    "tool_calls": 0,
+    "exact_exit_pairs": 1
+  },
+  "idle_PG_probe": {
+    "connect_median_ms_primary": 5.227,
+    "connect_median_ms_node2": 7.264,
+    "durable_insert_median_ms_primary": 2.144,
+    "durable_insert_median_ms_node2": 1.84,
+    "fsync": "on",
+    "synchronous_commit": "on",
+    "scope": "micro diagnostic only; exact newly owned schemas removed"
+  },
+  "Native8": {
+    "config_source": "d7541648d5cb03e2e66e429ccd14eeb6d98931b4",
+    "definition": "4327097b-7b98-4275-8763-f64c5e319165",
+    "published": true,
+    "cold_no_overlap": true,
+    "old_13_sessions_fact_hashes_unchanged": true
+  },
+  "required_next": [
+    "startup CPU mitigation candidate",
+    "fresh native latency comparison",
+    "full fixed E1 corpus/load/fault/soak gates"
+  ],
+  "E1_capacity": "not_run",
+  "independent_existing_guard_tests": 6,
+  "independent_review": "no Critical/Important; native no-tool/pwd and old-receipt checks still required",
+  "make_check": "passed",
+  "live_short_deferred": {
+    "task": "bb64dcec-4736-4e0c-8caa-f66b8053fdf1",
+    "seconds": 6.347,
+    "model_calls_settled": 1,
+    "tool_calls": 0,
+    "runtime_instances": 0,
+    "exact_exit_pairs": 1
+  },
+  "live_pwd_deferred": {
+    "task": "de279763-10c0-4872-9285-07248b4f5b56",
+    "seconds": 17.7,
+    "model_calls_settled": 2,
+    "tool_calls": 1,
+    "runtime_instances_created_and_removed": 1,
+    "provision_after_approval": true,
+    "exact_exit_pairs": 2,
+    "original_absolute_seconds": 120
+  },
+  "bounded_eight_burst": {
+    "all_single_POST_201": 8,
+    "all_completed": 8,
+    "min_seconds": 8.307,
+    "median_seconds": 11.781,
+    "max_seconds": 20.549,
+    "runtime_instances": 0,
+    "capacity_qualification": false
+  },
+  "operator_boundary": "A malformed marker in fresh task d74ef591 selected normal pwd; never approved, original stopped once in 0.97s, retained, not replayed."
+}

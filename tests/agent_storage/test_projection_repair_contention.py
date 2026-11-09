@@ -185,12 +185,16 @@ def test_completed_header_restores_cleanup_budget_before_next_roundtrip(
     budgets = []
 
     def observe_budget(connection, statement, params=None):
+        if not statement.startswith("SELECT repair_task_projection_header("):
+            return original(connection, statement, params)
+        connection.connection.execute("SET LOCAL plan_cache_mode=force_custom_plan")
         result = original(connection, statement, params)
-        if statement == "DO %s":
-            row = connection.connection.execute(
-                "SELECT current_setting('statement_timeout')::interval AS budget"
-            ).fetchone()
-            budgets.append(row["budget"].total_seconds())
+        row = connection.connection.execute(
+            "SELECT current_setting('statement_timeout')::interval AS budget, "
+            "current_setting('plan_cache_mode') AS plan_mode"
+        ).fetchone()
+        assert row["plan_mode"] == "force_custom_plan"
+        budgets.append(row["budget"].total_seconds())
         return result
 
     monkeypatch.setattr(_WorkConnection, "execute", observe_budget)
@@ -212,7 +216,7 @@ def test_commit_preparation_cancel_retains_prior_header_and_rolls_back_current(
 
     def cancel_second_commit(connection, statement, params=None):
         nonlocal cancelled
-        if statement == "DO %s":
+        if statement.startswith("SELECT repair_task_projection_header("):
             headers.append(1)
         if statement == "COMMIT" and len(headers) == 2 and not cancelled:
             cancelled = True
@@ -230,3 +234,35 @@ def test_commit_preparation_cancel_retains_prior_header_and_rolls_back_current(
     assert [(r["requested_through"], r["closed_through"]) for r in queue.work_rows()] == [
         (0, 0), (1, None),
     ]
+
+def test_running_repair_crosses_additive_migration(scratch, tmp_path, monkeypatch):
+    from agent_storage.postgres.projection_work_io import REPAIR_HEADER_SIGNATURE, _WorkConnection
+    from agent_storage.postgres.projection_work_repair_plan_migration import (
+        PROJECTION_WORK_REPAIR_PLAN_MIGRATION,
+    )
+
+    queue = QueueFixture("postgres", tmp_path, scratch)
+    queue.append(0)
+    queue.append(1)
+    store = active(queue)
+    with queue.connect() as connection:
+        connection.execute(f"DROP FUNCTION {REPAIR_HEADER_SIGNATURE}")
+    original = _WorkConnection.execute
+    paths = []
+
+    def observe(connection, statement, params=None):
+        if statement == "DO %s":
+            paths.append("legacy")
+        elif statement.startswith("SELECT repair_task_projection_header("):
+            paths.append("cached")
+        return original(connection, statement, params)
+
+    monkeypatch.setattr(_WorkConnection, "execute", observe)
+    first = store.repair_projection_work(queue.task, limit=1)
+    assert first.after_sequence == 0 and first.needs_repair
+    with queue.connect() as connection:
+        for statement in PROJECTION_WORK_REPAIR_PLAN_MIGRATION.statements:
+            connection.execute(statement)
+    final = store.repair_projection_work(queue.task, limit=1)
+    assert final.after_sequence == 1 and not final.needs_repair
+    assert paths == ["legacy", "cached"]

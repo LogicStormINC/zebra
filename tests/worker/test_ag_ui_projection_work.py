@@ -690,3 +690,41 @@ def test_native_two_consumers_ack_same_target_only_at_current_closure_revision(
 def test_invalid_poll_interval_creates_no_background_thread(interval):
     with pytest.raises(ValueError):
         AgUiProjectionWorkService(Ticks(), interval_seconds=interval)
+
+
+def test_idle_loop_caches_bootstrap_and_stretches_interval():
+    """Idle projection maintenance must not hammer PG at the base interval.
+
+    E1-A regression: bootstrap re-ran its FOR UPDATE config lock at 10 Hz and
+    the loop polled at 10 Hz forever (~300 idle transactions/s per fleet).
+    """
+    from time import sleep as _sleep
+
+    class IdleWork:
+        def __init__(self) -> None:
+            self.bootstraps = 0
+            self.polls = 0
+
+        def enable_projection_work(self) -> None:
+            return None
+
+        def bootstrap_projection_work(self, *, limit: int = 32) -> bool:
+            self.bootstraps += 1
+            return True  # completed bootstrap caches for the re-check window
+
+        def poll_once(self) -> int:
+            self.polls += 1
+            return 0  # nothing pending: idle
+
+    consumer = SimpleNamespace(work=IdleWork())
+    service = AgUiProjectionWorkService(consumer, interval_seconds=0.01)
+    service.start()
+    try:
+        _sleep(0.5)
+    finally:
+        service.close()
+    # One completed bootstrap call in 0.5 s (was ~50 at 10 Hz).
+    assert consumer.work.bootstraps == 1
+    # Polls stretched: base interval 0.01 s would give ~50 polls in 0.5 s;
+    # doubling to the 1 s cap keeps it an order of magnitude lower.
+    assert consumer.work.polls < 10

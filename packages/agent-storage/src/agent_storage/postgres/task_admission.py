@@ -12,9 +12,9 @@ from __future__ import annotations
 from typing import Any
 from uuid import UUID
 
-from agent_core.domain.events import EventType
+from agent_core.domain.events import EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId, TaskId
-from agent_core.domain.task_bindings import TaskBindingSnapshot
+from agent_core.domain.task_bindings import TaskBindingSnapshot, renew_task_binding_snapshot
 from agent_core.ports.idempotency_store import IdempotencyRecord
 from agent_core.ports.task_admission_transaction import (
     TaskAdmissionIdempotencyConflict,
@@ -24,8 +24,12 @@ from agent_core.ports.task_admission_transaction import (
 from psycopg import IsolationLevel, errors
 from psycopg.types.json import Jsonb
 
+from agent_storage.postgres.command_wakeup import record_command_wakeup_in_transaction
 from agent_storage.postgres.database import PostgresDatabase
-from agent_storage.postgres.events import append_event_in_transaction
+from agent_storage.postgres.events import (
+    append_event_in_transaction,
+    append_task_bootstrap_in_transaction,
+)
 from agent_storage.postgres.projections import save_session_in_transaction
 from agent_storage.postgres.task_index_transactions import _lock_task, rebuild_task_in_transaction
 from agent_storage.postgres.task_io import TaskIoConnections
@@ -106,8 +110,8 @@ class PostgresTaskAdmissionTransaction:
             or request.workspace.current_sequence != bootstrap_events[-1].sequence
         ):
             raise ValueError("initial task command must remain unprojected until Worker pickup")
-        persisted_events = tuple(
-            append_event_in_transaction(connection, namespace, event) for event in bootstrap_events
+        persisted_events = append_task_bootstrap_in_transaction(
+            connection, namespace, bootstrap_events
         )
         save_session_in_transaction(connection, namespace, request.session)
         save_workspace_in_transaction(connection, namespace, request.workspace)
@@ -122,7 +126,6 @@ class PostgresTaskAdmissionTransaction:
                 "WHERE deployment_namespace=%s AND workspace_id=%s AND owner_session_id IS NULL",
                 (root_session_id, namespace, workspace_id),
             )
-        task = rebuild_task_in_transaction(connection, namespace, root_session_id)
         binding_digest: str | None = None
         if request.binding is not None:
             binding_digest = _insert_binding_snapshot(
@@ -130,14 +133,25 @@ class PostgresTaskAdmissionTransaction:
                 namespace,
                 request.binding,
             )
+        deferred_wakeups: list[SessionEvent] = []
         persisted_events += tuple(
-            append_event_in_transaction(connection, namespace, event) for event in command_events
+            append_event_in_transaction(
+                connection, namespace, event, deferred_command_wakeups=deferred_wakeups
+            )
+            for event in command_events
         )
-        if command_events:
-            task = rebuild_task_in_transaction(connection, namespace, root_session_id)
+        task = rebuild_task_in_transaction(
+            connection, namespace, root_session_id, savepoint=False
+        )
         from agent_storage.postgres.input_artifact_admission import persist_input_artifacts
 
         persist_input_artifacts(connection, namespace, request.events, request.input_artifacts)
+        # Take the namespace admission lock after indexing the new Task.
+        # A rejected wakeup still rolls back every write in this transaction.
+        for event in deferred_wakeups:
+            record_command_wakeup_in_transaction(
+                connection, namespace, event, is_new_admission=True
+            )
         return TaskAdmissionReceipt(
             task_id=task.task_id,
             session_id=root_session_id,
@@ -195,10 +209,11 @@ def save_task_binding(
         # Bindings and fenced aggregate mutations share the Task boundary.
         # Lock before reading revisions so renewal cannot slip past final validation.
         _lock_task(connection, deployment_namespace, TaskId(UUID(binding.task_id)))
+        latest = None
         if expected_previous_revision is not None:
             latest = connection.execute(
                 """
-                SELECT binding_revision FROM task_binding_snapshots
+                SELECT binding_revision,binding_digest,snapshot_json FROM task_binding_snapshots
                 WHERE deployment_namespace = %s AND task_id = %s
                 ORDER BY binding_revision DESC
                 LIMIT 1
@@ -231,6 +246,36 @@ def save_task_binding(
                     "task binding revision is immutable and already exists with a different digest"
                 )
             return binding.binding_digest
+        budget = connection.execute(
+            "SELECT binding_digest FROM worker_task_budgets "
+            "WHERE deployment_namespace=%s AND task_id=%s FOR UPDATE",
+            (deployment_namespace, binding.task_id),
+        ).fetchone()
+        if budget is not None:
+            if latest is None:
+                raise ValueError("budget authority renewal requires adjacent CAS")
+            previous = TaskBindingSnapshot.model_validate(latest["snapshot_json"])
+            if (
+                budget["binding_digest"] != latest["binding_digest"]
+                or previous.binding_digest != latest["binding_digest"]
+            ):
+                raise ValueError("budget authority does not match the prior binding")
+            host = binding.host_capability
+            if host.host_context is None:
+                raise ValueError("budget authority renewal requires a verified Host context")
+            expected = renew_task_binding_snapshot(
+                previous, host.host_context, authority_issuer=host.authority_issuer,
+                bound_at=binding.bound_at,
+            )
+            if expected.model_dump() != binding.model_dump():
+                raise ValueError("budget authority renewal changed frozen configuration")
+            # Move only the reference: no new clock, credit or unknown-request replay.
+            connection.execute(
+                "UPDATE worker_task_budgets SET binding_digest=%s "
+                "WHERE deployment_namespace=%s AND task_id=%s AND binding_digest=%s",
+                (binding.binding_digest, deployment_namespace, binding.task_id,
+                 previous.binding_digest),
+            )
         _insert_binding_snapshot(connection, deployment_namespace, binding)
     return binding.binding_digest
 

@@ -30,7 +30,6 @@ from zebra_agent_worker.cloud_composition import CloudWorkerComposition, compose
 from zebra_agent_worker.cloud_memory_recovery import (
     CloudMemoryFinalizationRecovery,
 )
-from zebra_agent_worker.command_consumer import SessionCommandConsumer
 from zebra_agent_worker.control import SessionControlService
 from zebra_agent_worker.execution import SessionExecutionService
 from zebra_agent_worker.execution_composition import compose_recovery_titles
@@ -79,6 +78,7 @@ def build_worker_loop_service(
     memory_http_client: httpx.Client | None = None,
     memory_environ: Mapping[str, str] | None = None,
     model_request_budget_factory: ModelRequestBudgetFactory | None = None,
+    execution_only: bool = False,
 ) -> WorkerLoopService:
     client_runtime = None
     if settings.mcp_credentials.worker_enabled and settings.storage_authority != "postgresql":
@@ -114,6 +114,8 @@ def build_worker_loop_service(
                 cloud_bundle = compose_cloud_worker(cloud_settings)
         else:
             cloud_bundle = cloud_worker_composition
+        if model_request_budget_factory is None:
+            model_request_budget_factory = cloud_bundle.model_request_budget_factory
         if settings.cloud_skill_worker_enabled and (
             cloud_bundle.extensions is None or cloud_bundle.skill_objects is None
         ):
@@ -365,6 +367,10 @@ def build_worker_loop_service(
             raise ValueError("command delivery requires an explicit cloud DSN")
     elif settings.command_delivery.publish_enabled or settings.command_delivery.consume_enabled:
         raise ValueError("Rabbit command delivery requires PostgreSQL cloud composition")
+    if execution_only:
+        return WorkerLoopService(
+            execution_stores.sessions, execution_service, scan_ready_sessions=False
+        )
     cloud_control = None
     command_sessions = None
     if settings.storage_authority == "postgresql" and not migrated:
@@ -386,10 +392,11 @@ def build_worker_loop_service(
         command_binding_loader=task_binding_loader,
         command_scope_provider=active_authority_scope_provider,
     )
-    command_consumer = (
-        None
-        if migrated
-        else SessionCommandConsumer(
+    command_consumer = None
+    if not migrated:
+        from zebra_agent_worker.command_consumer import SessionCommandConsumer
+
+        command_consumer = SessionCommandConsumer(
             execution_stores,
             execution_service,
             control_service=control_service,
@@ -397,7 +404,6 @@ def build_worker_loop_service(
             command_sessions=command_sessions,
             next_command=None if command_sessions is None else command_sessions.next_command,
         )
-    )
     cloud_memory_recovery = None
     if cloud_memory_store is not None:
         assert active_namespace is not None
@@ -441,15 +447,16 @@ def build_worker_loop_service(
         from zebra_agent_worker.safety_net import WorkerSafetyNet
 
         def _safety_connect() -> Connection:
-            import psycopg
+            from agent_storage.postgres.connection_capacity import connect
 
-            return psycopg.connect(cloud_bundle.dsn or settings.database_url)
+            return connect(cloud_bundle.dsn or settings.database_url, lane="control")
 
         safety_net = WorkerSafetyNet(
             namespace=active_namespace,
             connect=_safety_connect,
         )
     service = WorkerLoopService(
+        cloud_polling=settings.deployment == "cloud",
         safety_net=safety_net,
         runtime_gates=configure_runtime_gates(settings, active_namespace),
         transient_capacity=configure_transient_capacity_maintenance(active_namespace, settings),
@@ -463,11 +470,7 @@ def build_worker_loop_service(
         client_effect_recovery=client_effect_recovery,
         stream_hint_relay=stream_hint_relay,
         projection_work=configure_agui_projection_work(
-            execution_stores,
-            settings,
-            active_namespace,
-            checkpoint_committed,
-        ),
+            execution_stores, settings, active_namespace, checkpoint_committed),
         scan_ready_sessions=not migrated and settings.deployment != "cloud",
         cutover_probe=None if migrated else cutover_probe,
         memory_delivery=(

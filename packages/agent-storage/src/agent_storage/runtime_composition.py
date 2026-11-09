@@ -88,7 +88,8 @@ def cloud_composition_from_environment(
         region_name=_optional(values, "ZEBRA_S3_REGION") or "us-east-1",
     )
     config = Config(signature_version="s3v4", s3={"addressing_style": "path"})
-    client = Session().create_client("s3", **client_options, config=config)
+    session = Session()
+    client = session.create_client("s3", **client_options, config=config)
 
     def deadline_client(timeout: float) -> Any:
         return Session().create_client(
@@ -108,7 +109,7 @@ def cloud_composition_from_environment(
         artifact_objects=S3ArtifactObjectStore(
             cast(Any, client),
             bucket=bucket,
-            read_client=cast(Any, bounded_s3_read_client(client)),
+            read_client=cast(Any, bounded_s3_read_client(client, session=session)),
             key_prefix=_optional(values, "ZEBRA_S3_KEY_PREFIX") or "zebra/artifacts/v1",
             deadline_client_factory=deadline_client,
         ),

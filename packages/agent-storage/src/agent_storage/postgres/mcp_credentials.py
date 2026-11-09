@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import json
 from hashlib import sha256
 from typing import Any
@@ -18,6 +17,7 @@ from agent_core.ports.extensions import ExtensionNotFoundError, ExtensionRevisio
 from psycopg.types.json import Jsonb
 from pydantic import TypeAdapter
 
+from agent_storage.postgres.async_dispatch import storage_call
 from agent_storage.postgres.database import PostgresDatabase
 from agent_storage.postgres.extensions import (
     _COLUMNS,
@@ -43,7 +43,7 @@ class PostgresMcpCredentialStore(PostgresDatabase):
         expected_revision: int | None,
     ) -> None:
         binding, envelope = self._validate_record(scope, record, expected_revision)
-        await asyncio.to_thread(self._save, binding, envelope, expected_revision)
+        await storage_call(self._save, binding, envelope, expected_revision)
 
     def _validate_record(
         self,
@@ -85,7 +85,7 @@ class PostgresMcpCredentialStore(PostgresDatabase):
     ) -> McpConnection:
         _require_revision(expected_connection_revision)
         binding, envelope = self._validate_record(scope, record, None)
-        result = await asyncio.to_thread(
+        result = await storage_call(
             self._save,
             binding,
             envelope,
@@ -104,7 +104,7 @@ class PostgresMcpCredentialStore(PostgresDatabase):
     ) -> McpConnection:
         _require_revision(expected_connection_revision)
         _IDENTIFIER.validate_python(connection_id)
-        return await asyncio.to_thread(
+        return await storage_call(
             self._revoke, scope, connection_id, expected_connection_revision
         )
 
@@ -195,7 +195,7 @@ class PostgresMcpCredentialStore(PostgresDatabase):
     ) -> StoredMcpCredential:
         if revision is not None and (type(revision) is not int or revision < 1):
             raise ValueError("invalid credential revision")
-        return await asyncio.to_thread(self._get, scope, connection_id, credential_ref, revision)
+        return await storage_call(self._get, scope, connection_id, credential_ref, revision)
 
     async def get_for_use(
         self, *, scope: ExtensionScope, expected_connection: McpConnection
@@ -208,7 +208,7 @@ class PostgresMcpCredentialStore(PostgresDatabase):
             or expected_connection.credential_ref is None
         ):
             raise ExtensionNotFoundError("MCP credential unavailable for use")
-        return await asyncio.to_thread(self._get_for_use, scope, expected_connection)
+        return await storage_call(self._get_for_use, scope, expected_connection)
 
     def _get_for_use(self, scope: ExtensionScope, expected: McpConnection) -> StoredMcpCredential:
         key = (*_scope_key(self.deployment_namespace, scope, "mcp"), expected.connection_id)

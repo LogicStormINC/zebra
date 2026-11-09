@@ -35,6 +35,29 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end -}}
 
 {{- define "zebra-agent.cloudEnv" -}}
+{{- if .Values.databaseBudget.enabled }}
+{{- if .Release.IsUpgrade }}
+{{- fail "budget-enabled upgrades await verified rollout lifecycle (CA-HA-08)" }}
+{{- end }}
+{{- $b := .Values.databaseBudget }}
+{{- if or (lt (int $b.fleet.api) (int (mul .Values.api.replicas 2))) (lt (int $b.fleet.worker) (int (mul .Values.worker.replicas 2))) }}
+{{- fail "database budget omits rollout peaks including terminating overlap" }}
+{{- end }}
+{{- if or (gt (int .Values.worker.executionSlots) (int $b.execution_slots)) (lt (int $b.fleet.executor) (int (mul $b.fleet.worker $b.execution_slots))) }}
+{{- fail "database budget omits private executors" }}
+{{- end }}
+{{- $processes := add $b.fleet.api $b.fleet.worker $b.fleet.cleanup $b.fleet.scheduler }}
+{{- $executor := default $b $b.executor_limits }}
+{{- $sockets := add (mul $processes (add $b.pool $b.normal $b.read $b.control $b.probe)) (mul $b.fleet.executor (add $executor.pool $executor.normal $executor.read $executor.control $executor.probe)) }}
+{{- $apiReadDelta := mul $b.fleet.api (sub (default $b.read $b.api_read) $b.read) }}
+{{- if gt (int (add $sockets $apiReadDelta (mul $b.fleet.api $b.receipt) $b.server_reserved $b.external)) (int $b.max_connections) }}
+{{- fail "database fleet exceeds server connection budget" }}
+{{- end }}
+- name: ZEBRA_DATABASE_BUDGET_JSON
+  value: {{ omit .Values.databaseBudget "enabled" | toJson | quote }}
+{{- end }}
+- name: ZEBRA_COMMAND_EXECUTION_SLOTS
+  value: {{ .Values.worker.executionSlots | quote }}
 - name: ZEBRA_PROFILE
   value: {{ required "profile must be cloud or production" .Values.profile | quote }}
 - name: ZEBRA_DATABASE_URL

@@ -1,6 +1,7 @@
 """Bounded checkpoint reads and boundary seeks use fixed SQL round trips."""
 
 from types import SimpleNamespace
+from uuid import uuid4
 
 import pytest
 from agent_core.ports.task_projection_checkpoints import CheckpointConflict
@@ -28,7 +29,7 @@ def input_store(request, tmp_path):
     return store, lease, events
 
 
-@pytest.mark.parametrize("corruption", [None, "mismatch", "oversized"])
+@pytest.mark.parametrize("corruption", [None, "mismatch", "oversized", "source"])
 def test_head_is_one_round_trip_and_corrupt_body_stays_in_database(
     input_store, monkeypatch, corruption,
 ):
@@ -36,15 +37,22 @@ def test_head_is_one_round_trip_and_corrupt_body_stays_in_database(
     expected = store.advance(lease, store.read_page(lease, -1, events[-1].sequence))
     if corruption is not None:
         with store._progress_connection(write=True) as connection:
-            store._progress_execute(
-                connection, "UPDATE execution_input_heads SET state_json=?",
-                ("x" * (1_100_000 if corruption == "oversized" else 17),),
-            )
+            if corruption == "source":
+                store._progress_execute(
+                    connection, "UPDATE execution_input_heads SET last_event_id=?",
+                    (str(uuid4()),),
+                )
+            else:
+                store._progress_execute(
+                    connection, "UPDATE execution_input_heads SET state_json=?",
+                    ("x" * (1_100_000 if corruption == "oversized" else 17),),
+                )
     original, rows = store._progress_execute, []
 
     def execute(connection, query, values=()):
         cursor = original(connection, query, values)
         if "FROM execution_input_heads" not in query:
+            assert "FROM session_events" not in query, "frontier source requires a second query"
             return cursor
         row = cursor.fetchone()
         rows.append(row)
@@ -54,6 +62,9 @@ def test_head_is_one_round_trip_and_corrupt_body_stays_in_database(
     if corruption is None:
         assert store.read(lease) == expected
         assert "不得泄露凭据" in rows[0]["state_json"]
+    elif corruption == "source":
+        with pytest.raises(CheckpointConflict, match="canonical source"):
+            store.read(lease)
     else:
         with pytest.raises(CheckpointConflict, match="metadata"):
             store.read(lease)

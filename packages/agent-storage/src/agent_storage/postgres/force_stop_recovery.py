@@ -9,7 +9,6 @@ from time import monotonic
 from typing import Any
 from uuid import NAMESPACE_URL, UUID, uuid5
 
-import psycopg
 from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.task_bindings import require_task_host_context
@@ -17,6 +16,7 @@ from psycopg.rows import dict_row
 
 from agent_storage.postgres.command_read_state import finish_command_read_state
 from agent_storage.postgres.command_runtime_cleanup import CleanupTarget, _target
+from agent_storage.postgres.connection_capacity import connect
 from agent_storage.postgres.database import PostgresDatabase, postgres_deadline
 from agent_storage.postgres.force_stop_executors import executors_exited
 from agent_storage.postgres.force_stop_signal import STOP_REASON, stop_requested
@@ -35,19 +35,42 @@ class PostgresForceStopRecovery:
         self.database = PostgresDatabase(dsn, deployment_namespace=deployment_namespace)
         self.namespace = deployment_namespace
 
-    def pending(self, limit: int = 4) -> list[UUID]:
+    def pending(self, limit: int = 4, *, engine_identity: str | None = None) -> list[UUID]:
+        if engine_identity is not None and (
+            len(engine_identity) != 64 or any(c not in "0123456789abcdef" for c in engine_identity)
+        ):
+            raise ValueError("invalid cleanup engine identity")
+        # Leave foreign-only frontiers to their owner; empty/unremembered frontiers
+        # still get lease revocation and canonical synchronization on any cleaner.
+        affinity = """
+            AND ((CASE WHEN reason='user_force_stop' THEN diagnostics::jsonb END
+                    ->>'lease') IS DISTINCT FROM 'revoked'
+              OR (CASE WHEN reason='user_force_stop' THEN diagnostics::jsonb END
+                    ->>'synchronization') IS DISTINCT FROM 'synchronized'
+              OR (CASE WHEN reason='user_force_stop' THEN diagnostics::jsonb END
+                    ->>'error_code')='stop_frontier_advanced'
+              OR (CASE WHEN reason='user_force_stop' THEN diagnostics::jsonb END
+                    ->>'accepted_at')::timestamptz<clock_timestamp()-interval '10 minutes'
+              OR NOT EXISTS (
+                SELECT 1 FROM runtime_instances i
+                WHERE i.deployment_namespace=agent_safety_overrides.deployment_namespace
+                AND i.status<>'removed'
+                AND (CASE WHEN reason='user_force_stop' THEN diagnostics::jsonb END)
+                    ->'target_sessions' ? i.session_id::text
+                HAVING bool_and(i.engine_identity IS DISTINCT FROM %s)
+            ))"""
         # ponytail: rare emergency stops share the safety channel. At fleet stop
         # volume, add a partial pending-phase index instead of retaining scan cost.
         with self.database.connect_task_io() as connection:
             rows = connection.execute(
-                """SELECT session_id FROM agent_safety_overrides
+                f"""SELECT session_id FROM agent_safety_overrides
                 WHERE deployment_namespace=%s AND reason=%s AND NOT shadow AND kind='watchdog'
                 AND (CASE WHEN reason='user_force_stop' THEN diagnostics::jsonb END)->>'phase'
                     IN ('requested','stopping')
                 AND COALESCE((CASE WHEN reason='user_force_stop' THEN diagnostics::jsonb
                     END->>'next_attempt_at')::timestamptz,created_at)
-                    <=clock_timestamp() ORDER BY created_at,session_id LIMIT %s""",
-                (self.namespace, STOP_REASON, limit),
+                    <=clock_timestamp() {affinity} ORDER BY created_at,session_id LIMIT %s""",
+                (self.namespace, STOP_REASON, engine_identity, limit),
             ).fetchall()
         return [r["session_id"] for r in rows]
 
@@ -55,8 +78,9 @@ class PostgresForceStopRecovery:
     def claim(self, sid: UUID) -> Iterator[dict[str, Any] | None]:
         # Session-level advisory lock on a PRIVATE autocommit connection: no open
         # transaction during engine I/O, auto-release on process/connection loss.
-        with psycopg.connect(
-            self.database._dsn, autocommit=True, row_factory=dict_row, connect_timeout=3
+        with connect(
+            self.database._dsn, budget=self.database._capacity, lane="control",
+            autocommit=True, row_factory=dict_row, connect_timeout=3
         ) as connection:
             connection.execute("SET statement_timeout='1500ms'")
             key = f"force-recovery:{self.namespace}:{sid}"

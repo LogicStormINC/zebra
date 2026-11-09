@@ -1,0 +1,66 @@
+{
+  "task": "CA-HA-03",
+  "parent": "b3dac442",
+  "status": "source_candidate_not_runtime_promoted",
+  "root_cause": "fresh verified Host renewal appends binding snapshot but Task budget ledger remains on old binding digest",
+  "shared_fix": "reuse existing renewal builder in Core; API import compatibility retained; save_task_binding under existing Task lock and adjacent CAS proves complete same-authority non-expanding snapshot and prior SQL/snapshot/ledger digest equality, then changes only budget reference in same transaction",
+  "red": {
+    "failed": 11,
+    "passed": 2
+  },
+  "real_PG": {
+    "new_final_passed": 17,
+    "native_combined_passed": 46,
+    "native_seconds": 26.48,
+    "database": "ha_qa",
+    "role": "ha_qa",
+    "superuser": false,
+    "runtime_role_privileges_used": false
+  },
+  "cross_VM_existing_concurrent_approval": {
+    "combined_failed": 1,
+    "combined_passed": 45,
+    "isolated_repeat_failed": 1,
+    "error": "50ms Task I/O lock timeout while second caller waits on session_streams",
+    "same_node_single_passed": 1,
+    "limits_relaxed": false,
+    "cross_node_concurrency_accepted": false
+  },
+  "unit": {
+    "passed": 21,
+    "conditional_skips": 3
+  },
+  "make_check": {
+    "exit": 0
+  },
+  "independent_AI": {
+    "critical": 0,
+    "important": 0,
+    "unit_passed": 16,
+    "conditional_skips": 3,
+    "ruff_passed": true,
+    "real_PG_run": false,
+    "human_review": false
+  },
+  "preserved": [
+    "absolute started_at/deadline",
+    "charged_tokens",
+    "tool_calls",
+    "known provider receipt",
+    "unknown reservation",
+    "last execution journal",
+    "latest binding/lease/STOP/namespace guards"
+  ],
+  "historical_stale_chains": "rejected, not automatically repaired",
+  "expired_live_test_task": "f69db4d3-1b62-476c-9f7d-ba7ed867f900 remains suspended; no resume or quota extension",
+  "old_unknown_task": "98471316-3fce-4c2e-a838-a5a7d03f421d not replayed/refunded",
+  "source_hashes": {
+    "packages/agent-core/src/agent_core/domain/task_bindings.py": "d381c200b273ee02a431134c7e7adbf172e575e1e220414a2642d709c04189de",
+    "apps/api/src/zebra_agent_api/session_binding.py": "7ef1d2e77b049568bcb7941cb27e026f63f036f8e8cb0e94aaf86f1a53b822ea",
+    "packages/agent-storage/src/agent_storage/postgres/task_admission.py": "e1eeac5f0ad245ed13970a6c1d671b16410bc64f3643315cf11fe810b284b6c0",
+    "tests/agent_storage/test_postgres_worker_budget_renewal.py": "72054c0c3f7c4dea7211f42ce3159b4049d530307a6659dc2249d6290e05a015",
+    "tests/compose/cloud_ha_e1/Dockerfile.delta": "d36c7aa82ec0468e0dcaa3ce1ea99d467fc7ce84e224e70a286c761aff5808ef"
+  },
+  "production_changed": false,
+  "full_E1_accepted": false
+}

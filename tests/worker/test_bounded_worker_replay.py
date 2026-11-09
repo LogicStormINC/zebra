@@ -100,6 +100,39 @@ def indexed(native):
     return native
 
 
+def test_native_completion_replay_fetches_bounded_tail_in_one_query(indexed, monkeypatch):
+    state = seed(indexed, 40)
+    replace(
+        indexed,
+        38,
+        EventType.ANSWER_COMMITTED,
+        {
+            "attempt_number": 1,
+            "assistant_message": "Original",
+            "delivery_assessment": {"status": "complete"},
+        },
+        EventActor.HARNESS,
+    )
+    execute = TaskIoConnection.execute
+    page_reads = []
+
+    def traced(connection, query, *args, **kwargs):
+        if isinstance(query, str) and (
+            "selected.event_bytes_bound" in query or "sequence=ANY(%s::bigint[])" in query
+        ):
+            page_reads.append(query)
+        return execute(connection, query, *args, **kwargs)
+
+    monkeypatch.setattr(TaskIoConnection, "execute", traced)
+    authority = state.authority.model_copy(update={"expected_stream_revision": 39})
+    events = PostgresWorkerReplayReader(indexed, deployment_namespace=NS).completion_events(
+        authority
+    )
+    assert events[-1].sequence == 38
+    assert events[-1].event_type is EventType.ANSWER_COMMITTED
+    assert len(page_reads) == 1
+
+
 def snapshot(**changes):
     now = datetime.now(UTC)
     fields = dict(

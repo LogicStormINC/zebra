@@ -9,10 +9,29 @@ from agent_core.ports.task_replay import TaskReadHeader
 
 
 def read_task_header(
-    connection: Any, namespace: str, task_id: TaskId, *, require_source_coverage: bool = False
+    connection: Any,
+    namespace: str,
+    task_id: TaskId | None = None,
+    *,
+    member_session_id: SessionId | None = None,
+    require_source_coverage: bool = False,
+    source_proof: TaskReadHeader | None = None,
 ) -> TaskReadHeader | None:
+    if (task_id is None) == (member_session_id is None):
+        raise ValueError("Task header requires exactly one lookup coordinate")
+    # Both predicates use the native namespace-qualified identity indexes.
+    parameters: tuple[object, ...]
+    if member_session_id is None:
+        coordinate = "t.task_id=%s"
+        parameters = (namespace, task_id)
+    else:
+        coordinate = (
+            "t.task_id=(SELECT task_id FROM execution_segments "
+            "WHERE deployment_namespace=%s AND session_id=%s)"
+        )
+        parameters = (namespace, namespace, member_session_id)
     row = connection.execute(
-        "SELECT t.active_segment_id,t.next_event_sequence,t.event_position_state,"
+        "SELECT t.task_id,t.active_segment_id,t.next_event_sequence,t.event_position_state,"
         "h.title,h.status,h.current_sequence AS active_segment_sequence,"
         "h.title_truncated,h.clarification_id,h.clarification_invalid,"
         "(o.kind IN ('dead_letter','watchdog','zombie_repair') AND NOT o.shadow) "
@@ -23,11 +42,13 @@ def read_task_header(
         "LEFT JOIN agent_safety_overrides o "
         "ON o.deployment_namespace=t.deployment_namespace "
         "AND o.session_id::text=t.active_segment_id::text "
-        "WHERE t.deployment_namespace=%s AND t.task_id=%s",
-        (namespace, task_id),
+        f"WHERE t.deployment_namespace=%s AND {coordinate}",
+        parameters,
     ).fetchone()
     if row is None:
         return None
+    if task_id is None:
+        task_id = TaskId(row["task_id"])
     if row["safety_terminal"]:
         # A control-plane terminal override is authoritative even when the
         # event projection is missing or stale: readers must always see a
@@ -59,7 +80,18 @@ def read_task_header(
             raise CheckpointNotReady("Task Event positions require explicit backfill")
         if row["status"] is None or row["active_segment_sequence"] is None:
             raise CheckpointNotReady("stream observation header requires explicit preparation")
-        strict_coverage = require_stream_source(connection, namespace, task_id, row)
+        # A proof supplied by StreamProofSnapshot belongs to this same SQL snapshot.
+        if (
+            source_proof is not None
+            and source_proof.strict_coverage is not None
+            and source_proof.task_id == task_id
+            and source_proof.active_segment_id == row["active_segment_id"]
+            and source_proof.current_sequence == row["next_event_sequence"] - 1
+            and source_proof.active_segment_sequence == row["active_segment_sequence"]
+        ):
+            strict_coverage = source_proof.strict_coverage
+        else:
+            strict_coverage = require_stream_source(connection, namespace, task_id, row)
     if row["event_position_state"] != "ready":
         raise CheckpointNotReady("Task Event positions require explicit backfill")
     return TaskReadHeader(

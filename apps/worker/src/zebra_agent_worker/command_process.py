@@ -3,7 +3,7 @@
 import asyncio
 import logging
 import signal
-from collections.abc import Awaitable, Callable
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
 from functools import partial
@@ -22,29 +22,29 @@ from agent_runtime.command_wakeup_consumer import (
 from agent_runtime.command_wakeup_quarantine import CommandWakeupQuarantine
 from agent_runtime.command_wakeup_relay import relay_command_batch
 from agent_storage.postgres.command_wakeup_recovery_proof import CoverageRecoveryCheck
+from agent_storage.postgres.connection_pool import postgres_context
 from zebra_agent_config import ZebraAgentSettings
 
+from zebra_agent_worker.command_background import (
+    background,
+    failure_state,
+    outcome_state,
+    safe_trace,
+)
 from zebra_agent_worker.command_process_state import CommandRecoverySweep, CommandWorkerCapability
 from zebra_agent_worker.runtime_factory import pin_cloud_engine
 from zebra_agent_worker.worker_health import WorkerHealth
 from zebra_agent_worker.worker_loop_service import WorkerLoopRunResult
-from zebra_agent_worker.worker_polling import validate_command_cadence, validate_loop_inputs
+from zebra_agent_worker.worker_polling import (
+    PollingDelay,
+    PollingState,
+    validate_command_cadence,
+    validate_loop_inputs,
+)
 
 logger = logging.getLogger(__name__)
 QUEUE = "zebra.session.command.ready.q"
 SHADOW_QUEUE = "zebra.session.command.ready.shadow.q"
-
-
-def _safe_trace(exc: Exception) -> str:
-    """Keep actionable frame locations without logging source lines or values."""
-
-    frames: list[str] = []
-    traceback = exc.__traceback__
-    while traceback is not None:
-        code = traceback.tb_frame.f_code
-        frames.append(f"{code.co_filename.rsplit('/', 1)[-1]}:{traceback.tb_lineno}:{code.co_name}")
-        traceback = traceback.tb_next
-    return " <- ".join(frames[-8:]) or "unavailable"
 
 
 class CommandWorkerProcess:
@@ -216,7 +216,7 @@ class CommandWorkerProcess:
                 logger.warning(
                     "command_execution_failed error_type=%s trace=%s",
                     type(exc).__name__,
-                    _safe_trace(exc),
+                    safe_trace(exc),
                 )
                 raise
             else:
@@ -308,29 +308,12 @@ class CommandWorkerProcess:
                 batch_size=1,
             )
 
-        async def background(action: Callable[[], Awaitable[object]]) -> None:
-            delay = config.tick_seconds
-            while not stop.is_set():
-                try:
-                    await action()
-                except Exception as exc:
-                    logger.warning(
-                        "command_background_tick_failed error_type=%s trace=%s",
-                        type(exc).__name__,
-                        _safe_trace(exc),
-                    )
-                    delay = min(30.0, delay * 2)
-                else:
-                    delay = config.tick_seconds
-                try:
-                    await asyncio.wait_for(stop.wait(), delay)
-                except TimeoutError:
-                    pass
+        lane_background = partial(background, stop=stop, interval=config.tick_seconds)
 
         async def maintenance() -> None:
             nonlocal recovery_generation, recovery_completed_at
             await loop.run_in_executor(
-                maintenance_pool,
+                maintenance_pool, postgres_context().run,
                 partial(
                     self._maintenance,
                     worker_id=owner,
@@ -339,32 +322,35 @@ class CommandWorkerProcess:
                 ),
             )
             if not stop.is_set():
-                await loop.run_in_executor(maintenance_pool, recovery.tick)
+                await loop.run_in_executor(maintenance_pool, postgres_context().run, recovery.tick)
                 recovery_generation += 1
                 recovery_completed_at = monotonic()
 
-        async def control() -> None:
+        async def control() -> tuple[PickupOutcome, ...]:
             nonlocal control_generation, control_completed_at
-            await consumer.poll(
+            outcomes = await consumer.poll(
                 "control", scope_mode="fallback" if config.scoped_rollout_enabled else "all"
             )
             control_generation += 1
             control_completed_at = monotonic()
+            return outcomes
 
         jobs = [
-            asyncio.create_task(background(maintenance)),
-            asyncio.create_task(background(lambda: loop.run_in_executor(cleanup_pool, cleanup))),
+            asyncio.create_task(lane_background(maintenance)),
+            asyncio.create_task(lane_background(
+                lambda: loop.run_in_executor(cleanup_pool, postgres_context().run, cleanup)
+            )),
         ]
         # Canonical controls always have a separate DB lane, even with broker-only execution.
-        jobs.append(asyncio.create_task(background(control)))
+        jobs.append(asyncio.create_task(lane_background(control)))
         if subscriber is not None:
-            jobs.append(asyncio.create_task(background(subscribe)))
+            jobs.append(asyncio.create_task(lane_background(subscribe)))
         if publisher is not None:
-            jobs.append(asyncio.create_task(background(quarantine.publish_once)))
+            jobs.append(asyncio.create_task(lane_background(quarantine.publish_once)))
         if config.publish_enabled:
             jobs.append(
                 asyncio.create_task(
-                    background(
+                    lane_background(
                         partial(
                             relay_command_batch,
                             self._dsn,
@@ -381,7 +367,7 @@ class CommandWorkerProcess:
             if config.scoped_rollout_enabled:
                 jobs.append(
                     asyncio.create_task(
-                        background(
+                        lane_background(
                             partial(
                                 relay_command_shadow_batch,
                                 self._dsn,
@@ -394,6 +380,8 @@ class CommandWorkerProcess:
                         )
                     )
                 )
+        delay = PollingDelay(config.tick_seconds if idle_sleep_seconds is None
+                             else idle_sleep_seconds)
         cycles = idle = 0
         reason = "max_cycles"
         try:
@@ -402,6 +390,7 @@ class CommandWorkerProcess:
                 and (max_cycles is None or cycles < max_cycles)
             ):
                 outcomes: tuple[PickupOutcome, ...] = ()
+                state: PollingState = "progress"
                 if config.scan_fallback_enabled:
                     discovery_generation = consumer._execution_discovery_generation
                     try:
@@ -409,10 +398,16 @@ class CommandWorkerProcess:
                             "execution",
                             scope_mode="fallback" if config.scoped_rollout_enabled else "all",
                         )
-                    except Exception:
-                        logger.warning("command_execution_pickup_failed")
+                    except Exception as exc:
+                        logger.warning(
+                            "command_execution_pickup_failed error_type=%s trace=%s",
+                            type(exc).__name__,
+                            safe_trace(exc),
+                        )
                         outcomes = (PickupOutcome.DEFERRED,)
+                        state = failure_state(exc)
                     else:
+                        state = outcome_state(outcomes)
                         if (
                             not stop.is_set()
                             and consumer._execution_discovery_generation > discovery_generation
@@ -441,7 +436,7 @@ class CommandWorkerProcess:
                 try:
                     await asyncio.wait_for(
                         stop.wait(),
-                        config.tick_seconds if idle_sleep_seconds is None else idle_sleep_seconds,
+                        delay.next(state),
                     )
                 except TimeoutError:
                     pass
@@ -473,7 +468,7 @@ class CommandWorkerProcess:
                 await (
                     consumer.close()
                 )  # real handoff/execute Future drain, never cancellation-as-drain
-                await loop.run_in_executor(maintenance_pool, self._drain)
+                await loop.run_in_executor(maintenance_pool, postgres_context().run, self._drain)
                 maintenance_pool.shutdown(wait=True)
                 cleanup_pool.shutdown(wait=True)
                 for transport in (subscriber, shadow_subscriber, publisher):

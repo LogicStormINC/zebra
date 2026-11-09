@@ -10,6 +10,12 @@ from agent_storage.postgres.bundle_definition_migration import BUNDLE_DEFINITION
 from agent_storage.postgres.command_coverage_admission_migration import (
     COMMAND_COVERAGE_ADMISSION_MIGRATION,
 )
+from agent_storage.postgres.command_outbox_capacity_index_migration import (
+    COMMAND_OUTBOX_CAPACITY_INDEX_MIGRATION,
+)
+from agent_storage.postgres.command_outbox_retirement_migration import (
+    COMMAND_OUTBOX_RETIREMENT_MIGRATION,
+)
 from agent_storage.postgres.command_read_state_migration import COMMAND_READ_STATE_MIGRATION
 from agent_storage.postgres.control_plane_migration import CONTROL_PLANE_MIGRATION
 from agent_storage.postgres.coverage_authority_migration import COVERAGE_AUTHORITY_MIGRATION
@@ -45,6 +51,9 @@ from agent_storage.postgres.execution_input_compaction_migration import (
     EXECUTION_INPUT_COMPACTION_MIGRATION,
 )
 from agent_storage.postgres.execution_inputs_migration import EXECUTION_INPUTS_MIGRATION
+from agent_storage.postgres.force_stop_receipt_index_migration import (
+    FORCE_STOP_RECEIPT_INDEX_MIGRATION,
+)
 from agent_storage.postgres.frontend_profile_management_migration import (
     FRONTEND_PROFILE_MANAGEMENT_MIGRATION,
 )
@@ -79,8 +88,14 @@ from agent_storage.postgres.projection_work_fanout_migration import (
     TASK_PROJECTION_WORK_FANOUT_MIGRATION,
 )
 from agent_storage.postgres.projection_work_migration import TASK_PROJECTION_WORK_MIGRATION
+from agent_storage.postgres.projection_work_repair_plan_migration import (
+    PROJECTION_WORK_REPAIR_PLAN_MIGRATION,
+)
 from agent_storage.postgres.projection_work_routing_migration import (
     TASK_PROJECTION_WORK_ROUTING_MIGRATION,
+)
+from agent_storage.postgres.projection_work_shared_lock_migration import (
+    PROJECTION_WORK_SHARED_LOCK_MIGRATION,
 )
 from agent_storage.postgres.provider_continuation_migration import PROVIDER_CONTINUATION_MIGRATION
 from agent_storage.postgres.publication_migration import PUBLICATION_MIGRATION
@@ -208,4 +223,9 @@ LATEST_MIGRATIONS = (
     replace(RUNTIME_GATE_TERMINATION_MIGRATION, version=119),
     ORCHESTRATION_ADMISSION_MIGRATION,
     WORKER_BUDGET_MIGRATION,
+    PROJECTION_WORK_SHARED_LOCK_MIGRATION,
+    PROJECTION_WORK_REPAIR_PLAN_MIGRATION,
+    COMMAND_OUTBOX_RETIREMENT_MIGRATION,
+    COMMAND_OUTBOX_CAPACITY_INDEX_MIGRATION,
+    FORCE_STOP_RECEIPT_INDEX_MIGRATION,
 )

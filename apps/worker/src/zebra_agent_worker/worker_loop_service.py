@@ -16,14 +16,13 @@ from agent_runtime.stream_hint_relay import StreamHintRelay
 from agent_storage import (
     LeaseConflictError,
 )
+from agent_storage.postgres.connection_pool import postgres_context
 
-from zebra_agent_worker.ag_ui_projection_work import AgUiProjectionWorkService
 from zebra_agent_worker.child_wakeup import ChildCompletionWakeupService
 from zebra_agent_worker.cloud_memory_recovery import (
     CloudMemoryFinalizationRecovery,
     recover_completed_cloud_memory,
 )
-from zebra_agent_worker.command_consumer import SessionCommandConsumer
 from zebra_agent_worker.execution import SessionExecutionService
 from zebra_agent_worker.execution_events import ExecutionInterrupted
 from zebra_agent_worker.execution_finalization import WorkerExecutionError
@@ -35,9 +34,15 @@ from zebra_agent_worker.resume import SessionResumeError
 from zebra_agent_worker.safety_net import WorkerSafetyNet
 from zebra_agent_worker.transient_capacity_maintenance import TransientCapacityMaintenance
 from zebra_agent_worker.worker_health import WorkerHealth
-from zebra_agent_worker.worker_polling import has_remaining_cycles, validate_loop_inputs
+from zebra_agent_worker.worker_polling import (
+    PollingDelay,
+    has_remaining_cycles,
+    validate_loop_inputs,
+)
 
 if TYPE_CHECKING:
+    from zebra_agent_worker.ag_ui_projection_work import AgUiProjectionWorkService
+    from zebra_agent_worker.command_consumer import SessionCommandConsumer
     from zebra_agent_worker.runtime_gates import RuntimeGateWorker
 
 
@@ -92,6 +97,7 @@ class WorkerLoopService:
         transient_capacity: TransientCapacityMaintenance | None = None,
         safety_net: WorkerSafetyNet | None = None,
         runtime_gates: RuntimeGateWorker | None = None,
+        cloud_polling: bool = False,
     ) -> None:
         self.health = WorkerHealth()
         self._projection_store = projection_store
@@ -103,7 +109,10 @@ class WorkerLoopService:
         self._sleep = sleep
         self._command_consumer = command_consumer
         self._scan_ready_sessions = scan_ready_sessions
+        self._cloud_polling = cloud_polling
         self._cloud_memory_recovery_thread: Thread | None = None
+        self._cloud_memory_recovery_at = 0.0
+        self._cloud_memory_polling = PollingDelay(0.5, idle_ceiling=30)
         self._memory_delivery = memory_delivery
         self._memory_delivery_thread: Thread | None = None
         self.migrated_run = migrated_run
@@ -296,7 +305,7 @@ class WorkerLoopService:
                 print("worker Memory delivery failed", file=sys.stderr, flush=True)
 
         thread = Thread(
-            target=deliver,
+            target=postgres_context().run, args=(deliver,),
             name=f"{worker_id}-memory-delivery",
             daemon=True,
         )
@@ -310,7 +319,10 @@ class WorkerLoopService:
         batch_size: int,
         lease_ttl_seconds: int,
     ) -> None:
-        if self._cloud_memory_recovery is None:
+        if (
+            self._cloud_memory_recovery is None
+            or time.monotonic() < self._cloud_memory_recovery_at
+        ):
             return
         active = self._cloud_memory_recovery_thread
         if active is not None and active.is_alive():
@@ -319,8 +331,9 @@ class WorkerLoopService:
         # ponytail: finalization recovery is best-effort background work until
         # it has its own durable queue; it must never block RUN command polling.
         def recover() -> None:
+            progressed, failed = False, False
             try:
-                recover_completed_cloud_memory(
+                progressed = recover_completed_cloud_memory(
                     worker_id=worker_id,
                     batch_size=batch_size,
                     lease_ttl_seconds=lease_ttl_seconds,
@@ -328,10 +341,21 @@ class WorkerLoopService:
                     projection_store=self._projection_store,
                 )
             except Exception:
+                failed = True
                 print("worker memory recovery failed", file=sys.stderr, flush=True)
+            finally:
+                if self._cloud_polling:
+                    # ponytail: best-effort idle discovery <=30s. A durable wakeup
+                    # queue is needed for tighter recovery latency at large history.
+                    delay = self._cloud_memory_polling.next(
+                        "error" if failed else "progress" if progressed else "idle"
+                    )
+                    self._cloud_memory_recovery_at = time.monotonic() + (0 if progressed else delay)
+                elif progressed is False:
+                    self._cloud_memory_recovery_at = time.monotonic() + 1
 
         recovery_thread = Thread(
-            target=recover,
+            target=postgres_context().run, args=(recover,),
             name=f"{worker_id}-cloud-memory-recovery",
             daemon=True,
         )
@@ -407,6 +431,7 @@ class WorkerLoopService:
                 max_cycles=max_cycles,
                 idle_sleep_seconds=idle_sleep_seconds,
             )
+            delay = PollingDelay(idle_sleep_seconds) if self._cloud_polling else None
             accumulator = _LoopAccumulator()
             stop_reason = "max_cycles"
             while max_cycles is None or accumulator.cycles_completed < max_cycles:
@@ -437,7 +462,9 @@ class WorkerLoopService:
                         break
                     if not has_remaining_cycles(accumulator, max_cycles):
                         break
-                    self._sleep(idle_sleep_seconds)
+                    self._sleep(delay.next("progress" if cycle.executed_session_ids else
+                                           "blocked" if cycle.skipped_session_ids else "idle")
+                                if delay else idle_sleep_seconds)
                     continue
                 if (
                     stop_when_idle
@@ -448,6 +475,9 @@ class WorkerLoopService:
                     break
                 if not has_remaining_cycles(accumulator, max_cycles):
                     break
+                if delay is not None:
+                    self._sleep(delay.next("progress" if cycle.executed_session_ids
+                                           else "blocked"))
             return WorkerLoopRunResult(
                 cycles_completed=accumulator.cycles_completed,
                 idle_cycles=accumulator.idle_cycles,

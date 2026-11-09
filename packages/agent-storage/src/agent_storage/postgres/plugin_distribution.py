@@ -1,6 +1,5 @@
 """Current distribution and immutable original receipts share one short transaction."""
 
-import asyncio
 from collections.abc import Callable
 from time import monotonic
 from typing import Any
@@ -12,6 +11,7 @@ from agent_core.domain.runtime_bundle_json import json_digest
 from agent_core.ports.extensions import ExtensionRevisionConflictError
 from psycopg.types.json import Jsonb
 
+from agent_storage.postgres.async_dispatch import storage_call
 from agent_storage.postgres.host_management import (
     HostManagementConflict,
     HostManagementStore,
@@ -86,7 +86,7 @@ class PluginDistributionStore:
                     connection, self.namespace, scope, package_digest
                 )
 
-        return await asyncio.to_thread(read)
+        return await storage_call(read)
 
     def apply(
         self,

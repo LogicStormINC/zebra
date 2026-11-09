@@ -103,7 +103,7 @@ def test_cloud_factory_composes_bounded_scalar_read(tmp_path):
     from contextlib import nullcontext
 
     connection = Mock()
-    connection.execute.return_value.fetchone.return_value = {"status": "running"}
+    connection.execute.return_value.fetchone.return_value = {"status": "running", "forced": False}
 
     def connect():
         deadline = current_task_io_deadline()

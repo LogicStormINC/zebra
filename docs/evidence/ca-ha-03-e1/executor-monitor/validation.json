@@ -1,0 +1,24 @@
+{
+  "candidate": "executor monitor uses existing normal lane; short exit ACK and STOP retain control",
+  "red_real_postgres": {
+    "failed": 2,
+    "skipped": 1
+  },
+  "native_linux_postgres": {
+    "passed": 30,
+    "includes": [
+      "control=1 with concurrent monitors",
+      "real supervisor child exit7 and matching scoped ACK",
+      "normal saturation rejects monitor without fabricating exit",
+      "existing force-stop store and recovery"
+    ]
+  },
+  "worker_api_regressions": {
+    "passed": 19
+  },
+  "make_check": "passed",
+  "independent_review": "no critical or important findings; Ruff passed; reviewer did not rerun PG",
+  "runtime_promotion": "not yet",
+  "historical_f69": "requires_reconciliation; missing original exit witness remains; no historical ACK manufactured",
+  "e1_status": "incomplete; no physical HA claim"
+}

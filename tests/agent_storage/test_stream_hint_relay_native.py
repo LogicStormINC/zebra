@@ -1,6 +1,11 @@
 """Real coalesced-frontier claims on isolated owned schemas, with no Event body reads."""
 
+from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager
 from dataclasses import replace
+from threading import Event
+from time import sleep
+from types import SimpleNamespace
 from uuid import uuid4
 
 import psycopg
@@ -8,11 +13,12 @@ import pytest
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId
 from agent_storage.postgres.database import PostgresDatabase
-from agent_storage.postgres.events import PostgresEventStore
+from agent_storage.postgres.events import PostgresEventStore, append_event_in_transaction
 from agent_storage.postgres.migration_runner import apply_postgres_migrations
 from agent_storage.postgres.stream_hint_relay import claim_stream_hints, settle_stream_hint
 from agent_storage.postgres.task_io import TaskIoConnection
 from agent_storage.postgres.work_unit import postgres_work_unit
+from psycopg.rows import dict_row
 
 from tests.agent_storage.test_coverage_artifact_publication import (
     publication as _publication_fixture,
@@ -56,6 +62,59 @@ def append(dsn, ns, sid, sequence):
 
 def claim(dsn, ns, owner="first", **kwargs):
     return claim_stream_hints(dsn, namespace=ns, owner=owner, **kwargs)
+
+
+def test_full_hint_batch_does_not_block_durable_append_across_round_trips(relay, monkeypatch):
+    dsn, ns = relay
+    sessions = [SessionId(uuid4()) for _ in range(32)]
+    for sid in sessions:
+        append(dsn, ns, sid, 0)
+    locked = Event()
+    connect = PostgresDatabase.connect_task_io
+
+    @contextmanager
+    def delayed(self, **kwargs):
+        with connect(self, **kwargs) as connection:
+
+            def execute(statement, *args, **options):
+                if locked.is_set():
+                    sleep(0.02)  # Controlled round-trip delay after claiming row locks.
+                result = connection.execute(statement, *args, **options)
+                if "FOR UPDATE SKIP LOCKED" in statement:
+                    locked.set()
+                return result
+
+            yield SimpleNamespace(execute=execute)
+
+    with monkeypatch.context() as patch:
+        patch.setattr(PostgresDatabase, "connect_task_io", delayed)
+        with ThreadPoolExecutor(max_workers=1) as pool:
+            pending = pool.submit(claim, dsn, ns)
+            assert locked.wait(2)
+            with psycopg.connect(dsn, row_factory=dict_row) as writer:
+                writer.execute("SET LOCAL lock_timeout='250ms'")
+                event = SessionEvent.create(
+                    session_id=sessions[0],
+                    sequence=1,
+                    actor=EventActor.SYSTEM,
+                    event_type=EventType.USER_MESSAGE_RECEIVED,
+                    payload={"content": "durable append alongside hints"},
+                )
+                assert append_event_in_transaction(writer, ns, event) == event
+            claims = pending.result(timeout=3)
+    assert len(claims) == 32
+    target = next(item for item in claims if item.session_id == sessions[0])
+    assert target.through == 0
+    with psycopg.connect(dsn) as writer:
+        writer.execute(
+            "SELECT current_version FROM session_streams "
+            "WHERE deployment_namespace=%s AND session_id=%s FOR UPDATE",
+            (ns, target.session_id),
+        )
+        assert not settle_stream_hint(dsn, target, confirmed=True)
+    assert settle_stream_hint(dsn, target, confirmed=True)
+    (newer,) = claim(dsn, ns, "second")
+    assert newer.session_id == target.session_id and newer.through == 1
 
 
 def test_sequence_zero_pending_fresh_connection_and_newer_append(relay, monkeypatch):
@@ -169,7 +228,11 @@ def test_due_indexes_exclude_acked_backoff_and_live_leases(relay, monkeypatch):
     execute = psycopg.Cursor.execute
 
     def observe(cursor, query, params=None, **kwargs):
-        if isinstance(query, str) and query.startswith("SELECT session_id,current_version"):
+        if (
+            isinstance(query, str)
+            and query.startswith(("SELECT", "WITH"))
+            and "FOR UPDATE SKIP LOCKED" in query
+        ):
             queries.append((query, params))
         return execute(cursor, query, params, **kwargs)
 
@@ -187,8 +250,13 @@ def test_due_indexes_exclude_acked_backoff_and_live_leases(relay, monkeypatch):
                 for child in node.get("Plans", []):
                     yield from nodes(child)
 
-            indexes = [n for n in nodes(plan[0]["Plan"]) if "Index Name" in n]
-            assert indexes and all(n["Index Name"].startswith("stream_hint_") for n in indexes)
+            connection.rollback()  # EXPLAIN ANALYZE executes the set-based claim.
+            indexes = [
+                n
+                for n in nodes(plan[0]["Plan"])
+                if n.get("Index Name", "").startswith("stream_hint_")
+            ]
+            assert indexes
             assert (
                 sum(n.get("Actual Rows", 0) + n.get("Rows Removed by Filter", 0) for n in indexes)
                 <= 32

@@ -17,6 +17,7 @@ from zebra_agent_worker.client_effect_resume import ClientEffectWakeup
 from zebra_agent_worker.control import SessionControlError, SessionControlService
 from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
 from zebra_agent_worker.execution_finalization import WorkerExecutionError
+from zebra_agent_worker.execution_preparation import finish_preparation, recover_fenced_session
 from zebra_agent_worker.recovery import SessionRecoveryService
 
 
@@ -143,6 +144,13 @@ def restore_suspended_session_claim(
             raise WorkerExecutionError(
                 "cloud suspended-session restoration requires the event store"
             )
+        status = claimed.recovery.session.status
+        if status not in {
+            SessionStatus.RUNNING,
+            SessionStatus.SUSPENDED,
+            SessionStatus.WAITING_CLIENT_EFFECT,
+        }:
+            return claimed
         events = event_store.list_for_session(claimed.lease.session_id)
         if (
             claimed.recovery.session.status is SessionStatus.SUSPENDED
@@ -156,11 +164,7 @@ def restore_suspended_session_claim(
                     "waiting_children suspension requires the harness wakeup to resume"
                 )
             resume_reason = "waiting_children_resolved"
-        elif claimed.recovery.session.status in {
-            SessionStatus.RUNNING,
-            SessionStatus.SUSPENDED,
-            SessionStatus.WAITING_CLIENT_EFFECT,
-        } and is_waiting_client_effect_suspension(events):
+        elif is_waiting_client_effect_suspension(events):
             if not has_trusted_client_effect_resume(events):
                 raise WorkerExecutionError(
                     "waiting_client_effect suspension requires a trusted receipt to resume"
@@ -357,10 +361,9 @@ def _recovered_claim(
     claimed: ClaimedSession,
     recovery_service: SessionRecoveryService,
 ) -> ClaimedSession:
-    return ClaimedSession(
-        recovery=recovery_service.recover_session(
-            claimed.recovery.session.session_id,
-            worker_lease=claimed.lease,
-        ),
-        lease=claimed.lease,
+    # Every Cloud recovery slice verifies the current lease in storage.
+    recovery = finish_preparation(
+        lambda: recover_fenced_session(recovery_service, claimed.lease),
+        lambda: None,
     )
+    return ClaimedSession(recovery=recovery, lease=claimed.lease)

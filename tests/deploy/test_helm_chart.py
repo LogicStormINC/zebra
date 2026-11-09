@@ -60,7 +60,7 @@ def test_migration_api_worker_and_service_boundaries_are_explicit() -> None:
     assert "backoffLimit: 0" in migration
     assert "command: [python, docker/migrate.py]" in migration
     assert "readinessProbe:" in api and "livenessProbe:" in api and "startupProbe:" in api
-    assert "command: [uvicorn]" in api
+    assert "command: [python, -m, zebra_agent_api.server]" in api
     assert "command: [zebra-agent-worker]" in worker
     assert "containerPort: 8000" in api
     assert "targetPort: http" in service
@@ -76,3 +76,69 @@ def test_pdbs_and_templates_never_embed_secret_values() -> None:
     assert "POSTGRES_PASSWORD" not in template_text
     assert "stringData:" not in template_text
     assert "secretKeyRef:" in template_text
+
+
+def test_budget_profiles_cover_rollout_and_private_executors():
+    helper = _read("_helpers.tpl")
+    assert "ZEBRA_DATABASE_BUDGET_JSON" in helper
+    assert 'omit .Values.databaseBudget "enabled"' in helper
+    assert "database budget omits rollout peaks" in helper
+    for path in ("api-deployment.yaml", "worker-deployment.yaml"):
+        assert "maxSurge: 1" in _read(path)
+
+
+def test_budget_mode_is_install_only_and_counts_terminating_overlap(tmp_path):
+    import shutil
+    import subprocess
+
+    import pytest
+
+    if shutil.which("helm") is None:
+        pytest.skip("Helm CLI required for real render acceptance")
+    values = {
+        "image": {"digest": "sha256:" + "a" * 64},
+        "deploymentNamespace": "ha-review", "runtimeImage": "runtime@sha256:" + "b" * 64,
+        "secrets": {name: {"name": "fixture-secret"} for name in
+                    ["databaseUrl", "s3", "liveRedisUrl", "memorySigningKey", "apiAuthToken"]},
+        "config": {"authorityIssuer": "https://issuer.example", "historyScopeNamespace": "history",
+                   "continuationScopeNamespace": "continuation", "s3Endpoint": "https://s3.example"},
+    }
+    for enabled, upgrade, bad_peak, expected in [
+        (True, False, False, 0), (True, True, False, 1),
+        (False, True, False, 0), (True, False, True, 1),
+    ]:
+        values["databaseBudget"] = {"enabled": enabled}
+        if bad_peak:
+            values["databaseBudget"]["fleet"] = {"worker": 3}
+        path = tmp_path / "values.json"
+        path.write_text(json.dumps(values))
+        result = subprocess.run(
+            ["helm", "template", "ha-review", str(CHART), "-f", str(path)]
+            + (["--is-upgrade"] if upgrade else []),
+            capture_output=True, text=True, check=False,
+        )
+        assert (result.returncode == 0) == (expected == 0), result.stderr
+        if enabled and upgrade:
+            assert "budget-enabled upgrades" in result.stderr
+        if bad_peak:
+            assert "terminating overlap" in result.stderr
+
+    cases = ((257, 0, True), (256, 0, False), (261, 3, True), (260, 3, False))
+    for maximum, api_read, fits in cases:
+        values["databaseBudget"] = {
+            "enabled": True,
+            "max_connections": maximum,
+            "api_read": api_read,
+            "executor_limits": dict(pool=1, normal=1, read=1, control=1, probe=1),
+        }
+        path.write_text(json.dumps(values))
+        result = subprocess.run(
+            ["helm", "template", "ha-review", str(CHART), "-f", str(path)],
+            capture_output=True, text=True, check=False,
+        )
+        if fits:
+            assert result.returncode == 0, result.stderr
+            assert "executor_limits" in result.stdout
+        else:
+            assert result.returncode != 0
+            assert "database fleet exceeds server connection budget" in result.stderr

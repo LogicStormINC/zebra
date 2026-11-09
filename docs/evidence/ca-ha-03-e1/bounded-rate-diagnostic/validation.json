@@ -1,0 +1,62 @@
+{
+  "source": "6cd0162e051f5df6b09f2ab995de2c4f603e3f0c",
+  "test": "normal ARM two-node 5Hz short-task diagnostic; no 10k/1M or 256 streams, not formal E1",
+  "run_id": "818a02bb-61b6-44ab-bba9-19b569a0e842",
+  "planned_offers": 60,
+  "offered": 32,
+  "single_post_201": 32,
+  "unknown_admission": 0,
+  "safety_stop_tick_seconds": 6.4,
+  "peak_confirmed_active_during_offers": 17,
+  "peak_active_reservations": 32,
+  "peak_inflight": 15,
+  "admission_seconds": {
+    "min": 0.2576,
+    "median": 2.6195,
+    "max": 5.7775,
+    "over_2s": 19,
+    "n": 32
+  },
+  "actual_terminal_read": {
+    "completed": 30,
+    "running": 1,
+    "suspended": 1
+  },
+  "uncompleted": {
+    "0fdb377b-db02-4eed-9d2a-7f8aa9d7329e": "running",
+    "39aacfa5-3b21-4802-9bbb-08d020a095d8": "suspended"
+  },
+  "real_exact_exit_pairs": 32,
+  "active_leases": 0,
+  "pending_commands": 0,
+  "model_total": 32,
+  "model_settled": 31,
+  "tools": 0,
+  "OCI": 0,
+  "running_case": "settled model and answer_committed, exact kernel ACK, no live lease/pending command; no replay or invented terminal fact",
+  "suspended_case": "LockNotAvailable / execution_storage_contention; original unknown model reservation retained, no refund or resend",
+  "postgres_lock_timeout_errors_in_capture": 14,
+  "observed_sql_paths": [
+    "stream hint SELECT claim_owner FOR UPDATE",
+    "durable UPDATE session_streams current_version",
+    "session advisory locks",
+    "worker_leases row locks"
+  ],
+  "worker_cgroup_throttling_during_admission_response_window": {
+    "vm": 0,
+    "orb2": 1
+  },
+  "operator_boundary": "Final summary serialization failed on numeric sum Decimal; retained raw samples, reconciled original Task IDs by readonly PG. No repeat or fabricated full drain CPU sample.",
+  "next": "prove batched hint claim lock contention in real PG; shorten observation transaction without changing durable commit/lease rules",
+  "later_control_only": {
+    "task": "0fdb377b-db02-4eed-9d2a-7f8aa9d7329e",
+    "single_stop_POST_202": true,
+    "state": "stopped",
+    "resources_released": true,
+    "observed_seconds": 1.199,
+    "canonical_projection": "cancelled",
+    "original_event_prefix_budget_model_counts_exit_acks_preserved": true,
+    "unknown_model_case": "original 39aacfa5 remains suspended; original reservation unknown, no resend/refund",
+    "classification": "control-only on idle fixture; original rate diagnosis remains failed"
+  }
+}

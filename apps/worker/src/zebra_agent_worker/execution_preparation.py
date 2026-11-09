@@ -10,10 +10,14 @@ from agent_core.domain.events import SessionEvent
 from agent_core.domain.leases import WorkerLease
 from agent_core.ports.event_store import EventStorePort
 from agent_core.ports.worker_preparation import PreparationAdvanced
+from psycopg.errors import LockNotAvailable
+
+from zebra_agent_worker.bounded_session_recovery import SessionRecoveryPending
 
 if TYPE_CHECKING:
     from zebra_agent_worker.claims import ClaimedSession
     from zebra_agent_worker.execution_recovery import RecoveredExecutionInputs
+    from zebra_agent_worker.recovery import RecoveredSession, SessionRecoveryService
 
 
 def finish_preparation[T](operation: Callable[[], T], ownership_check: Callable[[], None]) -> T:
@@ -38,6 +42,18 @@ def finish_preparation[T](operation: Callable[[], T], ownership_check: Callable[
                 ) from progress
             frontiers[progress.checkpoint_key] = (progress.through_sequence, progress.highwater)
     raise ValueError("Worker preparation exceeded its bounded slice budget")
+
+
+def recover_fenced_session(
+    service: SessionRecoveryService, lease: WorkerLease
+) -> RecoveredSession:
+    try:
+        return service.recover_session(lease.session_id, worker_lease=lease)
+    except SessionRecoveryPending as error:
+        if not isinstance(error.__cause__, LockNotAvailable):
+            raise
+    # One fresh preparation slice under the same fence, without replaying execution.
+    return service.recover_session(lease.session_id, worker_lease=lease)
 
 
 def prepare_execution_inputs(

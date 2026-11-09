@@ -1,13 +1,13 @@
-当前状态补充：HA02候选已在独立分支发布，真实PG通过，完整门禁被基线阻塞；原生整改01
-候选242定向+1真实PG通过，ERPNext整改02待领取。见[分批整改](CA_BASELINE_GATE_REMEDIATION.md)。
-HA02未主线合入，03仍Locked，不宣称下游就绪。以下保留原规划状态作为历史。
+当前E1回执（2026-11-03）：新Ubuntu/OrbStack双节点建立，四应用源码/双端新鲜健康通过；单次新Task到gVisor后被缺可信counter的预算guard拒绝。完整E1未通过，03仍In Progress、04不解锁；见evidence/ca-ha-03-e1/validation.json。
+
+当前状态（2026-11-02）：HA02组合验收通过并已合入cloud-agent；03用户授权后领取，03A/03B候选Review，独立AI复审问题已修复；完整E1容量/生命周期约束尚未验。生产HA仍未达标。
 
 # Cloud Agent 高可用分阶段任务清单 v1
 
-当前实施：02完整门禁被基线失败阻塞、真实PG5项通过；保持Review，[实现/限制/验证](CA-HA-02_readiness_preflight.md#6-ca-ha-02候选实现2026-10-31review)；不代表完整HA/性能达标。
+当前实施：02组合完整门禁和真实PG5已通过并合入cloud-agent；03A/03B候选验证通过（Review），独立AI复审通过；预算模式限全新隔离staging安装，完整E1容量/部署约束仍未验；不代表生产HA或性能达标。
 
 日期2026-10-31；配套[正式方案](CLOUD_HIGH_AVAILABILITY_PLAN_v1.md)。
-本文件是执行拆解，不是已实现能力列表；00已合入并推送cloud-agent，UX文档补充已完成；用户后续仅授权CA-HA-02候选实施，其他任务仍未启动。
+本文件是执行拆解，不是已实现能力列表；00已合入并推送cloud-agent，UX文档补充已完成；用户“继续”已授权领取03；其他HA阶段未由本批自动解锁。
 人类最终负责人Luke Ding；各实现卡领取前确定一位人类Owner和独立Reviewer，
 一任务/一分支/一worktree；本文角色是建议分工，不启动并行代理或后台任务。
 
@@ -19,7 +19,7 @@ HA02未主线合入，03仍Locked，不宣称下游就绪。以下保留原规�
 | CA-HA-00 | 正式方案、任务和文档索引 | Done：已集成推送d782039c | 当前用户授权 | TL/文档 |
 | CA-HA-01 | 固定基线、DDD不变量、SLO与故障合同 | Done：revision 2文档已集成1dd88bfd，非实现 | 00评审并集成，且用户另行授权后续工作 | TL/CORE/QA |
 | CA-HA-02 | API/Worker真实就绪与健康合同 | Done：完整组合门禁/实际PG5通过，代码已入本地cloud-agent | 01 | APP/RUNTIME |
-| CA-HA-03 | 资源预算、空转退避与租户技术隔离 | Ready（未领取/未实施） | 01、02（共享Worker接线须串行） | RUNTIME/CORE |
+| CA-HA-03 | 资源预算、空转退避与租户技术隔离 | In Progress：03A/03B Review，E1未验 | 01、02（共享Worker接线须串行） | RUNTIME/CORE |
 | CA-HA-04 | 排空、进程隔离、强停与资源回收 | Locked | 02、03；强停候选须独立合入/验收 | RUNTIME/SRE |
 | CA-HA-05 | Worker跨副本接管与旧执行者隔离 | Locked | 03、04 | CORE/存储 |
 | CA-HA-06 | PostgreSQL/对象/Redis/身份依赖容错 | Locked | 02、05 | SRE/存储/安全 |
