@@ -142,6 +142,23 @@ class PostCommitPublishingWorkerProjectionTransaction(WorkerProjectionTransactio
         self._transaction = transaction
         self._publisher = publisher
 
+    def commit_worker_events(
+        self,
+        events: tuple[SessionEvent, ...],
+        session: Session,
+        workspace: WorkspaceProjection,
+        *,
+        authority: WorkerMutationAuthority,
+    ) -> WorkerProjectionCommitResult:
+        committed = self._transaction.commit_worker_events(
+            events,
+            session,
+            workspace,
+            authority=authority,
+        )
+        self._publish(committed.event)
+        return committed
+
     def commit_worker_event(
         self,
         event: SessionEvent,

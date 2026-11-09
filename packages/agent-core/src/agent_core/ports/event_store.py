@@ -35,3 +35,19 @@ class BoundedSessionEventReadPort(Protocol):
         limit: int = 256,
         max_bytes: int = 1_048_576,
     ) -> SessionEventPage: ...
+
+
+def append_events_batch(
+    store: object, events: "tuple[SessionEvent, ...]"
+) -> tuple[SessionEvent, ...]:
+    """Batch-aware burst append: native batch when the store provides it.
+
+    CA-HA-03 D3: default is the exact per-Event loop, so every EventStorePort
+    implementation keeps its semantics untouched; PostgreSQL overrides with a
+    single-transaction span-CAS batch.
+    """
+    native = getattr(store, "append_batch", None)
+    if native is not None:
+        result: tuple[SessionEvent, ...] = native(events)
+        return result
+    return tuple(store.append(event) for event in events)  # type: ignore[attr-defined]

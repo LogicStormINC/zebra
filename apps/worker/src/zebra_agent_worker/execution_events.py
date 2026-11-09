@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Iterator, Sequence
 from contextlib import AbstractContextManager, contextmanager, nullcontext
 from datetime import UTC, datetime
 from functools import wraps
@@ -292,6 +292,61 @@ class DurableHarnessEventRecorder:
         self._advance_authority(event)
         self._events.append(event)
         return event
+
+    @_serialized
+    def append_close_batch(
+        self,
+        drafts: Sequence[tuple[EventType, EventActor, dict[str, object]]],
+    ) -> list[SessionEvent]:
+        """Prepare and atomically commit a contiguous close burst (CA-HA-03 D3).
+
+        Mirrors append()'s prepare-then-validate cycle per draft with the in-memory
+        Session state advancing inside the batch, then commits one native batch
+        transaction. Client-effect echoes and per-Event fallback apply whenever
+        the native batch is unavailable; close bursts never carry client effects.
+        """
+        if not drafts:
+            return []
+        self._ownership_check()
+        authority = self._worker_mutation_authority
+        batch_commit = (
+            getattr(self._worker_projection_transaction, "commit_worker_events", None)
+            if self._worker_projection_transaction is not None
+            else None
+        )
+        if authority is None or batch_commit is None or len(drafts) < 2:
+            return [
+                self.append(event_type, actor, payload)
+                for event_type, actor, payload in drafts
+            ]
+        self._synchronize_external_events()
+        self._raise_if_interrupted()
+        events: list[SessionEvent] = []
+        state_session, state_workspace = self._session, self._workspace
+        for event_type, actor, payload in drafts:
+            event = SessionEvent.create(
+                session_id=self._session.session_id,
+                sequence=state_session.current_sequence + 1,
+                event_type=event_type,
+                actor=actor,
+                payload=payload,
+                correlation_id=_correlation_id(payload.get("model_call_id")),
+                created_at=datetime.now(UTC),
+            )
+            state_session = apply_event(state_session, event)
+            state_workspace = apply_workspace_event(state_workspace, event)
+            events.append(event)
+        committed = batch_commit(
+            tuple(events), state_session, state_workspace, authority=authority
+        )
+        for event in events:
+            self._model_call_indexer.index_worker_event(event, authority=authority)
+            self._tool_run_indexer.index_worker_event(event, authority=authority)
+            self._events.append(event)
+        self._session = committed.session
+        self._workspace = committed.workspace
+        self._advance_authority(committed.event)
+        return events
 
     @_serialized
     def accept_persisted_event(self, event: SessionEvent) -> SessionEvent:

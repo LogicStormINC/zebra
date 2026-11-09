@@ -40,25 +40,33 @@ def append_turn_close(
     turn_index = open_turn.turn_index if open_turn else 0
     completed = attempt_result.outcome is HarnessAttemptOutcome.COMPLETED
     closes_segment = not completed or interaction_mode is not InteractionMode.CONVERSATION
-    recorder.append(
-        EventType.TURN_COMPLETED if completed else EventType.TURN_FAILED,
-        EventActor.HARNESS,
-        {
-            "turn_id": turn_id,
-            "turn_index": turn_index,
-            "summary" if completed else "reason": attempt_result.summary,
-            "closes_segment": closes_segment,
-            "attempt_number": attempt_number,
-            "metadata": attempt_result.metadata,
-        },
-    )
+    # CA-HA-03 D3: the close burst commits as one atomic batch when the recorder
+    # supports it; per-Event fallback preserves the legacy semantics otherwise.
+    turn_type = EventType.TURN_COMPLETED if completed else EventType.TURN_FAILED
+    turn_payload = {
+        "turn_id": turn_id,
+        "turn_index": turn_index,
+        "summary" if completed else "reason": attempt_result.summary,
+        "closes_segment": closes_segment,
+        "attempt_number": attempt_number,
+        "metadata": attempt_result.metadata,
+    }
     if closes_segment:
-        recorder.append(
-            EventType.SESSION_COMPLETED if completed else EventType.SESSION_FAILED,
-            EventActor.HARNESS,
-            {
-                "attempt_number": attempt_number,
-                "summary": attempt_result.summary,
-                "metadata": attempt_result.metadata,
-            },
-        )
+        terminal_type = EventType.SESSION_COMPLETED if completed else EventType.SESSION_FAILED
+        terminal_payload = {
+            "attempt_number": attempt_number,
+            "summary": attempt_result.summary,
+            "metadata": attempt_result.metadata,
+        }
+        # Duck-typed recorders and non-batch stores keep the exact per-Event path.
+        append_close_batch = getattr(recorder, "append_close_batch", None)
+        if append_close_batch is not None:
+            append_close_batch([
+                (turn_type, EventActor.HARNESS, turn_payload),
+                (terminal_type, EventActor.HARNESS, terminal_payload),
+            ])
+        else:
+            recorder.append(turn_type, EventActor.HARNESS, turn_payload)
+            recorder.append(terminal_type, EventActor.HARNESS, terminal_payload)
+    else:
+        recorder.append(turn_type, EventActor.HARNESS, turn_payload)

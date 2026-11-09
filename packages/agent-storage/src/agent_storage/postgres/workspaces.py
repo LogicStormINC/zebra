@@ -126,6 +126,75 @@ class PostgresWorkspaceProjectionStore(
             )
 
     @confirm_on_timeout
+    def commit_worker_events(
+        self,
+        events: tuple[SessionEvent, ...],
+        session: Session,
+        workspace: WorkspaceProjection,
+        *,
+        authority: WorkerMutationAuthority,
+    ) -> WorkerProjectionCommitResult:
+        """Commit a contiguous same-Session burst plus its final projections atomically.
+
+        CA-HA-03 D3: collapses N per-Event transactions (fence + append + projection
+        saves) into one. `session`/`workspace` are the FINAL states after applying
+        every event in order; the caller's in-memory transition chain owns that
+        ordering exactly like the single-Event path. Non-batchable shapes fall
+        back to per-Event commits with identical semantics.
+        """
+        from agent_storage.postgres.events import append_events_in_transaction
+
+        if not (
+            1 < len(events) <= 16
+            and events[0].sequence == authority.expected_stream_revision + 1
+            and events[-1].sequence == events[0].sequence + len(events) - 1
+        ):
+            committed = None
+            for event in events:
+                committed = self.commit_worker_event(
+                    event, session, workspace, authority=authority
+                )
+            assert committed is not None
+            return committed
+        self._validate_worker_commit(events[-1], session, workspace, authority)
+        for event in events:
+            self._validate_worker_commit(event, session, workspace, authority)
+        with self._database.connect() as connection:
+            assert_current_lease_fence(
+                connection,
+                self._database.deployment_namespace,
+                events[0].session_id,
+                authority.lease_fence,
+            )
+            persisted = append_events_in_transaction(
+                connection, self._database.deployment_namespace, events
+            )
+            if persisted[-1].sequence != events[-1].sequence:
+                raise PostgresWorkspaceProjectionConflictError(
+                    "canonical Event batch does not follow the expected stream revision"
+                )
+            last = persisted[-1]
+            canonical_session, canonical_workspace, already_projected = (
+                self._resolve_canonical_batch_projections(
+                    connection, persisted, session, workspace
+                )
+            )
+            if not already_projected:
+                canonical_session = save_session_in_transaction(
+                    connection, self._database.deployment_namespace, canonical_session
+                )
+                canonical_workspace = save_workspace_in_transaction(
+                    connection, self._database.deployment_namespace, canonical_workspace
+                )
+            for persisted_event in persisted:
+                record_worker_command_boundary(connection, persisted_event, authority)
+            return WorkerProjectionCommitResult(
+                event=last,
+                session=canonical_session,
+                workspace=canonical_workspace,
+            )
+
+    @confirm_on_timeout
     def project_persisted_worker_event(
         self,
         event: SessionEvent,
@@ -225,6 +294,66 @@ class PostgresWorkspaceProjectionStore(
             raise PostgresWorkspaceProjectionConflictError(
                 "event and projections must belong to the same session"
             )
+
+    def _resolve_canonical_batch_projections(
+        self,
+        connection: Any,
+        events: tuple[SessionEvent, ...],
+        session: Session,
+        workspace: WorkspaceProjection,
+    ) -> tuple[Session, WorkspaceProjection, bool]:
+        """Forward-project the stored state across a contiguous burst (D3 batch)."""
+        namespace = self._database.deployment_namespace
+        row = connection.execute(
+            """SELECT row_to_json(s) AS session,row_to_json(w) AS workspace
+               FROM session_projections s LEFT JOIN workspace_projections w
+                 USING(deployment_namespace,session_id)
+               WHERE s.deployment_namespace=%s AND s.session_id=%s""",
+            (namespace, events[0].session_id),
+        ).fetchone()
+        if row is None:
+            raise PostgresWorkspaceProjectionConflictError(
+                "worker projection commit requires an existing Session projection"
+            )
+        current_session = _session_from_row(row["session"])
+        current_workspace = (
+            _workspace_from_row(row["workspace"]) if row["workspace"] is not None else None
+        )
+        if current_session.current_sequence == events[-1].sequence:
+            if current_workspace is None or (
+                current_workspace.current_sequence != events[-1].sequence
+            ):
+                raise PostgresWorkspaceProjectionConflictError(
+                    "canonical Worker projections are incomplete"
+                )
+            return current_session, current_workspace, True
+        if current_session.current_sequence != events[0].sequence - 1:
+            raise PostgresWorkspaceProjectionConflictError(
+                "session projection does not precede the canonical Event burst "
+                f"(projection={current_session.current_sequence}, "
+                f"event={events[-1].sequence})"
+            )
+        expected_session = current_session
+        expected_workspace = current_workspace
+        for event in events:
+            expected_session = apply_session_event(expected_session, event)
+            if expected_workspace is None:
+                if event.event_type is not EventType.TASK_PREPARED:
+                    raise PostgresWorkspaceProjectionConflictError(
+                        "first workspace projection requires TASK_PREPARED"
+                    )
+                expected_workspace = rebuild_workspace([event])
+            else:
+                expected_workspace = apply_workspace_event(expected_workspace, event)
+        if session != expected_session:
+            raise PostgresWorkspaceProjectionConflictError(
+                "session projection content is not derived from the Event burst"
+            )
+        if workspace != expected_workspace:
+            raise PostgresWorkspaceProjectionConflictError(
+                "workspace projection content is not derived from the Event burst"
+            )
+        return expected_session, expected_workspace, False
 
     def _resolve_canonical_projections(
         self,

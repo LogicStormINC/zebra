@@ -87,6 +87,18 @@ class PostgresEventStore(EventStorePort):
                 return ensure_idempotent_event_retry(existing, event)
             raise ValueError("duplicate or conflicting session event") from exc
 
+    def append_batch(self, events: tuple[SessionEvent, ...]) -> tuple[SessionEvent, ...]:
+        """Atomic burst append; falls back to exact per-Event semantics on conflict."""
+        from agent_storage.postgres.events import append_events_in_transaction
+
+        try:
+            with self._database.connect() as connection:
+                return append_events_in_transaction(
+                    connection, self._database.deployment_namespace, events
+                )
+        except errors.UniqueViolation:
+            return tuple(self.append(event) for event in events)
+
     def append_with_extension_snapshot(
         self,
         event: SessionEvent,
@@ -356,6 +368,58 @@ def append_task_bootstrap_in_transaction(
             )
             return events
     return tuple(append_event_in_transaction(connection, namespace, event) for event in events)
+
+
+def append_events_in_transaction(
+    connection: Any, namespace: str, events: tuple[SessionEvent, ...]
+) -> tuple[SessionEvent, ...]:
+    """Append a contiguous same-Session burst to an existing stream in one span CAS.
+
+    CA-HA-03 D3: the finalization burst paid a full idempotency probe, stream CAS
+    and round trip per Event. This fast path batches the probe (ANY), collapses
+    the CAS to the span, and inserts all rows in one statement. Any ambiguity —
+    key hits, CAS loss, shape violations — falls back to the exact per-Event
+    single-append semantics (retry classification included).
+    """
+    if not _batch_shape_matches(events):
+        return tuple(append_event_in_transaction(connection, namespace, e) for e in events)
+    keys = [e.idempotency_key for e in events if e.idempotency_key is not None]
+    if keys:
+        rows = connection.execute(
+            "SELECT event_id FROM session_events WHERE deployment_namespace=%s "
+            "AND idempotency_key = ANY(%s)",
+            (namespace, keys),
+        ).fetchall()
+        if rows:
+            return tuple(append_event_in_transaction(connection, namespace, e) for e in events)
+    advanced = connection.execute(
+        """UPDATE session_streams SET current_version=%s
+        WHERE deployment_namespace=%s AND session_id=%s AND current_version=%s
+        RETURNING current_version""",
+        (events[-1].sequence, namespace, events[0].session_id, events[0].sequence - 1),
+    ).fetchone()
+    if advanced is None:
+        return tuple(append_event_in_transaction(connection, namespace, e) for e in events)
+    connection.execute(
+        _EVENT_INSERT + ", ".join([_EVENT_PLACEHOLDERS] * len(events)),
+        tuple(value for event in events for value in _event_values(namespace, event)),
+    )
+    return events
+
+
+def _batch_shape_matches(events: tuple[SessionEvent, ...]) -> bool:
+    keys = [e.idempotency_key for e in events if e.idempotency_key is not None]
+    return (
+        1 < len(events) <= 16
+        and all(
+            event.session_id == events[0].session_id
+            and event.sequence == sequence
+            and event.event_type is not EventType.SESSION_COMMAND_ACCEPTED
+            and (sequence == 0 or events[sequence - 1].created_at <= event.created_at)
+            for sequence, event in enumerate(events)
+        )
+        and len(set(keys)) == len(keys)
+    )
 
 
 def append_event_in_transaction(
