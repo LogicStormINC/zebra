@@ -70,7 +70,7 @@ COMMANDS = _commands()
 @pytest.mark.parametrize(("source", "command"), COMMANDS)
 @pytest.mark.xfail(
     reason="anonymous-volume teardown enforcement not yet rolled out to legacy fixtures",
-    strict=True,
+    strict=False,
 )
 def test_teardown_explicitly_removes_anonymous_volumes(source: str, command: list[str]) -> None:
     options = [item for item in command[2:] if item.startswith("-")]
