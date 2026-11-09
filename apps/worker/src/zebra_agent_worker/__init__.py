@@ -1,7 +1,8 @@
 """Worker app package for Zebra Agent."""
 
+from typing import TYPE_CHECKING
+
 from zebra_agent_worker.claims import ClaimedSession, SessionClaimService
-from zebra_agent_worker.command_consumer import CommandConsumption, SessionCommandConsumer
 from zebra_agent_worker.control import (
     CancelledSession,
     SessionControlError,
@@ -28,6 +29,19 @@ from zebra_agent_worker.recovery import (
 )
 from zebra_agent_worker.resume import ResumedSession, SessionResumeError, SessionResumeService
 from zebra_agent_worker.tool_run_index import ToolRunIndexer
+
+if TYPE_CHECKING:
+    from zebra_agent_worker.command_consumer import CommandConsumption, SessionCommandConsumer
+
+
+def __getattr__(name: str) -> object:
+    # Execution-only children never need the legacy command consumer.
+    if name in ("CommandConsumption", "SessionCommandConsumer"):
+        from zebra_agent_worker import command_consumer
+
+        return getattr(command_consumer, name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
 
 __all__ = [
     "ClaimedSession",

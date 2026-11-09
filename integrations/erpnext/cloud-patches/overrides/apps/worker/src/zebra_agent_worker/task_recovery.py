@@ -35,17 +35,16 @@ from agent_core.domain.task_bindings import TaskBindingSnapshot, host_context_di
 from agent_core.domain.tool_profiles import ToolProfile
 from agent_core.domain.turns import InteractionMode
 from agent_core.domain.workspaces import WorkspaceProjection
-from agent_core.harness.task_contracts import (
-    TaskAcceptanceContract,
-    infer_task_contract,
-    parse_task_contract,
-)
+from agent_core.harness.task_contracts import TaskAcceptanceContract
 from agent_core.ports import ArtifactPayloadReadPort
 from agent_core.ports.context_compiler import RuntimeEvidenceInput
 from agent_security import NetworkProfile, PolicyProfile, parse_network_profile
 from agent_storage import (
     load_attachment_contexts_from_reader,
     load_image_attachment_contexts_from_reader,
+)
+from zebra_agent_worker.task_host_context import (
+    _host_run_context as _host_run_context,
 )
 
 
@@ -199,13 +198,18 @@ def recover_task(
     policy_profile = workspace.policy_profile or PolicyProfile.WORKSPACE_WRITE.value
     try:
         clarification_refs = tuple(
-            ref for item in events if item.sequence > user_event.sequence
+            ref
+            for item in events
+            if item.sequence > user_event.sequence
             and item.event_type is EventType.CLARIFICATION_RESPONDED
             for ref in attachment_refs_from_event(item)
         )
         refs = attachment_refs_from_event(user_event) + clarification_refs
         if clarification_refs:
-            from agent_core.application.session_attachments import validate_attachment_context_budget
+            from agent_core.application.session_attachments import (
+                validate_attachment_context_budget,
+            )
+
             validate_attachment_context_budget(refs)
         attachments = load_attachment_contexts_from_reader(
             attachment_reader,
@@ -266,50 +270,6 @@ def recover_task(
         acceptance_contract=task_contract,
         coverage_admission=coverage_admission,
     )
-
-
-def _host_run_context(
-    events: list[SessionEvent], *, fallback_goal: str
-) -> tuple[tuple[RuntimeEvidenceInput, ...], TaskAcceptanceContract]:
-    """Recover bounded AG-UI Host context from the durable accepted command."""
-
-    evidence: list[RuntimeEvidenceInput] = []
-    contract = infer_task_contract(fallback_goal)
-    for event in reversed(events):
-        if event.event_type is not EventType.SESSION_COMMAND_ACCEPTED:
-            continue
-        raw_payload = event.payload.get("payload")
-        raw_input = raw_payload.get("input") if isinstance(raw_payload, dict) else None
-        raw_context = raw_input.get("context") if isinstance(raw_input, dict) else None
-        if not isinstance(raw_context, list):
-            continue
-        for item in raw_context[:12]:
-            if not isinstance(item, dict):
-                continue
-            description = item.get("description")
-            value = item.get("value")
-            if not isinstance(description, str) or not description.strip():
-                continue
-            if not isinstance(value, str) or not value.strip() or len(value) > 32_000:
-                continue
-            if description == "Agent task contract":
-                try:
-                    parsed = json.loads(value)
-                    if isinstance(parsed, dict):
-                        contract = parse_task_contract(parsed, fallback_goal=fallback_goal)
-                except (ValueError, TypeError, json.JSONDecodeError):
-                    contract = infer_task_contract(fallback_goal)
-                continue
-            evidence.append(
-                RuntimeEvidenceInput(
-                    kind="host_context",
-                    summary=description.strip()[:256],
-                    details=(value.strip(),),
-                    metadata={"source": "ag_ui_context"},
-                )
-            )
-        break
-    return tuple(evidence), contract
 
 
 def _model_invocation_policy(

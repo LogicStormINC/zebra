@@ -69,3 +69,14 @@ Canonical ERP source: separate `LogicStormINC/zebra-erpnext` repository, branch
 
 ERP adapter source commit: `9fc108b88800f325d490280489c54143e4c8aae4`. Native deployed source remains pinned to `97463d00`,
 not unvalidated later Cloud orchestration changes.
+
+## 合并后补充验收
+
+当前 cloud-agent 曾从 ac8473b3 继续演进，未包含本地97463d00 强停提交。本次通过合并
+恢复完整强停闭环并保留当前 orchestration 工作，线上仍固定已验收97463d00，不隐式部署后续功能。
+唯一文本代码冲突为空行；静态检查发现两个独立提取的 Task header 入口形成重定义，
+已删除旧平行实现，通过 re-export 统一复用 force-aware reader，防止强停误显示 failed。
+新增3个公共入口×4种终态/原因的12项行为回归。合并 Worker/API/恢复回归65 passed/2可选
+header_scratch跳过；最终修复后真实PG/Linux/OCI/API/状态入口41 passed，零跳过。
+Scoped Ruff、15模块mypy及3个Header模块mypy、runtime product boundary均通过。
+全仓15处既有ERP文件大小门禁保持未扩展修复。

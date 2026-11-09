@@ -5,14 +5,12 @@ from collections.abc import Callable, Mapping
 from pathlib import Path
 
 import httpx
-from agent_core.application import SessionTitleService
 from agent_core.domain.identifiers import SessionId
 from agent_core.ports import (
     EffectDispatchPort,
     GovernedMemoryStorePort,
     WorkerProjectionTransactionPort,
 )
-from agent_integrations import build_model_gateway
 from agent_storage import (
     CloudCompositionSettings,
     ControlPlaneStores,
@@ -22,19 +20,20 @@ from agent_storage import (
 from agent_storage.postgres.skill_publications import PostgresSkillPublicationStore
 from agent_storage.postgres.worker_replay_reader import PostgresWorkerReplayReader
 from agent_tools.skill_publications import SkillPublicationService
+from psycopg import Connection
 from zebra_agent_config import ZebraAgentSettings
 
 from zebra_agent_worker.ag_ui_composition import configure_agui_projection_work
-from zebra_agent_worker.bundle_assembly import build_bundle_title_service
 from zebra_agent_worker.claims import SessionClaimService
 from zebra_agent_worker.client_effect_runtime import compose_client_runtime
 from zebra_agent_worker.cloud_composition import CloudWorkerComposition, compose_cloud_worker
 from zebra_agent_worker.cloud_memory_recovery import (
     CloudMemoryFinalizationRecovery,
 )
-from zebra_agent_worker.command_consumer import SessionCommandConsumer
 from zebra_agent_worker.control import SessionControlService
 from zebra_agent_worker.execution import SessionExecutionService
+from zebra_agent_worker.execution_composition import compose_recovery_titles
+from zebra_agent_worker.execution_tool_gateway import ModelRequestBudgetFactory
 from zebra_agent_worker.live_event_runtime import (
     configure_live_event_delivery,
     configure_stream_hint_relay,
@@ -42,7 +41,6 @@ from zebra_agent_worker.live_event_runtime import (
 from zebra_agent_worker.mcp_composition import compose_worker_mcp
 from zebra_agent_worker.model_call_index import ModelCallIndexer
 from zebra_agent_worker.plugin_composition import compose_worker_plugins
-from zebra_agent_worker.provider_configuration import model_provider_settings
 from zebra_agent_worker.provider_continuation_commit import (
     CloudProviderContinuationCoordinator,
 )
@@ -79,6 +77,8 @@ def build_worker_loop_service(
     model_http_client: httpx.Client | None = None,
     memory_http_client: httpx.Client | None = None,
     memory_environ: Mapping[str, str] | None = None,
+    model_request_budget_factory: ModelRequestBudgetFactory | None = None,
+    execution_only: bool = False,
 ) -> WorkerLoopService:
     client_runtime = None
     if settings.mcp_credentials.worker_enabled and settings.storage_authority != "postgresql":
@@ -114,6 +114,8 @@ def build_worker_loop_service(
                 cloud_bundle = compose_cloud_worker(cloud_settings)
         else:
             cloud_bundle = cloud_worker_composition
+        if model_request_budget_factory is None:
+            model_request_budget_factory = cloud_bundle.model_request_budget_factory
         if settings.cloud_skill_worker_enabled and (
             cloud_bundle.extensions is None or cloud_bundle.skill_objects is None
         ):
@@ -236,6 +238,13 @@ def build_worker_loop_service(
                 )
 
     child_wakeup_service = None
+    from zebra_agent_worker.orchestration_wakeup_hook import compose_orchestration
+
+    orchestration_factory, orchestration_hook = compose_orchestration(
+        cloud_bundle.dsn if settings.storage_authority == "postgresql" else None,
+        active_namespace,
+        model_request_budget_factory=model_request_budget_factory,
+    )
     if cloud_memory_store is not None and settings.storage_authority == "postgresql":
         from zebra_agent_worker.child_wakeup import ChildCompletionWakeupService as _Wakeup
 
@@ -305,6 +314,8 @@ def build_worker_loop_service(
         deployment_namespace=active_namespace,
         task_binding_loader=task_binding_loader,
         transient_output_factory=transient_factory,
+        orchestration_factory=orchestration_factory,
+        model_request_budget_factory=model_request_budget_factory,
         egress_registry=egress_registry,
         delegation_store=delegation_store,
         frozen_manifest_loader=frozen_manifest_loader,
@@ -356,6 +367,10 @@ def build_worker_loop_service(
             raise ValueError("command delivery requires an explicit cloud DSN")
     elif settings.command_delivery.publish_enabled or settings.command_delivery.consume_enabled:
         raise ValueError("Rabbit command delivery requires PostgreSQL cloud composition")
+    if execution_only:
+        return WorkerLoopService(
+            execution_stores.sessions, execution_service, scan_ready_sessions=False
+        )
     cloud_control = None
     command_sessions = None
     if settings.storage_authority == "postgresql" and not migrated:
@@ -377,10 +392,11 @@ def build_worker_loop_service(
         command_binding_loader=task_binding_loader,
         command_scope_provider=active_authority_scope_provider,
     )
-    command_consumer = (
-        None
-        if migrated
-        else SessionCommandConsumer(
+    command_consumer = None
+    if not migrated:
+        from zebra_agent_worker.command_consumer import SessionCommandConsumer
+
+        command_consumer = SessionCommandConsumer(
             execution_stores,
             execution_service,
             control_service=control_service,
@@ -388,11 +404,11 @@ def build_worker_loop_service(
             command_sessions=command_sessions,
             next_command=None if command_sessions is None else command_sessions.next_command,
         )
-    )
     cloud_memory_recovery = None
     if cloud_memory_store is not None:
         assert active_namespace is not None
         assert active_transaction is not None
+        bound_titles, legacy_titles = compose_recovery_titles(settings, model_http_client)
         cloud_memory_recovery = CloudMemoryFinalizationRecovery(
             claim_service=claim_service,
             recorder_factory=recorder_factory,
@@ -403,14 +419,11 @@ def build_worker_loop_service(
             projection_store=execution_stores.sessions,
             workspace_store=execution_stores.workspaces,
             replay_reader=replay_reader,
-            bound_title_service_factory=lambda snapshot: build_bundle_title_service(
-                settings, snapshot, client=model_http_client
-            ),
-            title_service_factory=lambda: SessionTitleService(
-                build_model_gateway(model_provider_settings(settings), client=model_http_client)
-                if model_http_client is not None
-                else build_model_gateway(model_provider_settings(settings))
-            ),
+            bound_title_service_factory=bound_titles,
+            title_service_factory=legacy_titles,
+            paid_title_allowed=orchestration_factory.budgets.paid_title_allowed
+            if orchestration_factory
+            else None,
         )
     client_effect_recovery = None
     if settings.storage_authority == "postgresql":
@@ -424,6 +437,7 @@ def build_worker_loop_service(
     stream_hint_relay, checkpoint_committed = configure_stream_hint_relay(
         execution_stores, settings
     )
+    from zebra_agent_worker.runtime_gates import configure_runtime_gates
     from zebra_agent_worker.transient_capacity_maintenance import (
         configure_transient_capacity_maintenance,
     )
@@ -432,32 +446,31 @@ def build_worker_loop_service(
     if active_namespace and getattr(settings, "storage_authority", None) == "postgresql":
         from zebra_agent_worker.safety_net import WorkerSafetyNet
 
-        def _safety_connect():
-            import psycopg
+        def _safety_connect() -> Connection:
+            from agent_storage.postgres.connection_capacity import connect
 
-            return psycopg.connect(cloud_bundle.dsn or settings.database_url)
+            return connect(cloud_bundle.dsn or settings.database_url, lane="control")
 
         safety_net = WorkerSafetyNet(
             namespace=active_namespace,
             connect=_safety_connect,
         )
     service = WorkerLoopService(
+        cloud_polling=settings.deployment == "cloud",
         safety_net=safety_net,
+        runtime_gates=configure_runtime_gates(settings, active_namespace),
         transient_capacity=configure_transient_capacity_maintenance(active_namespace, settings),
         projection_store=execution_stores.sessions,
         execution_service=execution_service,
         cloud_memory_recovery=cloud_memory_recovery,
         child_wakeup_service=child_wakeup_service,
+        orchestration_hook=orchestration_hook,
         sleep=sleep,
         command_consumer=command_consumer,
         client_effect_recovery=client_effect_recovery,
         stream_hint_relay=stream_hint_relay,
         projection_work=configure_agui_projection_work(
-            execution_stores,
-            settings,
-            active_namespace,
-            checkpoint_committed,
-        ),
+            execution_stores, settings, active_namespace, checkpoint_committed),
         scan_ready_sessions=not migrated and settings.deployment != "cloud",
         cutover_probe=None if migrated else cutover_probe,
         memory_delivery=(
@@ -476,6 +489,7 @@ def build_worker_loop_service(
             execute=execution_service.execute_claimed_session,
             maintenance=service.maintenance_once,
             drain=service.drain,
+            health=service.health,
             coverage_check=(
                 None
                 if cloud_bundle.coverage_runtime is None

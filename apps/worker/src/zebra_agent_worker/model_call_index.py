@@ -40,6 +40,8 @@ class ModelCallIndexer:
     def index_worker_event(
         self, event: SessionEvent, *, authority: WorkerMutationAuthority
     ) -> ModelCallRecord | None:
+        if event.event_type is not EventType.MODEL_RESPONSE_RECEIVED:
+            return None
         index = getattr(self._model_call_store, "index_worker_event", None)
         if callable(index):
             return cast(ModelCallRecord | None, index(event, authority=authority))

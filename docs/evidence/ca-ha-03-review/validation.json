@@ -1,0 +1,61 @@
+{
+  "task": "CA-HA-03",
+  "slice": "review_followup",
+  "date": "2026-11-02",
+  "parent": "1d5207b401a27337b9a12921d1b4a7abc01d4a3f",
+  "branch": "codex/ca-ha-03-budgets",
+  "status": "local_candidate_reviewed_not_merged_or_deployed",
+  "source_hashes": "source-sha256.json",
+  "review": "review.json",
+  "regression": {
+    "passed": 1082,
+    "skipped": 327,
+    "failed": 0,
+    "seconds": 347.77,
+    "paths": "test-paths-final.json",
+    "log": "regression-final.log",
+    "frozen_source_hashes_checked_after_run": true
+  },
+  "focused": {
+    "passed": 114,
+    "skipped": 1,
+    "seconds": 14.65,
+    "log": "focused.log"
+  },
+  "make_check": {
+    "exit": 0,
+    "typed_sources": 1534,
+    "log": "make-check.log"
+  },
+  "earlier_runs": [
+    {
+      "passed": 1012,
+      "skipped": 327,
+      "failed": 12,
+      "reason": "old to_thread test instrumentation; moved probe to shared database_call, preserved existing assertions",
+      "log": "regression-initial.log"
+    },
+    {
+      "passed": 1024,
+      "skipped": 327,
+      "failed": 2,
+      "reason": "standalone Request lacks app; optional budget lookup restored default-off compatibility",
+      "log": "regression-second.log"
+    }
+  ],
+  "red_regressions": [
+    "transitive-red.log",
+    "nested-red.log",
+    "list-red.log",
+    "request-red.log"
+  ],
+  "boundaries": [
+    "no full repository make test",
+    "no new PostgreSQL runtime test in this followup; prior113 is historical03B evidence",
+    "no E1 capacity or fault certification",
+    "independent AI review, no human review",
+    "no production service changes, migrations or business replay",
+    "profile-on fresh staging only; upgrade/rollback/restarts/repeated transitions not certified"
+  ],
+  "environment": "environment.json"
+}

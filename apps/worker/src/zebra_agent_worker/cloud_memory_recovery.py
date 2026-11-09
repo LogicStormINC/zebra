@@ -146,6 +146,7 @@ class CloudMemoryFinalizationRecovery:
         workspace_store: WorkspaceProjectionStorePort,
         title_service_factory: Callable[[], SessionTitleService],
         replay_reader: PostgresWorkerReplayReader | None = None,
+        paid_title_allowed: Callable[[SessionId], bool] | None = None,
         bound_title_service_factory: Callable[
             [BundleDefinitionSnapshot], SessionTitleService | None
         ] | None = None,
@@ -162,6 +163,7 @@ class CloudMemoryFinalizationRecovery:
         self._title_service_factory = title_service_factory
         self._bound_title_service_factory = bound_title_service_factory
         self._replay_reader = replay_reader
+        self._paid_title_allowed = paid_title_allowed or (lambda _: True)
 
     def recover(
         self,
@@ -225,6 +227,8 @@ class CloudMemoryFinalizationRecovery:
             )
             if any(event.event_type is EventType.SESSION_TITLE_UPDATED for event in events):
                 return True
+            if not self._paid_title_allowed(session_id):
+                return True
             title_service = None
             snapshot = recorder.workspace.definition_snapshot
             if isinstance(snapshot, BundleDefinitionSnapshot):
@@ -260,9 +264,9 @@ def recover_completed_cloud_memory(
     lease_ttl_seconds: int,
     recovery: Any,
     projection_store: Any,
-) -> None:
+) -> bool:
     if recovery is None:
-        return
+        return False
     pending_reader = getattr(projection_store, "list_memory_recovery_sessions", None)
     if callable(pending_reader):
         pending = pending_reader(limit=max(batch_size, 1), recovery_action=MEMORY_RECOVERY_ACTION)
@@ -275,6 +279,7 @@ def recover_completed_cloud_memory(
         # recent-session compatibility behavior.
         recent = projection_store.list_recent_sessions(limit=max(batch_size, 32))
     sessions = {session.session_id: session for session in (*pending, *recent)}
+    progressed = False
     for session in sessions.values():
         # COMPLETED: legacy/one-shot finalization; AWAITING_TURN: a
         # conversation Turn closed but its fenced Memory/title side
@@ -285,14 +290,16 @@ def recover_completed_cloud_memory(
         }:
             continue
         try:
-            recovery.recover(
+            if recovery.recover(
                 session.session_id,
                 worker_id=worker_id,
                 recovered_at=datetime.now(UTC),
                 lease_ttl_seconds=lease_ttl_seconds,
-            )
+            ):
+                progressed = True
         except (LeaseConflictError, SessionRecoveryError, WorkerExecutionError):
             # Deterministic configuration/projection/contract errors are
             # deliberately NOT swallowed: they must surface instead of
             # forming an invisible hot loop over corrupted sessions.
             continue
+    return progressed

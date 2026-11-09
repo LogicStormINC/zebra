@@ -1,9 +1,8 @@
 from datetime import datetime
 
+import zebra_agent_worker.execution_finalization as execution_finalization
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.leases import WorkerLease
-
-import zebra_agent_worker.execution_finalization as execution_finalization
 from zebra_agent_worker.execution_recovery import (
     execute_existing_lease,
     execute_session_with_lease,
@@ -38,6 +37,9 @@ class SessionExecutionEntrypoints:
         early_authority_refusal=None,
     ) -> execution_finalization.ExecutedSession:
         return execute_existing_lease(
-            self, lease, executed_at=executed_at, lease_ttl_seconds=lease_ttl_seconds,
+            self,
+            lease,
+            executed_at=executed_at,
+            lease_ttl_seconds=lease_ttl_seconds,
             early_authority_refusal=early_authority_refusal,
         )

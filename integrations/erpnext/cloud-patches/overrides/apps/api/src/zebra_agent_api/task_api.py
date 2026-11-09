@@ -25,7 +25,6 @@ from agent_core.domain.sessions import Session, SessionStatus
 from agent_core.ports import EventStorePort
 from agent_security.host_grant import VerifiedHostGrant
 from agent_storage import ControlPlaneStores, PostgresControlPlaneStores
-
 from zebra_agent_api.coverage_public_read import coverage_task_read_problem
 from zebra_agent_api.coverage_public_summary import coverage_public_summary
 from zebra_agent_api.idempotency import replay_idempotent_response, save_idempotent_response
@@ -47,8 +46,12 @@ class TaskReadApi:
 
     def header(self, task_id: str, *, host_context=None, command_outcome=None) -> ApiResponse:
         parsed = parse_task_id(task_id)
-        return parsed if isinstance(parsed, ApiResponse) else task_header(
-            self.stores, parsed, host_context=host_context, command_outcome=command_outcome
+        return (
+            parsed
+            if isinstance(parsed, ApiResponse)
+            else task_header(
+                self.stores, parsed, host_context=host_context, command_outcome=command_outcome
+            )
         )
 
     def get(self, task_id: str) -> ApiResponse:
@@ -250,7 +253,8 @@ def create_task(
     # Missing/legacy indexes still use the existing preparation path.
     task = (
         app.stores.tasks.get_task(TaskId(UUID(session_id)))
-        if isinstance(app.stores, PostgresControlPlaneStores) else None
+        if isinstance(app.stores, PostgresControlPlaneStores)
+        else None
     )
     if task is None:
         task = app.stores.tasks.ensure_for_session(SessionId(UUID(session_id)))
@@ -330,8 +334,14 @@ def append_task_message(
 ) -> ApiResponse:
     if isinstance(app.stores, PostgresControlPlaneStores):
         from zebra_agent_api.http_input_attachments import append_cloud_input
-        return append_cloud_input(app,task_id,payload,verified_host_grant=verified_host_grant,
-                                  idempotency_key=idempotency_key)
+
+        return append_cloud_input(
+            app,
+            task_id,
+            payload,
+            verified_host_grant=verified_host_grant,
+            idempotency_key=idempotency_key,
+        )
     action = f"task-message:{task_id}"
     replayed = (
         replay_idempotent_response(

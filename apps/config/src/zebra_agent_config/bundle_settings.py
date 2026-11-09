@@ -7,29 +7,49 @@ import re
 from dataclasses import asdict
 from typing import Annotated, Literal, Self
 
-from agent_core.domain.runtime_assembly import RuntimeAssembly, RuntimeProviderProfile
+from agent_core.domain.runtime_assembly import (
+    BudgetProfile,
+    RuntimeAssembly,
+    RuntimeProviderProfile,
+)
 from agent_core.domain.runtime_bundle import RuntimeBundleEnvelope
 from agent_core.domain.runtime_bundle_json import load_bundle_json
-from agent_core.domain.runtime_bundle_types import ArtifactPin, BundleScope, BundleValue
+from agent_core.domain.runtime_bundle_types import (
+    ArtifactPin,
+    BundleScope,
+    BundleValue,
+    ConfigurableBudgetDomain,
+)
 from pydantic import Field, model_validator
 
 from zebra_agent_config.private_configuration import read_private_configuration
 from zebra_agent_config.settings import ZebraAgentSettings
 
 
-def baseline_digest(settings: ZebraAgentSettings, key: str) -> str:
+def baseline_digest(
+    settings: ZebraAgentSettings, key: str, *, include_disabled_agui_defaults: bool = False
+) -> str:
     """Pin all non-model settings; HMAC keeps credential-bearing settings private."""
     if not re.fullmatch(r"[0-9a-f]{64}", key):
         raise ValueError("INVALID_BASELINE_KEY")
     values = asdict(settings)
     del values["model"]
     del values["runtime_bundle_config"]
+    del values["runtime_gate_termination_config"]
+    del values["runtime_instance_id"]  # Process-only identity cannot drift existing Task baselines.
+    del values["runtime_gate_config"]  # Transport opt-in preserves historical baselines.
     del values["bundle_management_config"]
     del values["publication_management_config"]
     del values["script_validation_config"]
     del values["plugin_admission_config"]
     if not settings.host_execution_authority.enabled:
         del values["host_execution_authority"]
+    # ponytail: retain published defaults; the exact intermediate encoding is read-only history.
+    if not include_disabled_agui_defaults and not (
+        settings.stream.agui_profiles_enabled or settings.stream.agui_native_interaction_enabled
+    ):
+        del values["stream"]["agui_profiles_enabled"]
+        del values["stream"]["agui_native_interaction_enabled"]
     encoded = json.dumps(
         values, sort_keys=True, ensure_ascii=True, allow_nan=False, separators=(",", ":")
     ).encode()
@@ -43,6 +63,7 @@ class RuntimeExecutionCatalog(BundleValue):
     baseline_config: ArtifactPin
     baseline_key: Annotated[str, Field(pattern=r"^[0-9a-f]{64}$", repr=False, exclude=True)]
     providers: Annotated[tuple[RuntimeProviderProfile, ...], Field(min_length=1, max_length=32)]
+    budget: BudgetProfile
     output_schema: ArtifactPin
     build_evidence: Annotated[tuple[ArtifactPin, ...], Field(min_length=1, max_length=32)]
 
@@ -51,6 +72,7 @@ class RuntimeExecutionCatalog(BundleValue):
         if (
             self.image.kind != "image"
             or self.baseline_config.kind != "baseline-config"
+            or self.budget.pin.kind != "budget-profile"
             or self.output_schema.kind != "output-schema"
             or any(pin.kind != "build-evidence" for pin in self.build_evidence)
             or len({profile.pin for profile in self.providers}) != len(self.providers)
@@ -73,7 +95,15 @@ class RuntimeExecutionCatalog(BundleValue):
         profile = next((item for item in self.providers if item.pin == pin), None)
         if profile is None:
             raise ValueError("BUNDLE_PROVIDER_NOT_APPROVED")
-        return RuntimeAssembly(bundle=bundle, provider_profile=profile)
+        budget = manifest.domains.budget
+        if (
+            isinstance(budget, ConfigurableBudgetDomain)
+            and budget.parameters.budget_profile != self.budget.pin
+        ):
+            raise ValueError("BUNDLE_BUDGET_NOT_APPROVED")
+        return RuntimeAssembly(
+            bundle=bundle, provider_profile=profile, budget_profile=self.budget
+        )
 
 
 def load_execution_catalog(path: str | None) -> RuntimeExecutionCatalog:

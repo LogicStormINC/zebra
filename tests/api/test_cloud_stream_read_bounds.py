@@ -294,7 +294,7 @@ def test_unknown_stream_prefix_cannot_use_unrelated_signed_grant_to_read_victim(
     monkeypatch,
     method,
 ):
-    from dataclasses import fields
+    from dataclasses import fields, replace
 
     from agent_storage import sqlite_control_plane_stores
     from fastapi.testclient import TestClient
@@ -307,7 +307,11 @@ def test_unknown_stream_prefix_cannot_use_unrelated_signed_grant_to_read_victim(
 
     native, victim = source
     key = _key()
-    grant = verified((key, _settings(key)), run="unrelated-run")
+    settings = _settings(key)
+    grant = verified(
+        (key, replace(settings, allowed_scopes=(*settings.allowed_scopes, "artifact.read"))),
+        run="unrelated-run",
+    )
     authorizer = Authorizer(grant)
     local = sqlite_control_plane_stores(tmp_path / "prefix.sqlite")
     stores = SimpleNamespace(
@@ -368,3 +372,92 @@ def test_malformed_normalized_route_is_404_before_adapter_replay(
         host_grant_authorizer=_FakeHostAuthorizer(),
     )
     assert TestClient(application).get(shape.format(id=sid)).status_code == 404
+
+
+def test_stream_snapshot_reuses_qualified_source_for_same_task_header(
+    source, postgres_dsn, task_namespace, monkeypatch
+):
+    from agent_storage.postgres import stream_read_preflight
+    from agent_storage.postgres.stream_proof_batch import StreamProofReader
+
+    _, sid = source
+    task = TaskId(sid)
+    reader = StreamProofReader(postgres_dsn, deployment_namespace=task_namespace)
+    source_row = stream_read_preflight.source_row
+    requalifications = []
+
+    def counted(*args):
+        requalifications.append(args[2])
+        return source_row(*args)
+
+    monkeypatch.setattr(stream_read_preflight, "source_row", counted)
+    with reader.snapshot() as snapshot:
+        head = snapshot.read_stream_source_head(task_id=task)
+        assert head is not None
+        assert snapshot.read_task_header(task, require_source_coverage=True) == head.task
+    assert requalifications == []
+    with reader.snapshot() as fresh:
+        assert fresh.read_task_header(task, require_source_coverage=True) == head.task
+    assert requalifications == [task]
+
+
+@pytest.mark.parametrize("with_hint", [False, True])
+def test_native_task_tail_checks_source_once_before_page_and_again_before_output(
+    source, monkeypatch, with_hint,
+):
+    import asyncio
+    from pathlib import Path
+    from unittest.mock import AsyncMock
+    from uuid import uuid4
+
+    from agent_core.domain.identifiers import SessionId
+    from zebra_agent_api.session_streaming import tail_task_events
+
+    from tests.stream_storage.telemetry import Telemetry
+
+    stores, sid = source
+    cursor = stores.tasks.read_stream_source_head(task_id=TaskId(sid)).task.current_sequence
+    append(source, EventType.MODEL_RESPONSE_DELTA, {"content_delta": "next"})
+    original_head = stores.tasks.read_stream_source_head
+    original_page = stores.tasks.read_event_page
+    original_header = stores.tasks.read_task_header
+    reads = []
+
+    def header(*args, **kwargs):
+        reads.append("header")
+        return original_header(*args, **kwargs)
+
+    def head(**kwargs):
+        reads.append("head")
+        return original_head(**kwargs)
+
+    def page(*args, **kwargs):
+        reads.append("page")
+        return original_page(*args, **kwargs)
+
+    monkeypatch.setattr(stores.tasks, "read_stream_source_head", head)
+    monkeypatch.setattr(stores.tasks, "read_event_page", page)
+    monkeypatch.setattr(stores.tasks, "read_task_header", header)
+    # Preserve the native adapter contract for these observation-only spies.
+    monkeypatch.setattr(type(stores.tasks), "stream_head_reads_compatible", True)
+
+    async def first_frame():
+        # Even a stale notification hint must read the current canonical source.
+        hint = {"initial_wake_segment": SessionId(uuid4())} if with_hint else {}
+        stream = tail_task_events(
+            database_path=Path("/unused"), stores=stores, task_id=TaskId(sid),
+            request=SimpleNamespace(is_disconnected=AsyncMock(return_value=False)),
+            after_sequence=cursor, **hint,
+        )
+        try:
+            return await anext(stream)
+        finally:
+            await stream.aclose()
+
+    telemetry = Telemetry()
+    with telemetry.installed():
+        assert "next" in asyncio.run(asyncio.wait_for(first_frame(), 5))
+    assert reads == ([] if with_hint else ["header"]) + ["head", "page", "head"]
+    assert sum(v for k, v in telemetry.calls.items() if k.endswith("/new_pg_socket")) == (
+        2 + (not with_hint) + (psycopg.pq.version() < 170000)
+    )

@@ -63,6 +63,7 @@ def _read(dsn, event, context, **kwargs):
     "code,expected",
     [
         (None, "command_delivery_failed"),
+        ("requires_reconciliation", "command_requires_reconciliation"),
         ("recovery_exhausted", "command_recovery_exhausted"),
     ],
 )

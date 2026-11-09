@@ -1,0 +1,15 @@
+{
+  "image": "sha256:3ea09ec254ee0ffbfd6a00ccaebe0d7772474faa467ab8a410a46fdadd192677",
+  "base": "sha256:746563c4aa0f0833d2435fbc2bf186c307161c93765a5ac672b1cbfbaa996069",
+  "source_files": {
+    "api.py": "98833ff3876cf28d55f41b531bb9fe65a70515a1e101207eb21bcd250a556782",
+    "client.py": "c5ac7f0b0dc7042db7aa8ce7c7faf514f3b37c65922ef86067f18ea9f968b2bb"
+  },
+  "client_hotfix_mount_removed": true,
+  "admissions_restored": true,
+  "model_requests": 0,
+  "search_requests": 0,
+  "task_commands": 0,
+  "controller_acquired": false,
+  "temporary_container_removed": true
+}

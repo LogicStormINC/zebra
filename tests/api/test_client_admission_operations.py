@@ -158,3 +158,89 @@ def test_initial_surface_rejects_invalid_envelope_without_ports(payload):
         validate_initial_surface(
             SimpleNamespace(), api.Admission(kind="task_create", run="owned-run", payload=payload)
         )
+
+
+@pytest.mark.parametrize("terminate", [False, True])
+@pytest.mark.parametrize("capacity", [None, "command_scope_capacity", "command_outbox_capacity"])
+def test_atomic_first_run_rechecks_original_fence_after_rollback(monkeypatch, terminate, capacity):
+    from contextlib import contextmanager
+    from time import monotonic
+    from unittest.mock import Mock
+
+    from agent_storage.postgres.command_wakeup import CommandAdmissionCapacityError
+    from psycopg.errors import LockNotAvailable
+    from zebra_agent_api import client_admission_atomic as atomic
+    from zebra_agent_api import client_admission_task as task
+
+    store = Mock()
+    failure = LockNotAvailable() if capacity is None else CommandAdmissionCapacityError(capacity)
+    prepared = Mock(side_effect=[failure, api.ApiResponse(201, {})])
+    monkeypatch.setattr(task, "prepare_atomic_task", Mock(return_value=prepared))
+    monkeypatch.setattr(atomic, "start_atomic_surface", Mock(return_value=True))
+    monkeypatch.setattr(atomic, "current_task_io_deadline", lambda: monotonic() + 1)
+    authorize = Mock(return_value=None)
+    monkeypatch.setattr(api, "_authorize", authorize)
+    receipt = object()
+    persist = Mock(return_value=receipt)
+    monkeypatch.setattr(api, "_persist_result", persist)
+    visits = []
+
+    @contextmanager
+    def transaction(actual_store, scoped, digest):
+        assert (actual_store, scoped, digest) == (store, "original", "digest")
+        visits.append("enter")
+        try:
+            if terminate and visits.count("enter") == 2:
+                raise atomic.AtomicSurfaceAborted("original stopped")
+            yield
+        finally:
+            visits.append("exit")
+
+    monkeypatch.setattr(atomic, "atomic_surface_transaction", transaction)
+    result = atomic.execute_atomic_surface(
+        SimpleNamespace(stores=SimpleNamespace(idempotency=store)),
+        SimpleNamespace(headers={"X-Zebra-Admission-Protocol": "atomic-task-run/1"}),
+        SimpleNamespace(kind="task_create"),
+        "original",
+        b"key",
+        "digest",
+        "operation",
+        original_claim={"kind": "task_create"},
+    )
+    assert result is (None if terminate else receipt)
+    assert visits == ["enter", "exit", "enter", "exit"]
+    assert prepared.call_count == (1 if terminate or capacity is not None else 2)
+    assert persist.call_count == (0 if terminate else 1)
+    store.get.assert_not_called()
+    if not terminate:
+        assert authorize.call_args.args[-1] == {"kind": "task_create"}
+        if capacity is not None:
+            response = persist.call_args.args[1]
+            assert response.status_code == (429 if capacity == "command_scope_capacity" else 503)
+            assert response.body == {"status": "capacity_limited", "reason": capacity}
+
+
+def test_e1_receipt_proof_fails_closed_with_incomplete_configuration(monkeypatch):
+    from agent_storage.idempotency import new_idempotency_record
+    from zebra_agent_api.e1_receipt_proof import confirmed, enabled
+
+    monkeypatch.delenv("ZEBRA_HA_E1_RECEIPT_PROOF_DSN", raising=False)
+    monkeypatch.delenv("ZEBRA_HA_E1_RECEIPT_PROOF_SYSTEM_ID", raising=False)
+    monkeypatch.delenv("ZEBRA_HA_E1_RECEIPT_PROOF_TIMELINE", raising=False)
+    assert not enabled()
+    assert confirmed("isolated", None)
+    monkeypatch.setenv("ZEBRA_HA_E1_RECEIPT_PROOF_TIMELINE", "2")
+    assert enabled()
+    assert not confirmed("isolated", None)
+
+    monkeypatch.delenv("ZEBRA_HA_E1_RECEIPT_PROOF_TIMELINE")
+    monkeypatch.setenv("ZEBRA_HA_E1_RECEIPT_PROOF_SYSTEM_ID", "1")
+    monkeypatch.setenv(
+        "ZEBRA_HA_E1_RECEIPT_PROOF_DSN",
+        "host=127.0.0.1 user=e1_receipt_reader sslmode=verify-full",
+    )
+    record = new_idempotency_record(
+        action="run", idempotency_key="key", request_hash="digest",
+        status_code=201, response_body={"sealed": "fixture"},
+    )
+    assert not confirmed("isolated", record)

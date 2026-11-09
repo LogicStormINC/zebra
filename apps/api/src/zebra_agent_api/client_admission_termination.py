@@ -2,12 +2,14 @@
 
 from typing import Any
 
+from zebra_agent_api.e1_receipt_proof import confirmed, enabled
 from zebra_agent_api.responses import ApiResponse
 
 
 def terminate_admission(
     app: Any, request: Any, operation: str, scoped: str, digest: str, meta: dict[str, Any]
 ) -> ApiResponse:
+    from agent_storage.postgres.admission_atomic_surface import RESULT, STOP
     from agent_storage.postgres.admission_dispatch_fence import FENCE
 
     from zebra_agent_api.client_admission_operations import _authorize
@@ -44,8 +46,20 @@ def terminate_admission(
             else "atomic-surface/1",
         )
         denied = _authorize(app, request, meta)
+        if denied is not None:
+            return denied
+        if enabled() and fence["state"] in {"committed", "terminated"}:
+            action = RESULT if fence["state"] == "committed" else STOP
+            record = store.get(action=action, idempotency_key=scoped)
+            if (
+                record is None
+                or record.request_hash != digest
+                or record.created_at.isoformat() != fence["recorded_at"]
+                or not confirmed(store._database.deployment_namespace, record)
+            ):
+                fence = {"state": "unresolved", "recorded_at": ""}
         response = termination_response(operation, digest, meta["kind"], fence)
-        return denied or ApiResponse(
+        return ApiResponse(
             200,
             {
                 **response.body,
@@ -77,7 +91,18 @@ def terminate_admission(
             }
         )
     denied = _authorize(app, request, meta)
-    return denied or termination_response(operation, digest, meta["kind"], fence)
+    if denied is not None:
+        return denied
+    if enabled() and fence["state"] == "terminated":
+        record = store.get(action=FENCE, idempotency_key=scoped)
+        if (
+            record is None
+            or record.request_hash != digest
+            or record.created_at.isoformat() != fence["recorded_at"]
+            or not confirmed(store._database.deployment_namespace, record)
+        ):
+            fence = {"state": "unresolved", "recorded_at": ""}
+    return termination_response(operation, digest, meta["kind"], fence)
 
 
 def termination_response(

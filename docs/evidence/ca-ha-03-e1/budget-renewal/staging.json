@@ -1,0 +1,69 @@
+{
+  "status": "single_node_native_renewal_and_execution_passed_full_E1_pending",
+  "runtime_source": "6374181eca8419e703a17b4aa65ccb18ed93f948",
+  "common_manifest": "sha256:2dcaf9cb53037c5d46c0063cf853ea32cd88c60b4a03632ee3b06501514120da",
+  "native_publication": {
+    "trust_revision": 6,
+    "definition_id": "1b1c1ec5-bdb5-46cb-acf6-1aeac2841122",
+    "materialize_status": 200,
+    "publish_status": 200
+  },
+  "images": {
+    "vm": "sha256:919a59d55aacf9c5a387117353de4a479948e064fd75aab7909cffc4f1aad8fa",
+    "server": "sha256:a551127c3422fdcb91d0a21927fbf51dc1ca77b40ca3ef93eb7577e06efdab62"
+  },
+  "runtime_files_per_arch": 2140,
+  "symlinks_per_arch": 3,
+  "positive_case": {
+    "task_id": "a1a039d4-d9ba-48d9-81b9-0f2381fa875a",
+    "post_count": 1,
+    "native_run_discovery": "operator read-only original event3, no business mutation",
+    "control_endpoint": "VM node TLS, low-latency single node only",
+    "header_completed_seconds": 17.25,
+    "events": 33,
+    "model_calls": 2,
+    "all_model_reservations_settled": true,
+    "charged_tokens": 29308,
+    "tool_completed_records": 1,
+    "tool_calls_charged": 1,
+    "stdout": "/workspace\n",
+    "exit_code": 0,
+    "runtime_class": "gvisor",
+    "binding_revisions": [
+      1,
+      2
+    ],
+    "budget_latest_binding_match": true,
+    "absolute_clock_seconds": 120,
+    "active_leases": 0,
+    "pending_commands": 0
+  },
+  "prior_operator_cases_retained": {
+    "289e4e5b-d405-471e-bfdc-7264fb48ca43": "Run-scoped approved first model settled; WAN 503 before approval; no decision, budget expired",
+    "e08a07b0-e049-41be-bb35-d1df64043ade": "local first model settled, renewal budget moved correctly; immediate approval409 with lease handoff not awaited; no decision; budget expired"
+  },
+  "original_four_tasks_and_unknown_preserved": true,
+  "WAN": {
+    "Mac_route": "utun100",
+    "reported_rtt_ms": 159,
+    "forwarded_pg_connect_seconds": 1.799,
+    "forwarded_pg_query_seconds": [
+      0.299,
+      0.149,
+      0.299
+    ],
+    "strict_deadlines_not_relaxed": true,
+    "ended_shell_relay": "replaced with scoped transient VM systemd SSH relay,6 owned runtime ports; existing registry untouched; existing Mac identity used without copying",
+    "server_API_Worker": "exact owned instances stopped and held, not qualified for latency/capacity acceptance",
+    "logical_low_latency_node2": "clean OrbStack machine provisioning authorized; no physical HA claim"
+  },
+  "Task_wide_stop_probe": {
+    "Run_scoped_grant_rejected": 403,
+    "omitted_run_without_taskControl_rejected_by_current_broker": 400,
+    "missing_dependency": "existing producer9b943baa and HTTP regression8b286b59 absent from HA branch; align exact existing Task-control exchange, do not weaken Native guard or hand-mint authority",
+    "stop_accepted": false
+  },
+  "production_changed": false,
+  "full_E1_accepted": false,
+  "next": "align existing Broker Task-control producer; verify expired/stale-budget stop via signed native API; provision clean low-latency logical second node and run E1 capacity/fault/soak"
+}

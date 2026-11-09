@@ -69,7 +69,11 @@ class BoundHostExecutionAuthorityResolver(ExecutionAuthorityResolverPort):
         request: ExecutionAuthorityResolutionRequest,
     ) -> ExecutionAuthoritySnapshot:
         self._fail_closed_checks(request.scope, request.validated_at)
-        fresh_expiry = self.fresh_checker(request.validated_at).require_allowed() if self.fresh_checker else None
+        fresh_expiry = (
+            self.fresh_checker(request.validated_at).require_allowed()
+            if self.fresh_checker
+            else None
+        )
         expires_at = request.validated_at + timedelta(seconds=self.lifetime_seconds)
         if self.binding.host_capability.grant_expires_at is not None:
             expires_at = min(expires_at, self.binding.host_capability.grant_expires_at)
@@ -135,8 +139,10 @@ class BoundHostExecutionAuthorityResolver(ExecutionAuthorityResolverPort):
             return ExecutionAuthorityRevalidation(
                 attempt_number=request.attempt_number,
                 prior_snapshot_digest=request.prior_snapshot.snapshot_digest or "",
-                source_authority_digest=self._source_digest(), decision=fresh.decision,
-                validated_at=request.validated_at, reason_code=fresh.reason,
+                source_authority_digest=self._source_digest(),
+                decision=fresh.decision,
+                validated_at=request.validated_at,
+                reason_code=fresh.reason,
             )
         self._fail_closed_checks(request.scope, request.validated_at)
         binding_expiry = self.binding.host_capability.grant_expires_at
@@ -272,4 +278,8 @@ def select_attempt_authority(
         authority_issuer=binding.host_capability.authority_issuer,
         namespace_id=binding.host_capability.namespace_id,
     )
-    return BoundHostExecutionAuthorityResolver(binding=binding, fresh_checker=fresh_checker), scope, None
+    return (
+        BoundHostExecutionAuthorityResolver(binding=binding, fresh_checker=fresh_checker),
+        scope,
+        None,
+    )

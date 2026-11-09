@@ -1,3 +1,63 @@
+- Export-owned-path addendum: zebra_erpnext/business_queries.py uses the same exported
+  metric set; retain reviewed source split and the complete size/Ruff gate.
+
+# ERP-AUTH-MIGRATION-AUDIT-20261102
+- Status: Done; source/live audit verified and fixes merged/published in canonical main.
+- Created Ready then claimed In Progress; owner Luke Ding / Codex.
+- Branch codex/erp-auth-migration-audit-20261102, based on origin/main; preserve unrelated source releases.
+- Owned-path addendum for confirmed bootstrap regression: deploy/prepare_remote.py;
+  tests/test_ingress_prepare_checks.py. Reuse configured browser_origin for transport IP,
+  retain signed origin/issuer, and do not execute bootstrap on production.
+- Owned-path addendum for inherited maintenance fixture: tests/test_maintenance_checks.py;
+  reuse Gate02 textRef setup, all original maintenance refusal assertions retained.
+- Owned-path addendum for proven legacy manifest ImportError: zebra_erpnext/business.py;
+  tests/test_legacy_manifest_checks.py and include it in deploy/check_auth_release.py.
+  Exact five aggregate metrics shared with the existing validator; no new operation/scope.
+- Remote addendum: persisted host-settings.json browser_origin only; final bounded backend
+  image embeds accepted business.py constant repair, original image and rollback records retained.
+- Owned paths: zebra_erpnext/{api,client}.py; tests/test_client_checks.py,
+  tests/test_origin_bootstrap_checks.py, tests/test_auth_release_checks.py;
+  deploy/check_auth_release.py; README.md, docs/AGENT_TASKS.md,
+  docs/ERP_ORIGIN_BINDING_20261102.md, focused redacted docs/evidence/erp-origin-binding-20261102/*, WORKLOG.md.
+- Owned-path addendum before final backend packaging: only ERP backend image + removal of
+  exact client.py hotfix mount in erpnext-override.json; immutable two-file image from current
+  accepted native-surface base, bounded offline build, no dependency/Worker/Scheduler restart.
+- Temporary admission pause/restore and existing idle guard; do not submit any work.
+- Scheduler follow-up scope before refresh: after concurrent accepted v117 alignment,
+  resolved Compose Origin is correct but running process retains old browser-Origin env.
+  Recreate Scheduler only on same image after established no-active/no-firing guard,
+  pause/restore ERP admission, require unchanged model/session/firing/ledger counters.
+- Remote: read-only Host/Task/Profile/Connector/JWKS/Origin/CSRF/delegation/receipt inspection;
+  correct only Scheduler grant-origin configuration while retaining its schema guard and no execution.
+- Main hotfix must have no dependency on unpublished administrator/native-surface features;
+  merge same fix into current deployed source branch, publish both without overwriting dirty work.
+- Fixed Cloud export receives equivalent changes only through canonical source archive;
+  preserve prior size/Ruff baseline remediation and frozen manifests, never replace it by an old source tree.
+- Preserve original Task/Run/receipts/unknown/Coverage; no task execution/retry, Controller acquisition,
+  model/search calls, scheduler startup, schema migrations, or temporary Docker resources.
+
+# ERP-ORIGIN-BINDING-20261102
+- Status: Done; original fix is included in the published follow-up source/main integration.
+- Owner Luke Ding / Codex. Created Ready then claimed In Progress before configuration work.
+- Live origin repair verified; focused regression passed; pending source branch integration.
+- Runtime 403 plus original Task 404 resolved without changing any historical binding.
+- Branch codex/erp-origin-binding-20261102; isolated canonical worktree.
+- Root cause: ERP ingress and signed Grant origin moved to https://192.168.101.7:18443;
+  both native105 and cloud114 Host registries still trust only https://192.168.110.42:18443.
+- Owned-path addendum before browser/authority separation: zebra_erpnext/client.py, tests/test_client_checks.py;
+  remote ERP site config browser_origin/origin only, backend exact read-only client.py mount
+  in erpnext-override.json; preserve base image and all other Compose services.
+- Owned paths: docs/ERP_ORIGIN_BINDING_20261102.md, docs/AGENT_TASKS.md, WORKLOG.md;
+  remote exact erpnext/erpnext-full Host registry records only (allowed_origins).
+- Reuse PostgresHostAuthorityStore and immutable record replacement; append the new exact origin,
+  retain old origin for existing signed grants. Preserve issuer, namespace, keys, replay/audit,
+  Task/Run/Controller, historical receipts/unknown/Coverage and all unrelated configurations.
+- Validate: actual signed ERP BFF GET red/green, both registries checked, trusted new+historical
+  origins and foreign-origin rejection, only allowed_origins differs, no model/search/task dispatch.
+- No schema migration, Docker resource creation or business replay. Preserve original image;
+  one-file source hotfix must have durable matching read-only Compose override and backup;
+  recreate backend only so preloaded workers use the new code; all other services remain unchanged.
+
 # ERP-CAPABILITY-ACTIVATE-20261029
 - Created Ready then claimed In Progress on2026-10-29 after explicit user approval to switch production; now Review, production activated and no-model gates passed.
 - Human owner Luke Ding; executor Codex; branch codex/erp-capability-activate-20261029.

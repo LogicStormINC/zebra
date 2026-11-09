@@ -59,6 +59,7 @@ api:
       memory: 2Gi
 
 worker:
+  executionSlots: 4
   replicas: 2
   idleSleepSeconds: 1.0
   resources:
@@ -79,3 +80,25 @@ migration:
       memory: 1Gi
 
 podAnnotations: {}
+
+# Opt-in fresh staging install only; upgrades wait for CA-HA-08 lifecycle acceptance.
+# Declared arithmetic reserves one old/new overlap; maxSurge does not bound live Pods.
+# The actual server max/reserved values and external clients must match at enablement.
+databaseBudget:
+  enabled: false
+  pool: 2
+  normal: 8
+  read: 2
+  receipt: 0
+  control: 4
+  probe: 1
+  max_connections: 512
+  server_reserved: 3
+  external: 4
+  execution_slots: 4
+  fleet:
+    api: 4
+    worker: 4
+    executor: 16
+    cleanup: 1
+    scheduler: 1

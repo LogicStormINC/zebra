@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import json
 from hashlib import sha256
 from typing import Any
@@ -17,6 +16,7 @@ from agent_core.ports.skill_publications import (
 )
 from psycopg.types.json import Jsonb
 
+from agent_storage.postgres.async_dispatch import storage_call
 from agent_storage.postgres.database import PostgresDatabase
 
 _SCOPE = """scope_digest = %s AND deployment_namespace = %s
@@ -39,12 +39,12 @@ class PostgresSkillPublicationStore(PostgresDatabase):
         self._validate_scope(publication, scope)
         if publication.state != "publishing":
             raise ValueError("reservations must begin publishing without receipt")
-        return await asyncio.to_thread(self._reserve, scope, publication, idempotency_key)
+        return await storage_call(self._reserve, scope, publication, idempotency_key)
 
     async def get(
         self, *, scope: ExtensionScope, skill_id: str, version_id: str,
     ) -> SkillPublication:
-        return await asyncio.to_thread(self._get, scope, skill_id, version_id)
+        return await storage_call(self._get, scope, skill_id, version_id)
 
     async def mark_ready(
         self, *, scope: ExtensionScope, skill_id: str, version_id: str,
@@ -53,7 +53,7 @@ class PostgresSkillPublicationStore(PostgresDatabase):
         receipt = ArtifactObjectReceipt.model_validate(receipt.model_dump())
         if receipt.expectation.deployment_namespace != self.deployment_namespace:
             raise ValueError("receipt belongs to another deployment")
-        return await asyncio.to_thread(self._mark_ready, scope, skill_id, version_id, receipt)
+        return await storage_call(self._mark_ready, scope, skill_id, version_id, receipt)
 
     def _scope(self, scope: ExtensionScope) -> tuple[str, ...]:
         scope = ExtensionScope.model_validate(scope.model_dump())

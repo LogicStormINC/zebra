@@ -74,7 +74,10 @@ def test_native_batch_matches_individual_reads_and_unknown_membership_denies(pre
     store, tasks, lease = prepared
     task_id = tasks.task_id_for_session(lease.session_id)
     expected = tasks.read_task_header(task_id), store.read(lease)
-    assert store.read_preparation(lease, tasks) == expected
+    telemetry = Telemetry()
+    with telemetry.installed(), phase("initial_inputs"):
+        assert store.read_preparation(lease, tasks) == expected
+    assert telemetry.calls["initial/initial_inputs/sql:task"] == 1
     with pytest.raises(CheckpointNotReady, match="membership"):
         store.read_preparation(lease.model_copy(update={"session_id": SessionId(uuid4())}), tasks)
 

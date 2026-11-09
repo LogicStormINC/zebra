@@ -27,7 +27,6 @@ from agent_core.ports import EventStorePort
 from agent_core.ports.context_materialization import ContextMaterializationPort
 from agent_core.ports.execution_authority import ExecutionAuthorityResolverPort
 from agent_storage.postgres.task_io import task_io_deadline
-
 from zebra_agent_worker.authority_types import AuthorityScopeProvider
 from zebra_agent_worker.bound_execution_authority import (
     load_bound_binding,

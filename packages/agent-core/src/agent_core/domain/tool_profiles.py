@@ -15,6 +15,8 @@ GENERAL_TOOL_NAMES = frozenset(
         "agent.plan",
         "agent.research",
         "artifacts.read",
+        "orchestration.plan.propose",
+        "orchestration.task.request",
         "command.run",
         "content.present",
         "files.list",

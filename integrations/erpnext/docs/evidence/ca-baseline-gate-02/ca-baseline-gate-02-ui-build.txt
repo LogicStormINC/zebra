@@ -1,0 +1,9 @@
+
+> zebra-erpnext-panel@0.1.0 build
+> esbuild frontend/index.tsx --bundle --format=iife --target=es2022 --minify --define:process.env.NODE_ENV="\"production\"" --outfile=zebra_erpnext/public/zebra.js
+
+
+  zebra_erpnext/public/zebra.js    1.3mb ⚠️
+  zebra_erpnext/public/zebra.css  81.9kb
+
+⚡ Done in 89ms

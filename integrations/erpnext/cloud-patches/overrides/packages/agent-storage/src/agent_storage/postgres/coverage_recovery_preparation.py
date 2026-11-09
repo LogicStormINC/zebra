@@ -301,8 +301,11 @@ def check_prepared_recovery_clock(
 
 
 def prepare_command_recovery(
-    check: CoverageRecoveryCheck | None, namespace: str, event_id: Any,
-    *, continuation: bool = False,
+    check: CoverageRecoveryCheck | None,
+    namespace: str,
+    event_id: Any,
+    *,
+    continuation: bool = False,
 ) -> CoverageRecoveryCheck | None:
     """Only explicitly composed native checkers opt in; legacy checks stay safe."""
     prepare = getattr(check, "prepare_continuation", None) if continuation else None
@@ -311,8 +314,9 @@ def prepare_command_recovery(
     if not callable(prepare):
         return check
     from agent_storage.postgres.erp_workspace_policy import private_activation_enabled
+
     if private_activation_enabled(namespace):
-        raise CoverageRecoveryDeferred('erp_fresh_coverage_not_activated')
+        raise CoverageRecoveryDeferred("erp_fresh_coverage_not_activated")
     try:
         return cast(CoverageRecoveryCheck, prepare(namespace, event_id))
     except (ValueError, TypeError, KeyError):
@@ -324,25 +328,35 @@ def prepare_command_recovery(
 
 
 def prepare_command_handoff(
-    check: CoverageRecoveryCheck | None, connection: Any, namespace: str,
-    event_id: Any, generation: int,
+    check: CoverageRecoveryCheck | None,
+    connection: Any,
+    namespace: str,
+    event_id: Any,
+    generation: int,
 ) -> CoverageRecoveryCheck | None:
     """Select from native approval, then revalidate exact proof under pickup locks."""
-    normal = None if generation == 0 else connection.execute(
-        """SELECT a.reason,a.coverage_proof,r.wake_generation AS picked_generation
+    normal = (
+        None
+        if generation == 0
+        else connection.execute(
+            """SELECT a.reason,a.coverage_proof,r.wake_generation AS picked_generation
            FROM command_recovery_attempts a LEFT JOIN command_handoff_receipts r
              ON r.deployment_namespace=a.deployment_namespace
              AND r.accepted_event_id=a.accepted_event_id
            WHERE a.deployment_namespace=%s AND a.accepted_event_id=%s
              AND a.wake_generation=%s""",
-        (namespace, event_id, generation),
-    ).fetchone()
-    protocol = normal["coverage_proof"].get("continuation_protocol") if (
-        normal is not None and isinstance(normal["coverage_proof"], dict)
-    ) else None
+            (namespace, event_id, generation),
+        ).fetchone()
+    )
+    protocol = (
+        normal["coverage_proof"].get("continuation_protocol")
+        if (normal is not None and isinstance(normal["coverage_proof"], dict))
+        else None
+    )
     if protocol is not None and (
         protocol != "coverage-execution-receipt/1"
-        or normal is None or normal["reason"] != "coverage_continuation"
+        or normal is None
+        or normal["reason"] != "coverage_continuation"
         or not callable(getattr(check, "prepare_continuation", None))
     ):
         raise ValueError("command requires a supported native continuation consumer")

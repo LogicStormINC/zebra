@@ -33,7 +33,6 @@ from agent_storage import (
     HandoffStorageConflictError,
     sqlite_control_plane_stores,
 )
-
 from zebra_agent_api.responses import ApiResponse, bad_request, conflict
 from zebra_agent_api.session_identity_read import _parse_session_id
 
@@ -236,7 +235,7 @@ class SessionHandoffApi:
         if preview:
             return ApiResponse(200, _serialize_envelope(envelope, status="preview"))
         assert operation is not None
-        prepared_input=http_input.prepare(target_id,0,now) if http_input is not None else None
+        prepared_input = http_input.prepare(target_id, 0, now) if http_input is not None else None
         try:
             result = self._handoffs.commit(
                 SessionHandoffCommitRequest(

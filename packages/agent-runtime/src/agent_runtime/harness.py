@@ -4,6 +4,7 @@ import json
 from collections.abc import Callable, Sequence
 from pathlib import Path
 from time import perf_counter
+from typing import Any
 
 from agent_context import LocalContextCompiler
 from agent_core.domain.attachments import AttachmentContextInput
@@ -32,10 +33,12 @@ from agent_tools import (
     McpToolDescribeTool,
     McpToolSearchTool,
     PatchApplyTool,
+    PlanProposeTool,
     PlanTool,
     SessionSearchTool,
     SkillsListTool,
     SkillsReadTool,
+    TaskRequestTool,
     TestsRunTool,
     ToolExecutor,
     ToolOutputProjector,
@@ -166,6 +169,12 @@ def run_local_harness(
         tool_gateway.close()
 
 
+def _orchestration_port(value: object | None) -> Any:
+    """窄化注解边界：运行时端口协议在 agent-orchestration，此处鸭子传递。"""
+    return value
+
+
+
 class LocalToolGateway(ToolGatewayPort):
     def __init__(
         self,
@@ -183,6 +192,7 @@ class LocalToolGateway(ToolGatewayPort):
         parent_context: ContextMaterialization | None = None,
         parent_network_profile: NetworkProfile = DEFAULT_NETWORK_PROFILE,
         tool_profile: ToolProfile = ToolProfile.GENERAL,
+        orchestration_runtime: object | None = None,
         web_gateway_transport: WebGatewayTransport | None = None,
         web_search_endpoint: str | None = None,
         web_search_transport: WebSearchTransport | None = None,
@@ -239,6 +249,8 @@ class LocalToolGateway(ToolGatewayPort):
         tools = (
             ClarifyTool(),
             PlanTool(),
+            PlanProposeTool(_orchestration_port(orchestration_runtime)),
+            TaskRequestTool(_orchestration_port(orchestration_runtime)),
             *build_artifact_read_tools(artifact_payload_reader, current_session_id),
             WorkspaceListTool(
                 self._workspace,

@@ -1,0 +1,86 @@
+{
+  "task": "CA-BASELINE-GATE-02",
+  "scope": "canonical source candidate; no deployment or production migration",
+  "base": "2e8606a603ffe8836fc8a42874b9771f470bc82c",
+  "ruff": {
+    "diagnostics": 0,
+    "rules": [
+      "E",
+      "F",
+      "I",
+      "UP",
+      "B"
+    ],
+    "target": "py312",
+    "line_length": 100,
+    "exclusions_added": false
+  },
+  "size_gate": {
+    "checked": 411,
+    "violations": 0,
+    "source_limit": 500,
+    "test_limit": 700
+  },
+  "frontend": {
+    "build": "pass",
+    "npm_test": "pass",
+    "real_host_adapter": "pass"
+  },
+  "offline_python": {
+    "passed": 18,
+    "failed": 0,
+    "commands": [
+      "tests/test_business_checks.py",
+      "tests/test_business_expansion_checks.py",
+      "tests/test_chat_checks.py",
+      "tests/test_client_checks.py",
+      "tests/test_frontend_profile_checks.py",
+      "tests/test_full_capability_checks.py",
+      "tests/test_full_workspace_checks.py",
+      "tests/test_history_checks.py",
+      "tests/test_maintenance_checks.py",
+      "tests/test_manage_checks.py",
+      "tests/test_presentation_checks.py",
+      "tests/test_resources_checks.py",
+      "tests/test_runtime_checks.py",
+      "tests/test_schedule_authority_checks.py",
+      "tests/test_workspace_checks.py",
+      "tests/test_cancel_clears_pending.py",
+      "cloud-patches/tests/check_private_workspace.py",
+      "cloud-patches/tests/check_private_workspace_hardening.py"
+    ]
+  },
+  "native_offline": {
+    "passed": 9,
+    "failed": 0,
+    "environment": "installed native workspace 119, IO doubles; not exact deployed105 image",
+    "commands": [
+      "cloud-patches/tests/check_fresh_authority.py",
+      "cloud-patches/tests/check_legacy_containment.py",
+      "cloud-patches/tests/check_fresh_refusal_bff.py",
+      "cloud-patches/tests/check_fresh_refusal_ownership.py",
+      "cloud-patches/tests/check_fresh_refusal_boundary.py",
+      "cloud-patches/tests/check_private_preparation_native.py",
+      "cloud-patches/tests/test_initial_http_input.py",
+      "cloud-patches/tests/test_followup_http_input.py",
+      "cloud-patches/tests/test_clarification_attachment_dispatch.py"
+    ]
+  },
+  "deferred_callback_regression": "pass; original database/namespace/command survive later scan",
+  "transfer": {
+    "stdlib": "pass; portable archive real isolated execution covered",
+    "pinned105_psycopg": "not_run: available current catalog119 correctly refused, no version guard weakened",
+    "database_transfer": "not_run"
+  },
+  "historical_evidence": "old manifest/provenance/deployment evidence/native baseline Python unchanged; archived original source hashes checked separately from candidate",
+  "reviews": {
+    "App": "spec/quality PASS",
+    "Runtime": "spec/quality PASS",
+    "Transfer": "spec/quality PASS",
+    "Operator": "spec/quality PASS",
+    "check_split": "spec/quality PASS",
+    "source_projection_and_message_methods": "spec/quality PASS"
+  },
+  "docker_created": 0,
+  "combined_full_gates": "pending in cloud-agent integration branch"
+}

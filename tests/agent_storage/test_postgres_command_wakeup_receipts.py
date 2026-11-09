@@ -28,7 +28,7 @@ from tests.agent_storage.test_postgres_command_wakeup import NAMESPACE, _store
 from tests.agent_storage.test_postgres_command_wakeup import dsn as _dsn_fixture
 from tests.agent_storage.test_postgres_command_wakeup import postgres_dsn as _postgres_dsn_fixture
 from tests.agent_storage.test_postgres_command_wakeup_handoff import _handoff, _prepare
-from tests.agent_storage.test_postgres_lease_clock import _wait, _wait_locked, _worker_dsn
+from tests.agent_storage.test_postgres_lease_clock import _wait_locked, _worker_dsn
 from tests.agent_storage.test_postgres_leases import _expire
 
 dsn = _dsn_fixture
@@ -280,7 +280,7 @@ def test_historical_origin_does_not_gain_execution_attribution(dsn):
 def test_handoff_does_not_lock_pending_while_waiting_for_worker_lease(dsn):
     command = _prepare(dsn)
     leases = PostgresLeaseStore(dsn, deployment_namespace=NAMESPACE)
-    old = leases.acquire(command.session_id, owner_instance_id="old", ttl=timedelta(seconds=2))
+    old = leases.acquire(command.session_id, owner_instance_id="old", ttl=timedelta(seconds=30))
     name = f"receipt-lock-order-{uuid4()}"
     with ThreadPoolExecutor(max_workers=1) as executor:
         with psycopg.connect(dsn, autocommit=True) as observer:
@@ -292,5 +292,64 @@ def test_handoff_does_not_lock_pending_while_waiting_for_worker_lease(dsn):
                 # not deadlock with handoff waiting for lease UPDATE.
                 worker.execute("SET LOCAL lock_timeout = '500ms'")
                 worker.execute("UPDATE session_command_pending SET status = status")
-                _wait(observer, "SELECT clock_timestamp() > %s", (old.expires_at,))
-            assert future.result(timeout=3).status is HandoffStatus.ACCEPTED
+            assert future.result(timeout=3).status is HandoffStatus.BUSY
+    leases.release(command.session_id, fence=old.fence)
+    assert _handoff(dsn, command).status is HandoffStatus.ACCEPTED
+
+
+def test_retire_exact_terminal_fallback_outbox_under_rollout_fence(dsn):
+    from agent_storage.postgres.command_rollout import set_command_scope_rollout
+    from agent_storage.postgres.command_wakeup_relay import claim_relay_batch
+
+    command, lease = _setup(dsn)
+    with psycopg.connect(dsn, row_factory=dict_row) as connection:
+        before = connection.execute("SELECT * FROM broker_outbox").fetchone()
+    args = (NAMESPACE, before["scope_key"], 1)
+    retire = "SELECT retire_terminal_fallback_outbox(%s,%s,%s)"
+    with psycopg.connect(dsn) as connection, pytest.raises(psycopg.errors.InvalidTransactionState):
+        connection.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
+        connection.execute(retire, args)
+    with psycopg.connect(dsn) as connection:
+        assert connection.execute(retire, args).fetchone() == (0,)
+
+    _start(dsn, command, lease)
+    terminal = _event(dsn, command.session_id, EventType.SESSION_COMPLETED, {})
+    _commit(dsn, terminal, lease)
+    receipt = _receipt(dsn)
+    assert receipt["handled_event_id"] == terminal.event_id
+
+    with psycopg.connect(dsn) as holder, psycopg.connect(dsn) as contender:
+        holder.execute(
+            "SELECT pg_advisory_xact_lock(hashtextextended(%s,50))",
+            (f"{NAMESPACE}:command-rollout:{before['scope_key']}",),
+        )
+        assert contender.execute(retire, args).fetchone() == (0,)
+
+    def mode(value):
+        set_command_scope_rollout(
+            dsn, deployment_namespace=NAMESPACE, scope_key=before["scope_key"], mode=value,
+            actor="fixture", reason="retirement fence check",
+        )
+
+    mode("broker")
+    with psycopg.connect(dsn) as connection:
+        assert connection.execute(retire, args).fetchone() == (0,)
+    mode(None)
+
+    with psycopg.connect(dsn, row_factory=dict_row) as connection:
+        inbox = connection.execute("SELECT * FROM broker_command_inbox").fetchone()
+        assert connection.execute(retire, args).fetchone() == {
+            "retire_terminal_fallback_outbox": 1,
+        }
+        assert connection.execute("SELECT * FROM broker_outbox").fetchone() == {
+            **before, "status": "retired",
+        }
+        assert connection.execute("SELECT * FROM broker_command_inbox").fetchone() == inbox
+        assert connection.execute(retire, args).fetchone() == {
+            "retire_terminal_fallback_outbox": 0,
+        }
+    assert _receipt(dsn) == receipt
+    mode("broker")
+    assert not claim_relay_batch(
+        dsn, deployment_namespace=NAMESPACE, owner="fixture", scope_mode="broker"
+    )

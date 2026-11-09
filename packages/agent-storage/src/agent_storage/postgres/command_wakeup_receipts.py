@@ -148,3 +148,24 @@ def record_worker_command_boundary(
            WHERE deployment_namespace = %s AND accepted_event_id = %s AND status = 'pending'""",
         (authority.deployment_namespace, row["accepted_event_id"]),
     )
+
+
+def _check_inbox(
+    connection: Any,
+    namespace: str,
+    pending: dict[str, Any],
+    outbox: dict[str, Any],
+) -> str | None:
+    row = connection.execute(
+        """SELECT * FROM broker_command_inbox
+           WHERE deployment_namespace = %s AND message_id = %s""",
+        (namespace, outbox["message_id"]),
+    ).fetchone()
+    if row is not None and (
+        row["envelope_digest"] != outbox["envelope_digest"]
+        or row["scope_key"] != pending["scope_key"]
+        or row["command_id"] != pending["command_id"]
+        or row["accepted_event_id"] != pending["accepted_event_id"]
+    ):
+        raise ValueError("command Inbox identity or digest conflict")
+    return None if row is None else str(row["status"])

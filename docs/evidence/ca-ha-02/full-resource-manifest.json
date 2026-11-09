@@ -1,0 +1,12 @@
+{
+  "owner": "ca-ha-02-full-20261031",
+  "worktree": "/Users/lukeding/.codex/worktrees/ca-ha-02-readiness/zebra-agent",
+  "docker": "/usr/local/bin/docker",
+  "container_cpu": 1,
+  "container_memory": "512m",
+  "pids": 128,
+  "preserve": [
+    "overdoze-dev-pg"
+  ],
+  "temporary": true
+}

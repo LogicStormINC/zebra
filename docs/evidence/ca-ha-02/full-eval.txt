@@ -1,0 +1,2 @@
+eval release gate: passed=True pass_rate=1.00 average_score=1.00 cases=30
+deterministic trace artifact: evals/reports/deterministic-harness.json

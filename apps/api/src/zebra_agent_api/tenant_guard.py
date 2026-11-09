@@ -20,6 +20,7 @@ from agent_core.ports.projection_store import SessionNamespaceReadPort
 from agent_core.ports.task_projection_checkpoints import CheckpointNotReady
 from agent_security.host_grant import VerifiedHostGrant
 
+from zebra_agent_api.idempotency import TASK_CREATE_RECEIPT_PATH
 from zebra_agent_api.responses import ApiResponse
 
 if TYPE_CHECKING:
@@ -162,6 +163,8 @@ def tenant_scope_response(
                 include_tasks=path == "/tasks",
             )
         return response
+    if path == TASK_CREATE_RECEIPT_PATH and request.method.upper() == "GET":
+        return None  # The receipt route authorizes the Task resolved by the scoped key.
     for prefix in ("/sessions/", "/approvals/", "/tasks/"):
         if path.startswith(prefix):
             target = path.removeprefix(prefix).split("/")[0]

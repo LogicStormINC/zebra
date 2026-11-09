@@ -12,6 +12,7 @@ from typing import Any
 from uuid import uuid4
 
 from agent_core.domain.identifiers import TaskId
+from agent_orchestration.application.orchestration_scheduling import NodeOutcome, SchedulingDecision
 from agent_orchestration.domain.orchestration import (
     OrchestrationPlanSnapshot,
     OrchestrationRunStatus,
@@ -290,3 +291,85 @@ class PostgresOrchestrationStore:
                     edge.to_node,
                 ),
             )
+
+    def read_run_status(self, run_ref: str) -> str:
+        with self._database.connect() as connection:
+            row = connection.execute(
+                """
+                SELECT status FROM orchestration_runs
+                WHERE deployment_namespace = %s AND run_id = %s
+                """,
+                (self.deployment_namespace, run_ref),
+            ).fetchone()
+        if row is None:
+            raise OrchestrationStorageError(f"unknown orchestration run {run_ref}")
+        return str(row["status"])
+
+    # CA-P7-02C: parent-task → run lookup for the AG-UI task view attachment.
+    def find_run_for_parent(self, parent_task_id: TaskId) -> str | None:
+        with self._database.connect() as connection:
+            row = connection.execute(
+                """
+                SELECT run_id FROM orchestration_runs
+                WHERE deployment_namespace = %s AND parent_task_id = %s
+                ORDER BY created_at DESC LIMIT 1
+                """,
+                (self.deployment_namespace, str(parent_task_id)),
+            ).fetchone()
+        return row["run_id"] if row is not None else None
+
+    # CA-P7-02B: node-status surface the runtime loop rebuilds scheduling from.
+    def read_node_statuses(self, run_ref: str) -> dict[str, str]:
+        with self._database.connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT node_key, status
+                FROM orchestration_nodes
+                WHERE deployment_namespace = %s
+                  AND run_id = %s
+                  AND plan_revision = (
+                      SELECT current_plan_revision
+                      FROM orchestration_runs
+                      WHERE deployment_namespace = %s AND run_id = %s
+                  )
+                """,
+                (self.deployment_namespace, run_ref, self.deployment_namespace, run_ref),
+            ).fetchall()
+        return {row["node_key"]: row["status"] for row in rows}
+
+    def transition_node(
+        self,
+        run_ref: str,
+        node_key: str,
+        target_status: str,
+        *,
+        revision: int | None = None,
+        source_status: str | None = None,
+        child_task_id: str | None = None,
+    ) -> None:
+        from agent_storage.postgres.orchestration_completion import transition_node
+
+        transition_node(
+            self,
+            run_ref,
+            node_key,
+            target_status,
+            revision=revision,
+            source_status=source_status,
+            child_task_id=child_task_id,
+        )
+
+    def commit_node_outcome(
+        self,
+        run_ref: str,
+        node_key: str,
+        outcome: NodeOutcome,
+        *,
+        revision: int | None = None,
+        child_task_id: str | None = None,
+    ) -> SchedulingDecision:
+        from agent_storage.postgres.orchestration_completion import commit_node_outcome
+
+        return commit_node_outcome(
+            self, run_ref, node_key, outcome, revision=revision, child_task_id=child_task_id
+        )

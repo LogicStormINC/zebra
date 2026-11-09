@@ -2,8 +2,6 @@
 
 import asyncio
 import logging
-import math
-import signal
 from collections.abc import Awaitable, Callable
 from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
@@ -25,8 +23,9 @@ from agent_runtime.command_wakeup_relay import relay_command_batch
 from agent_storage.postgres.command_wakeup_recovery_proof import CoverageRecoveryCheck
 from agent_storage.postgres.erp_workspace_policy import private_activation_enabled
 from zebra_agent_config import ZebraAgentSettings
-
 from zebra_agent_worker.command_process_state import CommandRecoverySweep, CommandWorkerCapability
+from zebra_agent_worker.command_run_limits import validate_command_run_limits
+from zebra_agent_worker.command_shutdown_signals import install_shutdown_signals
 from zebra_agent_worker.runtime_factory import pin_cloud_engine
 from zebra_agent_worker.worker_loop_service import WorkerLoopRunResult
 from zebra_agent_worker.worker_polling import validate_loop_inputs
@@ -86,17 +85,9 @@ class CommandWorkerProcess:
             idle_sleep_seconds=idle_sleep_seconds,
         )
         try:
-            if (
-                type(batch_size) is not int
-                or batch_size > self._settings.command_delivery.batch_size
-            ):
-                raise ValueError("worker batch exceeds configured command batch limit")
-            if (
-                type(idle_sleep_seconds) not in (int, float)
-                or not math.isfinite(idle_sleep_seconds)
-                or not 0 <= idle_sleep_seconds <= 30
-            ):
-                raise ValueError("worker idle interval is outside bounds")
+            validate_command_run_limits(
+                batch_size, idle_sleep_seconds, self._settings.command_delivery.batch_size
+            )
             return asyncio.run(
                 self._run(
                     worker_id,
@@ -138,13 +129,7 @@ class CommandWorkerProcess:
                 consumer.stop_new_admissions()
 
         loop = asyncio.get_running_loop()
-        signals = []
-        for signum in (signal.SIGINT, signal.SIGTERM):
-            try:
-                loop.add_signal_handler(signum, stop_new_work)
-                signals.append(signum)
-            except (NotImplementedError, RuntimeError, ValueError):
-                pass  # Embedded test threads do not own process signals.
+        signals = install_shutdown_signals(loop, stop_new_work)
         publisher = subscriber = shadow_subscriber = None
         if config.publish_enabled or config.consume_enabled:
             factory = self._transport_factory
@@ -211,12 +196,17 @@ class CommandWorkerProcess:
             try:
                 early = {}
                 if getattr(getattr(self._execute, "__self__", None), "_erp_fresh_enabled", False):
-                    from agent_storage.postgres.erp_fresh_disposition import persist_fresh_disposition
+                    from agent_storage.postgres.erp_fresh_disposition import (
+                        persist_fresh_disposition,
+                    )
 
                     def refuse(owned, decision):
                         return persist_fresh_disposition(
-                            self._dsn, self._namespace, owned,
-                            code=decision.code, reason=decision.reason,
+                            self._dsn,
+                            self._namespace,
+                            owned,
+                            code=decision.code,
+                            reason=decision.reason,
                             consumer_capability=capability.lease_for(consumer),
                         )
 
@@ -303,7 +293,9 @@ class CommandWorkerProcess:
             self._namespace,
             config.batch_size,
             scope_mode="fallback" if config.scoped_rollout_enabled else "all",
-            coverage_check=(None if private_activation_enabled(self._namespace) else self._coverage_check),
+            coverage_check=(
+                None if private_activation_enabled(self._namespace) else self._coverage_check
+            ),
         )
         maintenance_pool = ThreadPoolExecutor(1, thread_name_prefix="command-maintenance")
         cleanup_pool = ThreadPoolExecutor(1, thread_name_prefix="command-cleanup")

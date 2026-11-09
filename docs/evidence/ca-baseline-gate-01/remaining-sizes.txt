@@ -1,0 +1,16 @@
+file size gate: passed=False checked=3984 violations=15
+- integrations/erpnext/cloud-patches/chat-recovery/host/business.py: actual=595 limit=500
+- integrations/erpnext/cloud-patches/chat-recovery/tools/effect_guard.py: actual=521 limit=500
+- integrations/erpnext/cloud-patches/chat-recovery/worker/loop.py: actual=516 limit=500
+- integrations/erpnext/cloud-patches/overrides/apps/api/src/zebra_agent_api/session_payloads.py: actual=502 limit=500
+- integrations/erpnext/cloud-patches/overrides/apps/worker/src/zebra_agent_worker/command_process.py: actual=505 limit=500
+- integrations/erpnext/cloud-patches/overrides/apps/worker/src/zebra_agent_worker/execution.py: actual=555 limit=500
+- integrations/erpnext/cloud-patches/overrides/apps/worker/src/zebra_agent_worker/loop.py: actual=515 limit=500
+- integrations/erpnext/cloud-patches/overrides/packages/agent-integrations/src/agent_integrations/openai_compatible.py: actual=507 limit=500
+- integrations/erpnext/cloud-patches/overrides/packages/agent-storage/src/agent_storage/postgres/command_wakeup_handoff.py: actual=595 limit=500
+- integrations/erpnext/cloud-patches/overrides/packages/agent-storage/src/agent_storage/postgres/command_wakeup_recovery.py: actual=510 limit=500
+- integrations/erpnext/cloud-patches/overrides/packages/agent-tools/src/agent_tools/effect_guard.py: actual=509 limit=500
+- integrations/erpnext/cloud-patches/transfer_erp_database.py: actual=931 limit=500
+- integrations/erpnext/frontend/index.tsx: actual=541 limit=500
+- integrations/erpnext/zebra_erpnext/business.py: actual=590 limit=500
+- integrations/erpnext/zebra_erpnext/chat.py: actual=501 limit=500

@@ -24,8 +24,6 @@ from agent_core.ports.session_handoff import (
     SessionHandoffResult,
     canonical_handoff_request_hash,
 )
-from psycopg.types.json import Jsonb
-
 from agent_storage.postgres.command_wakeup import _validated_host_context
 from agent_storage.postgres.events import append_event_in_transaction
 from agent_storage.postgres.leases import lock_session_lease_boundary
@@ -46,6 +44,7 @@ from agent_storage.postgres.workspaces import (
 )
 from agent_storage.session_handoff_events import build_handoff_events
 from agent_storage.session_handoff_rows import HandoffStorageConflictError
+from psycopg.types.json import Jsonb
 
 _TERMINAL_SOURCE_STATUSES = {
     SessionStatus.COMPLETED,
@@ -91,8 +90,11 @@ def commit_handoff_in_transaction(
     if strict_source["strict_source"]:
         raise HandoffStorageConflictError("strict coverage handoff is unsupported")
     if operation.status is HandoffOperationStatus.COMMITTED:
-        if request.http_input is not None and _claim_http_handoff_input(connection,deployment_namespace,request) is None:
-            raise HandoffStorageConflictError('committed handoff lacks atomic HTTP input receipt')
+        if (
+            request.http_input is not None
+            and _claim_http_handoff_input(connection, deployment_namespace, request) is None
+        ):
+            raise HandoffStorageConflictError("committed handoff lacks atomic HTTP input receipt")
         return result_for_operation(
             connection,
             deployment_namespace,
@@ -154,8 +156,11 @@ def commit_handoff_in_transaction(
         or segment["segment_index"] != request.envelope.source_stage_index
     ):
         raise HandoffStorageConflictError("handoff Task lineage changed")
-    if request.http_input is not None and _claim_http_handoff_input(connection,deployment_namespace,request) is not None:
-        raise HandoffStorageConflictError('HTTP input receipt conflicts with pending handoff')
+    if (
+        request.http_input is not None
+        and _claim_http_handoff_input(connection, deployment_namespace, request) is not None
+    ):
+        raise HandoffStorageConflictError("HTTP input receipt conflicts with pending handoff")
     events = build_handoff_events(
         operation,
         request,
@@ -204,8 +209,16 @@ def commit_handoff_in_transaction(
     )
     if request.http_input is not None:
         from agent_storage.postgres.http_input_messages import materialize_http_input
-        materialize_http_input(connection,deployment_namespace,request.http_input,
-            session=child,workspace=child_workspace,events=child_events,rolled_over=True)
+
+        materialize_http_input(
+            connection,
+            deployment_namespace,
+            request.http_input,
+            session=child,
+            workspace=child_workspace,
+            events=child_events,
+            rolled_over=True,
+        )
     _insert_envelope_and_dispatch(
         connection,
         deployment_namespace,
@@ -242,16 +255,18 @@ def commit_handoff_in_transaction(
 
 
 def _claim_http_handoff_input(connection, namespace, request):
-    from agent_storage.postgres.http_input_messages import claim_input_receipt
     from agent_storage.postgres.http_input_attachments import check_input_authority
+    from agent_storage.postgres.http_input_messages import claim_input_receipt
     from agent_storage.postgres.task_admission import _read_task_binding
     from agent_storage.postgres.task_index_transactions import _lock_task
-    task_id=TaskId(UUID(str(request.envelope.root_session_id)))
-    _lock_task(connection,namespace,task_id)
-    binding=_read_task_binding(connection,namespace,task_id)
-    if binding is None:raise HandoffStorageConflictError('HTTP input Task binding missing')
-    check_input_authority(connection,namespace,request.http_input.attachments.authority,binding)
-    return claim_input_receipt(connection,namespace,request.http_input)
+
+    task_id = TaskId(UUID(str(request.envelope.root_session_id)))
+    _lock_task(connection, namespace, task_id)
+    binding = _read_task_binding(connection, namespace, task_id)
+    if binding is None:
+        raise HandoffStorageConflictError("HTTP input Task binding missing")
+    check_input_authority(connection, namespace, request.http_input.attachments.authority, binding)
+    return claim_input_receipt(connection, namespace, request.http_input)
 
 
 def _child_host_context(
@@ -379,10 +394,14 @@ def _validate_request(
     envelope = request.envelope
     if (
         (request.http_input is None) != (request.create_request.http_input_request_hash is None)
-        or (request.http_input is not None and (
-            request.http_input.request_hash != request.create_request.http_input_request_hash
-            or request.http_input.event.session_id != operation.target_session_id
-            or request.http_input.attachments.authority.task_id != str(envelope.root_session_id)))
+        or (
+            request.http_input is not None
+            and (
+                request.http_input.request_hash != request.create_request.http_input_request_hash
+                or request.http_input.event.session_id != operation.target_session_id
+                or request.http_input.attachments.authority.task_id != str(envelope.root_session_id)
+            )
+        )
         or not request.artifact_id.strip()
         or request.create_request.source_session_id != operation.source_session_id
         or sha256_text(request.create_request.idempotency_key) != operation.idempotency_key_hash

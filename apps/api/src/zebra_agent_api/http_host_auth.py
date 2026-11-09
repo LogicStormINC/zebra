@@ -28,9 +28,11 @@ from zebra_agent_api.ag_ui_command import (
     _path_identity,
     _with_path_identity,
 )
+from zebra_agent_api.database_budget import database_call
 from zebra_agent_api.extension_reads import is_extension_path
 from zebra_agent_api.extension_request_body import _unique_object
 from zebra_agent_api.http_origins import _normalize_exact_origin
+from zebra_agent_api.idempotency import TASK_CREATE_RECEIPT_PATH
 from zebra_agent_api.responses import ApiResponse, bad_request
 from zebra_agent_api.session_binding import _build_binding_snapshot
 from zebra_agent_api.session_identity_read import _parse_session_id
@@ -101,6 +103,9 @@ def validate_host_target(
             definition_snapshot_digest=None,
         )
         return
+
+    if method == "GET" and path == TASK_CREATE_RECEIPT_PATH:
+        return  # The receipt route resolves and fences the stored Task identity.
 
     task_id: TaskId | ApiResponse | None = None
     run_id: str | None = None
@@ -278,7 +283,9 @@ async def authorize_request(
                     return error
                 request.state.authorized_body = body
                 request.state.authorized_body_read = True
-            verified = await asyncio.to_thread(operation)
+            verified = await database_call(
+                request.scope.get("app"), operation, wait_for_read_slot=True
+            )
         context = getattr(verified, "context", None)
         if context is not None and not isinstance(context, HostContextEnvelope):
             return _forbidden("host_grant_context_invalid")
@@ -372,7 +379,8 @@ async def authorize_previous_host_grant(
 
     try:
         async with asyncio.timeout(HOST_PREFLIGHT_SECONDS):
-            prior = await asyncio.to_thread(
+            prior = await database_call(
+                request.scope.get("app"),
                 authorizer.authorize,
                 HostGrantHttpRequest(
                     method="POST",
@@ -439,7 +447,9 @@ async def _read_request_body(
     if not raw_body:
         return None, None
     try:
-        payload = await asyncio.to_thread(json.loads, raw_body, object_pairs_hook=_unique_object)
+        payload = await database_call(
+            request.scope.get("app"), json.loads, raw_body, object_pairs_hook=_unique_object
+        )
     except (ValueError, UnicodeDecodeError, RecursionError):
         return None, JSONResponse(
             bad_request("request body must be valid JSON").body, status_code=400

@@ -1,0 +1,2 @@
+# CA-P5-03 — optional signed Worker process binding / verified / Review
+[Contract/boundary](../CA-P5-03_worker_process_binding.md): bind owning container launch identity to actual RuntimeGateWorker UUID; reuse existing fresh qualification, no new API/schema/readiness grant. Default opt-out and historical Bundle baseline preserved; 31 focused passed; make test11206 passed/3067 conditional skips and make check1445 typed sources/30Eval passed. No production deployment/migration, BFF/history/Task/Coverage mutation. [Previous](../archive/progress-ca-p5-02a.md).

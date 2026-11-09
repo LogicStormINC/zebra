@@ -135,7 +135,8 @@ def validate_attachment_sources(rows: list[Any], task_id: TaskId, through: int) 
             or row["task_sequence"] > through
             or str(row["session_id"]) != str(row["segment_id"])
             or row["source_sequence"] != row["segment_sequence"]
-            or row["event_type"] not in {EventType.USER_MESSAGE_RECEIVED.value, EventType.CLARIFICATION_RESPONDED.value}
+            or row["event_type"]
+            not in {EventType.USER_MESSAGE_RECEIVED.value, EventType.CLARIFICATION_RESPONDED.value}
         ):
             raise CheckpointConflict("attachment frontier conflicts with canonical source")
         if not row["event_position_source_ready"]:

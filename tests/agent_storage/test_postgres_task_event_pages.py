@@ -153,3 +153,29 @@ def test_postgres_page_rejects_invalid_bounds(
     store, task = _task(postgres_dsn, task_namespace, tmp_path / "pages", 3)
     with pytest.raises(ValueError):
         store.read_event_page(task.task_id, -1, **options)
+
+
+def test_page_resolves_highwater_and_bounded_metadata_in_one_query(
+    postgres_dsn: str, task_namespace: str, tmp_path: Path,
+) -> None:
+    from agent_storage.postgres.task_event_pages import read_task_event_page
+    from psycopg.rows import dict_row
+
+    _, task = _task(postgres_dsn, task_namespace, tmp_path / "metadata", 3)
+    with psycopg.connect(postgres_dsn, row_factory=dict_row) as connection:
+        statements = []
+
+        class ObservedConnection:
+            def execute(self, query, params):
+                statements.append(query)
+                return connection.execute(query, params)
+
+        page = read_task_event_page(
+            ObservedConnection(), task_namespace, task.task_id, 0,
+            through=1, limit=1, max_bytes=1024,
+        )
+        assert [entry.task_sequence for entry in page.events] == [1]
+        assert page.highwater == 1
+        assert len(statements) == 2
+        assert "event_bytes_bound" in statements[0]
+        assert "event.payload" not in statements[0]

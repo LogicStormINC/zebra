@@ -1,0 +1,742 @@
+........................................................................ [  5%]
+.....ssss...............ssssssss..s......................s..ss.s.s.s.ss. [ 10%]
+........................................................................ [ 15%]
+..sssssssssssssssss..........sssss..sssssssssssssss..................... [ 21%]
+...........s.................ssssssssssssssss........................... [ 26%]
+.............................ss......................................... [ 31%]
+........................................................................ [ 37%]
+................s...........s........................................... [ 42%]
+........................................................................ [ 47%]
+........................................................................ [ 53%]
+.................................................s.....ss............... [ 58%]
+..s.............ss...................................................... [ 63%]
+..ssssssss.............................................................. [ 69%]
+........................................................................ [ 74%]
+...............s..FFFFFFFFFFFFsssssssssssssssssssssssssssss............. [ 79%]
+ssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss [ 85%]
+ssssss...........sssssss......sssss................sssssssssssssssssssss [ 90%]
+sss..............sssssssssssssssssssssssssssssssssssssssssssssssss...... [ 95%]
+ssss............sssssssssssssssssss.sssssssssssssss.sss                  [100%]
+=================================== FAILURES ===================================
+_ test_raw_preparation_one_dispatch_keeps_source_cursor_and_fallback[ready-session] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10fbfd5e0>
+route = 'session', scenario = 'ready'
+
+    @pytest.mark.parametrize("route", ["session", "task"])
+    @pytest.mark.parametrize(
+        "scenario", ["ready", "future", "legacy", "unavailable", "tenant_denied", "source_denied"]
+    )
+    def test_raw_preparation_one_dispatch_keeps_source_cursor_and_fallback(
+        monkeypatch, route, scenario
+    ):
+        import asyncio
+        from pathlib import Path
+        from time import monotonic
+    
+        from zebra_agent_api import ag_ui_task_view, stream_v2_http
+        from zebra_agent_api.responses import ApiResponse
+        from zebra_agent_api.stream_v2_reader import V2StreamContext
+    
+        resource, calls, dispatches = uuid4(), [], []
+        context = V2StreamContext(
+            SimpleNamespace(),
+            route,
+            StreamV2Cursor("scope", "5" if scenario == "future" else "1"),
+            False,
+        )
+    
+        def negotiate(*args):
+            calls.append("negotiate")
+            if scenario == "legacy":
+                return None
+            if scenario == "unavailable":
+                return ApiResponse(409, {"status": "stream_source_unavailable"})
+            return context
+    
+        def preflight():
+            calls.append("authorize")
+            if scenario in {"tenant_denied", "source_denied"}:
+                return ApiResponse(403 if scenario == "tenant_denied" else 409, {"status": "denied"})
+            return None
+    
+        def highwater(identity, **kwargs):
+            assert identity == resource
+            if route == "task":
+                assert kwargs == {"require_source_coverage": True}
+            calls.append("source")
+            return SimpleNamespace(current_sequence=4) if route == "task" else 4
+    
+        async def tail(**kwargs):
+            assert kwargs["after_sequence"] == 1
+            assert kwargs[f"{route}_id"] == resource
+            yield "data: canonical\n\n"
+    
+>       original_thread = ag_ui_task_view.to_thread
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'zebra_agent_api.ag_ui_task_view' has no attribute 'to_thread'
+
+tests/api/test_stream_v2_http.py:572: AttributeError
+_ test_raw_preparation_one_dispatch_keeps_source_cursor_and_fallback[ready-task] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10ddedd00>
+route = 'task', scenario = 'ready'
+
+    @pytest.mark.parametrize("route", ["session", "task"])
+    @pytest.mark.parametrize(
+        "scenario", ["ready", "future", "legacy", "unavailable", "tenant_denied", "source_denied"]
+    )
+    def test_raw_preparation_one_dispatch_keeps_source_cursor_and_fallback(
+        monkeypatch, route, scenario
+    ):
+        import asyncio
+        from pathlib import Path
+        from time import monotonic
+    
+        from zebra_agent_api import ag_ui_task_view, stream_v2_http
+        from zebra_agent_api.responses import ApiResponse
+        from zebra_agent_api.stream_v2_reader import V2StreamContext
+    
+        resource, calls, dispatches = uuid4(), [], []
+        context = V2StreamContext(
+            SimpleNamespace(),
+            route,
+            StreamV2Cursor("scope", "5" if scenario == "future" else "1"),
+            False,
+        )
+    
+        def negotiate(*args):
+            calls.append("negotiate")
+            if scenario == "legacy":
+                return None
+            if scenario == "unavailable":
+                return ApiResponse(409, {"status": "stream_source_unavailable"})
+            return context
+    
+        def preflight():
+            calls.append("authorize")
+            if scenario in {"tenant_denied", "source_denied"}:
+                return ApiResponse(403 if scenario == "tenant_denied" else 409, {"status": "denied"})
+            return None
+    
+        def highwater(identity, **kwargs):
+            assert identity == resource
+            if route == "task":
+                assert kwargs == {"require_source_coverage": True}
+            calls.append("source")
+            return SimpleNamespace(current_sequence=4) if route == "task" else 4
+    
+        async def tail(**kwargs):
+            assert kwargs["after_sequence"] == 1
+            assert kwargs[f"{route}_id"] == resource
+            yield "data: canonical\n\n"
+    
+>       original_thread = ag_ui_task_view.to_thread
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'zebra_agent_api.ag_ui_task_view' has no attribute 'to_thread'
+
+tests/api/test_stream_v2_http.py:572: AttributeError
+_ test_raw_preparation_one_dispatch_keeps_source_cursor_and_fallback[future-session] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10fa15dc0>
+route = 'session', scenario = 'future'
+
+    @pytest.mark.parametrize("route", ["session", "task"])
+    @pytest.mark.parametrize(
+        "scenario", ["ready", "future", "legacy", "unavailable", "tenant_denied", "source_denied"]
+    )
+    def test_raw_preparation_one_dispatch_keeps_source_cursor_and_fallback(
+        monkeypatch, route, scenario
+    ):
+        import asyncio
+        from pathlib import Path
+        from time import monotonic
+    
+        from zebra_agent_api import ag_ui_task_view, stream_v2_http
+        from zebra_agent_api.responses import ApiResponse
+        from zebra_agent_api.stream_v2_reader import V2StreamContext
+    
+        resource, calls, dispatches = uuid4(), [], []
+        context = V2StreamContext(
+            SimpleNamespace(),
+            route,
+            StreamV2Cursor("scope", "5" if scenario == "future" else "1"),
+            False,
+        )
+    
+        def negotiate(*args):
+            calls.append("negotiate")
+            if scenario == "legacy":
+                return None
+            if scenario == "unavailable":
+                return ApiResponse(409, {"status": "stream_source_unavailable"})
+            return context
+    
+        def preflight():
+            calls.append("authorize")
+            if scenario in {"tenant_denied", "source_denied"}:
+                return ApiResponse(403 if scenario == "tenant_denied" else 409, {"status": "denied"})
+            return None
+    
+        def highwater(identity, **kwargs):
+            assert identity == resource
+            if route == "task":
+                assert kwargs == {"require_source_coverage": True}
+            calls.append("source")
+            return SimpleNamespace(current_sequence=4) if route == "task" else 4
+    
+        async def tail(**kwargs):
+            assert kwargs["after_sequence"] == 1
+            assert kwargs[f"{route}_id"] == resource
+            yield "data: canonical\n\n"
+    
+>       original_thread = ag_ui_task_view.to_thread
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'zebra_agent_api.ag_ui_task_view' has no attribute 'to_thread'
+
+tests/api/test_stream_v2_http.py:572: AttributeError
+_ test_raw_preparation_one_dispatch_keeps_source_cursor_and_fallback[future-task] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10dd29ee0>
+route = 'task', scenario = 'future'
+
+    @pytest.mark.parametrize("route", ["session", "task"])
+    @pytest.mark.parametrize(
+        "scenario", ["ready", "future", "legacy", "unavailable", "tenant_denied", "source_denied"]
+    )
+    def test_raw_preparation_one_dispatch_keeps_source_cursor_and_fallback(
+        monkeypatch, route, scenario
+    ):
+        import asyncio
+        from pathlib import Path
+        from time import monotonic
+    
+        from zebra_agent_api import ag_ui_task_view, stream_v2_http
+        from zebra_agent_api.responses import ApiResponse
+        from zebra_agent_api.stream_v2_reader import V2StreamContext
+    
+        resource, calls, dispatches = uuid4(), [], []
+        context = V2StreamContext(
+            SimpleNamespace(),
+            route,
+            StreamV2Cursor("scope", "5" if scenario == "future" else "1"),
+            False,
+        )
+    
+        def negotiate(*args):
+            calls.append("negotiate")
+            if scenario == "legacy":
+                return None
+            if scenario == "unavailable":
+                return ApiResponse(409, {"status": "stream_source_unavailable"})
+            return context
+    
+        def preflight():
+            calls.append("authorize")
+            if scenario in {"tenant_denied", "source_denied"}:
+                return ApiResponse(403 if scenario == "tenant_denied" else 409, {"status": "denied"})
+            return None
+    
+        def highwater(identity, **kwargs):
+            assert identity == resource
+            if route == "task":
+                assert kwargs == {"require_source_coverage": True}
+            calls.append("source")
+            return SimpleNamespace(current_sequence=4) if route == "task" else 4
+    
+        async def tail(**kwargs):
+            assert kwargs["after_sequence"] == 1
+            assert kwargs[f"{route}_id"] == resource
+            yield "data: canonical\n\n"
+    
+>       original_thread = ag_ui_task_view.to_thread
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'zebra_agent_api.ag_ui_task_view' has no attribute 'to_thread'
+
+tests/api/test_stream_v2_http.py:572: AttributeError
+_ test_raw_preparation_one_dispatch_keeps_source_cursor_and_fallback[legacy-session] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10dd29fd0>
+route = 'session', scenario = 'legacy'
+
+    @pytest.mark.parametrize("route", ["session", "task"])
+    @pytest.mark.parametrize(
+        "scenario", ["ready", "future", "legacy", "unavailable", "tenant_denied", "source_denied"]
+    )
+    def test_raw_preparation_one_dispatch_keeps_source_cursor_and_fallback(
+        monkeypatch, route, scenario
+    ):
+        import asyncio
+        from pathlib import Path
+        from time import monotonic
+    
+        from zebra_agent_api import ag_ui_task_view, stream_v2_http
+        from zebra_agent_api.responses import ApiResponse
+        from zebra_agent_api.stream_v2_reader import V2StreamContext
+    
+        resource, calls, dispatches = uuid4(), [], []
+        context = V2StreamContext(
+            SimpleNamespace(),
+            route,
+            StreamV2Cursor("scope", "5" if scenario == "future" else "1"),
+            False,
+        )
+    
+        def negotiate(*args):
+            calls.append("negotiate")
+            if scenario == "legacy":
+                return None
+            if scenario == "unavailable":
+                return ApiResponse(409, {"status": "stream_source_unavailable"})
+            return context
+    
+        def preflight():
+            calls.append("authorize")
+            if scenario in {"tenant_denied", "source_denied"}:
+                return ApiResponse(403 if scenario == "tenant_denied" else 409, {"status": "denied"})
+            return None
+    
+        def highwater(identity, **kwargs):
+            assert identity == resource
+            if route == "task":
+                assert kwargs == {"require_source_coverage": True}
+            calls.append("source")
+            return SimpleNamespace(current_sequence=4) if route == "task" else 4
+    
+        async def tail(**kwargs):
+            assert kwargs["after_sequence"] == 1
+            assert kwargs[f"{route}_id"] == resource
+            yield "data: canonical\n\n"
+    
+>       original_thread = ag_ui_task_view.to_thread
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'zebra_agent_api.ag_ui_task_view' has no attribute 'to_thread'
+
+tests/api/test_stream_v2_http.py:572: AttributeError
+_ test_raw_preparation_one_dispatch_keeps_source_cursor_and_fallback[legacy-task] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10dd2aae0>
+route = 'task', scenario = 'legacy'
+
+    @pytest.mark.parametrize("route", ["session", "task"])
+    @pytest.mark.parametrize(
+        "scenario", ["ready", "future", "legacy", "unavailable", "tenant_denied", "source_denied"]
+    )
+    def test_raw_preparation_one_dispatch_keeps_source_cursor_and_fallback(
+        monkeypatch, route, scenario
+    ):
+        import asyncio
+        from pathlib import Path
+        from time import monotonic
+    
+        from zebra_agent_api import ag_ui_task_view, stream_v2_http
+        from zebra_agent_api.responses import ApiResponse
+        from zebra_agent_api.stream_v2_reader import V2StreamContext
+    
+        resource, calls, dispatches = uuid4(), [], []
+        context = V2StreamContext(
+            SimpleNamespace(),
+            route,
+            StreamV2Cursor("scope", "5" if scenario == "future" else "1"),
+            False,
+        )
+    
+        def negotiate(*args):
+            calls.append("negotiate")
+            if scenario == "legacy":
+                return None
+            if scenario == "unavailable":
+                return ApiResponse(409, {"status": "stream_source_unavailable"})
+            return context
+    
+        def preflight():
+            calls.append("authorize")
+            if scenario in {"tenant_denied", "source_denied"}:
+                return ApiResponse(403 if scenario == "tenant_denied" else 409, {"status": "denied"})
+            return None
+    
+        def highwater(identity, **kwargs):
+            assert identity == resource
+            if route == "task":
+                assert kwargs == {"require_source_coverage": True}
+            calls.append("source")
+            return SimpleNamespace(current_sequence=4) if route == "task" else 4
+    
+        async def tail(**kwargs):
+            assert kwargs["after_sequence"] == 1
+            assert kwargs[f"{route}_id"] == resource
+            yield "data: canonical\n\n"
+    
+>       original_thread = ag_ui_task_view.to_thread
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'zebra_agent_api.ag_ui_task_view' has no attribute 'to_thread'
+
+tests/api/test_stream_v2_http.py:572: AttributeError
+_ test_raw_preparation_one_dispatch_keeps_source_cursor_and_fallback[unavailable-session] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10dd2ae40>
+route = 'session', scenario = 'unavailable'
+
+    @pytest.mark.parametrize("route", ["session", "task"])
+    @pytest.mark.parametrize(
+        "scenario", ["ready", "future", "legacy", "unavailable", "tenant_denied", "source_denied"]
+    )
+    def test_raw_preparation_one_dispatch_keeps_source_cursor_and_fallback(
+        monkeypatch, route, scenario
+    ):
+        import asyncio
+        from pathlib import Path
+        from time import monotonic
+    
+        from zebra_agent_api import ag_ui_task_view, stream_v2_http
+        from zebra_agent_api.responses import ApiResponse
+        from zebra_agent_api.stream_v2_reader import V2StreamContext
+    
+        resource, calls, dispatches = uuid4(), [], []
+        context = V2StreamContext(
+            SimpleNamespace(),
+            route,
+            StreamV2Cursor("scope", "5" if scenario == "future" else "1"),
+            False,
+        )
+    
+        def negotiate(*args):
+            calls.append("negotiate")
+            if scenario == "legacy":
+                return None
+            if scenario == "unavailable":
+                return ApiResponse(409, {"status": "stream_source_unavailable"})
+            return context
+    
+        def preflight():
+            calls.append("authorize")
+            if scenario in {"tenant_denied", "source_denied"}:
+                return ApiResponse(403 if scenario == "tenant_denied" else 409, {"status": "denied"})
+            return None
+    
+        def highwater(identity, **kwargs):
+            assert identity == resource
+            if route == "task":
+                assert kwargs == {"require_source_coverage": True}
+            calls.append("source")
+            return SimpleNamespace(current_sequence=4) if route == "task" else 4
+    
+        async def tail(**kwargs):
+            assert kwargs["after_sequence"] == 1
+            assert kwargs[f"{route}_id"] == resource
+            yield "data: canonical\n\n"
+    
+>       original_thread = ag_ui_task_view.to_thread
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'zebra_agent_api.ag_ui_task_view' has no attribute 'to_thread'
+
+tests/api/test_stream_v2_http.py:572: AttributeError
+_ test_raw_preparation_one_dispatch_keeps_source_cursor_and_fallback[unavailable-task] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10d3bd700>
+route = 'task', scenario = 'unavailable'
+
+    @pytest.mark.parametrize("route", ["session", "task"])
+    @pytest.mark.parametrize(
+        "scenario", ["ready", "future", "legacy", "unavailable", "tenant_denied", "source_denied"]
+    )
+    def test_raw_preparation_one_dispatch_keeps_source_cursor_and_fallback(
+        monkeypatch, route, scenario
+    ):
+        import asyncio
+        from pathlib import Path
+        from time import monotonic
+    
+        from zebra_agent_api import ag_ui_task_view, stream_v2_http
+        from zebra_agent_api.responses import ApiResponse
+        from zebra_agent_api.stream_v2_reader import V2StreamContext
+    
+        resource, calls, dispatches = uuid4(), [], []
+        context = V2StreamContext(
+            SimpleNamespace(),
+            route,
+            StreamV2Cursor("scope", "5" if scenario == "future" else "1"),
+            False,
+        )
+    
+        def negotiate(*args):
+            calls.append("negotiate")
+            if scenario == "legacy":
+                return None
+            if scenario == "unavailable":
+                return ApiResponse(409, {"status": "stream_source_unavailable"})
+            return context
+    
+        def preflight():
+            calls.append("authorize")
+            if scenario in {"tenant_denied", "source_denied"}:
+                return ApiResponse(403 if scenario == "tenant_denied" else 409, {"status": "denied"})
+            return None
+    
+        def highwater(identity, **kwargs):
+            assert identity == resource
+            if route == "task":
+                assert kwargs == {"require_source_coverage": True}
+            calls.append("source")
+            return SimpleNamespace(current_sequence=4) if route == "task" else 4
+    
+        async def tail(**kwargs):
+            assert kwargs["after_sequence"] == 1
+            assert kwargs[f"{route}_id"] == resource
+            yield "data: canonical\n\n"
+    
+>       original_thread = ag_ui_task_view.to_thread
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'zebra_agent_api.ag_ui_task_view' has no attribute 'to_thread'
+
+tests/api/test_stream_v2_http.py:572: AttributeError
+_ test_raw_preparation_one_dispatch_keeps_source_cursor_and_fallback[tenant_denied-session] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10d3beea0>
+route = 'session', scenario = 'tenant_denied'
+
+    @pytest.mark.parametrize("route", ["session", "task"])
+    @pytest.mark.parametrize(
+        "scenario", ["ready", "future", "legacy", "unavailable", "tenant_denied", "source_denied"]
+    )
+    def test_raw_preparation_one_dispatch_keeps_source_cursor_and_fallback(
+        monkeypatch, route, scenario
+    ):
+        import asyncio
+        from pathlib import Path
+        from time import monotonic
+    
+        from zebra_agent_api import ag_ui_task_view, stream_v2_http
+        from zebra_agent_api.responses import ApiResponse
+        from zebra_agent_api.stream_v2_reader import V2StreamContext
+    
+        resource, calls, dispatches = uuid4(), [], []
+        context = V2StreamContext(
+            SimpleNamespace(),
+            route,
+            StreamV2Cursor("scope", "5" if scenario == "future" else "1"),
+            False,
+        )
+    
+        def negotiate(*args):
+            calls.append("negotiate")
+            if scenario == "legacy":
+                return None
+            if scenario == "unavailable":
+                return ApiResponse(409, {"status": "stream_source_unavailable"})
+            return context
+    
+        def preflight():
+            calls.append("authorize")
+            if scenario in {"tenant_denied", "source_denied"}:
+                return ApiResponse(403 if scenario == "tenant_denied" else 409, {"status": "denied"})
+            return None
+    
+        def highwater(identity, **kwargs):
+            assert identity == resource
+            if route == "task":
+                assert kwargs == {"require_source_coverage": True}
+            calls.append("source")
+            return SimpleNamespace(current_sequence=4) if route == "task" else 4
+    
+        async def tail(**kwargs):
+            assert kwargs["after_sequence"] == 1
+            assert kwargs[f"{route}_id"] == resource
+            yield "data: canonical\n\n"
+    
+>       original_thread = ag_ui_task_view.to_thread
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'zebra_agent_api.ag_ui_task_view' has no attribute 'to_thread'
+
+tests/api/test_stream_v2_http.py:572: AttributeError
+_ test_raw_preparation_one_dispatch_keeps_source_cursor_and_fallback[tenant_denied-task] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10d9114f0>
+route = 'task', scenario = 'tenant_denied'
+
+    @pytest.mark.parametrize("route", ["session", "task"])
+    @pytest.mark.parametrize(
+        "scenario", ["ready", "future", "legacy", "unavailable", "tenant_denied", "source_denied"]
+    )
+    def test_raw_preparation_one_dispatch_keeps_source_cursor_and_fallback(
+        monkeypatch, route, scenario
+    ):
+        import asyncio
+        from pathlib import Path
+        from time import monotonic
+    
+        from zebra_agent_api import ag_ui_task_view, stream_v2_http
+        from zebra_agent_api.responses import ApiResponse
+        from zebra_agent_api.stream_v2_reader import V2StreamContext
+    
+        resource, calls, dispatches = uuid4(), [], []
+        context = V2StreamContext(
+            SimpleNamespace(),
+            route,
+            StreamV2Cursor("scope", "5" if scenario == "future" else "1"),
+            False,
+        )
+    
+        def negotiate(*args):
+            calls.append("negotiate")
+            if scenario == "legacy":
+                return None
+            if scenario == "unavailable":
+                return ApiResponse(409, {"status": "stream_source_unavailable"})
+            return context
+    
+        def preflight():
+            calls.append("authorize")
+            if scenario in {"tenant_denied", "source_denied"}:
+                return ApiResponse(403 if scenario == "tenant_denied" else 409, {"status": "denied"})
+            return None
+    
+        def highwater(identity, **kwargs):
+            assert identity == resource
+            if route == "task":
+                assert kwargs == {"require_source_coverage": True}
+            calls.append("source")
+            return SimpleNamespace(current_sequence=4) if route == "task" else 4
+    
+        async def tail(**kwargs):
+            assert kwargs["after_sequence"] == 1
+            assert kwargs[f"{route}_id"] == resource
+            yield "data: canonical\n\n"
+    
+>       original_thread = ag_ui_task_view.to_thread
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'zebra_agent_api.ag_ui_task_view' has no attribute 'to_thread'
+
+tests/api/test_stream_v2_http.py:572: AttributeError
+_ test_raw_preparation_one_dispatch_keeps_source_cursor_and_fallback[source_denied-session] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10fa16f90>
+route = 'session', scenario = 'source_denied'
+
+    @pytest.mark.parametrize("route", ["session", "task"])
+    @pytest.mark.parametrize(
+        "scenario", ["ready", "future", "legacy", "unavailable", "tenant_denied", "source_denied"]
+    )
+    def test_raw_preparation_one_dispatch_keeps_source_cursor_and_fallback(
+        monkeypatch, route, scenario
+    ):
+        import asyncio
+        from pathlib import Path
+        from time import monotonic
+    
+        from zebra_agent_api import ag_ui_task_view, stream_v2_http
+        from zebra_agent_api.responses import ApiResponse
+        from zebra_agent_api.stream_v2_reader import V2StreamContext
+    
+        resource, calls, dispatches = uuid4(), [], []
+        context = V2StreamContext(
+            SimpleNamespace(),
+            route,
+            StreamV2Cursor("scope", "5" if scenario == "future" else "1"),
+            False,
+        )
+    
+        def negotiate(*args):
+            calls.append("negotiate")
+            if scenario == "legacy":
+                return None
+            if scenario == "unavailable":
+                return ApiResponse(409, {"status": "stream_source_unavailable"})
+            return context
+    
+        def preflight():
+            calls.append("authorize")
+            if scenario in {"tenant_denied", "source_denied"}:
+                return ApiResponse(403 if scenario == "tenant_denied" else 409, {"status": "denied"})
+            return None
+    
+        def highwater(identity, **kwargs):
+            assert identity == resource
+            if route == "task":
+                assert kwargs == {"require_source_coverage": True}
+            calls.append("source")
+            return SimpleNamespace(current_sequence=4) if route == "task" else 4
+    
+        async def tail(**kwargs):
+            assert kwargs["after_sequence"] == 1
+            assert kwargs[f"{route}_id"] == resource
+            yield "data: canonical\n\n"
+    
+>       original_thread = ag_ui_task_view.to_thread
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'zebra_agent_api.ag_ui_task_view' has no attribute 'to_thread'
+
+tests/api/test_stream_v2_http.py:572: AttributeError
+_ test_raw_preparation_one_dispatch_keeps_source_cursor_and_fallback[source_denied-task] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10fa14d10>
+route = 'task', scenario = 'source_denied'
+
+    @pytest.mark.parametrize("route", ["session", "task"])
+    @pytest.mark.parametrize(
+        "scenario", ["ready", "future", "legacy", "unavailable", "tenant_denied", "source_denied"]
+    )
+    def test_raw_preparation_one_dispatch_keeps_source_cursor_and_fallback(
+        monkeypatch, route, scenario
+    ):
+        import asyncio
+        from pathlib import Path
+        from time import monotonic
+    
+        from zebra_agent_api import ag_ui_task_view, stream_v2_http
+        from zebra_agent_api.responses import ApiResponse
+        from zebra_agent_api.stream_v2_reader import V2StreamContext
+    
+        resource, calls, dispatches = uuid4(), [], []
+        context = V2StreamContext(
+            SimpleNamespace(),
+            route,
+            StreamV2Cursor("scope", "5" if scenario == "future" else "1"),
+            False,
+        )
+    
+        def negotiate(*args):
+            calls.append("negotiate")
+            if scenario == "legacy":
+                return None
+            if scenario == "unavailable":
+                return ApiResponse(409, {"status": "stream_source_unavailable"})
+            return context
+    
+        def preflight():
+            calls.append("authorize")
+            if scenario in {"tenant_denied", "source_denied"}:
+                return ApiResponse(403 if scenario == "tenant_denied" else 409, {"status": "denied"})
+            return None
+    
+        def highwater(identity, **kwargs):
+            assert identity == resource
+            if route == "task":
+                assert kwargs == {"require_source_coverage": True}
+            calls.append("source")
+            return SimpleNamespace(current_sequence=4) if route == "task" else 4
+    
+        async def tail(**kwargs):
+            assert kwargs["after_sequence"] == 1
+            assert kwargs[f"{route}_id"] == resource
+            yield "data: canonical\n\n"
+    
+>       original_thread = ag_ui_task_view.to_thread
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'zebra_agent_api.ag_ui_task_view' has no attribute 'to_thread'
+
+tests/api/test_stream_v2_http.py:572: AttributeError
+=========================== short test summary info ============================
+FAILED tests/api/test_stream_v2_http.py::test_raw_preparation_one_dispatch_keeps_source_cursor_and_fallback[ready-session]
+FAILED tests/api/test_stream_v2_http.py::test_raw_preparation_one_dispatch_keeps_source_cursor_and_fallback[ready-task]
+FAILED tests/api/test_stream_v2_http.py::test_raw_preparation_one_dispatch_keeps_source_cursor_and_fallback[future-session]
+FAILED tests/api/test_stream_v2_http.py::test_raw_preparation_one_dispatch_keeps_source_cursor_and_fallback[future-task]
+FAILED tests/api/test_stream_v2_http.py::test_raw_preparation_one_dispatch_keeps_source_cursor_and_fallback[legacy-session]
+FAILED tests/api/test_stream_v2_http.py::test_raw_preparation_one_dispatch_keeps_source_cursor_and_fallback[legacy-task]
+FAILED tests/api/test_stream_v2_http.py::test_raw_preparation_one_dispatch_keeps_source_cursor_and_fallback[unavailable-session]
+FAILED tests/api/test_stream_v2_http.py::test_raw_preparation_one_dispatch_keeps_source_cursor_and_fallback[unavailable-task]
+FAILED tests/api/test_stream_v2_http.py::test_raw_preparation_one_dispatch_keeps_source_cursor_and_fallback[tenant_denied-session]
+FAILED tests/api/test_stream_v2_http.py::test_raw_preparation_one_dispatch_keeps_source_cursor_and_fallback[tenant_denied-task]
+FAILED tests/api/test_stream_v2_http.py::test_raw_preparation_one_dispatch_keeps_source_cursor_and_fallback[source_denied-session]
+FAILED tests/api/test_stream_v2_http.py::test_raw_preparation_one_dispatch_keeps_source_cursor_and_fallback[source_denied-task]
+12 failed, 1012 passed, 327 skipped in 345.03s (0:05:45)

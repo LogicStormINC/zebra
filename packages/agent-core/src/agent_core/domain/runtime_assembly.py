@@ -10,7 +10,13 @@ from pydantic import BeforeValidator, Field, field_validator, model_validator
 from agent_core.domain.modeling import ModelContextWindow
 from agent_core.domain.runtime_bundle import RuntimeBundleEnvelope
 from agent_core.domain.runtime_bundle_json import json_digest
-from agent_core.domain.runtime_bundle_types import ArtifactPin, BundleValue, Identifier, Text
+from agent_core.domain.runtime_bundle_types import (
+    ArtifactPin,
+    BundleValue,
+    ConfigurableBudgetDomain,
+    Identifier,
+    Text,
+)
 
 TEXT_OUTPUT_SCHEMA = {"format": "text", "schema_version": "cloud-agent.text-output/1"}
 TEXT_OUTPUT_SCHEMA_DIGEST = json_digest(TEXT_OUTPUT_SCHEMA)
@@ -75,9 +81,33 @@ class RuntimeProviderProfile(BundleValue):
         return self
 
 
+class BudgetProfile(BundleValue):
+    """Approval ceiling for the root Task budget; never a reservation itself."""
+
+    pin: ArtifactPin
+    max_model_tokens: Annotated[int, Field(ge=0)]
+    max_tool_calls: Annotated[int, Field(ge=0)]
+    max_runtime_seconds: Annotated[int, Field(ge=0)]
+
+    @model_validator(mode="after")
+    def approval_digest(self) -> Self:
+        if (
+            self.pin.kind != "budget-profile"
+            or self.pin.digest != canonical_budget_profile_digest(self)
+        ):
+            raise ValueError("budget profile pin digest mismatch")
+        return self
+
+
+def canonical_budget_profile_digest(profile: BudgetProfile | dict[str, Any]) -> str:
+    payload = profile.model_dump(mode="json") if isinstance(profile, BudgetProfile) else profile
+    return json_digest({key: value for key, value in payload.items() if key != "pin"})
+
+
 class RuntimeAssembly(BundleValue):
     bundle: RuntimeBundleEnvelope
     provider_profile: RuntimeProviderProfile
+    budget_profile: BudgetProfile
 
     @model_validator(mode="after")
     def require_approved_native_parameters(self) -> Self:
@@ -96,6 +126,18 @@ class RuntimeAssembly(BundleValue):
             raise ValueError("Bundle model exceeds exact provider approval")
         if model.thinking != "auto":
             raise ValueError("native Bundle assembly requires thinking=auto")
+        budget = self.bundle.manifest.domains.budget
+        if isinstance(budget, ConfigurableBudgetDomain):
+            parameters = budget.parameters
+            budget_ceiling = self.budget_profile
+            if (
+                parameters.budget_profile != budget_ceiling.pin
+                or parameters.model_tokens > budget_ceiling.max_model_tokens
+                or parameters.tool_calls > budget_ceiling.max_tool_calls
+                or parameters.runtime_seconds > budget_ceiling.max_runtime_seconds
+            ):
+                raise ValueError("Bundle budget exceeds exact budget approval")
+        # pinned budget 保持合法（无预算批准被消费）；合同切换后在装配层收紧。
         if (
             self.bundle.manifest.domains.instructions.parameters.output_schema.digest
             != TEXT_OUTPUT_SCHEMA_DIGEST

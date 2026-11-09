@@ -17,6 +17,17 @@ _UNREJECTED = """NOT EXISTS (
 )"""
 
 
+# ponytail: only rescue the final READY command frontier. Later facts stay with
+# existing recovery/cutover ledgers; projection replay is never execution proof.
+_UNSTARTED_FRONTIER = """e.sequence=p.current_sequence AND p.status='ready'
+    AND e.payload->>'kind' IN ('run','resume','message')
+    AND NOT EXISTS (
+      SELECT 1 FROM session_events later
+      WHERE later.deployment_namespace=e.deployment_namespace
+        AND later.session_id=e.session_id AND later.sequence>e.sequence
+    )"""
+
+
 class LegacyCommandCandidates:
     def __init__(self, dsn: str, *, deployment_namespace: str) -> None:
         self._database = PostgresDatabase(dsn, deployment_namespace=deployment_namespace)
@@ -32,7 +43,8 @@ class LegacyCommandCandidates:
                   AND EXISTS (
                     SELECT 1 FROM session_events e
                     WHERE e.deployment_namespace=p.deployment_namespace
-                      AND e.session_id=p.session_id AND e.sequence > p.current_sequence
+                      AND e.session_id=p.session_id AND e.sequence >= p.current_sequence
+                      AND (e.sequence > p.current_sequence OR ({_UNSTARTED_FRONTIER}))
                       AND e.event_type='session_command_accepted'
                       AND {_UNREJECTED}
                   )
@@ -46,11 +58,20 @@ class LegacyCommandCandidates:
         with self._database.connect_task_io() as connection:
             row = connection.execute(
                 f"""SELECT e.* FROM session_events e
-                WHERE e.deployment_namespace=%s AND e.session_id=%s AND e.sequence>%s
+                JOIN session_projections p ON p.deployment_namespace=e.deployment_namespace
+                  AND p.session_id=e.session_id
+                WHERE e.deployment_namespace=%s AND e.session_id=%s AND e.sequence>=%s
+                  AND (e.sequence>%s OR (p.current_sequence=%s AND ({_UNSTARTED_FRONTIER})))
                   AND e.event_type='session_command_accepted' AND {_UNREJECTED}
                 ORDER BY COALESCE(e.payload->>'kind' IN ('stop','cancel'), false) DESC,
                          e.sequence LIMIT 1""",
-                (self._database.deployment_namespace, session_id, current_sequence,
-                 LEGACY_REJECTION_ACTION),
+                (
+                    self._database.deployment_namespace,
+                    session_id,
+                    current_sequence,
+                    current_sequence,
+                    current_sequence,
+                    LEGACY_REJECTION_ACTION,
+                ),
             ).fetchone()
         return None if row is None else SessionEvent.model_validate(row)

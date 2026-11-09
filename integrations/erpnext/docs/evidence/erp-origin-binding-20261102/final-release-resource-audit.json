@@ -1,0 +1,19 @@
+{
+  "changed_existing_container_ids": [
+    "/erpnext-backend-1"
+  ],
+  "all_original_service_environment_values_preserved": true,
+  "other_original_service_images_preserved": true,
+  "backend_final_image": "sha256:0afdf46442e188caf17bce1c533c0b4503cb1cf7881b79c64f5468d5b120138d",
+  "source_files": {
+    "api.py": "98833ff3876cf28d55f41b531bb9fe65a70515a1e101207eb21bcd250a556782",
+    "client.py": "c5ac7f0b0dc7042db7aa8ce7c7faf514f3b37c65922ef86067f18ea9f968b2bb",
+    "business.py": "f422eab0e875dfe4e1a88443045d09cfcad7c87902441ebe49b7a9bdf2811a04"
+  },
+  "stale_source_mount_removed": true,
+  "temporary_container_absent": true,
+  "temporary_build_directories_absent": true,
+  "no_added_networks_or_named_volumes_by_this_task": true,
+  "other_new_containers_observed": [],
+  "schema_migration": false
+}

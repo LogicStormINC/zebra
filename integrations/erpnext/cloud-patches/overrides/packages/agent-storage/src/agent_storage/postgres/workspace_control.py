@@ -18,7 +18,6 @@ from agent_core.ports.workspace_control import (
     WorkspaceOperationReceipt,
     WorkspaceSnapshotRef,
 )
-
 from agent_storage.postgres.database import PostgresDatabase
 
 
@@ -159,7 +158,9 @@ class PostgresWorkspaceControlStore:
         with self._database.connect() as connection:
             return self.get_in_transaction(connection, workspace_id)
 
-    def get_in_transaction(self, connection: Any, workspace_id: WorkspaceId) -> WorkspaceInstance | None:
+    def get_in_transaction(
+        self, connection: Any, workspace_id: WorkspaceId
+    ) -> WorkspaceInstance | None:
         """Read native source facts in the caller's consistent policy snapshot."""
         row = self._fetch_instance(connection, workspace_id)
         return _row_to_instance(row, self.deployment_namespace) if row is not None else None

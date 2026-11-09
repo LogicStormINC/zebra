@@ -1,0 +1,16 @@
+
+> zebra-erpnext-panel@0.1.0 test
+> node frontend/check.mjs && node frontend/workbench-check.mjs && node frontend/ui-actions-check.mjs && node frontend/host-api-check.mjs
+
+SSE fragmentation, message reduction, and stale/unsupported/submitted form checks passed
+Attachment type/count/size/model boundaries, native usage and fixed artifact URL checks passed
+Active/mismatched preview rejection and paused/stopped/approval status checks passed
+Allowlisted native public-state, interrupt and usage projection checks passed
+PASS public rich content, source/file guards, stable contextual recommendations, parts-only body, stream parts and exact unknown-result retry admission
+PASS Markdown/plain-Part copy body hides native artifact coordinates with the same report placeholder
+PASS workbench busy, child removals/reordering, unknown fields, scoped receipts and view/RPC guards
+PASS actual approval reader contains delayed failures and rejects stale success/failure
+PASS human-readable approval fields reuse cached native metadata with bounded fallbacks
+PASS actual draft setter and delayed bootstrap/create/select closures preserve editable drafts
+PASS frontend profile revision 2 actions: expected-page guards, typed cells, list/report/new navigation, page.read shapes and child patch grouping
+PASS real Host adapter same-origin/CSRF/session/fence/abort and single submission

@@ -5,6 +5,7 @@ import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from threading import Lock, Thread
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from agent_core.domain.identifiers import SessionId, TaskId
@@ -15,24 +16,34 @@ from agent_runtime.stream_hint_relay import StreamHintRelay
 from agent_storage import (
     LeaseConflictError,
 )
+from agent_storage.postgres.connection_pool import postgres_context
 
-from zebra_agent_worker.ag_ui_projection_work import AgUiProjectionWorkService
 from zebra_agent_worker.child_wakeup import ChildCompletionWakeupService
 from zebra_agent_worker.cloud_memory_recovery import (
     CloudMemoryFinalizationRecovery,
     recover_completed_cloud_memory,
 )
-from zebra_agent_worker.command_consumer import SessionCommandConsumer
 from zebra_agent_worker.execution import SessionExecutionService
 from zebra_agent_worker.execution_events import ExecutionInterrupted
 from zebra_agent_worker.execution_finalization import WorkerExecutionError
 from zebra_agent_worker.lease_heartbeat import LeaseHeartbeatError
 from zebra_agent_worker.memory_delivery_consumer import MemoryDeliveryConsumption
+from zebra_agent_worker.orchestration_wakeup_hook import OrchestrationWakeupHook
 from zebra_agent_worker.recovery import SessionRecoveryError
 from zebra_agent_worker.resume import SessionResumeError
 from zebra_agent_worker.safety_net import WorkerSafetyNet
 from zebra_agent_worker.transient_capacity_maintenance import TransientCapacityMaintenance
-from zebra_agent_worker.worker_polling import has_remaining_cycles, validate_loop_inputs
+from zebra_agent_worker.worker_health import WorkerHealth
+from zebra_agent_worker.worker_polling import (
+    PollingDelay,
+    has_remaining_cycles,
+    validate_loop_inputs,
+)
+
+if TYPE_CHECKING:
+    from zebra_agent_worker.ag_ui_projection_work import AgUiProjectionWorkService
+    from zebra_agent_worker.command_consumer import SessionCommandConsumer
+    from zebra_agent_worker.runtime_gates import RuntimeGateWorker
 
 
 @dataclass(frozen=True)
@@ -73,6 +84,7 @@ class WorkerLoopService:
         *,
         cloud_memory_recovery: CloudMemoryFinalizationRecovery | None = None,
         child_wakeup_service: ChildCompletionWakeupService | None = None,
+        orchestration_hook: OrchestrationWakeupHook | None = None,
         sleep: Callable[[float], None] = time.sleep,
         command_consumer: SessionCommandConsumer | None = None,
         scan_ready_sessions: bool = True,
@@ -84,16 +96,23 @@ class WorkerLoopService:
         stream_hint_relay: StreamHintRelay | None = None,
         transient_capacity: TransientCapacityMaintenance | None = None,
         safety_net: WorkerSafetyNet | None = None,
+        runtime_gates: RuntimeGateWorker | None = None,
+        cloud_polling: bool = False,
     ) -> None:
+        self.health = WorkerHealth()
         self._projection_store = projection_store
         self._execution_service = execution_service
         self._safety_net = safety_net
         self._cloud_memory_recovery = cloud_memory_recovery
         self._child_wakeup_service = child_wakeup_service
+        self._orchestration_hook = orchestration_hook
         self._sleep = sleep
         self._command_consumer = command_consumer
         self._scan_ready_sessions = scan_ready_sessions
+        self._cloud_polling = cloud_polling
         self._cloud_memory_recovery_thread: Thread | None = None
+        self._cloud_memory_recovery_at = 0.0
+        self._cloud_memory_polling = PollingDelay(0.5, idle_ceiling=30)
         self._memory_delivery = memory_delivery
         self._memory_delivery_thread: Thread | None = None
         self.migrated_run = migrated_run
@@ -102,6 +121,7 @@ class WorkerLoopService:
         self._client_recovery_at = 0.0
         self._projection_work = projection_work
         self._transient_capacity = transient_capacity
+        self._runtime_gates = runtime_gates
         self._stream_hint_relay = stream_hint_relay
         self._relay_at = 0.0
         self._relay_lock = Lock()
@@ -112,7 +132,7 @@ class WorkerLoopService:
         try:
             if time.monotonic() < self._relay_at:
                 return
-            self._relay_at = time.monotonic()+1  # Rate ceiling, not a delivery latency promise.
+            self._relay_at = time.monotonic() + 1  # Rate ceiling, not a delivery latency promise.
             self._stream_hint_relay.tick()
         finally:
             self._relay_lock.release()
@@ -140,6 +160,8 @@ class WorkerLoopService:
         batch_size: int,
         lease_ttl_seconds: int,
     ) -> None:
+        if self._runtime_gates is not None:
+            self._runtime_gates.tick()
         if self._transient_capacity is not None:
             self._transient_capacity.tick()
         self._relay_stream_hints()
@@ -152,6 +174,8 @@ class WorkerLoopService:
         )
 
     def drain(self) -> None:
+        if self._runtime_gates is not None:
+            self._runtime_gates.close()
         if self._transient_capacity is not None:
             self._transient_capacity.close()
         if self._stream_hint_relay is not None:
@@ -169,7 +193,10 @@ class WorkerLoopService:
         worker_id: str,
         batch_size: int = 1,
         lease_ttl_seconds: int = 30,
+        stop_requested: Callable[[], bool] = lambda: False,
     ) -> WorkerLoopCycleResult:
+        if self._runtime_gates is not None:
+            self._runtime_gates.tick()
         if self._transient_capacity is not None:
             self._transient_capacity.tick()
         self._relay_stream_hints()
@@ -182,7 +209,7 @@ class WorkerLoopService:
                 lease_ttl_seconds=lease_ttl_seconds,
                 batch_size=batch_size,
             )
-            if self._command_consumer is not None
+            if self._command_consumer is not None and not stop_requested()
             else None
         )
         executed_ids: list[str] = []
@@ -212,6 +239,8 @@ class WorkerLoopService:
         )
         ready_ids = tuple(str(session.session_id) for session in ready_sessions)
         for session in ready_sessions:
+            if stop_requested():
+                break
             session_id = str(session.session_id)
             if session_id in executed_ids:
                 continue
@@ -236,9 +265,7 @@ class WorkerLoopService:
             ) as skip_error:
                 skipped_ids.append(session_id)
                 if self._safety_net is not None:
-                    self._safety_net.note_recovery_failure(
-                        session_id, "session_scan", skip_error
-                    )
+                    self._safety_net.note_recovery_failure(session_id, "session_scan", skip_error)
                 print(
                     f"worker session skipped: session={session_id} "
                     f"reason={type(skip_error).__name__}",
@@ -247,7 +274,7 @@ class WorkerLoopService:
                 )
                 continue
             executed_ids.append(session_id)
-        if command_result is None or command_result.status == "idle":
+        if not stop_requested() and (command_result is None or command_result.status == "idle"):
             self._start_memory_delivery(worker_id=worker_id, batch_size=batch_size)
             self._start_cloud_memory_recovery(
                 worker_id=worker_id,
@@ -278,7 +305,7 @@ class WorkerLoopService:
                 print("worker Memory delivery failed", file=sys.stderr, flush=True)
 
         thread = Thread(
-            target=deliver,
+            target=postgres_context().run, args=(deliver,),
             name=f"{worker_id}-memory-delivery",
             daemon=True,
         )
@@ -292,7 +319,10 @@ class WorkerLoopService:
         batch_size: int,
         lease_ttl_seconds: int,
     ) -> None:
-        if self._cloud_memory_recovery is None:
+        if (
+            self._cloud_memory_recovery is None
+            or time.monotonic() < self._cloud_memory_recovery_at
+        ):
             return
         active = self._cloud_memory_recovery_thread
         if active is not None and active.is_alive():
@@ -301,8 +331,9 @@ class WorkerLoopService:
         # ponytail: finalization recovery is best-effort background work until
         # it has its own durable queue; it must never block RUN command polling.
         def recover() -> None:
+            progressed, failed = False, False
             try:
-                recover_completed_cloud_memory(
+                progressed = recover_completed_cloud_memory(
                     worker_id=worker_id,
                     batch_size=batch_size,
                     lease_ttl_seconds=lease_ttl_seconds,
@@ -310,10 +341,21 @@ class WorkerLoopService:
                     projection_store=self._projection_store,
                 )
             except Exception:
+                failed = True
                 print("worker memory recovery failed", file=sys.stderr, flush=True)
+            finally:
+                if self._cloud_polling:
+                    # ponytail: best-effort idle discovery <=30s. A durable wakeup
+                    # queue is needed for tighter recovery latency at large history.
+                    delay = self._cloud_memory_polling.next(
+                        "error" if failed else "progress" if progressed else "idle"
+                    )
+                    self._cloud_memory_recovery_at = time.monotonic() + (0 if progressed else delay)
+                elif progressed is False:
+                    self._cloud_memory_recovery_at = time.monotonic() + 1
 
         recovery_thread = Thread(
-            target=recover,
+            target=postgres_context().run, args=(recover,),
             name=f"{worker_id}-cloud-memory-recovery",
             daemon=True,
         )
@@ -321,15 +363,33 @@ class WorkerLoopService:
         recovery_thread.start()
 
     def _process_child_wakeups(self) -> None:
-        """Poll terminal children and emit parent resume commands."""
+        """Poll terminal children and emit parent resume commands.
 
+        CA-P7-02B wiring: children bound to orchestration nodes also advance
+        the orchestration run via the wakeup hook before the delegation
+        epoch evaluates.
+        """
+
+        if self._orchestration_hook is not None:
+            try:
+                self._orchestration_hook.reconcile_pending()
+            except Exception:
+                print("worker orchestration reconciliation failed", file=sys.stderr, flush=True)
         if self._child_wakeup_service is None:
             return
         from agent_core.domain.identifiers import TaskId
         from agent_core.domain.parent_continuation import ChildTerminalStatus
 
+        from zebra_agent_worker.orchestration_wakeup_hook import outcome_for_child_status
+
         for terminal in self._child_wakeup_service.poll_terminal_children():
             try:
+                if self._orchestration_hook is not None:
+                    outcome = outcome_for_child_status(str(terminal["status"]))
+                    if outcome is not None:
+                        self._orchestration_hook.on_child_terminal(
+                            TaskId(UUID(str(terminal["child_task_id"]))), outcome
+                        )
                 self._child_wakeup_service.process_child_terminal(
                     TaskId(UUID(str(terminal["child_task_id"]))),
                     status=ChildTerminalStatus(str(terminal["status"])),
@@ -350,8 +410,11 @@ class WorkerLoopService:
         max_cycles: int | None = None,
         stop_when_idle: bool = False,
         idle_sleep_seconds: float = 0.1,
+        stop_requested: Callable[[], bool] = lambda: False,
     ) -> WorkerLoopRunResult:
         try:
+            if stop_requested():
+                return WorkerLoopRunResult(0, 0, "signal", (), ())
             if self.migrated_run is not None:
                 return self.migrated_run(
                     worker_id=worker_id,
@@ -360,6 +423,7 @@ class WorkerLoopService:
                     max_cycles=max_cycles,
                     stop_when_idle=stop_when_idle,
                     idle_sleep_seconds=idle_sleep_seconds,
+                    stop_requested=stop_requested,
                 )
             validate_loop_inputs(
                 batch_size=batch_size,
@@ -367,20 +431,30 @@ class WorkerLoopService:
                 max_cycles=max_cycles,
                 idle_sleep_seconds=idle_sleep_seconds,
             )
+            delay = PollingDelay(idle_sleep_seconds) if self._cloud_polling else None
             accumulator = _LoopAccumulator()
             stop_reason = "max_cycles"
             while max_cycles is None or accumulator.cycles_completed < max_cycles:
+                if stop_requested():
+                    stop_reason = "signal"
+                    break
                 if self._cutover_probe is not None and self._cutover_probe():
                     stop_reason = "cutover_requires_restart"
                     break
+                self.health.legacy_tick(busy=True)
                 cycle = self.poll_once(
                     worker_id=worker_id,
                     batch_size=batch_size,
                     lease_ttl_seconds=lease_ttl_seconds,
+                    stop_requested=stop_requested,
                 )
+                self.health.legacy_tick(busy=False)
                 accumulator.cycles_completed += 1
                 accumulator.executed_session_ids.extend(cycle.executed_session_ids)
                 accumulator.skipped_session_ids.extend(cycle.skipped_session_ids)
+                if stop_requested():
+                    stop_reason = "signal"
+                    break
                 if not cycle.ready_session_ids:
                     accumulator.idle_cycles += 1
                     if stop_when_idle:
@@ -388,7 +462,9 @@ class WorkerLoopService:
                         break
                     if not has_remaining_cycles(accumulator, max_cycles):
                         break
-                    self._sleep(idle_sleep_seconds)
+                    self._sleep(delay.next("progress" if cycle.executed_session_ids else
+                                           "blocked" if cycle.skipped_session_ids else "idle")
+                                if delay else idle_sleep_seconds)
                     continue
                 if (
                     stop_when_idle
@@ -399,6 +475,9 @@ class WorkerLoopService:
                     break
                 if not has_remaining_cycles(accumulator, max_cycles):
                     break
+                if delay is not None:
+                    self._sleep(delay.next("progress" if cycle.executed_session_ids
+                                           else "blocked"))
             return WorkerLoopRunResult(
                 cycles_completed=accumulator.cycles_completed,
                 idle_cycles=accumulator.idle_cycles,
@@ -407,4 +486,5 @@ class WorkerLoopService:
                 skipped_session_ids=tuple(accumulator.skipped_session_ids),
             )
         finally:
+            self.health.close()
             self.drain()

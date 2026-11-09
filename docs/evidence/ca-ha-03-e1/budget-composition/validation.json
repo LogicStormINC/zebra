@@ -1,0 +1,66 @@
+{
+  "task": "CA-HA-03",
+  "parent": "84b4b462f3192f40e18d666d5035a4550122d9be",
+  "status": "source_candidate_reviewed_not_deployed_no_E1_acceptance",
+  "root_cause_refinement": {
+    "prior_receipt": "../validation.json",
+    "first_old_guard": "ordinary synchronous client injected by CLI/child cannot satisfy cancellable native I/O",
+    "second_old_guard": "trusted exact-request counter absent",
+    "original_task": "e698a4d3-e12a-4d37-9fd9-1af491aaff10",
+    "original_task_replayed": false,
+    "historical_receipt_unchanged": true
+  },
+  "changes": [
+    "optional existing ModelRequestBudgetFactory carried by trusted CloudWorkerComposition",
+    "ordinary and delegated roots receive bundle factory unless explicitly overridden",
+    "Cloud CLI and isolated child use native cancellable I/O; local client ownership retained",
+    "synthetic provider and request proof share compact JSON UTF8 byte meter; actual output cap enforced"
+  ],
+  "regression_initial": {
+    "passed": 3054,
+    "skipped": 856,
+    "failed": 1,
+    "seconds": 570.75,
+    "scope": "tests/worker tests/agent_integrations tests/test_cloud_api_worker_profile_composition.py",
+    "failure": "obsolete test required Cloud shared sync client closure; update tests to prove drain before DB scope close and prohibit sync client creation"
+  },
+  "final_focused": {
+    "passed": 47,
+    "skipped": 2,
+    "seconds": 7.83,
+    "log": "final-focused.log"
+  },
+  "full_regression_repeated_after_test_only_fix": false,
+  "make_check": {
+    "exit": 0,
+    "typed_sources": 1534,
+    "eval_cases": 30,
+    "file_size_violations": 0,
+    "log": "make-check.log"
+  },
+  "meter_check": {
+    "command": "uv run python tests/compose/cloud_ha_e1/check_metering.py",
+    "passed": true,
+    "coverage": [
+      "exact request bytes/hash/input bound/output cap",
+      "multibyte Unicode",
+      "noncanonical/nonobject/oversize/invalid cap reject",
+      "actual provider usage and readonly pwd",
+      "actual HTTP output cap and body bound rejection"
+    ],
+    "contract": "e1-canonical-json-utf8-bytes/1",
+    "real_provider_tokenizer": false,
+    "log": "metering.log"
+  },
+  "frozen_sources": "source-sha256.json",
+  "review": "review.json",
+  "remaining": [
+    "explicit operator fixture composition selecting the counter",
+    "new Task frozen model invocation/bundle output cap within cumulative authority budget",
+    "exact new source images and guarded end-to-end NEW synthetic Task",
+    "E1 dataset/load/fault/soak and subsequent HA stages"
+  ],
+  "production_changed": false,
+  "staging_images_changed": false,
+  "real_provider_counter_supplied": false
+}

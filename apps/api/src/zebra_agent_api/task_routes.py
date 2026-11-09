@@ -7,6 +7,8 @@ from agent_security.host_grant import VerifiedHostGrant
 from agent_storage import PostgresControlPlaneStores
 
 from zebra_agent_api.app import ZebraAgentApi
+from zebra_agent_api.command_submission import cloud_command_payload
+from zebra_agent_api.idempotency import TASK_CREATE_RECEIPT_PATH, scoped_idempotency_key
 from zebra_agent_api.responses import ApiResponse
 from zebra_agent_api.subagent_read import SubagentReadApi
 from zebra_agent_api.task_api import (
@@ -22,6 +24,7 @@ from zebra_agent_api.task_artifact_history import artifact_segments, route_task_
 from zebra_agent_api.task_message_contract import receipt_version
 from zebra_agent_api.task_message_receipts import read_task_message_receipt
 from zebra_agent_api.task_read_summaries import read_task_attachments, read_task_usage
+from zebra_agent_api.tenant_guard import host_list_context_response, task_access_response
 
 
 class TaskRouteRequest(Protocol):
@@ -47,8 +50,36 @@ class TaskRouteRequest(Protocol):
     def verified_host_grant(self) -> VerifiedHostGrant | None: ...
 
 
+def _read_create_receipt(app: ZebraAgentApi, request: TaskRouteRequest) -> ApiResponse:
+    if app.settings.deployment != "cloud":
+        return ApiResponse(404, {"status": "not_found"})
+    context, verified = request.host_context, request.verified_host_grant
+    if context is None:
+        return ApiResponse(403, {"status": "host_grant_rejected"})
+    denied = host_list_context_response(context, verified)
+    if denied is not None:
+        return denied
+    key = _idempotency_key(request)
+    if key is None or not 1 <= len(key) <= 256 or request.query or request.body is not None:
+        return ApiResponse(400, {"status": "receipt_input_rejected"})
+    scoped = scoped_idempotency_key(key, context)
+    assert scoped is not None
+    receipt = app.stores.idempotency.get(action="session.create", idempotency_key=scoped)
+    if receipt is None:
+        return ApiResponse(200, {"status": "not_observed"})
+    task = receipt.response_body.get("session_id")
+    if receipt.status_code != 201 or not isinstance(task, str):
+        return ApiResponse(503, {"status": "create_receipt_unavailable"})
+    denied = task_access_response(app, task, context, verified_host_grant=verified)
+    if denied is not None:
+        return ApiResponse(denied.status_code, {"status": "create_receipt_unavailable"})
+    return ApiResponse(200, {"status": "accepted", "task_id": task})
+
+
 def handle_task_route(app: ZebraAgentApi, request: TaskRouteRequest) -> ApiResponse | None:
     method = request.method.upper()
+    if method == "GET" and request.path == TASK_CREATE_RECEIPT_PATH:
+        return _read_create_receipt(app, request)
     if method == "GET" and request.path == "/tasks":
         return TaskReadApi(app.stores).list(request.query or {})
     if method == "POST" and request.path == "/tasks":
@@ -111,6 +142,22 @@ def handle_task_route(app: ZebraAgentApi, request: TaskRouteRequest) -> ApiRespo
             request.body or {},
             idempotency_key=_idempotency_key(request),
             message_receipt_version=version,
+        )
+    if (
+        app.settings.deployment == "cloud"
+        and method == "POST"
+        and len(parts) == 2
+        and parts[1] in {"resume", "suspend"}
+    ):
+        command = cloud_command_payload(parts[1], request.body or {})
+        if isinstance(command, ApiResponse):
+            return command
+        return route_active_task(
+            app.stores,
+            parts[0],
+            lambda active: app.submit_command(
+                active, command, idempotency_key=_idempotency_key(request)
+            ),
         )
     if (
         method == "POST"

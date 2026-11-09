@@ -1,13 +1,6 @@
 from datetime import datetime
 from pathlib import Path
 
-from agent_core.domain.attachments import AttachmentContextInput
-from agent_core.domain.memories import MemoryType
-from agent_core.domain.messages import SessionMessage
-from agent_core.harness.retry_plan import is_skipped_verification
-from agent_core.ports.context_compiler import ConfirmedMemoryInput, RuntimeEvidenceInput
-from agent_core.ports.conversation_compactor import ConversationCompactionResult
-
 from agent_context.compaction import (
     ConversationCompactionRequest,
     ToolOutputCompactionRequest,
@@ -27,6 +20,12 @@ from agent_context.models import (
 )
 from agent_context.prompt_layout import build_prompt_layout
 from agent_context.scanner import estimate_tokens
+from agent_core.domain.attachments import AttachmentContextInput
+from agent_core.domain.memories import MemoryType
+from agent_core.domain.messages import SessionMessage
+from agent_core.harness.retry_plan import is_skipped_verification
+from agent_core.ports.context_compiler import ConfirmedMemoryInput, RuntimeEvidenceInput
+from agent_core.ports.conversation_compactor import ConversationCompactionResult
 
 MAX_CONTINUITY_ITEM_TOKENS = 1_000
 
@@ -229,9 +228,8 @@ def _compact_runtime_evidence(
             )
             continue
         if evidence.kind == "client_state":
-            from agent_core.domain.client_context import ClientStateSnapshot
-
             from agent_context.client_state import client_state_context_item
+            from agent_core.domain.client_context import ClientStateSnapshot
 
             metadata = evidence.metadata or {}
             frontend_app_id = metadata.get("frontend_app_id")

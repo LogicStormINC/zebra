@@ -10,19 +10,17 @@ from uuid import UUID
 from agent_core.domain.events import EventType
 from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.identifiers import SessionId, TaskId
-from agent_core.ports.stream_source_head import StreamObservationReadPort
+from agent_core.ports.agent_tasks import AgentTaskPort
 from agent_core.ports.task_projection_checkpoints import CheckpointNotReady, ProjectionScope
 from agent_integrations.ag_ui.checkpoint_plan import checkpoint_version
 from agent_integrations.ag_ui.profiles import AgUiProjectionProfile
-from agent_storage.live_event_store import PostCommitPublishingEventStore
 from agent_storage.postgres.agent_tasks import PostgresAgentTaskStore
-from agent_storage.postgres.direct_control import PostgresDirectControl
-from agent_storage.postgres.events import PostgresEventStore
-from agent_storage.postgres.projections import PostgresProjectionStore
-from agent_storage.postgres.stream_proof_batch import StreamProofSnapshot
+from agent_storage.postgres.connection_scope import postgres_connection_scope
+from agent_storage.postgres.stream_proof_batch import StreamProofReader, StreamProofSnapshot
 from agent_storage.postgres.task_io import current_task_io_deadline
 from fastapi import Request
 from fastapi.responses import JSONResponse, StreamingResponse
+from psycopg import OperationalError
 
 from zebra_agent_api.ag_ui_observation_binding import stream_negotiation_problem as _problem
 from zebra_agent_api.ag_ui_stream import AgUiStreamContext, prepare_agui_stream, tail_agui_events
@@ -34,8 +32,14 @@ from zebra_agent_api.ag_ui_task_view import (
 from zebra_agent_api.app import ZebraAgentApi
 from zebra_agent_api.responses import ApiResponse
 from zebra_agent_api.session_streaming import _deadline, tail_session_events, tail_task_events
-from zebra_agent_api.stream_v2_authority import V2ReadAuthority, V2ReadBinding
-from zebra_agent_api.stream_v2_query import _source_query
+from zebra_agent_api.stream_v2_authority import (
+    V2ReadAuthority,
+    V2ReadBinding,
+    legacy_snapshot_database,
+    native_raw_snapshot_compatible,
+)
+from zebra_agent_api.stream_v2_query import legacy_cursor_position
+from zebra_agent_api.stream_v2_query import source_query as source_query
 from zebra_agent_api.stream_v2_reader import V2StreamContext
 from zebra_agent_api.tenant_guard import task_access_response
 
@@ -75,35 +79,7 @@ def _raw_snapshot_authority(api: ZebraAgentApi) -> V2ReadAuthority | None:
     authority = _native_raw_authority(api)
     if authority is None:
         return None
-    control, sessions, events = api.cloud_control, api.stores.sessions, api.stores.events
-    if type(events) is PostCommitPublishingEventStore:
-        method = events.read_session_highwater
-        if (
-            getattr(method, "__func__", method)
-            is not PostCommitPublishingEventStore._snapshot_native_highwater
-        ):
-            return None
-        events = events._event_store
-    if (
-        type(control) is not PostgresDirectControl
-        or not control.supports_binding_snapshot(authority.proofs._database)
-        or type(sessions) is not PostgresProjectionStore
-        or type(events) is not PostgresEventStore
-    ):
-        return None
-    namespace_method = sessions.get_session_namespace
-    highwater_method = events.read_session_highwater
-    if (
-        getattr(namespace_method, "__func__", namespace_method)
-        is not PostgresProjectionStore._snapshot_native_namespace
-        or getattr(highwater_method, "__func__", highwater_method)
-        is not PostgresEventStore._snapshot_native_highwater
-    ):
-        return None
-    for database in (sessions._database, events._database):
-        if database._dsn != authority.dsn or database.deployment_namespace != authority.namespace:
-            return None
-    return authority
+    return authority if native_raw_snapshot_compatible(api, authority.proofs._database) else None
 
 
 def prepare_v2(
@@ -134,12 +110,15 @@ def prepare_v2(
     parts = path.strip("/").split("/")
     try:
         authority = _native_raw_authority(api) if parts[0] != "agui" or proof is not None else None
-        if proof is not None and (
-            authority is None
-            or proof._database._dsn != authority.dsn
-            or proof._database.deployment_namespace != authority.namespace
-        ):
-            raise ValueError("stream snapshot crosses request database scope")
+        if proof is not None:
+            database = (
+                authority.proofs._database if authority is not None
+                else legacy_snapshot_database(api)
+            )
+            if database is None or (proof._database._dsn, proof._namespace) != (
+                database._dsn, database.deployment_namespace
+            ):
+                raise ValueError("stream snapshot crosses request database scope")
         scope = (
             authority.proofs.snapshot()
             if authority is not None and proof is None
@@ -163,14 +142,10 @@ def prepare_v2(
             if reader is None:
                 from agent_integrations.run_stream_admission import load_run_stream_admission
 
-                admission = load_run_stream_admission(api.stores.tasks, task_id, run_id)
+                admission = load_run_stream_admission(cast(AgentTaskPort, tasks), task_id, run_id)
                 if admission is not None and admission.mode.value == "transient_v2":
                     return _problem(503, "stream_v2_unavailable")
-                return (
-                    _problem(503, "stream_v2_unavailable")
-                    if (token or "").startswith(("v2.", "v2p."))
-                    else None
-                )
+                return None  # Signed cursors without a reader were rejected above.
             arguments = task_id, run_id, cast(HostContextEnvelope, host)
             bound: V2ReadBinding | None
             if profile is not None:
@@ -220,26 +195,17 @@ def prepare_v2(
                     for entry in page.events
                 ):
                     return None
+        except (TimeoutError, OperationalError):
+            raise
         except Exception:
             pass
         return _problem(409, "projection_not_ready")
     except ValueError:
         return _problem(400, "invalid_cursor")
+    except (TimeoutError, OperationalError):
+        raise
     except Exception:
         return _problem(409, "stream_source_unavailable")
-
-
-def source_query(
-    api: ZebraAgentApi,
-    context: V2StreamContext,
-    query: Mapping[str, str],
-    *,
-    initial_metadata: StreamObservationReadPort | None = None,
-) -> dict[str, str] | ApiResponse:
-    try:
-        return _source_query(api, context, query, initial_metadata=initial_metadata)
-    except ValueError:
-        return _problem(400, "invalid_cursor")
 
 
 _native_agui_callbacks = (task_access_response, prepare_v2, source_query, prepare_agui_stream)
@@ -255,10 +221,7 @@ def _agui_snapshot_authority(api: ZebraAgentApi) -> V2ReadAuthority | None:
         )
     ):
         return None
-    authority = _raw_snapshot_authority(api)
-    if authority is None:
-        return None
-    return authority
+    return _raw_snapshot_authority(api)
 
 
 async def agui_response(
@@ -344,7 +307,6 @@ async def agui_response(
                 prepared, public_slice=public_slice, public_cursor_exhausted=exhausted
             )
         return prepared if isinstance(prepared, ApiResponse) else (context, prepared)
-
     def prepare() -> tuple[V2StreamContext | None, AgUiStreamContext | None] | ApiResponse:
         if authority is None:
             return prepare_context()
@@ -358,6 +320,7 @@ async def agui_response(
         prepare,
         authorization_expires_at=getattr(host, "expires_at", None),
         request_deadline=getattr(request.state, "authorization_deadline", None),
+        http_app=request.scope.get("app"),
     )
     if isinstance(admitted, ApiResponse):
         return JSONResponse(status_code=admitted.status_code, content=admitted.body)
@@ -402,10 +365,20 @@ async def raw_response(
         query.setdefault("last_event_id", value)
 
     authority = _raw_snapshot_authority(api) if snapshot_preflight is not None else None
+    proofs = authority.proofs if authority is not None else None
+    if proofs is None and snapshot_preflight is not None and (
+        prepare_v2 is _native_agui_callbacks[1]
+    ):
+        if (database := legacy_snapshot_database(api)) is not None:
+            proofs = StreamProofReader(
+                database._dsn, deployment_namespace=database.deployment_namespace,
+                task_io_connections=database._task_io,
+            )
 
-    def prepare_context(
-        proof: StreamProofSnapshot | None = None,
-    ) -> ApiResponse | tuple[V2StreamContext, dict[str, str], UUID, int] | None:
+    type Position = tuple[V2StreamContext | None, UUID, int, SessionId | None]
+    type Prepared = ApiResponse | JSONResponse | Position | None
+
+    def prepare_context(proof: StreamProofSnapshot | None = None) -> Prepared:
         if "X-Zebra-AGUI-Profile" in request.headers or "X-Zebra-AGUI-Revision" in request.headers:
             return _problem(409, "agui_profile_unavailable")
         context = (
@@ -413,6 +386,9 @@ async def raw_response(
             if proof is not None
             else prepare_v2(api, request.url.path, query, host)
         )
+        if context is None and proof is not None and api.stream_v2_reader is None:
+            position = legacy_cursor_position(request, proof)
+            return position if isinstance(position, JSONResponse) else (None, *position)
         if isinstance(context, ApiResponse) or context is None:
             return context
         rewritten = source_query(api, context, query)
@@ -426,6 +402,7 @@ async def raw_response(
             resource = UUID(request.url.path.strip("/").split("/")[1])
         except ValueError:
             return ApiResponse(400, {"status": "invalid_request"})
+        initial_wake_segment = None
         if request.url.path.startswith("/tasks/"):
             header = (proof if proof is not None else api.stores.tasks).read_task_header(
                 TaskId(resource), require_source_coverage=api.settings.deployment != "local"
@@ -433,6 +410,8 @@ async def raw_response(
             if header is None:
                 return ApiResponse(404, {"status": "not_found"})
             highwater = header.current_sequence
+            if proof is not None:
+                initial_wake_segment = header.active_segment_id
         elif api.settings.deployment != "local":
             if proof is not None:
                 highwater = proof.read_session_highwater(SessionId(resource))
@@ -442,27 +421,33 @@ async def raw_response(
             highwater = after
         if after > highwater:
             return ApiResponse(400, {"status": "invalid_request"})
-        return context, rewritten, resource, after
+        return context, resource, after, initial_wake_segment
 
-    def prepare() -> ApiResponse | tuple[V2StreamContext, dict[str, str], UUID, int] | None:
-        if authority is None or snapshot_preflight is None:
-            return prepare_context()
-        with authority.proofs.snapshot() as proof:
+    def prepare() -> Prepared:
+        if proofs is None or snapshot_preflight is None:
+            if preflight is None:
+                return prepare_context()
+            with postgres_connection_scope(bounded=True):
+                denied = preflight()
+                _check_read_deadline(current_task_io_deadline(), getattr(host, "expires_at", None))
+                return denied if denied is not None else prepare_context()
+        with proofs.snapshot() as proof:
             denied = snapshot_preflight(proof)
             _check_read_deadline(current_task_io_deadline(), getattr(host, "expires_at", None))
             return denied if denied is not None else prepare_context(proof)
 
     admitted = await authorized_task_preflight(
-        preflight if authority is None and preflight is not None else lambda: None,
+        lambda: None,
         prepare,
         authorization_expires_at=getattr(host, "expires_at", None),
         request_deadline=getattr(request.state, "authorization_deadline", None),
+        http_app=request.scope.get("app"),
     )
     if isinstance(admitted, ApiResponse):
         return JSONResponse(status_code=admitted.status_code, content=admitted.body)
-    if admitted is None:
-        return None
-    context, query, resource, after = admitted
+    if admitted is None or isinstance(admitted, JSONResponse):
+        return admitted
+    context, resource, after, initial_wake_segment = admitted
     deadline = _deadline(getattr(host, "expires_at", None))
     options = dict(
         database_path=database_path,
@@ -476,7 +461,10 @@ async def raw_response(
         recovery_notice=isinstance(context, V2StreamContext) and context.full_recovery,
     )
     if request.url.path.startswith("/tasks/"):
-        stream = tail_task_events(task_id=TaskId(resource), **options)  # type: ignore[arg-type]
+        stream = tail_task_events(
+            task_id=TaskId(resource), initial_wake_segment=initial_wake_segment,
+            **options,  # type: ignore[arg-type]
+        )
     else:
         stream = tail_session_events(session_id=SessionId(resource), **options)  # type: ignore[arg-type]
     if isinstance(context, V2StreamContext):

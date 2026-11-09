@@ -1,0 +1,15 @@
+{
+ admin off
+ auto_https off
+}
+:28445 {
+ tls /certs/server.crt /certs/server.key
+ reverse_proxy 127.0.0.1:28080
+}
+
+https://api.deepseek.com {
+ bind 127.0.0.1
+ tls /certs/model.crt /certs/model.key
+ header X-Zebra-E1-Fixture ca-ha-03-e1-20261102
+ reverse_proxy 127.0.0.1:28082
+}

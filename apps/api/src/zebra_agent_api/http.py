@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-import asyncio
-from collections.abc import AsyncIterator, Mapping
+from collections.abc import Mapping
 from pathlib import Path
 
 from agent_core.application.agent_definitions import PublisherGrantPort
@@ -30,6 +29,7 @@ from zebra_agent_api.artifact_download import (
 )
 from zebra_agent_api.coverage_public_read import cloud_raw_stream_preflight
 from zebra_agent_api.coverage_report_http import coverage_report_response
+from zebra_agent_api.database_budget import configure_database_budget, database_call
 from zebra_agent_api.extension_composition import (
     compose_http_extensions,
     compose_http_turn_admission,
@@ -40,6 +40,7 @@ from zebra_agent_api.extension_reads import (
     extension_error,
     is_extension_path,
 )
+from zebra_agent_api.health_readiness import ApiHealth
 from zebra_agent_api.host_registry_management import deployment_namespace as _deployment_namespace
 from zebra_agent_api.host_registry_management import register_management_routes
 from zebra_agent_api.http_host_auth import (
@@ -188,23 +189,11 @@ def create_http_app(
         active_host_grant_authorizer,
         host_grant_origins,
     )
-    from contextlib import asynccontextmanager
-
-    @asynccontextmanager
-    async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
-        try:
-            if active_settings.deployment != "local":
-                from zebra_agent_api.host_auth import warm_host_grant_keys
-
-                await warm_host_grant_keys(active_host_grant_authorizer)
-            yield
-        finally:
-            if api.stream_v2_reader is not None:
-                await api.stream_v2_reader.close()
-            if api.stream_notifications is not None:
-                await api.stream_notifications.close()
-
-    app = FastAPI(title="Zebra Agent API", lifespan=lifespan)
+    health = ApiHealth(api, active_host_grant_authorizer)
+    app = FastAPI(title="Zebra Agent API", lifespan=health.lifespan)
+    health.register(app)
+    configure_database_budget(app, health, cloud_composition.dsn if cloud_composition
+                              else active_settings.database_url)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"] if active_settings.deployment == "local" else exact_host_origins,
@@ -288,7 +277,9 @@ def create_http_app(
         )
         artifact_parts = tuple(part for part in request.url.path.split("/") if part)
         raw_negotiated = False
-        if (
+        if request.method == "GET" and request.url.path == "/health":
+            response = adapter.handle(route_request)
+        elif (
             active_settings.deployment != "local"
             and request.method == "GET"
             and len(artifact_parts) == 5
@@ -338,10 +329,11 @@ def create_http_app(
                 lambda: adapter.handle(route_request),
                 authorization_expires_at=getattr(route_request.host_context, "expires_at", None),
                 request_deadline=getattr(request.state, "authorization_deadline", None),
+                http_app=request.scope.get("app"),
             )
         else:
             # Observation budgets must not turn an uncertain command into a retry.
-            response = await asyncio.to_thread(adapter.handle, route_request)
+            response = await database_call(app, adapter.handle, route_request)
         if _is_stream_request(request) and response.status_code == 200:
             from zebra_agent_api.stream_v2_http import raw_response
 
@@ -369,6 +361,7 @@ def create_http_app(
                         route_request.host_context, "expires_at", None
                     ),
                     request_deadline=getattr(request.state, "authorization_deadline", None),
+                    http_app=request.scope.get("app"),
                 )
                 if isinstance(head, ApiResponse):
                     return JSONResponse(status_code=head.status_code, content=head.body)
@@ -413,6 +406,7 @@ def create_http_app(
                             route_request.host_context, "expires_at", None
                         ),
                         request_deadline=getattr(request.state, "authorization_deadline", None),
+                        http_app=request.scope.get("app"),
                     )
                     if isinstance(highwater, ApiResponse):
                         return JSONResponse(

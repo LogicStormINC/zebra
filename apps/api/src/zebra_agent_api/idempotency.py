@@ -8,6 +8,8 @@ from agent_storage import new_idempotency_record
 
 from zebra_agent_api.responses import ApiResponse
 
+TASK_CREATE_RECEIPT_PATH = "/tasks/create-receipt"
+
 
 def request_hash(payload: dict[str, object]) -> str:
     encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")

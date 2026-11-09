@@ -1,3 +1,26 @@
+[CA-P7-03C普通Worker累计预算与正常入口候选](docs/CA-P7-03C_worker_budget.md)：
+跨Attempt持久guard/可信usage装配；缺生产counter或持久gate仍拒绝，非部署或完整跨仓验收。
+
+[CA-P7-03B真实子任务准入/持久预算/原收据](docs/CA-P7-03B_orchestration_admission.md)：
+候选路径真实PG验证通过，默认执行预算gate保持关闭；未部署。
+
+[可信编排上下文与双工具授权（CA-P7-03A）](docs/CA-P7-03A_trusted_orchestration.md)：
+03A 修复信任边界，真实派发保持关闭；03B/C/D 负责准入、装配与执行验收。
+
+Current P5 precursor: [fenced cloud Eval/shared quota backing](docs/CA-P5-04_cloud_script_eval.md); actual owned gVisor lifecycle S1 remains separate.
+
+2026-10-28：[可选签名 Worker 进程绑定](docs/CA-P5-03_worker_process_binding.md)，仅启动身份元数据，不代替就绪/兼容或部署授权；默认不启用。
+
+## Original Runtime gate termination
+
+[CA-P5-02A public contract/proof boundary](docs/CA-P5-02A_gate_termination.md): separate machine authority, durable late-submit fence and original GET; no Task/process/fleet termination or deployment.
+
+## CA-P5-01 — Runtime gates (verified / Review)
+
+[Contract/proof boundaries](docs/CA-P5-01_runtime_gates.md): scoped machine API, immutable original/CAS,
+DB admission drain/open and real Worker snapshot/engine observations. Development mode is explicit;
+no global stop/activation authority, automatic replay, Controller claim, deployment or production migration.
+
 2026-10-28：[P4授权主线整合与分支边界](docs/evidence/p4-integration/2026-10-28.json)；cloud-agent只快进，保留脏工作树/独有实验与冻结兼容基线。无部署或生产迁移。
 
 2026-10-27：[产品分发/当前撤回](docs/CA-P4-02_plugin_distribution.md)，精确原发布/独立业务安装/代际与Worker当前门禁；无部署或生产迁移。

@@ -1,8 +1,10 @@
 """Real PG lane discovery, frozen authority and consumer control isolation."""
 
 import asyncio
+from dataclasses import replace
 from datetime import UTC, datetime
 from threading import Event
+from uuid import uuid4
 
 import psycopg
 import pytest
@@ -23,8 +25,8 @@ from tests.agent_storage.test_postgres_command_wakeup import dsn as _dsn_fixture
 from tests.agent_storage.test_postgres_command_wakeup import postgres_dsn as _pg_fixture
 from tests.agent_storage.test_postgres_command_wakeup_control import _body, _control, _intent
 from tests.agent_storage.test_postgres_command_wakeup_discovery import SCOPE
-from tests.agent_storage.test_postgres_command_wakeup_handoff import _prepare
-from tests.agent_storage.test_postgres_command_wakeup_recovery import _rows
+from tests.agent_storage.test_postgres_command_wakeup_handoff import _handoff, _prepare
+from tests.agent_storage.test_postgres_command_wakeup_recovery import _due, _recover, _rows
 
 dsn = _dsn_fixture
 postgres_dsn = _pg_fixture
@@ -32,6 +34,34 @@ postgres_dsn = _pg_fixture
 
 def _discover(dsn, lane, **kwargs):
     return discover_command_pickups(dsn, deployment_namespace=NAMESPACE, lane=lane, **kwargs)
+
+
+@pytest.mark.parametrize(("pickup_lane", "caller_lane", "expected"), [
+    ("execution", "normal", "read"),
+    ("control", "control", "control"),
+])
+@pytest.mark.parametrize("lookup", ["discover", "resolve"])
+def test_pickup_reads_reserve_the_expected_connection_lane(
+    monkeypatch, pickup_lane, caller_lane, expected, lookup,
+):
+    from agent_storage.postgres import command_wakeup_pickup
+    from agent_storage.postgres.connection_capacity import capacity_lane, current_lane
+
+    class Database:
+        def connect_task_io(self):
+            assert current_lane() == expected
+            raise ConnectionError("connection probe reached")
+
+    monkeypatch.setattr(command_wakeup_pickup, "_database", lambda *_: Database())
+    with capacity_lane(caller_lane):
+        with pytest.raises(ConnectionError, match="connection probe reached"):
+            if lookup == "discover":
+                _discover("unused", pickup_lane)
+            else:
+                resolve_command_pickup(
+                    "unused", deployment_namespace=NAMESPACE, accepted_event_id=uuid4()
+                )
+        assert current_lane() == caller_lane
 
 
 def test_global_keyset_finds_old_sessions_and_control_lane_ignores_run_backlog(dsn):
@@ -65,6 +95,27 @@ def test_global_keyset_finds_old_sessions_and_control_lane_ignores_run_backlog(d
             (NAMESPACE,),
         ).fetchall()
     assert "command_pending_control_pickup" in str(plan)
+
+
+def test_fallback_revisits_approved_recovery_without_rewinding_forward_cursor(dsn):
+    recovered = _prepare(dsn)
+    [first] = _discover(dsn, "execution", batch_size=1, scope_mode="fallback")
+    _due(dsn)
+    assert _recover(dsn)[0].generation == 1
+    later = _intent(dsn, _seed(dsn).session_id, "run")
+    [retry] = _discover(
+        dsn, "execution", batch_size=1, scope_mode="fallback", after=first.cursor
+    )
+    assert retry.accepted_event_id == recovered.event_id
+    assert retry.cursor == replace(first.cursor, cycle_page=first.cursor.cycle_page + 1)
+    [forward] = _discover(
+        dsn, "execution", batch_size=1, scope_mode="fallback", after=retry.cursor
+    )
+    assert forward.accepted_event_id == later.event_id
+    assert _handoff(dsn, recovered).lease is not None
+    assert not _discover(
+        dsn, "execution", batch_size=1, scope_mode="fallback", after=forward.cursor
+    )
 
 
 def test_pickup_page_round_robins_scopes_before_second_command(dsn):
@@ -389,3 +440,31 @@ def test_durable_reconciliation_and_duplicate_are_acknowledged_without_execution
 def test_discovery_rejects_unbounded_limits_without_database(limit):
     with pytest.raises(ValueError):
         _discover("unused", "control", batch_size=limit)
+
+
+@pytest.mark.parametrize("read", ["discover", "resolve"])
+def test_pickup_reads_release_db_lane_on_table_lock(dsn, read):
+    from concurrent.futures import ThreadPoolExecutor
+
+    command = _prepare(dsn)
+    finished = Event()
+
+    def lookup():
+        try:
+            if read == "discover":
+                return _discover(dsn, "execution")
+            return resolve_command_pickup(
+                dsn, deployment_namespace=NAMESPACE, accepted_event_id=command.event_id
+            )
+        finally:
+            finished.set()
+
+    with psycopg.connect(dsn) as locker, ThreadPoolExecutor(1) as pool:
+        locker.execute("LOCK TABLE session_command_pending IN ACCESS EXCLUSIVE MODE")
+        try:
+            future = pool.submit(lookup)
+            assert finished.wait(1.5), "pickup read stranded its database lane on a lock"
+        finally:
+            locker.rollback()  # Always unblock the pre-fix thread before joining it.
+        with pytest.raises(psycopg.errors.LockNotAvailable):
+            future.result()

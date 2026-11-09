@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 from typing import Any
 
 from agent_core.domain.execution_authority_support import digest
@@ -17,6 +16,7 @@ from agent_core.ports.extension_snapshots import (
 from psycopg.types.json import Jsonb
 from pydantic import TypeAdapter, ValidationError
 
+from agent_storage.postgres.async_dispatch import storage_call
 from agent_storage.postgres.database import PostgresDatabase
 
 _ID = TypeAdapter(OpaqueExtensionId)
@@ -86,7 +86,7 @@ class PostgresExtensionSnapshotStore(PostgresDatabase):
         snapshot = ExtensionSnapshot.model_validate(snapshot.model_dump())
         if snapshot.scope != scope:
             raise ValueError("snapshot scope disagrees with supplied scope")
-        await asyncio.to_thread(self._save, scope, snapshot)
+        await storage_call(self._save, scope, snapshot)
 
     async def get(
         self,
@@ -100,13 +100,13 @@ class PostgresExtensionSnapshotStore(PostgresDatabase):
         session_id = _ID.validate_python(session_id)
         turn_id = _ID.validate_python(turn_id)
         expected_digest = _DIGEST.validate_python(expected_digest)
-        return await asyncio.to_thread(self._get, scope, session_id, turn_id, expected_digest)
+        return await storage_call(self._get, scope, session_id, turn_id, expected_digest)
 
     async def exists(self, *, scope: ExtensionScope, session_id: str, turn_id: str) -> bool:
         scope = self._validate_scope(scope)
         session_id = _ID.validate_python(session_id)
         turn_id = _ID.validate_python(turn_id)
-        return await asyncio.to_thread(self._exists, scope, session_id, turn_id)
+        return await storage_call(self._exists, scope, session_id, turn_id)
 
     def resolve_task_ceiling(self, *, session_id: str) -> ExtensionTaskCeiling:
         session_id = _ID.validate_python(session_id)

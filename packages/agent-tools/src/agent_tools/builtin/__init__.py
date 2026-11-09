@@ -3,6 +3,12 @@ from agent_tools.builtin.clarify import ClarifyTool, clarify_contract
 from agent_tools.builtin.command import CommandRunTool, command_run_contract
 from agent_tools.builtin.files import FileReadTool, file_read_contract
 from agent_tools.builtin.git import GitStatusTool, git_status_contract
+from agent_tools.builtin.orchestration import (
+    PlanProposeTool,
+    TaskRequestTool,
+    plan_propose_contract,
+    task_request_contract,
+)
 from agent_tools.builtin.patch import PatchApplyTool, patch_apply_contract
 from agent_tools.builtin.plan import PlanTool, plan_contract
 from agent_tools.builtin.present import ContentPresentTool, content_present_contract
@@ -25,6 +31,10 @@ __all__ = [
     "artifact_read_contract",
     "command_run_contract",
     "clarify_contract",
+    "PlanProposeTool",
+    "TaskRequestTool",
+    "plan_propose_contract",
+    "task_request_contract",
     "file_read_contract",
     "files_search_contract",
     "git_status_contract",

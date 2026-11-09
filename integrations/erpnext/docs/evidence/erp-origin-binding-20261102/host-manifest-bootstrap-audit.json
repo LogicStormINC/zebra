@@ -1,0 +1,18 @@
+{
+  "host_manifests": [
+    {
+      "runtime": "cloud114",
+      "manifest_http": 200,
+      "tool_count": 5,
+      "wrong_workload_signature_http": 403
+    },
+    {
+      "runtime": "native105",
+      "transport_error": "ConnectionError"
+    }
+  ],
+  "bootstrap_https_url": "https://192.168.101.7:18443/desk",
+  "model_requests": 0,
+  "commands": 0,
+  "controller_acquired": false
+}

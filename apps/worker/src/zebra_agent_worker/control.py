@@ -133,7 +133,8 @@ class SessionControlService:
             return self.cancel_session(command.session_id)
         admitted = next(
             (
-                event for event in self._event_store.read_since(
+                event
+                for event in self._event_store.read_since(
                     command.session_id, command.expected_revision
                 )
                 if event.event_type is EventType.SESSION_COMMAND_ACCEPTED
@@ -144,11 +145,13 @@ class SessionControlService:
         if admitted is None:
             raise SessionControlError("cancellation requires a durable admitted command")
         accepted = validate_accepted_session_command(
-            admitted.payload, session_id=command.session_id,
+            admitted.payload,
+            session_id=command.session_id,
             idempotency_key=admitted.idempotency_key,
         )
         if (accepted.fingerprint, accepted.idempotency_key) != (
-            command.fingerprint, command.idempotency_key,
+            command.fingerprint,
+            command.idempotency_key,
         ):
             raise SessionControlError("cancellation differs from admitted command")
         binding = (
@@ -179,6 +182,7 @@ class SessionControlService:
             scope=scope,
             host_context=context,
             operation_id=command.command_id,
+            admitted_event=admitted if context is not None else None,
         )
 
     def suspend_session(
@@ -280,13 +284,16 @@ class SessionControlService:
         idempotency_key: str | None = None,
         operation_id: UUID | None = None,
         task_id: TaskId | None = None,
+        admitted_event: SessionEvent | None = None,
     ) -> CancelledSession:
         if self._cloud:
             if self._cloud_control is None:
                 raise SessionControlError("cloud direct control requires explicit composition")
             try:
                 if host_context is not None:
-                    scope = self._cloud_control.host_scope(session_id, host_context)
+                    scope = self._cloud_control.host_scope(
+                        session_id, host_context, admitted_event=admitted_event
+                    )
                 if scope is None:
                     raise ValueError("cloud direct control requires trusted caller scope")
                 result = self._cloud_control.cancel(
@@ -297,6 +304,7 @@ class SessionControlService:
                     idempotency_key=idempotency_key,
                     operation_id=operation_id,
                     task_id=task_id,
+                    admitted_event=admitted_event,
                 )
                 return CancelledSession(result.event, result.workspace)
             except ValueError as exc:

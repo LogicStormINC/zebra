@@ -1,7 +1,7 @@
 """Explicit bounded storage recovery; never recover an uncertain executing program."""
 
 from dataclasses import dataclass
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, timedelta
 from enum import StrEnum
 from typing import Any
 from uuid import UUID
@@ -11,9 +11,15 @@ from agent_core.contracts.session_commands import SessionCommandKind
 from agent_core.domain.events import SessionEvent
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.leases import LeaseFence
-from psycopg.errors import LockNotAvailable, QueryCanceled
-from psycopg.types.json import Jsonb
-
+from agent_storage.postgres.command_recovery_records import (
+    _defer as _defer,
+)
+from agent_storage.postgres.command_recovery_records import (
+    _receipt_snapshot as _receipt_snapshot,
+)
+from agent_storage.postgres.command_recovery_records import (
+    _stop as _stop,
+)
 from agent_storage.postgres.command_wakeup import (
     _check_outbox_capacity,
     _envelope,
@@ -48,6 +54,8 @@ from agent_storage.postgres.leases import (
     assert_current_lease_fence,
     lock_session_lease_boundary,
 )
+from psycopg.errors import LockNotAvailable, QueryCanceled
+from psycopg.types.json import Jsonb
 
 RETRY_DELAY = timedelta(seconds=60)
 
@@ -192,7 +200,10 @@ def _recover(
         connection.execute("ROLLBACK TO SAVEPOINT command_recovery_preflight")
         connection.execute("RELEASE SAVEPOINT command_recovery_preflight")
     coverage_check = prepare_command_recovery(
-        coverage_check, namespace, event_id, continuation=continuation_fence is not None,
+        coverage_check,
+        namespace,
+        event_id,
+        continuation=continuation_fence is not None,
     )
     connection = prepared_recovery_connection(connection, coverage_check)
     lock_session_lease_boundary(connection, namespace, session_id)
@@ -317,8 +328,11 @@ def _recover(
         return result(RecoveryStatus.REQUIRES_RECONCILIATION)
     fresh_proof = None
     from agent_storage.postgres.erp_fresh_disposition import (
-        UNAVAILABLE, EXHAUSTED, verified_fresh_disposition,
+        EXHAUSTED,
+        UNAVAILABLE,
+        verified_fresh_disposition,
     )
+
     if pending["recovery_code"] == UNAVAILABLE:
         try:
             fresh_proof = verified_fresh_disposition(connection, namespace, event_id)
@@ -344,7 +358,12 @@ def _recover(
     if (continuation_fence is None and crashes >= MAX_GENERATION) or now - pending[
         "created_at"
     ] >= MAX_TOTAL_AGE:
-        _stop(connection, namespace, event_id, EXHAUSTED if fresh_proof is not None else "recovery_exhausted")
+        _stop(
+            connection,
+            namespace,
+            event_id,
+            EXHAUSTED if fresh_proof is not None else "recovery_exhausted",
+        )
         return result(RecoveryStatus.EXHAUSTED)
     if receipt is None and (
         outbox["status"] != "published"
@@ -392,12 +411,21 @@ def _recover(
             ("coverage_continuation" if continuation_fence is not None else "coverage_checkpoint")
             if coverage_proof is not None
             else ("published_no_handoff" if receipt is None else "expired_unstarted"),
-            None if receipt is None else Jsonb({
-                **_receipt_snapshot(receipt),
-                **({"early_authority_code": UNAVAILABLE,
-                    "early_authority_proof": f"{event_id}:{generation}"}
-                   if fresh_proof is not None else {}),
-            }),
+            None
+            if receipt is None
+            else Jsonb(
+                {
+                    **_receipt_snapshot(receipt),
+                    **(
+                        {
+                            "early_authority_code": UNAVAILABLE,
+                            "early_authority_proof": f"{event_id}:{generation}",
+                        }
+                        if fresh_proof is not None
+                        else {}
+                    ),
+                }
+            ),
             None if coverage_proof is None else Jsonb(coverage_proof),
         ),
     )
@@ -467,44 +495,3 @@ def continue_coverage_command(
     if result.status is not RecoveryStatus.APPROVED:
         raise ValueError("strict continuation has no current native recovery proof")
     return result
-
-
-def _receipt_snapshot(receipt: dict[str, Any]) -> dict[str, Any]:
-    # Explicit allowlist: never let future receipt columns leak into audit JSON.
-    fields = (
-        "scope_key",
-        "command_id",
-        "accepted_event_id",
-        "session_id",
-        "status",
-        "control_plane_epoch",
-        "fencing_token",
-        "owner_instance_id",
-        "created_at",
-        "execution_floor_sequence",
-        "started_event_id",
-        "handled_event_id",
-        "turn_id",
-        "wake_generation",
-    )
-    return {
-        field: (value if value is None or isinstance(value, str | int) else str(value))
-        for field in fields
-        for value in (receipt[field],)
-    }
-
-
-def _defer(connection: Any, namespace: str, event_id: UUID, due: datetime) -> None:
-    connection.execute(
-        """UPDATE session_command_pending SET recovery_due_at = %s
-           WHERE deployment_namespace = %s AND accepted_event_id = %s""",
-        (due, namespace, event_id),
-    )
-
-
-def _stop(connection: Any, namespace: str, event_id: UUID, code: str) -> None:
-    connection.execute(
-        """UPDATE session_command_pending SET status = 'dead', recovery_code = %s
-           WHERE deployment_namespace = %s AND accepted_event_id = %s""",
-        (code, namespace, event_id),
-    )

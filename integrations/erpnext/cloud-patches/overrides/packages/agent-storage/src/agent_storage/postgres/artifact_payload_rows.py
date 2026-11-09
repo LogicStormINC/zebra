@@ -14,23 +14,26 @@ from agent_core.domain.cloud_artifact_requests import (
     ArtifactEventBinding,
     ArtifactReserveRequest,
 )
+from agent_core.domain.http_input_attachments import HttpInputAuthority
 from agent_core.domain.identifiers import ArtifactId, EventId, SessionId
 from agent_core.domain.leases import LeaseFence
-from agent_core.domain.http_input_attachments import HttpInputAuthority
 
 
 def artifact_payload_from_row(row: dict[str, Any]) -> CloudArtifactPayloadRecord:
-    kind = row['authority_kind']
-    fence = tuple(row[k] for k in ('reservation_epoch', 'reservation_fencing_token', 'reservation_owner_instance_id'))
-    if kind == 'worker':
+    kind = row["authority_kind"]
+    fence = tuple(
+        row[k]
+        for k in ("reservation_epoch", "reservation_fencing_token", "reservation_owner_instance_id")
+    )
+    if kind == "worker":
         LeaseFence(control_plane_epoch=fence[0], fencing_token=fence[1], owner_instance_id=fence[2])
-        if row['http_input_authority'] is not None:
-            raise ValueError('Worker Artifact cannot carry HTTP input proof')
+        if row["http_input_authority"] is not None:
+            raise ValueError("Worker Artifact cannot carry HTTP input proof")
         input_authority = None
-    elif kind == 'http_input' and fence == (None, None, None):
-        input_authority = HttpInputAuthority.model_validate(row['http_input_authority'])
+    elif kind == "http_input" and fence == (None, None, None):
+        input_authority = HttpInputAuthority.model_validate(row["http_input_authority"])
     else:
-        raise ValueError('Artifact authority lane is malformed')
+        raise ValueError("Artifact authority lane is malformed")
     namespace = row["deployment_namespace"]
     artifact_id = ArtifactId(row["artifact_id"])
     reservation = ArtifactReserveRequest(
@@ -51,7 +54,8 @@ def artifact_payload_from_row(row: dict[str, Any]) -> CloudArtifactPayloadRecord
     return CloudArtifactPayloadRecord(
         deployment_namespace=namespace,
         reservation=reservation,
-        authority_kind=kind, input_authority=input_authority,
+        authority_kind=kind,
+        input_authority=input_authority,
         lifecycle_status=CloudArtifactPayloadLifecycleStatus(row["lifecycle_status"]),
         lifecycle_revision=row["lifecycle_revision"],
         event_binding=binding,

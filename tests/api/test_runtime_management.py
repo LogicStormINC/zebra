@@ -212,3 +212,36 @@ def test_timed_out_file_reads_keep_capacity_bounded(monkeypatch: pytest.MonkeyPa
             await asyncio.sleep(0.05)
 
     asyncio.run(check())
+
+
+class TestScriptAbiCapability:
+    """CA-P7-01B-z1: descriptor nativeScriptAbi is config-driven, two-state."""
+
+    def test_default_descriptor_claims_unsupported(self, tmp_path: Path) -> None:
+        path = tmp_path / "config.json"
+        write(path, configuration())
+        app = create_http_app(tmp_path / "sessions.sqlite", settings=settings(path))
+        with TestClient(app) as client:
+            response = client.get(PATH, headers=HEADERS)
+        assert response.status_code == 200
+        assert response.json()["capabilities"]["nativeScriptAbi"] == "unsupported"
+
+    def test_configured_descriptor_claims_real_abi(self, tmp_path: Path) -> None:
+        path = tmp_path / "config.json"
+        write(path, {**configuration(), "nativeScriptAbi": "cloud-agent.native-script/1"})
+        app = create_http_app(tmp_path / "sessions.sqlite", settings=settings(path))
+        with TestClient(app) as client:
+            response = client.get(PATH, headers=HEADERS)
+        assert response.status_code == 200
+        assert (
+            response.json()["capabilities"]["nativeScriptAbi"]
+            == "cloud-agent.native-script/1"
+        )
+
+    def test_unknown_abi_value_is_rejected_at_config_load(self, tmp_path: Path) -> None:
+        path = tmp_path / "config.json"
+        write(path, {**configuration(), "nativeScriptAbi": "bogus/abi"})
+        app = create_http_app(tmp_path / "sessions.sqlite", settings=settings(path))
+        with TestClient(app) as client:
+            response = client.get(PATH, headers=HEADERS)
+        assert response.status_code == 503

@@ -72,3 +72,50 @@ Production Chrome remains unauthenticated; page click acceptance not claimed.
 New runtime boot reconciliation is ordered after private mounts/socket; actual
 unit start succeeded without replacing running containers. No host reboot or
 HA/SLO claim. Full details and rollback in ERP_CAPABILITY_RELEASE_20261028.md.
+
+## 2026-10-31 CA-BASELINE-GATE-02 source candidate
+
+Claimed canonical task/Owner/branch before source edits. Fixed original4924Ruff violations without ignores or lower gates; used package-local isort context for byte-identical frozen native code. Split App/Runtime/transfer/operator and tests by concrete responsibility; explicit imports, constructor seams and Docker source closure retained. All original frozen manifest/provenance/deployment evidence and native baseline Python preserved; original Host/chat source archived and dual-checked with separate candidate manifest. Portable stdlib zip keeps worker argv/path and avoids namespace injection. No transfer/deploy/privileged execution.
+
+Spec then independent quality review passed for five split groups and follow-ups. Source Ruff0; exact parent size411/0; npm build/test PASS; offline assertions and9 native composition scripts PASS, delayed-refusal callback regression PASS. Seven stale baseline fixture failures reproduced on2e8606a first; updated only fixture setup or actual source-owner references and preserved all assertions. Native dependencies119+IO doubles are not deployed105 acceptance; transfer105 SQL remains not_run, correct guard refusal retained. Parent full gates/HA02 PG pending. No Docker resources created here, no data/history/receipts/unknown/Coverage rewrites or backend connection for platform mock.
+
+
+## ERP-ORIGIN-BINDING-20261102
+
+Migration changed signed origin as well as ingress; both registries rejected it403.
+Adding the exact origin exposed the second immutable Task-origin fence404. Reused the
+existing registry API, restored stable authority origin, added browser_origin to the
+server-owned config and one fallback check in client.py. Regression RED then GREEN;
+client/admin/force-stop checks and source Ruff F pass. Live original Task four GETs200,
+legacy Task header200, actual snapshot/history+capability catalog restored. Unknown,
+original failed status and Controller untouched; zero model/search/command submission.
+Only backend recreated with the same image and explicit readonly source mount; backups
+and exact evidence in docs/ERP_ORIGIN_BINDING_20261102.md. No temporary Docker resources.
+Future image must include this source fix and remove that mount. No full suite/model/browser
+claim. Canonical native-surface dirty branch and runtime worktrees left untouched.
+
+
+## ERP-AUTH-MIGRATION-AUDIT-20261102
+
+Follow-up audit claimed before changes. The old absolute bootstrap link is another
+network/authority conflation: failing actual-bootstrap regression then configured
+browser_origin fallback correction. Added dependency-free release preflight that
+runs the real browser admission/bootstrap tests and rejects stale exact-file or
+parent-directory mounts. Mainline hotfix deliberately independent of unpublished
+admin/native-surface code; those source branches retain their capabilities.
+Cold legacy/full JWKS TLS works; legacy persisted Compose and live hosts already
+point at the new address (Docker creation metadata still records the old address).
+Scheduler allowed Origin still used browser address; update its protected env file
+only and retain schema-version refusal; no Task/Controller/scheduler dispatch.
+
+
+Follow-up complete: restored shared aggregate metrics after real Legacy Worker Manifest
+ImportError500, real Worker GET200/wrong signature403. New backend image0afdf464 embeds
+all3 accepted source modules; temporary file overlay removed. Saved browser settings and
+initial transport generation aligned. Concurrent Scheduler v117 source retained; refreshed
+only its Origin on the same image with zero-active/firing guard,188 models/51 sessions/0
+firings and ledger unchanged. Exact original event/binding/receipt/ERP row hashes unchanged.
+See focused migration doc and redacted proof JSON. No original Task/unknown replay,
+Controller acquisition, schema migration or model/search request; all owned temporary
+Docker containers/build directories removed. Separate main/deployed/export source branches
+retain their previous capabilities and gate remediation; final references published after checks.

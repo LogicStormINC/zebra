@@ -275,6 +275,22 @@ def test_lease_migration_is_concurrent_repeatable_and_does_not_bootstrap_epoch(
         (101, "stream_hint_relay", 64),
         (102, "source_once_projection_work_classification", 64),
         (103, "function_scoped_projection_plan_reuse", 64),
+        (104, "research_web_tool_profile", 64),
+        (105, "scoped_plugin_installations", 64),
+        (106, "host_manifest_binding_policy", 64),
+        (107, "host_manifest_revisions", 64),
+        (108, "host_registry_management", 64),
+        (109, "host_connector_management", 64),
+        (110, "agent_definition_bundle_versions", 64),
+        (111, "runtime_publication_receipts", 64),
+        (112, "frontend_profile_management", 64),
+        (113, "approval_resume_replay_headers", 64),
+        (114, "plugin_product_distribution", 64),
+        (115, "agui_profile_projection_routing", 64),
+        (116, "standard_projection_cells", 64),
+        (117, "agent_safety_overrides", 64),
+        (118, "runtime_admission_gate", 64),
+        (119, "runtime_gate_original_termination", 64),
     ]
     assert epochs == (0,)
     assert [row[0] for row in lease_columns] == [

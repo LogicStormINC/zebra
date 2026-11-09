@@ -71,7 +71,7 @@ def host_management_dsn() -> Iterator[str]:
         apply_postgres_migrations(dsn)
         yield dsn
     finally:
-        subprocess.run(["docker", "rm", "-f", name], check=True, capture_output=True)
+        subprocess.run(["docker", "rm", "-fv", name], check=True, capture_output=True)
 
 
 @pytest.fixture

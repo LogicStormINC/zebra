@@ -14,7 +14,6 @@ from agent_core.ports import (
 from agent_core.ports.execution_inputs import ExecutionInputPort
 from agent_core.ports.session_recovery import SessionRecoveryPort
 from agent_core.ports.task_projection_work import TaskProjectionWorkPort
-
 from agent_storage.artifact_payload_reads import CloudArtifactPayloadReader
 from agent_storage.execution_inputs import ExecutionInputStore
 from agent_storage.postgres import (
@@ -118,7 +117,9 @@ def postgres_control_plane_stores(
     return PostgresControlPlaneStores(
         task_io_connections=shared,
         deployment_namespace=deployment_namespace,
-        http_input_admission=PostgresHttpInputAdmission(dsn, deployment_namespace=deployment_namespace, objects=artifact_objects),
+        http_input_admission=PostgresHttpInputAdmission(
+            dsn, deployment_namespace=deployment_namespace, objects=artifact_objects
+        ),
         events=events,
         sessions=sessions,
         workspaces=PostgresWorkspaceProjectionStore(

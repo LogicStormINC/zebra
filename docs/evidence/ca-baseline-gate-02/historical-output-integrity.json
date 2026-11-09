@@ -1,0 +1,32 @@
+{
+  "scope": "additional whitespace audit, not a source gate exclusion",
+  "unchanged_published_raw_logs": [
+    {
+      "path": "docs/evidence/ca-baseline-gate-01/digest-red.txt",
+      "original_commit": "6ac3d008",
+      "sha256": "030701251ec4a8ed486824ca207dc45102d35e15673bac6bc421ba1755fba26f"
+    },
+    {
+      "path": "docs/evidence/ca-ha-02/full-baseline-failures.txt",
+      "original_commit": "d16645aa",
+      "sha256": "0d85ff09aab41ff06e70f42c61cbb04ebfd53e40f54430a75e3aab4088f8cf65"
+    },
+    {
+      "path": "docs/evidence/ca-ha-02/full-make-test.txt",
+      "original_commit": "d16645aa",
+      "sha256": "f9272fab94d61fbc67cffc4d908cf02ef91eb6f6b91ba46a4c7b286b0f57097d"
+    },
+    {
+      "path": "docs/evidence/ca-ha-02/review-absolute-deadline-red.txt",
+      "original_commit": "d16645aa",
+      "sha256": "2146e14cfc4a9cc8982ea51b2adccad20de3aed3066a2f8e831b261ba54db764"
+    },
+    {
+      "path": "docs/evidence/ca-ha-02/review-shutdown-red.txt",
+      "original_commit": "d16645aa",
+      "sha256": "1bc515ae0e6d928b9a4463c96becb3949eb345819b91d30eb9d954c0d430365e"
+    }
+  ],
+  "other_changed_paths_whitespace": "pass",
+  "policy": "preserve immutable published output bytes; no code/config/gate ignore added"
+}

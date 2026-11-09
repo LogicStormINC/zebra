@@ -21,10 +21,9 @@ from agent_core.ports.task_projection_work import (
     ProjectionWorkRepair,
     TaskProjectionWorkPort,
 )
-from psycopg import ClientCursor
 
 from agent_storage.postgres.database import PostgresDatabase
-from agent_storage.postgres.projection_work_io import _WorkConnection
+from agent_storage.postgres.projection_work_io import REPAIR_HEADER_SIGNATURE, _WorkConnection
 from agent_storage.postgres.task_io import TaskIoConnection
 from agent_storage.projection_work import (
     PENDING,
@@ -39,17 +38,11 @@ from agent_storage.projection_work_routing import (
     activate_privacy,
     classified_pending,
     matches_task_privacy,
-    routed_statements,
     task_version,
 )
 
 PG_WHERE = WHERE.replace("?", "%s")
 PG_PENDING = PENDING.replace("?", "%s").replace("h.task_id=w.task_id", "h.task_id=w.task_id::uuid")
-SOURCE = """SELECT %(namespace)s::text AS deployment_namespace,%(task_id)s::text AS task_id,
- %(event_id)s::text AS event_id,%(task_sequence)s::bigint AS task_sequence,
- %(event_type)s::text AS event_type,%(command_kind)s::text AS command_kind,
- %(run_id)s::text AS run_id,%(internal)s::integer AS internal,
- %(version)s::text AS selected_version"""
 HEADER_BYTES = "128+" + "+".join(
     f"COALESCE(octet_length({name}::text),0)"
     for name in ("event_id", "event_type", "replay_command_kind", "replay_run_id")
@@ -94,8 +87,16 @@ class PostgresTaskProjectionWorkStore(TaskProjectionWorkPort):
         if scope.anchor_event_id is None:
             raise CheckpointConflict("projection-work scope requires an executable anchor")
 
+    _enabled_cache_ttl: float = 30.0  # E1-A: 135K queries/s eliminated by TTL cache
+
     def _enabled(self, connection: _WorkConnection) -> bool:
-        return (
+        import time as _time
+
+        now = _time.monotonic()
+        cached = getattr(self, "_enabled_cache", None)
+        if cached is not None and cached[0] > now - self._enabled_cache_ttl:
+            return cached[1]
+        result = (
             connection.execute(
                 "SELECT 1 FROM task_projection_work_projectors WHERE deployment_namespace=%s "
                 "AND projector_version=%s AND enabled=1",
@@ -103,6 +104,8 @@ class PostgresTaskProjectionWorkStore(TaskProjectionWorkPort):
             ).fetchone()
             is not None
         )
+        self._enabled_cache = (now, result)
+        return result
 
     def enable_projection_work(self) -> None:
         with self._connect(write=True) as connection:
@@ -290,22 +293,21 @@ class PostgresTaskProjectionWorkStore(TaskProjectionWorkPort):
                 raise CheckpointNotReady("explicit source position repair required")
             connection.execute("SET TRANSACTION ISOLATION LEVEL READ COMMITTED")
             route = execute(
-                "SELECT * FROM task_projection_work_routes WHERE deployment_namespace=%s "
-                "AND task_id=%s AND projector_version=%s",
-                key,
+                """SELECT *,
+                to_regprocedure(format('%%I.%%s', current_schema(), %s))
+                  IS NOT NULL AS cached_repair
+                FROM task_projection_work_routes WHERE deployment_namespace=%s
+                AND task_id=%s AND projector_version=%s""",
+                (REPAIR_HEADER_SIGNATURE, *key),
             ).fetchone()
             assert route is not None
+            cached_repair = route["cached_repair"]
             used = 0
             problem = None
             # ponytail: one bounded header transaction, not a page-long route lock.
             # Native routing serializes and checks the frontier; source reads need no lock.
             deadline = min(connection.deadline - 0.2, time.monotonic() + 0.1)
             step = _WorkConnection(connection.connection, deadline)
-            routing = (
-                "BEGIN "
-                + ";".join(routed_statements(SOURCE, postgres=True, profiles=True))
-                + (";PERFORM set_config('statement_timeout',%(finish_timeout)s,true);END")
-            )
             for index in range(limit):
                 remaining = step.deadline - time.monotonic()
                 if remaining <= 0 or route["observed_through"] >= route["wanted_through"]:
@@ -347,9 +349,8 @@ class PostgresTaskProjectionWorkStore(TaskProjectionWorkPort):
                         internal=int(row["replay_internal_continuation"]),
                         finish_timeout=f"{finish_timeout}ms",
                     )
-                    code = ClientCursor(connection.connection).mogrify(routing, params)
-                    # The DO is page-bounded; restore cleanup timeout before its next roundtrip.
-                    step.execute("DO %s", (code,))
+                    # Restore the cleanup timeout before the next roundtrip.
+                    step.repair_header(params, cached=cached_repair)
                     connection.commit()
                 except CheckpointNotReady as exc:
                     if connection.connection.closed:

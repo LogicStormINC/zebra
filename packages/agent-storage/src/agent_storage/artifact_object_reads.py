@@ -128,7 +128,7 @@ def artifact_read_scope(
             _SCOPE.reset(token)
 
 
-def bounded_s3_read_client(client: Any) -> Any:
+def bounded_s3_read_client(client: Any, *, session: Session | None = None) -> Any:
     """Clone only native, statically credentialed clients; writes remain untouched."""
     if not isinstance(client, BaseClient):
         return client  # Deterministic injected clients retain unscoped compatibility.
@@ -137,7 +137,7 @@ def bounded_s3_read_client(client: Any) -> Any:
         raise ValueError("bounded Artifact reads require pinned static S3 credentials")
     frozen = credentials.get_frozen_credentials()
     verify = client._endpoint.http_session._verify
-    read_client = Session().create_client(
+    read_client = (session if session is not None else Session()).create_client(
         "s3",
         endpoint_url=client.meta.endpoint_url,
         region_name=client.meta.region_name,

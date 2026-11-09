@@ -1,0 +1,37 @@
+{
+  "namespace": "erpnext-full",
+  "records": {
+    "task_binding_snapshots": {
+      "count": 48,
+      "sha256": "3b2e594733b334cd2838ee590056767085c675d105259031851ab99ff427aaaf"
+    },
+    "client_run_bindings": {
+      "count": 13,
+      "sha256": "6a2d68f3e1e72a5353e4dbd2148156e7190787268f3bb471cbe154128c20753a"
+    },
+    "client_effect_receipts": {
+      "count": 4,
+      "sha256": "9d21e1d0beebd91dcabcc9909c4aa592953b5e27f7617ff7fa9a686f1145a7ff"
+    },
+    "command_control_receipts": {
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "command_handoff_receipts": {
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "coverage_execution_receipts": {
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "direct_control_operations": {
+      "count": 13,
+      "sha256": "5fee6a2f640f583ea885a81f3f71535ef0dfaa753012822e1885ca2ac9db05e6"
+    },
+    "session_events": {
+      "count": 897,
+      "sha256": "dac4e92d766f125230f4fba89793084319c73e70def583353002710666f77879"
+    }
+  }
+}

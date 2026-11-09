@@ -24,6 +24,22 @@ from agent_orchestration.domain.orchestration import (
 )
 from agent_orchestration.domain.orchestration_budget import BudgetReservation
 
+
+def root_budget_from_parameters(
+    model_tokens: int, tool_calls: int, runtime_seconds: int
+) -> BudgetReservation:
+    """Root reservation derived from a configurable Bundle budget domain.
+
+    Pinned/absent budget domains keep the conservative zero default: without an
+    explicit approved reservation nothing may be spent by accounting.
+    """
+    return BudgetReservation(
+        model_tokens=max(0, model_tokens),
+        tool_calls=max(0, tool_calls),
+        runtime_seconds=max(0, runtime_seconds),
+    )
+
+
 DEFAULT_MAX_DEPTH = 4
 DEFAULT_MAX_PARALLELISM = 2
 
@@ -66,6 +82,8 @@ class PlanValidationContext:
         object.__setattr__(
             self, "write_capabilities", capability_set(self.write_capabilities)
         )
+        object.__setattr__(self, "parent_resource_refs", frozenset(self.parent_resource_refs))
+        object.__setattr__(self, "published_roles", frozenset(self.published_roles))
 
 
 def validate_plan(
@@ -126,8 +144,6 @@ def _validate_resources(
     proposal: OrchestrationPlanProposal,
     context: PlanValidationContext,
 ) -> None:
-    if not context.parent_resource_refs:
-        return
     allowed = set(context.parent_resource_refs)
     for node in proposal.nodes:
         for ref in node.resource_refs:

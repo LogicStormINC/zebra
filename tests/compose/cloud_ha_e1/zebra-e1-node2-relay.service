@@ -1,0 +1,13 @@
+[Unit]
+Description=Isolated Zebra E1 loopback dependency relay
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+ExecStart=/usr/bin/python3 /usr/local/lib/zebra-e1-node2-dependency-relay.py
+ExecStartPost=/usr/bin/python3 -c 'import socket,time; time.sleep(.5); [socket.create_connection(("127.0.0.1",p),2).close() for p in (25432,26379,29000,25672,28444,28082)]'
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

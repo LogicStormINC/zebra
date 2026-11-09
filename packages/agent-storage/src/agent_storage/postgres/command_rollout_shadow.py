@@ -43,13 +43,13 @@ def record_command_shadow(
     ).fetchone()
     if scope_lock is None or not scope_lock["acquired"]:
         return None
+    if command_scope_mode(connection, deployment_namespace, scope_key) != "shadow":
+        return None
     acquired = connection.execute(
         "SELECT pg_try_advisory_xact_lock(hashtextextended(%s,50)) AS acquired",
         (f"{deployment_namespace}:command-shadow",),
     ).fetchone()
     if acquired is None or not acquired["acquired"]:
-        return None
-    if command_scope_mode(connection, deployment_namespace, scope_key) != "shadow":
         return None
     existing = connection.execute(
         """SELECT shadow_message_id,envelope_digest FROM command_shadow_outbox

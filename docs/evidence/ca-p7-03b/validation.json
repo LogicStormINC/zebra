@@ -1,0 +1,108 @@
+{
+  "task": "CA-P7-03B",
+  "date": "2026-11-02",
+  "base": "f7f74302835f7afcd821bf219499daab58d47e65",
+  "pytest": {
+    "command": [
+      "/Users/lukeding/.codex/worktrees/ca-p5-main-integration/zebra-agent/.venv/bin/python",
+      "-m",
+      "pytest",
+      "-q",
+      "tests/agent_orchestration",
+      "tests/agent_tools/test_orchestration_tools.py",
+      "tests/worker/test_orchestration_wiring.py",
+      "tests/agent_integrations/test_orchestration_projection_view.py",
+      "tests/architecture/test_orchestration_boundaries.py",
+      "tests/agent_storage/test_postgres_orchestration_admission.py",
+      "tests/agent_storage/test_postgres_orchestration.py",
+      "tests/agent_storage/test_postgres_subagent_delegation.py",
+      "tests/agent_storage/test_postgres_force_stops.py"
+    ],
+    "exitCode": 0,
+    "summary": "211 passed in 14.47s",
+    "scope": "focused deterministic + real PostgreSQL + spawn-process + legacy regression; no Worker execution or full suite"
+  },
+  "static": [
+    {
+      "command": [
+        "/Users/lukeding/.codex/worktrees/ca-p5-main-integration/zebra-agent/.venv/bin/python",
+        "-m",
+        "ruff",
+        "check",
+        "packages/agent-orchestration/src/agent_orchestration/application/orchestration_authority.py",
+        "packages/agent-orchestration/src/agent_orchestration/application/orchestration_runtime.py",
+        "packages/agent-storage/src/agent_storage/postgres/migration_catalog_tail.py",
+        "packages/agent-orchestration/src/agent_orchestration/application/orchestration_admission.py",
+        "packages/agent-storage/src/agent_storage/postgres/orchestration_admission.py",
+        "packages/agent-storage/src/agent_storage/postgres/orchestration_admission_migration.py",
+        "packages/agent-storage/src/agent_storage/postgres/orchestration_admission_queries.py",
+        "tests/agent_orchestration/test_orchestration_admission.py",
+        "tests/agent_storage/test_postgres_orchestration_admission.py"
+      ],
+      "exitCode": 0,
+      "output": "All checks passed!\n"
+    },
+    {
+      "command": [
+        "/Users/lukeding/.codex/worktrees/ca-p5-main-integration/zebra-agent/.venv/bin/python",
+        "-m",
+        "mypy",
+        "--follow-imports=silent",
+        "packages/agent-orchestration/src/agent_orchestration/application/orchestration_authority.py",
+        "packages/agent-orchestration/src/agent_orchestration/application/orchestration_runtime.py",
+        "packages/agent-storage/src/agent_storage/postgres/migration_catalog_tail.py",
+        "packages/agent-orchestration/src/agent_orchestration/application/orchestration_admission.py",
+        "packages/agent-storage/src/agent_storage/postgres/orchestration_admission.py",
+        "packages/agent-storage/src/agent_storage/postgres/orchestration_admission_migration.py",
+        "packages/agent-storage/src/agent_storage/postgres/orchestration_admission_queries.py"
+      ],
+      "exitCode": 0,
+      "output": "Success: no issues found in 7 source files\n"
+    }
+  ],
+  "sourceSha256": {
+    "packages/agent-orchestration/src/agent_orchestration/application/orchestration_admission.py": "8863e4bcf68e0e330ac47ead787ffd39d6ac7979ee10e5707bdc7f810473b317",
+    "packages/agent-orchestration/src/agent_orchestration/application/orchestration_authority.py": "38d731cc7e821a0433698cb981166321bd08f30fe9064b3d5d2eea7a8fc50e77",
+    "packages/agent-orchestration/src/agent_orchestration/application/orchestration_runtime.py": "16107c59da4132064a2f2a04ccaf6580921a64caaf5fd643ebde4b1022939c2e",
+    "packages/agent-storage/src/agent_storage/postgres/migration_catalog_tail.py": "177b74d9f252b13a05e66c939897d6a0319eac3c8dfcf86f3aa964b810f1c9fd",
+    "packages/agent-storage/src/agent_storage/postgres/orchestration_admission.py": "8872710f4008367f1b040a5156c495e9f6ad82468900ecbfa99bd64114dd6543",
+    "packages/agent-storage/src/agent_storage/postgres/orchestration_admission_migration.py": "0aff2a482b4f6a50e9626efd1c59c7c893dfa9dc511edea372a582c8ff319617",
+    "packages/agent-storage/src/agent_storage/postgres/orchestration_admission_queries.py": "70f03685826fd016592ae8e2429ac024986914815c5048dcf6461fb895b241c4",
+    "tests/agent_orchestration/test_orchestration_admission.py": "9c5e9c158df2c981063b361415ef506c5b4dc900c0eaa896dca2f2c12b61bb61",
+    "tests/agent_storage/test_postgres_orchestration_admission.py": "93f6518185cab0e2ff0f465524b5dd8388be90e3c910fa161dc2be4ac0753c3a"
+  },
+  "review": "two independent read-only reviews; no unresolved scope blockers",
+  "resources": {
+    "owner": "CA-P7-03B/Codex",
+    "run": "ca-p7-03b-20261102061533",
+    "containers": [
+      "ca-p7-03b-20261102061533-pg"
+    ],
+    "networks": [],
+    "volumes": [],
+    "mounts": [
+      "tmpfs PGDATA 256MiB"
+    ],
+    "limits": {
+      "cpus": 1,
+      "memory": "512m",
+      "pids": 128
+    },
+    "processes": [],
+    "state": "cleaned",
+    "preserve": "logs/results retained; disposable test DB only; unrelated resources untouched",
+    "containerId": "d25df30e29f86021edc870dff2684af279f505919d4541eaf2bb7a08ab74e842",
+    "retainedDump": "postgres-originals.sql.gz",
+    "dumpSha256": "46fca00ebee2b24ec75c185bb395d254f67ef19590e67577b597ebb3a2710767",
+    "cleanup": "owned container removed; tmpfs disposable data preserved in dump; no owned volume/network/image mount retained"
+  },
+  "proofBoundary": "approved/free accounting, exact original only observation, no production executor budget guard; default executor readiness missing denies admission",
+  "excluded": [
+    "deployment",
+    "production migrations",
+    "normal Worker assembly",
+    "real provider/token-time execution proof",
+    "full make test/check",
+    "production HA"
+  ]
+}

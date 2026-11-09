@@ -18,6 +18,9 @@ from agent_storage.postgres.projection_work_fanout_migration import (
     TASK_PROJECTION_WORK_FANOUT_MIGRATION,
 )
 from agent_storage.postgres.projection_work_migration import TASK_PROJECTION_WORK_MIGRATION
+from agent_storage.postgres.projection_work_repair_plan_migration import (
+    PROJECTION_WORK_REPAIR_PLAN_MIGRATION,
+)
 from agent_storage.postgres.projection_work_routing_migration import (
     TASK_PROJECTION_WORK_ROUTING_MIGRATION,
 )
@@ -92,8 +95,11 @@ def native_dsn():
                 if migration.version <= 67:
                     for statement in migration.statements:
                         connection.execute(statement)
-            for statement in TASK_PROJECTION_WORK_MIGRATION.statements:
-                connection.execute(statement)
+            for migration in (
+                TASK_PROJECTION_WORK_MIGRATION, PROJECTION_WORK_REPAIR_PLAN_MIGRATION,
+            ):
+                for statement in migration.statements:
+                    connection.execute(statement)
         yield dsn
     finally:
         with psycopg.connect(configured, autocommit=True) as connection:

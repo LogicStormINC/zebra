@@ -162,6 +162,7 @@ class PostgresAgentRegistry(AgentDraftAuthorityMixin):
             release.definition_id,
         )
         with self._database.connect() as connection:
+            lock_definition(connection, scope_key)
             current = connection.execute(
                 "SELECT release_id, revision FROM agent_release_records"
                 " WHERE authority_issuer = %s AND namespace_id = %s"

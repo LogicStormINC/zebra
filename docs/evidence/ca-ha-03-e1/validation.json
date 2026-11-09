@@ -1,0 +1,388 @@
+{
+  "source_commit": "0fd9f0c1eb213e6b0c75188e4facc0b04ffc9e37",
+  "captured_at": "2026-11-02T17:57:43.107180+00:00",
+  "nodes": {
+    "vm": {
+      "apps": [
+        {
+          "id": "d00444d9cc9f6524f9a29b52ce12c76ccd01cdfd82a62b65bba0ea6cf75b15f3",
+          "name": "/zebra-ha-e1-20261102-api-1",
+          "image": "sha256:1f70247d757909b24900f516a7d16aaac92e81a4170c357285b99fa3191e0ccd",
+          "running": true,
+          "pid": 213733,
+          "started": "2026-11-02T17:50:56.783264196Z",
+          "restarts": 0,
+          "cpu": 2000000000,
+          "memory": 2147483648,
+          "pids_limit": 1024,
+          "read_only": true,
+          "network": "host",
+          "log": {
+            "Type": "json-file",
+            "Config": {
+              "max-file": "3",
+              "max-size": "10m"
+            }
+          },
+          "owner": "ca-ha-03-e1-20261102"
+        },
+        {
+          "id": "6ddd79747752cd090497d570c204385bf414228541c39dbc68e0c813c020056a",
+          "name": "/zebra-ha-e1-20261102-worker-1",
+          "image": "sha256:1f70247d757909b24900f516a7d16aaac92e81a4170c357285b99fa3191e0ccd",
+          "running": true,
+          "pid": 213740,
+          "started": "2026-11-02T17:50:56.786606384Z",
+          "restarts": 0,
+          "cpu": 2000000000,
+          "memory": 2147483648,
+          "pids_limit": 1024,
+          "read_only": true,
+          "network": "host",
+          "log": {
+            "Type": "json-file",
+            "Config": {
+              "max-file": "3",
+              "max-size": "10m"
+            }
+          },
+          "owner": "ca-ha-03-e1-20261102"
+        }
+      ],
+      "worker_health": {
+        "pid": 7,
+        "instance_id": "c15a861c-04a3-450b-9071-9d5b0678c396",
+        "phase": "command",
+        "observed_at": 43721.838016553,
+        "control_observed_at": 43721.021677615,
+        "ready": true,
+        "valid_until": 43726.021677615,
+        "control_fresh": true
+      },
+      "api_tls_probes": {
+        "/health/live": {
+          "http_status": 200,
+          "elapsed_ms": 29.99,
+          "body": {
+            "status": "alive"
+          }
+        },
+        "/health/ready": {
+          "http_status": 200,
+          "elapsed_ms": 4.46,
+          "body": {
+            "status": "ready"
+          }
+        }
+      },
+      "worker_freshness_check": {
+        "fresh": true,
+        "sampled_monotonic": 43852.169239443,
+        "health": {
+          "pid": 7,
+          "instance_id": "c15a861c-04a3-450b-9071-9d5b0678c396",
+          "phase": "command",
+          "observed_at": 43851.677374155,
+          "control_observed_at": 43851.565416274,
+          "ready": true,
+          "valid_until": 43856.565416274,
+          "control_fresh": true
+        }
+      },
+      "model_transport_preflight": {
+        "model": "synthetic_native_wire",
+        "peer": "127.0.0.1",
+        "certificate": "229085b746c6c89939e4450d23321dfaed55c517e92059040ad0b8b975791b3c",
+        "marker": "ca-ha-03-e1-20261102",
+        "negative_peer_certificate_marker": "rejected",
+        "real_provider_qualification": false
+      },
+      "worker_log_tail": {
+        "limit_lines": 60,
+        "captured_lines": 1,
+        "both_stdout_stderr_captured": true,
+        "sha256": "cd709255ac3ce7e37bd888886bd20485a3586b045c053f029617e7ca7d780ab0",
+        "ValueError_count": 0,
+        "Traceback_count": 0,
+        "error_lines": 0
+      }
+    },
+    "server": {
+      "apps": [
+        {
+          "id": "40555a3f625718dd55f4cc79790ade89b835056bfeacb477304376cbfde1a9cf",
+          "name": "/zebra-ha-e1-20261102-api-1",
+          "image": "sha256:fda8f18876be3942b897c19c2cb227ed1184b8f5281bde3f64ae0aff558b77c2",
+          "running": true,
+          "pid": 1971721,
+          "started": "2026-11-02T17:50:59.641511424Z",
+          "restarts": 0,
+          "cpu": 2000000000,
+          "memory": 2147483648,
+          "pids_limit": 1024,
+          "read_only": true,
+          "network": "host",
+          "log": {
+            "Type": "json-file",
+            "Config": {
+              "max-file": "3",
+              "max-size": "10m"
+            }
+          },
+          "owner": "ca-ha-03-e1-20261102"
+        },
+        {
+          "id": "90ee205a16264f0bc23cd599530091fc5e7b364d0f25805bb6ba371617e89e20",
+          "name": "/zebra-ha-e1-20261102-worker-1",
+          "image": "sha256:fda8f18876be3942b897c19c2cb227ed1184b8f5281bde3f64ae0aff558b77c2",
+          "running": true,
+          "pid": 1971724,
+          "started": "2026-11-02T17:50:59.639434017Z",
+          "restarts": 0,
+          "cpu": 2000000000,
+          "memory": 2147483648,
+          "pids_limit": 1024,
+          "read_only": true,
+          "network": "host",
+          "log": {
+            "Type": "json-file",
+            "Config": {
+              "max-file": "3",
+              "max-size": "10m"
+            }
+          },
+          "owner": "ca-ha-03-e1-20261102"
+        }
+      ],
+      "worker_health": {
+        "pid": 7,
+        "instance_id": "7e3eaf68-9cfb-48c6-afd4-93f67a000494",
+        "phase": "command",
+        "observed_at": 820125.92276581,
+        "control_observed_at": 820125.663351876,
+        "ready": true,
+        "valid_until": 820130.663351876,
+        "control_fresh": true
+      },
+      "api_tls_probes": {
+        "/health/live": {
+          "http_status": 200,
+          "elapsed_ms": 24.73,
+          "body": {
+            "status": "alive"
+          }
+        },
+        "/health/ready": {
+          "http_status": 200,
+          "elapsed_ms": 38.67,
+          "body": {
+            "status": "ready"
+          }
+        }
+      },
+      "worker_freshness_check": {
+        "fresh": true,
+        "sampled_monotonic": 820258.259390252,
+        "health": {
+          "pid": 7,
+          "instance_id": "7e3eaf68-9cfb-48c6-afd4-93f67a000494",
+          "phase": "command",
+          "observed_at": 820257.837397084,
+          "control_observed_at": 820257.000408546,
+          "ready": true,
+          "valid_until": 820262.000408546,
+          "control_fresh": true
+        }
+      },
+      "model_transport_preflight": {
+        "model": "synthetic_native_wire",
+        "peer": "127.0.0.1",
+        "certificate": "229085b746c6c89939e4450d23321dfaed55c517e92059040ad0b8b975791b3c",
+        "marker": "ca-ha-03-e1-20261102",
+        "negative_peer_certificate_marker": "rejected",
+        "real_provider_qualification": false
+      },
+      "worker_log_tail": {
+        "limit_lines": 60,
+        "captured_lines": 0,
+        "both_stdout_stderr_captured": true,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "ValueError_count": 0,
+        "Traceback_count": 0,
+        "error_lines": 0
+      }
+    }
+  },
+  "native_budget_probe": [
+    {
+      "budget_hook": "worker-budget/1",
+      "trusted_request_counter_configured": false
+    },
+    {
+      "schema": 121,
+      "model_reservations": 0,
+      "event_types": [
+        [
+          0,
+          "session_created"
+        ],
+        [
+          1,
+          "user_message_received"
+        ],
+        [
+          2,
+          "task_prepared"
+        ],
+        [
+          3,
+          "session_command_accepted"
+        ],
+        [
+          4,
+          "execution_authority_resolved"
+        ],
+        [
+          5,
+          "memory_context_selected"
+        ],
+        [
+          6,
+          "runtime_provisioned"
+        ],
+        [
+          7,
+          "harness_attempt_started"
+        ],
+        [
+          8,
+          "model_request_started"
+        ],
+        [
+          9,
+          "turn_failed"
+        ],
+        [
+          10,
+          "session_failed"
+        ]
+      ],
+      "application_superuser": false
+    }
+  ],
+  "data_mount": {
+    "filesystems": [
+      {
+        "source": "/dev/loop0",
+        "target": "/root/zebra-ha-e1-20261102/data",
+        "fstype": "ext4",
+        "size": "23.5G",
+        "uuid": "9fb46e13-9f70-4b64-99ee-001b45f13555",
+        "label": "zebra_ha_e1"
+      }
+    ]
+  },
+  "task": "CA-HA-03",
+  "status": "two_host_environment_ready_native_task_smoke_failed_closed_E1_not_accepted",
+  "synthetic_task": {
+    "task_id": "e698a4d3-e12a-4d37-9fd9-1af491aaff10",
+    "command_id": "1dab3fe3-c638-4414-89ea-39542208df3a",
+    "post_count": 1,
+    "admission_http": 201,
+    "final_header": {
+      "task_id": "e698a4d3-e12a-4d37-9fd9-1af491aaff10",
+      "session_id": "e698a4d3-e12a-4d37-9fd9-1af491aaff10",
+      "active_segment_id": "e698a4d3-e12a-4d37-9fd9-1af491aaff10",
+      "current_sequence": 10,
+      "active_segment_sequence": 10,
+      "title": "E1 synthetic native smoke",
+      "title_truncated": false,
+      "status": "failed",
+      "clarification_context": null,
+      "clarification_unavailable": false
+    },
+    "attempts": 1,
+    "tools_executed": 0,
+    "model_reservations": 0,
+    "failure": "WorkerBudgetError: trusted exact-request model counter unavailable in native CLI composition",
+    "replayed": false,
+    "retry_or_guard_bypass": false,
+    "model_request_started_is_intent_not_provider_send": true,
+    "read_grants": "fresh one-use Broker grant per readonly GET; consumed admission grant replay correctly rejected403"
+  },
+  "production": {
+    "services_replaced_by_this_slice": false,
+    "production_migrations": false,
+    "original_business_runs_replayed": 0,
+    "original_page_http": 200,
+    "existing_containers_observed": [
+      {
+        "name": "/zebra-application-zebra-api-1",
+        "id": "bafbc5de9162853e617ba97921d042933ce4ba5f088e0fa310315fa2f7d2c0a5",
+        "running": true,
+        "started": "2026-11-02T11:33:58.435469955Z",
+        "health": "healthy",
+        "restart_count": 0
+      },
+      {
+        "name": "/zebra-application-zebra-worker-1",
+        "id": "2b7694f54f97f2cef4ce87f5b1e2850a0b8f7b1d20cbfadcce7cd36bf1878c69",
+        "running": true,
+        "started": "2026-11-02T11:33:58.431170835Z",
+        "health": "healthy",
+        "restart_count": 0
+      },
+      {
+        "name": "/trench-api",
+        "id": "8e3cefd300c1de2c70a8cf846618fb0e055d03a4bebb361724d51a46b8552547",
+        "running": true,
+        "started": "2026-11-02T15:07:55.515854471Z",
+        "health": "healthy",
+        "restart_count": 0
+      },
+      {
+        "name": "/trench-frontend",
+        "id": "3eababc1f61b4fa91b1bf0cb91c08e5e6b696f84dc401ab5be7dccb8b4a5efc3",
+        "running": true,
+        "started": "2026-11-02T11:34:26.780480583Z",
+        "health": "healthy",
+        "restart_count": 0
+      }
+    ]
+  },
+  "validation": {
+    "integration_focused_passed": 9,
+    "real_pg_passed": 12,
+    "real_pg_failed": 1,
+    "real_pg_failure": "pre-existing ScriptedModel missing worker-budget/1; reproduced with original recovery module",
+    "make_check": "passed1534 typed sources; source-candidate receipt",
+    "review": "independent AI, no human review",
+    "runtime_maintenance_tail": "No recovery DSN ValueError in current combined stdout/stderr tails; not a long-soak claim"
+  },
+  "not_run": [
+    "10k Tasks/1m events reference dataset",
+    "E1 baseline/load/fault and multi-hour soak matrix",
+    "physical host power loss",
+    "storage HA",
+    "fleet drift enforcement",
+    "production rollout",
+    "real provider/IdP qualification",
+    "cross-node workspace durability"
+  ],
+  "next_required": "Wire a trusted exact-request counter through the existing ModelRequestBudgetFactory before any further new synthetic Task; then bounded baseline and E1 matrix. Do not replay this failed Task.",
+  "runtime_source_proof": {
+    "files": 2139,
+    "symlinks": 3,
+    "all_four_running_apps_match": true,
+    "manifest_sha256": "c48ea8bc42a3f015d0362d7a62551a8079829f82f529a7c8ca6d586e35c31d7c",
+    "source_commit": "0fd9f0c1eb213e6b0c75188e4facc0b04ffc9e37"
+  },
+  "proof_completed_at": "2026-11-02T18:01:24.446245+00:00",
+  "review": {
+    "kind": "independent AI receipt-only review",
+    "critical": 0,
+    "important": 0,
+    "human_review": false,
+    "scope": "validation JSON and seven owned progress/readme diffs; no host/private artifact access"
+  }
+}

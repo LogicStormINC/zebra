@@ -14,6 +14,7 @@ from fastapi import Request
 from fastapi.responses import JSONResponse, Response
 
 from zebra_agent_api.ag_ui_task_view import authorized_async_read
+from zebra_agent_api.database_budget import database_call
 from zebra_agent_api.responses import ApiResponse
 from zebra_agent_api.routes import RouteAdapter, RouteRequest
 
@@ -83,7 +84,7 @@ async def authorized_artifact_read(
         return ApiResponse(405, {"status": "method_not_allowed"})
     context = route.host_context
     if context is None:
-        return await asyncio.to_thread(adapter.handle, route)
+        return await database_call(None, adapter.handle, route)
     if denied := _authorization_error(context):
         return ApiResponse(
             denied.status_code, {"status": "forbidden", "reason": "host_grant_rejected"}
@@ -191,7 +192,7 @@ async def _download(request: Request, adapter: RouteAdapter) -> Response | None:
         if not isinstance(encoded, str) or len(encoded) != 4 * ((selected_size + 2) // 3):
             return _unavailable()
         try:
-            body = await asyncio.to_thread(base64.b64decode, encoded, validate=True)
+            body = await database_call(None, base64.b64decode, encoded, validate=True)
         except ValueError:
             return _unavailable()
         if len(body) != selected_size:
@@ -212,11 +213,11 @@ async def _read_route(
     route: RouteRequest,
 ) -> ApiResponse:
     if route.host_context is None:
-        return await asyncio.to_thread(adapter.handle, route)
+        return await database_call(None, adapter.handle, route)
     scope = current_artifact_read_scope()
     assert scope is not None
     scope.remaining()
-    worker = asyncio.create_task(asyncio.to_thread(adapter.handle, route))
+    worker = asyncio.create_task(database_call(None, adapter.handle, route))
     try:
         result = await asyncio.shield(worker)
         scope.remaining()

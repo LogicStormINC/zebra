@@ -30,11 +30,14 @@ from agent_storage.postgres.events import PostgresEventStore
 from agent_storage.postgres.leases import PostgresLeaseStore
 from agent_storage.postgres.migrations import MIGRATIONS
 from agent_storage.postgres.projections import PostgresProjectionStore
+from agent_storage.postgres.safety_override_migration import SAFETY_OVERRIDE_MIGRATION
 from agent_storage.postgres.session_recovery import (
     SESSION_PAGE_METADATA_SQL,
     PostgresSessionRecoveryStore,
 )
 from agent_storage.postgres.session_recovery_migration import SESSION_RECOVERY_MIGRATION
+from agent_storage.postgres.subagent_delegation_migration import SUBAGENT_DELEGATION_MIGRATION
+from agent_storage.postgres.task_admission_migration import TASK_BINDING_MIGRATION
 from agent_storage.postgres.task_event_bytes_migration import TASK_EVENT_BYTES_MIGRATION
 from agent_storage.postgres.workspaces import PostgresWorkspaceProjectionStore
 from psycopg import sql
@@ -71,10 +74,16 @@ def native():
     try:
         with psycopg.connect(dsn) as database:
             for migration in MIGRATIONS:
-                if migration.version in {1, 2, 4, 6, 20, 23}:
+                if migration.version in {1, 2, 4, 5, 6, 20, 23}:
                     for statement in migration.statements:
                         database.execute(statement)
-            for migration in (TASK_EVENT_BYTES_MIGRATION, SESSION_RECOVERY_MIGRATION):
+            for migration in (
+                TASK_BINDING_MIGRATION,
+                SUBAGENT_DELEGATION_MIGRATION,
+                TASK_EVENT_BYTES_MIGRATION,
+                SESSION_RECOVERY_MIGRATION,
+                SAFETY_OVERRIDE_MIGRATION,
+            ):
                 for statement in migration.statements:
                     database.execute(statement)
             database.execute(COMMAND_READ_STATE_MIGRATION.statements[0])

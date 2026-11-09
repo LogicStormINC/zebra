@@ -47,7 +47,8 @@ from zebra_agent_worker.provider_continuation_execution import (
     resolve_provider_continuation,
 )
 from zebra_agent_worker.recovery import RecoveredSession
-from zebra_agent_worker.session_handoff import recover_worker_handoff
+from zebra_agent_worker.session_handoff import SessionHandoffRecoveryGate, recover_worker_handoff
+from zebra_agent_worker.session_process import process_factory
 from zebra_agent_worker.task_recovery import (
     RecoveredTask,
     recover_client_state_evidence,
@@ -117,6 +118,7 @@ def execute_claimed_with_stale_retry(
         with (
             postgres_connection_scope(task_io=True)
             if getattr(service, "_execution_namespace", None) is not None
+            and process_factory(service._settings) is None
             else nullcontext()
         ):
             result: ExecutedSession = service._execute_claimed_session_once(
@@ -159,13 +161,22 @@ def recover_execution_inputs(
 ) -> RecoveredExecutionInputs:
     if ownership_check is not None:
         ownership_check()
-    if execution_input_reader is None and execution_input_store is not None:
+    prepare_native_head = execution_input_reader is None and execution_input_store is not None
+    if prepare_native_head:
         from zebra_agent_worker.execution_input_preparation import recover_execution_input_events
 
         if tasks is None or namespace is None:
             raise ValueError("execution input preparation requires explicit tasks and namespace")
         if execution_input_store.namespace != namespace:
             raise ValueError("execution input namespace disagrees with explicit composition")
+
+        recover_execution_input_events(
+            store=execution_input_store,
+            tasks=tasks,
+            lease=claimed.lease,
+            expected_session_revision=claimed.recovery.session.current_sequence,
+            ownership_check=ownership_check,
+        )
 
         def execution_input_reader(lease: WorkerLease) -> list[SessionEvent]:
             return recover_execution_input_events(
@@ -183,12 +194,15 @@ def recover_execution_inputs(
         event_store = ExecutionInputEventView(event_store, execution_input_reader, claimed.lease)
         # Finish all preparation before suspended-session restoration can append
         # SESSION_RESUMED. The main loop retries only this input phase.
-        event_store.list_for_session(session_id)
-        if execution_input_store is not None and (
-            execution_input_store.read(claimed.lease).state.session_revision
-            != claimed.recovery.session.current_sequence
-        ):
-            raise StaleExecutionSnapshot("execution inputs disagree with claimed Session revision")
+        if not prepare_native_head:
+            event_store.list_for_session(session_id)
+            if execution_input_store is not None and (
+                execution_input_store.read(claimed.lease).state.session_revision
+                != claimed.recovery.session.current_sequence
+            ):
+                raise StaleExecutionSnapshot(
+                    "execution inputs disagree with claimed Session revision"
+                )
     cloud_continuation = provider_runtime.cloud_for_session(
         cloud_provider_continuation_factory, session_id
     )
@@ -200,20 +214,29 @@ def recover_execution_inputs(
         started_at=started_at,
         event_store=event_store,
     )
+    handoff_events = event_store.list_for_session(session_id) if execution_input_reader else None
     recovered_handoff = recover_worker_handoff(
         handoff_gate,
         session_id,
         fence=claimed.lease.fence,
         recovered_at=started_at,
         release=lambda: None,
-        events=event_store.list_for_session(session_id) if execution_input_reader else None,
+        events=handoff_events,
     )
-    session_events = event_store.list_for_session(session_id)
-    if execution_input_store is not None and (
-        execution_input_store.read(claimed.lease).state.session_revision
-        != claimed.recovery.session.current_sequence
-    ):
-        raise StaleExecutionSnapshot("execution inputs disagree with restored Session revision")
+    # The native gate returning None made no changes. A real handoff or
+    # custom gate can change the source, so reread before constructing inputs.
+    session_events = (
+        handoff_events
+        if handoff_events is not None and recovered_handoff is None
+        and type(handoff_gate) is SessionHandoffRecoveryGate
+        else event_store.list_for_session(session_id)
+    )
+    evidence = None
+    if execution_input_store is not None:
+        input_state = execution_input_store.read(claimed.lease).state
+        if input_state.session_revision != claimed.recovery.session.current_sequence:
+            raise StaleExecutionSnapshot("execution inputs disagree with restored Session revision")
+        evidence = input_state.evidence
     active_context = context_lifecycle_store.get_active_capsule(session_id)
     provider_continuation = resolve_provider_continuation(
         cloud_continuation,
@@ -232,16 +255,14 @@ def recover_execution_inputs(
             ),
             client_state_evidence=recover_client_state_evidence(session_events),
         )
-        if execution_input_store is not None:
-            evidence = execution_input_store.read(claimed.lease).state.evidence
-            if evidence is not None:
-                task = replace(
-                    task,
-                    runtime_evidence=(
-                        *task.runtime_evidence,
-                        execution_evidence_context(evidence),
-                    ),
-                )
+        if evidence is not None:
+            task = replace(
+                task,
+                runtime_evidence=(
+                    *task.runtime_evidence,
+                    execution_evidence_context(evidence),
+                ),
+            )
         if (
             task.coverage_admission is not None
             and not strict_dispatch_configured

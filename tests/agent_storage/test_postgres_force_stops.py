@@ -228,3 +228,46 @@ def test_other_safety_writers_cannot_erase_an_accepted_user_stop(dsn):
         assert projection.get_session_status(other) is original
     assert adapter.handle(_progress(sid)).body == accepted.body
     assert PostgresLeaseStore(dsn, deployment_namespace=NAMESPACE).get(sid) is None
+
+
+@pytest.mark.parametrize(
+    "module",
+    [
+        "agent_storage.postgres.agent_tasks",
+        "agent_storage.postgres.task_replay_headers",
+        "agent_storage.postgres.task_read_header",
+    ],
+)
+@pytest.mark.parametrize(
+    "status,reason,expected",
+    [
+        ("running", "user_force_stop", "cancelled"),
+        ("completed", "user_force_stop", "completed"),
+        ("failed", "user_force_stop", "failed"),
+        ("running", "watchdog", "failed"),
+    ],
+)
+def test_public_header_readers_keep_force_stop_and_prior_results(module, status, reason, expected):
+    from importlib import import_module
+    from types import SimpleNamespace
+    from uuid import uuid4
+
+    task_id = uuid4()
+    row = dict(
+        active_segment_id=task_id,
+        next_event_sequence=7,
+        event_position_state="ready",
+        title="Retained",
+        status=status,
+        active_segment_sequence=6,
+        title_truncated=False,
+        clarification_id=None,
+        clarification_invalid=False,
+        safety_terminal=True,
+        safety_reason=reason,
+    )
+    # Exercise every supported caller entry; a stale parallel reader reports FAILED.
+    connection = SimpleNamespace(execute=lambda *a, **kw: SimpleNamespace(fetchone=lambda: row))
+    result = import_module(module).read_task_header(connection, "isolated-header", task_id)
+    assert result.status.value == expected
+    assert result.title == "Retained" and result.active_segment_sequence == 6

@@ -202,3 +202,115 @@ def test_postgres_forged_payload_or_old_attempt_cannot_advance_head(native_progr
             scope, tasks.read_event_page(scope.task_id, page.next_sequence)
         )
     assert tasks.read_worker_progress(scope) == committed
+
+
+@pytest.mark.parametrize("composition", ["native", "foreign", "custom"])
+def test_checked_progress_header_shares_only_native_same_scope(
+    native_progress_dsn, monkeypatch, composition,
+):
+    from datetime import timedelta
+
+    from agent_storage import PostgresLeaseStore
+    from agent_storage.postgres.database import PostgresDatabase
+    from zebra_agent_worker.progress_recovery import WorkerProgressRecovery
+    from zebra_agent_worker.worker_budget import BudgetExecutionCheck
+
+    from tests.stream_storage.telemetry import Telemetry, phase
+
+    tasks, _, scope = seed(native_progress_dsn)
+    page = tasks.read_event_page(scope.task_id, 0, limit=256, max_bytes=1_048_576)
+    head = tasks.advance_worker_progress(scope, page)
+    leases = PostgresLeaseStore(native_progress_dsn, deployment_namespace=NS)
+    lease = leases.acquire(
+        scope.task_id, owner_instance_id="header-check", ttl=timedelta(seconds=60),
+    )
+
+    def owned():
+        assert leases.get(lease.session_id).fence == lease.fence
+
+    database = leases._database if composition != "foreign" else PostgresDatabase(
+        native_progress_dsn, deployment_namespace="foreign-header-scope",
+    )
+    if composition == "custom":
+        original = tasks.read_latest_run_header
+        monkeypatch.setattr(tasks, "read_latest_run_header", lambda task: original(task))
+    check = BudgetExecutionCheck(owned, ownership_database=database)
+    recovered = WorkerProgressRecovery(tasks, head, check, 8)
+    telemetry = Telemetry()
+    with telemetry.installed(), phase("header"):
+        assert recovered.catch_up() is None
+    assert telemetry.calls["initial/header/client_commit"] == (
+        1 if composition == "native" else 2
+    )
+
+
+def test_checked_progress_header_sees_new_run_and_clears_read_scope(native_progress_dsn):
+    from agent_storage.postgres.work_unit import borrow_work_unit
+    from zebra_agent_worker.execution_events import ExecutionInterrupted
+    from zebra_agent_worker.progress_recovery import WorkerProgressRecovery
+    from zebra_agent_worker.worker_budget import BudgetExecutionCheck
+
+    tasks, events, scope = seed(native_progress_dsn)
+    page = tasks.read_event_page(scope.task_id, 0, limit=256, max_bytes=1_048_576)
+    head = tasks.advance_worker_progress(scope, page)
+    command = SessionCommand(
+        session_id=scope.task_id, kind=SessionCommandKind.RUN,
+        expected_revision=1, idempotency_key="checked-header-new-run",
+        payload={"run_id": "replacement"},
+    )
+
+    def changed():
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            executor.submit(
+                append, events, scope, EventType.SESSION_COMMAND_ACCEPTED, command.event_payload(),
+            ).result()
+
+    check = BudgetExecutionCheck(changed, ownership_database=tasks._database)
+    recovery = WorkerProgressRecovery(tasks, head, check, 8)
+    with pytest.raises(ExecutionInterrupted, match="superseded"):
+        recovery.catch_up()
+    assert borrow_work_unit((tasks._database._dsn, NS)) is None
+    assert tasks.read_latest_run_header(scope.task_id).run_id == "replacement"
+
+
+def test_checked_progress_header_closes_before_page_advance(native_progress_dsn, monkeypatch):
+    from agent_core.ports.worker_progress import WorkerProgressHead, WorkerProgressState
+    from agent_storage.postgres.work_unit import borrow_work_unit
+    from zebra_agent_worker.progress_recovery import WorkerProgressRecovery
+    from zebra_agent_worker.worker_budget import BudgetExecutionCheck
+
+    tasks, _, scope = seed(native_progress_dsn)
+    head = WorkerProgressHead(scope, scope.anchor_sequence - 1, None, WorkerProgressState())
+    check = BudgetExecutionCheck(lambda: None, ownership_database=tasks._database)
+    advance = tasks.advance_worker_progress
+    writes = []
+
+    def independently_committed(*args, **kwargs):
+        assert borrow_work_unit((tasks._database._dsn, NS)) is None
+        writes.append(1)
+        return advance(*args, **kwargs)
+
+    monkeypatch.setattr(tasks, "advance_worker_progress", independently_committed)
+    recovery = WorkerProgressRecovery(tasks, head, check, 8)
+    recovery.catch_up()
+    assert writes == [1]
+    assert tasks.read_worker_progress(scope) == recovery.head
+
+
+
+def test_checked_progress_header_refuses_writes_inside_read_phase(native_progress_dsn):
+    import psycopg
+    from agent_storage.postgres.work_unit import borrow_work_unit
+
+    tasks, _, scope = seed(native_progress_dsn)
+
+    def write():
+        with tasks._database.connect() as connection:
+            connection.execute(
+                "UPDATE agent_tasks SET active_segment_id=active_segment_id "
+                "WHERE deployment_namespace=%s AND task_id=%s", (NS, scope.task_id),
+            )
+
+    with pytest.raises(psycopg.errors.ReadOnlySqlTransaction):
+        tasks.read_latest_run_header(scope.task_id, ownership_check=write)
+    assert borrow_work_unit((tasks._database._dsn, NS)) is None

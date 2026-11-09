@@ -1,5 +1,4 @@
 """Latest additive migrations kept separate from the primary catalog."""
-from agent_storage.postgres.http_input_attachment_migration import HTTP_INPUT_ATTACHMENT_MIGRATION
 
 from agent_storage.postgres.agent_registry_migration import AGENT_REGISTRY_MIGRATION
 from agent_storage.postgres.artifact_payload_migration import ARTIFACT_PAYLOAD_MIGRATION
@@ -45,6 +44,7 @@ from agent_storage.postgres.full_gateway_migration import FULL_GATEWAY_MIGRATION
 from agent_storage.postgres.governed_memory_migration import GOVERNED_MEMORY_MIGRATION
 from agent_storage.postgres.handoff_migration import HANDOFF_MIGRATION
 from agent_storage.postgres.host_auth_migration import HOST_AUTH_MIGRATION
+from agent_storage.postgres.http_input_attachment_migration import HTTP_INPUT_ATTACHMENT_MIGRATION
 from agent_storage.postgres.memory_delivery_migration import MEMORY_DELIVERY_MIGRATION
 from agent_storage.postgres.migration_recovery_migration import MIGRATION_RECOVERY_MIGRATION
 from agent_storage.postgres.native_memory_migration import NATIVE_MEMORY_MIGRATION

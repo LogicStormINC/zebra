@@ -98,7 +98,7 @@ def isolated_dsn() -> Iterator[str]:
         apply_postgres_migrations(dsn)
         yield dsn
     finally:
-        subprocess.run(["docker", "rm", "-f", container], check=True, capture_output=True)
+        subprocess.run(["docker", "rm", "-fv", container], check=True, capture_output=True)
 
 
 @pytest.fixture

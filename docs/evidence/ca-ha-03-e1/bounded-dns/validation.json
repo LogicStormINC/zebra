@@ -1,0 +1,48 @@
+{
+  "task": "CA-HA-03",
+  "parent": "fff9e463692b94f244e254c83f938d6c029a193a",
+  "status": "source_and_isolated_dns_checks_passed_candidate_image_not_promoted",
+  "root_cause": "ordinary guarded hostname requests reused auxiliary loop which refuses uncancellable executor DNS",
+  "change": "ordinary loop uses bounded stdlib resolver process; auxiliary loop unchanged; original URL/SNI/TLS and model send guards retained",
+  "focused": {
+    "passed": 74
+  },
+  "independent_AI": {
+    "passed": 74,
+    "critical": 0,
+    "important": 0,
+    "human_review": false
+  },
+  "make_check": {
+    "exit": 0
+  },
+  "linux_standalone": {
+    "vm": {
+      "hostname_resolved": true,
+      "cancelled_child_reaped": true,
+      "platform": "linux"
+    },
+    "server": {
+      "hostname_resolved": true,
+      "cancelled_child_reaped": true,
+      "platform": "linux"
+    }
+  },
+  "unknown_preserved": {
+    "task_id": "98471316-3fce-4c2e-a838-a5a7d03f421d",
+    "request_digest": "d6bc4b493d5369539d1239b338992de63d54411a687552f4e72dcd8a2045a1a7",
+    "input_upper_bound": 14175,
+    "output_cap": 1024,
+    "receipt": null,
+    "resent": false,
+    "refunded": false
+  },
+  "source_hashes": {
+    "packages/agent-integrations/src/agent_integrations/bounded_model_dns.py": "67baeadf15446dfd473fe41a811660dcf10a260b32194e9b304135d070833bff",
+    "packages/agent-integrations/src/agent_integrations/worker_budget.py": "be2b6d494c2cc322efe1e1617314fafe77d8f6124d717aa515b5d945df2d4167",
+    "tests/agent_integrations/test_bounded_model_dns.py": "90af7c40bb62ca02774ff8fa5f9b4f981b0ca7e2643a1db0d3c915520c4bd1a8",
+    "tests/compose/cloud_ha_e1/Dockerfile.delta": "c60be33ad9b59b5c5ea8e54b795644624a766e7b76992c7adb2dfb8a2cb76044"
+  },
+  "full_E1_accepted": false,
+  "production_changed": false
+}

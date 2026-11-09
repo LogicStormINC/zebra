@@ -1,6 +1,5 @@
 """Private certified bytes only; HEAD uses the same complete gate as GET."""
 
-import asyncio
 from time import monotonic
 from uuid import UUID
 
@@ -12,6 +11,7 @@ from agent_storage.postgres.database import postgres_deadline
 from fastapi import Request
 from fastapi.responses import JSONResponse, Response
 
+from zebra_agent_api.database_budget import database_call
 from zebra_agent_api.responses import ApiResponse
 from zebra_agent_api.routes import RouteAdapter
 
@@ -54,7 +54,7 @@ async def coverage_report_response(request: Request, adapter: RouteAdapter) -> R
             return None, result
 
     try:
-        denied, result = await asyncio.to_thread(read)
+        denied, result = await database_call(None, read)
     except PermissionError:
         return refused(403, "coverage_report_authority_invalid")
     except (ValueError, CoverageRefusedError):

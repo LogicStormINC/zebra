@@ -3,8 +3,17 @@
     "ArtifactPin": {
       "additionalProperties": false,
       "properties": {
-        "digest": {
-          "title": "Digest",
+        "kind": {
+          "enum": [
+            "image",
+            "baseline-config",
+            "component",
+            "provider-profile",
+            "budget-profile",
+            "output-schema",
+            "build-evidence"
+          ],
+          "title": "Kind",
           "type": "string"
         },
         "id": {
@@ -13,21 +22,13 @@
           "title": "Id",
           "type": "string"
         },
-        "kind": {
-          "enum": [
-            "image",
-            "baseline-config",
-            "component",
-            "provider-profile",
-            "output-schema",
-            "build-evidence"
-          ],
-          "title": "Kind",
-          "type": "string"
-        },
         "version": {
           "maxLength": 64,
           "title": "Version",
+          "type": "string"
+        },
+        "digest": {
+          "title": "Digest",
           "type": "string"
         }
       },
@@ -40,6 +41,38 @@
       "title": "ArtifactPin",
       "type": "object"
     },
+    "BudgetParameters": {
+      "additionalProperties": false,
+      "description": "Root budget reservation within operator-approved ceilings.",
+      "properties": {
+        "budget_profile": {
+          "$ref": "#/$defs/ArtifactPin"
+        },
+        "model_tokens": {
+          "minimum": 0,
+          "title": "Model Tokens",
+          "type": "integer"
+        },
+        "tool_calls": {
+          "minimum": 0,
+          "title": "Tool Calls",
+          "type": "integer"
+        },
+        "runtime_seconds": {
+          "minimum": 0,
+          "title": "Runtime Seconds",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "budget_profile",
+        "model_tokens",
+        "tool_calls",
+        "runtime_seconds"
+      ],
+      "title": "BudgetParameters",
+      "type": "object"
+    },
     "BundleScope": {
       "additionalProperties": false,
       "properties": {
@@ -47,18 +80,6 @@
           "maxLength": 2048,
           "minLength": 1,
           "title": "Authority Issuer",
-          "type": "string"
-        },
-        "deployment_id": {
-          "maxLength": 256,
-          "minLength": 1,
-          "title": "Deployment Id",
-          "type": "string"
-        },
-        "environment": {
-          "maxLength": 256,
-          "minLength": 1,
-          "title": "Environment",
           "type": "string"
         },
         "namespace_id": {
@@ -73,10 +94,22 @@
           "title": "Product Id",
           "type": "string"
         },
+        "environment": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Environment",
+          "type": "string"
+        },
         "target_id": {
           "maxLength": 256,
           "minLength": 1,
           "title": "Target Id",
+          "type": "string"
+        },
+        "deployment_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Deployment Id",
           "type": "string"
         }
       },
@@ -91,6 +124,29 @@
       "title": "BundleScope",
       "type": "object"
     },
+    "ConfigurableBudgetDomain": {
+      "additionalProperties": false,
+      "properties": {
+        "component": {
+          "$ref": "#/$defs/ArtifactPin"
+        },
+        "mode": {
+          "const": "configurable",
+          "title": "Mode",
+          "type": "string"
+        },
+        "parameters": {
+          "$ref": "#/$defs/BudgetParameters"
+        }
+      },
+      "required": [
+        "component",
+        "mode",
+        "parameters"
+      ],
+      "title": "ConfigurableBudgetDomain",
+      "type": "object"
+    },
     "EmptyParameters": {
       "additionalProperties": false,
       "description": "Pinned domains cannot smuggle configuration through a mutable mapping.",
@@ -101,17 +157,17 @@
     "EngineBinding": {
       "additionalProperties": false,
       "properties": {
-        "bundle_abi": {
-          "const": "cloud-agent.bundle/1",
-          "title": "Bundle Abi",
+        "kind": {
+          "const": "cloud-agent",
+          "title": "Kind",
           "type": "string"
         },
         "image": {
           "$ref": "#/$defs/ArtifactPin"
         },
-        "kind": {
-          "const": "cloud-agent",
-          "title": "Kind",
+        "bundle_abi": {
+          "const": "cloud-agent.bundle/1",
+          "title": "Bundle Abi",
           "type": "string"
         },
         "script_abi": {
@@ -155,6 +211,11 @@
     "InstructionsParameters": {
       "additionalProperties": false,
       "properties": {
+        "system_text": {
+          "maxLength": 32768,
+          "title": "System Text",
+          "type": "string"
+        },
         "business_text": {
           "maxLength": 32768,
           "title": "Business Text",
@@ -167,11 +228,6 @@
         },
         "output_schema": {
           "$ref": "#/$defs/ArtifactPin"
-        },
-        "system_text": {
-          "maxLength": 32768,
-          "title": "System Text",
-          "type": "string"
         }
       },
       "required": [
@@ -209,6 +265,15 @@
     "ModelParameters": {
       "additionalProperties": false,
       "properties": {
+        "provider_profile": {
+          "$ref": "#/$defs/ArtifactPin"
+        },
+        "model": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Model",
+          "type": "string"
+        },
         "context_window_tokens": {
           "maximum": 1048576,
           "minimum": 1,
@@ -226,15 +291,6 @@
           "minimum": 0,
           "title": "Max Retries",
           "type": "integer"
-        },
-        "model": {
-          "maxLength": 256,
-          "minLength": 1,
-          "title": "Model",
-          "type": "string"
-        },
-        "provider_profile": {
-          "$ref": "#/$defs/ArtifactPin"
         },
         "temperature_milli": {
           "maximum": 2000,
@@ -275,13 +331,13 @@
           "title": "Mode",
           "type": "string"
         },
-        "parameters": {
-          "$ref": "#/$defs/EmptyParameters"
-        },
         "reason": {
           "const": "requires-runtime-assembly",
           "title": "Reason",
           "type": "string"
+        },
+        "parameters": {
+          "$ref": "#/$defs/EmptyParameters"
         }
       },
       "required": [
@@ -296,17 +352,19 @@
     "ResolvedRuntimeBundle": {
       "additionalProperties": false,
       "properties": {
+        "schema_version": {
+          "const": "cloud-agent.runtime-bundle/1",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "scope": {
+          "$ref": "#/$defs/BundleScope"
+        },
+        "engine": {
+          "$ref": "#/$defs/EngineBinding"
+        },
         "baseline_config": {
           "$ref": "#/$defs/ArtifactPin"
-        },
-        "build_evidence": {
-          "items": {
-            "$ref": "#/$defs/ArtifactPin"
-          },
-          "maxLength": 32,
-          "minLength": 1,
-          "title": "Build Evidence",
-          "type": "array"
         },
         "catalog_digest": {
           "title": "Catalog Digest",
@@ -314,9 +372,6 @@
         },
         "domains": {
           "$ref": "#/$defs/RuntimeDomains"
-        },
-        "engine": {
-          "$ref": "#/$defs/EngineBinding"
         },
         "lock": {
           "items": {
@@ -327,13 +382,14 @@
           "title": "Lock",
           "type": "array"
         },
-        "schema_version": {
-          "const": "cloud-agent.runtime-bundle/1",
-          "title": "Schema Version",
-          "type": "string"
-        },
-        "scope": {
-          "$ref": "#/$defs/BundleScope"
+        "build_evidence": {
+          "items": {
+            "$ref": "#/$defs/ArtifactPin"
+          },
+          "maxLength": 32,
+          "minLength": 1,
+          "title": "Build Evidence",
+          "type": "array"
         }
       },
       "required": [
@@ -352,43 +408,37 @@
     "RuntimeDomains": {
       "additionalProperties": false,
       "properties": {
-        "addons": {
-          "$ref": "#/$defs/PinnedDomain"
-        },
-        "budget": {
-          "$ref": "#/$defs/PinnedDomain"
-        },
-        "content": {
-          "$ref": "#/$defs/PinnedDomain"
-        },
-        "context": {
-          "$ref": "#/$defs/PinnedDomain"
-        },
         "engine": {
           "$ref": "#/$defs/PinnedDomain"
         },
         "execution": {
           "$ref": "#/$defs/PinnedDomain"
         },
-        "frontend": {
-          "$ref": "#/$defs/PinnedDomain"
+        "model": {
+          "$ref": "#/$defs/ModelDomain"
         },
         "instructions": {
           "$ref": "#/$defs/InstructionsDomain"
         },
-        "lifecycle": {
+        "context": {
           "$ref": "#/$defs/PinnedDomain"
         },
         "memory": {
           "$ref": "#/$defs/PinnedDomain"
         },
-        "model": {
-          "$ref": "#/$defs/ModelDomain"
+        "content": {
+          "$ref": "#/$defs/PinnedDomain"
         },
         "native": {
           "$ref": "#/$defs/PinnedDomain"
         },
-        "operations": {
+        "addons": {
+          "$ref": "#/$defs/PinnedDomain"
+        },
+        "tools": {
+          "$ref": "#/$defs/PinnedDomain"
+        },
+        "lifecycle": {
           "$ref": "#/$defs/PinnedDomain"
         },
         "policy": {
@@ -400,16 +450,37 @@
         "storage": {
           "$ref": "#/$defs/PinnedDomain"
         },
-        "tools": {
+        "transport": {
           "$ref": "#/$defs/PinnedDomain"
         },
-        "transport": {
+        "frontend": {
           "$ref": "#/$defs/PinnedDomain"
         },
         "triggers": {
           "$ref": "#/$defs/PinnedDomain"
         },
+        "budget": {
+          "discriminator": {
+            "mapping": {
+              "configurable": "#/$defs/ConfigurableBudgetDomain",
+              "pinned": "#/$defs/PinnedDomain"
+            },
+            "propertyName": "mode"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/PinnedDomain"
+            },
+            {
+              "$ref": "#/$defs/ConfigurableBudgetDomain"
+            }
+          ],
+          "title": "Budget"
+        },
         "verification": {
+          "$ref": "#/$defs/PinnedDomain"
+        },
+        "operations": {
           "$ref": "#/$defs/PinnedDomain"
         }
       },
@@ -441,17 +512,17 @@
   },
   "additionalProperties": false,
   "properties": {
+    "schema_version": {
+      "const": "cloud-agent.bundle-envelope/1",
+      "title": "Schema Version",
+      "type": "string"
+    },
     "bundle_digest": {
       "title": "Bundle Digest",
       "type": "string"
     },
     "manifest": {
       "$ref": "#/$defs/ResolvedRuntimeBundle"
-    },
-    "schema_version": {
-      "const": "cloud-agent.bundle-envelope/1",
-      "title": "Schema Version",
-      "type": "string"
     }
   },
   "required": [

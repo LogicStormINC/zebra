@@ -1,0 +1,76 @@
+{
+  "cause": "PG workspace row pre-parse repeated the typed field validator; every v2 closure regenerated static catalog schema metadata",
+  "source_overlay_sha256": {
+    "packages/agent-storage/src/agent_storage/postgres/workspaces.py": "a7ca381e8a1d38208f1bad618a6151479304bc2eb8a241fd0c1f33c132505df5",
+    "packages/agent-core/src/agent_core/domain/runtime_bundle_catalog.py": "d4b555743ad2afb7c9579620c2e58ef25cdb1e0a2272591e4aaa91bb50524a05"
+  },
+  "native_readonly_microbenchmark": {
+    "image": "sha256:e13900a858fb92a91726eaa8cb78134babccadbdc1b3c8eb9a19a22e3b391cc2",
+    "runtime_source": "2116b6be25acbbef92e360d9cc90a7f008422b5d",
+    "native_source_overlays": {
+      "packages/agent-storage/src/agent_storage/postgres/workspaces.py": "a7ca381e8a1d38208f1bad618a6151479304bc2eb8a241fd0c1f33c132505df5",
+      "packages/agent-core/src/agent_core/domain/runtime_bundle_catalog.py": "d4b555743ad2afb7c9579620c2e58ef25cdb1e0a2272591e4aaa91bb50524a05"
+    },
+    "unchanged_original_task": "2c262cdb-581c-4597-ac66-97b710d64bae",
+    "reads_per_process": 23,
+    "case": "readonly network-none decoder microbenchmark of a persisted v2 row; no Task execution or SLO claim",
+    "samples": [
+      {
+        "variant": "old",
+        "wall_seconds": 0.4926110439992044,
+        "cpu_seconds": 0.48997720499999997,
+        "projection_sha256": "efad3a39b0d31225e227e2ebbcbd1789a6dff96939ae6349b3bb70af13d7c3ee"
+      },
+      {
+        "variant": "candidate",
+        "wall_seconds": 0.08731718400667887,
+        "cpu_seconds": 0.08687954200000003,
+        "projection_sha256": "efad3a39b0d31225e227e2ebbcbd1789a6dff96939ae6349b3bb70af13d7c3ee"
+      },
+      {
+        "variant": "old",
+        "wall_seconds": 0.49396271900332067,
+        "cpu_seconds": 0.493792498,
+        "projection_sha256": "efad3a39b0d31225e227e2ebbcbd1789a6dff96939ae6349b3bb70af13d7c3ee"
+      },
+      {
+        "variant": "candidate",
+        "wall_seconds": 0.08606884400069248,
+        "cpu_seconds": 0.086041166,
+        "projection_sha256": "efad3a39b0d31225e227e2ebbcbd1789a6dff96939ae6349b3bb70af13d7c3ee"
+      }
+    ]
+  },
+  "runnable_red": "persisted snapshot parsed 2 times",
+  "runnable_green": "one typed validation; bad digest rejected; exact golden catalog and no returned object cache poisoning",
+  "focused_passed": 217,
+  "real_PG_initial": "13 test bodies passed, one teardown failure and 13 teardown errors from runtime_namespace_gates FK; all raw results retained",
+  "real_PG_final": "14 passed after one-line dependency-ordered cleanup of newly generated QA namespaces only",
+  "make_check": "passed on implementation; final fixture-only change validated by Ruff and real PG",
+  "independent_review": "no Critical/Important; separate focused 41 passed",
+  "dynamic_authority_changed": false,
+  "snapshot_or_mutable_schema_cached": false,
+  "native11": {
+    "source": "6cd0162e051f5df6b09f2ab995de2c4f603e3f0c",
+    "arm64_platform_manifest": "sha256:e247e5f01a6d0b36482577aa6b9271d1b6d40ccedcdabac6e8c62f2027982994",
+    "multiarch_index": false,
+    "amd64": "build exit0, SSH timed out before digest/source qualification",
+    "definition": "b41e5b11-0879-455f-b691-6d3ac61efb88",
+    "marker": 0,
+    "old36_facts_unchanged_after_new10": true,
+    "fresh_short_seconds": 5.021,
+    "fresh_pwd_seconds": 15.92,
+    "new10_real_exit_acks": true,
+    "exact_pwd_OCI_removed": true,
+    "new_pstats_files": 0,
+    "burst8": {
+      "accepted_and_completed": 8,
+      "min_seconds": 7.495,
+      "median_seconds": 12.215,
+      "max_seconds": 16.309,
+      "prior_native9_median_seconds": 9.7305,
+      "overall_concurrency_gain_not_proved": true
+    }
+  },
+  "fixed_E1": "not run"
+}

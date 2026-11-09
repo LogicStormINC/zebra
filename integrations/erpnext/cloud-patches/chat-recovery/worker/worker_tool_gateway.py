@@ -1,10 +1,10 @@
 """Tool routing and execution resource ownership for one Worker attempt."""
 
-from dataclasses import dataclass
 from collections.abc import Callable
+from dataclasses import dataclass
 
-from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.execution_authority import ExecutionAuthorityResolutionError
+from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.host_effect_receipts import HostEffectReceipt
 from agent_core.domain.modeling import ModelToolDefinition
 from agent_core.domain.tools import (
@@ -29,7 +29,6 @@ from agent_tools.extension_management import (
     management_contracts,
 )
 from agent_tools.registry import ToolRegistry
-
 from zebra_agent_worker.client_tool_gateway import ClientToolGateway
 from zebra_agent_worker.host_media_artifacts import (
     HostMediaArtifactImporter,
@@ -82,7 +81,9 @@ class WorkerToolGateway:
         client_gateway = self.client
         if client_gateway is not None:
             tools = tools + tuple(client_gateway.model_tools)
-        from agent_storage.postgres.erp_chat_readonly import enabled as chat_enabled, allowed_tools
+        from agent_storage.postgres.erp_chat_readonly import allowed_tools
+        from agent_storage.postgres.erp_chat_readonly import enabled as chat_enabled
+
         if chat_enabled(self.host_context.namespace_id if self.host_context else None):
             tools = tuple(tool for tool in tools if tool.name in allowed_tools())
         return tools
@@ -191,27 +192,50 @@ class WorkerToolGateway:
         return self._execute(toolCall)
 
     def _execute(self, tool_call: ToolCall) -> ToolResult:
-        from agent_storage.postgres.erp_chat_readonly import enabled as chat_enabled, allowed_tools, READS
+        from agent_storage.postgres.erp_chat_readonly import (
+            READS,
+            allowed_tools,
+        )
+        from agent_storage.postgres.erp_chat_readonly import (
+            enabled as chat_enabled,
+        )
+
         if chat_enabled(self.host_context.namespace_id if self.host_context else None) and (
-                tool_call.name not in allowed_tools() or tool_call.name == 'erpnext.read'
-                and tool_call.arguments.get('operation') not in READS
-                or tool_call.name == 'erpnext.propose' and (
-                    tool_call.arguments.get('operation') not in {'create', 'update', 'submit'}
-                    or not isinstance(tool_call.arguments.get('arguments'), dict)
-                    or tool_call.arguments['arguments'].get('doctype') != 'Production Plan')):
-            return ToolResult(tool_call_id=tool_call.tool_call_id, status=ToolCallStatus.FAILED,
-                output='当前仅支持 ERP 查询与文字对话。', metadata={'reason': 'erp_chat_readonly_denied',
-                'transport_outcome': 'returned', 'execution_state': 'not_executed'})
+            tool_call.name not in allowed_tools()
+            or tool_call.name == "erpnext.read"
+            and tool_call.arguments.get("operation") not in READS
+            or tool_call.name == "erpnext.propose"
+            and (
+                tool_call.arguments.get("operation") not in {"create", "update", "submit"}
+                or not isinstance(tool_call.arguments.get("arguments"), dict)
+                or tool_call.arguments["arguments"].get("doctype") != "Production Plan"
+            )
+        ):
+            return ToolResult(
+                tool_call_id=tool_call.tool_call_id,
+                status=ToolCallStatus.FAILED,
+                output="当前仅支持 ERP 查询与文字对话。",
+                metadata={
+                    "reason": "erp_chat_readonly_denied",
+                    "transport_outcome": "returned",
+                    "execution_state": "not_executed",
+                },
+            )
         if self.fresh_authority_check is not None:
             try:
                 self.fresh_authority_check("tool:" + tool_call.name, str(tool_call.tool_call_id))
             except ExecutionAuthorityResolutionError:
                 # The native outer fence recognizes returned/rejected as proof of no effect.
                 return ToolResult(
-                    tool_call_id=tool_call.tool_call_id, status=ToolCallStatus.FAILED,
-                    metadata={"transport_outcome": "returned", "business_outcome": "rejected",
-                              "effect_status": "failed_no_effect", "execution_state": "not_executed",
-                              "reason": "erp_fresh_authority_denied"},
+                    tool_call_id=tool_call.tool_call_id,
+                    status=ToolCallStatus.FAILED,
+                    metadata={
+                        "transport_outcome": "returned",
+                        "business_outcome": "rejected",
+                        "effect_status": "failed_no_effect",
+                        "execution_state": "not_executed",
+                        "reason": "erp_fresh_authority_denied",
+                    },
                 )
         if self.management is not None and tool_call.name in self.management_names:
             return self.management.execute(tool_call)
@@ -251,9 +275,16 @@ class WorkerToolGateway:
             manifest=self.host_manifest,
         )
         from agent_storage.postgres.erp_chat_readonly import OUTPUT_BYTES
-        if chat_enabled(self.host_context.namespace_id) and (len(result.output.encode()) > OUTPUT_BYTES or has_host_media_envelope(result)):
-            return ToolResult(tool_call_id=tool_call.tool_call_id, status=ToolCallStatus.FAILED,
-                output='查询结果超过当前文字查询范围，请缩小字段或条件。', metadata={'reason': 'erp_chat_output_too_large'})
+
+        if chat_enabled(self.host_context.namespace_id) and (
+            len(result.output.encode()) > OUTPUT_BYTES or has_host_media_envelope(result)
+        ):
+            return ToolResult(
+                tool_call_id=tool_call.tool_call_id,
+                status=ToolCallStatus.FAILED,
+                output="查询结果超过当前文字查询范围，请缩小字段或条件。",
+                metadata={"reason": "erp_chat_output_too_large"},
+            )
         if result.status is ToolCallStatus.EXECUTED and has_host_media_envelope(result):
             if self.host_media_importer is None:
                 return result.model_copy(

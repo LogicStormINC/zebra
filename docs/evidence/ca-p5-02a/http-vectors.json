@@ -1,0 +1,103 @@
+[
+  {
+    "method": "POST",
+    "requestBody": "{\"termination_id\":\"4e747854-c7c2-4a0b-af43-25de496294ed\",\"original_request\":\"{\\\"operation_id\\\":\\\"8673149b-18a0-476e-b856-64e32fc1f00e\\\",\\\"action\\\":\\\"drain\\\",\\\"expected_revision\\\":0}\",\"expected_gate_revision\":0}",
+    "operationId": null,
+    "body": {
+      "contractVersion": "runtime-gate-termination/1",
+      "contractDigest": "sha256:e4c73f0a55fda8d4d69ee936d6108e00a2d08c5dafe37be27cadb48162858954",
+      "scope": {
+        "authority_issuer": "https://business.example",
+        "namespace_id": "gate-ac6352b13bfa",
+        "product_id": "product-a",
+        "environment": "test",
+        "target_id": "target/native",
+        "deployment_id": "deployment/declared"
+      },
+      "trustRevision": 1,
+      "original": {
+        "terminationId": "4e747854-c7c2-4a0b-af43-25de496294ed",
+        "operationId": "8673149b-18a0-476e-b856-64e32fc1f00e",
+        "inputDigest": "sha256:9e886d4ad3a087bddc6317289b5f7bcdaf31ec21385dfcbdd21b93fc61034ccb",
+        "originalInputDigest": "sha256:eb7fca4b9db33f92595d8682bfe3d312ba7a961844796c0cfdf03d357a46a184",
+        "outcome": "no_gate_commit",
+        "gateRevision": 0,
+        "actor": "gate-stop-overdoze",
+        "trustRevision": 1,
+        "lateSubmissionFenced": true,
+        "proofScope": "original_gate_command_only",
+        "original": null
+      }
+    }
+  },
+  {
+    "method": "GET",
+    "requestBody": "",
+    "operationId": "4e747854-c7c2-4a0b-af43-25de496294ed",
+    "body": {
+      "contractVersion": "runtime-gate-termination/1",
+      "contractDigest": "sha256:e4c73f0a55fda8d4d69ee936d6108e00a2d08c5dafe37be27cadb48162858954",
+      "scope": {
+        "authority_issuer": "https://business.example",
+        "namespace_id": "gate-ac6352b13bfa",
+        "product_id": "product-a",
+        "environment": "test",
+        "target_id": "target/native",
+        "deployment_id": "deployment/declared"
+      },
+      "trustRevision": 1,
+      "original": {
+        "terminationId": "4e747854-c7c2-4a0b-af43-25de496294ed",
+        "operationId": "8673149b-18a0-476e-b856-64e32fc1f00e",
+        "inputDigest": "sha256:9e886d4ad3a087bddc6317289b5f7bcdaf31ec21385dfcbdd21b93fc61034ccb",
+        "originalInputDigest": "sha256:eb7fca4b9db33f92595d8682bfe3d312ba7a961844796c0cfdf03d357a46a184",
+        "outcome": "no_gate_commit",
+        "gateRevision": 0,
+        "actor": "gate-stop-overdoze",
+        "trustRevision": 1,
+        "lateSubmissionFenced": true,
+        "proofScope": "original_gate_command_only",
+        "original": null
+      }
+    }
+  },
+  {
+    "method": "POST",
+    "requestBody": "{\"termination_id\":\"938df78a-5e58-438c-b827-d0073dd6affa\",\"original_request\":\"{\\\"operation_id\\\": \\\"109e3b33-999e-4919-9bc8-b0d3cc86583a\\\", \\\"action\\\": \\\"drain\\\", \\\"expected_revision\\\": 0}\",\"expected_gate_revision\":1}",
+    "operationId": null,
+    "body": {
+      "contractVersion": "runtime-gate-termination/1",
+      "contractDigest": "sha256:e4c73f0a55fda8d4d69ee936d6108e00a2d08c5dafe37be27cadb48162858954",
+      "scope": {
+        "authority_issuer": "https://business.example",
+        "namespace_id": "gate-36e4d9770d21",
+        "product_id": "product-a",
+        "environment": "test",
+        "target_id": "target/native",
+        "deployment_id": "deployment/declared"
+      },
+      "trustRevision": 1,
+      "original": {
+        "terminationId": "938df78a-5e58-438c-b827-d0073dd6affa",
+        "operationId": "109e3b33-999e-4919-9bc8-b0d3cc86583a",
+        "inputDigest": "sha256:be3d268848c28e9567b60d0e48e288b80210f996e7e4e97c01e6daf1fc35aa8d",
+        "originalInputDigest": "sha256:dc768ec260351cf974eb86abbf0a7232a32eb19cdc5876e13e4a2369e24b1913",
+        "outcome": "already_committed",
+        "gateRevision": 1,
+        "actor": "gate-stop-overdoze",
+        "trustRevision": 1,
+        "lateSubmissionFenced": true,
+        "proofScope": "original_gate_command_only",
+        "original": {
+          "operationId": "109e3b33-999e-4919-9bc8-b0d3cc86583a",
+          "action": "drain",
+          "inputDigest": "sha256:dc768ec260351cf974eb86abbf0a7232a32eb19cdc5876e13e4a2369e24b1913",
+          "gateRevision": 1,
+          "admission": "draining",
+          "actor": "gate-overdoze",
+          "trustRevision": 1
+        }
+      }
+    }
+  }
+]

@@ -1,0 +1,8 @@
+{
+  "fixtureKey": "rtbind_YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE",
+  "event": {
+    "contractVersion": "runtime-worker-process/1",
+    "payload": "eyJjb250cmFjdFZlcnNpb24iOiJydW50aW1lLXdvcmtlci1wcm9jZXNzLzEiLCJpbnN0YW5jZUlkIjoiYTAwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMDAxIiwibmFtZXNwYWNlSWQiOiJuYW1lc3BhY2UiLCJwcm9jZXNzSWQiOiJiMDAwMDAwMC0wMDAwLTQwMDAtODAwMC0wMDAwMDAwMDAwMDEifQ",
+    "signature": "hmac-sha256:475b2694d486688363c8de695f906b226916edf47a444e050503466da36475a3"
+  }
+}

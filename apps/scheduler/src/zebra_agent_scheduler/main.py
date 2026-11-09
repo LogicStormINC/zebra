@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import signal
 import sys
 from collections.abc import Sequence
+from contextlib import nullcontext
 from threading import Event
 
 import httpx
@@ -18,13 +20,15 @@ from agent_storage import (
     PostgresTaskScheduleStore,
     cloud_composition_from_environment,
 )
+from agent_storage.postgres.connection_capacity import PROFILE_ENV
+from agent_storage.postgres.connection_pool import postgres_pool_scope
 from zebra_agent_api import create_app
 from zebra_agent_api.extension_composition import (
     compose_http_extensions,
     compose_http_turn_admission,
     resolve_publication_cloud,
 )
-from zebra_agent_config import load_settings
+from zebra_agent_config import ZebraAgentSettings, load_settings
 
 from zebra_agent_scheduler.admission import ZebraApiScheduledTaskAdmission
 from zebra_agent_scheduler.config import load_scheduler_settings
@@ -35,6 +39,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     settings = load_settings()
     if settings.deployment != "cloud" or settings.storage_authority != "postgresql":
         raise ValueError("user Schedule materialization requires cloud PostgreSQL authority")
+    with (postgres_pool_scope(settings.database_url, component="scheduler")
+          if os.environ.get(PROFILE_ENV) else nullcontext()):
+        return _compose_and_run(args, settings)
+
+
+def _compose_and_run(args: argparse.Namespace, settings: ZebraAgentSettings) -> int:
     scheduler = load_scheduler_settings()
     cloud = resolve_publication_cloud(
         settings, None, cloud_composition_from_environment(), None, None

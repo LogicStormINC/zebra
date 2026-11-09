@@ -21,7 +21,6 @@ from agent_storage import SQLiteSkillsStateStore
 from agent_tools.skills_catalog import SkillCatalog
 from agent_tools.skills_scope import build_scoped_skill_roots
 from zebra_agent_config import ZebraAgentSettings
-
 from zebra_agent_worker.client_tool_gateway import ClientToolGateway
 from zebra_agent_worker.host_gateway_resolution import (
     NO_MANIFEST_DIGEST,
@@ -38,7 +37,6 @@ from zebra_agent_worker.worker_tool_gateway import WorkerToolGateway as WorkerTo
 NETWORKED_WEB_TOOLS = frozenset({"web.fetch", "web.search", "web.crawl", "web.extract"})
 NATIVE_WEB_READ_TOOLS = frozenset({"web.crawl", "web.extract", "web.read", "web.find"})
 WEB_ALLOWED_PROFILES = frozenset({"domain-allowlist", "full-gateway", "full-trusted-local"})
-
 
 
 def build_worker_tool_gateway(
@@ -105,54 +103,61 @@ def build_worker_tool_gateway(
     )
     cloud_mcp = cloud_mcp_transport is not None or settings.mcp_credentials.worker_enabled
     from agent_storage.postgres.erp_chat_readonly import enabled as chat_enabled
+
     readonly_chat = chat_enabled(task.host_context.namespace_id if task.host_context else None)
-    local = (LocalToolGateway.erp_chat_readonly(runtime, network_cancellation_check) if readonly_chat else LocalToolGateway(
-        task.workspace_root,
-        model_gateway=model_gateway,
-        tool_profile=task.tool_profile,
-        web_search_endpoint=settings.web_search_endpoint,
-        web_search_private_backend=settings.web_search_private_backend,
-        skill_roots=() if skill_catalog is not None else skill_roots,
-        skill_catalog=skill_catalog,
-        skill_component_names=skill_component_names,
-        skills_state=(
-            SQLiteSkillsStateStore(settings.skills_state_path)
-            if skills_enabled and skill_catalog is None
-            else None
-        ),
-        mcp_servers=() if cloud_mcp else settings.mcp_servers,
-        mcp_allowlist=() if cloud_mcp else task.mcp_allowlist,
-        cloud_mcp_transport=cloud_mcp_transport,
-        session_history=session_history.scoped(task.history_session_ids),
-        current_session_id=str(session_id),
-        runtime=runtime,
-        runtime_handle=None,
-        artifact_payload_store=local_artifacts if cloud_artifacts is None else None,
-        artifact_payload_reader=artifact_payload_reader,
-        output_projector=cloud_artifacts.output_projector if cloud_artifacts else None,
-        file_publisher=(
-            cloud_artifacts.capture_file if can_publish and cloud_artifacts is not None else None
-        ),
-        max_publish_bytes=(
-            task.host_context.limits.max_artifact_bytes
-            if can_publish and task.host_context is not None
-            else 0
-        ),
-        trusted_local=trusted_local,
-        web_pipeline_v2=settings.web_pipeline_v2,
-        durable_delegation=durable_delegation,
-        delegation_store=delegation_store,
-        parent_task_id=parent_task_id,
-        parent_attempt_number=parent_attempt_number,
-        parent_binding_digest=parent_binding_digest,
-        parent_binding=parent_binding,
-        parent_context=parent_context,
-        parent_network_profile=task.network_profile,
-        network_cancellation_check=network_cancellation_check,
-        reuse_doh_transport=settings.deployment == "cloud",
-        egress_endpoint=(settings.web_egress_socks_endpoint
-                         if settings.deployment == "cloud" else None),
-    )
+    local = (
+        LocalToolGateway.erp_chat_readonly(runtime, network_cancellation_check)
+        if readonly_chat
+        else LocalToolGateway(
+            task.workspace_root,
+            model_gateway=model_gateway,
+            tool_profile=task.tool_profile,
+            web_search_endpoint=settings.web_search_endpoint,
+            web_search_private_backend=settings.web_search_private_backend,
+            skill_roots=() if skill_catalog is not None else skill_roots,
+            skill_catalog=skill_catalog,
+            skill_component_names=skill_component_names,
+            skills_state=(
+                SQLiteSkillsStateStore(settings.skills_state_path)
+                if skills_enabled and skill_catalog is None
+                else None
+            ),
+            mcp_servers=() if cloud_mcp else settings.mcp_servers,
+            mcp_allowlist=() if cloud_mcp else task.mcp_allowlist,
+            cloud_mcp_transport=cloud_mcp_transport,
+            session_history=session_history.scoped(task.history_session_ids),
+            current_session_id=str(session_id),
+            runtime=runtime,
+            runtime_handle=None,
+            artifact_payload_store=local_artifacts if cloud_artifacts is None else None,
+            artifact_payload_reader=artifact_payload_reader,
+            output_projector=cloud_artifacts.output_projector if cloud_artifacts else None,
+            file_publisher=(
+                cloud_artifacts.capture_file
+                if can_publish and cloud_artifacts is not None
+                else None
+            ),
+            max_publish_bytes=(
+                task.host_context.limits.max_artifact_bytes
+                if can_publish and task.host_context is not None
+                else 0
+            ),
+            trusted_local=trusted_local,
+            web_pipeline_v2=settings.web_pipeline_v2,
+            durable_delegation=durable_delegation,
+            delegation_store=delegation_store,
+            parent_task_id=parent_task_id,
+            parent_attempt_number=parent_attempt_number,
+            parent_binding_digest=parent_binding_digest,
+            parent_binding=parent_binding,
+            parent_context=parent_context,
+            parent_network_profile=task.network_profile,
+            network_cancellation_check=network_cancellation_check,
+            reuse_doh_transport=settings.deployment == "cloud",
+            egress_endpoint=(
+                settings.web_egress_socks_endpoint if settings.deployment == "cloud" else None
+            ),
+        )
     )
     web_egress_enabled = trusted_local or task.network_profile.name.value in WEB_ALLOWED_PROFILES
     if task.host_context is None:

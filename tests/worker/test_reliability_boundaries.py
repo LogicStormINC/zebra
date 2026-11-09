@@ -9,6 +9,7 @@ from agent_core.domain.sessions import SessionStatus
 from agent_core.domain.turns import InteractionMode
 from agent_core.harness.models import HarnessAttemptOutcome, HarnessAttemptResult
 from agent_core.ports.execution_inputs import ExecutionInputLimitExceeded
+from agent_core.ports.worker_budget import ModelRequestOutcomeUnknown
 from psycopg import OperationalError
 from psycopg.errors import LockNotAvailable
 from test_client_effect_resume import NOW, SESSION, _event, _stream
@@ -23,6 +24,12 @@ from zebra_agent_worker.continuation_lifecycle import restore_suspended_session_
 from zebra_agent_worker.execution_completion import finish_execution
 from zebra_agent_worker.execution_errors import WorkerExecutionError, exception_attempt_result
 from zebra_agent_worker.execution_input_preparation import ExecutionInputEventView
+
+
+def test_unreceipted_model_transport_loss_suspends_without_retry():
+    result = exception_attempt_result(ModelRequestOutcomeUnknown(), {})
+    assert result.outcome is HarnessAttemptOutcome.SUSPENDED
+    assert result.metadata == {"stop_reason": "model_request_outcome_unknown", "retryable": False}
 
 
 @pytest.mark.parametrize("fault", [LockNotAvailable, OperationalError])
@@ -167,3 +174,19 @@ def test_post_answer_storage_fault_preserves_later_control_and_attempt_identity(
     marker = answer.model_copy(update={"sequence": answer.sequence + 1,
         "event_type": boundary, "payload": {}})
     assert preserve_committed_result([answer, marker], prior, attempt_number=1) is prior
+
+
+def test_ready_claim_does_not_reread_events_for_suspension_restoration():
+    claim = SimpleNamespace(
+        recovery=SimpleNamespace(session=SimpleNamespace(status=SessionStatus.READY))
+    )
+    store = Mock()
+    assert restore_suspended_session_claim(
+        claim,
+        cloud_deployment=True,
+        control_service=None,
+        recovery_service=Mock(),
+        started_at=NOW,
+        event_store=store,
+    ) is claim
+    store.list_for_session.assert_not_called()

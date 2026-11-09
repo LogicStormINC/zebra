@@ -1,0 +1,42 @@
+FF                                                                       [100%]
+=================================== FAILURES ===================================
+__________ test_cached_readiness_cannot_outlive_real_control_progress __________
+
+tmp_path = PosixPath('/private/var/folders/qx/n_v9dpmd12dgb9m1s75tjgtm0000gn/T/pytest-of-lukeding/pytest-893/test_cached_readiness_cannot_o0')
+
+    def test_cached_readiness_cannot_outlive_real_control_progress(tmp_path):
+        now = [14.5]
+        path = tmp_path / "control-age.json"
+        health = WorkerHealth(clock=lambda: now[0])
+        health.attach(path)
+        lease = SimpleNamespace(expires_at=datetime.now(UTC) + timedelta(seconds=30))
+        health.command_tick(lease, 10.0)  # The last real completed control/maintenance is 4.5s old.
+        state = health.snapshot()
+        assert state["ready"]
+        now[0] = 15.1  # Cache is fresh, but actual progress is older than the five-second budget.
+>       assert not health.snapshot()["ready"]
+E       assert not True
+
+tests/worker/test_worker_health_observation.py:176: AssertionError
+___________________ test_local_reader_rejects_symbolic_link ____________________
+
+tmp_path = PosixPath('/private/var/folders/qx/n_v9dpmd12dgb9m1s75tjgtm0000gn/T/pytest-of-lukeding/pytest-893/test_local_reader_rejects_symb0')
+
+    def test_local_reader_rejects_symbolic_link(tmp_path):
+        health = WorkerHealth()
+        source = tmp_path / "source.json"
+        alias = tmp_path / "alias.json"
+        health.attach(source)
+        health.legacy_tick(busy=False)
+        state = health.snapshot()
+        alias.symlink_to(source)
+>       assert not read_worker_health(
+            alias, state["pid"], state["instance_id"], now=state["observed_at"]
+        )["ready"]
+E       assert not True
+
+tests/worker/test_worker_health_observation.py:188: AssertionError
+=========================== short test summary info ============================
+FAILED tests/worker/test_worker_health_observation.py::test_cached_readiness_cannot_outlive_real_control_progress
+FAILED tests/worker/test_worker_health_observation.py::test_local_reader_rejects_symbolic_link
+2 failed in 1.39s

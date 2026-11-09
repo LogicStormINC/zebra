@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/var/folders/qx/n_v9dpmd12dgb9m1s75tjgtm0000gn/T/ca-g02-erp-source-baseline-rdvyuxkz/tests/test_manage_checks.py", line 43, in <module>
+    assert chat.manage('own',title=' new title ')['title']=='new title'
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/private/var/folders/qx/n_v9dpmd12dgb9m1s75tjgtm0000gn/T/ca-g02-erp-source-baseline-rdvyuxkz/zebra_erpnext/chat.py", line 309, in manage
+    doc = cloud.owned(name, for_update=True, admission_lock=admission_lock)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: owned() got an unexpected keyword argument 'admission_lock'

@@ -7,7 +7,10 @@ import pytest
 from agent_core.domain.leases import LeaseLostError
 from agent_runtime.force_stop_cleanup import recover_force_stops
 from agent_storage import PostgresLeaseStore, bootstrap_control_plane_epoch
-from agent_storage.postgres.force_stop_executors import register_executor
+from agent_storage.postgres.force_stop_executors import (
+    acknowledge_executor_incarnation,
+    register_executor,
+)
 from agent_storage.postgres.force_stop_recovery import PostgresForceStopRecovery
 from agent_storage.postgres.force_stops import PostgresForceStops
 from zebra_agent_api import RouteAdapter
@@ -240,3 +243,28 @@ def test_binding_profile_revision_cannot_resurrect_stopped_task_or_its_children(
     assert adapter.handle(_force(lease.session_id)).body == accepted.body
     assert recover(dsn) == 1
     assert adapter.handle(_progress(lease.session_id)).body["resources_released"]
+
+def test_executor_exit_requires_registered_incarnation(dsn):
+    lease = _setup(dsn)
+    database = PostgresForceStops(dsn, deployment_namespace=NAMESPACE).database
+    sid, fence = lease.session_id, lease.fence
+    incarnation = {"engine": "node", "container": "worker", "started_at": "original"}
+    assert not acknowledge_executor_incarnation(database, sid, fence, incarnation=incarnation)
+    register_executor(database, sid, fence, incarnation=incarnation)
+    assert not acknowledge_executor_incarnation(
+        database, sid, fence, incarnation={**incarnation, "started_at": "replacement"}
+    )
+    assert not acknowledge_executor_incarnation(
+        database, sid, fence.model_copy(update={"fencing_token": 999}), incarnation=incarnation
+    )
+    for _ in range(2):
+        assert acknowledge_executor_incarnation(database, sid, fence, incarnation=incarnation)
+    rows = _rows(dsn, "control_plane_idempotency_records")
+    assert sum(row["action"] == "executor_exit" for row in rows) == 1
+
+    with psycopg.connect(dsn) as connection:
+        connection.execute(
+            """UPDATE control_plane_idempotency_records SET response_body='{}'::jsonb
+            WHERE action='executor_exit'"""
+        )
+    assert not acknowledge_executor_incarnation(database, sid, fence, incarnation=incarnation)

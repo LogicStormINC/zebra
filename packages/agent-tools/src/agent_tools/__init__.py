@@ -10,6 +10,12 @@ if TYPE_CHECKING:
     from agent_tools.builtin.files import FileReadTool, file_read_contract
     from agent_tools.builtin.git import GitStatusTool, git_status_contract
     from agent_tools.builtin.listing import WorkspaceListTool, files_list_contract
+    from agent_tools.builtin.orchestration import (
+        PlanProposeTool,
+        TaskRequestTool,
+        plan_propose_contract,
+        task_request_contract,
+    )
     from agent_tools.builtin.patch import PatchApplyTool, patch_apply_contract
     from agent_tools.builtin.plan import PlanTool, plan_contract
     from agent_tools.builtin.present import ContentPresentTool, content_present_contract
@@ -91,7 +97,11 @@ __all__ = [
     "McpToolSearchTool",
     "McpToolTarget",
     "PatchApplyTool",
+    "PlanProposeTool",
     "PlanTool",
+    "TaskRequestTool",
+    "plan_propose_contract",
+    "task_request_contract",
     "ProjectedToolOutput",
     "RegisteredTool",
     "SessionSearchTool",
@@ -221,6 +231,16 @@ _EXPORTS = {
     "skills_list_contract": ("agent_tools.skills", "skills_list_contract"),
     "skills_read_contract": ("agent_tools.skills", "skills_read_contract"),
     "tests_run_contract": ("agent_tools.builtin.tests", "tests_run_contract"),
+    "PlanProposeTool": ("agent_tools.builtin.orchestration", "PlanProposeTool"),
+    "TaskRequestTool": ("agent_tools.builtin.orchestration", "TaskRequestTool"),
+    "plan_propose_contract": (
+        "agent_tools.builtin.orchestration",
+        "plan_propose_contract",
+    ),
+    "task_request_contract": (
+        "agent_tools.builtin.orchestration",
+        "task_request_contract",
+    ),
     "web_fetch_contract": ("agent_tools.web_gateway", "web_fetch_contract"),
     "web_search_contract": ("agent_tools.web_search", "web_search_contract"),
 }

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import os
+import subprocess
+import sys
 from collections.abc import Generator
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, time, timedelta
@@ -31,6 +33,8 @@ from agent_storage.postgres.task_schedules import PostgresTaskScheduleStore
 from psycopg import sql
 from psycopg.conninfo import make_conninfo
 from pydantic import ValidationError
+
+from tests.agent_storage.test_postgres_lease_clock import _wait
 
 
 @pytest.fixture(scope="session")
@@ -307,26 +311,82 @@ def test_once_misfire_is_recorded_and_schedule_completes(dsn: str) -> None:
     assert skipped.failure_code == "misfire_grace_expired"
 
 
-def test_expired_materialization_claim_recovers_without_second_firing(dsn: str) -> None:
+def test_dead_scheduler_claim_recovers_without_second_firing(dsn: str) -> None:
     schedules = PostgresTaskScheduleStore(dsn, deployment_namespace="cloud")
-    first = PostgresTaskScheduleFiringStore(dsn, deployment_namespace="cloud")
-    second = PostgresTaskScheduleFiringStore(dsn, deployment_namespace="cloud")
-    item, authority = schedule(next_fire_at=datetime.now(UTC) - timedelta(seconds=2))
+    firings = PostgresTaskScheduleFiringStore(dsn, deployment_namespace="cloud")
+    item, authority = schedule(once=True, next_fire_at=datetime.now(UTC) - timedelta(seconds=2))
     schedules.create(item, authority)
-    (claimed,) = first.claim_due(claimant="scheduler-a", limit=1, claim_ttl_seconds=30)
-    with first.connect() as connection:
-        connection.execute(
-            "UPDATE task_schedule_firings SET created_at = created_at - interval '60 seconds', "
-            "claim_expires_at = clock_timestamp() - interval '1 second' WHERE fire_id = %s",
-            (claimed.fire_id,),
-        )
 
-    (recovered,) = second.claim_due(claimant="scheduler-b", limit=1, claim_ttl_seconds=30)
+    claim_and_hold = """
+import sys
+from time import sleep
+from agent_storage.postgres.task_schedule_firings import PostgresTaskScheduleFiringStore
 
+store = PostgresTaskScheduleFiringStore(sys.stdin.read(), deployment_namespace="cloud")
+(claimed,) = store.claim_due(claimant="scheduler-a", limit=1, claim_ttl_seconds=2)
+sleep(30)
+"""
+    with subprocess.Popen(
+        [sys.executable, "-c", claim_and_hold], stdin=subprocess.PIPE, text=True
+    ) as claimant:
+        try:
+            assert claimant.stdin is not None
+            claimant.stdin.write(dsn)
+            claimant.stdin.close()
+            with psycopg.connect(dsn, autocommit=True) as observer:
+                _wait(
+                    observer,
+                    "SELECT EXISTS (SELECT 1 FROM task_schedule_firings "
+                    "WHERE schedule_id=%s AND claimed_by='scheduler-a')",
+                    (item.schedule_id,),
+                )
+                (fire_id,) = observer.execute(
+                    "SELECT fire_id FROM task_schedule_firings WHERE schedule_id=%s",
+                    (item.schedule_id,),
+                ).fetchone()
+                claimed = firings.get_firing(fire_id)
+                assert claimed is not None and claimant.poll() is None
+                claimant.kill()
+                assert claimant.wait(timeout=5) != 0
+                _wait(
+                    observer,
+                    "SELECT clock_timestamp() >= %s",
+                    (claimed.claim_expires_at,),
+                )
+        finally:
+            if claimant.poll() is None:
+                claimant.kill()
+                claimant.wait(timeout=5)
+
+    (recovered,) = firings.claim_due(claimant="scheduler-b", limit=1, claim_ttl_seconds=30)
     assert recovered.fire_id == claimed.fire_id
-    assert recovered.attempt == 2
-    assert recovered.claimed_by == "scheduler-b"
-    with second.connect() as connection:
+    assert recovered.idempotency_key == claimed.idempotency_key
+    assert recovered.scheduled_for == claimed.scheduled_for
+    assert recovered.attempt == 2 and recovered.claimed_by == "scheduler-b"
+
+    task_id = TaskId(uuid4())
+    stale = claimed.transition(
+        ScheduleFiringStatus.DISPATCHED, at=datetime.now(UTC), task_id=task_id
+    )
+    with pytest.raises(TaskScheduleConflictError, match="claim changed"):
+        firings.settle_firing(
+            stale,
+            expected_status=ScheduleFiringStatus.MATERIALIZING,
+            expected_claim_expiry=claimed.claim_expires_at,
+        )
+    settled = recovered.transition(
+        ScheduleFiringStatus.DISPATCHED, at=datetime.now(UTC), task_id=task_id
+    )
+    assert (
+        firings.settle_firing(
+            settled,
+            expected_status=ScheduleFiringStatus.MATERIALIZING,
+            expected_claim_expiry=recovered.claim_expires_at,
+        )
+        == settled
+    )
+    assert firings.claim_due(claimant="scheduler-c", limit=1, claim_ttl_seconds=30) == ()
+    with firings.connect() as connection:
         assert connection.execute("SELECT count(*) AS n FROM task_schedule_firings").fetchone() == {
             "n": 1
         }

@@ -1,9 +1,10 @@
+import asyncio
 from types import SimpleNamespace
 from unittest.mock import Mock
 
 from agent_core.ports.task_projection_checkpoints import CheckpointConflict, CheckpointNotReady
 from zebra_agent_api.ag_ui_stream import prepare_agui_stream
-from zebra_agent_api.ag_ui_task_view import stream_problem
+from zebra_agent_api.ag_ui_task_view import authorized_async_read, stream_problem
 from zebra_agent_api.stream_v2_http import prepare_v2
 
 
@@ -38,3 +39,22 @@ def test_v2_initialization_retries_only_preparing_sources():
         response = prepare_v2(api, path, {}, object())
         assert response.body["code"] == code
         assert (response.body.get("retryable") is True) is retryable
+
+
+def test_v2_source_timeout_reaches_authorized_preflight():
+    async def prepare():
+        reader = SimpleNamespace(authority=SimpleNamespace(bind=Mock(side_effect=TimeoutError)))
+        api = SimpleNamespace(
+            stream_v2_reader=reader,
+            stores=SimpleNamespace(deployment_namespace="test", tasks=Mock()),
+        )
+        return prepare_v2(
+            api,
+            "/agui/threads/67fee462-9f30-4ece-8e60-501a5ef3e177/runs/probe/stream",
+            {},
+            object(),
+        )
+
+    response = asyncio.run(authorized_async_read(prepare, authorization_expires_at=None))
+    assert response.status_code == 503
+    assert response.body == {"status": "task_preflight_unavailable", "retryable": True}

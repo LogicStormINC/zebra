@@ -1,0 +1,9 @@
+{
+  "runtime": "native105",
+  "actual_worker_container_diagnostic_get_only": true,
+  "manifest_http": 200,
+  "wrong_workload_signature_http": 403,
+  "tool_count": 3,
+  "commands": 0,
+  "model_requests": 0
+}

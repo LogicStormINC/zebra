@@ -1,0 +1,79 @@
+{
+  "actual_bff": [
+    {
+      "conversation": "5vdk10lcmu",
+      "runtime": "cloud114",
+      "requests": [
+        {
+          "path": "/capabilities/runtime",
+          "status": 200,
+          "error": null
+        },
+        {
+          "path": "/tasks/aea4fc91-adc8-4352-81cd-8136a436aaaf/header",
+          "status": 200,
+          "error": null
+        },
+        {
+          "path": "/tasks/aea4fc91-adc8-4352-81cd-8136a436aaaf/usage",
+          "status": 200,
+          "error": null
+        },
+        {
+          "path": "/tasks/aea4fc91-adc8-4352-81cd-8136a436aaaf/artifacts",
+          "status": 200,
+          "error": null
+        }
+      ]
+    },
+    {
+      "conversation": "m0gj7p4pnf",
+      "runtime": "native105",
+      "requests": [
+        {
+          "path": "/tasks/52eb4ac8-effc-41e9-9dbc-ccc488a677fd/header",
+          "status": 200,
+          "error": null
+        }
+      ]
+    }
+  ],
+  "signed_origin_matrix": [
+    {
+      "runtime": "cloud114",
+      "origin": "https://192.168.110.42:18443",
+      "http": 200
+    },
+    {
+      "runtime": "cloud114",
+      "origin": "https://192.168.101.7:18443",
+      "http": 200
+    },
+    {
+      "runtime": "cloud114",
+      "origin": "https://untrusted.invalid",
+      "http": 403
+    },
+    {
+      "runtime": "native105",
+      "origin": "https://192.168.110.42:18443",
+      "http": 404
+    },
+    {
+      "runtime": "native105",
+      "origin": "https://192.168.101.7:18443",
+      "http": 404
+    },
+    {
+      "runtime": "native105",
+      "origin": "https://untrusted.invalid",
+      "http": 403
+    }
+  ],
+  "source_sha256": "0a043a2f238ae96439d71e1a8a5ca00608715ec18a140d74e15c0eae5c6bae49",
+  "original_mappings_unchanged": true,
+  "commands_submitted": 0,
+  "controller_acquired": false,
+  "model_requests": 0,
+  "search_requests": 0
+}

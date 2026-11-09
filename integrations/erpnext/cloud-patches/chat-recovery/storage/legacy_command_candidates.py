@@ -3,7 +3,6 @@
 from agent_core.domain.events import SessionEvent
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.sessions import Session
-
 from agent_storage.postgres.database import PostgresDatabase
 from agent_storage.postgres.projections import _session_from_row
 
@@ -24,8 +23,12 @@ class LegacyCommandCandidates:
     def __call__(self, limit: int, after: SessionId | None) -> list[Session]:
         if not 1 <= limit <= 500:
             raise ValueError("legacy command discovery limit must be between 1 and 500")
-        from agent_storage.postgres.erp_chat_readonly import enabled as chat_enabled, candidate_sql
-        chat_filter = candidate_sql('p') if chat_enabled(self._database.deployment_namespace) else ''
+        from agent_storage.postgres.erp_chat_readonly import candidate_sql
+        from agent_storage.postgres.erp_chat_readonly import enabled as chat_enabled
+
+        chat_filter = (
+            candidate_sql("p") if chat_enabled(self._database.deployment_namespace) else ""
+        )
         with self._database.connect_task_io() as connection:
             rows = connection.execute(
                 f"""SELECT p.* FROM session_projections p
@@ -53,7 +56,11 @@ class LegacyCommandCandidates:
                   AND e.event_type='session_command_accepted' AND {_UNREJECTED}
                 ORDER BY COALESCE(e.payload->>'kind' IN ('stop','cancel'), false) DESC,
                          e.sequence LIMIT 1""",
-                (self._database.deployment_namespace, session_id, current_sequence,
-                 LEGACY_REJECTION_ACTION),
+                (
+                    self._database.deployment_namespace,
+                    session_id,
+                    current_sequence,
+                    LEGACY_REJECTION_ACTION,
+                ),
             ).fetchone()
         return None if row is None else SessionEvent.model_validate(row)

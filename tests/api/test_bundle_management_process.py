@@ -141,6 +141,7 @@ def test_real_process_contract_validation_rotation_and_no_execution(tmp_path: Pa
                         {
                             "bundle": bundle,
                             "provider_profile": catalog["providers"][0],
+                            "budget_profile": catalog["budget"],
                         }
                     )
                     assert receipt["scope"] == scope and receipt["trustRevision"] == 1

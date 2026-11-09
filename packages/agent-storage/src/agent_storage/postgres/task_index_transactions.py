@@ -1,5 +1,6 @@
 """PostgreSQL Task-index transaction and row primitives."""
 
+from contextlib import nullcontext
 from typing import Any
 from uuid import UUID
 
@@ -12,6 +13,7 @@ from agent_core.domain.leases import LeaseLostError
 from agent_core.domain.sessions import SessionStatus
 from agent_core.ports.aggregate_mutation import WorkerMutationAuthority
 from psycopg import errors
+from psycopg.pq import TransactionStatus
 from psycopg.rows import dict_row
 
 from agent_storage.postgres.leases import assert_current_lease_fence, lock_session_lease_boundary
@@ -27,12 +29,17 @@ def rebuild_task_in_transaction(
     connection: Any,
     deployment_namespace: str,
     root_session_id: SessionId,
+    *,
+    savepoint: bool = True,
 ) -> AgentTask:
-    """Rebuild one Event-derived Task index in the caller's transaction."""
+    """Rebuild the index; disabling the savepoint requires caller-owned rollback."""
+    if not savepoint and connection.info.transaction_status != TransactionStatus.INTRANS:
+        raise RuntimeError("Task rebuild requires an active admission transaction")
     try:
         with connection.cursor(row_factory=dict_row) as cursor:
-            cursor.execute("SELECT 1")
-            with connection.transaction():
+            if savepoint:
+                cursor.execute("SELECT 1")
+            with connection.transaction() if savepoint else nullcontext():
                 return _rebuild_task(cursor, deployment_namespace, root_session_id)
     except errors.UniqueViolation as exc:
         raise PostgresAgentTaskConflictError("task lineage conflicts with its index") from exc
@@ -45,21 +52,20 @@ def _rebuild_task(
 ) -> AgentTask:
     task_id = TaskId(UUID(str(root_session_id)))
     _lock_task(connection, deployment_namespace, task_id)
-    root = connection.execute(
-        """
-        SELECT created_at FROM session_projections
-        WHERE deployment_namespace = %s AND session_id = %s
-        """,
-        (deployment_namespace, root_session_id),
-    ).fetchone()
-    if root is None:
+    # Membership writers use the same Task lock, so read both sources together.
+    root_and_members = connection.execute(
+        """SELECT root.created_at, member.session_id, member.predecessor_id,
+                  member.segment_index, member.rollover_reason
+           FROM session_projections AS root
+           LEFT JOIN execution_segments AS member
+             ON member.deployment_namespace=root.deployment_namespace AND member.task_id=%s
+           WHERE root.deployment_namespace=%s AND root.session_id=%s""",
+        (task_id, deployment_namespace, root_session_id),
+    ).fetchall()
+    if not root_and_members:
         raise PostgresAgentTaskConflictError("task root Session was not found")
     lineage = derive_lineage(connection, deployment_namespace, root_session_id)
-    members = connection.execute(
-        """SELECT session_id,task_id,predecessor_id,segment_index,visibility,rollover_reason
-           FROM execution_segments WHERE deployment_namespace=%s AND task_id=%s""",
-        (deployment_namespace, task_id),
-    ).fetchall()
+    members = [row for row in root_and_members if row["session_id"] is not None]
     expected = {row["session_id"]: row for row in lineage}
     for member in members:
         canonical = expected.get(member["session_id"])
@@ -88,7 +94,7 @@ def _rebuild_task(
             task_id,
             root_session_id,
             active["session_id"],
-            root["created_at"],
+            root_and_members[0]["created_at"],
             deployment_namespace,
             active["session_id"],
         ),
@@ -348,4 +354,6 @@ def _sync_events_in_transaction(
     deployment_namespace: str,
     task_id: TaskId,
 ) -> bool:
-    return backfill_task_event_positions(connection, deployment_namespace, task_id)
+    return backfill_task_event_positions(
+        connection, deployment_namespace, task_id, task_lock_held=True
+    )

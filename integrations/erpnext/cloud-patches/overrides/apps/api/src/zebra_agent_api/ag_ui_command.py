@@ -13,7 +13,6 @@ from agent_core.domain.stream_admission import StreamCapabilities
 from agent_security.host_grant import VerifiedHostGrant
 from agent_storage import ControlPlaneStores
 from pydantic import BaseModel, ConfigDict, Field, StrictInt, ValidationError, field_validator
-
 from zebra_agent_api.extension_turn_admission import CloudExtensionTurnAdmission
 from zebra_agent_api.responses import ApiResponse
 
@@ -199,8 +198,9 @@ def _command_payload(envelope: AgUiCommandEnvelope) -> dict[str, object]:
 
     candidate = dict(envelope.input or {})
     from zebra_agent_api.http_input_attachments import has_raw_input_attachments
-    if has_raw_input_attachments({'input':candidate}):
-        raise ValueError('attachments require canonical Task/message admission before an AG-UI run')
+
+    if has_raw_input_attachments({"input": candidate}):
+        raise ValueError("attachments require canonical Task/message admission before an AG-UI run")
     candidate.setdefault("threadId", envelope.thread_id)
     candidate.setdefault("runId", envelope.run_id)
     candidate.setdefault("state", {})

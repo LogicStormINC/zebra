@@ -2,12 +2,13 @@
 
 from agent_core.domain.identifiers import TaskId
 from agent_storage import ControlPlaneStores
-
 from zebra_agent_api.responses import ApiResponse
 from zebra_agent_api.task_responses import task_not_found
 
 
-def task_header(stores: ControlPlaneStores, task_id: TaskId, *, host_context=None, command_outcome=None) -> ApiResponse:
+def task_header(
+    stores: ControlPlaneStores, task_id: TaskId, *, host_context=None, command_outcome=None
+) -> ApiResponse:
     header = stores.tasks.read_task_header(task_id)
     if header is None:
         return task_not_found(str(task_id))

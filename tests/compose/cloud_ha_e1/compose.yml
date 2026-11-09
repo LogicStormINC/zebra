@@ -1,0 +1,237 @@
+name: zebra-ha-e1-20261102
+x-logs: &logs
+  driver: json-file
+  options: {max-size: 10m, max-file: "3"}
+x-app: &app
+  logging: *logs
+  image: ${E1_IMAGE:?immutable candidate image required}
+  network_mode: host
+  extra_hosts: ["api.deepseek.com=127.0.0.1"]
+  env_file: ${E1_ROOT:?}/app.env
+  restart: "no"
+  init: true
+  read_only: true
+  cpus: 2
+  mem_limit: 2g
+  pids_limit: 1024
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  tmpfs: [/tmp:size=256m]
+  labels: {zebra.ha.owner: ca-ha-03-e1-20261102}
+  volumes:
+    - ${E1_ROOT}/tls/ca.crt:/e1/ca.crt:ro
+    - ${E1_ROOT}/tls/model.crt:/e1/model.crt:ro
+    - ${E1_ROOT}/execution/catalog.json:/e1/catalog.json:ro
+    - ${E1_ROOT}/execution/publication.json:/e1/publication.json:ro
+    - ${E1_ROOT}/tls/ca.crt:/app/.venv/lib/python3.12/site-packages/certifi/cacert.pem:ro
+    - workspaces:${E1_WORKSPACE_PATH:?same path on engine and Worker required}
+services:
+  api:
+    <<: *app
+    entrypoint: [python, -m, zebra_agent_api.server, --port, '28080']
+  worker:
+    <<: *app
+    entrypoint: [python, /fixtures/worker.py, --worker-id, '${E1_WORKER_ID:?}', --idle-sleep-seconds, '.1', --health-file, /tmp/worker-health.json]
+    group_add: ['${E1_DOCKER_GID:?}']
+    environment:
+      PYTHONPATH: /fixtures
+      ZEBRA_SESSION_PROCESS_FACTORY: e1_composition:compose
+    volumes:
+      - ${E1_ROOT}/tls/ca.crt:/e1/ca.crt:ro
+      - ${E1_ROOT}/tls/model.crt:/e1/model.crt:ro
+      - ${E1_ROOT}/execution/catalog.json:/e1/catalog.json:ro
+      - ${E1_ROOT}/execution/publication.json:/e1/publication.json:ro
+      - ${E1_ROOT}/worker.py:/fixtures/worker.py:ro
+      - ${E1_ROOT}/e1_composition.py:/fixtures/e1_composition.py:ro
+      - ${E1_ROOT}/metering.py:/fixtures/metering.py:ro
+      - ${E1_ROOT}/check_model.py:/fixtures/check_model.py:ro
+      - ${E1_ROOT}/tls/ca.crt:/app/.venv/lib/python3.12/site-packages/certifi/cacert.pem:ro
+      - workspaces:${E1_WORKSPACE_PATH}
+      - /var/run/docker.sock:/var/run/docker.sock
+  scheduler:
+    <<: *app
+    profiles: [scheduler]
+    env_file:
+      - ${E1_ROOT}/app.env
+      - ${E1_ROOT}/scheduler.env
+    environment: {ZEBRA_SCHEDULER_ID: 'scheduler:${E1_WORKER_ID:?}'}
+    entrypoint: [python, -m, zebra_agent_scheduler.main]
+  runtime-cleanup:
+    <<: *app
+    entrypoint: [python, -m, zebra_agent_worker.runtime_cleanup_service]
+    cpus: .5
+    mem_limit: 512m
+    pids_limit: 128
+    group_add: ['${E1_DOCKER_GID:?}']
+    volumes:
+      - ${E1_ROOT}/tls/ca.crt:/e1/ca.crt:ro
+      - ${E1_ROOT}/tls/model.crt:/e1/model.crt:ro
+      - ${E1_ROOT}/execution/catalog.json:/e1/catalog.json:ro
+      - ${E1_ROOT}/execution/publication.json:/e1/publication.json:ro
+      - ${E1_ROOT}/tls/ca.crt:/app/.venv/lib/python3.12/site-packages/certifi/cacert.pem:ro
+      - workspaces:${E1_WORKSPACE_PATH}
+      - /var/run/docker.sock:/var/run/docker.sock
+  node-tls:
+    user: "${E1_CERT_UID:?}:${E1_CERT_GID:?}"
+    cap_add: [NET_BIND_SERVICE]
+    logging: *logs
+    image: ${E1_CADDY_IMAGE:?}
+    network_mode: host
+    restart: "no"
+    cpus: .25
+    mem_limit: 128m
+    pids_limit: 128
+    read_only: true
+    cap_drop: [ALL]
+    tmpfs: ["/data:size=16m,mode=1777", "/config:size=16m,mode=1777"]
+    labels: {zebra.ha.owner: ca-ha-03-e1-20261102}
+    volumes:
+      - ${E1_ROOT}/Node.Caddyfile:/etc/caddy/Caddyfile:ro
+      - ${E1_ROOT}/tls/server.crt:/certs/server.crt:ro
+      - ${E1_ROOT}/tls/server.key:/certs/server.key:ro
+      - ${E1_ROOT}/tls/model.crt:/certs/model.crt:ro
+      - ${E1_ROOT}/tls/model.key:/certs/model.key:ro
+  registry:
+    logging: *logs
+    profiles: [control]
+    image: ${E1_REGISTRY_IMAGE:?}
+    network_mode: host
+    restart: "no"
+    cpus: .25
+    mem_limit: 384m
+    pids_limit: 128
+    read_only: true
+    cap_drop: [ALL]
+    tmpfs: [/tmp:size=16m]
+    environment:
+      REGISTRY_HTTP_ADDR: 127.0.0.1:28081
+      REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY: /data
+    labels: {zebra.ha.owner: ca-ha-03-e1-20261102}
+    volumes:
+      - ${E1_DATA}/registry:/data
+  postgres:
+    logging: *logs
+    profiles: [control]
+    image: ${E1_POSTGRES_IMAGE:?}
+    network_mode: host
+    restart: "no"
+    user: '70:70'
+    shm_size: 256m
+    cpus: 1
+    mem_limit: 2g
+    pids_limit: 512
+    cap_drop: [ALL]
+    environment:
+      POSTGRES_DB: ha_e1
+      POSTGRES_USER: ha_admin
+      POSTGRES_PASSWORD: ${E1_PG_ADMIN_PASSWORD:?}
+      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
+    command: [postgres, -p, '25432', -c, max_connections=256, -c, shared_buffers=256MB, -c, max_wal_size=128MB, -c, ssl=on, -c, ssl_cert_file=/tls/server.crt, -c, ssl_key_file=/tls/pg.key]
+    labels: {zebra.ha.owner: ca-ha-03-e1-20261102}
+    volumes:
+      - ${E1_DATA:?verified bounded filesystem required}/postgres:/var/lib/postgresql/data
+      - ${E1_ROOT}/init.sql:/docker-entrypoint-initdb.d/20-app.sql:ro
+      - ${E1_ROOT}/tls/server.crt:/tls/server.crt:ro
+      - ${E1_ROOT}/tls/pg.key:/tls/pg.key:ro
+  redis:
+    logging: *logs
+    profiles: [control]
+    image: ${E1_REDIS_IMAGE:?}
+    network_mode: host
+    restart: "no"
+    user: '0:0'
+    cpus: .25
+    mem_limit: 384m
+    pids_limit: 128
+    cap_drop: [ALL]
+    entrypoint: [redis-server]
+    command: [--port, '0', --tls-port, '26379', --tls-cert-file, /tls/server.crt, --tls-key-file, /tls/server.key, --tls-ca-cert-file, /tls/ca.crt, --tls-auth-clients, 'no', --requirepass, '${E1_REDIS_PASSWORD:?}', --maxmemory, 256mb, --maxmemory-policy, noeviction, --maxclients, '256', --appendonly, 'yes', --dir, /data]
+    labels: {zebra.ha.owner: ca-ha-03-e1-20261102}
+    volumes:
+      - ${E1_DATA}/redis:/data
+      - ${E1_ROOT}/tls/server.crt:/tls/server.crt:ro
+      - ${E1_ROOT}/tls/server.key:/tls/server.key:ro
+      - ${E1_ROOT}/tls/ca.crt:/tls/ca.crt:ro
+  objects:
+    logging: *logs
+    profiles: [control]
+    image: ${E1_MINIO_IMAGE:?}
+    network_mode: host
+    restart: "no"
+    user: '0:0'
+    cpus: .5
+    mem_limit: 1g
+    pids_limit: 256
+    cap_drop: [ALL]
+    environment: {MINIO_ROOT_USER: '${E1_S3_ACCESS:?}', MINIO_ROOT_PASSWORD: '${E1_S3_SECRET:?}'}
+    command: [server, /data, --address, ':29000', --console-address, 127.0.0.1:29001, --certs-dir, /certs]
+    labels: {zebra.ha.owner: ca-ha-03-e1-20261102}
+    volumes:
+      - ${E1_DATA}/objects:/data
+      - ${E1_ROOT}/tls/server.crt:/certs/public.crt:ro
+      - ${E1_ROOT}/tls/server.key:/certs/private.key:ro
+  model:
+    <<: *app
+    profiles: [control]
+    cpus: .25
+    mem_limit: 128m
+    pids_limit: 64
+    env_file: []
+    entrypoint: [python, /fixtures/model.py]
+    volumes:
+      - ${E1_ROOT}/fake_model.py:/fixtures/fake_model.py:ro
+      - ${E1_ROOT}/model.py:/fixtures/model.py:ro
+      - ${E1_ROOT}/metering.py:/fixtures/metering.py:ro
+  authority:
+    <<: *app
+    profiles: [control]
+    user: '0:0'
+    cpus: .25
+    mem_limit: 128m
+    env_file: ${E1_ROOT}/authority.env
+    environment: {E1_PRINCIPALS_FILE: /fixtures/principals.json}
+    entrypoint: [uvicorn, authority:app, --app-dir, /fixtures, --host, 0.0.0.0, --port, '28084']
+    volumes:
+      - ${E1_ROOT}/authority.py:/fixtures/authority.py:ro
+      - ${E1_ROOT}/principals.json:/fixtures/principals.json:ro
+  broker:
+    <<: *app
+    profiles: [control]
+    cpus: .25
+    mem_limit: 256m
+    env_file: ${E1_ROOT}/broker.env
+    entrypoint: [uvicorn, zebra_host_grant_broker.runtime:app, --host, 0.0.0.0, --port, '28083']
+    volumes:
+      - ${E1_ROOT}/tls/ca.crt:/e1/ca.crt:ro
+      - ${E1_ROOT}/tls/broker.key:/secrets/broker.key:ro
+  rabbit:
+    profiles: [control]
+    image: rabbitmq:4.3.5-management-alpine@sha256:ac1201d1dc227779d93c607f976e7f9156fd5b551ee5ff7946cab6c242091bf3
+    hostname: zebra-ha-e1-rabbit
+    network_mode: host
+    restart: "no"
+    cpus: .5
+    mem_limit: 768m
+    pids_limit: 256
+    logging: *logs
+    labels: {zebra.ha.owner: ca-ha-03-e1-20261102}
+    environment:
+      RABBITMQ_DEFAULT_USER: provisioner
+      RABBITMQ_DEFAULT_PASS: ${E1_RABBIT_ADMIN_PASSWORD:?}
+      RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: +S 2:2 +A 4 +SDcpu 1 +SDio 1
+    volumes:
+      - ${E1_DATA}/rabbit:/var/lib/rabbitmq
+      - ${E1_ROOT}/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+      - ${E1_ROOT}/enabled_plugins:/etc/rabbitmq/enabled_plugins:ro
+  control-tls:
+    extends: {service: node-tls}
+    profiles: [control]
+    volumes: !override
+      - ${E1_ROOT}/Control.Caddyfile:/etc/caddy/Caddyfile:ro
+      - ${E1_ROOT}/tls/server.crt:/certs/server.crt:ro
+      - ${E1_ROOT}/tls/server.key:/certs/server.key:ro
+      - ${E1_ROOT}/tls/ca.crt:/certs/ca.crt:ro
+volumes:
+  workspaces:
+    external: true
+    name: ${E1_WORKSPACE_VOLUME:?}

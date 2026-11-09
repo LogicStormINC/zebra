@@ -10,7 +10,6 @@ from agent_core.ports.artifact_payload_store import ArtifactPayloadStorePort
 from agent_core.ports.runtime import RuntimeHandle, RuntimePort
 from agent_runtime.deferred import DeferredRuntime
 from zebra_agent_config import ZebraAgentSettings
-
 from zebra_agent_worker import runtime_authority, runtime_setup
 from zebra_agent_worker.claims import ClaimedSession
 from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
@@ -74,15 +73,27 @@ def compose_execution_runtime(
         recorder().require_active_execution()
 
     from agent_storage.postgres.erp_chat_readonly import enabled as chat_enabled
+
     if chat_enabled(binding.host_capability.namespace_id if binding else None):
-        if (binding is None or materialization is None or task.attachments or task.image_attachments
-                or task.coverage_admission is not None or has_capsule
-                or task.network_profile.name.value != 'none' or task.policy_profile != 'read_only'
-                or task.history_session_ids or task.mcp_allowlist or task.skill_components):
-            raise ValueError('ERP readonly chat inputs exceed the admitted surface')
+        if (
+            binding is None
+            or materialization is None
+            or task.attachments
+            or task.image_attachments
+            or task.coverage_admission is not None
+            or has_capsule
+            or task.network_profile.name.value != "none"
+            or task.policy_profile != "read_only"
+            or task.history_session_ids
+            or task.mcp_allowlist
+            or task.skill_components
+        ):
+            raise ValueError("ERP readonly chat inputs exceed the admitted surface")
+
         def refuse_runtime():
             check()
-            raise RuntimeError('ERP readonly chat has no workspace runtime')
+            raise RuntimeError("ERP readonly chat has no workspace runtime")
+
         return DeferredRuntime(refuse_runtime, check=check), None, False
 
     prepared: runtime_setup.PreparedRuntime | None = None

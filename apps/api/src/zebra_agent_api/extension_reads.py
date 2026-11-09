@@ -176,7 +176,10 @@ async def extension_read_response(
                 plugin_installations, scope,
                 tuple(item for item in records.items if isinstance(item, SkillInstallation)),
             )
-            semaphore = asyncio.Semaphore(8)
+            state = getattr(request.scope.get("app"), "state", None)
+            budget = getattr(state, "database_budget", None)
+            limit = min(8, budget.profile.limit("api", "read")) if budget else 8
+            semaphore = asyncio.Semaphore(limit)
 
             async def describe(record: SkillInstallation | McpConnection) -> dict[str, object]:
                 async with semaphore:

@@ -1,0 +1,134 @@
+{
+  "task": "CA-HA-02",
+  "date": "2026-10-31",
+  "status": "Review_blocked_by_baseline_gates",
+  "implementation_commit": "e5ef4127335e56e2670defe1f79e5664ae1c274d",
+  "baseline_commit": "e8a4f10b7ede3a8343f568eb126a1ab64bdea9fc",
+  "dependencies": "uv sync --frozen --all-packages --group dev; no lockfile/dependency changes",
+  "complete_make_test": {
+    "exit": 2,
+    "passed": 11641,
+    "failed": 15,
+    "skipped": 3155,
+    "duration_seconds": 1387.95,
+    "collected": 14810,
+    "collection_note": "The new opt-in PG module was added after collection; all five new cases separately exercised on real PG below. No business source changed during/after full run."
+  },
+  "complete_make_check": {
+    "exit": 2,
+    "stopped_at": "file size gate",
+    "size_violations": 16,
+    "supplementary_all_remaining_steps_run_serially": {
+      "ruff": {
+        "exit": 1,
+        "errors": 4924,
+        "all_in": "integrations/erpnext/"
+      },
+      "mypy": {
+        "exit": 0,
+        "source_files": 1494
+      },
+      "eval": {
+        "exit": 0,
+        "cases": 30
+      },
+      "postcommit": {
+        "exit": 0
+      },
+      "risk": {
+        "exit": 0
+      }
+    }
+  },
+  "baseline_reproduction": {
+    "failed_nodes": 15,
+    "duration_seconds": 1.87,
+    "size_violations": 16,
+    "ruff_diagnostics": 4924,
+    "comparison": "full-baseline-comparison.json",
+    "baseline_import_roots_verified": true,
+    "violating_sources_byte_identical": true
+  },
+  "real_postgresql": {
+    "command": "ZEBRA_HA_POSTGRES_ACCEPTANCE=1 uv run --no-sync pytest -q tests/api/test_cloud_ha_health_postgres.py",
+    "passed": 5,
+    "failed": 0,
+    "skipped": 0,
+    "duration_seconds": 11.09,
+    "image": "postgres:17-alpine (pre-existing, pull never)",
+    "scenarios": [
+      "actual cloud HTTP factory/current schema, epoch read, pause/unpause, auth unchanged, shutdown/no probe thread",
+      "actual role connection slot exhausted then released; no liveness loss",
+      "ACCESS EXCLUSIVE query blocking then recovery before 5s cache expiry; no probe sessions after close",
+      "incompatible disposable schema ledger refused before health startup; restored in finally",
+      "actual PG Worker capability TTL expiration rejects cached process-local observation"
+    ],
+    "boundaries": [
+      "S3 and HostGrant authorization use existing unused-object/fake-authorizer fixtures; no real IdP or model acceptance",
+      "role connection-limit rejection does not prove fleet-wide pool budgets/queue limits",
+      "Worker capability is real PG; does not claim real Broker/Worker execution or cluster failover",
+      "micro HTTP liveness checks do not prove production SLO/capacity",
+      "startup schema compatibility tested; runtime schema drift detection not implemented"
+    ]
+  },
+  "resources": {
+    "serial": true,
+    "pytest_workers": 1,
+    "host_nice": 10,
+    "OMP_NUM_THREADS": 1,
+    "OPENBLAS_NUM_THREADS": 1,
+    "full_suite_docker_wrapper": "added cpu=1,memory=512m,pids=128 and owner label to actual run/create; fixtures cleanup and shell EXIT fallback",
+    "postgres_docker_limits_asserted_from_inspect": {
+      "NanoCpus": 1000000000,
+      "Memory": 536870912,
+      "PidsLimit": 128,
+      "data": "tmpfs 256MiB"
+    },
+    "pg_cleanup": "fixture finally exact container rm -fv plus shell EXIT fallback",
+    "owned_remaining_containers": 0,
+    "new_persistent_volumes_or_networks": 0,
+    "preserved_container": "303c33d83297 overdoze-dev-pg",
+    "production_services_or_data_modified": false
+  },
+  "merge": {
+    "performed": false,
+    "reason": "user conditional merge requires passing full gates; inherited failures are not a pass"
+  },
+  "next_task": {
+    "id": "CA-HA-03",
+    "status": "Locked",
+    "01": "merged",
+    "02": "not merged; full-gate blocker",
+    "scope": "budget/fairness/backoff only after 02 integration; no code started"
+  },
+  "preserved": [
+    "historical evidence files",
+    "history",
+    "original receipts",
+    "unknown never automatically resent",
+    "Coverage",
+    "frontend mock",
+    "unrelated dirty worktrees"
+  ],
+  "logs_sha256": {
+    "full-make-test.txt": "f9272fab94d61fbc67cffc4d908cf02ef91eb6f6b91ba46a4c7b286b0f57097d",
+    "full-make-check.txt": "4acc5f6c27a9ccff8e0f21236beaea4bff5eddd05ea352a04c8cca28e5848e10",
+    "full-baseline-failures.txt": "0d85ff09aab41ff06e70f42c61cbb04ebfd53e40f54430a75e3aab4088f8cf65",
+    "full-baseline-sizes.txt": "8ebf0548c696786ea68aa667fa1020222fa9270f6aa5394629764ce000038a8c",
+    "full-mypy.txt": "c7650727195c9aadefd2279ea05f23aac6e8737f8863bb0c821a951b1a7f3ec2",
+    "full-eval.txt": "5d01963817cada8561b23ceb33d13d0fb1ea355db78681193e64ca98cc4edbde",
+    "full-postcommit.txt": "e3b0f9296f584acc7d3ca565ba97e246516514b54042acdecd4b889e824bb79f",
+    "full-risk.txt": "10708e58f3ffbf876a665fe3593d2a75a0b570003e625ef1fbd721409588e94e",
+    "full-real-postgres.txt": "9954745c0fdb02326fcf9d6ce284c6e75e9223e0a7b7a842a3658dfc58b57a86",
+    "full-baseline-comparison.json": "88689ae4fdd0ce71da29c3ffbb8caeb7ab690a62db443b21b290bc622387b88b",
+    "full-resource-manifest.json": "6b6463d2a011be6e3b25431c1a01766e62d87a80584500e0e0c98f201b92a407",
+    "full-ruff-summary.json": "9289b99dd22a7fe2f452478e4192509ef4c68445e4a0bb8cfee56b906b0235bf",
+    "full-docker-cli.py.txt": "3633ed6be46f908bb155e85d7ac11e3e63790ede849f8547ca963d16933726b5"
+  },
+  "baseline_follow_up_order": [
+    "Trace Coverage admission/recovery refusals (9 failures) and current stream access (2) without weakening proof/authorization",
+    "Review published default digests (2) and pinned SDK enum snapshot (1), never blindly regenerate compatibility expectations",
+    "Repair native file size plus ERPNext size/style in separately owned task; no blanket exclude/ignore to make gate green",
+    "Repeat complete gates; only then integrate CA-HA-02 and unlock CA-HA-03"
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "at": "2026-11-02T08:39:32.671212+00:00",
+  "deployment": "erpnext-full",
+  "before": {
+    "host_app_id": "erpnext",
+    "namespace_id": "erpnext-full",
+    "issuer": "https://erpnext.zebra.local",
+    "audience": "zebra",
+    "jwks_uri": "https://erpnext-full-host.zebra.local/api/method/zebra_erpnext.gateway.jwks",
+    "allowed_origins": [
+      "https://192.168.110.42:18443"
+    ],
+    "algorithms": [
+      "RS256"
+    ],
+    "policy_version": "erpnext-v1",
+    "active": true
+  },
+  "after": {
+    "host_app_id": "erpnext",
+    "namespace_id": "erpnext-full",
+    "issuer": "https://erpnext.zebra.local",
+    "audience": "zebra",
+    "jwks_uri": "https://erpnext-full-host.zebra.local/api/method/zebra_erpnext.gateway.jwks",
+    "allowed_origins": [
+      "https://192.168.110.42:18443",
+      "https://192.168.101.7:18443"
+    ],
+    "algorithms": [
+      "RS256"
+    ],
+    "policy_version": "erpnext-v1",
+    "active": true
+  },
+  "backup": "/tmp/erp-origin-binding-20261102-erpnext-full.json",
+  "only_allowed_origins_changed": true
+}

@@ -28,7 +28,6 @@ from agent_core.domain.task_bindings import (
 )
 from agent_security.host_grant import VerifiedHostGrant
 from agent_storage.postgres.task_admission import load_task_binding, save_task_binding
-
 from zebra_agent_api.responses import ApiResponse, bad_request
 
 if TYPE_CHECKING:
@@ -203,12 +202,14 @@ def _build_binding_snapshot(
     the default admission surface either way.
     """
 
-    if require_resolved_connector and (resolved_connector_profile is None or frozen_host_manifest is None):
-        raise ValueError('published connector profile and frozen manifest are required')
+    if require_resolved_connector and (
+        resolved_connector_profile is None or frozen_host_manifest is None
+    ):
+        raise ValueError("published connector profile and frozen manifest are required")
     if (resolved_connector_profile is None) != (frozen_host_manifest is None):
-        raise ValueError('connector profile and frozen manifest must resolve together')
+        raise ValueError("connector profile and frozen manifest must resolve together")
     if host_context is None and resolved_connector_profile is not None:
-        raise ValueError('resolved connector requires a verified Host context')
+        raise ValueError("resolved connector requires a verified Host context")
     if host_context is None:
         grant_digest = hashlib.sha256(
             f"deployment-binding:{deployment_namespace}".encode()
@@ -235,32 +236,62 @@ def _build_binding_snapshot(
         profile, manifest = None, None
         bindings_digest = NO_CONNECTOR_DIGEST
         if resolved_connector_profile is not None:
-            from agent_core.domain.host_connectors import HostConnectorProfileVersion, accepts_new_tasks
+            from agent_core.domain.host_connectors import (
+                HostConnectorProfileVersion,
+                accepts_new_tasks,
+            )
             from agent_integrations.host_tools import HostToolManifest
-            if not isinstance(resolved_connector_profile, HostConnectorProfileVersion) or not isinstance(frozen_host_manifest, HostToolManifest):
-                raise ValueError('typed connector profile and frozen manifest are required')
-            profile = HostConnectorProfileVersion.model_validate(resolved_connector_profile.model_dump(mode='json'))
+
+            if not isinstance(
+                resolved_connector_profile, HostConnectorProfileVersion
+            ) or not isinstance(frozen_host_manifest, HostToolManifest):
+                raise ValueError("typed connector profile and frozen manifest are required")
+            profile = HostConnectorProfileVersion.model_validate(
+                resolved_connector_profile.model_dump(mode="json")
+            )
             manifest = HostToolManifest.from_payload(frozen_host_manifest.to_payload())
-            if (profile.host_app_id != host_context.host_app_id or not accepts_new_tasks(profile.status)
-                    or manifest.workload_identity != profile.workload_identity_ref
-                    or manifest.digest != frozen_manifest_digest):
-                raise ValueError('published connector profile or frozen manifest drifted')
+            if (
+                profile.host_app_id != host_context.host_app_id
+                or not accepts_new_tasks(profile.status)
+                or manifest.workload_identity != profile.workload_identity_ref
+                or manifest.digest != frozen_manifest_digest
+            ):
+                raise ValueError("published connector profile or frozen manifest drifted")
             # Same native resource-rule canonicalization as HostCapabilitySnapshot,
             # applied to the real parsed wire manifest; no V1 schema conversion.
-            bindings_digest = hashlib.sha256(json.dumps([
-                {'tool': tool.name, 'bindings': [
-                    {'argumentPointer': rule.argument_pointer, 'resourceType': rule.resource_type, 'required': rule.required}
-                    for rule in manifest.resource_bindings_for(tool.name)]}
-                for tool in manifest.tools], sort_keys=True, separators=(',', ':')).encode()).hexdigest()
+            bindings_digest = hashlib.sha256(
+                json.dumps(
+                    [
+                        {
+                            "tool": tool.name,
+                            "bindings": [
+                                {
+                                    "argumentPointer": rule.argument_pointer,
+                                    "resourceType": rule.resource_type,
+                                    "required": rule.required,
+                                }
+                                for rule in manifest.resource_bindings_for(tool.name)
+                            ],
+                        }
+                        for tool in manifest.tools
+                    ],
+                    sort_keys=True,
+                    separators=(",", ":"),
+                ).encode()
+            ).hexdigest()
         host = HostCapabilitySnapshot(
             host_app_id=host_context.host_app_id,
             authority_issuer=verified_host_grant.authority_issuer,
             namespace_id=host_context.namespace_id,
             grant_digest=envelope_grant_digest(host_context),
             grant_expires_at=host_context.expires_at,
-            connector_id=profile.connector_id if profile is not None else f"{host_context.host_app_id}-unbound",
+            connector_id=profile.connector_id
+            if profile is not None
+            else f"{host_context.host_app_id}-unbound",
             connector_profile_revision=profile.profile_revision if profile is not None else 1,
-            connector_profile_digest=profile.profile_digest if profile is not None else NO_CONNECTOR_DIGEST,
+            connector_profile_digest=profile.profile_digest
+            if profile is not None
+            else NO_CONNECTOR_DIGEST,
             manifest_digest=(
                 frozen_manifest_digest
                 if isinstance(frozen_manifest_digest, str)

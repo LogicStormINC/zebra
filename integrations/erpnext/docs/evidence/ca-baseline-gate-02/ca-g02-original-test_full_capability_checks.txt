@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "/var/folders/qx/n_v9dpmd12dgb9m1s75tjgtm0000gn/T/ca-g02-erp-source-baseline-rdvyuxkz/tests/test_full_capability_checks.py", line 18, in <module>
+    from zebra_erpnext import cloud,runtime,extensions,knowledge
+  File "/private/var/folders/qx/n_v9dpmd12dgb9m1s75tjgtm0000gn/T/ca-g02-erp-source-baseline-rdvyuxkz/zebra_erpnext/cloud.py", line 11, in <module>
+    import requests
+ModuleNotFoundError: No module named 'requests'

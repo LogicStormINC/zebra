@@ -16,7 +16,6 @@ from agent_core.harness.model_step_support import tool_result_message
 from agent_core.harness.models import HarnessAttemptOutcome, HarnessAttemptResult, HarnessContext
 from agent_core.harness.orchestration_events import continuation_verification_scope_missing
 from agent_core.harness.sequential_support import durable_action_fingerprints
-
 from zebra_agent_worker.approved_continuation import ApprovedContinuation
 from zebra_agent_worker.child_wakeup_continuation import (
     ChildWakeupContinuation,
@@ -192,8 +191,11 @@ def run_continuation(
                 **(clarification.metadata or {}),
                 "clarification_continuation": True,
                 "clarification_id": str(clarification.tool_call.tool_call_id),
-                **({"cache_boundary_reason": "private_reasoning_not_durable"}
-                   if restored.rebased_message_count else {}),
+                **(
+                    {"cache_boundary_reason": "private_reasoning_not_durable"}
+                    if restored.rebased_message_count
+                    else {}
+                ),
                 "exact_prefix_message_count": restored.exact_prefix_message_count,
                 "rebased_message_count": restored.rebased_message_count,
                 "durable_action_fingerprints": sorted(
@@ -395,20 +397,31 @@ def child_wakeup_tool_results(child_wakeup: ChildWakeupContinuation) -> tuple[To
 def _clarification_attachment_messages(context, clarification):
     from agent_context.adapter import _attachment_items
     from agent_core.harness.image_messages import image_data_urls
-    task=getattr(context,'task',None)
-    wanted=set(clarification.attachment_ids)
-    text=tuple(item for item in getattr(task,'attachments',()) if str(item.attachment_id) in wanted)
-    images=tuple(getattr(task,'image_attachments',()))
-    if not wanted.issubset({str(item.attachment_id) for item in (*text,*images)}):
-        raise ValueError('clarification attachment context is unavailable')
-    present={url for message in clarification.conversation for url in message.provider_image_data_urls}
+
+    task = getattr(context, "task", None)
+    wanted = set(clarification.attachment_ids)
+    text = tuple(
+        item for item in getattr(task, "attachments", ()) if str(item.attachment_id) in wanted
+    )
+    images = tuple(getattr(task, "image_attachments", ()))
+    if not wanted.issubset({str(item.attachment_id) for item in (*text, *images)}):
+        raise ValueError("clarification attachment context is unavailable")
+    present = {
+        url for message in clarification.conversation for url in message.provider_image_data_urls
+    }
     # Provider image URLs are intentionally excluded from durable conversation.
     # Restore only verified current-turn images recovered from canonical refs.
-    urls=tuple(dict.fromkeys(url for url in image_data_urls(images) if url not in present))
+    urls = tuple(dict.fromkeys(url for url in image_data_urls(images) if url not in present))
     if not text and not urls:
         return ()
     # Reuse native bounded untrusted-file rendering (16KiB total, 8KiB/file).
-    content='\n\n'.join(f'{item.title}\n{item.content}' for item in _attachment_items(text))
-    return (SessionMessage(message_id=new_message_id(),role=MessageRole.USER,
-        content=content or 'User-provided current-turn clarification images.',
-        created_at=clarification.tool_call.created_at,provider_image_data_urls=urls),)
+    content = "\n\n".join(f"{item.title}\n{item.content}" for item in _attachment_items(text))
+    return (
+        SessionMessage(
+            message_id=new_message_id(),
+            role=MessageRole.USER,
+            content=content or "User-provided current-turn clarification images.",
+            created_at=clarification.tool_call.created_at,
+            provider_image_data_urls=urls,
+        ),
+    )

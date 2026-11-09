@@ -1,0 +1,92 @@
+{
+  "task": "CA-HA-03",
+  "slice": "E1 provisioning source candidate",
+  "date": "2026-11-03",
+  "parent": "9e3cef3bf22f0b783494f5558217e3b5778bcc1e",
+  "status": "source_reviewed_image_delta_pending_no_E1_capacity_claim",
+  "authorization": "user explicitly authorized new isolated staging on192.168.101.7 and/or OrbStack",
+  "production": {
+    "existing_services_replaced": false,
+    "existing_database_migrated": false,
+    "original_business_runs_replayed": 0
+  },
+  "nodes": {
+    "server": "Ubuntu amd64, fresh API+Worker2CPU/2GiB each",
+    "vm": "existing running zebra-gvisor on Mac arm64; no old containers resumed; fresh API+Worker2CPU/2GiB each"
+  },
+  "isolated_data": "new24GiB ext4 filesystem labelzebra_ha_e1, loop-mounted only in VM; separate QA DB",
+  "real_database_bootstrap": {
+    "schema": 121,
+    "app_superuser": false,
+    "events_before": 0,
+    "cutover": "complete",
+    "bucket_versioning": "Enabled"
+  },
+  "budget": {
+    "pool": 4,
+    "normal": 8,
+    "read": 2,
+    "control": 2,
+    "probe": 1,
+    "fleet_processes": 14,
+    "maximum_arithmetic": 245,
+    "server_max_connections": 256
+  },
+  "runtime": {
+    "both_runsc_native_checks": "passed",
+    "both_API_live_ready": "passed",
+    "both_Worker_capability_ready": "passed",
+    "maintenance_original_DSN_fix_live_scoped_smoke": "passed; final_image_delta_pending"
+  },
+  "model": {
+    "mode": "synthetic_native_wire",
+    "real_provider_qualification": false,
+    "DNS": "api.deepseek.com->127.0.0.1 only owned containers",
+    "trust": "only fixture CA read-only mounted into certifi",
+    "peer_certificate_marker_both_nodes": "passed",
+    "negative_peer_certificate_marker": "rejected",
+    "native_SSE_tool_and_synthetic_usage": "passed; no Task created"
+  },
+  "tests": {
+    "focused": {
+      "passed": 9,
+      "failed": 0
+    },
+    "real_pg": {
+      "passed": 12,
+      "failed": 1,
+      "failure": "unmodified native HTTP fixture ScriptedModel lacks worker-budget/1; original recovery module reproduces same failure before recovery"
+    },
+    "independent_AI_review": "migration/capacity3pass, authoritycheckpass, noCritical/Important; minorcheck_wire bundle omission corrected"
+  },
+  "limits": [
+    "no full repository make test",
+    "noE1 load/fault matrix",
+    "no realIdP/browser/provider/production certification",
+    "current core fixes not yet promoted into long-running staging images"
+  ],
+  "source_sha256": {
+    "docker/migrate.py": "0483f52d224f73bf8405c92a5621a0635abef79738569f50f215d8357f35cd82",
+    "packages/agent-storage/src/agent_storage/postgres/client_effect_recovery.py": "b021beb9aeb7c63b4f7eaa8b20b8e4377bb23f2d2f48b0284cf049c5effa64df",
+    "tests/compose/cloud_ha_e1/rabbitmq.conf": "0f157081b78c3f2a321dec461700042b132a99e6b22ae3a7bd160698c1a83f6d",
+    "tests/compose/cloud_ha_e1/bundle.py": "fe0e72303ef81048aab35978b473c37d4ed23a70771f76539b8017a4beaeb99f",
+    "tests/compose/cloud_ha_e1/Control.Caddyfile": "efbb823db6640d39890e056a2687069445bf33b8f44e0911a02a0295c27da572",
+    "tests/compose/cloud_ha_e1/Dockerfile.delta": "523cb9b76de8c9fc56c3024c7c52846585fb4a6b2b1a97e6c4505128219cfd91",
+    "tests/compose/cloud_ha_e1/Node.Caddyfile": "915b0a190517f77c48fc4f80311fc111d9d0c6c1ed1df81a65eaea5ee8b33530",
+    "tests/compose/cloud_ha_e1/initialize.py": "ce29d7cf6a21426ebb5dd3d0c87a72d51dc57639fc9424c4d4cd3c852f9d541c",
+    "tests/compose/cloud_ha_e1/check_authority.py": "3c60f88805813b6255a77936599d25ba90e3d120249e284f5a240488aeb48229",
+    "tests/compose/cloud_ha_e1/model.py": "3d8f2a84a64fb3c12a89e05f45bad709d353b10e90cc6669f5acfe27ca75f1d3",
+    "tests/compose/cloud_ha_e1/README.md": "ff2d96a3a068e6a356a41432dd4f77157e92c05d8fe5c33b4350b950698ab43b",
+    "tests/compose/cloud_ha_e1/authority.py": "0e3bd350a435ffbe91f30fb6c296b4f7d888fc274ba2d8062a487523fac47cb4",
+    "tests/compose/cloud_ha_e1/check_model.py": "b4eb41df6dd9cc3e761f12c12c11ea6cd4e0bb072416d4d996974428252180c2",
+    "tests/compose/cloud_ha_e1/check_wire.py": "7ad8493a4eacaed75235b61312677130a9ef9841952583e267c66e2b44470c54",
+    "tests/compose/cloud_ha_e1/verify.py": "7551e39b9d7b8dd35feefdbae1a18400a424c8831e10b9dc99984227daa5e20d",
+    "tests/compose/cloud_ha_e1/compose.yml": "a163c73c044cf061ed1e5a8b9b623d1f34ca8e0af5647fc010226c3e849ec044",
+    "tests/compose/cloud_ha_e1/prepare.py": "fe74c99a7f337f16632eec878b9693602f3ccf6355fb2274e12679253e855a5e"
+  },
+  "logs_processing": "known fixture secrets redacted; trailing whitespace normalized",
+  "make_check": {
+    "exit": 0,
+    "log": "make-check.log"
+  }
+}

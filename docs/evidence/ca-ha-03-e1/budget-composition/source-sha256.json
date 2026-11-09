@@ -1,0 +1,15 @@
+{
+  "apps/worker/src/zebra_agent_worker/cloud_composition.py": "d682b15791cba2f4c5bd92bcced327a0a6267bb1a796b89d61b955b1e40d568b",
+  "apps/worker/src/zebra_agent_worker/loop.py": "497186911041ad46c9683570a25a9ea404b1569d51ce2b7baab3d699950e1c38",
+  "apps/worker/src/zebra_agent_worker/main.py": "be89ba1e10c2eefc5bf4e4498cca34ca6a0c2b8e2a080c92a92c392995e6bf98",
+  "apps/worker/src/zebra_agent_worker/session_process_child.py": "ab00402c345c6f52dd331a23e29781505a07d5f430bfa81debcac6c24526b8ea",
+  "tests/worker/test_cloud_budget_composition.py": "4cc416afc8af82f68e03f3cb25245664cd651519575aec41fce3a8f78f5ba5b2",
+  "tests/worker/test_command_process.py": "1a492d9916ef8782641303179224813c801d59fcb13411f44b860700339cfa29",
+  "tests/compose/cloud_ha_e1/metering.py": "9504419baeaef5cb8957357110f09f2c75e501e6c9dc1f0cbdb7638c3a1ace7c",
+  "tests/compose/cloud_ha_e1/check_metering.py": "7f3c8fab3e3e2b8acf71606205cb7ecc70268b12aaa7243a0a0ba6d3ec26d3d2",
+  "tests/compose/cloud_ha_e1/model.py": "2cb1f9c3ea03a44631bd85548b56098f27f885876ea270f1a4038a581f5bd573",
+  "tests/compose/cloud_ha_e1/check_wire.py": "5d5a054f5188809b60adf821b213fa35d23c2316982440c2ce6eb076b868f64b",
+  "tests/compose/cloud_ha_e1/prepare.py": "6acea4e23851a30e5c84564fa5aaec894a9a9637a48b260d0b1022d98cefbf26",
+  "tests/compose/cloud_ha_e1/bundle.py": "ce1d6555edaded957d91c07719bfa4e08048a8e880427b06044433733e965fa2",
+  "tests/compose/cloud_ha_e1/compose.yml": "e35237941f3f39db8ce8deaa980c05b923d82a81d28144704d68dad5a2478386"
+}

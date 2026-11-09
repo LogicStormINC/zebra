@@ -1,0 +1,33 @@
+{
+  "task": "CA-BRIDGE-01A",
+  "title": "管理面任务观察端点 GET /management/v1/task-observations",
+  "date": "2026-11-01",
+  "authorization": "user: 继续（cloud-agent 为真实主线，从其拉 worktree 实施；不触碰常驻 force-stop 工作树）",
+  "branch": "codex/ca-bridge-01a-task-observations",
+  "base": "cloud-agent 29ecde64",
+  "worktree": "~/Documents/Codex/2026-11-01/ca-bridge-01a",
+  "design": "overdoze docs/superpowers/specs/2026-11-01-task-observations-bridge-design.md（跨仓设计稿）",
+  "scope": [
+    "apps/api/src/zebra_agent_api/task_observation_management.py（新增）：rthm_ 管理传输族 + tasks.read 动作；namespace 来自部署配置不取请求参数；固定观察窗 25（updated_at DESC）；响应最小事实集 {taskId,status,activeSegmentId,currentSequence}——标题等用户内容、事件正文、凭据线索不出域（测试断言 SECRET_TITLE 不在响应中）",
+    "host_registry_config.py：管理动作词表新增 tasks.read（固定集 additive）",
+    "host_registry_management.py：注册链尾追加 register_task_observation_management",
+    "docs/contracts/task-observation-management-v1.openapi.json（新增公开合同，GET-only，TaskCoordinates additionalProperties=false 且无 title 字段）",
+    "tests/api/test_task_observation_management.py（新增 4 测试：命名空间隔离+无用户内容、传输/授权负向（rtmg_ 前缀 401、scope 403、cookie/query 400、POST/PUT 405、动作撤销 403→恢复 200）、无库 503、合同文档断言）"
+  ],
+  "verification": [
+    "tests/api/test_task_observation_management.py 4/4 通过（隔离 docker PG，真实迁移 schema，种子含外命名空间任务与机密标题）",
+    "tests/api 全量 1744 passed / 192 skipped 零回归（注册链与词表变更影响面）",
+    "tests/api/test_host_connector_management.py + tests/config 103 passed",
+    "make check 全绿（产品边界/文件尺寸/ruff/mypy 1495 文件）"
+  ],
+  "notRun": "全量 make test 未跑（tests/api 已覆盖全部改动面；存储层仅只读复用未改）",
+  "invariants": [
+    "不新增任何写路径；任务存储只读（list_tasks 复用）",
+    "namespace 隔离由存储层 WHERE deployment_namespace 强制，请求参数不可指定",
+    "用户内容不出域（标题/正文/凭据零暴露，合同文档与测试双锚定）"
+  ],
+  "next": [
+    "overdoze CA-BRIDGE-01B：delivery 无状态代理 + BFF + jorice contracts/task-observations/v1 check（producer pin 本卡合并后的 commit）",
+    "producer re-pin 窗口（113→117+本卡）在 01B 同窗处理"
+  ]
+}

@@ -2,12 +2,14 @@
 
 import hashlib
 import json
+import logging
 import os
 import subprocess
 import sys
 import tempfile
 from dataclasses import asdict
 from pathlib import Path
+from time import monotonic_ns
 from typing import Any
 
 from agent_runtime import executor_supervisor
@@ -19,6 +21,8 @@ from zebra_agent_worker.execution_errors import WorkerExecutorInterrupted
 from zebra_agent_worker.execution_events import ExecutionInterrupted
 from zebra_agent_worker.execution_finalization import ExecutedSession
 
+logger = logging.getLogger(__name__)
+
 
 def process_factory(settings: Any) -> str | None:
     factory = os.environ.get("ZEBRA_SESSION_PROCESS_FACTORY")
@@ -29,6 +33,25 @@ def process_factory(settings: Any) -> str | None:
     if not hasattr(os, "waitid"):
         raise ValueError("Cloud executor isolation requires Linux waitid ownership fencing")
     return factory
+
+
+def executor_incarnation() -> dict[str, str] | None:
+    """Read the trusted node's per-start identity from an operator-mounted file."""
+    path = os.environ.get("ZEBRA_EXECUTOR_INCARNATION_FILE")
+    if path is None:
+        return None
+    try:
+        identity = json.loads(Path(path).read_bytes())
+        if (
+            not isinstance(identity, dict)
+            or identity.keys() != {"engine", "container", "started_at", "pid_namespace"}
+            or not all(isinstance(value, str) and value.strip() for value in identity.values())
+            or identity["pid_namespace"] != os.readlink("/proc/self/ns/pid")
+        ):
+            raise ValueError("executor incarnation does not match this PID namespace")
+        return identity
+    except (OSError, ValueError) as error:
+        raise WorkerExecutorInterrupted("trusted executor incarnation unavailable") from error
 
 
 def settings_digest(settings: Any) -> str:
@@ -71,8 +94,7 @@ def execute_isolated(service: Any, request: dict[str, Any]) -> ExecutedSession:
         source, result = root / "request.json", root / "result.json"
         request["executor_command"] = [
             sys.executable,
-            "-m",
-            "zebra_agent_worker.session_process_child",
+            str(Path(__file__).with_name("session_process_child.py")),
             "--execute",
             str(source),
             str(result),
@@ -82,7 +104,9 @@ def execute_isolated(service: Any, request: dict[str, Any]) -> ExecutedSession:
             "fence": lease.fence.model_dump(mode="json"),
         }
         source.write_text(json.dumps(request))
-        register_executor(store.database, sid, lease.fence)
+        registration_started = monotonic_ns()
+        register_executor(store.database, sid, lease.fence, incarnation=executor_incarnation())
+        launch_started = monotonic_ns()
         try:
             process = subprocess.Popen(
                 [
@@ -95,12 +119,20 @@ def execute_isolated(service: Any, request: dict[str, Any]) -> ExecutedSession:
                 env={
                     **os.environ,
                     "ZEBRA_SESSION_PROCESS_CHILD": "1",
+                    "ZEBRA_SESSION_PROCESS_LAUNCH_NS": str(launch_started),
                     "PYTHONPATH": os.pathsep.join(sys.path),
                 },
             )
         except OSError as error:
             store.acknowledge_executor(sid, lease.fence)
             raise WorkerExecutorInterrupted("isolated executor launch failed") from error
+
+        logger.info(
+            "worker_executor_launched session_id=%s fence=%s registration_ms=%s spawn_ms=%s",
+            sid, lease.fence.fencing_token,
+            (launch_started - registration_started) // 1_000_000,
+            (monotonic_ns() - launch_started) // 1_000_000,
+        )
 
         def acknowledge() -> None:
             receipt = json.loads(result.with_suffix(".exit.json").read_text())
@@ -110,7 +142,13 @@ def execute_isolated(service: Any, request: dict[str, Any]) -> ExecutedSession:
 
         with executor_monitor(database, sid) as cancelled:
             supervise(process, cancelled, on_exit=acknowledge)
-        if process.returncode != 0 or not result.exists():
+        result_present = result.exists()
+        if process.returncode != 0 or not result_present:
+            logger.warning(
+                "worker_executor_outcome_unknown session_id=%s fence=%s returncode=%s "
+                "result_present=%s",
+                sid, lease.fence.fencing_token, process.returncode, result_present,
+            )
             raise WorkerExecutorInterrupted("isolated executor outcome unknown")
         try:
             return TypeAdapter(ExecutedSession).validate_json(result.read_bytes())

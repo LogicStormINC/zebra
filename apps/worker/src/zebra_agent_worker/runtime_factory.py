@@ -1,3 +1,4 @@
+import os
 from hashlib import sha1
 from pathlib import Path
 from tempfile import gettempdir
@@ -30,8 +31,12 @@ def build_runtime(
 ) -> RuntimePort:
     runtime_root = _runtime_root(database_path)
     if settings.runtime.require_workspace_quota:
+        declared = os.environ.get("ZEBRA_WORKSPACE_VOLUME_ROOT", "").strip()
+        shared = Path(declared) if declared else workspace_root
+        if not workspace_root.resolve(strict=True).is_relative_to(shared.resolve(strict=True)):
+            raise ValueError("workspace is outside the configured quota backing")
         require_workspace_quota(
-            workspace_root,
+            shared,
             maximum_bytes=settings.runtime.workspace_quota_mb * 1024 * 1024,
         )
     runtime_class = RuntimeClass(settings.runtime.runtime_class)
@@ -121,3 +126,12 @@ def pin_cloud_engine(settings: ZebraAgentSettings) -> PinnedOciEngine:
 def _runtime_root(database_path: Path) -> Path:
     database_key = sha1(str(database_path.resolve()).encode("utf-8")).hexdigest()[:12]
     return Path(gettempdir()) / "zebra-agent-runtime" / database_key
+
+
+def script_workspace_parent(settings: ZebraAgentSettings) -> Path | None:
+    declared = os.environ.get("ZEBRA_WORKSPACE_VOLUME_ROOT", "").strip()
+    if not settings.runtime.require_workspace_quota or not declared:
+        return None
+    root = Path(declared).resolve(strict=True)
+    require_workspace_quota(root, maximum_bytes=settings.runtime.workspace_quota_mb * 1024 * 1024)
+    return root

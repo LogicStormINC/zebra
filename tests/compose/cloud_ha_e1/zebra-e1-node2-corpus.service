@@ -1,0 +1,13 @@
+[Unit]
+Description=Start the owned Zebra E1 corpus containers after their relay
+Requires=docker.service zebra-e1-node2-relay.service
+After=docker.service zebra-e1-node2-relay.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/docker start zebra-e1-receipt-probe-preflight-corpus zebra-ha-e1-20261102-worker-1-corpus zebra-ha-e1-20261102-runtime-cleanup-1-corpus zebra-e1-receipt-tls zebra-ha-e1-20261102-node-tls-1
+ExecStop=/usr/bin/docker stop zebra-e1-receipt-probe-preflight-corpus zebra-ha-e1-20261102-worker-1-corpus zebra-ha-e1-20261102-runtime-cleanup-1-corpus zebra-e1-receipt-tls zebra-ha-e1-20261102-node-tls-1
+
+[Install]
+WantedBy=multi-user.target

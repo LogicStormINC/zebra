@@ -1,0 +1,24 @@
+{
+  "task": "CA-P5-02A",
+  "base": "985a369ae54cd8261bac2b219a1cef622ffdc931",
+  "contractDigest": "sha256:e4c73f0a55fda8d4d69ee936d6108e00a2d08c5dafe37be27cadb48162858954",
+  "files": {
+    "apps/api/src/zebra_agent_api/host_registry_management.py": "c71ee2a41d3dbb4d94377b5478e48ed3dd06d498fa720cd5a55418e642f0647e",
+    "apps/api/src/zebra_agent_api/runtime_gate_termination.py": "75c085c25a8f7fd573085e0ce807e8626265e42b9a7da89ab9e775eada9ee660",
+    "apps/api/src/zebra_agent_api/runtime_gate_termination_config.py": "5bc3a9449a968d49660539538dc21a4d52c9ff2fe2dd3efe5f87a6336446280f",
+    "apps/api/src/zebra_agent_api/runtime_gates_admin.py": "0699f78645d85133b758f5099fec4af7f8b5220f7163335ff6eb48e46147247c",
+    "apps/config/src/zebra_agent_config/bundle_settings.py": "93821e7ef6af5f52d266fb0ae8fdd618905d9757fd03594925b2cbc00c67167a",
+    "apps/config/src/zebra_agent_config/settings.py": "c1bb3f033b8df3d8858b7cff1b4684b16e08d92fe464a659073595e553fce388",
+    "docs/evidence/ca-p5-02a/composition_acceptance.py": "9a35272869773f7db80cc982ce3595fef5b14c831c04fd63a51b3b28e25f279d",
+    "packages/agent-core/src/agent_core/application/runtime_gate_termination.py": "349a08af03f88b0f99d15973fdfc04014f7a6306bc791d008fce55d4335a21dd",
+    "packages/agent-core/src/agent_core/domain/runtime_gate_termination.py": "0045276252ca9b37e3482ae36d553680ecf92d1adda7d5965411c87a4cb7fac3",
+    "packages/agent-core/src/agent_core/ports/runtime_gate_termination.py": "4d5314c1fad9dd55dbd66faeaea9606a8f2b9065d6f59045bfb1f0a2ff4348fd",
+    "packages/agent-storage/src/agent_storage/postgres/migration_catalog_tail.py": "4995e76e1640a5dc780791be1fdc66dbce516f3ae70ee033bf392c2df506bdb9",
+    "packages/agent-storage/src/agent_storage/postgres/runtime_gate_termination.py": "0f11be89bd4c30f3caa6ee9148d8f330b3295661b7bd5a4495113ead93c30b7d",
+    "packages/agent-storage/src/agent_storage/postgres/runtime_gate_termination_migration.py": "cb11e6695b87965eb9beed702ddd67164381a468778d3ac73d911509b5c9856b",
+    "packages/agent-storage/src/agent_storage/postgres/runtime_gates.py": "90dd6dcfe491ba6cebb4bf6528494420c2f5466d19581581289d36915f87a094",
+    "tests/agent_core/test_runtime_gate_domain.py": "cfc56c7df3055ec02b2e3d9344e28dc3ff3ec7cd7935e3c8b4126373010a171f",
+    "tests/agent_storage/test_branch_migration_catalog.py": "8badf5a0916ec6392b25ad0f21b61f8a4b53e2a7a45888ac7b4fe07c98021c2e",
+    "tests/api/test_runtime_gate_termination.py": "4624709767315781604c810ed8f3f06863f2bb1fdb1d3619d3be0443977e6513"
+  }
+}

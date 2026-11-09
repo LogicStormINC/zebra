@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from contextlib import nullcontext
 from pathlib import Path
 
@@ -11,38 +11,53 @@ import httpx
 from agent_core.domain.sessions import SessionStatus
 from agent_runtime.public_egress import probe_egress
 from agent_storage.postgres.connection_pool import postgres_pool_scope
-from zebra_agent_config import load_settings
+from zebra_agent_config import ZebraAgentSettings, load_settings
 
 from zebra_agent_worker.claims import SessionClaimService
+from zebra_agent_worker.cloud_composition import CloudWorkerComposition
 from zebra_agent_worker.loop import WorkerLoopService, build_worker_loop_service
 from zebra_agent_worker.recovery import SessionRecoveryService
 from zebra_agent_worker.resume import SessionResumeService
+from zebra_agent_worker.worker_signals import worker_stop_signals
 
 
 def worker_banner() -> str:
     return f"worker-ready:{SessionStatus.CREATED.value}"
 
 
-def main(argv: Sequence[str] | None = None) -> int:
+def main(
+    argv: Sequence[str] | None = None, *,
+    cloud_worker_composition_factory: Callable[[ZebraAgentSettings], CloudWorkerComposition]
+    | None = None,
+) -> int:
     namespace = _build_parser().parse_args(list(argv) if argv is not None else None)
     settings = load_settings()
     if settings.deployment == "cloud" and settings.web_egress_socks_endpoint is not None:
         probe_egress(settings.web_egress_socks_endpoint)
     database_path = Path(namespace.database or settings.database_url)
-    # The process may need an internal CA for Host Grant traffic, but model
-    # providers use public TLS. Keep their client independent of SSL_CERT_FILE.
+    # Cloud gateways own cancellable native HTTP; a shared synchronous client
+    # cannot satisfy the Task deadline. Preserve the local client and public TLS.
     with (
-        postgres_pool_scope(settings.database_url)
-        if settings.storage_authority == "postgresql" else nullcontext()
-    ), httpx.Client(
-        timeout=httpx.Timeout(60.0, connect=10.0),
-        trust_env=False,
-    ) as model_http_client:
+        worker_stop_signals() as stop_requested,
+        (postgres_pool_scope(
+            settings.database_url, component="worker",
+            execution_slots=settings.command_delivery.execution_slots,
+        )
+         if settings.storage_authority == "postgresql" else nullcontext()),
+        (httpx.Client(timeout=httpx.Timeout(60.0, connect=10.0), trust_env=False)
+         if settings.deployment != "cloud" else nullcontext()) as model_http_client,
+    ):
         loop_service = build_worker_loop_service(
             database_path=database_path,
             settings=settings,
             model_http_client=model_http_client,
+            cloud_worker_composition=(
+                cloud_worker_composition_factory(settings)
+                if cloud_worker_composition_factory is not None else None
+            ),
         )
+        if namespace.health_file is not None:
+            loop_service.health.attach(namespace.health_file)
         result = loop_service.run(
             worker_id=namespace.worker_id,
             batch_size=namespace.batch_size,
@@ -50,6 +65,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             max_cycles=namespace.max_cycles,
             stop_when_idle=namespace.stop_when_idle,
             idle_sleep_seconds=namespace.idle_sleep_seconds,
+            stop_requested=stop_requested,
         )
     print(
         json.dumps(
@@ -122,6 +138,7 @@ def _build_parser() -> argparse.ArgumentParser:
         default=0.1,
         help="Sleep duration between idle polls when not stopping.",
     )
+    parser.add_argument("--health-file", type=Path, help="Private local Worker observation file.")
     return parser
 
 

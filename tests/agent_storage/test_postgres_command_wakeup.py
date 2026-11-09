@@ -3,7 +3,8 @@
 import os
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, timedelta
-from threading import Barrier
+from threading import Barrier, Timer
+from time import monotonic
 from types import SimpleNamespace
 from uuid import uuid4
 
@@ -18,10 +19,14 @@ from agent_core.contracts.session_commands import SessionCommand, SessionCommand
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.ports.task_admission_transaction import TaskAdmissionRequest
 from agent_storage import PostgresEventStore, PostgresProjectionStore, apply_postgres_migrations
+from agent_storage.postgres import command_wakeup
 from agent_storage.postgres.client_effects import _append_client_event
-from agent_storage.postgres.command_wakeup import CommandAdmissionCapacityError
+from agent_storage.postgres.command_wakeup import (
+    CommandAdmissionCapacityError,
+)
 from agent_storage.postgres.events import append_event_in_transaction
 from agent_storage.postgres.task_admission import PostgresTaskAdmissionTransaction
+from agent_storage.postgres.task_io import task_io_deadline
 from psycopg import sql
 from psycopg.conninfo import make_conninfo
 from psycopg.rows import dict_row
@@ -309,23 +314,24 @@ def test_future_producer_timestamp_does_not_delay_outbox(dsn):
 
 
 @pytest.mark.parametrize(
-    ("limit_column", "second_tenant", "code"),
+    ("scope_limit", "outbox_limit", "second_tenant", "code"),
     [
-        ("max_pending_per_scope", "tenant-a", "command_scope_capacity"),
-        ("max_unpublished_outbox", "tenant-b", "command_outbox_capacity"),
+        (1, 100, "tenant-a", "command_scope_capacity"),
+        (32, 1, "tenant-b", "command_outbox_capacity"),
+        (1, 1, "tenant-a", "command_outbox_capacity"),
     ],
 )
 def test_live_admission_capacity_is_atomic_and_preserves_canonical_stream(
-    dsn, limit_column, second_tenant, code
+    dsn, scope_limit, outbox_limit, second_tenant, code
 ):
     first = _seed(dsn)
     second = _seed(dsn, tenant=second_tenant)
     _enable(dsn)
     with psycopg.connect(dsn) as connection:
         connection.execute(
-            sql.SQL("UPDATE command_wakeup_rollouts SET {}=1, reserved_control_outbox=0").format(
-                sql.Identifier(limit_column)
-            )
+            "UPDATE command_wakeup_rollouts SET max_pending_per_scope=%s, "
+            "max_unpublished_outbox=%s, reserved_control_outbox=0",
+            (scope_limit, outbox_limit),
         )
     _store(dsn).append(_command(first.session_id, key="first"))
     before = _store(dsn).list_for_session(second.session_id)
@@ -337,11 +343,45 @@ def test_live_admission_capacity_is_atomic_and_preserves_canonical_stream(
     assert _counts(dsn) == (1, 1)
 
 
-def test_concurrent_live_admissions_share_one_scope_slot(dsn):
-    sessions = [_seed(dsn), _seed(dsn)]
+def test_bounded_run_survives_brief_global_wakeup_wait(dsn):
+    session = _seed(dsn)
+    _enable(dsn)
+    event = _command(session.session_id, key="brief-global-wait")
+    with (
+        psycopg.connect(dsn) as holder,
+        psycopg.connect(dsn, row_factory=dict_row) as waiter,
+    ):
+        holder.execute(
+            "SELECT pg_advisory_xact_lock(hashtextextended(%s,49))",
+            (f"{NAMESPACE}:command-global",),
+        )
+        waiter.execute("SET LOCAL lock_timeout='50ms'")
+        pending: list[SessionEvent] = []
+        append_event_in_transaction(waiter, NAMESPACE, event, deferred_command_wakeups=pending)
+        assert len(pending) == 1
+        release = Timer(0.080, holder.commit)
+        release.start()
+        try:
+            with task_io_deadline(monotonic() + 2):
+                command_wakeup.record_command_wakeup_in_transaction(
+                    waiter, NAMESPACE, pending[0], is_new_admission=True
+                )
+        finally:
+            release.join()
+        assert waiter.execute("SHOW lock_timeout").fetchone() == {"lock_timeout": "50ms"}
+    assert _counts(dsn) == (1, 1)
+
+
+@pytest.mark.parametrize("global_limit", [False, True])
+def test_concurrent_live_admissions_share_one_slot(dsn, global_limit):
+    sessions = [_seed(dsn), _seed(dsn, tenant="tenant-b" if global_limit else "tenant-a")]
     _enable(dsn)
     with psycopg.connect(dsn) as connection:
-        connection.execute("UPDATE command_wakeup_rollouts SET max_pending_per_scope=1")
+        connection.execute(
+            "UPDATE command_wakeup_rollouts SET max_pending_per_scope=1, "
+            "max_unpublished_outbox=%s, reserved_control_outbox=0",
+            (1 if global_limit else 100,),
+        )
     barrier = Barrier(2)
 
     def admit(index):
@@ -354,7 +394,8 @@ def test_concurrent_live_admissions_share_one_scope_slot(dsn):
 
     with ThreadPoolExecutor(max_workers=2) as pool:
         outcomes = list(pool.map(admit, range(2)))
-    assert sorted(outcomes) == ["accepted", "command_scope_capacity"]
+    code = "command_outbox_capacity" if global_limit else "command_scope_capacity"
+    assert sorted(outcomes) == ["accepted", code]
     assert _counts(dsn) == (1, 1)
     assert (
         sum(
@@ -428,6 +469,35 @@ def test_execution_saturation_preserves_reserved_control_admission(dsn):
     assert _counts(dsn) == (2, 2)
 
 
+def test_new_command_uses_one_pending_query_under_admission_locks(dsn, monkeypatch):
+    from agent_storage.postgres import events
+
+    session = _seed(dsn)
+    _enable(dsn)
+    original = events.record_command_wakeup_in_transaction
+    after_lock = []
+
+    def capture(connection, *args, **kwargs):
+        class TracedConnection:
+            def __getattr__(self, name):
+                return getattr(connection, name)
+
+            def execute(self, statement, params):
+                if "pg_advisory_xact_lock" in statement:
+                    after_lock.append("lock")
+                elif after_lock and "session_command_pending" in statement:
+                    after_lock.append("pending")
+                return connection.execute(statement, params)
+
+        return original(TracedConnection(), *args, **kwargs)
+
+    monkeypatch.setattr(events, "record_command_wakeup_in_transaction", capture)
+    event = _command(session.session_id, key="single-pending-roundtrip")
+    assert _store(dsn).append(event) == event
+    assert _counts(dsn) == (1, 1)
+    assert after_lock == ["lock", "pending"]
+
+
 def test_idempotent_retry_is_not_rejected_when_outbox_is_at_capacity(dsn):
     session = _seed(dsn)
     _enable(dsn)
@@ -440,3 +510,63 @@ def test_idempotent_retry_is_not_rejected_when_outbox_is_at_capacity(dsn):
     assert _store(dsn).append(event) == event
     assert _store(dsn).append(event.model_copy(update={"event_id": uuid4()})) == event
     assert _counts(dsn) == (1, 1)
+
+
+def test_live_scope_capacity_excludes_done_rows_but_sequence_keeps_history(dsn):
+    first, second = _seed(dsn), _seed(dsn)
+    _enable(dsn)
+    with psycopg.connect(dsn) as connection:
+        connection.execute("UPDATE command_wakeup_rollouts SET max_pending_per_scope=1")
+
+    _store(dsn).append(_command(first.session_id, key="first"))
+    with psycopg.connect(dsn) as connection:
+        connection.execute("UPDATE session_command_pending SET status='done'")
+
+    _store(dsn).append(_command(second.session_id, key="second"))
+    with psycopg.connect(dsn) as connection:
+        rows = connection.execute(
+            "SELECT scope_sequence, status FROM session_command_pending ORDER BY scope_sequence"
+        ).fetchall()
+    assert rows == [(1, "done"), (2, "pending")]
+
+
+@pytest.mark.parametrize("enabled", [True, False, None])
+def test_rollout_checks_raw_bootstrap_only_when_disabled(dsn, enabled, monkeypatch):
+    from agent_storage.postgres import command_wakeup
+
+    session = _seed(dsn)
+    event = _command().model_copy(update={"session_id": session.session_id})
+    with psycopg.connect(dsn, row_factory=dict_row) as connection:
+        if enabled is not None:
+            connection.execute(
+                "INSERT INTO command_wakeup_rollouts(deployment_namespace,admission_enabled) "
+                "VALUES (%s,%s)", (NAMESPACE, enabled),
+            )
+        plans = []
+
+        class ExplainRollout:
+            def execute(self, statement, params):
+                plan = connection.execute("EXPLAIN (ANALYZE, FORMAT JSON) " + statement, params)
+                plans.append(plan.fetchone()["QUERY PLAN"][0]["Plan"])
+                return connection.execute(statement, params)
+
+        def stop_at_scope(*args):
+            raise RuntimeError("rollout query measured")
+
+        monkeypatch.setattr(command_wakeup, "_scope_from_binding", stop_at_scope)
+        if enabled:
+            with pytest.raises(RuntimeError, match="rollout query measured"):
+                command_wakeup.record_command_wakeup_in_transaction(
+                    ExplainRollout(), NAMESPACE, event
+                )
+        else:
+            command_wakeup.record_command_wakeup_in_transaction(ExplainRollout(), NAMESPACE, event)
+
+    pending = plans.copy()
+    marker_loops = 0
+    while pending:
+        node = pending.pop()
+        pending.extend(node.get("Plans", ()))
+        if node.get("Relation Name") == "session_events":
+            marker_loops += node["Actual Loops"]
+    assert bool(marker_loops) is not bool(enabled)

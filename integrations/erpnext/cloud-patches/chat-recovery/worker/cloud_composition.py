@@ -28,7 +28,6 @@ from agent_storage import (
 from agent_storage.postgres.extension_snapshots import PostgresExtensionSnapshotStore
 from agent_storage.postgres.extensions import PostgresExtensionStore
 from zebra_agent_config import MemoryGatewaySettings
-
 from zebra_agent_worker.coverage_composition import CloudCoverageRuntime
 from zebra_agent_worker.memory_context_materialization import RankedMemoryContextMaterializer
 from zebra_agent_worker.memory_gateway_runtime import (
@@ -173,22 +172,31 @@ def compose_cloud_worker(
     from pathlib import Path
 
     from agent_runtime import PostgresWorkspaceProvisioner
-
-    from agent_storage.postgres.erp_workspace_policy import ERPWorkspaceContainment, containment_enabled
+    from agent_storage.postgres.erp_workspace_policy import (
+        ERPWorkspaceContainment,
+        containment_enabled,
+    )
 
     workspace_control = PostgresWorkspaceControlStore(
-        cloud.dsn, deployment_namespace=stores.deployment_namespace,
+        cloud.dsn,
+        deployment_namespace=stores.deployment_namespace,
     )
     erp_containment = (
-        ERPWorkspaceContainment(cloud.dsn, deployment_namespace=stores.deployment_namespace,
-                                workspace_control=workspace_control)
-        if containment_enabled(stores.deployment_namespace) else None
+        ERPWorkspaceContainment(
+            cloud.dsn,
+            deployment_namespace=stores.deployment_namespace,
+            workspace_control=workspace_control,
+        )
+        if containment_enabled(stores.deployment_namespace)
+        else None
     )
 
     from agent_storage.postgres.erp_workspace_policy import private_activation_enabled
+
     private_active = private_activation_enabled(stores.deployment_namespace)
     if private_active:
         from agent_runtime.erp_private_workspace import PrivateWorkspaceClient, private_enabled
+
         private_enabled(stores.deployment_namespace)
         private_client = PrivateWorkspaceClient()
 
@@ -282,6 +290,7 @@ def compose_cloud_worker(
         )
 
     from agent_storage.postgres.erp_chat_readonly import enabled as chat_enabled
+
     readonly_chat = chat_enabled(stores.deployment_namespace)
     return CloudWorkerComposition(
         stores=stores,
@@ -299,12 +308,14 @@ def compose_cloud_worker(
         extension_snapshots=PostgresExtensionSnapshotStore(
             cloud.dsn, deployment_namespace=cloud.deployment_namespace
         ),
-        extensions=None if readonly_chat else PostgresExtensionStore(
-            cloud.dsn, deployment_namespace=cloud.deployment_namespace
-        ),
+        extensions=None
+        if readonly_chat
+        else PostgresExtensionStore(cloud.dsn, deployment_namespace=cloud.deployment_namespace),
         skill_objects=None if readonly_chat else cloud.artifact_objects,
         memory_runtime=memory_runtime,
-        coverage_runtime=None if readonly_chat else CloudCoverageRuntime(
+        coverage_runtime=None
+        if readonly_chat
+        else CloudCoverageRuntime(
             cloud.dsn, cloud.deployment_namespace, stores.artifact_payloads, cloud.artifact_objects
         ),
     )

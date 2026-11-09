@@ -27,15 +27,32 @@ def _lock_task(
 
 
 def backfill_task_event_positions(
-    connection: Any, namespace: str, task_id: TaskId, *, limit: int = POSITION_BATCH_LIMIT
+    connection: Any,
+    namespace: str,
+    task_id: TaskId,
+    *,
+    limit: int = POSITION_BATCH_LIMIT,
+    task_lock_held: bool = False,
 ) -> bool:
-    """One shared metadata budget; progress survives the caller's commit."""
+    """Backfill within the caller's transaction, reusing its exclusive Task lock if held."""
     if not 1 <= limit <= POSITION_BATCH_LIMIT:
         raise ValueError("Task position backfill limit must be between 1 and 256")
-    _lock_task(connection, namespace, task_id)
+    if not task_lock_held:
+        _lock_task(connection, namespace, task_id)
     task = connection.execute(
-        """SELECT next_event_sequence,event_position_state,event_position_cursor
-           FROM agent_tasks WHERE deployment_namespace=%s AND task_id=%s""",
+        """SELECT next_event_sequence,event_position_state,event_position_cursor,
+                  event_index_repair_cursor,event_index_repair_highwater,
+                  CASE WHEN event_position_state='legacy' THEN GREATEST(
+                      COALESCE((SELECT e.task_sequence FROM session_events e
+                          WHERE e.deployment_namespace=t.deployment_namespace
+                            AND e.task_id=t.task_id
+                          ORDER BY e.task_sequence DESC LIMIT 1),-1),
+                      COALESCE((SELECT i.task_sequence FROM task_event_index i
+                          WHERE i.deployment_namespace=t.deployment_namespace
+                            AND i.task_id=t.task_id
+                          ORDER BY i.task_sequence DESC LIMIT 1),-1))+1
+                  END AS legacy_next_sequence
+           FROM agent_tasks t WHERE deployment_namespace=%s AND task_id=%s""",
         (namespace, task_id),
     ).fetchone()
     if task is None:
@@ -45,26 +62,26 @@ def backfill_task_event_positions(
         int(task["event_position_cursor"]),
         int(task["next_event_sequence"]),
     )
+    stored_phase = phase
+    empty_index = False
     if phase == "legacy":
-        row = connection.execute(
-            """SELECT GREATEST(
-                COALESCE((SELECT task_sequence FROM session_events
-                    WHERE deployment_namespace=%s AND task_id=%s
-                    ORDER BY task_sequence DESC LIMIT 1),-1),
-                COALESCE((SELECT task_sequence FROM task_event_index
-                    WHERE deployment_namespace=%s AND task_id=%s
-                    ORDER BY task_sequence DESC LIMIT 1),-1))+1 AS next_sequence""",
-            (namespace, task_id, namespace, task_id),
-        ).fetchone()
-        next_sequence, phase = row["next_sequence"], "validating"
-    # Freeze reservations before adoption. New Segment prefixes must not use the
-    # ordinary ready-state allocator's next-counter assignment guard.
-    connection.execute(
-        """UPDATE agent_tasks SET event_position_state=%s
-           WHERE deployment_namespace=%s AND task_id=%s""",
-        (phase, namespace, task_id),
-    )
+        next_sequence, phase = task["legacy_next_sequence"], "validating"
+        empty_index = (
+            next_sequence == 0
+            and task["event_index_repair_cursor"] == task["event_index_repair_highwater"] == -1
+        )
+        if empty_index:
+            # Under the Task lock both position sources proved empty. No
+            # legacy reservations exist to validate before source assignment.
+            phase = "assigning"
     if phase == "validating":
+        if stored_phase != phase:
+            connection.execute(
+                """UPDATE agent_tasks SET event_position_state=%s
+                   WHERE deployment_namespace=%s AND task_id=%s""",
+                (phase, namespace, task_id),
+            )
+            stored_phase = phase
         rows = _position_rows(connection, namespace, task_id, cursor, limit)
         for row in rows:
             if row["task_sequence"] != cursor + 1 or (
@@ -80,11 +97,14 @@ def backfill_task_event_positions(
             phase = "assigning"
     if phase == "ready" and _pending_segment(connection, namespace, task_id) is not None:
         phase = "assigning"
-    connection.execute(
-        """UPDATE agent_tasks SET event_position_state=%s
-           WHERE deployment_namespace=%s AND task_id=%s""",
-        (phase, namespace, task_id),
-    )
+    # Freeze reservations before assigning a new source prefix. A Task
+    # already in this phase needs no second state write.
+    if phase != stored_phase:
+        connection.execute(
+            """UPDATE agent_tasks SET event_position_state=%s
+               WHERE deployment_namespace=%s AND task_id=%s""",
+            (phase, namespace, task_id),
+        )
     while phase == "assigning" and limit:
         member = _pending_segment(connection, namespace, task_id)
         if member is None:
@@ -98,26 +118,49 @@ def backfill_task_event_positions(
             (namespace, member["session_id"], member["event_position_source_cursor"], limit),
         ).fetchall()
         source_cursor = member["event_position_source_cursor"]
-        for row in rows:
+        if (
+            empty_index
+            and next_sequence == 0
+            and member["session_id"] == task_id
+            and source_cursor == -1
+            and rows
+            and all(
+                row["sequence"] == position
+                and row["source_task"] is None
+                and row["source_position"] is None
+                for position, row in enumerate(rows)
+            )
+        ):
+            _assign_fresh_root(connection, namespace, task_id, [row["event_id"] for row in rows])
+            next_sequence = len(rows)
+            source_cursor = next_sequence - 1
+            pending_rows = ()
+        else:
+            pending_rows = rows
+        previous_position: int | None = None
+        for row in pending_rows:
             if row["sequence"] != source_cursor + 1:
                 raise PostgresAgentTaskConflictError("canonical Task source coverage is incomplete")
             position = next_sequence if row["source_task"] is None else row["source_position"]
             if row["source_task"] is not None and position >= next_sequence:
                 raise PostgresAgentTaskConflictError("source Event position exceeds Task counter")
-            _assign(connection, namespace, task_id, row, position)
+            _assign(
+                connection, namespace, task_id, row, position, previous_position=previous_position
+            )
+            previous_position = position
             next_sequence += int(row["source_task"] is None)
             source_cursor = row["sequence"]
         limit -= max(len(rows), 1)  # Empty Segments also consume bounded work.
-        more = connection.execute(
-            """SELECT 1 FROM session_events WHERE deployment_namespace=%s AND session_id=%s
-               AND sequence>%s LIMIT 1""",
-            (namespace, member["session_id"], source_cursor),
-        ).fetchone()
         connection.execute(
-            """UPDATE execution_segments SET event_position_source_cursor=%s,
-                      event_position_source_ready=%s
-               WHERE deployment_namespace=%s AND session_id=%s""",
-            (source_cursor, more is None, namespace, member["session_id"]),
+            """UPDATE execution_segments AS segment
+               SET event_position_source_cursor=%s,
+                   event_position_source_ready=NOT EXISTS (
+                       SELECT 1 FROM session_events AS event
+                       WHERE event.deployment_namespace=segment.deployment_namespace
+                         AND event.session_id=segment.session_id AND event.sequence>%s
+                   )
+               WHERE segment.deployment_namespace=%s AND segment.session_id=%s""",
+            (source_cursor, source_cursor, namespace, member["session_id"]),
         )
         if _pending_segment(connection, namespace, task_id) is None:
             phase = "ready"
@@ -126,9 +169,36 @@ def backfill_task_event_positions(
                   event_position_cursor=%s WHERE deployment_namespace=%s AND task_id=%s""",
         (next_sequence, phase, cursor, namespace, task_id),
     )
-    if phase == "ready" and limit:
+    # Every mapping for a previously empty index was verified by _assign above.
+    if phase == "ready" and limit and not empty_index:
         repair_task_event_index(connection, namespace, task_id, limit=limit)
     return phase == "ready"
+
+
+def _assign_fresh_root(
+    connection: Any, namespace: str, task_id: TaskId, event_ids: list[Any]
+) -> None:
+    try:
+        result = connection.execute(
+            f"""WITH assigned AS (
+                UPDATE session_events
+                SET task_id=%s,task_sequence=sequence,event_bytes_bound={BYTE_BOUND}
+                WHERE deployment_namespace=%s AND session_id=%s AND event_id=ANY(%s)
+                  AND task_id IS NULL AND task_sequence IS NULL
+                RETURNING deployment_namespace,task_id,task_sequence,event_id,session_id,sequence
+            ), indexed AS (
+                INSERT INTO task_event_index
+                    (deployment_namespace,task_id,task_sequence,event_id,segment_id,segment_sequence)
+                SELECT deployment_namespace,task_id,task_sequence,event_id,session_id,sequence
+                FROM assigned RETURNING event_id
+            )
+            SELECT count(*) AS count FROM indexed""",
+            (task_id, namespace, task_id, event_ids),
+        ).fetchone()
+    except errors.UniqueViolation as exc:
+        raise PostgresAgentTaskConflictError("fresh Task position already exists") from exc
+    if result["count"] != len(event_ids):
+        raise PostgresAgentTaskConflictError("source Event changed during position assignment")
 
 
 def _pending_segment(connection: Any, namespace: str, task_id: TaskId) -> Any:
@@ -212,13 +282,21 @@ def _position_rows(
     return list(rows)
 
 
-def _assign(connection: Any, namespace: str, task_id: TaskId, row: Any, position: int) -> int:
+def _assign(
+    connection: Any,
+    namespace: str,
+    task_id: TaskId,
+    row: Any,
+    position: int,
+    *,
+    previous_position: int | None = None,
+) -> int:
     actual = row["source_task"], row["source_position"]
     if actual[0] is not None and actual[0] != task_id:
         raise PostgresAgentTaskConflictError("source Event belongs to another Task")
     if actual != (None, None) and actual != (task_id, position):
         raise PostgresAgentTaskConflictError("legacy Task reservation conflicts with source")
-    if row["sequence"] > 0:
+    if previous_position is None and row["sequence"] > 0:
         previous = connection.execute(
             """SELECT task_id,task_sequence FROM session_events
                WHERE deployment_namespace=%s AND session_id=%s AND sequence=%s""",
@@ -228,34 +306,55 @@ def _assign(connection: Any, namespace: str, task_id: TaskId, row: Any, position
             raise PostgresAgentTaskConflictError("legacy Task reservation omits a source prefix")
         if previous["task_id"] != task_id:
             raise PostgresAgentTaskConflictError("source Event belongs to another Task")
-        if previous["task_sequence"] >= position:
-            raise PostgresAgentTaskConflictError("legacy Task reservations invert source order")
-    if actual == (None, None):
-        connection.execute(
-            f"""UPDATE session_events SET task_id=%s,task_sequence=%s,event_bytes_bound={BYTE_BOUND}
-               WHERE deployment_namespace=%s AND event_id=%s AND task_id IS NULL""",
-            (task_id, position, namespace, row["event_id"]),
-        )
-    else:
-        connection.execute(
-            f"UPDATE session_events SET event_bytes_bound={BYTE_BOUND} "
-            f"WHERE deployment_namespace=%s AND event_id=%s AND event_bytes_bound "
-            f"IS DISTINCT FROM ({BYTE_BOUND})",
-            (namespace, row["event_id"]),
-        )
-    # ponytail: arbitrate with the existing unique key; only an existing mapping needs a read.
+        previous_position = previous["task_sequence"]
+    if previous_position is not None and previous_position >= position:
+        raise PostgresAgentTaskConflictError("legacy Task reservations invert source order")
     try:
-        inserted = connection.execute(
-            """INSERT INTO task_event_index
-               (deployment_namespace,task_id,task_sequence,event_id,segment_id,segment_sequence)
-               VALUES (%s,%s,%s,%s,%s,%s)
-               ON CONFLICT (deployment_namespace,event_id) DO NOTHING""",
-            (namespace, task_id, position, row["event_id"], row["session_id"], row["sequence"]),
-        )
+        if actual == (None, None):
+            result = connection.execute(
+                f"""WITH assigned AS (
+                    UPDATE session_events
+                    SET task_id=%s,task_sequence=%s,event_bytes_bound={BYTE_BOUND}
+                    WHERE deployment_namespace=%s AND event_id=%s AND task_id IS NULL
+                    RETURNING deployment_namespace,task_id,task_sequence,event_id,session_id,
+                              sequence
+                ), indexed AS (
+                    INSERT INTO task_event_index
+                        (deployment_namespace,task_id,task_sequence,event_id,segment_id,
+                         segment_sequence)
+                    SELECT deployment_namespace,task_id,task_sequence,event_id,session_id,sequence
+                    FROM assigned WHERE true
+                    ON CONFLICT (deployment_namespace,event_id) DO NOTHING
+                    RETURNING event_id
+                )
+                SELECT EXISTS (SELECT 1 FROM assigned) AS assigned,
+                       EXISTS (SELECT 1 FROM indexed) AS indexed""",
+                (task_id, position, namespace, row["event_id"]),
+            ).fetchone()
+            if not result["assigned"]:
+                raise PostgresAgentTaskConflictError(
+                    "source Event changed during position assignment"
+                )
+            if result["indexed"]:
+                return 1
+        else:
+            connection.execute(
+                f"UPDATE session_events SET event_bytes_bound={BYTE_BOUND} "
+                f"WHERE deployment_namespace=%s AND event_id=%s AND event_bytes_bound "
+                f"IS DISTINCT FROM ({BYTE_BOUND})",
+                (namespace, row["event_id"]),
+            )
+            inserted = connection.execute(
+                """INSERT INTO task_event_index
+                   (deployment_namespace,task_id,task_sequence,event_id,segment_id,segment_sequence)
+                   VALUES (%s,%s,%s,%s,%s,%s)
+                   ON CONFLICT (deployment_namespace,event_id) DO NOTHING""",
+                (namespace, task_id, position, row["event_id"], row["session_id"], row["sequence"]),
+            )
+            if inserted.rowcount == 1:
+                return 1
     except errors.UniqueViolation as exc:
         raise PostgresAgentTaskConflictError("derived Task position conflicts with source") from exc
-    if inserted.rowcount == 1:
-        return 1
     mapped = connection.execute(
         """SELECT task_id,task_sequence,segment_id,segment_sequence FROM task_event_index
            WHERE deployment_namespace=%s AND event_id=%s""",

@@ -24,14 +24,25 @@ def command_rejected(store: IdempotencyStorePort, event: SessionEvent) -> bool:
 def reject_command(
     store: IdempotencyStorePort,
     event: SessionEvent,
-    reason: Literal["invalid_command", "unsupported_control", "legacy_observation_only", "private_workspace_not_activated"],
+    reason: Literal[
+        "invalid_command",
+        "unsupported_control",
+        "legacy_observation_only",
+        "private_workspace_not_activated",
+    ],
 ) -> None:
     store.save(
         IdempotencyRecord(
             action=LEGACY_REJECTION_ACTION,
             idempotency_key=str(event.event_id),
             request_hash=_fingerprint(event),
-            status_code=(422 if reason == "invalid_command" else 501 if reason == "unsupported_control" else 409),
+            status_code=(
+                422
+                if reason == "invalid_command"
+                else 501
+                if reason == "unsupported_control"
+                else 409
+            ),
             response_body={
                 "status": "rejected",
                 "reason": reason,

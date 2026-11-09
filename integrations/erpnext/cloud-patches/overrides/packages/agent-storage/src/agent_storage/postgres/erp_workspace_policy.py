@@ -46,7 +46,8 @@ def is_private_generation(binding: Any, instance: Any, *, task_id: str) -> bool:
         context = host.host_context
         if context is None or (
             host.authority_issuer != "https://erpnext.zebra.local"
-            or host.host_app_id != "erpnext" or host.namespace_id != "erpnext"
+            or host.host_app_id != "erpnext"
+            or host.namespace_id != "erpnext"
             or instance.deployment_namespace != "erpnext"
             or instance.owner_session_id not in {None, UUID(task_id)}
             or instance.source.kind is not WorkspaceSourceKind.HOST_REFERENCE
@@ -65,8 +66,11 @@ def private_activation_enabled(namespace: str | None) -> bool:
     value = os.environ.get("ZEBRA_ERPNEXT_PRIVATE_WORKSPACES", "disabled")
     if value not in {"disabled", "enabled"}:
         raise ValueError("invalid ERP private workspace activation")
-    if value == "enabled" and (namespace != "erpnext" or not containment_enabled(namespace)
-            or os.environ.get("ZEBRA_ERPNEXT_FRESH_AUTHORITY") != "enabled"):
+    if value == "enabled" and (
+        namespace != "erpnext"
+        or not containment_enabled(namespace)
+        or os.environ.get("ZEBRA_ERPNEXT_FRESH_AUTHORITY") != "enabled"
+    ):
         raise ValueError("private activation requires ERP containment and fresh authority")
     return value == "enabled"
 
@@ -75,7 +79,10 @@ class ERPWorkspaceContainment:
     """Use the same native control store as the Cloud resolver, without provisioning."""
 
     def __init__(self, dsn: str, *, deployment_namespace: str, workspace_control: Any) -> None:
-        if deployment_namespace != "erpnext" or workspace_control.deployment_namespace != deployment_namespace:
+        if (
+            deployment_namespace != "erpnext"
+            or workspace_control.deployment_namespace != deployment_namespace
+        ):
             raise ValueError("ERP containment requires the same erpnext control store")
         self._database = PostgresDatabase(dsn, deployment_namespace=deployment_namespace)
         self._workspace_control = workspace_control
@@ -85,13 +92,16 @@ class ERPWorkspaceContainment:
             connection.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY")
             self.require_in_transaction(connection, session_id, workspace=workspace)
 
-    def require_in_transaction(self, connection: Any, session_id: SessionId, *, workspace: Any = None) -> None:
+    def require_in_transaction(
+        self, connection: Any, session_id: SessionId, *, workspace: Any = None
+    ) -> None:
         from agent_storage.postgres.task_admission import read_session_task_binding
         from agent_storage.postgres.workspaces import get_workspace_in_transaction
 
         namespace = self._database.deployment_namespace
         if private_activation_enabled(namespace):
             from agent_storage.postgres.erp_private_workspace import private_facts
+
             try:
                 _, _, native = private_facts(connection, self._workspace_control, session_id)
                 if workspace is not None and workspace != native:
@@ -102,21 +112,30 @@ class ERPWorkspaceContainment:
         code = LEGACY_OBSERVATION_ONLY
         try:
             row = connection.execute(
-                "SELECT task.task_id FROM agent_tasks task JOIN execution_segments segment "
-                "ON segment.deployment_namespace=task.deployment_namespace AND segment.task_id=task.task_id "
-                "WHERE task.deployment_namespace=%s AND segment.session_id=%s "
-                "AND task.active_segment_id=segment.session_id",
+                (
+                    "SELECT task.task_id FROM agent_tasks task JOIN execution_segment"
+                    "s segment ON segment.deployment_namespace=task.deployment_namesp"
+                    "ace AND segment.task_id=task.task_id WHERE task.deployment_names"
+                    "pace=%s AND segment.session_id=%s AND task.active_segment_id=seg"
+                    "ment.session_id"
+                ),
                 (namespace, session_id),
             ).fetchone()
             native = get_workspace_in_transaction(connection, namespace, session_id)
-            if row is not None and native is not None and (workspace is None or workspace == native):
+            if (
+                row is not None
+                and native is not None
+                and (workspace is None or workspace == native)
+            ):
                 reference = native.workspace_root
                 prefix = "workspace://" if reference.startswith("workspace://") else "workspace:/"
                 workspace_id = UUID(reference.removeprefix(prefix))
                 # Match both native resolver spellings; Path folds the double slash.
                 # UUID shorthand, percent escapes and suffixes remain invalid.
                 if reference == prefix + str(workspace_id):
-                    instance = self._workspace_control.get_in_transaction(connection, WorkspaceId(workspace_id))
+                    instance = self._workspace_control.get_in_transaction(
+                        connection, WorkspaceId(workspace_id)
+                    )
                     binding = read_session_task_binding(connection, namespace, session_id)
                     if is_private_generation(binding, instance, task_id=str(row["task_id"])):
                         code = PRIVATE_NOT_ACTIVATED
@@ -133,7 +152,8 @@ def containment_for_database(dsn: str, namespace: str) -> ERPWorkspaceContainmen
     from agent_storage.postgres.workspace_control import PostgresWorkspaceControlStore
 
     return ERPWorkspaceContainment(
-        dsn, deployment_namespace=namespace,
+        dsn,
+        deployment_namespace=namespace,
         workspace_control=PostgresWorkspaceControlStore(dsn, deployment_namespace=namespace),
     )
 

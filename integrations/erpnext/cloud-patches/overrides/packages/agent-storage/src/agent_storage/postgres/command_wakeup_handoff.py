@@ -1,23 +1,29 @@
 """Atomic command-to-Lease handoff shared by broker and fallback; no execution."""
 
-from dataclasses import dataclass
 from datetime import timedelta
-from enum import StrEnum
 from typing import Any, Literal
 from uuid import UUID
 
-from agent_core.contracts.broker_envelope import (
-    PrincipalScope,
-    ZebraCommandEnvelope,
-    parse_broker_envelope,
-)
+from agent_core.contracts.broker_envelope import PrincipalScope, ZebraCommandEnvelope
 from agent_core.domain.identifiers import EventId, SessionId
-from agent_core.domain.leases import DEFAULT_MAX_LEASE_TTL, LeaseConflictError, WorkerLease
+from agent_core.domain.leases import DEFAULT_MAX_LEASE_TTL, LeaseConflictError
 from agent_core.ports.task_projection_checkpoints import CheckpointNotReady
-
 from agent_storage.postgres.command_coverage_admission import (
     pin_command_consumer,
     reject_missing_command_consumer,
+)
+from agent_storage.postgres.command_handoff_envelope import parse_handoff_envelope
+from agent_storage.postgres.command_handoff_inbox import _check_inbox, _inbox
+from agent_storage.postgres.command_handoff_policy import (
+    check_handoff_policy,
+    defer_handoff_scope,
+    require_private_handoff_preparation,
+    settle_private_handoff,
+)
+from agent_storage.postgres.command_handoff_types import (
+    CommandHandoff,
+    HandoffStatus,
+    _TerminalAfterLease,
 )
 from agent_storage.postgres.command_read_budget import command_read_budget
 from agent_storage.postgres.command_read_preflight import prepare_command_candidate
@@ -28,8 +34,7 @@ from agent_storage.postgres.command_wakeup_message import (
     MessageInputRejected,
     append_command_message,
 )
-from agent_storage.postgres.command_wakeup_receipts import _terminal_session as _terminal_session
-from agent_storage.postgres.command_wakeup_receipts import _validate as _validate
+from agent_storage.postgres.command_wakeup_receipts import _terminal_session, _validate
 from agent_storage.postgres.command_wakeup_recovery_proof import (
     MAX_GENERATION,
     CoverageRecoveryCheck,
@@ -43,8 +48,11 @@ from agent_storage.postgres.coverage_recovery_preparation import (
     prepare_command_handoff,
     prepared_recovery_connection,
 )
+from agent_storage.postgres.erp_workspace_policy import (
+    containment_enabled,
+    private_activation_enabled,
+)
 from agent_storage.postgres.events import read_event_in_transaction
-from agent_storage.postgres.erp_workspace_policy import containment_enabled, private_activation_enabled
 from agent_storage.postgres.leases import (
     acquire_lease_in_transaction,
     assert_current_lease_fence,
@@ -55,31 +63,6 @@ from agent_storage.postgres.worker_capability import (
     WorkerCapabilityLostError,
     check_worker_capability_clock,
 )
-
-
-class HandoffStatus(StrEnum):
-    PREPARING = "preparing"
-    ACCEPTED = "accepted"
-    DUPLICATE = "duplicate"
-    RETIRED_NOOP = "retired_noop"
-    BUSY = "busy"
-    PRIOR_COMMAND_UNRECONCILED = "prior_command_unreconciled"
-    REQUIRES_RECONCILIATION = "requires_reconciliation"
-    UNSUPPORTED_FOR_EXECUTION_HANDOFF = "unsupported_for_execution_handoff"
-    SCOPE_DEFERRED = "scope_deferred"
-    SCOPE_SETTLED = "scope_settled"
-
-
-@dataclass(frozen=True)
-class CommandHandoff:
-    status: HandoffStatus
-    command_id: UUID
-    accepted_event_id: UUID
-    lease: WorkerLease | None = None
-
-
-class _TerminalAfterLease(Exception):
-    """Roll back the tentative acquisition without discarding reconciliation."""
 
 
 @command_read_budget
@@ -104,23 +87,9 @@ def handoff_command(
     reacquires an expired lease. Historical ambiguity requires external accounting.
     MESSAGE input is atomic here; control commands use their dedicated path.
     """
-    if not isinstance(scope, PrincipalScope) or not isinstance(accepted_event_id, UUID):
-        raise ValueError("handoff requires trusted principal scope and canonical Event UUID")
-    if required_scope_mode not in (None, "broker", "fallback"):
-        raise ValueError("invalid required command scope mode")
-    envelope = None
-    if raw_body is not None:
-        try:
-            envelope = parse_broker_envelope(raw_body)
-            if (
-                not isinstance(envelope, ZebraCommandEnvelope)
-                or envelope.scope != scope
-                or envelope.deployment_namespace != deployment_namespace
-                or envelope.accepted_event_id != str(accepted_event_id)
-            ):
-                raise ValueError("scope or identity mismatch")
-        except ValueError:
-            raise ValueError("invalid command handoff envelope or scope") from None
+    envelope = parse_handoff_envelope(
+        raw_body, scope, deployment_namespace, accepted_event_id, required_scope_mode
+    )
     contained = containment_enabled(deployment_namespace)
     private = private_activation_enabled(deployment_namespace)
     if not contained or private and callable(private_preparation):
@@ -136,7 +105,9 @@ def handoff_command(
             private_preparation=private_preparation,
         )
         if preparing is not None:
-            return CommandHandoff(HandoffStatus.PREPARING, preparing["command_id"], accepted_event_id)
+            return CommandHandoff(
+                HandoffStatus.PREPARING, preparing["command_id"], accepted_event_id
+            )
     with _database(dsn, deployment_namespace).connect_task_io() as connection:
         connection.execute("SET LOCAL lock_timeout = '5s'")
         pending = connection.execute(
@@ -152,55 +123,49 @@ def handoff_command(
         ):
             raise ValueError("command handoff scope or canonical candidate mismatch")
         reject_missing_command_consumer(
-            connection, deployment_namespace, accepted_event_id, consumer_capability)
-        if private:
-            from agent_storage.postgres.erp_private_workspace import private_command_settlement
-            settled = private_command_settlement(connection, deployment_namespace, scope,
-                accepted_event_id, raw_body, required_scope_mode)
-            if settled is not None:
-                return CommandHandoff(HandoffStatus(settled), pending['command_id'], accepted_event_id)
-        if private and not callable(private_preparation):
-            from agent_storage.postgres.erp_workspace_policy import ERPWorkspacePolicyRefusal, containment_for_database
-            from agent_storage.postgres.coverage_recovery_preparation import CoverageRecoveryDeferred
-            missing_policy = containment_for_database(dsn, deployment_namespace)
-            if missing_policy is None:
-                raise ValueError('private preparation native policy is unavailable')
-            try:
-                missing_policy.require_in_transaction(connection, SessionId(pending['session_id']))
-            except ERPWorkspacePolicyRefusal:
-                pass  # Preserve canonical observation-only refusal below.
-            else:
-                raise CoverageRecoveryDeferred('private preparation proof is missing')
+            connection, deployment_namespace, accepted_event_id, consumer_capability
+        )
+        settled = settle_private_handoff(
+            connection,
+            deployment_namespace,
+            scope,
+            accepted_event_id,
+            raw_body,
+            required_scope_mode,
+            pending,
+            private,
+        )
+        if settled is not None:
+            return settled
+        require_private_handoff_preparation(
+            connection, dsn, deployment_namespace, pending, private, private_preparation
+        )
         if private and callable(private_preparation):
             private_preparation(connection, deployment_namespace, accepted_event_id)
         if not contained or private and callable(private_preparation):
             # ERP's ordinary private generation is gated; its coverage executor
             # remains unactivated, so never invoke a private coverage reader.
             coverage_check = prepare_command_handoff(
-                None if private else coverage_check, connection, deployment_namespace, accepted_event_id,
+                None if private else coverage_check,
+                connection,
+                deployment_namespace,
+                accepted_event_id,
                 pending["current_generation"] if envelope is None else envelope.wake_generation,
             )
             connection = prepared_recovery_connection(connection, coverage_check)
         capability = pin_command_consumer(
             connection, deployment_namespace, accepted_event_id, consumer_capability
         )
-        if required_scope_mode is not None:
-            connection.execute(
-                "SELECT pg_advisory_xact_lock(hashtextextended(%s,50))",
-                (f"{deployment_namespace}:command-rollout:{pending['scope_key']}",),
-            )
-            mode = command_scope_mode(connection, deployment_namespace, pending["scope_key"])
-            if required_scope_mode == "fallback" and mode == "broker":
-                return CommandHandoff(
-                    HandoffStatus.SCOPE_DEFERRED, pending["command_id"], accepted_event_id
-                )
-            if required_scope_mode == "broker" and mode != "broker":
-                status = (
-                    HandoffStatus.SCOPE_DEFERRED
-                    if pending["status"] == "pending"
-                    else HandoffStatus.SCOPE_SETTLED
-                )
-                return CommandHandoff(status, pending["command_id"], accepted_event_id)
+        scope_result = defer_handoff_scope(
+            connection,
+            deployment_namespace,
+            pending,
+            required_scope_mode,
+            accepted_event_id,
+            command_scope_mode=command_scope_mode,
+        )
+        if scope_result is not None:
+            return scope_result
         session_id = SessionId(pending["session_id"])
         lock_session_lease_boundary(connection, deployment_namespace, session_id)
         # No pending/Inbox lock before lease serialization: workers write those
@@ -258,58 +223,24 @@ def handoff_command(
             receipt["accepted_event_id"] != accepted_event_id or receipt["session_id"] != session_id
         ):
             raise ValueError("canonical command receipt identity conflict")
-        from agent_storage.postgres.erp_workspace_policy import (
-            ERPWorkspacePolicyRefusal, containment_for_database,
+        policy_result = check_handoff_policy(
+            connection,
+            dsn,
+            deployment_namespace,
+            session_id,
+            accepted_event_id,
+            pending,
+            receipt,
+            contained,
+            private,
+            private_preparation,
+            capability,
+            consumer_capability,
+            pin_command_consumer=pin_command_consumer,
+            terminal_session=_terminal_session,
         )
-        from agent_storage.postgres.leases import read_current_lease
-
-        policy = containment_for_database(dsn, deployment_namespace) if contained else None
-        if contained and policy is None:
-            raise ValueError("ERP containment policy is unavailable")
-        if policy is not None:
-            event = connection.execute(
-                "SELECT payload FROM session_events WHERE deployment_namespace=%s AND event_id=%s",
-                (deployment_namespace, accepted_event_id),
-            ).fetchone()
-            if event is None:
-                raise ValueError("canonical command Event is absent")
-            if event["payload"].get("kind") not in {"run", "resume", "message"}:
-                return CommandHandoff(
-                    HandoffStatus.UNSUPPORTED_FOR_EXECUTION_HANDOFF,
-                    pending["command_id"], accepted_event_id,
-                )
-            if receipt is not None and receipt["handled_event_id"] is not None:
-                return CommandHandoff(HandoffStatus.DUPLICATE, pending["command_id"], accepted_event_id)
-            try:
-                policy.require(session_id)
-            except ERPWorkspacePolicyRefusal as refusal:
-                # Do not overwrite a concurrent active fence, control receipt,
-                # or any accepted/Started/handled execution history.
-                if (
-                    read_current_lease(connection, deployment_namespace, session_id) is None
-                    and not _terminal_session(connection, deployment_namespace, session_id)
-                    and (receipt is None or receipt["started_event_id"] is None)
-                ):
-                    connection.execute(
-                        "UPDATE session_command_pending SET status='dead', recovery_code=%s "
-                        "WHERE deployment_namespace=%s AND accepted_event_id=%s AND status='pending'",
-                        (refusal.code, deployment_namespace, accepted_event_id),
-                    )
-                if capability is not None:
-                    capability = pin_command_consumer(
-                        connection, deployment_namespace, accepted_event_id, consumer_capability,
-                        lock_task_authority=True,
-                    )
-                    if capability is None:
-                        raise WorkerCapabilityLostError("strict command identity changed before refusal")
-                    check_worker_capability_clock(connection, capability)
-                return CommandHandoff(HandoffStatus.REQUIRES_RECONCILIATION, pending["command_id"], accepted_event_id)
-            if not private:
-                raise ValueError("ERP containment requires an explicit policy refusal")
-            if not callable(private_preparation):
-                from agent_storage.postgres.coverage_recovery_preparation import CoverageRecoveryDeferred
-                raise CoverageRecoveryDeferred('private preparation proof is missing')
-            private_preparation(connection, deployment_namespace, accepted_event_id)
+        if policy_result is not None:
+            return policy_result
         coverage_proof = None
         if receipt is not None:
             if (
@@ -321,7 +252,10 @@ def handoff_command(
                 _inbox(connection, deployment_namespace, pending, outbox, receipt["status"])
                 if capability is not None:
                     capability = pin_command_consumer(
-                        connection, deployment_namespace, accepted_event_id, consumer_capability,
+                        connection,
+                        deployment_namespace,
+                        accepted_event_id,
+                        consumer_capability,
                         lock_task_authority=True,
                     )
                     if capability is None:
@@ -394,26 +328,32 @@ def handoff_command(
             # Only an exact handled Event receipt unblocks the next command.
             # Neither projection sequence nor a merely accepted handoff suffices.
             prior = connection.execute(
-                """SELECT event.event_id FROM session_events AS event WHERE deployment_namespace = %s
-                   AND session_id = %s AND event_type = 'session_command_accepted'
-                   AND sequence < %s AND NOT EXISTS (
-                       SELECT 1 FROM command_handoff_receipts AS receipt
-                       WHERE receipt.deployment_namespace = event.deployment_namespace
-                         AND receipt.accepted_event_id = event.event_id
-                         AND receipt.session_id = event.session_id AND receipt.scope_key = %s
-                         AND receipt.status = 'accepted' AND receipt.handled_event_id IS NOT NULL
-                   ) AND NOT EXISTS (
-                       SELECT 1 FROM command_control_receipts AS control
-                       WHERE control.deployment_namespace = event.deployment_namespace
-                         AND control.accepted_event_id = event.event_id
-                         AND control.session_id = event.session_id AND control.scope_key = %s
-                         AND control.kind = 'suspend' AND control.outcome = 'unsupported'
-                   ) AND NOT EXISTS (
-                       SELECT 1 FROM command_retirements AS retired
-                       WHERE retired.deployment_namespace=event.deployment_namespace
-                         AND retired.accepted_event_id=event.event_id
-                         AND retired.session_id=event.session_id AND retired.scope_key=%s
-                   ) ORDER BY sequence""",
+                (
+                    "SELECT event.event_id FROM session_events AS event WHERE deploym"
+                    "ent_namespace = %s\n                   AND session_id = %s AND ev"
+                    "ent_type = 'session_command_accepted'\n                   AND seq"
+                    "uence < %s AND NOT EXISTS (\n                       SELECT 1 FROM"
+                    " command_handoff_receipts AS receipt\n                       WHER"
+                    "E receipt.deployment_namespace = event.deployment_namespace\n    "
+                    "                     AND receipt.accepted_event_id = event.event"
+                    "_id\n                         AND receipt.session_id = event.sess"
+                    "ion_id AND receipt.scope_key = %s\n                         AND r"
+                    "eceipt.status = 'accepted' AND receipt.handled_event_id IS NOT N"
+                    "ULL\n                   ) AND NOT EXISTS (\n                      "
+                    " SELECT 1 FROM command_control_receipts AS control\n             "
+                    "          WHERE control.deployment_namespace = event.deployment_"
+                    "namespace\n                         AND control.accepted_event_id"
+                    " = event.event_id\n                         AND control.session_i"
+                    "d = event.session_id AND control.scope_key = %s\n                "
+                    "         AND control.kind = 'suspend' AND control.outcome = 'uns"
+                    "upported'\n                   ) AND NOT EXISTS (\n                "
+                    "       SELECT 1 FROM command_retirements AS retired\n            "
+                    "           WHERE retired.deployment_namespace=event.deployment_n"
+                    "amespace\n                         AND retired.accepted_event_id="
+                    "event.event_id\n                         AND retired.session_id=e"
+                    "vent.session_id AND retired.scope_key=%s\n                   ) OR"
+                    "DER BY sequence"
+                ),
                 (
                     deployment_namespace,
                     session_id,
@@ -428,9 +368,16 @@ def handoff_command(
             # A dead text code cannot settle accepted work. Only the immutable,
             # fenced no-execution proof can discharge this historical command.
             try:
-                unresolved = any(verified_fresh_disposition(
-                    connection, deployment_namespace, item["event_id"], terminal=True,
-                ) is None for item in prior)
+                unresolved = any(
+                    verified_fresh_disposition(
+                        connection,
+                        deployment_namespace,
+                        item["event_id"],
+                        terminal=True,
+                    )
+                    is None
+                    for item in prior
+                )
             except (ValueError, TypeError, KeyError):
                 unresolved = True
             if unresolved:
@@ -535,7 +482,10 @@ def handoff_command(
             # Task61 is last, matching canonical Event allocation and renewal:
             # all Session/lease/stream/command writes precede the locked recheck.
             capability = pin_command_consumer(
-                connection, deployment_namespace, accepted_event_id, consumer_capability,
+                connection,
+                deployment_namespace,
+                accepted_event_id,
+                consumer_capability,
                 lock_task_authority=True,
             )
             if capability is None:
@@ -546,50 +496,3 @@ def handoff_command(
                 connection, coverage_check, proof=coverage_proof, pending=pending
             )
         return CommandHandoff(status, pending["command_id"], accepted_event_id, lease)
-
-
-def _check_inbox(
-    connection: Any,
-    namespace: str,
-    pending: dict[str, Any],
-    outbox: dict[str, Any],
-) -> str | None:
-    row = connection.execute(
-        """SELECT * FROM broker_command_inbox
-           WHERE deployment_namespace = %s AND message_id = %s""",
-        (namespace, outbox["message_id"]),
-    ).fetchone()
-    if row is not None and (
-        row["envelope_digest"] != outbox["envelope_digest"]
-        or row["scope_key"] != pending["scope_key"]
-        or row["command_id"] != pending["command_id"]
-        or row["accepted_event_id"] != pending["accepted_event_id"]
-    ):
-        raise ValueError("command Inbox identity or digest conflict")
-    return None if row is None else str(row["status"])
-
-
-def _inbox(
-    connection: Any,
-    namespace: str,
-    pending: dict[str, Any],
-    outbox: dict[str, Any],
-    status: str,
-) -> None:
-    connection.execute(
-        """INSERT INTO broker_command_inbox (
-            deployment_namespace, message_id, envelope_digest, scope_key,
-            command_id, accepted_event_id, status
-        ) VALUES (%s, %s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING""",
-        (
-            namespace,
-            outbox["message_id"],
-            outbox["envelope_digest"],
-            pending["scope_key"],
-            pending["command_id"],
-            pending["accepted_event_id"],
-            status,
-        ),
-    )
-    if _check_inbox(connection, namespace, pending, outbox) != status:
-        raise ValueError("command Inbox and receipt status conflict")

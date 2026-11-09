@@ -431,13 +431,14 @@ def test_event_view_finishes_only_reads_and_delegates_writes(tmp_path):
         view.list_for_session("foreign-session")
 
 
-def test_cloud_input_entry_uses_typed_checkpoint_without_history(tmp_path):
+def test_cloud_input_entry_uses_typed_checkpoint_without_history(tmp_path, monkeypatch):
     from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
     from agent_core.application.session_projection import rebuild_session
     from agent_core.application.workspace_projection import rebuild_workspace
     from zebra_agent_worker.claims import ClaimedSession
     from zebra_agent_worker.execution_recovery import recover_execution_inputs
     from zebra_agent_worker.recovery import RecoveredSession
+    from zebra_agent_worker.session_handoff import SessionHandoffRecoveryGate
 
     tasks, events, lease, store = setup_inputs(tmp_path)
     bootstrap = SessionBootstrapService().build(
@@ -460,8 +461,11 @@ def test_cloud_input_entry_uses_typed_checkpoint_without_history(tmp_path):
     events.list_for_session = lambda *_: pytest.fail("cloud whole-history hydration")
     context_store = Mock()
     context_store.get_active_capsule.return_value = None
-    handoff = Mock()
-    handoff.recover.return_value = None
+    handoff = SessionHandoffRecoveryGate(str(tmp_path / "handoff.sqlite"))
+    from zebra_agent_worker import execution_input_preparation
+
+    read = Mock(wraps=execution_input_preparation.recover_execution_input_events)
+    monkeypatch.setattr(execution_input_preparation, "recover_execution_input_events", read)
     inputs = recover_execution_inputs(
         claimed=claimed,
         session_id=lease.session_id,
@@ -482,6 +486,7 @@ def test_cloud_input_entry_uses_typed_checkpoint_without_history(tmp_path):
         ownership_check=Mock(),
     )
     assert inputs.task.user_input == "Keep constraints"
+    assert read.call_count == 2
     assert inputs.execution_input_reader(lease) == source
 
 
@@ -554,3 +559,27 @@ def test_stale_page_cas_and_released_lease_cannot_advance(tmp_path):
     SQLiteLeaseStore(tmp_path / "inputs.sqlite").release(lease.session_id, fence=lease.fence)
     with pytest.raises(LeaseLostError):
         store.advance(lease, page)
+
+
+def test_input_lock_timeout_retries_same_page_after_ownership_check(tmp_path, monkeypatch):
+    from psycopg.errors import LockNotAvailable
+
+    tasks, events, lease, store = setup_inputs(tmp_path)
+    latest = append(events, lease, 2, EventType.USER_MESSAGE_RECEIVED, {"content": "Inspect"})
+    advance = store.advance
+    calls = []
+
+    def busy_then_advance(current_lease, page):
+        calls.append((current_lease, page))
+        if sum(isinstance(call, tuple) for call in calls) == 1:
+            raise LockNotAvailable()
+        assert calls[-2] == "ownership"
+        return advance(current_lease, page)
+
+    monkeypatch.setattr(store, "advance", busy_then_advance)
+    recovered = recover_execution_input_events(
+        store=store, tasks=tasks, lease=lease, ownership_check=lambda: calls.append("ownership")
+    )
+    attempts = [call for call in calls if isinstance(call, tuple)]
+    assert len(attempts) == 2 and attempts[0] == attempts[1]
+    assert latest in recovered and store.read(lease).through_sequence == 2

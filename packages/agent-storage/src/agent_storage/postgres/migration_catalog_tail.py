@@ -1,5 +1,7 @@
 """Latest additive migrations kept separate from the primary catalog."""
 
+from dataclasses import replace
+
 from agent_storage.postgres.agent_registry_migration import AGENT_REGISTRY_MIGRATION
 from agent_storage.postgres.agui_profile_routing_migration import AGUI_PROFILE_ROUTING_MIGRATION
 from agent_storage.postgres.approval_resume_migration import APPROVAL_RESUME_MIGRATION
@@ -7,6 +9,12 @@ from agent_storage.postgres.artifact_payload_migration import ARTIFACT_PAYLOAD_M
 from agent_storage.postgres.bundle_definition_migration import BUNDLE_DEFINITION_MIGRATION
 from agent_storage.postgres.command_coverage_admission_migration import (
     COMMAND_COVERAGE_ADMISSION_MIGRATION,
+)
+from agent_storage.postgres.command_outbox_capacity_index_migration import (
+    COMMAND_OUTBOX_CAPACITY_INDEX_MIGRATION,
+)
+from agent_storage.postgres.command_outbox_retirement_migration import (
+    COMMAND_OUTBOX_RETIREMENT_MIGRATION,
 )
 from agent_storage.postgres.command_read_state_migration import COMMAND_READ_STATE_MIGRATION
 from agent_storage.postgres.control_plane_migration import CONTROL_PLANE_MIGRATION
@@ -43,6 +51,9 @@ from agent_storage.postgres.execution_input_compaction_migration import (
     EXECUTION_INPUT_COMPACTION_MIGRATION,
 )
 from agent_storage.postgres.execution_inputs_migration import EXECUTION_INPUTS_MIGRATION
+from agent_storage.postgres.force_stop_receipt_index_migration import (
+    FORCE_STOP_RECEIPT_INDEX_MIGRATION,
+)
 from agent_storage.postgres.frontend_profile_management_migration import (
     FRONTEND_PROFILE_MANAGEMENT_MIGRATION,
 )
@@ -59,6 +70,9 @@ from agent_storage.postgres.host_manifest_revision_migration import HOST_MANIFES
 from agent_storage.postgres.memory_delivery_migration import MEMORY_DELIVERY_MIGRATION
 from agent_storage.postgres.migration_recovery_migration import MIGRATION_RECOVERY_MIGRATION
 from agent_storage.postgres.native_memory_migration import NATIVE_MEMORY_MIGRATION
+from agent_storage.postgres.orchestration_admission_migration import (
+    ORCHESTRATION_ADMISSION_MIGRATION,
+)
 from agent_storage.postgres.plugin_distribution_migration import PLUGIN_DISTRIBUTION_MIGRATION
 from agent_storage.postgres.plugin_installations_migration import PLUGIN_INSTALLATIONS_MIGRATION
 from agent_storage.postgres.projection_source_metadata_migration import (
@@ -74,12 +88,22 @@ from agent_storage.postgres.projection_work_fanout_migration import (
     TASK_PROJECTION_WORK_FANOUT_MIGRATION,
 )
 from agent_storage.postgres.projection_work_migration import TASK_PROJECTION_WORK_MIGRATION
+from agent_storage.postgres.projection_work_repair_plan_migration import (
+    PROJECTION_WORK_REPAIR_PLAN_MIGRATION,
+)
 from agent_storage.postgres.projection_work_routing_migration import (
     TASK_PROJECTION_WORK_ROUTING_MIGRATION,
+)
+from agent_storage.postgres.projection_work_shared_lock_migration import (
+    PROJECTION_WORK_SHARED_LOCK_MIGRATION,
 )
 from agent_storage.postgres.provider_continuation_migration import PROVIDER_CONTINUATION_MIGRATION
 from agent_storage.postgres.publication_migration import PUBLICATION_MIGRATION
 from agent_storage.postgres.research_web_profile_migration import RESEARCH_WEB_PROFILE_MIGRATION
+from agent_storage.postgres.runtime_gate_migration import RUNTIME_GATE_MIGRATION
+from agent_storage.postgres.runtime_gate_termination_migration import (
+    RUNTIME_GATE_TERMINATION_MIGRATION,
+)
 from agent_storage.postgres.session_observation_headers_migration import (
     SESSION_OBSERVATION_HEADERS_MIGRATION,
 )
@@ -112,6 +136,7 @@ from agent_storage.postgres.tool_profile_constraint_migration import (
     TOOL_PROFILE_CONSTRAINT_MIGRATION,
 )
 from agent_storage.postgres.user_personalization_migration import USER_PERSONALIZATION_MIGRATION
+from agent_storage.postgres.worker_budget_migration import WORKER_BUDGET_MIGRATION
 from agent_storage.postgres.worker_capability_migration import WORKER_CAPABILITY_MIGRATION
 from agent_storage.postgres.worker_continuation_migration import WORKER_CONTINUATION_MIGRATION
 from agent_storage.postgres.worker_progress_migration import WORKER_PROGRESS_MIGRATION
@@ -194,4 +219,13 @@ LATEST_MIGRATIONS = (
     PLUGIN_DISTRIBUTION_MIGRATION,
     AGUI_PROFILE_ROUTING_MIGRATION,
     STANDARD_PROJECTION_CELLS_MIGRATION,
+    replace(RUNTIME_GATE_MIGRATION, version=118),
+    replace(RUNTIME_GATE_TERMINATION_MIGRATION, version=119),
+    ORCHESTRATION_ADMISSION_MIGRATION,
+    WORKER_BUDGET_MIGRATION,
+    PROJECTION_WORK_SHARED_LOCK_MIGRATION,
+    PROJECTION_WORK_REPAIR_PLAN_MIGRATION,
+    COMMAND_OUTBOX_RETIREMENT_MIGRATION,
+    COMMAND_OUTBOX_CAPACITY_INDEX_MIGRATION,
+    FORCE_STOP_RECEIPT_INDEX_MIGRATION,
 )

@@ -7,21 +7,16 @@ from fixtures import RUN_ID, THREAD_ID
 from pydantic import TypeAdapter, ValidationError
 from sse_decoder import decode_sse_json
 
-EXPECTED_EVENT_TYPES_0_1_19 = (
+EXPECTED_EVENT_TYPES_1_0_0 = (
     "TEXT_MESSAGE_START",
     "TEXT_MESSAGE_CONTENT",
     "TEXT_MESSAGE_END",
     "TEXT_MESSAGE_CHUNK",
-    "THINKING_TEXT_MESSAGE_START",
-    "THINKING_TEXT_MESSAGE_CONTENT",
-    "THINKING_TEXT_MESSAGE_END",
     "TOOL_CALL_START",
     "TOOL_CALL_ARGS",
     "TOOL_CALL_END",
     "TOOL_CALL_CHUNK",
     "TOOL_CALL_RESULT",
-    "THINKING_START",
-    "THINKING_END",
     "STATE_SNAPSHOT",
     "STATE_DELTA",
     "MESSAGES_SNAPSHOT",
@@ -41,11 +36,17 @@ EXPECTED_EVENT_TYPES_0_1_19 = (
     "REASONING_MESSAGE_CHUNK",
     "REASONING_END",
     "REASONING_ENCRYPTED_VALUE",
+    "SUBAGENT_STARTED",
+    "SUBAGENT_FINISHED",
+    "SUBAGENT_ERROR",
 )
 
 
 def test_event_type_snapshot_matches_reviewed_sdk_version() -> None:
-    assert tuple(item.value for item in EventType) == EXPECTED_EVENT_TYPES_0_1_19
+    from importlib.metadata import version
+
+    assert version("ag-ui-protocol") == "1.0.0"
+    assert tuple(item.value for item in EventType) == EXPECTED_EVENT_TYPES_1_0_0
 
 
 def test_unknown_discriminator_is_rejected_instead_of_silently_retyped() -> None:

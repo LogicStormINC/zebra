@@ -1,0 +1,102 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_______ test_cancelled_normal_calls_keep_slots_and_do_not_starve_control _______
+
+    def test_cancelled_normal_calls_keep_slots_and_do_not_starve_control():
+        import asyncio
+        from threading import Event
+    
+        import pytest
+        from agent_storage.postgres.capacity_profile import CapacityProfile
+        from agent_storage.postgres.connection_capacity import (
+            ConnectionBudget,
+            DatabaseCapacityExceeded,
+            capacity_lane,
+        )
+        from agent_storage.postgres.async_dispatch import async_dispatch_scope, storage_call
+        from zebra_agent_api.database_budget import ApiDatabaseCalls
+    
+        budget = ConnectionBudget(
+            "dbname=one", CapacityProfile.parse(json.dumps(profile_data())), "api"
+        )
+        calls, finish = ApiDatabaseCalls(budget), Event()
+        entered = [Event() for _ in range(budget.profile.pool + budget.profile.normal)]
+    
+        def blocked(index):
+            entered[index].set()
+            assert finish.wait(5)
+    
+        async def exercise():
+            with capacity_lane("read"), async_dispatch_scope(calls.call):
+                assert await calls.call(lambda: asyncio.run(storage_call(lambda: "nested"))) == "nested"
+            normal = [asyncio.create_task(calls.call(blocked, index)) for index in range(len(entered))]
+            try:
+                assert all(await asyncio.gather(*(asyncio.to_thread(e.wait, 1) for e in entered)))
+                for task in normal:
+                    task.cancel()
+                await asyncio.gather(*normal, return_exceptions=True)
+                with pytest.raises(DatabaseCapacityExceeded):
+                    await calls.call(lambda: None)
+                with capacity_lane("control"):
+                    assert await calls.call(lambda: "control") == "control"
+                with capacity_lane("read"):
+                    assert await calls.call(lambda: "read") == "read"
+            finally:
+                finish.set()
+                await asyncio.gather(*normal, return_exceptions=True)
+    
+        try:
+>           asyncio.run(exercise())
+
+tests/api/test_database_budget.py:89: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../../../.local/share/uv/python/cpython-3.12.9-macos-aarch64-none/lib/python3.12/asyncio/runners.py:195: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+../../../../.local/share/uv/python/cpython-3.12.9-macos-aarch64-none/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../../.local/share/uv/python/cpython-3.12.9-macos-aarch64-none/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+tests/api/test_database_budget.py:71: in exercise
+    assert await calls.call(lambda: asyncio.run(storage_call(lambda: "nested"))) == "nested"
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+apps/api/src/zebra_agent_api/database_budget.py:112: in call
+    return await asyncio.shield(wrapped)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../../.local/share/uv/python/cpython-3.12.9-macos-aarch64-none/lib/python3.12/concurrent/futures/thread.py:59: in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/api/test_database_budget.py:71: in <lambda>
+    assert await calls.call(lambda: asyncio.run(storage_call(lambda: "nested"))) == "nested"
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../../.local/share/uv/python/cpython-3.12.9-macos-aarch64-none/lib/python3.12/asyncio/runners.py:195: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+../../../../.local/share/uv/python/cpython-3.12.9-macos-aarch64-none/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../../.local/share/uv/python/cpython-3.12.9-macos-aarch64-none/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+packages/agent-storage/src/agent_storage/postgres/async_dispatch.py:30: in storage_call
+    return await dispatch(action, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <zebra_agent_api.database_budget.ApiDatabaseCalls object at 0x110198410>
+action = <function test_cancelled_normal_calls_keep_slots_and_do_not_starve_control.<locals>.exercise.<locals>.<lambda>.<locals>.<lambda> at 0x1101a9120>
+args = (), kwargs = {}
+
+    async def call[T](self, action: Callable[..., T], *args: Any, **kwargs: Any) -> T:
+        lane = current_lane()
+        with self._lock:
+            if self._closed or not self._slots[lane].acquire(blocking=False):
+>               raise DatabaseCapacityExceeded("API database lane unavailable")
+E               agent_storage.postgres.connection_capacity.DatabaseCapacityExceeded: API database lane unavailable
+
+apps/api/src/zebra_agent_api/database_budget.py:102: DatabaseCapacityExceeded
+=========================== short test summary info ============================
+FAILED tests/api/test_database_budget.py::test_cancelled_normal_calls_keep_slots_and_do_not_starve_control
+1 failed in 1.10s

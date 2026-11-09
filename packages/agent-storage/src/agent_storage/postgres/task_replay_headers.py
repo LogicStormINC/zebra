@@ -17,6 +17,7 @@ from psycopg.errors import LockNotAvailable, QueryCanceled
 
 from agent_storage.postgres.task_lineage import PostgresAgentTaskConflictError
 from agent_storage.postgres.task_projection_checkpoint_rows import require_source
+from agent_storage.postgres.task_read_header import read_task_header as read_task_header
 from agent_storage.postgres.task_replay_scalar_header_migration import (
     SCALAR_COLUMNS,
     SCALAR_COMMAND,

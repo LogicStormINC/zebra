@@ -1,0 +1,48 @@
+{
+  "parent": "2079c2de",
+  "red_real_postgres": {
+    "failed": 4,
+    "reason": "foreign claims consume retries/delay and hide local work; stop retries reach16"
+  },
+  "final_native_same_node_postgres": {
+    "passed": 46,
+    "new_affinity_cases": 10,
+    "engine_remove": "fake exact-label-checked; not real two-engine deletion",
+    "executor_exit_ack": "unit injected before STOP; real Linux witness covered separately"
+  },
+  "coverage": [
+    "command and direct-control anchors",
+    "foreign owner retry and scheduling metadata unchanged",
+    "oldest foreign obligation cannot hide local work",
+    "unrelated local fence cannot change routing",
+    "mixed-engine remaining instances block completion",
+    "None engine does not burn foreign retries",
+    "shared control retries after transient revocation failure",
+    "absolute STOP deadline remains schedulable",
+    "expired command cleanup remains quarantinable"
+  ],
+  "make_check": "passed",
+  "independent_review": "no Critical/Important; Ruff passed; reviewer did not run PG/hosts",
+  "static_local247_preflight": {
+    "vm": "passed",
+    "orb2": "passed",
+    "baseline_config_hmac": "unchanged",
+    "fleet_connections_including_external_and_reserved": 247,
+    "postgres_max_connections": 256
+  },
+  "node2": {
+    "real_runsc_nonroot_readonly_network_none": "passed after complete strict sidecar install",
+    "runtime_files_verified": 2140,
+    "symlinks_verified": 3,
+    "compose_plugin": "same primary binary/hash",
+    "applications_started": false,
+    "physical_host": "shared Mac; not physical HA"
+  },
+  "initial_native_previews": [
+    "new test copied outside mounted source path: no tests ran",
+    "stale QA env after isolated credential rotation: authentication errors; corrected before final46"
+  ],
+  "runtime_promotion": "pending exact images/index/native publication",
+  "production_changed": false,
+  "e1_complete": false
+}

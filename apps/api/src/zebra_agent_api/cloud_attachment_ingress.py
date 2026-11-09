@@ -4,7 +4,12 @@ from datetime import UTC, datetime
 from hashlib import sha256
 
 from agent_core.application.session_attachments import attach_refs_to_user_event
-from agent_core.domain.artifact_objects import ArtifactObjectExpectation, ArtifactObjectPutRequest
+from agent_core.domain.artifact_objects import (
+    ArtifactObjectExpectation,
+    ArtifactObjectPutRequest,
+    ArtifactObjectUnavailableError,
+    ArtifactObjectVerificationStatus,
+)
 from agent_core.domain.attachments import SessionAttachmentRef, TextAttachmentInput
 from agent_core.domain.cloud_artifact_payloads import (
     CloudArtifactPayloadLifecycleStatus,
@@ -43,9 +48,18 @@ def prepare_cloud_inputs(
             sha256=sha256(item.payload).hexdigest(),
             size_bytes=len(item.payload),
         )
-        receipt = objects.put_if_absent(
-            ArtifactObjectPutRequest(expectation=expectation, payload=item.payload)
-        )
+        try:
+            receipt = objects.put_if_absent(
+                ArtifactObjectPutRequest(expectation=expectation, payload=item.payload)
+            )
+        except ArtifactObjectUnavailableError:
+            verification = objects.verify(expectation)
+            if (
+                verification.status is not ArtifactObjectVerificationStatus.VERIFIED
+                or verification.receipt is None
+            ):
+                raise
+            receipt = verification.receipt
         if receipt.expectation != expectation:
             raise ValueError("Cloud input object receipt disagrees")
         uri = f"artifact://{item.attachment_id}"

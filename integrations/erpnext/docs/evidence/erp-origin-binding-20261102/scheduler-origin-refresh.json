@@ -1,0 +1,33 @@
+{
+  "same_runtime_image": "sha256:e4faff1bfaf7d9d38bd7a60befcb534fedcc1f4faf753eb335cad288a98bf968",
+  "authority_origin": "https://192.168.110.42:18443",
+  "only_scheduler_environment_origin_changed": true,
+  "no_active_or_pending_firings": true,
+  "snapshot_before": {
+    "active_schedules": 0,
+    "pending_firings": 0,
+    "firings": 0,
+    "running": 0,
+    "leases": 0,
+    "model_calls": 188,
+    "sessions": 51,
+    "version": 117,
+    "ledger_sha256": "73168d2872f8551e6ae4493c6f995cd642a94b373613ff5bbb98c5851ca9059e"
+  },
+  "snapshot_after": {
+    "active_schedules": 0,
+    "pending_firings": 0,
+    "firings": 0,
+    "running": 0,
+    "leases": 0,
+    "model_calls": 188,
+    "sessions": 51,
+    "version": 117,
+    "ledger_sha256": "73168d2872f8551e6ae4493c6f995cd642a94b373613ff5bbb98c5851ca9059e"
+  },
+  "all_other_services_unchanged": true,
+  "admission_restored": true,
+  "model_requests": 0,
+  "task_commands": 0,
+  "controller_acquired": false
+}

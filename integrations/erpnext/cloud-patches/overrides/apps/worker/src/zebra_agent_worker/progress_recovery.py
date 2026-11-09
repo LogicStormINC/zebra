@@ -31,7 +31,6 @@ from agent_core.ports.worker_progress import (
 )
 from agent_storage.postgres.connection_scope import postgres_connection_scope
 from agent_storage.postgres.task_io import task_io_deadline
-
 from zebra_agent_worker.commentary_recovery import repair_commentary
 from zebra_agent_worker.execution_events import ExecutionInterrupted
 from zebra_agent_worker.public_output_runtime import publication_lock
@@ -133,7 +132,10 @@ class WorkerProgressRecovery:
         original_sink = sink
 
         def checked_sink(event: HarnessEventDraft) -> None:
-            if event.event_type is EventType.PUBLIC_OUTPUT and self.fresh_authority_check is not None:
+            if (
+                event.event_type is EventType.PUBLIC_OUTPUT
+                and self.fresh_authority_check is not None
+            ):
                 self.fresh_authority_check("public_output", str(event.payload.get("output_id", "")))
             original_sink(event)
 

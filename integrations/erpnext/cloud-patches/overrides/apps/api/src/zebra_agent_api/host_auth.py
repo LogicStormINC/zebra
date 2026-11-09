@@ -25,7 +25,6 @@ from agent_security import (
 )
 from agent_storage import HostGrantAttempt, HostRegistryRecord, PostgresHostAuthorityStore
 from agent_storage.postgres.task_io import TaskIoConnections, task_io_deadline
-
 from zebra_agent_api.http import HostGrantHttpRequest, HostGrantRequestAuthorizer
 from zebra_agent_api.http_host_auth import HOST_CATALOG_READ_SECONDS, host_authorization_seconds
 
@@ -181,14 +180,20 @@ class PostgresHostGrantRequestAuthorizer(HostGrantRequestAuthorizer):
                 )
                 if not decision.accepted:
                     raise HostGrantBindingError("Host Grant replay rejected")
-                return replace(verified, consumed_proof=ConsumedHostGrantProof(
-                    deployment_namespace=self.registry.deployment_namespace,
-                    grant_id=verified.grant_id, grant_digest=attempt.grant_digest,
-                    expires_at=attempt.expires_at, authority_issuer=verified.authority_issuer,
-                    algorithm=verified.algorithm.value, audit_id=decision.audit.audit_id,
-                    policy_version=record.policy_version,
-                    trust_policy_revision=registry_policy_digest(asdict(record)),
-                ))
+                return replace(
+                    verified,
+                    consumed_proof=ConsumedHostGrantProof(
+                        deployment_namespace=self.registry.deployment_namespace,
+                        grant_id=verified.grant_id,
+                        grant_digest=attempt.grant_digest,
+                        expires_at=attempt.expires_at,
+                        authority_issuer=verified.authority_issuer,
+                        algorithm=verified.algorithm.value,
+                        audit_id=decision.audit.audit_id,
+                        policy_version=record.policy_version,
+                        trust_policy_revision=registry_policy_digest(asdict(record)),
+                    ),
+                )
 
 
 def _required_scopes_for_request(request: HostGrantHttpRequest) -> tuple[str, ...]:

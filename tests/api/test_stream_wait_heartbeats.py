@@ -5,8 +5,10 @@ from contextlib import aclosing
 from types import SimpleNamespace
 
 import pytest
+from agent_core.domain.sessions import SessionStatus
 from agent_core.ports.live_event_fanout import LiveEventBatch, LiveEventCursor
 from agent_core.ports.task_projection_checkpoints import CheckpointNotReady
+from agent_storage import SQLiteAgentTaskStore, SQLiteProjectionStore
 from zebra_agent_api import ag_ui_checkpoint_tail as checkpoint
 from zebra_agent_api import session_streaming as session
 
@@ -115,3 +117,81 @@ def test_heartbeats_continue_without_advancing_thirty_second_sql_retry(
             assert fanout.captures == (2 if reader == "agui" and outage else 1)
 
     asyncio.run(collect())
+
+
+def test_observation_retries_capacity_without_changing_read_coordinates(monkeypatch):
+    from time import monotonic
+    from unittest.mock import AsyncMock
+
+    from agent_storage.postgres.connection_capacity import DatabaseCapacityExceeded
+
+    read = object()
+    expected_page = object()
+    dispatch = AsyncMock(side_effect=[DatabaseCapacityExceeded(), expected_page])
+    monkeypatch.setattr(checkpoint, "database_call", dispatch)
+    monkeypatch.setattr(checkpoint, "uniform", lambda *_: 0)
+    result = asyncio.run(checkpoint._read_until(monotonic() + 1, read, "task", 42))
+    assert result is expected_page
+    assert dispatch.await_count == 2
+    assert dispatch.await_args_list[0] == dispatch.await_args_list[1]
+
+
+def test_observation_capacity_backoff_stops_at_deadline(monkeypatch):
+    from time import monotonic
+    from unittest.mock import AsyncMock
+
+    from agent_storage.postgres.connection_capacity import DatabaseCapacityExceeded
+
+    dispatch = AsyncMock(side_effect=DatabaseCapacityExceeded())
+    monkeypatch.setattr(checkpoint, "database_call", dispatch)
+    monkeypatch.setattr(checkpoint, "uniform", lambda *_: 1)
+    with pytest.raises(TimeoutError):
+        asyncio.run(checkpoint._read_until(monotonic() + 0.1, lambda: None))
+    assert dispatch.await_count == 1
+
+
+@pytest.mark.parametrize("kind", ["task_id", "session_id"])
+def test_raw_source_head_waits_for_projection_without_changing_target(monkeypatch, kind):
+    from time import monotonic
+    from unittest.mock import AsyncMock
+
+    head = object()
+    store = SimpleNamespace(read_stream_source_head=lambda **_: head)
+    read = AsyncMock(side_effect=[CheckpointNotReady("source is ahead"), head])
+    monkeypatch.setattr(session, "_read_until", read)
+    monkeypatch.setattr(session, "uniform", lambda *_: 0)
+    assert asyncio.run(session._read_raw_head(monotonic() + 1, store, **{kind: "target"})) is head
+    assert read.await_count == 2
+    assert read.await_args_list[0] == read.await_args_list[1]
+    assert read.await_args.kwargs[kind] == "target"
+
+
+@pytest.mark.parametrize("resource", ["session", "task"])
+def test_native_stream_keeps_observing_during_approval(tmp_path, monkeypatch, resource):
+    clock = Clock()
+    database, identity, revision = _seed_session(tmp_path)
+    projections = SQLiteProjectionStore(database)
+    current = projections.get_session(identity)
+    assert current is not None
+    projections.save_session(current.model_copy(update={"status": SessionStatus.WAITING_APPROVAL}))
+    monkeypatch.setattr(session, "monotonic", lambda: clock.now)
+
+    async def wait(*args, **kwargs):
+        clock.now += 15
+        return False
+
+    monkeypatch.setattr(session.StreamWake, "wait", wait)
+
+    if resource == "task":
+        task = SQLiteAgentTaskStore(database).ensure_for_session(identity)
+        tail, target = session.tail_task_events, {"task_id": task.task_id}
+    else:
+        tail, target = session.tail_session_events, {"session_id": identity}
+
+    async def collect():
+        async with aclosing(tail(
+            database_path=database, request=Connected(), after_sequence=revision, **target,
+        )) as source:
+            assert await anext(source) == ": keepalive\n\n"
+
+    asyncio.run(asyncio.wait_for(collect(), 2))

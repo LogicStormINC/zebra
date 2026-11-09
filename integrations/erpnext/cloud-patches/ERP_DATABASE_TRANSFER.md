@@ -2,7 +2,7 @@
 
 Source prepared, **not authorized by this file to execute a production transfer**. No infrastructure creation, service stopping, configuration activation, native migration or consumer release is implemented. Transfer success means `verified_unactivated`; original ERP consumers must remain stopped. Trench stays on the original105 server.
 
-`transfer_erp_database.py` runs with host Python stdlib and the local pinned105 API image's existing psycopg. It creates one temporary plain Python maintenance container, joins the two verified networks, and removes that container and its credential copy on exit. It never starts API/Worker/scheduler code. No dependency installation, image pull, source writes, source `nextval`, trigger disabling or replication-role bypass occurs.
+`transfer_erp_database.py` runs with host Python stdlib and the local pinned105 API image's existing psycopg. It creates one temporary plain Python maintenance container, joins the two verified networks, and removes that container and its credential copy on exit. The host builds a deterministic stdlib ZIP application at the same `worker.py` artifact path, containing only the pinned inventory, validation, transaction worker and NDJSON entrypoint modules. Python runs this archive directly in the maintenance container; no helper extraction or neighboring host files are needed. Deploy the adjacent `transfer_*.py` source modules together with the host CLI. It never starts API/Worker/scheduler code. No dependency installation, image pull, source writes, source `nextval`, trigger disabling or replication-role bypass occurs.
 
 ## Protected inputs
 
@@ -84,7 +84,7 @@ The QA network absence check replaces the external Host/production-service gate 
 
 A separate small native roundtrip fixture is included in `check_transfer_erp_database.py` and deliberately does **not** satisfy the production105 catalog inventory. Have root create additional empty QA databases on the labeled QA servers (source name `zebra_transfer_qa_source_fixture_*`, target `erpnext_agent_qa_fixture_*` owned by the dedicated runtime role); do not reuse a partially loaded full105 target. A protected fixture config contains only `source` and `destination` psycopg connection objects using those database names.
 
-Run each fixture phase in a temporary pinned105 API container, with plain `/app/.venv/bin/python`, matching host file-owner UID/GID, the QA internal network and protected read-only mounts for this script, the operator module and config. No Docker socket or native application entrypoint is required:
+Run each fixture phase in a temporary pinned105 API container, with plain `/app/.venv/bin/python`, matching host file-owner UID/GID and the QA internal network. Mount the complete `cloud-patches/` source directory read-only, preserving its directory structure so the check entrypoint can import its contract checks, fixture module and all adjacent `transfer_*.py` modules. Keep the protected fixture config in a separate protected read-only mount at `/protected/fixture.json`. No Docker socket or native application entrypoint is required:
 
 Before any fixture DDL, run `check_transfer_erp_database.py --fixture identity /protected/fixture.json` with actual Docker server IPs in the config. This opens only read-only identity transactions, executes the real native identity SQL on both PostgreSQL17.5 servers, and requires exact address/database/role matches. It may also run against already-seeded full105 QA databases.
 

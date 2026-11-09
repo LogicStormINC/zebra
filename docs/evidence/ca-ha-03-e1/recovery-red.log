@@ -1,0 +1,45 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+__________ test_recovery_uses_original_authority_and_bounded_task_io ___________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10e2c49b0>
+
+    def test_recovery_uses_original_authority_and_bounded_task_io(monkeypatch):
+        budget = ConnectionBudget("dbname=one", CapacityProfile.parse(json.dumps(profile_data())), "worker")
+        calls = []
+        with capacity_scope(budget):
+            recovery = ClientEffectRecovery("dbname=one", deployment_namespace="capacity-test")
+
+            def connect():
+                assert capacity_for(recovery._database._dsn) is budget
+                calls.append(True)
+                return nullcontext(SimpleNamespace(execute=lambda *_: SimpleNamespace(fetchall=lambda: [])))
+
+            monkeypatch.setattr(recovery._database, "connect_task_io", connect)
+>           assert recovery.reconcile() == 0
+                   ^^^^^^^^^^^^^^^^^^^^
+
+tests/agent_storage/test_client_effect_capacity.py:26:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+packages/agent-storage/src/agent_storage/postgres/client_effect_recovery.py:35: in reconcile
+    with self._database.connect() as connection:
+         ^^^^^^^^^^^^^^^^^^^^^^^^
+packages/agent-storage/src/agent_storage/postgres/database.py:66: in connect
+    capacity = self._capacity or capacity_for(self._dsn)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+dsn = "dbname=one connect_timeout=2 options='-c statement_timeout=1500 -c lock_timeout=100'"
+
+    def capacity_for(dsn: str, *, strict: bool = True) -> ConnectionBudget | None:
+        budget = _budget.get()
+        if budget is not None:
+            if budget.params != conninfo_to_dict(dsn):
+                if strict:
+>                   raise ValueError("database connection is outside the composed budget")
+E                   ValueError: database connection is outside the composed budget
+
+packages/agent-storage/src/agent_storage/postgres/connection_capacity.py:102: ValueError
+=========================== short test summary info ============================
+FAILED tests/agent_storage/test_client_effect_capacity.py::test_recovery_uses_original_authority_and_bounded_task_io
+1 failed in 0.14s

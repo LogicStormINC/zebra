@@ -1,0 +1,48 @@
+# Reviewed integration fixes atop the frozen native Rabbit image.
+ARG E1_BASE_IMAGE=zebra-ha-e1-rabbit:9e3cef3b
+FROM ${E1_BASE_IMAGE}
+COPY --chown=65532:65532 packages/agent-storage/src/agent_storage/postgres/command_runtime_cleanup.py /app/packages/agent-storage/src/agent_storage/postgres/command_runtime_cleanup.py
+COPY --chown=65532:65532 packages/agent-storage/src/agent_storage/postgres/force_stop_recovery.py /app/packages/agent-storage/src/agent_storage/postgres/force_stop_recovery.py
+COPY --chown=65532:65532 packages/agent-runtime/src/agent_runtime/force_stop_cleanup.py /app/packages/agent-runtime/src/agent_runtime/force_stop_cleanup.py
+COPY --chown=65532:65532 docker/migrate.py /app/docker/migrate.py
+COPY --chown=65532:65532 packages/agent-storage/src/agent_storage/postgres/client_effect_recovery.py /app/packages/agent-storage/src/agent_storage/postgres/client_effect_recovery.py
+COPY --chown=65532:65532 apps/worker/src/zebra_agent_worker/cloud_composition.py /app/apps/worker/src/zebra_agent_worker/cloud_composition.py
+COPY --chown=65532:65532 apps/worker/src/zebra_agent_worker/loop.py /app/apps/worker/src/zebra_agent_worker/loop.py
+COPY --chown=65532:65532 apps/worker/src/zebra_agent_worker/main.py /app/apps/worker/src/zebra_agent_worker/main.py
+COPY --chown=65532:65532 apps/worker/src/zebra_agent_worker/session_process_child.py /app/apps/worker/src/zebra_agent_worker/session_process_child.py
+COPY --chown=65532:65532 packages/agent-integrations/src/agent_integrations/worker_budget.py /app/packages/agent-integrations/src/agent_integrations/worker_budget.py
+COPY --chown=65532:65532 packages/agent-integrations/src/agent_integrations/bounded_model_dns.py /app/packages/agent-integrations/src/agent_integrations/bounded_model_dns.py
+COPY --chown=65532:65532 packages/agent-core/src/agent_core/domain/task_bindings.py /app/packages/agent-core/src/agent_core/domain/task_bindings.py
+COPY --chown=65532:65532 apps/api/src/zebra_agent_api/session_binding.py /app/apps/api/src/zebra_agent_api/session_binding.py
+COPY --chown=65532:65532 packages/agent-storage/src/agent_storage/postgres/task_admission.py /app/packages/agent-storage/src/agent_storage/postgres/task_admission.py
+COPY --chown=65532:65532 apps/host_grant_broker/src/zebra_host_grant_broker/grant_minting.py /app/apps/host_grant_broker/src/zebra_host_grant_broker/grant_minting.py
+COPY --chown=65532:65532 packages/agent-storage/src/agent_storage/postgres/force_stop_executors.py /app/packages/agent-storage/src/agent_storage/postgres/force_stop_executors.py
+COPY --chown=65532:65532 tests/compose/cloud_ha_e1/child_profile_sitecustomize.py /app/.venv/lib/python3.12/site-packages/sitecustomize.py
+COPY --chown=65532:65532 packages/agent-storage/src/agent_storage/postgres/workspaces.py /app/packages/agent-storage/src/agent_storage/postgres/workspaces.py
+COPY --chown=65532:65532 packages/agent-core/src/agent_core/domain/runtime_bundle_catalog.py /app/packages/agent-core/src/agent_core/domain/runtime_bundle_catalog.py
+COPY --chown=65532:65532 packages/agent-storage/src/agent_storage/postgres/stream_hint_relay.py /app/packages/agent-storage/src/agent_storage/postgres/stream_hint_relay.py
+COPY --chown=65532:65532 packages/agent-storage/src/agent_storage/postgres/migration_catalog_tail.py /app/packages/agent-storage/src/agent_storage/postgres/migration_catalog_tail.py
+COPY --chown=65532:65532 packages/agent-storage/src/agent_storage/postgres/projection_work_shared_lock_migration.py /app/packages/agent-storage/src/agent_storage/postgres/projection_work_shared_lock_migration.py
+COPY --chown=65532:65532 apps/worker/src/zebra_agent_worker/execution.py /app/apps/worker/src/zebra_agent_worker/execution.py
+COPY --chown=65532:65532 apps/api/src/zebra_agent_api/routes.py /app/apps/api/src/zebra_agent_api/routes.py
+COPY --chown=65532:65532 apps/api/src/zebra_agent_api/task_routes.py /app/apps/api/src/zebra_agent_api/task_routes.py
+COPY --chown=65532:65532 apps/api/src/zebra_agent_api/command_submission.py /app/apps/api/src/zebra_agent_api/command_submission.py
+COPY --chown=65532:65532 apps/api/src/zebra_agent_api/ag_ui_checkpoint_tail.py /app/apps/api/src/zebra_agent_api/ag_ui_checkpoint_tail.py
+COPY --chown=65532:65532 apps/api/src/zebra_agent_api/session_streaming.py /app/apps/api/src/zebra_agent_api/session_streaming.py
+COPY --chown=65532:65532 packages/agent-storage/src/agent_storage/postgres/worker_budget.py /app/packages/agent-storage/src/agent_storage/postgres/worker_budget.py
+COPY --chown=65532:65532 apps/api/src/zebra_agent_api/idempotency.py /app/apps/api/src/zebra_agent_api/idempotency.py
+COPY --chown=65532:65532 apps/api/src/zebra_agent_api/http_host_auth.py /app/apps/api/src/zebra_agent_api/http_host_auth.py
+COPY --chown=65532:65532 apps/api/src/zebra_agent_api/tenant_guard.py /app/apps/api/src/zebra_agent_api/tenant_guard.py
+COPY --chown=65532:65532 apps/worker/src/zebra_agent_worker/execution_input_preparation.py /app/apps/worker/src/zebra_agent_worker/execution_input_preparation.py
+COPY --chown=65532:65532 packages/agent-storage/src/agent_storage/postgres/worker_commit_confirmation.py /app/packages/agent-storage/src/agent_storage/postgres/worker_commit_confirmation.py
+COPY --chown=65532:65532 apps/api/src/zebra_agent_api/client_admission_atomic.py /app/apps/api/src/zebra_agent_api/client_admission_atomic.py
+COPY --chown=65532:65532 apps/api/src/zebra_agent_api/client_admission_operations.py /app/apps/api/src/zebra_agent_api/client_admission_operations.py
+COPY --chown=65532:65532 packages/agent-storage/src/agent_storage/postgres/events.py /app/packages/agent-storage/src/agent_storage/postgres/events.py
+ARG E1_SOURCE_COMMIT
+LABEL org.opencontainers.image.revision=${E1_SOURCE_COMMIT}
+
+# ponytail: compile only image-owned code; source hashes still reject stale caches.
+USER root
+RUN python -m compileall -q -f --invalidation-mode checked-hash \
+    /app/apps /app/packages /app/.venv/lib/python3.12/site-packages /usr/local/lib/python3.12
+USER zebra

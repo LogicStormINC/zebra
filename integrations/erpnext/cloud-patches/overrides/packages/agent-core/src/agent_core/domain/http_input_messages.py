@@ -1,4 +1,5 @@
 """One prepared human input and its immutable native replay coordinates."""
+
 from dataclasses import dataclass
 
 from agent_core.domain.events import SessionEvent

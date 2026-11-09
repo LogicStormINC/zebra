@@ -1,0 +1,49 @@
+{
+  "task": "CA-P5-08",
+  "status": "Review; P5 engineering exit verified, main integration pending",
+  "sourceCommit": "9e91d75ff12634d34f5eedf57da6558cccd274e4",
+  "sourceBranchFrozen": "codex/ca-p5-10-admitted-stop-identity",
+  "sourceBlobs": {
+    "packages/agent-storage/src/agent_storage/postgres/legacy_command_candidates.py": "5d4471ab563b4a8d0f1e598187ec7561934baf75ee66442a3518eee7b8b22e8c",
+    "apps/worker/src/zebra_agent_worker/control.py": "fce12427714066f3ad26dd8f3511581de42d85e5ae36e35a3fd11b388ccc2c56",
+    "packages/agent-storage/src/agent_storage/postgres/direct_control.py": "401a205a684630ac0ec57aee6448e2485f1f6989832ac6b68565d963fcd6712a",
+    "tests/worker/test_legacy_ready_recovery.py": "84733e528d12a4a33c4af41faff4fcd342a3fdb1c6dc48ddcdd71d1e16da0563",
+    "tests/worker/test_admitted_stop_identity.py": "b4ccd859e26a13d24b5cf2cb31d70b4d1d18e629559e9d1a28d8590376f19048"
+  },
+  "fullGates": {
+    "passed": 11240,
+    "conditionalSkips": 3080,
+    "makeTest": 0,
+    "makeCheck": 0,
+    "typedSources": 1448,
+    "evalCases": 30,
+    "ownedLegacyPGPassed": 8,
+    "ownedResourcePGPassed": 7,
+    "frozenSourceUnchanged": true
+  },
+  "consumerEvidenceSHA256": "95d90e6da1f2afe384f748c8356da19e9dc1d3d414d4abc06804d4217e40237c",
+  "consumerCase": "V31",
+  "sameEnvironmentSDKTasks": 3,
+  "actualIncompatibleCLIRefusedSameTask": true,
+  "sameOriginalTaskContinuedByHealthyWorker": true,
+  "managementExecutorRestarts": 3,
+  "originalEventsEffectsSnapshotsBindingsRetained": true,
+  "CoverageBoundary": "original Native full Coverage regressions plus preserved frozen metadata/event originals; not an unsupported Bundle Coverage execution claim",
+  "noBusinessReplayOrControllerReclaim": true,
+  "oldUnknownsKept": true,
+  "cleanup": {
+    "errors": [],
+    "quotaMounted": false,
+    "removedRuntimeObjects": 8,
+    "stoppedDataObjectsRetained": 2,
+    "resourceManifestSHA256": "8bb900f72507131ac1d04fdd89f764b5d014aa7feb0a3466852b14ee0b50d43b",
+    "priorStoppedShellsArchived": 24,
+    "allDataVolumesAndOriginalReceiptsRetained": true,
+    "archiveManifestSHA256": "de1bbdad13e61faef085655f01ae138427b69ae0a0cc77580d7540b1af358c0b",
+    "noGlobalPrune": true,
+    "foreignResourcesPreserved": true
+  },
+  "noDeploymentProductionMigrationOrMainMerge": true,
+  "producerBodiesUnchangedAfterFullGates": true,
+  "proofLevels": "full mandatory PG/HTTP gate and termination, optional legacy8/resource7 on isolated owned PG, actual image/CLI/SDK/gVisor S1; controlled model and IdP; no production HA"
+}

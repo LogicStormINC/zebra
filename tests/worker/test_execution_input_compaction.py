@@ -368,7 +368,20 @@ def test_admitted_evidence_reaches_real_recovered_harness_task(tmp_path):
     prepare(store, tasks, lease)
     source.list_for_session = lambda *_: pytest.fail("whole-history recovery")
     context_store, handoff = Mock(), Mock()
-    context_store.get_active_capsule.return_value = None
+    expected = execution_evidence_context(store.read(lease).state.evidence)
+    context_read = False
+    read_head = store.read
+
+    def read_before_context(current):
+        assert not context_read, "evidence must come from the revision-checked head"
+        return read_head(current)
+
+    def read_context(_):
+        nonlocal context_read
+        context_read = True
+
+    store.read = read_before_context
+    context_store.get_active_capsule.side_effect = read_context
     handoff.recover.return_value = None
     inputs = recover_execution_inputs(
         claimed=claimed,
@@ -400,7 +413,6 @@ def test_admitted_evidence_reaches_real_recovered_harness_task(tmp_path):
         tool_gateway=gateway,
         memory_store=memories,
     )
-    expected = execution_evidence_context(store.read(lease).state.evidence)
     assert expected in inputs.task.runtime_evidence
     assert expected in harness.runtime_evidence
     assert expected.metadata["current_run_budget_authority"] is False

@@ -1,12 +1,14 @@
 """Explicit bounded consumer ticks; no process activation or runtime cleanup here."""
 
 import asyncio
+import logging
 from collections.abc import Awaitable, Callable
 from concurrent.futures import Future, ThreadPoolExecutor
 from datetime import timedelta
 from enum import StrEnum
 from functools import partial
 from threading import BoundedSemaphore, Lock
+from time import monotonic
 from typing import Literal, Protocol
 from uuid import UUID
 
@@ -28,6 +30,8 @@ from agent_storage.postgres.command_wakeup_pickup import (
     resolve_command_pickup,
 )
 from agent_storage.postgres.command_wakeup_recovery_proof import CoverageRecoveryCheck
+from agent_storage.postgres.connection_capacity import capacity_lane
+from agent_storage.postgres.connection_pool import postgres_context
 from agent_storage.postgres.coverage_recovery_preparation import CoverageRecoveryDeferred
 from agent_storage.postgres.worker_capability import (
     WorkerCapabilityLease,
@@ -36,6 +40,7 @@ from agent_storage.postgres.worker_capability import (
 from psycopg.errors import LockNotAvailable, QueryCanceled
 from pydantic import TypeAdapter, ValidationError
 
+logger = logging.getLogger(__name__)
 
 class CommandDelivery(Protocol):
     @property
@@ -129,7 +134,8 @@ class CommandWakeupConsumer:
             if self._closed or not self._db_slots[pool].acquire(blocking=False):
                 raise _Busy
             try:
-                future = pool.submit(function)
+                with capacity_lane("control" if pool is self._control else "normal"):
+                    future = pool.submit(postgres_context().run, function)
             except BaseException:
                 self._db_slots[pool].release()
                 raise
@@ -147,6 +153,7 @@ class CommandWakeupConsumer:
     ) -> PickupOutcome:
         if not self._slots.acquire(blocking=False):
             return PickupOutcome.DEFERRED
+        slot_started = monotonic()
         scheduled = False
         try:
             result = handoff_command(
@@ -173,13 +180,16 @@ class CommandWakeupConsumer:
             if result.status is not HandoffStatus.ACCEPTED:
                 return PickupOutcome.DEFERRED
             assert result.lease is not None
+            handed_off = monotonic()
             try:
-                future = self._execution.submit(self._execute, result.lease)
+                future = self._execution.submit(postgres_context().run, self._execute, result.lease)
             except Exception:
                 raise _SchedulingFailed("committed command scheduling failed") from None
             scheduled = True
             # Slot release follows the real synchronous Future, never task cancellation.
-            future.add_done_callback(self._execution_finished)
+            future.add_done_callback(
+                partial(self._execution_finished, result.lease, slot_started, handed_off)
+            )
             return PickupOutcome.SCHEDULED
         except (
             WorkerCapabilityLostError,
@@ -192,12 +202,28 @@ class CommandWakeupConsumer:
             if not scheduled:
                 self._slots.release()
 
-    def _execution_finished(self, future: Future[object]) -> None:
+    def _execution_finished(
+        self, lease: WorkerLease, slot_started: float, handed_off: float, future: Future[object]
+    ) -> None:
         try:
-            if not future.cancelled():
-                future.exception()  # do not log model/credential exception text
+            error = None if future.cancelled() else future.exception()
         finally:
             self._slots.release()
+        if error is not None:
+            logger.warning(
+                "command_execution_future_failed session_id=%s fence=%s error_type=%s",
+                lease.session_id,
+                lease.fence.fencing_token,
+                type(error).__name__,
+            )
+        if logger.isEnabledFor(logging.INFO):
+            logger.info(
+                "command_execution_slot_released session_id=%s fence=%s handoff_ms=%s held_ms=%s",
+                lease.session_id,
+                lease.fence.fencing_token,
+                int((handed_off - slot_started) * 1000),
+                int((monotonic() - slot_started) * 1000),
+            )
 
     async def _handle(
         self,

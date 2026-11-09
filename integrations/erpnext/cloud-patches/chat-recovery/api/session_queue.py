@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from pathlib import Path
 import os
+from pathlib import Path
 
 from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
 from agent_core.application.workspace_projection import rebuild_workspace
@@ -15,7 +15,6 @@ from agent_core.ports.task_admission_transaction import (
 )
 from agent_security.host_grant import VerifiedHostGrant
 from agent_storage import ControlPlaneStores
-
 from zebra_agent_api.responses import ApiResponse
 from zebra_agent_api.session_attachment_persistence import persist_initial_attachments
 from zebra_agent_api.session_payloads import CreateSessionPayload, parse_create_session_payload
@@ -131,12 +130,19 @@ def create_queued_session(
             PostgresTaskAdmissionTransaction,
         )
 
-        mode = os.environ.get('ZEBRA_ERPNEXT_CHAT_READONLY', 'disabled')
-        if mode not in {'enabled', 'disabled'}:
-            raise ValueError('invalid ERP readonly chat mode')
-        require_connector = mode == 'enabled' and admission_namespace == 'erpnext' and host_context is not None
-        profile, frozen = _resolve_host_connector(admission_dsn, admission_namespace, host_context,
-            frozen_manifest_digest, required=require_connector)
+        mode = os.environ.get("ZEBRA_ERPNEXT_CHAT_READONLY", "disabled")
+        if mode not in {"enabled", "disabled"}:
+            raise ValueError("invalid ERP readonly chat mode")
+        require_connector = (
+            mode == "enabled" and admission_namespace == "erpnext" and host_context is not None
+        )
+        profile, frozen = _resolve_host_connector(
+            admission_dsn,
+            admission_namespace,
+            host_context,
+            frozen_manifest_digest,
+            required=require_connector,
+        )
         raw_binding = _derive_binding(
             bootstrap.session.session_id,
             host_context=host_context,
@@ -144,7 +150,8 @@ def create_queued_session(
             deployment_namespace=admission_namespace,
             frozen_manifest_digest=frozen_manifest_digest,
             verified_host_grant=verified_host_grant,
-            resolved_connector_profile=profile, frozen_host_manifest=frozen,
+            resolved_connector_profile=profile,
+            frozen_host_manifest=frozen,
             require_resolved_connector=require_connector,
         )
         idempotency_record = None
@@ -236,7 +243,8 @@ def _derive_binding(
         deployment_namespace=deployment_namespace,
         frozen_manifest_digest=frozen_manifest_digest,
         verified_host_grant=verified_host_grant,
-        resolved_connector_profile=resolved_connector_profile, frozen_host_manifest=frozen_host_manifest,
+        resolved_connector_profile=resolved_connector_profile,
+        frozen_host_manifest=frozen_host_manifest,
         require_resolved_connector=require_resolved_connector,
     )
 
@@ -245,24 +253,34 @@ def _resolve_host_connector(dsn, namespace, host_context, frozen_digest, *, requ
     """Read the already frozen immutable profile; atomic admission persists it once."""
     if not required or host_context is None:
         return None, None
-    from agent_storage.postgres.host_connectors import PostgresHostConnectorRegistry
-    from agent_storage.postgres.host_manifest_freeze import load_frozen_manifest
     from agent_core.domain.host_connectors import accepts_new_tasks
     from agent_integrations.host_tools import HostToolManifest
+    from agent_storage.postgres.host_connectors import PostgresHostConnectorRegistry
+    from agent_storage.postgres.host_manifest_freeze import load_frozen_manifest
+
     registry = PostgresHostConnectorRegistry(dsn, deployment_namespace=namespace)
     binding = registry.resolve_binding(host_context.host_app_id, host_context.namespace_id)
     if binding is None:
         if required or frozen_digest is not None:
-            raise ValueError('published Host connector binding is required')
+            raise ValueError("published Host connector binding is required")
         return None, None
-    profile = registry.get_profile(binding.host_app_id, binding.connector_id, binding.profile_revision)
+    profile = registry.get_profile(
+        binding.host_app_id, binding.connector_id, binding.profile_revision
+    )
     if profile is None or not binding.active or not accepts_new_tasks(profile.status):
-        raise ValueError('published Host connector profile is unavailable')
-    frozen = load_frozen_manifest(dsn, deployment_namespace=namespace, connector_id=profile.connector_id,
-        profile_revision=profile.profile_revision)
+        raise ValueError("published Host connector profile is unavailable")
+    frozen = load_frozen_manifest(
+        dsn,
+        deployment_namespace=namespace,
+        connector_id=profile.connector_id,
+        profile_revision=profile.profile_revision,
+    )
     if frozen is None:
-        raise ValueError('admission frozen Host manifest is unavailable')
+        raise ValueError("admission frozen Host manifest is unavailable")
     manifest = HostToolManifest.from_payload(frozen)
-    if manifest.digest != frozen_digest or manifest.workload_identity != profile.workload_identity_ref:
-        raise ValueError('admission Host connector manifest drifted')
+    if (
+        manifest.digest != frozen_digest
+        or manifest.workload_identity != profile.workload_identity_ref
+    ):
+        raise ValueError("admission Host connector manifest drifted")
     return profile, manifest

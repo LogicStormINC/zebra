@@ -245,3 +245,90 @@ class TestRejections:
         with pytest.raises(PlanValidationError) as exc:
             _validate(proposal, _context(max_depth=2))
         assert exc.value.reason_code == "depth_exceeded"
+
+
+class TestRootBudgetFromBundle:
+    """CA-P7-01A-z2: assembly budget domain derives the root reservation."""
+
+    def test_configurable_budget_becomes_root_reservation(self) -> None:
+        from agent_orchestration.application.orchestration_validation import (
+            root_budget_from_parameters,
+        )
+
+        root = root_budget_from_parameters(250_000, 120, 900)
+        assert root == BudgetReservation(
+            model_tokens=250_000, tool_calls=120, runtime_seconds=900
+        )
+
+    def test_negative_inputs_clamp_to_zero_conservatively(self) -> None:
+        from agent_orchestration.application.orchestration_validation import (
+            root_budget_from_parameters,
+        )
+
+        root = root_budget_from_parameters(-5, -1, -9)
+        assert root == BudgetReservation(model_tokens=0, tool_calls=0, runtime_seconds=0)
+
+    def test_budget_over_assembly_ceiling_is_refused_by_accounting(self) -> None:
+        """触顶行为：节点总预算超过 assembly 根预算 → budget_beyond_parent 拒付。"""
+        from agent_orchestration.application.orchestration_validation import (
+            root_budget_from_parameters,
+        )
+
+        # assembly 批准根预算（tokens 150 < 两节点合计 200 → 拒付）
+        root = root_budget_from_parameters(150, 6, 120)
+        proposal = OrchestrationPlanProposal(
+            objective="Exceed root",
+            nodes=[_node("a"), _node("b")],  # 每节点 100 tokens / 3 tool_calls / 60s
+            dependencies=(),
+            max_parallelism=1,
+            synthesis_instruction="Merge",
+        )
+        with pytest.raises(PlanValidationError) as raised:
+            _validate(proposal, _context(parent_remaining_budget=root))
+        assert raised.value.reason_code == "budget_beyond_parent"
+
+    def test_zero_root_budget_refuses_any_spending(self) -> None:
+        """pinned budget 的保守零默认：任何节点预算都不可批准。"""
+        from agent_orchestration.application.orchestration_validation import (
+            root_budget_from_parameters,
+        )
+
+        root = root_budget_from_parameters(0, 0, 0)
+        proposal = OrchestrationPlanProposal(
+            objective="No budget",
+            nodes=[_node("a")],
+            dependencies=(),
+            max_parallelism=1,
+            synthesis_instruction="Merge",
+        )
+        with pytest.raises(PlanValidationError) as raised:
+            _validate(proposal, _context(parent_remaining_budget=root))
+        assert raised.value.reason_code == "budget_beyond_parent"
+
+
+@pytest.mark.parametrize("granted", [False, True])
+def test_empty_resource_authority_denies_refs_but_explicit_grant_allows(granted: bool) -> None:
+    ref = HostResourceRef(type="host-a.event", id="evt-9")
+    proposal = OrchestrationPlanProposal(
+        objective="Read authorized source",
+        max_parallelism=1,
+        nodes=(_node("a", resources=(ref,)),),
+        synthesis_instruction="Merge",
+    )
+    context = _context(parent_resource_refs=frozenset({ref}) if granted else frozenset())
+    if granted:
+        assert _validate(proposal, context).nodes[0].proposal.resource_refs == (ref,)
+    else:
+        with pytest.raises(PlanValidationError, match="resource_beyond_parent"):
+            _validate(proposal, context)
+
+
+def test_validation_context_copies_mutable_resource_and_role_sets() -> None:
+    ref = HostResourceRef(type="host-a.event", id="evt-9")
+    resources = {ref}
+    roles = {"researcher"}
+    context = _context(parent_resource_refs=resources, published_roles=roles)
+    resources.clear()
+    roles.add("implementer")
+    assert context.parent_resource_refs == frozenset({ref})
+    assert context.published_roles == frozenset({"researcher"})

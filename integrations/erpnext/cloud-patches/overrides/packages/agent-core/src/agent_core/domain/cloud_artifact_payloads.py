@@ -4,15 +4,14 @@ from datetime import datetime
 from enum import StrEnum
 from typing import Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator, model_validator
-
 from agent_core.domain.artifact_objects import ArtifactObjectReceipt
-from agent_core.domain.http_input_attachments import HttpInputAuthority
 from agent_core.domain.cloud_artifact_requests import (
     ArtifactEventBinding,
     ArtifactReserveRequest,
 )
+from agent_core.domain.http_input_attachments import HttpInputAuthority
 from agent_core.domain.identifiers import ArtifactId, SessionId
+from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator, model_validator
 
 
 class CloudArtifactPayloadLifecycleStatus(StrEnum):
@@ -86,16 +85,19 @@ class CloudArtifactPayloadRecord(BaseModel):
 
     @model_validator(mode="after")
     def require_lifecycle_shape(self) -> Self:
-        if (self.authority_kind == 'http_input') != (self.input_authority is not None):
-            raise ValueError('Artifact authority discriminator conflicts with its proof')
-        if self.authority_kind == 'http_input' and self.lifecycle_status not in {
+        if (self.authority_kind == "http_input") != (self.input_authority is not None):
+            raise ValueError("Artifact authority discriminator conflicts with its proof")
+        if self.authority_kind == "http_input" and self.lifecycle_status not in {
             CloudArtifactPayloadLifecycleStatus.FINALIZED,
             CloudArtifactPayloadLifecycleStatus.PRUNING,
             CloudArtifactPayloadLifecycleStatus.PRUNED,
         }:
-            raise ValueError('HTTP input requires finalized or retention lifecycle evidence')
-        if self.input_authority is not None and self.input_authority.proof.deployment_namespace != self.deployment_namespace:
-            raise ValueError('HTTP input proof belongs to another deployment')
+            raise ValueError("HTTP input requires finalized or retention lifecycle evidence")
+        if (
+            self.input_authority is not None
+            and self.input_authority.proof.deployment_namespace != self.deployment_namespace
+        ):
+            raise ValueError("HTTP input proof belongs to another deployment")
         self._require_object_receipt_binding()
         self._require_event_binding()
         finalized_proof = all(

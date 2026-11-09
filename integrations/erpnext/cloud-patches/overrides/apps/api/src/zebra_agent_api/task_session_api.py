@@ -7,7 +7,6 @@ from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.identifiers import TaskId
 from agent_security.host_grant import VerifiedHostGrant
 from agent_storage import ControlPlaneStores
-
 from zebra_agent_api.responses import ApiResponse
 
 
@@ -28,7 +27,10 @@ class TaskSessionApi(Protocol):
     ) -> ApiResponse: ...
 
     def append_session_message(
-        self, session_id: str, payload: dict[str, object], *,
+        self,
+        session_id: str,
+        payload: dict[str, object],
+        *,
         verified_host_grant: VerifiedHostGrant | None = None,
         idempotency_key: str | None = None,
     ) -> ApiResponse: ...

@@ -9,6 +9,11 @@ from psycopg.types.json import Jsonb
 from agent_storage.postgres.agent_registry import AgentDefinitionEvalEvidence, PostgresAgentRegistry
 from agent_storage.postgres.host_management import HostManagementConflict, HostManagementTrust
 from agent_storage.postgres.publication import PublicationStore, lock_definition
+from agent_storage.postgres.script_eval_instances import (
+    initialize_cloud_eval,
+    require_cloud_eval_schema,
+    require_eval_resources_settled,
+)
 from agent_storage.postgres.work_unit import postgres_transaction_work_unit
 
 
@@ -31,6 +36,8 @@ class ScriptEvaluationStore(PublicationStore):
                 ON native_script_eval_operations(deployment_namespace,authority_issuer,
                 namespace_id,definition_id,version_id,status)""")
 
+            initialize_cloud_eval(connection)
+
     def observe(self, trust: HostManagementTrust, operation: UUID) -> dict[str, Any] | None:
         with self.approvals.authorized(trust) as connection:
             row = self._operation(connection, trust, operation)
@@ -45,6 +52,8 @@ class ScriptEvaluationStore(PublicationStore):
         scope: tuple[str, str, Any],
         version: UUID,
         recheck: Callable[[], None],
+        *,
+        cloud_instances: bool = False,
     ) -> tuple[bool, dict[str, Any]]:
         with self.approvals.authorized(trust) as connection:
             lock_definition(connection, scope)
@@ -55,6 +64,15 @@ class ScriptEvaluationStore(PublicationStore):
                     raise HostManagementConflict("EVAL_OPERATION_CONFLICT")
                 self.approvals._live(connection, trust)
                 return False, dict(row["result"])
+            if cloud_instances:
+                require_cloud_eval_schema(connection)
+                gate = connection.execute(
+                    "SELECT mode FROM runtime_namespace_gates "
+                    "WHERE deployment_namespace=%s FOR SHARE",
+                    (self.database.deployment_namespace,),
+                ).fetchone()
+                if gate is None or gate["mode"] != "open":
+                    raise HostManagementConflict("EVAL_ADMISSION_CLOSED")
             pending = connection.execute(
                 "SELECT 1 FROM native_script_eval_operations WHERE deployment_namespace=%s "
                 "AND authority_issuer=%s AND namespace_id=%s AND definition_id=%s "
@@ -92,6 +110,11 @@ class ScriptEvaluationStore(PublicationStore):
                     Jsonb(result),
                 ),
             )
+            if cloud_instances:
+                connection.execute(
+                    "INSERT INTO native_script_eval_cloud_holds VALUES(%s,%s,%s)",
+                    (self.database.deployment_namespace, trust.host_app_id, operation),
+                )
             self.approvals._live(connection, trust)
             return True, result
 
@@ -108,7 +131,7 @@ class ScriptEvaluationStore(PublicationStore):
         with self.approvals.authorized(trust) as connection:
             lock_definition(connection, scope)
             recheck()
-            row = self._operation(connection, trust, operation)
+            row = self._operation(connection, trust, operation, lock=True)
             if (
                 row is None
                 or row["payload_digest"] != digest
@@ -119,6 +142,9 @@ class ScriptEvaluationStore(PublicationStore):
                 or row["namespace_id"] != evidence.namespace_id
             ):
                 raise HostManagementConflict("EVAL_OPERATION_CONFLICT")
+            require_eval_resources_settled(
+                connection, self.database.deployment_namespace, trust.host_app_id, operation
+            )
             result = dict(row["result"]) | {
                 "status": "completed",
                 "evidenceId": str(evidence.evidence_id),
@@ -134,9 +160,11 @@ class ScriptEvaluationStore(PublicationStore):
             self.approvals._live(connection, trust)
             return result
 
-    def _operation(self, connection: Any, trust: HostManagementTrust, operation: UUID) -> Any:
+    def _operation(
+        self, connection: Any, trust: HostManagementTrust, operation: UUID, *, lock: bool = False
+    ) -> Any:
         return connection.execute(
             "SELECT * FROM native_script_eval_operations WHERE deployment_namespace=%s "
-            "AND actor=%s AND operation_id=%s",
+            "AND actor=%s AND operation_id=%s" + (" FOR UPDATE" if lock else ""),
             (self.database.deployment_namespace, trust.host_app_id, operation),
         ).fetchone()

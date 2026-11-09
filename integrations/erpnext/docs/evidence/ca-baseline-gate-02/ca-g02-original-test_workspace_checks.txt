@@ -1,0 +1,11 @@
+Traceback (most recent call last):
+  File "/var/folders/qx/n_v9dpmd12dgb9m1s75tjgtm0000gn/T/ca-g02-erp-source-baseline-rdvyuxkz/tests/test_workspace_checks.py", line 35, in <module>
+    fresh=doc();token=cloud.grant(fresh)
+                      ^^^^^^^^^^^^^^^^^^
+  File "/private/var/folders/qx/n_v9dpmd12dgb9m1s75tjgtm0000gn/T/ca-g02-erp-source-baseline-rdvyuxkz/zebra_erpnext/cloud.py", line 96, in grant
+    conversation = owned(conversation.name, for_update=True, admission_lock=admission_lock)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/private/var/folders/qx/n_v9dpmd12dgb9m1s75tjgtm0000gn/T/ca-g02-erp-source-baseline-rdvyuxkz/zebra_erpnext/cloud.py", line 63, in owned
+    if doc.user != user or doc.status == "deleted":
+       ^^^^^^^^
+AttributeError: 'types.SimpleNamespace' object has no attribute 'user'

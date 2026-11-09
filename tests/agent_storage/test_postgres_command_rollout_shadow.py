@@ -3,6 +3,7 @@
 from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
 from hashlib import sha256
+from uuid import uuid4
 
 import psycopg
 import pytest
@@ -16,6 +17,7 @@ from agent_storage.postgres.command_rollout_shadow import (
     claim_command_shadow_batch,
     command_shadow_reconciliation,
     observe_command_shadow,
+    record_command_shadow,
     reject_command_shadow,
     settle_command_shadow,
 )
@@ -179,6 +181,24 @@ def test_shadow_lane_is_bounded_separate_idempotent_and_message_id_reconciled(ds
     assert not _rows(dsn, "broker_command_inbox")
     assert not _rows(dsn, "command_handoff_receipts")
     assert not _rows(dsn, "worker_leases")
+
+
+def test_fallback_scope_does_not_hold_namespace_shadow_lock(dsn):
+    with (
+        psycopg.connect(dsn, row_factory=dict_row) as admission,
+        psycopg.connect(dsn) as concurrent,
+    ):
+        assert record_command_shadow(
+            admission,
+            deployment_namespace=NAMESPACE,
+            source_message_id=uuid4(),
+            scope_key=command_scope_key(_scope("tenant-a")),
+            envelope_digest="0" * 64,
+        ) is None
+        assert concurrent.execute(
+            "SELECT pg_try_advisory_xact_lock(hashtextextended(%s,50))",
+            (f"{NAMESPACE}:command-shadow",),
+        ).fetchone() == (True,)
 
 
 def test_busy_shadow_lock_never_blocks_formal_admission(dsn):

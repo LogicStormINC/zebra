@@ -1,0 +1,59 @@
+{
+  "task": "CA-OPS-02",
+  "base": "6dee587ad119d6a8ac56d45231d6c510f106f9e4",
+  "red": {
+    "failed": 6,
+    "passed": 3,
+    "skipped_live_opt_in": 12
+  },
+  "live": {
+    "passed": 21,
+    "seconds": 13.52,
+    "resource_identity_sets_match_previous_after": true,
+    "log_sha256": "2f6554439cf304ab70da3effd971303a0461ac56e6718aa1337efed7f22eb050"
+  },
+  "full_test": {
+    "state": "passed",
+    "log": "/tmp/ca-ops-02-make-test.log",
+    "make_pid": 790,
+    "uv_pid": 979,
+    "pytest_pid": 1068,
+    "exit_code": 0,
+    "passed": 11225,
+    "skipped": 3080,
+    "seconds": 1305.68,
+    "log_sha256": "5ddf1b58d599229f091357f9cd08436e7f27253aa55133b82a37ccc85a12ac9e"
+  },
+  "make_check": {
+    "exit_code": 0,
+    "typed_sources": 1447,
+    "eval_cases": 30,
+    "file_size_violations": 0,
+    "log_sha256": "654174a6e82b91711e1d8a1a8a61da2b296876edad08cf056b5b8afbcb48289f"
+  },
+  "overdoze": {
+    "source": "25de8c9",
+    "unchanged": true,
+    "make_test": "passed30 race packages plus selfcheck",
+    "make_check": "passed74 inherited warnings"
+  },
+  "resource_changes": {
+    "containers": {
+      "added": [],
+      "removed": []
+    },
+    "volumes": {
+      "added": [],
+      "removed": []
+    },
+    "networks": {
+      "added": [],
+      "removed": []
+    }
+  },
+  "historical23_volumes": "retained without historical mount ownership proof; no prune",
+  "manifest": "/tmp/ca-ops-02-73d3670dfe/manifest.json",
+  "production_code_changed": false,
+  "production_operations": false,
+  "main_merge": false
+}

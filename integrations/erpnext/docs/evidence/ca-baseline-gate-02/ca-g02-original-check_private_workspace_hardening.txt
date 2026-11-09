@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "/var/folders/qx/n_v9dpmd12dgb9m1s75tjgtm0000gn/T/ca-g02-erp-source-baseline-rdvyuxkz/cloud-patches/tests/check_private_workspace_hardening.py", line 111, in <module>
+    assert argv.count('--env') == 1
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError

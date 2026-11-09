@@ -18,6 +18,7 @@ from agent_storage.postgres.task_io import task_io_deadline
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
+from zebra_agent_api.database_budget import database_call
 from zebra_agent_api.extension_request_body import _unique_object
 from zebra_agent_api.host_registry_config import HostManagementConfig
 from zebra_agent_api.runtime_management import _HEADERS, _error
@@ -107,7 +108,7 @@ def register_management_endpoint(
         headers = {header: request.headers.getlist(header) for header in _HEADERS.values()}
         with task_io_deadline(monotonic() + timeout):
             task = asyncio.create_task(
-                asyncio.to_thread(perform, token, headers, request.method, body)
+                database_call(None, perform, token, headers, request.method, body)
             )
 
         def finished(done: asyncio.Task[JSONResponse]) -> None:

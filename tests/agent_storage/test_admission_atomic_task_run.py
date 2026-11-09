@@ -1,6 +1,7 @@
 """Task + first RUN + native wakeups are visible only after the original commit."""
 
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager
 from threading import Event
 from types import SimpleNamespace
 
@@ -101,13 +102,32 @@ def test_uncommitted_run_not_discoverable_stop_rolls_back_everything(isolated_mi
     assert not start_atomic_surface(store, op, "a" * 64, protocol=PROTOCOL)
 
 
-def test_committed_run_has_exact_persisted_identity_never_noncommit(isolated_migration_dsn):
+def test_committed_run_has_exact_persisted_identity_never_noncommit(
+    isolated_migration_dsn, monkeypatch,
+):
+    from agent_storage.postgres import task_admission
+
+    append = task_admission.append_task_bootstrap_in_transaction
+    statements = []
+
+    def observe_bootstrap(connection, namespace, events):
+        class Probe:
+            def execute(self, statement, params):
+                statements.append(statement)
+                return connection.execute(statement, params)
+
+        return append(Probe(), namespace, events)
+
+    monkeypatch.setattr(task_admission, "append_task_bootstrap_in_transaction", observe_bootstrap)
     store, op = setup(isolated_migration_dsn, PROTOCOL)
     enable(store)
     assert start_atomic_surface(store, op, "a" * 64, protocol=PROTOCOL)
     with atomic_surface_transaction(store, op, "a" * 64):
         effects(store)
         result(store, op)
+    assert len(statements) == 2
+    assert "INSERT INTO session_streams" in statements[0]
+    assert "INSERT INTO session_events" in statements[1]
     assert command_counts(store) == [1, 1]
     with store._database.connect() as c:
         event = c.execute(
@@ -116,6 +136,16 @@ def test_committed_run_has_exact_persisted_identity_never_noncommit(isolated_mig
             (store._database.deployment_namespace,),
         ).fetchone()
         assert event["payload"]["payload"]["run_id"] == "run:exact-owned"
+        task = c.execute(
+            "SELECT event_position_state,event_index_repair_cursor,event_index_repair_highwater "
+            "FROM agent_tasks WHERE deployment_namespace=%s",
+            (store._database.deployment_namespace,),
+        ).fetchone()
+        assert task == {
+            "event_position_state": "ready",
+            "event_index_repair_cursor": -1,
+            "event_index_repair_highwater": -1,
+        }
     assert observe(store, op, True)["state"] == "committed"
     assert (
         observe_atomic_termination(store, op, "a" * 64, write=True, protocol="atomic-task/1")[
@@ -123,3 +153,105 @@ def test_committed_run_has_exact_persisted_identity_never_noncommit(isolated_mig
         ]
         == "unsupported"
     )
+
+
+def test_atomic_initial_run_indexes_before_wakeup_and_rolls_back_on_rejection(
+    isolated_migration_dsn, monkeypatch
+):
+    from agent_storage.postgres import task_admission
+
+    store, op = setup(isolated_migration_dsn, PROTOCOL)
+    enable(store)
+    assert start_atomic_surface(store, op, "a" * 64, protocol=PROTOCOL)
+    wake = task_admission.record_command_wakeup_in_transaction
+    rebuild = task_admission.rebuild_task_in_transaction
+    indexed = []
+    root_member_reads = []
+    task_locks = []
+    position_reads = []
+    source_tail_writes = []
+
+    def observe_rebuild(connection, namespace, session_id, **kwargs):
+        class AdmissionConnection:
+            def __getattr__(self, name):
+                return getattr(connection, name)
+
+            def transaction(self):
+                pytest.fail("atomic Task rebuild must use its existing admission transaction")
+
+            @contextmanager
+            def cursor(self, **options):
+                with connection.cursor(**options) as cursor:
+                    class RebuildCursor:
+                        def execute(self, statement, params):
+                            if "pg_advisory_xact_lock(hashtextextended(%s,61))" in statement:
+                                task_locks.append(params)
+                            if ('SELECT next_event_sequence,event_position_state' in statement
+                                or 'SELECT GREATEST(' in statement):
+                                position_reads.append(statement)
+                            if (
+                                "SELECT 1 FROM session_events WHERE" in statement
+                                or "UPDATE execution_segments" in statement
+                            ):
+                                source_tail_writes.append(statement)
+                            if ("SELECT created_at FROM session_projections" in statement
+                                or "FROM execution_segments WHERE" in statement
+                                or "LEFT JOIN execution_segments AS member" in statement):
+                                root_member_reads.append(statement)
+                            return cursor.execute(statement, params)
+
+                    yield RebuildCursor()
+
+        task = rebuild(AdmissionConnection(), namespace, session_id, **kwargs)
+        indexed.append(session_id)
+        return task
+
+    def reject(connection, namespace, event, *, is_new_admission):
+        assert indexed == [event.session_id]
+        assert len(root_member_reads) == 1
+        assert len(task_locks) == 1
+        assert len(position_reads) == 1
+        assert len(source_tail_writes) == 1
+        wake(connection, namespace, event, is_new_admission=is_new_admission)
+        raise AtomicSurfaceAborted("controlled wakeup rollback")
+
+    monkeypatch.setattr(task_admission, "rebuild_task_in_transaction", observe_rebuild)
+    monkeypatch.setattr(task_admission, "record_command_wakeup_in_transaction", reject)
+    with pytest.raises(AtomicSurfaceAborted, match="controlled wakeup rollback"):
+        with atomic_surface_transaction(store, op, "a" * 64):
+            effects(store)
+    assert counts(store) == [0] * 5 and command_counts(store) == [0, 0]
+
+
+@pytest.mark.parametrize("before_commit", [True, False])
+def test_atomic_first_run_reconciles_original_on_commit_disconnect(
+    isolated_migration_dsn, before_commit
+):
+    from agent_storage.postgres.idempotency import PostgresIdempotencyStore
+    from psycopg import OperationalError
+
+    from tests.api.test_artifact_download_deadline import lost_commit_reply
+
+    store, op = setup(isolated_migration_dsn, PROTOCOL)
+    enable(store)
+    assert start_atomic_surface(store, op, "a" * 64, protocol=PROTOCOL)
+    with lost_commit_reply(isolated_migration_dsn, before_commit=before_commit) as (
+        proxy_dsn,
+        interrupted,
+        _,
+    ):
+        through_proxy = PostgresIdempotencyStore(
+            proxy_dsn, deployment_namespace=store._database.deployment_namespace
+        )
+        with pytest.raises(OperationalError):
+            with atomic_surface_transaction(through_proxy, op, "a" * 64):
+                effects(through_proxy)
+                result(through_proxy, op)
+        assert interrupted.is_set()
+    if before_commit:
+        assert observe(store, op, False)["state"] == "unresolved"
+        assert counts(store) == [0] * 5 and command_counts(store) == [0, 0]
+        assert observe(store, op, True)["state"] == "terminated"
+    else:
+        assert observe(store, op, False)["state"] == "committed"
+        assert command_counts(store) == [1, 1]

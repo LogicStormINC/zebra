@@ -178,3 +178,32 @@ def test_same_key_integrity_conflict_is_not_relabelled_as_transient(tmp_path):
             recorder=recorder, events=stores.events.list_for_session(sid), started_at=NOW
         )
     assert not isinstance(error.value, CompletionRecoveryPending)
+
+
+def test_isolated_interruption_reconciles_from_refreshed_fenced_head(monkeypatch):
+    from zebra_agent_worker import execution
+    from zebra_agent_worker.execution_errors import WorkerExecutorInterrupted
+
+    lease = Mock(session_id=uuid4())
+    claimed = execution.ClaimedSession(lease=lease, recovery=Mock())
+    fresh = Mock()
+    completed = object()
+    service = SimpleNamespace(
+        _settings=object(),
+        _recovery_service=SimpleNamespace(recover_session=Mock(return_value=fresh)),
+    )
+    monkeypatch.setattr(execution, "process_factory", lambda _: "isolated")
+    isolated = Mock(side_effect=WorkerExecutorInterrupted("lost IPC"))
+    monkeypatch.setattr(execution, "execute_isolated", isolated)
+
+    def reconcile(service, claim, ownership_check, started_at):
+        return completed if claim.recovery is fresh and claim.lease is lease else None
+
+    monkeypatch.setattr(execution, "recover_committed_completion", reconcile)
+    assert execution.SessionExecutionService._execute_claimed_session_once(
+        service, claimed, started_at=NOW, ownership_check=Mock()
+    ) is completed
+    service._recovery_service.recover_session.assert_called_once_with(
+        lease.session_id, worker_lease=lease
+    )
+    isolated.assert_called_once()

@@ -1,0 +1,29 @@
+{
+  "task": "ERP-AUTH-CLOUD-EXPORT-20261102",
+  "canonical_main_commit": "c418ecaec7e601f2968a06b7cc1a26fba9b2dae9",
+  "canonical_export_commit": "cf190d309bb255820b926295bd8c15ff8928298e",
+  "exact_git_archive_match": true,
+  "source_offline_tests": {
+    "passed": 22,
+    "failed": 0,
+    "serial": true
+  },
+  "make_check": {
+    "passed": true,
+    "file_size_checked": 4090,
+    "violations": 0,
+    "ruff": "pass",
+    "mypy_source_files": 1519,
+    "eval_cases": 30,
+    "runtime_boundary": "pass",
+    "postcommit_and_unknown_boundaries": "pass"
+  },
+  "runtime_apps_packages_modified": false,
+  "full_make_test": "not_run: source integration and read-only auth audit; no runtime execution changes",
+  "production_auth_matrix_cases": 12,
+  "original_history_receipt_hashes_unchanged": true,
+  "task_replay": false,
+  "controller_acquisition": false,
+  "schema_migration": false,
+  "temporary_docker_resources_remaining": false
+}

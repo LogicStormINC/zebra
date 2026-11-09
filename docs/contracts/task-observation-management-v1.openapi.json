@@ -1,0 +1,147 @@
+{
+ "openapi": "3.1.0",
+ "info": {
+  "title": "Native scoped Task observation (management plane)",
+  "version": "1.0.0"
+ },
+ "security": [
+  {
+   "hostManagementBearer": []
+  }
+ ],
+ "paths": {
+  "/management/v1/task-observations": {
+   "get": {
+    "operationId": "observeTasks",
+    "description": "Read-only, namespace-scoped Task coordinates for the management plane. Requires explicit tasks.read action; the namespace comes from the registered deployment configuration, never from request parameters. Fixed observation window (25 most recently updated Tasks). Titles, user content, event bodies and credential material never leave the native side. No queries/cookies/duplicate headers; no-store; write methods are rejected.",
+    "parameters": [
+     {
+      "name": "X-Runtime-Deployment",
+      "in": "header",
+      "required": true,
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "X-Runtime-Audience",
+      "in": "header",
+      "required": true,
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "X-Runtime-Product",
+      "in": "header",
+      "required": true,
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "X-Runtime-Environment",
+      "in": "header",
+      "required": true,
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "X-Runtime-Trust-Revision",
+      "in": "header",
+      "required": true,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Scoped observation window",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Observation"
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ },
+ "components": {
+  "securitySchemes": {
+   "hostManagementBearer": {
+    "type": "http",
+    "scheme": "bearer",
+    "bearerFormat": "rthm_"
+   }
+  },
+  "schemas": {
+   "Observation": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+     "contractVersion",
+     "namespace",
+     "tasks"
+    ],
+    "properties": {
+     "contractVersion": {
+      "const": "task-observation-management/1"
+     },
+     "namespace": {
+      "type": "string"
+     },
+     "tasks": {
+      "type": "array",
+      "items": {
+       "$ref": "#/components/schemas/TaskCoordinates"
+      }
+     }
+    }
+   },
+   "TaskCoordinates": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+     "taskId",
+     "status",
+     "activeSegmentId",
+     "currentSequence"
+    ],
+    "properties": {
+     "taskId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "status": {
+      "enum": [
+       "created",
+       "ready",
+       "running",
+       "waiting_approval",
+       "waiting_input",
+       "waiting_client_effect",
+       "awaiting_turn",
+       "suspended",
+       "completed",
+       "failed",
+       "cancelled"
+      ]
+     },
+     "activeSegmentId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "currentSequence": {
+      "type": "integer",
+      "minimum": 0
+     }
+    }
+   }
+  }
+ }
+}

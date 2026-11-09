@@ -1,0 +1,99 @@
+{
+  "task": "CA-HA-03",
+  "slice": "03A",
+  "date": "2026-11-02",
+  "status": "candidate_verified_not_deployed",
+  "base": "56ae352a5",
+  "branch": "codex/ca-ha-03-budgets",
+  "source_sha256": {
+    "apps/worker/src/zebra_agent_worker/worker_polling.py": "7486dfe24de5d78d19a0b0280c6eaea80cb5158ebf0185e78f3e906bdaf6f584",
+    "apps/worker/src/zebra_agent_worker/worker_loop_service.py": "8a091ac27bd471ae967cf647e49d84b1b99f85cd9144f25be8090f5f67bf78b2",
+    "apps/worker/src/zebra_agent_worker/loop.py": "b7644dd4d8e4d845c7fd12bd42dac2193bb742dbb5a2a35329bbf4fb9b98863a",
+    "apps/worker/src/zebra_agent_worker/command_process.py": "f3a578648f812a7693618d5e067a08ae188410b4cd3eb51ae1a4d196ee44b87a",
+    "apps/worker/src/zebra_agent_worker/command_background.py": "64e4ee4729f683cd5184c8d8315681ac01e22d81b13a1d49ab7cc031c33acc6b",
+    "packages/agent-storage/src/agent_storage/postgres/command_wakeup_pickup.py": "fa759aa0e9f4425c25d2502944a2b188b1a1470a2c7fdee24d297306473154e2",
+    "tests/worker/test_cloud_ha_polling.py": "e8412b2af28fb5d98be9d72e0a97949f75414fb48691265325e3fe096d020af4",
+    "tests/worker/test_execution_control_status.py": "59b64735c15d77cc81ba07d9968d0e8a03643d6ed234ed44d7a0d5b74a5097cd",
+    "tests/agent_storage/test_postgres_command_wakeup_pickup.py": "db331ddd638bdaddaa8f72891a10643908b40594b6606df34f61c85691aaea09"
+  },
+  "red": {
+    "polling": {
+      "failed": 8,
+      "passed": 2
+    },
+    "real_postgres_table_lock": {
+      "failed": 2
+    },
+    "clean_baseline_fixture_failure": {
+      "base": "56ae352a5",
+      "failed": 1,
+      "cause": "Mock omitted existing forced SQL column",
+      "baseline_source_export_import_paths_verified": true
+    }
+  },
+  "worker_complete": {
+    "command": "uv run --no-sync pytest -q tests/worker",
+    "passed": 1326,
+    "skipped": 759,
+    "failed": 0,
+    "seconds": 347.77
+  },
+  "focused": {
+    "passed": 92,
+    "skipped": 1,
+    "failed": 0
+  },
+  "real_postgres": {
+    "passed": 33,
+    "failed": 0,
+    "seconds": 28.03,
+    "coverage": [
+      "table-lock native deadline",
+      "scope fairness and live-tail prefix progress",
+      "independent control while execution saturated",
+      "ordinary pool transaction-reset isolation"
+    ],
+    "resource_attempt": {
+      "initial_passed": 30,
+      "initial_errors": 1,
+      "cause": "isolated tmpfs WAL DiskFull",
+      "correction": "PostgreSQL min/max_wal_size32MiB; shared_buffers32MiB; same 256MiB tmpfs and 512MiB RAM limit"
+    },
+    "final_resource_receipt": {
+      "container": "7a8937943c4bd051d2c79357eaaa7555c6b38869a59940b3344a6f7132b10c87",
+      "temporary_data": "tmpfs256MiB",
+      "limit": "1CPU/512MiB/PID128",
+      "production": false,
+      "wal": "min/max32MiB",
+      "targets": [
+        "tests/agent_storage/test_postgres_command_wakeup_pickup.py",
+        "tests/agent_storage/test_postgres_connection_pool.py"
+      ],
+      "exit": 0,
+      "seconds": 29.966,
+      "owned_container_removed": true,
+      "preexisting_containers_retained": false
+    },
+    "cleanup_boundary": "Only exact owned container IDs were removed. Preexisting container inventory changed concurrently; no assertion that it was unchanged."
+  },
+  "make_check": {
+    "exit": 0,
+    "size_violations": 0,
+    "ruff": "pass",
+    "mypy": "pass",
+    "eval": 30,
+    "boundary_and_progress_checks": "pass"
+  },
+  "review": "self-reviewed; independent/human review pending",
+  "not_verified": [
+    "full repository make test",
+    "E1-C/E1-O load and p95/p99 capacity",
+    "fleet-wide connection quota and control reservation",
+    "production HA or multi-node fault takeover",
+    "legacy stop automatic reconciliation/alerting"
+  ],
+  "production_changes": false,
+  "business_run_replayed": false,
+  "model_calls": 0,
+  "old_environments_restarted": false
+}

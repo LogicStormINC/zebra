@@ -22,9 +22,6 @@ from agent_core.ports.task_admission_transaction import (
     TaskAdmissionReceipt,
     TaskAdmissionRequest,
 )
-from psycopg import IsolationLevel, errors
-from psycopg.types.json import Jsonb
-
 from agent_storage.postgres.database import PostgresDatabase
 from agent_storage.postgres.events import append_event_in_transaction
 from agent_storage.postgres.projections import save_session_in_transaction
@@ -36,6 +33,8 @@ from agent_storage.postgres.task_lineage import (
     root_for_session,
 )
 from agent_storage.postgres.workspaces import save_workspace_in_transaction
+from psycopg import IsolationLevel, errors
+from psycopg.types.json import Jsonb
 
 
 class PostgresTaskAdmissionTransaction:
@@ -123,11 +122,19 @@ class PostgresTaskAdmissionTransaction:
             )
         if request.http_input is not None:
             from agent_storage.postgres.http_input_attachments import admit_http_input
+
             if request.binding is None:
-                raise ValueError('HTTP input admission requires a frozen Task binding')
-            event = next((event for event in persisted_events if event.event_id == request.http_input.event_id), None)
+                raise ValueError("HTTP input admission requires a frozen Task binding")
+            event = next(
+                (
+                    event
+                    for event in persisted_events
+                    if event.event_id == request.http_input.event_id
+                ),
+                None,
+            )
             if event is None:
-                raise ValueError('HTTP input event is absent from bootstrap')
+                raise ValueError("HTTP input event is absent from bootstrap")
             admit_http_input(connection, namespace, request.http_input, event, request.binding)
         persisted_events += tuple(
             append_event_in_transaction(connection, namespace, event) for event in command_events
@@ -417,7 +424,9 @@ def _read_task_binding(
     return _binding_from_snapshot(row["snapshot_json"], task_id, row.get("binding_digest"))
 
 
-def _binding_from_snapshot(snapshot: Any, task_id: TaskId, stored_digest: Any) -> TaskBindingSnapshot:
+def _binding_from_snapshot(
+    snapshot: Any, task_id: TaskId, stored_digest: Any
+) -> TaskBindingSnapshot:
     if not isinstance(stored_digest, str) or re.fullmatch(r"[0-9a-f]{64}", stored_digest) is None:
         raise ValueError("stored task binding digest is missing or malformed")
     binding = TaskBindingSnapshot.model_validate(snapshot)

@@ -128,4 +128,8 @@ def test_negative_vectors_reach_semantic_boundary():
                     catalog.resolve(candidate)
                 if negative["stage"] == "assembly":
                     with pytest.raises(ValueError):
-                        RuntimeAssembly(bundle=candidate, provider_profile=catalog.providers[0])
+                        RuntimeAssembly(
+                        bundle=candidate,
+                        provider_profile=catalog.providers[0],
+                        budget_profile=catalog.budget,
+                    )

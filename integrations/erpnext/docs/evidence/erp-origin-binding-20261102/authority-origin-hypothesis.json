@@ -1,0 +1,29 @@
+{
+  "conversation": "5vdk10lcmu",
+  "requests": [
+    {
+      "path": "/capabilities/runtime",
+      "status": 200,
+      "error": null
+    },
+    {
+      "path": "/tasks/aea4fc91-adc8-4352-81cd-8136a436aaaf/header",
+      "status": 200,
+      "error": null
+    },
+    {
+      "path": "/tasks/aea4fc91-adc8-4352-81cd-8136a436aaaf/usage",
+      "status": 200,
+      "error": null
+    },
+    {
+      "path": "/tasks/aea4fc91-adc8-4352-81cd-8136a436aaaf/artifacts",
+      "status": 200,
+      "error": null
+    }
+  ],
+  "original_mapping_unchanged": true,
+  "process_only_authority_origin_restored": true,
+  "model_requests": 0,
+  "commands_submitted": 0
+}

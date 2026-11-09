@@ -1,0 +1,9 @@
+{
+  "owner": "ca-baseline-gate-01",
+  "container": "ca-baseline-gate-01-82703b6aef3f",
+  "cpus": 1,
+  "memory": "512m",
+  "pids": 128,
+  "data": "tmpfs256MiB",
+  "cleaned": true
+}

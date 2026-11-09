@@ -124,7 +124,7 @@ def test_queued_receipt_and_canonical_run_are_built_before_single_atomic_admissi
     monkeypatch, validation_mode
 ):
     from agent_storage.postgres import command_coverage_admission
-    from zebra_agent_api import session_binding
+    from zebra_agent_api import host_manifest_freeze, session_binding
 
     raw = payload()
     expected = dict(raw["coverage_admission"])
@@ -135,7 +135,9 @@ def test_queued_receipt_and_canonical_run_are_built_before_single_atomic_admissi
         expected["validation_mode"] = validation_mode
     captured = []
     monkeypatch.setattr(CoverageHttpAdmission, "preflight", lambda self: None)
-    monkeypatch.setattr(session_binding, "_frozen_manifest_digest", lambda *args: "b" * 64)
+    # Orchestration-only fixture: no connector binding, so freeze the real unbound sentinel.
+    monkeypatch.setattr(session_binding, "_frozen_manifest_digest", lambda *args: "0" * 64)
+    monkeypatch.setattr(host_manifest_freeze, "resolve_admission_profile", lambda *args: None)
 
     def admit(database_dsn, namespace, request, digest):
         request.validate()

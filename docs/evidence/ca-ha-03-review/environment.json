@@ -1,0 +1,61 @@
+{
+  "status": "environment_unverified",
+  "date": "2026-11-02",
+  "mode": "read_only_no_provisioning_or_workflow_dispatch",
+  "local_contexts": {
+    "colima-zebra-gvisor": "get_nodes_unreachable_exit1",
+    "orbstack": "get_nodes_unreachable_exit1"
+  },
+  "github": {
+    "repository": "LogicStormINC/zebra",
+    "repo_actions_runners_endpoint": {
+      "exit": 0,
+      "total_count": 0,
+      "runners": []
+    },
+    "environments_endpoint": {
+      "exit": 0,
+      "names": []
+    },
+    "workflow_labels_do_not_prove_available_cluster": true
+  },
+  "server": {
+    "address": "192.168.101.7",
+    "known_role": "existing_production_single_host",
+    "cpu_count": 16,
+    "memory_observed_mib": {
+      "total": 31907,
+      "used": 9652,
+      "free": 814,
+      "available": 22255,
+      "swap_used": 4399
+    },
+    "docker_swarm": "inactive",
+    "kubectl_k3s_microk8s_in_PATH": false,
+    "cluster_absence_not_proven": true,
+    "dedicated_independent_E1_nodes_not_verified": true
+  },
+  "not_run": [
+    "E1 cluster",
+    "resource provisioning",
+    "fault injection",
+    "workflows",
+    "old environment restart",
+    "production changes"
+  ],
+  "next_required": "Freeze fresh two-host Compose topology, resource caps and exact ownership; build candidate images and verify actual composition before E1.",
+  "subsequent_user_authorization": {
+    "text": "现在没有，你可以去192.168.101.7上面建立一个，本地orbstack也可以",
+    "scope": "fresh isolated E1 staging on server and/or OrbStack, preserve existing production and data"
+  },
+  "subsequent_resource_preflight": {
+    "server_available_mib": 21911,
+    "server_root_free_gib": 67,
+    "mac_physical_gib": 32,
+    "mac_memory_free_percent": 65,
+    "orbstack_docker_cpus": 10,
+    "orbstack_docker_memory_bytes": 16818991104,
+    "existing_zebra_gvisor_vm": "running, no containers; existing mTLS engine and runsc verified read-only",
+    "existing_orbstack_cluster_not_restarted": true
+  }
+}

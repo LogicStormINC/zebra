@@ -3,7 +3,6 @@ from __future__ import annotations
 from collections.abc import Callable
 from contextlib import AbstractContextManager, nullcontext
 from datetime import UTC, datetime, timedelta
-from hashlib import sha256
 from uuid import UUID
 
 from agent_core.domain.artifact_payloads import ArtifactPayloadWrite
@@ -14,11 +13,9 @@ from agent_core.domain.effect_dispatch import (
     EffectDispatchStateError,
     EffectDispatchStatus,
     EffectEvidence,
-    EffectResolutionOutcome,
     EffectScheduleRequest,
 )
 from agent_core.domain.events import EventActor, EventType, SessionEvent
-from agent_core.domain.host_effect_receipts import HostEffectReceipt, HostEffectStatus
 from agent_core.domain.identifiers import ArtifactId, SessionId
 from agent_core.domain.leases import LeaseFence
 from agent_core.domain.modeling import ModelToolDefinition
@@ -29,7 +26,6 @@ from agent_core.ports import (
     WorkerMutationAuthority,
 )
 from agent_core.ports.effect_dispatch import effect_input
-
 from agent_tools.effect_guard_support import (
     EffectPayloadCoordinatorLike,
     ToolGatewayLike,
@@ -40,6 +36,7 @@ from agent_tools.effect_guard_support import (
     uncertain_evidence,
 )
 from agent_tools.effect_payload_admission import settle_unreadable_payload
+from agent_tools.effect_receipt_reconciliation import reconcile_uncertain_effects
 from agent_tools.legacy_effect_guard import EffectGuardedToolGateway as EffectGuardedToolGateway
 
 
@@ -88,7 +85,8 @@ class FencedEffectToolGateway:
         self._mutation_guard = mutation_guard
         self._execution_started = execution_started
         self.execution_finished_listener: Callable[[ToolCall, ToolResult | None], None] | None = (
-            None)
+            None
+        )
 
     def __getattr__(self, name: str) -> object:
         return getattr(self._gateway, name)
@@ -143,72 +141,7 @@ class FencedEffectToolGateway:
         return len(claims)
 
     def reconcile_uncertain(self, *, limit: int = 100) -> int:
-        self._ownership_check()
-        list_uncertain = getattr(self._dispatch, "list_uncertain", None)
-        resolver = getattr(self._gateway, "reconcile_effect_receipt", None)
-        if not callable(list_uncertain) or not callable(resolver):
-            return 0
-        dispatches: tuple[EffectDispatch, ...] = list_uncertain(
-            self._execution_session_id,
-            current_fence=self._fence,
-            limit=limit,
-        )
-        resolved = 0
-        for dispatch in dispatches:
-            self._ownership_check()
-            evidence = dispatch.evidence
-            receipt = None if evidence is None else evidence.host_effect_receipt
-            if receipt is None:
-                continue
-            settled: HostEffectReceipt = resolver(receipt)
-            if not settled.reconciled:
-                continue
-            tool_call = self._read_tool_call(dispatch.payload_artifact_ref)
-            result = ToolResult(
-                tool_call_id=tool_call.tool_call_id,
-                status=(
-                    ToolCallStatus.EXECUTED
-                    if settled.effect_status is HostEffectStatus.SUCCEEDED
-                    else ToolCallStatus.FAILED
-                ),
-                output="Host Effect reconciled from its durable receipt.",
-                metadata={
-                    "provider_operation_id": settled.provider_operation_id,
-                    "business_revision": settled.business_revision,
-                    "business_outcome": (
-                        "applied"
-                        if settled.effect_status is HostEffectStatus.SUCCEEDED
-                        else "rejected"
-                    ),
-                    "transport_outcome": "returned",
-                    "host_effect_receipt": settled.model_dump(mode="json"),
-                },
-            )
-            with self._mutation_guard():
-                terminal = self._terminal_event(tool_call, result)
-                persisted = self._dispatch.resolve_uncertain(
-                    dispatch.dispatch_id,
-                    current_fence=self._fence,
-                    evidence=EffectEvidence(
-                        reason_code="host_receipt_reconciled",
-                        provider_operation_id_hash=sha256(
-                            settled.provider_operation_id.encode()
-                        ).hexdigest(),
-                        host_effect_receipt=settled,
-                    ),
-                    outcome=(
-                        EffectResolutionOutcome.SUCCEEDED
-                        if settled.effect_status is HostEffectStatus.SUCCEEDED
-                        else EffectResolutionOutcome.FAILED_NO_EFFECT
-                    ),
-                    terminal_event=terminal,
-                    result=(
-                        result if settled.effect_status is HostEffectStatus.SUCCEEDED else None
-                    ),
-                )
-                self._accept_event(persisted)
-            resolved += 1
-        return resolved
+        return reconcile_uncertain_effects(self, limit=limit)
 
     def execute(self, tool_call: ToolCall) -> ToolResult:
         self._ownership_check()
@@ -282,17 +215,26 @@ class FencedEffectToolGateway:
                         else ToolResult(
                             tool_call_id=claimed_call.tool_call_id,
                             status=ToolCallStatus.FAILED,
-                            metadata={"effect_status": "failed_no_effect",
-                                      "execution_state": "not_executed"},
+                            metadata={
+                                "effect_status": "failed_no_effect",
+                                "execution_state": "not_executed",
+                            },
                         ),
                     )
-                    commit = (self._dispatch.mark_uncertain if dispatched
-                              else self._dispatch.fail_no_effect)
+                    commit = (
+                        self._dispatch.mark_uncertain
+                        if dispatched
+                        else self._dispatch.fail_no_effect
+                    )
                     persisted = commit(
                         claim,
-                        evidence=EffectEvidence(reason_code=(
-                            "provider_call_raised" if dispatched else "provider_call_not_dispatched"
-                        )),
+                        evidence=EffectEvidence(
+                            reason_code=(
+                                "provider_call_raised"
+                                if dispatched
+                                else "provider_call_not_dispatched"
+                            )
+                        ),
                         terminal_event=terminal,
                     )
                     self._accept_event(persisted)
@@ -335,13 +277,14 @@ class FencedEffectToolGateway:
             raise EffectDispatchConflictError("scheduled Effect identity conflicts")
         original = ToolCall.model_validate(
             effect_input(self._read_tool_call(scheduled.payload_artifact_ref)),
-            strict=True, extra="forbid",
+            strict=True,
+            extra="forbid",
         )
-        if (
-            (original.tool_call_id, original.name, original.arguments)
-            != (tool_call.tool_call_id, tool_call.name, tool_call.arguments)
-            or effect_identity(original, self._authority_scope) != identity
-        ):
+        if (original.tool_call_id, original.name, original.arguments) != (
+            tool_call.tool_call_id,
+            tool_call.name,
+            tool_call.arguments,
+        ) or effect_identity(original, self._authority_scope) != identity:
             raise EffectDispatchConflictError("durable Effect request conflicts")
         self._ownership_check()
         if scheduled.status is EffectDispatchStatus.SUCCEEDED:
@@ -351,8 +294,10 @@ class FencedEffectToolGateway:
         if scheduled.status is not EffectDispatchStatus.PENDING:
             raise EffectDispatchStateError("exact Effect is not pending; no reissue permitted")
         claim = self._dispatch.claim_exact(
-            self._execution_session_id, expected=scheduled,
-            fence=self._fence, claim_ttl=self._claim_ttl,
+            self._execution_session_id,
+            expected=scheduled,
+            fence=self._fence,
+            claim_ttl=self._claim_ttl,
         )
         if claim is None:
             raise EffectDispatchStateError("exact Effect was not claimable")
@@ -363,7 +308,8 @@ class FencedEffectToolGateway:
         find_existing = getattr(self._dispatch, "find_by_ledger_key", None)
         if callable(find_existing):
             existing: EffectDispatch | None = find_existing(
-                self._root_session_id, identity=identity)
+                self._root_session_id, identity=identity
+            )
             if existing is not None:
                 if (
                     existing.identity != identity
@@ -449,7 +395,9 @@ class FencedEffectToolGateway:
     ) -> SessionEvent:
         if self._effect_payloads is not None:
             persisted = self._effect_payloads.complete_with_payload(
-                claim, result=result, terminal_event=terminal_event,
+                claim,
+                result=result,
+                terminal_event=terminal_event,
                 authority=self._require_mutation_authority(),
             )
             if persisted is not None:
@@ -462,7 +410,10 @@ class FencedEffectToolGateway:
         evidence = uncertain_evidence(result)
         if self._effect_payloads is not None:
             persisted = self._effect_payloads.mark_uncertain_with_payload(
-                claim, result=result, evidence=evidence, terminal_event=terminal_event,
+                claim,
+                result=result,
+                evidence=evidence,
+                terminal_event=terminal_event,
                 authority=self._require_mutation_authority(),
             )
             if persisted is not None:
@@ -477,7 +428,10 @@ class FencedEffectToolGateway:
         evidence = EffectEvidence(reason_code="provider_rejected_without_effect")
         if self._effect_payloads is not None:
             persisted = self._effect_payloads.fail_no_effect_with_payload(
-                claim, result=result, evidence=evidence, terminal_event=terminal_event,
+                claim,
+                result=result,
+                evidence=evidence,
+                terminal_event=terminal_event,
                 authority=self._require_mutation_authority(),
             )
             if persisted is not None:

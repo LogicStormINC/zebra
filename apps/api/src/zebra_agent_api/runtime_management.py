@@ -19,6 +19,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from zebra_agent_config import ZebraAgentSettings
 
+from zebra_agent_api.database_budget import database_call
 from zebra_agent_api.extension_request_body import _unique_object
 
 CONTRACT = "runtime-management/1"
@@ -55,8 +56,13 @@ def _config(path: str | None, namespace: str | None) -> dict[str, Any]:
     if len(raw) > 16384:
         raise ValueError("configuration too large")
     value = json.loads(raw, object_pairs_hook=_unique_object)
-    if not isinstance(value, dict) or set(value) != _FIELDS:
+    if not isinstance(value, dict) or not _FIELDS <= set(value) <= _FIELDS | {
+        "nativeScriptAbi"
+    }:
         raise ValueError("invalid configuration fields")
+    abi = value.get("nativeScriptAbi", "unsupported")
+    if abi not in ("unsupported", "cloud-agent.native-script/1"):
+        raise ValueError("invalid nativeScriptAbi capability")
     for field in ("deploymentId", "deploymentNamespace", "audience", "productId", "environment"):
         if (
             not isinstance(value[field], str)
@@ -131,7 +137,7 @@ def register_runtime_management(
             return response
         await slots.acquire()
         read = asyncio.create_task(
-            asyncio.to_thread(_config, settings.runtime_management_config, namespace)
+            database_call(None, _config, settings.runtime_management_config, namespace)
         )
 
         # Keep the capacity slot until the actual read ends, including timed-out callers.
@@ -172,7 +178,7 @@ def register_runtime_management(
                 "checks": {"database": "not_checked", "worker": "not_checked"},
                 "capabilities": {
                     "bundleManagement": "unsupported",
-                    "nativeScriptAbi": "unsupported",
+                    "nativeScriptAbi": config.get("nativeScriptAbi", "unsupported"),
                 },
             },
             headers={"Cache-Control": "no-store"},

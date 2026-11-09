@@ -1,0 +1,26 @@
+Traceback (most recent call last):
+  File "/var/folders/qx/n_v9dpmd12dgb9m1s75tjgtm0000gn/T/ca-g02-erp-source-baseline-rdvyuxkz/cloud-patches/tests/check_private_workspace.py", line 53, in <module>
+    receipts = list(pool.map(lambda _: allocator.ensure(request), range(8)))
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lukeding/.local/share/uv/python/cpython-3.12.9-macos-aarch64-none/lib/python3.12/concurrent/futures/_base.py", line 619, in result_iterator
+    yield _result_or_cancel(fs.pop())
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lukeding/.local/share/uv/python/cpython-3.12.9-macos-aarch64-none/lib/python3.12/concurrent/futures/_base.py", line 317, in _result_or_cancel
+    return fut.result(timeout)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/Users/lukeding/.local/share/uv/python/cpython-3.12.9-macos-aarch64-none/lib/python3.12/concurrent/futures/_base.py", line 456, in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/Users/lukeding/.local/share/uv/python/cpython-3.12.9-macos-aarch64-none/lib/python3.12/concurrent/futures/_base.py", line 401, in __get_result
+    raise self._exception
+  File "/Users/lukeding/.local/share/uv/python/cpython-3.12.9-macos-aarch64-none/lib/python3.12/concurrent/futures/thread.py", line 59, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/folders/qx/n_v9dpmd12dgb9m1s75tjgtm0000gn/T/ca-g02-erp-source-baseline-rdvyuxkz/cloud-patches/tests/check_private_workspace.py", line 53, in <lambda>
+    receipts = list(pool.map(lambda _: allocator.ensure(request), range(8)))
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/private/var/folders/qx/n_v9dpmd12dgb9m1s75tjgtm0000gn/T/ca-g02-erp-source-baseline-rdvyuxkz/cloud-patches/operator/private_workspace_operator.py", line 356, in ensure
+    (path / 'lost+found').rmdir()
+  File "/Users/lukeding/.local/share/uv/python/cpython-3.12.9-macos-aarch64-none/lib/python3.12/pathlib.py", line 1351, in rmdir
+    os.rmdir(self)
+FileNotFoundError: [Errno 2] No such file or directory: '/var/folders/qx/n_v9dpmd12dgb9m1s75tjgtm0000gn/T/tmpgwlvgn5r/root/1c9955c7-583f-49ab-8332-69536b51bd54/lost+found'

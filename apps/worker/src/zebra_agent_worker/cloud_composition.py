@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, replace
 from pathlib import Path
+from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 
 import httpx
@@ -44,6 +45,9 @@ from zebra_agent_worker.provider_continuation_commit import (
 from zebra_agent_worker.runtime_instances import InstanceFactory
 from zebra_agent_worker.tool_output_artifacts import CloudToolOutputArtifactCoordinator
 from zebra_agent_worker.transient_output_runtime import TransientOutputFactory
+
+if TYPE_CHECKING:
+    from zebra_agent_worker.execution_tool_gateway import ModelRequestBudgetFactory
 
 
 def _workspace_snapshot_uri(
@@ -93,6 +97,7 @@ class CloudWorkerComposition:
     memory_runtime: MemoryGatewayRuntime | None = None
     coverage_runtime: CloudCoverageRuntime | None = None
     transient_output_factory: TransientOutputFactory | None = None
+    model_request_budget_factory: ModelRequestBudgetFactory | None = None
 
 
 def compose_cloud_worker(

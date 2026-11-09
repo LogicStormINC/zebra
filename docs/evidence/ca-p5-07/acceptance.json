@@ -1,0 +1,39 @@
+{
+  "task": "CA-P5-07",
+  "status": "producer-review",
+  "parent": "d5f10cb42e202f7d7db1cf02a3fc4c24a5723551",
+  "codeBlobs": {
+    "apps/worker/src/zebra_agent_worker/main.py": "5bc5ebdf31f8f9135b32add945c2c5d53b77a4d379665718cdbb9d099eea4a6b",
+    "apps/worker/src/zebra_agent_worker/worker_loop_service.py": "785b57dcd8bddf72a6e37655990c81c0b942e457ca7bab18f92513ba30695ab3",
+    "apps/worker/src/zebra_agent_worker/worker_signals.py": "1f2613a0a7b4051b876d27381bc739553cb981c17825619694475d2919b98af8",
+    "apps/worker/src/zebra_agent_worker/worker_polling.py": "c5f12ca20bcefd4c74b68c90564ef9b5f3b103929ed63804c3948b510ac67afa",
+    "apps/worker/src/zebra_agent_worker/command_process.py": "48cc9a554ab57ff2248fbb89c1fcd1038a0929a3f1c8951742b1f7058e86e550"
+  },
+  "focusedPassed": 31,
+  "makeTest": {
+    "passed": 11231,
+    "conditionalSkipped": 3080,
+    "failures": 0,
+    "logSHA256": "9b61a9093afc0525a2a13e50cdedb8e9277d5afc7704f45ebc7a69bb8e38a779"
+  },
+  "makeCheck": {
+    "passed": true,
+    "typedSources": 1448,
+    "evalCases": 30,
+    "sizeViolations": 0,
+    "logSHA256": "7efbab4181819971b5518087aef670f00142e882e1b376521cf19b97c9339e2d"
+  },
+  "resourceAudit": {
+    "sourceDrift": false,
+    "confirmedOwnedLeftovers": 0,
+    "externalContainers": 4,
+    "externalNamedVolumes": 4,
+    "externalMarkedAnonymousVolumes": 8,
+    "firstRunUnattributedVolumesRetained": 4,
+    "earlierUnprovenVolumesRetained": 23
+  },
+  "actualPID1JointAcceptance": "OD-P5-07C-R pending exact source images",
+  "productionOperations": false,
+  "schemaMigration": false,
+  "historyReceiptsCoverageRewritten": false
+}

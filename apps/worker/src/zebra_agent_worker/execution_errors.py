@@ -21,6 +21,7 @@ from agent_core.harness.orchestration_events import continuation_metadata
 from agent_core.harness.provider_continuation import ProviderContinuationUncertainError
 from agent_core.ports.model_gateway import ModelResponseRejectedError
 from agent_core.ports.runtime import RuntimeCapabilityError
+from agent_core.ports.worker_budget import ModelRequestOutcomeUnknown
 from agent_core.ports.worker_progress import WorkerProgressTimeout
 from agent_core.ports.workspace_projection_store import WorkerCommitConfirmationPending
 from agent_integrations.model_errors import ModelProviderError
@@ -88,6 +89,16 @@ def exception_attempt_result(exc: Exception, metadata: dict[str, object]) -> Har
             outcome=HarnessAttemptOutcome.SUSPENDED,
             summary="Accepted plugin authority is unavailable; execution suspended.",
             metadata={**metadata, "stop_reason": PLUGIN_UNAVAILABLE, "retryable": False},
+        )
+    if isinstance(exc, ModelRequestOutcomeUnknown):
+        return HarnessAttemptResult(
+            outcome=HarnessAttemptOutcome.SUSPENDED,
+            summary="model request outcome is unknown and requires reconciliation",
+            metadata={
+                **metadata,
+                "stop_reason": "model_request_outcome_unknown",
+                "retryable": False,
+            },
         )
     if isinstance(exc, ProviderContinuationUncertainError):
         return HarnessAttemptResult(

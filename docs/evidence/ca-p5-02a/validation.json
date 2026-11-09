@@ -1,0 +1,63 @@
+{
+  "task": "CA-P5-02A",
+  "recordedAt": "2026-10-28T17:08:11.233615+08:00",
+  "branch": "codex/ca-p5-02a-gate-termination",
+  "base": "985a369ae54cd8261bac2b219a1cef622ffdc931",
+  "gates": {
+    "makeTest": 0,
+    "makeCheck": 0,
+    "passed": 11203,
+    "conditionalSkips": 3067,
+    "typedSources": 1443,
+    "evalCases": 30,
+    "focusedPassed": 25,
+    "httpExportChecks": 6,
+    "actualHttpVectors": 3,
+    "terminationOnlyCloudComposition": 0
+  },
+  "logs": {
+    "nativeTest": {
+      "localPath": "/tmp/ca-p5-02a-test-final.log",
+      "sha256": "48151666db19caa13631984a1ad8fdb648b7cf0647eff6540c5be22d172d603a"
+    },
+    "nativeCheck": {
+      "localPath": "/tmp/ca-p5-02a-check-commit.log",
+      "sha256": "51097bb5a13f2c8e5dbcca0d10acd3e2e835a1554769418ca5e4891a39aa3b09"
+    },
+    "focused": {
+      "localPath": "/tmp/ca-p5-02a-focused-delivery.log",
+      "sha256": "82283078c85d2533610a041082321b761759755c64a3c1e5fb2f0050ed93d8ef"
+    },
+    "httpExport": {
+      "localPath": "/tmp/ca-p5-02a-http-vectors.log",
+      "sha256": "30f1a0e904a4aedac23d91c34dce3a6f9a2fbe180627c73c8eeea4289502930e"
+    },
+    "composition": {
+      "localPath": "/tmp/ca-p5-02a-composition.log",
+      "sha256": "627610ed30bc939ffe0c7f06c955b54ceb5b6a13565fbd243c5876a175625cc4"
+    },
+    "migrationWorker": {
+      "localPath": "/tmp/ca-p5-02a-migration-worker.log",
+      "sha256": "ba28f91694890820828bbba644b4ed538207ee6a386a430452c5d3032f42fbe8"
+    },
+    "gateConcurrencyDiagnostic": {
+      "localPath": "/tmp/ca-p5-02a-race-diagnostic.log",
+      "sha256": "73a89f37f06fcc70ca7e1ac9478e27753915bec70c25f3137a6b953de64a11e6"
+    }
+  },
+  "boundaries": {
+    "proofScope": "original_gate_command_only",
+    "explicitSeparateMachineAuthority": true,
+    "lateOldSnapshotSerializationProven": true,
+    "alreadyCommittedOriginalRetained": true,
+    "gateV1ContractChanged": false,
+    "historicalBaselineChanged": false,
+    "goProofConsumerImplemented": false,
+    "taskProcessFleetTerminationProven": false,
+    "deploymentOrProductionMigration": false,
+    "historyOriginalReceiptsCoverageChanged": false,
+    "automaticRetryOrControllerClaim": false,
+    "mainMerged": false,
+    "p5Complete": false
+  }
+}

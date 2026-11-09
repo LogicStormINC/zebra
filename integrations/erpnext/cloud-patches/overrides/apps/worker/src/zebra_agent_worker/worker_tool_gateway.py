@@ -1,10 +1,10 @@
 """Tool routing and execution resource ownership for one Worker attempt."""
 
-from dataclasses import dataclass
 from collections.abc import Callable
+from dataclasses import dataclass
 
-from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.execution_authority import ExecutionAuthorityResolutionError
+from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.host_effect_receipts import HostEffectReceipt
 from agent_core.domain.modeling import ModelToolDefinition
 from agent_core.domain.tools import (
@@ -29,7 +29,6 @@ from agent_tools.extension_management import (
     management_contracts,
 )
 from agent_tools.registry import ToolRegistry
-
 from zebra_agent_worker.client_tool_gateway import ClientToolGateway
 from zebra_agent_worker.host_media_artifacts import (
     HostMediaArtifactImporter,
@@ -194,10 +193,15 @@ class WorkerToolGateway:
             except ExecutionAuthorityResolutionError:
                 # The native outer fence recognizes returned/rejected as proof of no effect.
                 return ToolResult(
-                    tool_call_id=tool_call.tool_call_id, status=ToolCallStatus.FAILED,
-                    metadata={"transport_outcome": "returned", "business_outcome": "rejected",
-                              "effect_status": "failed_no_effect", "execution_state": "not_executed",
-                              "reason": "erp_fresh_authority_denied"},
+                    tool_call_id=tool_call.tool_call_id,
+                    status=ToolCallStatus.FAILED,
+                    metadata={
+                        "transport_outcome": "returned",
+                        "business_outcome": "rejected",
+                        "effect_status": "failed_no_effect",
+                        "execution_state": "not_executed",
+                        "reason": "erp_fresh_authority_denied",
+                    },
                 )
         if self.management is not None and tool_call.name in self.management_names:
             return self.management.execute(tool_call)

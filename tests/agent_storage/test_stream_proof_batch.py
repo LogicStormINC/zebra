@@ -50,7 +50,9 @@ def test_native_issue_resolve_observes_intervening_source_mutation(owned, monkey
             assignments = {
                 "token": "fencing_token=fencing_token+1",
                 "owner": "owner_instance_id='changed-owner'",
-                "expiry": "expires_at=clock_timestamp()-interval '1 second'",
+                "expiry": "acquired_at=acquired_at-interval '1 minute', "
+                "heartbeat_at=heartbeat_at-interval '1 minute', "
+                "expires_at=clock_timestamp()-interval '1 second'",
             }
             connection.execute(
                 "UPDATE worker_leases SET "
@@ -204,3 +206,29 @@ def test_native_binding_snapshot_keeps_custom_hooks_and_database_scope(
         assert result == (None if extension == "namespace" else baseline)
     sockets = sum(v for k, v in telemetry.calls.items() if k.endswith("/new_pg_socket"))
     assert sockets == (2 if extension in {"dsn", "namespace"} else 1)
+
+
+def test_latest_run_header_is_reused_only_for_matching_unbounded_read(monkeypatch):
+    from types import SimpleNamespace
+    from unittest.mock import Mock
+
+    from agent_core.ports.task_replay import TaskRunHeader
+    from agent_storage.postgres import stream_proof_batch
+
+    task = uuid4()
+    header = TaskRunHeader(task, "run", 3, None, 0, None, legacy=True)
+    latest = Mock(return_value=header)
+    explicit = Mock(return_value=header)
+    monkeypatch.setattr(stream_proof_batch, "read_latest_run_header", latest)
+    monkeypatch.setattr(stream_proof_batch, "read_run_header", explicit)
+    connection, database = object(), SimpleNamespace(deployment_namespace="ns")
+    snapshot = stream_proof_batch.StreamProofSnapshot(connection, database)
+    assert snapshot.read_latest_run_header(task) is header
+    assert snapshot.read_run_header(task, "run") is header
+    explicit.assert_not_called()
+    snapshot.read_run_header(task, "run", through_sequence=2)
+    snapshot.read_run_header(task, "other")
+    snapshot.read_run_header(uuid4(), "run")
+    fresh = stream_proof_batch.StreamProofSnapshot(connection, database)
+    fresh.read_run_header(task, "run")
+    assert explicit.call_count == 4

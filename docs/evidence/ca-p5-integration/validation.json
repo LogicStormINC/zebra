@@ -1,0 +1,169 @@
+{
+  "task": "CA-P5-INTEGRATE",
+  "sourceParents": {
+    "remote": "ac8473b3504ccdcbf5901d1d3c9d76962d0ef5cb",
+    "verifiedP5": "f8356c30665722889beab1dc0eeebb9d6ddbf63e"
+  },
+  "freshNativeFull": {
+    "passed": 11618,
+    "skipped": 3155,
+    "failed": 15,
+    "durationSeconds": 1397.82,
+    "makeTestPassed": false,
+    "failures": [
+      "tests/api/test_coverage_http_admission.py::test_queued_receipt_and_canonical_run_are_built_before_single_atomic_admission[None]",
+      "tests/api/test_coverage_http_admission.py::test_queued_receipt_and_canonical_run_are_built_before_single_atomic_admission[eager]",
+      "tests/api/test_coverage_http_admission.py::test_queued_receipt_and_canonical_run_are_built_before_single_atomic_admission[final_certification]",
+      "tests/api/test_stream_v2_http.py::test_agui_preparations_share_one_fresh_access_gate[False]",
+      "tests/api/test_stream_v2_http.py::test_agui_preparations_share_one_fresh_access_gate[True]",
+      "tests/config/test_bundle_management_config.py::test_api_only_path_preserves_published_baseline_digest",
+      "tests/config/test_script_validation_config.py::test_setting_does_not_change_old_baseline",
+      "tests/spikes/ag_ui/test_forward_compatibility.py::test_event_type_snapshot_matches_reviewed_sdk_version",
+      "tests/test_file_size_limits.py::test_repository_file_size_gate_passes",
+      "tests/worker/test_coverage_task_recovery.py::test_actual_execution_recovery_refuses_unconfigured_strict_before_workspace[True-False-None]",
+      "tests/worker/test_coverage_task_recovery.py::test_actual_execution_recovery_refuses_unconfigured_strict_before_workspace[True-False-workspace_error1]",
+      "tests/worker/test_coverage_task_recovery.py::test_actual_execution_recovery_refuses_unconfigured_strict_before_workspace[True-False-workspace_error2]",
+      "tests/worker/test_coverage_task_recovery.py::test_actual_execution_recovery_refuses_unconfigured_strict_before_workspace[False-False-None]",
+      "tests/worker/test_coverage_task_recovery.py::test_actual_execution_recovery_refuses_unconfigured_strict_before_workspace[False-False-workspace_error1]",
+      "tests/worker/test_coverage_task_recovery.py::test_actual_execution_recovery_refuses_unconfigured_strict_before_workspace[False-False-workspace_error2]"
+    ],
+    "cleanRemoteExactCaseReproduction": {
+      "failed": 15,
+      "durationSeconds": 2.7,
+      "failuresMatchExactly": true,
+      "baselineSourceClean": true
+    },
+    "newFailingCasesComparedWithRemote": []
+  },
+  "makeCheck": {
+    "passed": false,
+    "inheritedFileSizeViolations": 16,
+    "inheritedRuffErrors": 4924,
+    "evidence": "inherited-checks.json",
+    "boundaryCheckPassed": true,
+    "mypyPassed": true,
+    "mypySourceFiles": 1492,
+    "evalPassed": true,
+    "evalCases": 30,
+    "progressRepairPassed": true,
+    "progressRiskPassed": true
+  },
+  "postgresFocused": {
+    "passed": 70,
+    "durationSeconds": 104.5,
+    "includesCommandCutoverLegacyAndCanonicalSchemaGates": true,
+    "disposableDatabasesOnly": true,
+    "originalMigrationRowsAndUnknownReceiptsRetained": true
+  },
+  "goFresh": {
+    "makeTestPassed": true,
+    "makeCheckPassed": true,
+    "packages": 30,
+    "inheritedNonblockingWarnings": 74
+  },
+  "sourceFreeze": {
+    "entries": 3429,
+    "manifestSha256": "9ced359a4c9d71955e3a782aa5db50399f076400a41cf44988214ef583125e16",
+    "drift": []
+  },
+  "serialVerificationSteps": [
+    {
+      "name": "baseline-coverage",
+      "cwd": "/Users/lukeding/.codex/worktrees/ca-p5-remote-baseline/zebra-agent",
+      "log": "/tmp/p5-branch-baseline-coverage.log",
+      "startedAtEpoch": 1793378152.123799,
+      "exitCode": 1,
+      "elapsedSeconds": 6.63
+    },
+    {
+      "name": "native-test",
+      "cwd": "/Users/lukeding/.codex/worktrees/ca-p5-main-integration/zebra-agent",
+      "log": "/tmp/p5-branch-native-test.log",
+      "startedAtEpoch": 1793378158.7548,
+      "exitCode": 2,
+      "elapsedSeconds": 1402.23
+    },
+    {
+      "name": "native-check",
+      "cwd": "/Users/lukeding/.codex/worktrees/ca-p5-main-integration/zebra-agent",
+      "log": "/tmp/p5-branch-native-check.log",
+      "startedAtEpoch": 1793379560.985811,
+      "exitCode": 2,
+      "elapsedSeconds": 2.74
+    },
+    {
+      "name": "native-ruff",
+      "cwd": "/Users/lukeding/.codex/worktrees/ca-p5-main-integration/zebra-agent",
+      "log": "/tmp/p5-branch-native-ruff.log",
+      "startedAtEpoch": 1793379563.724635,
+      "exitCode": 1,
+      "elapsedSeconds": 0.33
+    },
+    {
+      "name": "native-mypy",
+      "cwd": "/Users/lukeding/.codex/worktrees/ca-p5-main-integration/zebra-agent",
+      "log": "/tmp/p5-branch-native-mypy.log",
+      "startedAtEpoch": 1793379564.053824,
+      "exitCode": 0,
+      "elapsedSeconds": 1.44
+    },
+    {
+      "name": "native-eval",
+      "cwd": "/Users/lukeding/.codex/worktrees/ca-p5-main-integration/zebra-agent",
+      "log": "/tmp/p5-branch-native-eval.log",
+      "startedAtEpoch": 1793379565.497416,
+      "exitCode": 0,
+      "elapsedSeconds": 0.55
+    },
+    {
+      "name": "native-repair",
+      "cwd": "/Users/lukeding/.codex/worktrees/ca-p5-main-integration/zebra-agent",
+      "log": "/tmp/p5-branch-native-repair.log",
+      "startedAtEpoch": 1793379566.0465322,
+      "exitCode": 0,
+      "elapsedSeconds": 1.29
+    },
+    {
+      "name": "native-risk",
+      "cwd": "/Users/lukeding/.codex/worktrees/ca-p5-main-integration/zebra-agent",
+      "log": "/tmp/p5-branch-native-risk.log",
+      "startedAtEpoch": 1793379567.3410869,
+      "exitCode": 0,
+      "elapsedSeconds": 1.11
+    },
+    {
+      "name": "go-test",
+      "cwd": "/Users/lukeding/.codex/worktrees/od-p5-07c-resume/overdoze",
+      "log": "/tmp/p5-branch-go-test.log",
+      "startedAtEpoch": 1793379568.4481258,
+      "exitCode": 0,
+      "elapsedSeconds": 3.14
+    },
+    {
+      "name": "go-check",
+      "cwd": "/Users/lukeding/.codex/worktrees/od-p5-07c-resume/overdoze",
+      "log": "/tmp/p5-branch-go-check.log",
+      "startedAtEpoch": 1793379571.588257,
+      "exitCode": 0,
+      "elapsedSeconds": 16.44
+    }
+  ],
+  "interruptedAttemptsNotPasses": [
+    {
+      "passed": 5835,
+      "skipped": 759,
+      "failed": 3,
+      "reason": "runner injection seam and merged fixture assumptions; corrected before final suite"
+    },
+    {
+      "passed": 7741,
+      "skipped": 2251,
+      "failed": 3,
+      "reason": "completed sibling schema-validator trace and corrected command cutover; full final suite rerun"
+    }
+  ],
+  "temporaryOwnedPgResourcesRemoved": true,
+  "unrelatedServicesAndWorktreesPreserved": true,
+  "deployment": false,
+  "productionMigration": false
+}

@@ -5,11 +5,10 @@ from typing import Any
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.sessions import Session, SessionStatus
 from agent_core.ports.projection_store import ProjectionStorePort
-from psycopg.types.json import Jsonb
-
 from agent_storage.postgres.database import PostgresDatabase
-from agent_storage.postgres.task_io import TaskIoConnections
 from agent_storage.postgres.erp_workspace_policy import containment_enabled, eligible_execution_sql
+from agent_storage.postgres.task_io import TaskIoConnections
+from psycopg.types.json import Jsonb
 
 
 class PostgresProjectionConflictError(ValueError):
@@ -137,7 +136,8 @@ class PostgresProjectionStore(ProjectionStorePort):
         if limit <= 0:
             return []
         return self._list_sessions(
-            "AND status = %s " + eligible_execution_sql(self._database.deployment_namespace)
+            "AND status = %s "
+            + eligible_execution_sql(self._database.deployment_namespace)
             + "ORDER BY updated_at ASC, created_at ASC, session_id ASC LIMIT %s",
             (SessionStatus.READY.value, limit),
         )

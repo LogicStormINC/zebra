@@ -3,7 +3,6 @@ from __future__ import annotations
 import hashlib
 import json
 from collections.abc import Callable, Mapping
-from pathlib import Path
 from time import perf_counter
 from typing import Any
 from uuid import uuid4
@@ -14,7 +13,6 @@ from agent_core.domain.modeling import (
     ModelCompletion,
     ModelContextWindow,
     ModelInvocationPolicy,
-    ModelRole,
     ModelTextDelta,
     ModelThinkingMode,
     ModelToolDefinition,
@@ -46,7 +44,6 @@ from agent_integrations.openai_payloads import (
     serialize_tool,
 )
 from agent_integrations.openai_streaming import read_openai_stream
-from agent_integrations.provider_defaults import _read_defaults
 from agent_integrations.provider_settings import ModelProviderSettings
 from agent_integrations.request_metadata import (
     ModelRequestMetadata,
@@ -57,6 +54,10 @@ CHAT_COMPLETIONS_PATH = "/chat/completions"
 
 
 class OpenAICompatibleModelGateway:
+    worker_budget_hook_contract = "worker-budget/1"
+    worker_budget: Any = None
+    model_request_budget: Callable[[bytes], Any] | None = None
+
     def __init__(
         self,
         *,
@@ -105,6 +106,8 @@ class OpenAICompatibleModelGateway:
 
     def complete_prepared(self, request: PreparedModelRequest) -> ModelCompletion:
         """Consume an owned preparation with one HTTP attempt and no redirects."""
+        if self.worker_budget is not None:
+            raise ValueError("Coverage prepared transport cannot borrow ordinary Task budget")
         if self.authority_check is not None:
             self.authority_check(uuid4().hex)
         return self._prepared_requests.send(self, request)
@@ -139,6 +142,10 @@ class OpenAICompatibleModelGateway:
             strict_tools=strict_tools,
             invocation_policy=invocation_policy,
         )
+        if self.worker_budget is not None:
+            from agent_integrations.worker_budget import guarded_chat
+            return guarded_chat(self, request_body, tools=tools, tool_names=tool_names,
+                                resolved=resolved, metadata=request_metadata)
         started = perf_counter()
         call_id = uuid4().hex
         if deadline_s is not None:
@@ -209,6 +216,10 @@ class OpenAICompatibleModelGateway:
             strict_tools=strict_tools,
             invocation_policy=invocation_policy,
         )
+        if self.worker_budget is not None:
+            from agent_integrations.worker_budget import guarded_chat
+            return guarded_chat(self, request_body, tools=tools, tool_names=tool_names,
+                                resolved=resolved, metadata=request_metadata, sink=on_text_delta)
         client = self._client or httpx.Client(timeout=self._client_timeout())
         should_close = self._client is None
         started = perf_counter()
@@ -337,6 +348,10 @@ class OpenAICompatibleModelGateway:
                 body["reasoning_effort"] = resolved.reasoning_effort.value
             if stream:
                 body["stream_options"] = {"include_usage": True}
+        if (self.worker_budget is not None and resolved is None
+                and invocation_policy is not None
+                and invocation_policy.max_output_tokens is not None):
+            body["max_tokens"] = invocation_policy.max_output_tokens
         metadata = build_request_metadata(body, resolved) if resolved else None
         return body, metadata
 
@@ -429,65 +444,15 @@ class OpenAICompatibleModelGateway:
             if should_close:
                 client.close()
 
-
 def build_model_gateway(
     settings: ModelProviderSettings,
     *,
     env: Mapping[str, str] | None = None,
     client: httpx.Client | None = None,
 ) -> OpenAICompatibleModelGateway | DeepSeekResponsesModelGateway:
-    values = dict(env or {})
-    if env is None:
-        values.update(_read_defaults(Path(".env")))
-        values.update(_read_defaults(Path(".env.local")))
-    api_key = values.get(settings.api_key_env)
-    if api_key is None:
-        import os
-
-        api_key = os.environ.get(settings.api_key_env)
-    normalized_key = (api_key or "").strip()
-    if not normalized_key:
-        raise ValueError(f"missing API key in environment variable {settings.api_key_env}")
-    router = None
-    if settings.provider.lower() == "deepseek":
-        configured_profiles = {
-            role: profile_id
-            for role, profile_id in (
-                (ModelRole.EXECUTOR, settings.executor_profile),
-                (ModelRole.PLANNER, settings.planner_profile),
-                (ModelRole.REVIEWER, settings.reviewer_profile),
-                (ModelRole.SUMMARIZER, settings.summarizer_profile),
-                (ModelRole.ANALYST, settings.analyst_profile),
-                (ModelRole.CLASSIFIER, settings.classifier_profile),
-            )
-            if profile_id is not None
-        }
-        router = DeepSeekProfileRouter(
-            role_profiles=configured_profiles,
-            legacy_executor_model=settings.model,
-        )
-    if settings.wire_api == "responses":
-        if settings.provider.lower() != "deepseek":
-            raise ValueError("Responses wire API is only supported for DeepSeek")
-        return DeepSeekResponsesModelGateway(
-            base_url=settings.base_url,
-            api_key=normalized_key,
-            model_name=settings.model,
-            max_retries=settings.max_retries,
-            deepseek_router=router,
-            client=client,
-        )
-    if settings.wire_api != "chat_completions":
-        raise ValueError(f"unsupported model wire API: {settings.wire_api}")
-    return OpenAICompatibleModelGateway(
-        provider_name=settings.provider,
-        base_url=settings.base_url,
-        api_key=normalized_key,
-        model_name=settings.model,
-        max_retries=settings.max_retries,
-        deepseek_router=router,
-        client=client,
-    )
+    """Compatibility import; construction belongs to the provider factory."""
+    from agent_integrations.model_gateway_factory import build_model_gateway as build
+    return build(settings, env=env, client=client)
 
 
 def _serialized_tool_name(tool: dict[str, object]) -> str:

@@ -2,7 +2,6 @@
 
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
-from contextlib import nullcontext
 from dataclasses import replace
 from threading import Event
 from types import SimpleNamespace
@@ -207,7 +206,7 @@ def test_broker_down_keeps_fallback_and_safe_logs(wired, caplog):
     assert "SECRET" not in caplog.text and "command_background_tick_failed" in caplog.text
 
 
-def test_worker_main_closes_model_client_after_real_process_drain_and_hides_dsn(
+def test_cloud_main_closes_pool_after_real_process_drain_without_sync_model_client(
     wired, monkeypatch, capsys
 ):
     import importlib
@@ -226,20 +225,21 @@ def test_worker_main_closes_model_client_after_real_process_drain_and_hides_dsn(
 
     class Client:
         def __init__(self, **kwargs):
-            pass
-
-        def __enter__(self):
-            return self
-
-        def __exit__(self, *args):
-            log.append("model-client-close")
+            raise AssertionError("Cloud model I/O must be natively cancellable")
 
     process = _process(wired)
     pool_dsns = []
-    monkeypatch.setattr(
-        main_module, "postgres_pool_scope",
-        lambda dsn: pool_dsns.append(dsn) or nullcontext(),
-    )
+    from contextlib import contextmanager
+
+    @contextmanager
+    def pool(dsn, **options):
+        pool_dsns.append(dsn)
+        try:
+            yield
+        finally:
+            log.append("database-pool-close")
+
+    monkeypatch.setattr(main_module, "postgres_pool_scope", pool)
     monkeypatch.setattr(main_module, "load_settings", lambda: settings)
     monkeypatch.setattr(main_module.httpx, "Client", Client)
     monkeypatch.setattr(main_module, "build_worker_loop_service", lambda **kwargs: process)
@@ -248,7 +248,7 @@ def test_worker_main_closes_model_client_after_real_process_drain_and_hides_dsn(
     assert (
         log.index("consumer-drained")
         < log.index("memory-drained")
-        < log.index("model-client-close")
+        < log.index("database-pool-close")
     )
     output = capsys.readouterr().out
     assert "SECRET" not in output and "postgresql:[redacted]" in output
@@ -392,3 +392,47 @@ def test_cli_batch_and_idle_values_are_effective_with_configured_ceiling(wired, 
     )  # CLI execution cadence; config maintenance cadence
     with pytest.raises(ValueError, match="batch limit"):
         process.run(worker_id="w", batch_size=17, max_cycles=1)
+
+
+def test_cli_stop_request_does_not_start_consumer_or_transport(wired):
+    log, objects, *_ = wired
+    result = _process(wired).run(worker_id="w", stop_requested=lambda: True)
+    assert result.stop_reason == "signal" and result.cycles_completed == 0
+    assert objects == []
+    assert log == ["memory-drained"]
+
+
+@pytest.mark.parametrize("control_works", [True, False])
+def test_health_tracks_actual_control_maintenance_and_capability(wired, monkeypatch, control_works):
+    from datetime import UTC, datetime, timedelta
+
+    from zebra_agent_worker.worker_health import WorkerHealth
+
+    samples = []
+
+    class ObservedHealth(WorkerHealth):
+        def command_tick(self, lease, work_completed_at):
+            super().command_tick(lease, work_completed_at)
+            samples.append(self.snapshot())
+
+    lease = SimpleNamespace(expires_at=datetime.now(UTC) + timedelta(seconds=30))
+    granted = []
+    capability = SimpleNamespace(
+        consumer_tick=lambda *args: granted.append(True),
+        lease_for=lambda consumer: lease if granted else None,
+        close=lambda: None,
+    )
+    monkeypatch.setattr(module, "CommandWorkerCapability", lambda *args: capability)
+    poll = module.CommandWakeupConsumer.poll
+
+    async def checked_poll(self, lane, **kwargs):
+        if lane == "control" and not control_works:
+            raise TimeoutError("owned control failure")
+        return await poll(self, lane, **kwargs)
+
+    monkeypatch.setattr(module.CommandWakeupConsumer, "poll", checked_poll)
+    process = _process(wired)
+    process._health = ObservedHealth()
+    process.run(worker_id="health-test", max_cycles=4, idle_sleep_seconds=0.02)
+    assert bool(any(sample["ready"] for sample in samples)) == control_works
+    assert process._health.snapshot()["phase"] == "stopped"

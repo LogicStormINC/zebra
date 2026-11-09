@@ -23,13 +23,14 @@ THREAD = "trench-bootstrap-opaque-case-sensitive-A"
 @pytest.fixture(scope="module")
 def broker():
     key = _key()
-    return key, _settings(key)
+    settings = _settings(key)
+    return key, replace(settings, allowed_scopes=(*settings.allowed_scopes, "artifact.read"))
 
 
 def verified(broker, *, thread=THREAD, run="bootstrap:opaque", now=None, resources=None):
     key, settings = broker
     token = mint_grant(
-        settings,
+        replace(settings, allowed_scopes=(*settings.allowed_scopes, "artifact.read")),
         key,
         ExchangeRequest("zebra", thread, run, ("agent.run", "event.read", "artifact.read")),
         TrenchViewer(user_id="user-a", workspace_id="workspace-a", active_source_ids=frozenset()),

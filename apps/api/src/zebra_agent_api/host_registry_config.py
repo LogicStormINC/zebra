@@ -98,6 +98,7 @@ def load_host_management_config(path: str | None, namespace: str | None) -> Host
         "connector.write",
         "frontend-profile.read",
         "frontend-profile.write",
+        "tasks.read",
     }
     if (
         not isinstance(actions, list)

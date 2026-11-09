@@ -1,6 +1,8 @@
 """No model: real hung executor process, signal escalation and sibling isolation."""
 
+import json
 import os
+import select
 import signal
 import subprocess
 import sys
@@ -8,6 +10,7 @@ import time
 from types import SimpleNamespace
 
 import pytest
+from agent_runtime import executor_supervisor
 from zebra_agent_worker.execution_events import ExecutionInterrupted
 from zebra_agent_worker.session_process import process_factory, supervise, terminate_group
 
@@ -39,6 +42,19 @@ def test_hung_executor_is_killed_without_stopping_shared_worker_or_sibling():
     finally:
         terminate_group(process, grace=0.01)
         terminate_group(sibling, grace=0.01)
+
+
+@pytest.mark.skipif(not hasattr(os, "pidfd_open"), reason="requires Linux pidfd")
+def test_executor_exit_wakes_before_next_cancellation_poll():
+    process = child("import time; time.sleep(.15)")
+    acknowledged = []
+    started = time.monotonic()
+    try:
+        supervise(process, lambda: False, interval=2, on_exit=lambda: acknowledged.append(True))
+        assert time.monotonic() - started < 2
+        assert process.returncode == 0 and acknowledged == [True]
+    finally:
+        terminate_group(process, grace=0.01)
 
 
 def test_database_uncertainty_does_not_authorize_killing_executor():
@@ -122,3 +138,213 @@ def test_execution_receipt_roundtrip_preserves_body_and_identity(tmp_path, monke
     assert restored == result
     assert restored.session.session_id == session
     assert restored.attempt_result.metadata["assistant_message"] == "Worker completed the session."
+
+
+@pytest.mark.parametrize("repeated", [False, True])
+def test_initial_recovery_retries_one_lock_timeout_under_same_lease(repeated):
+    from unittest.mock import Mock, call
+
+    from psycopg.errors import LockNotAvailable
+    from zebra_agent_worker.bounded_session_recovery import SessionRecoveryPending
+    from zebra_agent_worker.execution_preparation import (
+        recover_fenced_session as recover_initial_session,
+    )
+
+    pending = SessionRecoveryPending("busy")
+    pending.__cause__ = LockNotAvailable()
+    result = object()
+    service = Mock()
+    service.recover_session.side_effect = [pending, pending if repeated else result]
+    lease = Mock()
+    if repeated:
+        with pytest.raises(SessionRecoveryPending):
+            recover_initial_session(service, lease)
+    else:
+        assert recover_initial_session(service, lease) is result
+    assert (
+        service.recover_session.call_args_list == [call(lease.session_id, worker_lease=lease)] * 2
+    )
+
+
+@pytest.mark.skipif(sys.platform != "linux", reason="requires Linux parent fence")
+def test_child_rejects_missing_parent_before_worker_import(tmp_path):
+    import importlib.util
+
+    spec = importlib.util.find_spec("zebra_agent_worker.session_process_child")
+    assert spec is not None and spec.origin is not None
+    (tmp_path / "agent_core.py").write_text("raise RuntimeError('worker imports ran first')")
+    env = {**os.environ, "PYTHONPATH": os.pathsep.join((str(tmp_path), *sys.path))}
+    result = subprocess.run(
+        [sys.executable, spec.origin, "--execute", "unused", "unused", "0"],
+        env=env, capture_output=True, text=True, timeout=10,
+    )
+    assert result.returncode != 0
+    assert "executor parent fence unavailable" in result.stderr
+    assert "worker imports ran first" not in result.stderr
+
+
+@pytest.mark.parametrize("parent_lost_before_arm", [False, True])
+def test_supervisor_parent_death_before_spawn_writes_only_exit_receipt(
+    tmp_path, monkeypatch, parent_lost_before_arm,
+):
+    request = tmp_path / "request.json"
+    result = tmp_path / "result.json"
+    receipt = {"session_id": "original", "fence": {"fencing_token": 7}}
+    request.write_text(json.dumps({"parent_pid": 123, "exit_receipt": receipt}))
+    handlers = {}
+    monkeypatch.setattr(os, "waitid", None, raising=False)
+    monkeypatch.setattr(
+        executor_supervisor.ctypes,
+        "CDLL",
+        lambda *a, **kw: SimpleNamespace(
+            prctl=lambda *args: 0,
+        ),
+    )
+    monkeypatch.setattr(
+        signal, "signal", lambda signum, handler: handlers.update({signum: handler})
+    )
+
+    def parent_died(parent_pid, *, death_signal):
+        assert parent_pid == 123
+        assert death_signal == signal.SIGTERM
+        if parent_lost_before_arm:
+            return original_fence(parent_pid, death_signal=death_signal)
+        handlers[death_signal](death_signal, None)
+
+    original_fence = executor_supervisor.parent_fence
+    monkeypatch.setattr(os, "getppid", lambda: 1)
+    monkeypatch.setattr(executor_supervisor, "parent_fence", parent_died)
+    with pytest.raises(SystemExit, match="1"):
+        executor_supervisor.run(request, result)
+    assert json.loads(result.with_suffix(".exit.json").read_text()) == receipt
+    assert not result.exists()
+
+
+@pytest.mark.skipif(sys.platform != "linux", reason="requires Linux subreaper and parent fence")
+def test_supervisor_drains_after_worker_sigkill():
+    probe = """
+import ctypes
+import json
+import os
+import signal
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
+assert ctypes.CDLL(None).prctl(36, 1, 0, 0, 0) == 0
+with tempfile.TemporaryDirectory() as directory:
+    request = Path(directory) / "request.json"
+    result = Path(directory) / "result.json"
+    receipt = {"session_id": "original", "fence": {"fencing_token": 7}}
+    signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGUSR1})
+    worker = os.fork()
+    if worker == 0:
+        executor = (
+            "import os,signal; "
+            "os.setsid() if os.fork() == 0 else None; "
+            "print('ready', flush=True); signal.pause()"
+        )
+        request.write_text(json.dumps({
+            "parent_pid": os.getpid(),
+            "executor_command": [sys.executable, "-c", executor],
+            "exit_receipt": receipt,
+        }))
+        supervisor = subprocess.Popen(
+            [sys.executable, sys.argv[1], str(request), str(result)]
+        )
+        print(supervisor.pid, flush=True)
+        signal.pause()
+        os._exit(2)
+    try:
+        signal.sigwait({signal.SIGUSR1})
+    finally:
+        os.kill(worker, signal.SIGKILL)
+        os.waitpid(worker, 0)
+    _, status = os.waitpid(-1, 0)
+    assert os.waitstatus_to_exitcode(status) == 1
+    assert json.loads(result.with_suffix(".exit.json").read_text()) == receipt
+    assert not result.exists()
+    print("drained", flush=True)
+"""
+    process = subprocess.Popen(
+        [sys.executable, "-c", probe, executor_supervisor.__file__],
+        stdout=subprocess.PIPE,
+        text=True,
+        start_new_session=True,
+    )
+    try:
+        assert process.stdout is not None
+        ready = b""
+        deadline = time.monotonic() + 5
+        while ready.count(b"ready\n") < 2 and time.monotonic() < deadline:
+            if select.select([process.stdout], [], [], 0.1)[0]:
+                chunk = os.read(process.stdout.fileno(), 1024)
+                if not chunk:
+                    break
+                ready += chunk
+        assert ready.count(b"ready\n") == 2
+        process.send_signal(signal.SIGUSR1)
+        output, _ = process.communicate(timeout=5)
+        assert process.returncode == 0
+        assert output.strip() == "drained"
+    finally:
+        if process.poll() is None:
+            os.killpg(process.pid, signal.SIGKILL)
+            process.wait()
+
+
+def test_executor_incarnation_rejects_stale_node_binding(tmp_path, monkeypatch):
+    from zebra_agent_worker.execution_errors import WorkerExecutorInterrupted
+    from zebra_agent_worker.session_process import executor_incarnation
+
+    monkeypatch.delenv("ZEBRA_EXECUTOR_INCARNATION_FILE", raising=False)
+    assert executor_incarnation() is None
+    path = tmp_path / "identity.json"
+    monkeypatch.setenv("ZEBRA_EXECUTOR_INCARNATION_FILE", str(path))
+    monkeypatch.setattr(os, "readlink", lambda _: "pid:[123]")
+    identity = {
+        "engine": "node", "container": "container", "started_at": "original",
+        "pid_namespace": "pid:[123]",
+    }
+    path.write_text(json.dumps(identity))
+    assert executor_incarnation() == identity
+    path.write_text(json.dumps({**identity, "pid_namespace": "pid:[456]"}))
+    with pytest.raises(WorkerExecutorInterrupted, match="trusted executor incarnation unavailable"):
+        executor_incarnation()
+
+
+def test_cold_child_uses_native_model_transport(monkeypatch):
+    from contextlib import nullcontext
+    from pathlib import Path
+
+    import agent_storage as agent_storage_module
+    import zebra_agent_config
+    from agent_storage.postgres import connection_pool
+    from zebra_agent_worker import loop as worker_loop
+    from zebra_agent_worker import session_process as session_process_module
+
+    settings = SimpleNamespace(
+        deployment="cloud", storage_authority="postgresql", database_url="postgresql://test"
+    )
+    cloud = object()
+
+    def build(**kwargs):
+        assert kwargs["database_path"] == Path(settings.database_url)
+        assert kwargs["cloud_composition"] is cloud
+        assert kwargs.get("model_http_client") is None
+        assert kwargs.get("execution_only") is True
+        return SimpleNamespace(_execution_service=object())
+
+    monkeypatch.setattr(sys, "argv", ["session_process_child", "--check"])
+    monkeypatch.setenv("ZEBRA_SESSION_PROCESS_FACTORY", "default")
+    monkeypatch.setattr(zebra_agent_config, "load_settings", lambda: settings)
+    monkeypatch.setattr(session_process_module, "settings_digest", lambda _: "settings")
+    monkeypatch.setattr(agent_storage_module, "cloud_composition_from_environment", lambda: cloud)
+    monkeypatch.setattr(
+        connection_pool, "postgres_pool_scope", lambda *args, **kwargs: nullcontext()
+    )
+    monkeypatch.setattr(worker_loop, "build_worker_loop_service", build)
+    from zebra_agent_worker import session_process_child as child_entry
+
+    child_entry.main()

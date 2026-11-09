@@ -1,0 +1,66 @@
+{
+  "task": "CA-HA-02",
+  "status": "Review_candidate_not_deployed",
+  "base_commit": "e8a4f10b7ede3a8343f568eb126a1ab64bdea9fc",
+  "documentation_prerequisite_cherry_pick": "559422d7",
+  "verification": {
+    "baseline_focused": {
+      "passed": 3
+    },
+    "focused": {
+      "passed": 52,
+      "failed": 0,
+      "skipped": 0,
+      "log": "focused.txt",
+      "scope": "API HTTP/auth and local lifecycle; worker observations/CLI and fake-I/O command loop; no real PG"
+    },
+    "expiry_regression_red": {
+      "expected_failures": 1,
+      "log": "expiry-red.txt"
+    },
+    "ruff": {
+      "status": "pass",
+      "scope": "7 changed source modules and 3 changed/new test modules",
+      "log": "ruff.txt"
+    },
+    "mypy": {
+      "status": "pass",
+      "source_files": 7,
+      "follow_imports": "silent",
+      "MYPYPATH": "current worktree source roots",
+      "log": "mypy.txt"
+    },
+    "product_boundary": "pass",
+    "complete_make_test": "not_run_user_resource_constraint",
+    "complete_make_check": "not_run_user_resource_constraint",
+    "real_pg_or_cluster_faults": "not_run",
+    "ux_capacity": "not_run",
+    "docker_or_model_calls": "not_started"
+  },
+  "runtime_scope": {
+    "api_readiness": "common control-plane epoch after factory startup schema validation",
+    "background_probe_threads_per_api": 1,
+    "probe_io_budget_seconds": 0.75,
+    "max_cache_age_seconds": 5,
+    "worker_file_opt_in": true,
+    "worker_file_permissions": "0600",
+    "worker_unknown_busy_is_not_task_failure": true,
+    "health_is_not_execution_authority": true,
+    "health_responses_cache_control": "no-store",
+    "worker_file_requires_fresh_exclusive_path": true
+  },
+  "preserved": [
+    "history",
+    "original_receipts",
+    "unknown_get_only",
+    "coverage",
+    "frontend_mock",
+    "core_storage_and_helm_sources"
+  ],
+  "logs_sha256": {
+    "mypy.txt": "050c52a2b0c61e8b681ef5c485e0bc03340b8d55148e0acef27d744c8be42033",
+    "ruff.txt": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+    "focused.txt": "f80274d2745eee4aabafa0a8a73f8f3d8826bdf9dfa95b5a2d813fbf845eaed3",
+    "expiry-red.txt": "f1be36654a7fa5825c41c6b716acbb92bed397ea4b1c945d81b720ef9a562234"
+  }
+}

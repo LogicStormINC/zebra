@@ -13,10 +13,10 @@ from hashlib import sha256
 from typing import Any
 from uuid import UUID
 
-import psycopg
 from psycopg import Connection
 from psycopg.rows import dict_row
 
+from agent_storage.postgres.connection_capacity import connect
 from agent_storage.postgres.database import PostgresDatabase
 from agent_storage.worker_capability_configuration import (
     STRICT_WORKER_CONTRACT as STRICT_WORKER_CONTRACT,
@@ -59,7 +59,8 @@ class PostgresWorkerCapabilities:
 
     def _connect(self) -> Connection[dict[str, Any]]:
         # Native identity is resolved on this connection, not from a DSN hash.
-        return psycopg.connect(self._database._dsn, connect_timeout=2, row_factory=dict_row)
+        return connect(self._database._dsn, budget=self._database._capacity,
+                       lane="control", connect_timeout=2, row_factory=dict_row)
 
     def register(
         self,
@@ -217,7 +218,7 @@ class PostgresWorkerCapabilities:
 
 
 def _require_schema(connection: Connection[dict[str, Any]]) -> None:
-    from agent_storage.postgres.migrations import MIGRATIONS
+    from agent_storage.postgres.migration_history_plan import runtime_schema_matches
 
     connection.execute("SET LOCAL lock_timeout = '2s'")
     connection.execute("SET LOCAL statement_timeout = '2s'")
@@ -227,9 +228,7 @@ def _require_schema(connection: Connection[dict[str, Any]]) -> None:
             "SELECT version,name,checksum FROM zebra_schema_migrations"
         ).fetchall()
     }
-    if len(applied) != len(MIGRATIONS) or any(
-        applied.get(m.version) != (m.name, m.checksum) for m in MIGRATIONS
-    ):
+    if not runtime_schema_matches(applied):
         raise WorkerCapabilityLostError("worker capability requires the verified schema")
 
 

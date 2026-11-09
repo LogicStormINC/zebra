@@ -298,6 +298,7 @@ def test_native_handoff_parent_canonical_history_has_no_child_drafts(owned, monk
 
     def raw_request(after=None):
         return SimpleNamespace(
+            scope={},
             state=SimpleNamespace(host_context=fresh, authorization_deadline=monotonic() + 2),
             headers={},
             is_disconnected=connected,
@@ -487,17 +488,18 @@ def test_agui_preparations_share_one_fresh_access_gate(monkeypatch, denied):
 
     calls = []
     api = SimpleNamespace(
+        agui_profiles=None,
         stores=SimpleNamespace(),
         live_event_fanout=None,
         command_outcome=None,
         stream_notifications=None,
     )
-    request = SimpleNamespace(
-        state=SimpleNamespace(host_context=None),
-        query_params={},
-        headers={},
-        url=SimpleNamespace(path="/tasks/task/ag-ui/stream"),
-    )
+    from starlette.requests import Request
+
+    request = Request({
+        "type": "http", "method": "GET", "path": "/v1/tasks/task/ag-ui/stream",
+        "headers": [], "query_string": b"", "state": {"host_context": None},
+    })
 
     def access(*args):
         calls.append("authorize")
@@ -568,11 +570,13 @@ def test_raw_preparation_one_dispatch_keeps_source_cursor_and_fallback(
         assert kwargs[f"{route}_id"] == resource
         yield "data: canonical\n\n"
 
-    original_thread = ag_ui_task_view.to_thread
+    http_app = SimpleNamespace()
+    original_dispatch = ag_ui_task_view.database_call
 
-    async def thread(function, *args, **kwargs):
+    async def dispatch(app, function, *args, **kwargs):
+        assert app is http_app and kwargs["wait_for_read_slot"] is True
         dispatches.append(True)
-        return await original_thread(function, *args, **kwargs)
+        return await original_dispatch(app, function, *args, **kwargs)
 
     api = SimpleNamespace(
         stores=SimpleNamespace(
@@ -586,6 +590,7 @@ def test_raw_preparation_one_dispatch_keeps_source_cursor_and_fallback(
         stream_v2_reader=SimpleNamespace(tail=lambda context, source, **kwargs: source),
     )
     request = SimpleNamespace(
+        scope={"app": http_app},
         state=SimpleNamespace(host_context=None, authorization_deadline=monotonic() + 2),
         query_params={},
         headers={},
@@ -594,7 +599,7 @@ def test_raw_preparation_one_dispatch_keeps_source_cursor_and_fallback(
         ),
         is_disconnected=lambda: False,
     )
-    monkeypatch.setattr(ag_ui_task_view, "to_thread", thread)
+    monkeypatch.setattr(ag_ui_task_view, "database_call", dispatch)
     monkeypatch.setattr(stream_v2_http, "prepare_v2", negotiate)
     monkeypatch.setattr(stream_v2_http, f"tail_{route}_events", tail)
 

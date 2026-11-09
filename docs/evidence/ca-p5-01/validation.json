@@ -1,0 +1,54 @@
+{
+  "task": "CA-P5-01",
+  "recordedAt": "2026-10-28T12:38:10.396666+08:00",
+  "branch": "codex/ca-p5-01-runtime-gates",
+  "gates": {
+    "makeTest": 0,
+    "makeCheck": 0,
+    "passed": 11197,
+    "conditionalSkips": 3067,
+    "typedSources": 1436,
+    "evalCases": 30,
+    "focusedChecks": 21,
+    "cloudComposition": true,
+    "finalDocsCheck": 0
+  },
+  "supersededCandidate": {
+    "complete": false,
+    "reason": "interrupted to add retention/open and inherited-observer recovery fixes",
+    "passedBeforeInterrupt": 7810,
+    "skippedBeforeInterrupt": 2181
+  },
+  "logs": {
+    "fullTest": {
+      "localPath": "/tmp/ca-p5-01-test-delivery.log",
+      "sha256": "3dc6c50c96da4305c40f533192e1d7ff310009d558ed4eea65fd6e4a6ebbd835"
+    },
+    "fullCheck": {
+      "localPath": "/tmp/ca-p5-01-check-delivery.log",
+      "sha256": "5d4462ebbb947d35c23b1de1dc806ac313bf12d5a35d18c01b3962c8aff04307"
+    },
+    "focused": {
+      "localPath": "/tmp/ca-p5-01-evidence-delivery.log",
+      "sha256": "8571b1377e48a15988a336cf7492daef2f7e5430cc318690eeaa87ef02fde2d0"
+    },
+    "cloudComposition": {
+      "localPath": "/tmp/ca-p5-composition-delivery.log",
+      "sha256": "2b3423d3e680c8d550b152adc743a00ba86323c8eddaae5908204e48ba69af1e"
+    },
+    "finalDocsCheck": {
+      "localPath": "/tmp/ca-p5-01-check-final-docs.log",
+      "sha256": "655af688fee631732bad1fff0a4d2943f9b6c7cb5d0d052f88d8b2238a2871b8"
+    }
+  },
+  "proofBoundary": {
+    "transport": "real owned PG + ASGI, independent process and actual cloud app factory",
+    "workerQualification": "actual Worker predicate; trusted-local positive, engine failure negative",
+    "registryFixture": "explicit exact Registry Release/Version setup; not new Eval/model execution",
+    "safeToStop": false,
+    "activationAuthorized": false,
+    "productionHA": false,
+    "deploymentPerformed": false,
+    "productionMigrationPerformed": false
+  }
+}

@@ -1,0 +1,3 @@
+Synthetic canonical UTF-8 byte meter: exact request, usage, cap and negatives passed.
+Actual synthetic provider uses the same meter and read-only tool contract.
+Actual fixture HTTP cap rejection, bounded body and usage response passed.

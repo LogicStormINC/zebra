@@ -9,6 +9,7 @@ import httpx
 from agent_core.domain.context_materialization import ContextMaterialization
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.leases import LeaseFence
+from agent_core.domain.runtime_assembly import RuntimeAssembly
 from agent_core.domain.task_bindings import TaskBindingSnapshot
 from agent_core.ports import (
     ArtifactPayloadReadPort,
@@ -19,6 +20,7 @@ from agent_core.ports import (
 from agent_core.ports.event_store import EventStorePort
 from agent_core.ports.host_connector_registry import HostConnectorRegistryPort
 from agent_core.ports.runtime import RuntimeHandle, RuntimePort
+from agent_core.ports.worker_budget import ModelRequestBudget
 from agent_integrations import ModelProviderSettings
 from agent_integrations.bundle_model import BundleModelGateway
 from agent_tools.extension_management import READ_NAMES, WRITE_NAMES
@@ -39,8 +41,24 @@ from zebra_agent_worker.worker_mcp_catalog import prepare_worker_mcp
 from zebra_agent_worker.worker_plugins import WorkerPluginSource as WorkerPluginSource
 from zebra_agent_worker.worker_plugins import prepare_worker_plugins
 
+ModelRequestBudgetFactory = Callable[
+    [ModelGatewayPort, RuntimeAssembly | None], Callable[[bytes], ModelRequestBudget] | None
+]
+
 WorkerExtensionSnapshotStore = WorkerExtensionStore
 WorkerSkillSource = worker_skills.WorkerSkillCatalogSource
+
+
+class OrchestrationFactory(Protocol):
+    def __call__(
+        self,
+        *,
+        task: RecoveredTask,
+        binding: TaskBindingSnapshot | None,
+        fence: LeaseFence,
+        model_gateway: ModelGatewayPort,
+        attempt_number: int,
+    ) -> object | None: ...
 
 
 class ExecutionComposition(Protocol):
@@ -57,6 +75,8 @@ class ExecutionComposition(Protocol):
     _frozen_manifest_loader: Callable[[str], object] | None
     _client_runtime: Callable[[SessionId], ClientToolGateway | None] | None
     _extensions: "ExtensionRuntime"
+    _orchestration_factory: OrchestrationFactory | None
+    _model_request_budget_factory: ModelRequestBudgetFactory | None
 
 
 class ModelGatewayBuilder(Protocol):
@@ -75,11 +95,20 @@ def model_gateway(
 
     assembly = task_assembly(task) if task is not None else None
     if assembly is not None:
-        return BundleModelGateway(assembly, client=service._model_http_client)
-    settings = model_provider_settings(service._settings)
-    if service._model_http_client is not None:
-        return builder(settings, client=service._model_http_client)
-    return builder(settings)
+        model: ModelGatewayPort = BundleModelGateway(assembly, client=service._model_http_client)
+    else:
+        settings = model_provider_settings(service._settings)
+        model = (
+            builder(settings, client=service._model_http_client)
+            if service._model_http_client
+            else builder(settings)
+        )
+    counter_factory = getattr(service, "_model_request_budget_factory", None)
+    if counter_factory is not None:
+        counter = counter_factory(model, assembly)
+        if counter is not None:
+            model.model_request_budget = counter  # type: ignore[attr-defined]
+    return model
 
 
 @dataclass(frozen=True, slots=True)
@@ -122,6 +151,7 @@ def build_execution_tool_gateway(
     network_cancellation_check: Callable[[], None] | None = None,
     script_recorder: Callable[[], DurableHarnessEventRecorder] | None = None,
     instance_factory: BoundInstanceFactory | None = None,
+    binding_loader: Callable[[SessionId], object] | None = None,
 ) -> WorkerToolGateway:
     """Compose one execution gateway from already trusted Worker state."""
     plugin_guard = prepare_worker_plugins(
@@ -135,6 +165,18 @@ def build_execution_tool_gateway(
         deployment_namespace=service._deployment_namespace or "",
         source=service._extensions.skills,
         plugin_guard=plugin_guard,
+    )
+    factory = getattr(service, "_orchestration_factory", None)
+    orchestration = (
+        factory(
+            task=task,
+            binding=task_binding,
+            fence=fence,
+            model_gateway=model_gateway,
+            attempt_number=attempt_number,
+        )
+        if factory
+        else None
     )
     gateway = build_worker_tool_gateway(
         task,
@@ -155,6 +197,7 @@ def build_execution_tool_gateway(
         durable_delegation=service._settings.deployment == "cloud",
         parent_binding_digest=task_binding.binding_digest if task_binding else None,
         parent_binding=task_binding,
+        orchestration_runtime=orchestration,
         parent_context=materialized_context,
         network_cancellation_check=network_cancellation_check,
         manifest_digest=(task_binding.host_capability.manifest_digest if task_binding else None),
@@ -177,6 +220,7 @@ def build_execution_tool_gateway(
             task_binding.host_capability.authority_issuer if task_binding is not None else None
         ),
     )
+    gateway.orchestration_enabled = orchestration is not None
     gateway.management = prepare_extension_management(
         extension,
         mcp=service._extensions.mcp,
@@ -210,6 +254,7 @@ def build_execution_tool_gateway(
             recorder=script_recorder,
             instance_factory=instance_factory,
             attempt_number=attempt_number,
+            binding_loader=binding_loader,
         )
         if scripts is not None:
             if scripts.names & {tool.name for tool in gateway.model_tools}:

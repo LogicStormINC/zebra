@@ -1,10 +1,12 @@
 """Native component allowlist; provenance does not attest deployed configuration."""
 
+from functools import lru_cache
 from typing import Any
 
 from agent_core.domain.runtime_bundle_json import json_digest
 from agent_core.domain.runtime_bundle_types import (
     ArtifactPin,
+    BudgetParameters,
     BundleValue,
     EmptyParameters,
     InstructionsParameters,
@@ -40,9 +42,10 @@ def _descriptor(domain: str, source: str) -> dict[str, Any]:
     parameter_types: dict[str, type[BundleValue]] = {
         "model": ModelParameters,
         "instructions": InstructionsParameters,
+        "budget": BudgetParameters,
     }
     parameters = parameter_types.get(domain, EmptyParameters)
-    configurable = domain in ("model", "instructions")
+    configurable = domain in ("model", "instructions", "budget")
     descriptor = {
         "domain": domain,
         "id": f"cloud-agent/native/{domain}",
@@ -62,15 +65,21 @@ def runtime_bundle_catalog() -> dict[str, Any]:
     }
 
 
+@lru_cache(maxsize=1)
 def runtime_bundle_catalog_digest() -> str:
     return json_digest(runtime_bundle_catalog())
+
+
+# ponytail: fixed source-pinned fingerprints; a dynamic catalog would need versioned keys.
+@lru_cache(maxsize=len(_SOURCE_REFS))
+def _descriptor_identity(domain: str, source: str) -> tuple[str, str, str]:
+    descriptor = _descriptor(domain, source)
+    return descriptor["id"], descriptor["version"], descriptor["digest"]
 
 
 def builtin_component_pin(domain: str) -> ArtifactPin:
     for name, source in _SOURCE_REFS:
         if domain == name:
-            descriptor = _descriptor(name, source)
-            return ArtifactPin(
-                kind="component", id=descriptor["id"], version="1.0.0", digest=descriptor["digest"]
-            )
+            component_id, version, digest = _descriptor_identity(name, source)
+            return ArtifactPin(kind="component", id=component_id, version=version, digest=digest)
     raise ValueError("unsupported native component")

@@ -15,7 +15,7 @@ from agent_runtime.stream_hint_relay import StreamHintRelay
 from agent_storage import (
     LeaseConflictError,
 )
-
+from agent_storage.postgres.erp_workspace_policy import ERPWorkspacePolicyRefusal
 from zebra_agent_worker.ag_ui_projection_work import AgUiProjectionWorkService
 from zebra_agent_worker.child_wakeup import ChildCompletionWakeupService
 from zebra_agent_worker.cloud_memory_recovery import (
@@ -26,7 +26,6 @@ from zebra_agent_worker.command_consumer import SessionCommandConsumer
 from zebra_agent_worker.execution import SessionExecutionService
 from zebra_agent_worker.execution_events import ExecutionInterrupted
 from zebra_agent_worker.execution_finalization import WorkerExecutionError
-from agent_storage.postgres.erp_workspace_policy import ERPWorkspacePolicyRefusal
 from zebra_agent_worker.lease_heartbeat import LeaseHeartbeatError
 from zebra_agent_worker.memory_delivery_consumer import MemoryDeliveryConsumption
 from zebra_agent_worker.recovery import SessionRecoveryError
@@ -110,7 +109,7 @@ class WorkerLoopService:
         try:
             if time.monotonic() < self._relay_at:
                 return
-            self._relay_at = time.monotonic()+1  # Rate ceiling, not a delivery latency promise.
+            self._relay_at = time.monotonic() + 1  # Rate ceiling, not a delivery latency promise.
             self._stream_hint_relay.tick()
         finally:
             self._relay_lock.release()
@@ -276,7 +275,9 @@ class WorkerLoopService:
         batch_size: int,
         lease_ttl_seconds: int,
     ) -> None:
-        if self._cloud_memory_recovery is None or getattr(self._cloud_memory_recovery, "fresh_maintenance_blocked", False):
+        if self._cloud_memory_recovery is None or getattr(
+            self._cloud_memory_recovery, "fresh_maintenance_blocked", False
+        ):
             return
         active = self._cloud_memory_recovery_thread
         if active is not None and active.is_alive():

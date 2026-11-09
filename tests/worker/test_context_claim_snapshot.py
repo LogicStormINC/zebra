@@ -50,6 +50,7 @@ def inputs():
         workspace=workspace,
         worker_mutation_authority=authority,
         read_active_session=Mock(return_value=session),
+        _ownership_check=Mock(),
         mutation=lambda: nullcontext(),
     )
     return ClaimedSession(old, lease), recorder
@@ -138,6 +139,20 @@ def test_explicit_ownership_check_is_retained_for_cloud_snapshot():
     with pytest.raises(LeaseLostError):
         context._refresh_claim(recorder, Mock(), claimed, ownership)
     recorder.read_active_session.assert_not_called()
+
+
+def test_shared_ownership_callback_runs_once_after_active_primary_read():
+    claimed, recorder = inputs()
+    ownership = recorder._ownership_check
+
+    def active():
+        ownership.assert_not_called()
+        ownership()
+        return recorder.session
+
+    recorder.read_active_session.side_effect = active
+    context._refresh_claim(recorder, Mock(), claimed, ownership)
+    ownership.assert_called_once_with()
 
 
 def test_concurrent_primary_change_keeps_original_bounded_recovery():

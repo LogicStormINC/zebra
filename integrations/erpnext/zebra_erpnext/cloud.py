@@ -1,16 +1,16 @@
 """Small Host adapter: native OpenSSL signing, fresh grants, existing Cloud wire."""
+
 import base64
+import hashlib
 import json
 import subprocess
 import time
-import hashlib
 from datetime import timedelta
 from uuid import uuid4
 
 import frappe
 import requests
 from frappe.utils import now_datetime
-
 
 SCOPES = ["agent.run", "erpnext.read", "artifact.read"]
 
@@ -37,11 +37,16 @@ def require_admission_open(settings=None):
 
 
 def require_chat_generation(conversation):
-    from zebra_erpnext.runtime import release, LEGACY
-    if (release(conversation) == LEGACY and config().get('chat_readonly_enabled') is True
-            and conversation.task_id
-            and json.loads(conversation.request_options or '{}').get('chat_readonly_generation') is not True):
-        frappe.throw('此历史会话保留为只读，请新建会话继续。')
+    from zebra_erpnext.runtime import LEGACY, release
+
+    if (
+        release(conversation) == LEGACY
+        and config().get("chat_readonly_enabled") is True
+        and conversation.task_id
+        and json.loads(conversation.request_options or "{}").get("chat_readonly_generation")
+        is not True
+    ):
+        frappe.throw("此历史会话保留为只读，请新建会话继续。")
 
 
 def principal():
@@ -53,12 +58,15 @@ def principal():
 
 def owned(name, *, for_update=False, admission_lock=None):
     user = principal()
-    doc = frappe.get_doc("Zebra Conversation", name, for_update=for_update or admission_lock is not None)
+    doc = frappe.get_doc(
+        "Zebra Conversation", name, for_update=for_update or admission_lock is not None
+    )
     # Check the real Redis token AFTER the current database row is locked.
     # A successor cannot write until this mutation commits; an expired waiter
     # cannot overwrite it using a stale Document after grant/network commits.
     if admission_lock is not None and not admission_lock.owned():
         from redis.exceptions import LockError
+
         raise LockError("conversation admission ownership expired")
     if doc.user != user or doc.status == "deleted":
         frappe.throw("会话不存在", frappe.PermissionError)
@@ -72,18 +80,25 @@ def _b64(value):
 
 def private_workspace_ref(user, company):
     """Private file scope, stable per site + ERP principal + company."""
-    return "erp-u-" + hashlib.sha256(
-        (frappe.local.site + "\0" + user + "\0" + company).encode()).hexdigest()[:40]
+    return (
+        "erp-u-"
+        + hashlib.sha256((frappe.local.site + "\0" + user + "\0" + company).encode()).hexdigest()[
+            :40
+        ]
+    )
 
 
 def has_private_workspace(conversation):
-    return conversation.workspace_ref == private_workspace_ref(conversation.user, conversation.company)
+    return conversation.workspace_ref == private_workspace_ref(
+        conversation.user, conversation.company
+    )
 
 
 def grant(conversation, run_id=None, *, admission_lock=None, authority_refs=None):
     if admission_lock is not None:
         conversation = owned(conversation.name, for_update=True, admission_lock=admission_lock)
     from zebra_erpnext import runtime
+
     settings = runtime.settings(conversation, config())
     principal()
     if conversation.user != frappe.session.user:
@@ -100,64 +115,133 @@ def grant(conversation, run_id=None, *, admission_lock=None, authority_refs=None
         conversation.workspace_ref = private_workspace_ref(conversation.user, conversation.company)
         conversation.db_update()
     grant_id = str(uuid4())
-    resources = [{"type": "thread", "id": conversation.host_thread},
-                 {"type": "principal", "id": conversation.user}]
+    resources = [
+        {"type": "thread", "id": conversation.host_thread},
+        {"type": "principal", "id": conversation.user},
+    ]
     resources.append({"type": "company", "id": conversation.company})
     if authority_refs:
-        if not isinstance(authority_refs, list) or len(authority_refs) != 1 or set(authority_refs[0]) != {'type','id'} or authority_refs[0]['type'] != 'schedule_request':
-            frappe.throw('调度授权引用无效')
+        if (
+            not isinstance(authority_refs, list)
+            or len(authority_refs) != 1
+            or set(authority_refs[0]) != {"type", "id"}
+            or authority_refs[0]["type"] != "schedule_request"
+        ):
+            frappe.throw("调度授权引用无效")
         resources.extend(authority_refs)
     if run_id:
         resources.append({"type": "run", "id": run_id})
-    readonly_chat = runtime.release(conversation) == runtime.LEGACY and settings.get('chat_readonly_enabled') is True
-    claims = dict(iss=settings["issuer"], aud="zebra", sub=conversation.user,
-                  jti=grant_id, iat=now, nbf=now, exp=now + 1800,
-                  host_app_id="erpnext", namespace_id=settings.get("namespace_id", "erpnext"),
-                  workspace_ref=conversation.workspace_ref, resource_refs=resources,
-                  scopes=["agent.run", "erpnext.read"] if readonly_chat else settings.get("scopes", SCOPES), origin=settings["origin"], policy_version="erpnext-v1",
-                  limits=dict(max_runtime_seconds=600, max_model_tokens=40000,
-                              max_artifact_bytes=1 if readonly_chat else 20 * 1024 * 1024))
+    readonly_chat = (
+        runtime.release(conversation) == runtime.LEGACY
+        and settings.get("chat_readonly_enabled") is True
+    )
+    claims = dict(
+        iss=settings["issuer"],
+        aud="zebra",
+        sub=conversation.user,
+        jti=grant_id,
+        iat=now,
+        nbf=now,
+        exp=now + 1800,
+        host_app_id="erpnext",
+        namespace_id=settings.get("namespace_id", "erpnext"),
+        workspace_ref=conversation.workspace_ref,
+        resource_refs=resources,
+        scopes=["agent.run", "erpnext.read"] if readonly_chat else settings.get("scopes", SCOPES),
+        origin=settings["origin"],
+        policy_version="erpnext-v1",
+        limits=dict(
+            max_runtime_seconds=600,
+            max_model_tokens=40000,
+            max_artifact_bytes=1 if readonly_chat else 20 * 1024 * 1024,
+        ),
+    )
     header = _b64(json.dumps({"alg": "RS256", "typ": "JWT", "kid": "erpnext-v1"}).encode())
     payload = _b64(json.dumps(claims, ensure_ascii=False, separators=(",", ":")).encode())
     signing = f"{header}.{payload}".encode()
-    signed = subprocess.run(["openssl", "dgst", "-sha256", "-sign", settings["signing_key"]],
-                            input=signing, capture_output=True, check=True, timeout=10)
-    frappe.get_doc(dict(doctype="Zebra Grant", name=grant_id, user=conversation.user,
-                        company=conversation.company, conversation=conversation.name,
-                        run_id=run_id,
-                        workspace_ref=conversation.workspace_ref, runtime_ref=runtime.release(conversation),
-                        expires_at=now_datetime() + timedelta(minutes=30))).db_insert()
+    signed = subprocess.run(
+        ["openssl", "dgst", "-sha256", "-sign", settings["signing_key"]],
+        input=signing,
+        capture_output=True,
+        check=True,
+        timeout=10,
+    )
+    frappe.get_doc(
+        dict(
+            doctype="Zebra Grant",
+            name=grant_id,
+            user=conversation.user,
+            company=conversation.company,
+            conversation=conversation.name,
+            run_id=run_id,
+            workspace_ref=conversation.workspace_ref,
+            runtime_ref=runtime.release(conversation),
+            expires_at=now_datetime() + timedelta(minutes=30),
+        )
+    ).db_insert()
     # A synchronous Worker callback must see the issued authority mapping.
     frappe.db.commit()
     return f"{header}.{payload}.{_b64(signed.stdout)}"
 
 
-def request(conversation, method, path, *, body=None, run_id=None, key=None,
-            stream=False, params=None, extra_headers=None, _attempt=0, accepted_problems=(), raw_response=False, admission_lock=None,
-            content_bytes=None, content_type=None, authority_refs=None):
+def request(
+    conversation,
+    method,
+    path,
+    *,
+    body=None,
+    run_id=None,
+    key=None,
+    stream=False,
+    params=None,
+    extra_headers=None,
+    _attempt=0,
+    accepted_problems=(),
+    raw_response=False,
+    admission_lock=None,
+    content_bytes=None,
+    content_type=None,
+    authority_refs=None,
+):
     from zebra_erpnext import runtime
+
     settings = runtime.settings(conversation, config())
     if method.upper() != "GET":
         require_admission_open(settings)
-    headers = {"Authorization": "Bearer " + grant(conversation, run_id, admission_lock=admission_lock, authority_refs=authority_refs),
-               "Accept": "text/event-stream" if stream else "application/json"}
+    headers = {
+        "Authorization": "Bearer "
+        + grant(conversation, run_id, admission_lock=admission_lock, authority_refs=authority_refs),
+        "Accept": "text/event-stream" if stream else "application/json",
+    }
     if key:
         headers["Idempotency-Key"] = key
     if extra_headers:
         headers.update(extra_headers)
     if admission_lock is not None and not admission_lock.owned():
         from redis.exceptions import LockError
+
         raise LockError("conversation admission ownership expired")
     if content_bytes is not None:
-        if body is not None or not isinstance(content_bytes, bytes) or content_type != 'application/zip' or len(content_bytes) > 10 * 1024 * 1024:
+        if (
+            body is not None
+            or not isinstance(content_bytes, bytes)
+            or content_type != "application/zip"
+            or len(content_bytes) > 10 * 1024 * 1024
+        ):
             frappe.throw("安装包请求无效")
-        headers['Content-Type'] = content_type
+        headers["Content-Type"] = content_type
     try:
-        response = requests.request(method, settings["base_url"].rstrip("/") + path,
-                                    headers=headers, params=params,
-                                    **({'data': content_bytes} if content_bytes is not None else {'json': body}),
-                                    verify=settings["ca_file"], timeout=(10, 65), stream=stream,
-                                    allow_redirects=False)
+        response = requests.request(
+            method,
+            settings["base_url"].rstrip("/") + path,
+            headers=headers,
+            params=params,
+            **({"data": content_bytes} if content_bytes is not None else {"json": body}),
+            verify=settings["ca_file"],
+            timeout=(10, 65),
+            stream=stream,
+            allow_redirects=False,
+        )
     except requests.RequestException:
         frappe.throw("zebra Cloud 连接失败；任务不会自动重复提交")
     if raw_response:
@@ -165,7 +249,9 @@ def request(conversation, method, path, *, body=None, run_id=None, key=None,
     if not response.ok:
         try:
             problem = response.json()
-            reason = str(problem.get("code") or problem.get("reason") or problem.get("status"))[:240]
+            reason = str(problem.get("code") or problem.get("reason") or problem.get("status"))[
+                :240
+            ]
         except ValueError:
             reason = "upstream_error"
         status = response.status_code
@@ -173,10 +259,24 @@ def request(conversation, method, path, *, body=None, run_id=None, key=None,
         if (status, reason) in accepted_problems:
             return problem
         if method == "GET" and status == 409 and reason == "projection_not_ready" and _attempt < 5:
-            time.sleep(0.25 * 2 ** _attempt)
-            return request(conversation, method, path, body=body, run_id=run_id, key=key,
-                           stream=stream, params=params, extra_headers=extra_headers, _attempt=_attempt + 1, accepted_problems=accepted_problems, admission_lock=admission_lock)
-        frappe.throw(f"zebra Cloud 拒绝请求（{status}: {reason}）", CloudRejectedError(status, reason))
+            time.sleep(0.25 * 2**_attempt)
+            return request(
+                conversation,
+                method,
+                path,
+                body=body,
+                run_id=run_id,
+                key=key,
+                stream=stream,
+                params=params,
+                extra_headers=extra_headers,
+                _attempt=_attempt + 1,
+                accepted_problems=accepted_problems,
+                admission_lock=admission_lock,
+            )
+        frappe.throw(
+            f"zebra Cloud 拒绝请求（{status}: {reason}）", CloudRejectedError(status, reason)
+        )
     if stream:
         return response
     try:

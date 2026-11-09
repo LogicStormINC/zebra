@@ -1,0 +1,24 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+____________ test_capability_expiry_wins_over_fresh_control_sample _____________
+
+tmp_path = PosixPath('/private/var/folders/qx/n_v9dpmd12dgb9m1s75tjgtm0000gn/T/pytest-of-lukeding/pytest-889/test_capability_expiry_wins_ov0')
+
+    def test_capability_expiry_wins_over_fresh_control_sample(tmp_path):
+        now = [10.0]
+        path = tmp_path / "expiry.json"
+        health = WorkerHealth(clock=lambda: now[0])
+        health.attach(path)
+        lease = SimpleNamespace(expires_at=datetime.now(UTC) + timedelta(seconds=2))
+        health.command_tick(lease, 10)
+        state = health.snapshot()
+        assert state["ready"]
+        now[0] += 3  # Observation is fresh, but its capability can no longer support readiness.
+        assert health.snapshot()["control_fresh"]
+>       assert not health.snapshot()["ready"]
+E       assert not True
+
+tests/worker/test_worker_health_observation.py:123: AssertionError
+=========================== short test summary info ============================
+FAILED tests/worker/test_worker_health_observation.py::test_capability_expiry_wins_over_fresh_control_sample
+1 failed in 1.25s

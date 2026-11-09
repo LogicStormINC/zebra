@@ -36,13 +36,15 @@ from agent_storage.postgres.task_lineage import (
     task_event_from_row,
 )
 from agent_storage.postgres.task_projection_checkpoints import PostgresTaskProjectionCheckpointMixin
-from agent_storage.postgres.task_read_header import read_task_header as read_task_header
 from agent_storage.postgres.task_read_summaries import PostgresTaskReadSummaryMixin
 from agent_storage.postgres.task_replay_headers import (
     backfill_task_replay_headers,
     read_event_header,
     read_event_header_by_key,
     read_run_header,
+)
+from agent_storage.postgres.task_replay_headers import (
+    read_task_header as read_task_header,
 )
 from agent_storage.postgres.worker_progress import PostgresWorkerProgressMixin
 

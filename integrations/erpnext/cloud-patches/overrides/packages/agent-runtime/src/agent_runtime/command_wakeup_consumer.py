@@ -151,8 +151,17 @@ class CommandWakeupConsumer:
             return PickupOutcome.DEFERRED
         scheduled = False
         try:
-            private_guard = None if self._private_preparation is None else self._private_preparation(
-                self._dsn, self._namespace, resolved.scope, resolved.accepted_event_id, raw, required_scope_mode,
+            private_guard = (
+                None
+                if self._private_preparation is None
+                else self._private_preparation(
+                    self._dsn,
+                    self._namespace,
+                    resolved.scope,
+                    resolved.accepted_event_id,
+                    raw,
+                    required_scope_mode,
+                )
             )
             result = handoff_command(
                 self._dsn,
