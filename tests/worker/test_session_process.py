@@ -312,3 +312,39 @@ def test_executor_incarnation_rejects_stale_node_binding(tmp_path, monkeypatch):
     path.write_text(json.dumps({**identity, "pid_namespace": "pid:[456]"}))
     with pytest.raises(WorkerExecutorInterrupted, match="trusted executor incarnation unavailable"):
         executor_incarnation()
+
+
+def test_cold_child_uses_native_model_transport(monkeypatch):
+    from contextlib import nullcontext
+    from pathlib import Path
+
+    import agent_storage as agent_storage_module
+    import zebra_agent_config
+    from agent_storage.postgres import connection_pool
+    from zebra_agent_worker import loop as worker_loop
+    from zebra_agent_worker import session_process as session_process_module
+
+    settings = SimpleNamespace(
+        deployment="cloud", storage_authority="postgresql", database_url="postgresql://test"
+    )
+    cloud = object()
+
+    def build(**kwargs):
+        assert kwargs["database_path"] == Path(settings.database_url)
+        assert kwargs["cloud_composition"] is cloud
+        assert kwargs.get("model_http_client") is None
+        assert kwargs.get("execution_only") is True
+        return SimpleNamespace(_execution_service=object())
+
+    monkeypatch.setattr(sys, "argv", ["session_process_child", "--check"])
+    monkeypatch.setenv("ZEBRA_SESSION_PROCESS_FACTORY", "default")
+    monkeypatch.setattr(zebra_agent_config, "load_settings", lambda: settings)
+    monkeypatch.setattr(session_process_module, "settings_digest", lambda _: "settings")
+    monkeypatch.setattr(agent_storage_module, "cloud_composition_from_environment", lambda: cloud)
+    monkeypatch.setattr(
+        connection_pool, "postgres_pool_scope", lambda *args, **kwargs: nullcontext()
+    )
+    monkeypatch.setattr(worker_loop, "build_worker_loop_service", build)
+    from zebra_agent_worker import session_process_child as child_entry
+
+    child_entry.main()
