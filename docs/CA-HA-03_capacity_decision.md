@@ -490,3 +490,27 @@ Owner lukeding 于 2026-11-09 深夜会话中明确选择"修订口径 + 101.7 �
 教训：停产窗口前必须审计 tmpfs 容器。生产恢复 82/84 Up（trench/erpnext/WeKnora/zebra
 健康抽查通过）。证据：.artifacts/cloud-ha-e1/dedicated-window-20261109/WINDOW-RESULTS.md
 （本仓）与宿主 /data/zebra-e1a/window/。
+
+## 2026-11-09 Phase A/B 引导段定位与零代码杠杆：3/s 需产品级 import 削减
+
+**Phase A（定位，全部实测）**：零工具任务零 OCI（事件流 0 容器创建，defer 生效）；
+引导段=session 子进程，**每任务 ~3.0 CPU·s**：import 2.0s（67%，热点
+zebra_agent_worker.claims→agent_storage.postgres.leases→agent_storage/__init__ 全量拉载
+1.06s）+ 初始化 0.8s + 组装 0.18s；DB 往返 1-10ms/条非瓶颈。并发恶化机理=宿主 CPU
+饱和自增强（16 并发 × 3 CPU·s），非调度配额或连接池。
+
+**Phase B（零代码杠杆，实测）**：
+- B2 checked-hash pyc 预编译镜像（perf3-bootcache）：import -15~19%（2112→1794ms），
+  远低于 11-03 原型的 -48%——残余为 pydantic 模型构建等非编译成本；
+- B1 worker --cpus 2.0：共享宿主下**负杠杆**（16×2 配额加剧超卖，带产 3/s 探针
+  1.52/s、exec 12.5s，比 1.0 配额更差）；专用机下有限正效应但主约束仍是 CPU 总量。
+- 结论：**零代码杠杆无法达到 3/s**。带产基线维持 4 worker @1CPU。
+
+**D1 提案（产品级，待批准后实施）**：`agent_storage/__init__` 改 PEP 562 惰性导出
+（子进程不需要的 artifact_objects 等子模块 1.06s 拉载全部延迟），配合
+session_process_child 已有惰性导入结构。预期 import 2.0→<0.8s、子进程 3.0→~1.8 CPU·s，
+16 worker 专用机理论 5-6/s、现实 3.5-4/s——3/s 可达且全部署形态受益。回归纪律：
+现有 import 结构测试 + 全量 make test/check + 链上验证后再复验。
+
+证据：/data/zebra-e1a/window/phaseA/（events/importtime/cpu.stat/statements）、
+it2/it3.log、e1a-b1.log、phaseB-gate jsonl。
