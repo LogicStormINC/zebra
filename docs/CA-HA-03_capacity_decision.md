@@ -570,3 +570,15 @@ pg_stat_statements 抓到三个维护回环在负载下自放大：
 合并。量化目标：负载下 auth→model ≤2.5s、容量 ≥3/s。生产已全量恢复（79/79+3
 保留，健康抽查通过）。证据：window2/（停产清单）、e1a-w2/redis/lock 日志与
 pg_stat_statements 快照（宿主 /tmp 与 /data/zebra-e1a/window2/）。
+
+## 2026-11-10 D2-v1 落地：v127 列级覆盖源比较，+28% 接受吞吐
+
+窗口 2 归因结论修正后的第一个修复。v96 UPDATE 触发器以
+`coverage_model_event_source(to_jsonb(OLD/NEW))` 为门（每更新行两次整行 JSONB
+序列化）；位置分配/投影块等派生态更新使其在 1 任务/s 下达 466 次评估/s 且操作数
+恒相等。v127 改列级 `IS DISTINCT ROW` 比较（语义等价、免序列化）。101.7 带产探针
+（3/s×60s，语句统计重置）：接受 1.03→**1.32/s（+28%）**，body-ARRAY 语句
+466→**174/s（-63%**，余量为 INSERT/DELETE 触发器合法记账），事务率 632→460/s。
+顺带修复迁移目录测试的过期期望（基线既有失败）并收紧 schema 门（缺最新必需迁移
+即拒绝启动）。基线镜像 perf6-coverage-compare，DB v127。3/s 专用复验待下一个
+授权窗口；剩余放大项：事件页多次遍历（~30×/任务）与 INSERT 触发器记账。
