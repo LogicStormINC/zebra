@@ -52,9 +52,13 @@ class StreamHintRelay:
                         pass
                     if monotonic() + 0.02 >= deadline:
                         break  # No fresh settlement budget: lease recovery owns this uncertainty.
-                    published += int(
-                        settle_stream_hint(self.dsn, claim, confirmed=confirmed) and confirmed
-                    )
+                    if confirmed:
+                        published += int(
+                            settle_stream_hint(self.dsn, claim, confirmed=True)
+                        )
+                    # Transport failure keeps the claim: its lease expiry is the bounded
+                    # backoff. Settling unconfirmed with a 1s retry turns one dead fanout
+                    # into permanent claim/settle churn against PostgreSQL.
         except (PostgresError, RedisError, TimeoutError):
             pass  # Expected hint transport failure must not back off unrelated recovery.
         finally:

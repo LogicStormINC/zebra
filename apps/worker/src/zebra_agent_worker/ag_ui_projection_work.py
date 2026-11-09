@@ -2,6 +2,7 @@
 
 import logging
 from threading import Event, Lock, Thread
+from time import monotonic
 
 from agent_integrations.ag_ui.checkpoint_consumer import AgUiCheckpointConsumer
 from agent_storage.postgres.connection_pool import postgres_context
@@ -40,18 +41,37 @@ class AgUiProjectionWorkService:
 
     def _run(self) -> None:
         enabled: set[int] = set()
+        # E1-A idle-cost fix: a completed bootstrap re-locks the projector config
+        # row FOR UPDATE on every call; re-check it at a bounded cadence instead.
+        bootstrap_done_until: dict[int, float] = {}
+        bootstrap_recheck_seconds = 60.0
+        # E1-A idle-cost fix: 10 Hz polling with no pending work is ~300 idle
+        # transactions/s per fleet against PG; stretch the interval when idle
+        # and reset to the base interval on any progress.
+        delay = self.interval
+        idle_cap = 1.0
         while not self._stop.is_set():
-            delay = self.interval
+            progressed = False
             for index, consumer in enumerate(self.consumers):
                 try:
                     if index not in enabled:
                         consumer.work.enable_projection_work()
                         enabled.add(index)
-                    consumer.work.bootstrap_projection_work(limit=32)
-                    consumer.poll_once()
+                    now = monotonic()
+                    if bootstrap_done_until.get(index, 0.0) <= now:
+                        if consumer.work.bootstrap_projection_work(limit=32):
+                            bootstrap_done_until[index] = now + bootstrap_recheck_seconds
+                        else:
+                            progressed = True  # bootstrap still chewing through batches
+                    if consumer.poll_once():
+                        progressed = True
                 except Exception as exc:
                     logger.warning("AG-UI projection maintenance failed: %s", type(exc).__name__)
                     delay = max(delay, 1.0)
+            if progressed:
+                delay = self.interval
+            else:
+                delay = min(delay * 2, idle_cap)
             self._stop.wait(delay)
 
     def close(self) -> None:

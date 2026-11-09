@@ -40,8 +40,8 @@ def sample():
     return StreamHintClaim("ns", SessionId(uuid4()), "owner", 1, 0, datetime.now(UTC))
 
 
-def test_publish_failure_settles_pending_and_one_deadline(monkeypatch):
-    deadlines, confirmed = [], []
+def test_publish_failure_keeps_claim_for_lease_recovery(monkeypatch):
+    deadlines, settled = [], []
 
     def claim(*args, **kwargs):
         deadlines.append(current_task_io_deadline())
@@ -53,7 +53,7 @@ def test_publish_failure_settles_pending_and_one_deadline(monkeypatch):
 
     def settle(*args, **kwargs):
         deadlines.append(current_task_io_deadline())
-        confirmed.append(kwargs["confirmed"])
+        settled.append(kwargs["confirmed"])
         return True
 
     monkeypatch.setattr(runtime, "claim_stream_hints", claim)
@@ -62,10 +62,25 @@ def test_publish_failure_settles_pending_and_one_deadline(monkeypatch):
     relay = runtime.StreamHintRelay("test", "ns", publisher)
     with task_io_deadline(monotonic() + 0.5):
         assert relay.tick() == 0
-    assert confirmed == [False] and len(set(deadlines)) == 1
+    # A dead fanout must not convert into unbounded claim/settle churn: the
+    # claimed hint stays leased and lease expiry owns the bounded retry.
+    assert settled == [] and len(set(deadlines)) == 1
     relay.close()
     relay.close()
     assert relay.tick() == 0 and publisher.closed == 1
+
+
+def test_publish_success_settles_confirmed(monkeypatch):
+    settled = []
+    monkeypatch.setattr(runtime, "claim_stream_hints", lambda *a, **k: (sample(),))
+    monkeypatch.setattr(
+        runtime, "settle_stream_hint",
+        lambda *a, **k: settled.append(k.get("confirmed")) or True,
+    )
+    relay = runtime.StreamHintRelay("test", "ns", Publisher())
+    assert relay.tick() == 1
+    assert settled == [True]
+    relay.close()
 
 
 def test_no_settle_when_publish_spent_remaining_budget(monkeypatch):
