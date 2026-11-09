@@ -30,7 +30,9 @@ def test_projection_work_migration_is_registered_and_frozen() -> None:
 
 @pytest.mark.parametrize(
     ("variant", "valid"),
-    [("current", True), ("predecessor", True), ("older", False),
+    # v127 (coverage_model_source_compare) is required, not rollout-optional:
+    # a database missing the newest migration is stale and must refuse startup.
+    [("current", True), ("predecessor", False), ("older", False),
      ("wrong_checksum", False), ("future", False)],
 )
 def test_startup_requires_exact_schema(monkeypatch, variant, valid):

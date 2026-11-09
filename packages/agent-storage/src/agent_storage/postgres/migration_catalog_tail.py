@@ -39,6 +39,9 @@ from agent_storage.postgres.coverage_model_migration import COVERAGE_MODEL_MIGRA
 from agent_storage.postgres.coverage_model_revision_migration import (
     COVERAGE_MODEL_REVISION_MIGRATION,
 )
+from agent_storage.postgres.coverage_model_source_compare_migration import (
+    COVERAGE_MODEL_SOURCE_COMPARE_MIGRATION,
+)
 from agent_storage.postgres.coverage_model_source_positions_migration import (
     COVERAGE_MODEL_SOURCE_POSITIONS_MIGRATION,
 )
@@ -221,6 +224,7 @@ LATEST_MIGRATIONS = (
     STANDARD_PROJECTION_CELLS_MIGRATION,
     replace(RUNTIME_GATE_MIGRATION, version=118),
     replace(RUNTIME_GATE_TERMINATION_MIGRATION, version=119),
+    COVERAGE_MODEL_SOURCE_COMPARE_MIGRATION,
     ORCHESTRATION_ADMISSION_MIGRATION,
     WORKER_BUDGET_MIGRATION,
     PROJECTION_WORK_SHARED_LOCK_MIGRATION,
