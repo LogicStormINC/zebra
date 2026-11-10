@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import threading
 from collections.abc import Callable
 from hashlib import sha256
 from time import monotonic
@@ -18,6 +19,40 @@ from agent_core.ports.worker_budget import (
 )
 
 from agent_integrations.bounded_model_dns import model_io_loop
+
+# CA-HA-03 D7: cache the event loop + AsyncClient across model calls.
+# Each guarded_completion previously paid ~500-800ms for asyncio.Runner
+# creation + httpx.AsyncClient construction (SSL context, connection pool,
+# DNS resolver). A worker-level singleton amortizes this to once per process.
+_LOOP_LOCK = threading.Lock()
+_CACHED_LOOP: asyncio.AbstractEventLoop | None = None
+_CACHED_CLIENT: httpx.AsyncClient | None = None
+
+
+def _get_model_transport() -> tuple[asyncio.AbstractEventLoop, httpx.AsyncClient | None]:
+    """Return (loop, cached_client_or_None); caller must not close either."""
+    global _CACHED_LOOP, _CACHED_CLIENT
+    with _LOOP_LOCK:
+        if _CACHED_LOOP is None or _CACHED_LOOP.is_closed():
+            _CACHED_LOOP = model_io_loop()
+            _CACHED_CLIENT = None  # new loop invalidates cached client
+        if _CACHED_CLIENT is None:
+            _CACHED_CLIENT = httpx.AsyncClient(
+                timeout=httpx.Timeout(30.0),
+                follow_redirects=False,
+                trust_env=False,
+            )
+        return _CACHED_LOOP, _CACHED_CLIENT
+
+
+def _reset_model_transport() -> None:
+    """Force re-creation on next call (for tests)."""
+    global _CACHED_LOOP, _CACHED_CLIENT
+    with _LOOP_LOCK:
+        if _CACHED_LOOP is not None and not _CACHED_LOOP.is_closed():
+            _CACHED_LOOP.close()
+        _CACHED_LOOP = None
+        _CACHED_CLIENT = None
 
 
 def inspect_request(gateway: Any, body: dict[str, Any]) -> ModelRequestBudget:
@@ -80,12 +115,18 @@ def guarded_completion(
     else:
         raise WorkerBudgetError("synchronous guarded transport cannot block an async loop")
     # Existing native async cancellation scope bounds connect, body and cleanup together.
+    # CA-HA-03 D7: reuse the cached loop + client instead of per-call creation.
     try:
-        with asyncio.Runner(loop_factory=model_io_loop) as runner:
-            payload = runner.run(
-                _wire(gateway, request.exact_body, remaining, stream_sink, responses)
-            )
+        loop, cached_client = _get_model_transport()
+        if cached_client is not None:
+            gateway._wire_client = cached_client  # _wire picks this up
+        payload = loop.run_until_complete(
+            _wire(gateway, request.exact_body, remaining, stream_sink, responses)
+        )
+        gateway._wire_client = None  # clear reference; not part of gateway state
+        gateway._wire_buffer = None
     except (httpx.TransportError, TimeoutError) as error:
+        _reset_model_transport()  # broken connection → recreate on next call
         raise ModelRequestOutcomeUnknown("model request outcome is unknown") from error
     if monotonic() - started >= remaining:
         raise ModelRequestOutcomeUnknown("model request outcome is unknown after its deadline")
@@ -114,9 +155,16 @@ async def _wire(
         if not isinstance(transport, httpx.MockTransport):
             raise WorkerBudgetError("guarded transport requires cancellable native async I/O")
     url = gateway._base_url + ("/responses" if responses else "/chat/completions")
-    content = bytearray()
-    delta_index = 0
+    cached = getattr(gateway, "_wire_client", None)
     async with asyncio.timeout(seconds):
+        if cached is not None and transport is None:
+            # D7: reuse the worker-level cached client (loop-bound, no cleanup).
+            client = cached
+            async with client.stream(
+                "POST", url, headers=gateway._headers(), content=exact
+            ) as response:
+                await _drain_response(gateway, response, sink, responses)
+                return _finalize_response(gateway, sink, responses, url)
         async with httpx.AsyncClient(
             timeout=httpx.Timeout(seconds),
             transport=transport,
@@ -126,25 +174,51 @@ async def _wire(
             async with client.stream(
                 "POST", url, headers=gateway._headers(), content=exact
             ) as response:
-                response.raise_for_status()
-                if sink is None:
-                    async for chunk in response.aiter_bytes():
-                        if len(content) + len(chunk) > 4 * 1024 * 1024:
-                            raise WorkerBudgetError("model response exceeds bounded body size")
-                        content.extend(chunk)
-                else:
-                    async for line in response.aiter_lines():
-                        encoded = (line + "\n").encode()
-                        if len(content) + len(encoded) > 4 * 1024 * 1024:
-                            raise WorkerBudgetError("model stream exceeds bounded body size")
-                        content.extend(encoded)
-                        gateway.worker_budget.check()
-                        if line.startswith("data:") and line[5:].strip() != "[DONE]":
-                            event = json.loads(line[5:].strip())
-                            text = _public_delta(event, responses)
-                            if text:
-                                sink(ModelTextDelta(index=delta_index, content=text))
-                                delta_index += 1
+                await _drain_response(gateway, response, sink, responses)
+                return _finalize_response(gateway, sink, responses, url)
+    raise WorkerBudgetError("unreachable")  # pragma: no cover
+
+
+async def _drain_response(
+    gateway: Any,
+    response: httpx.Response,
+    sink: Callable[[ModelTextDelta], None] | None,
+    responses: bool,
+) -> None:
+    """Stream the model response into gateway._wire_buffer."""
+    content = bytearray()
+    delta_index = 0
+    response.raise_for_status()
+    if sink is None:
+        async for chunk in response.aiter_bytes():
+            if len(content) + len(chunk) > 4 * 1024 * 1024:
+                raise WorkerBudgetError("model response exceeds bounded body size")
+            content.extend(chunk)
+    else:
+        async for line in response.aiter_lines():
+            encoded = (line + "\n").encode()
+            if len(content) + len(encoded) > 4 * 1024 * 1024:
+                raise WorkerBudgetError("model stream exceeds bounded body size")
+            content.extend(encoded)
+            gateway.worker_budget.check()
+            if line.startswith("data:") and line[5:].strip() != "[DONE]":
+                event = json.loads(line[5:].strip())
+                text = _public_delta(event, responses)
+                if text:
+                    sink(ModelTextDelta(index=delta_index, content=text))
+                    delta_index += 1
+    gateway._wire_buffer = bytes(content)
+
+
+def _finalize_response(
+    gateway: Any,
+    sink: Callable[[ModelTextDelta], None] | None,
+    responses: bool,
+    url: str,
+) -> dict[str, Any]:
+    """Parse the buffered response; shared by cached and fresh-client paths."""
+    content = gateway._wire_buffer
+    gateway._wire_buffer = None
     if sink is None:
         result = json.loads(content)
         if not isinstance(result, dict):
