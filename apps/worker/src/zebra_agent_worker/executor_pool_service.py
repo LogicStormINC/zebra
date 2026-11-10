@@ -41,8 +41,15 @@ class ExecutorPoolService:
         env: dict[str, str] | None = None,
         ack_deadline: float = _ACK_DEADLINE,
     ) -> None:
-        pool_size = getattr(settings, "executor_pool_size", 0)
-        if type(pool_size) is not int or not 0 <= pool_size <= 8:
+        # Environment-direct: avoids a settings-digest change for pool enablement.
+        raw = (env or {}).get("ZEBRA_EXECUTOR_POOL_SIZE") or os.environ.get(
+            "ZEBRA_EXECUTOR_POOL_SIZE", "0"
+        )
+        try:
+            pool_size = int(raw)
+        except (TypeError, ValueError):
+            pool_size = 0
+        if not 0 <= pool_size <= 8:
             pool_size = 0
         self._pool_size = pool_size
         self._settings = settings
