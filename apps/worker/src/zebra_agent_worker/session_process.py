@@ -66,7 +66,70 @@ def supervise(
         raise ExecutionInterrupted("session cancelled; isolated executor stopped")
 
 
+_POOL: Any = None  # Module-level ExecutorPoolService (D6, config-gated)
+
+
+def _get_pool(service: Any) -> Any:
+    """Lazily create the executor pool if configured (ZEBRA_EXECUTOR_POOL_SIZE > 0)."""
+    global _POOL
+    if _POOL is not None:
+        return _POOL if _POOL.enabled else None
+    from zebra_agent_worker.executor_pool_service import ExecutorPoolService
+
+    _POOL = ExecutorPoolService(settings=service._settings)
+    if _POOL.enabled:
+        _POOL.start()
+    return _POOL if _POOL.enabled else None
+
+
 def execute_isolated(service: Any, request: dict[str, Any]) -> ExecutedSession:
+    # D6: pool path when enabled; falls through to per-task spawn otherwise.
+    pool = _get_pool(service)
+    if pool is not None:
+        return _execute_via_pool(pool, service, request)
+    return _execute_spawned(service, request)
+
+
+def _execute_via_pool(
+    pool: Any, service: Any, request: dict[str, Any]
+) -> ExecutedSession:
+    """Execute through a pooled child (D6); register/ack force-stop invariants."""
+    from uuid import UUID
+
+    from agent_core.domain.identifiers import SessionId
+    from agent_core.domain.leases import WorkerLease
+    from agent_storage.postgres.force_stop_executors import register_executor
+    from agent_storage.postgres.force_stops import PostgresForceStops
+    from pydantic import TypeAdapter
+
+    from zebra_agent_worker.execution_errors import WorkerExecutorInterrupted
+
+    sid = SessionId(UUID(request["session_id"]))
+    lease = WorkerLease.model_validate(request["lease"])
+    database = service._projection_store._database
+    store = PostgresForceStops(database._dsn, deployment_namespace=database.deployment_namespace)
+
+    request.update(
+        factory=process_factory(service._settings),
+        settings_digest=settings_digest(service._settings),
+        deployment_namespace=database.deployment_namespace,
+    )
+    register_executor(store.database, sid, lease.fence, incarnation=executor_incarnation())
+    try:
+        outcome = pool.submit(request)
+    except Exception as error:
+        store.acknowledge_executor(sid, lease.fence)
+        raise WorkerExecutorInterrupted("pooled executor failed") from error
+    store.acknowledge_executor(sid, lease.fence)
+    if outcome is None or outcome.get("outcome") != "executed":
+        reason = outcome.get("outcome", "unavailable") if outcome else "pool_full"
+        raise WorkerExecutorInterrupted(f"pooled executor outcome: {reason}")
+    return TypeAdapter(ExecutedSession).validate_json(
+        json.dumps(outcome["result"])
+    )
+
+
+def _execute_spawned(service: Any, request: dict[str, Any]) -> ExecutedSession:
     factory = process_factory(service._settings)
     assert factory is not None
     from uuid import UUID
