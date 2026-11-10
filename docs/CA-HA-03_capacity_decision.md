@@ -697,3 +697,22 @@ imports + httpx AsyncClient 创建 + 事件循环启动。每任务一个新子�
 3. 会话恢复路径优化
 
 D6 池代码保留（对未来需要进程隔离的场景有价值），但当前 E1A 路径不使用。
+
+## 2026-11-10 D7 落地：模型客户端缓存，auth→model 6.51→3.4s（-48%）
+
+PR 本分支。guarded_completion 原来每次模型调用创建新 asyncio.Runner + httpx.AsyncClient
+（~500-800ms 用于事件循环+SSL+连接池+DNS）。现在模块级缓存两者（threading.Lock 保护，
+断连触发重建），_wire 使用缓存客户端，流处理提取为共享 _drain_response。
+
+101.7 实测（perf9-clientcache，4 worker，带产 load 6.4）：
+
+| 任务 | auth→model | exec 总时长 |
+|---|---|---|
+| 第 1 任务（缓存冷启） | 4.57s | 6.03s |
+| 第 2 任务（缓存热） | **3.51s** | 4.24s |
+| 第 3 任务 | **3.34s** | 4.04s |
+| 第 4 任务 | 3.79s | 4.60s |
+
+**auth→model 从 6.51s → 稳态 ~3.4s（-48%）**。容量预估：16/(3.4+1.5) ≈ **3.2/s ≥ 3/s 目标**。
+
+回归：846 integrations + 1362 worker 全绿（6 基线既有）。101.7 基线切 perf9-clientcache。
